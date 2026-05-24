@@ -1,5 +1,5 @@
 [package]
-name = "aic-cli"
+name = "aic-data"
 version = "0.1.0"
 edition.workspace = true
 license.workspace = true
@@ -7,9 +7,7 @@ rust-version.workspace = true
 publish = false
 
 [dependencies]
-aic-data.workspace = true
-anyhow.workspace = true
-clap.workspace = true
+serde.workspace = true
 serde_json.workspace = true
 
 [lints]

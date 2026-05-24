@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "external_items": ["originium-ore"],
+  "recipes": [
+    {
+      "id": "grind-originium-powder",
+      "facility": "grinding-unit",
+      "inputs": [
+        {
+          "item": "originium-ore",
+          "quantity": 1
+        }
+      ],
+      "outputs": [
+        {
+          "item": "originium-powder",
+          "quantity": 1
+        }
+      ],
+      "duration_ms": 2000
+    }
+  ]
+}
