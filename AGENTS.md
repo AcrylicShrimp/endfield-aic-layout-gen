@@ -84,3 +84,7 @@
 - Keep commits focused and descriptive.
 - Do not revert unrelated user changes.
 - Before committing, inspect `git status --short`.
+- After completing a work unit and passing the relevant verification, commit the resulting changes unless the user explicitly asks not to commit.
+- When one turn completes multiple separable work units, split commits by work unit when practical.
+- Do not commit incomplete work unless the user explicitly requests a checkpoint commit.
+- After committing, report the commit hash or hashes and whether the worktree is clean.
