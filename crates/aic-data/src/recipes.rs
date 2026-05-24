@@ -7,6 +7,7 @@ mod model;
 mod throughput;
 mod validate;
 mod validated;
+mod wiring;
 
 pub use facilities::{
     FacilityRequirementDiagnostic, FacilityRequirementReport, FacilityRequirementSummary,
@@ -25,6 +26,10 @@ pub use validate::{
     SUPPORTED_SCHEMA_VERSION, ValidationDiagnostic, ValidationReport, validate_recipe_book,
 };
 pub use validated::ValidatedRecipeBook;
+pub use wiring::{
+    RecipeWiringEdge, RecipeWiringGraphDiagnostic, RecipeWiringGraphNode, RecipeWiringGraphReport,
+    build_recipe_wiring_graph,
+};
 
 #[cfg(test)]
 mod tests;

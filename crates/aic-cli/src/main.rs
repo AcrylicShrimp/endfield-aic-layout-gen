@@ -2,8 +2,9 @@ use std::{path::PathBuf, process::ExitCode};
 
 use aic_data::recipes::{
     FacilityRequirementReport, RecipeThroughputReport, RecipeThroughputRequest,
-    ThroughputDiagnostic, ValidatedRecipeBook, calculate_facility_requirements, load_recipe_book,
-    validate_recipe_book, validate_target_item_id, validate_throughput_request,
+    RecipeWiringGraphReport, ThroughputDiagnostic, ValidatedRecipeBook, build_recipe_wiring_graph,
+    calculate_facility_requirements, load_recipe_book, validate_recipe_book,
+    validate_target_item_id, validate_throughput_request,
 };
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
@@ -72,6 +73,16 @@ enum RecipesCommand {
         #[arg(long, short, value_name = "FILE")]
         request: PathBuf,
     },
+    /// Build a recipe-level wiring graph for a target request.
+    WiringGraph {
+        /// Recipe JSON file to load.
+        #[arg(long, short, value_name = "FILE")]
+        file: PathBuf,
+
+        /// Throughput request JSON file to load.
+        #[arg(long, short, value_name = "FILE")]
+        request: PathBuf,
+    },
 }
 
 fn main() -> ExitCode {
@@ -104,6 +115,7 @@ fn run() -> Result<CommandStatus> {
             }
             RecipesCommand::Throughput { file, request } => throughput_recipes(file, request),
             RecipesCommand::Facilities { file, request } => facilities_recipes(file, request),
+            RecipesCommand::WiringGraph { file, request } => wiring_graph_recipes(file, request),
         },
     }
 }
@@ -193,6 +205,24 @@ fn facilities_recipes(file: PathBuf, request: PathBuf) -> Result<CommandStatus> 
     }
 }
 
+fn wiring_graph_recipes(file: PathBuf, request: PathBuf) -> Result<CommandStatus> {
+    let throughput_report = calculate_throughput_report(file, request)?;
+    if !throughput_report.success {
+        write_throughput_report(&throughput_report)?;
+        return Ok(CommandStatus::Failure);
+    }
+
+    let report = build_recipe_wiring_graph(&throughput_report);
+    let success = report.success;
+    write_recipe_wiring_graph_report(&report)?;
+
+    if success {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
+    }
+}
+
 fn calculate_throughput_report(file: PathBuf, request: PathBuf) -> Result<RecipeThroughputReport> {
     let recipe_book = load_recipe_book(&file)?;
     let request_json = std::fs::read_to_string(&request).with_context(|| {
@@ -243,6 +273,14 @@ fn write_throughput_report(report: &RecipeThroughputReport) -> Result<()> {
 fn write_facility_requirement_report(report: &FacilityRequirementReport) -> Result<()> {
     serde_json::to_writer_pretty(std::io::stdout().lock(), report)
         .context("failed to write facility requirement report")?;
+    println!();
+
+    Ok(())
+}
+
+fn write_recipe_wiring_graph_report(report: &RecipeWiringGraphReport) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write recipe wiring graph report")?;
     println!();
 
     Ok(())

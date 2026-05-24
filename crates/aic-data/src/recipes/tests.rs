@@ -102,6 +102,32 @@ fn multi_output_book() -> RecipeBook {
     }
 }
 
+fn surplus_book() -> RecipeBook {
+    RecipeBook {
+        schema_version: 1,
+        external_items: vec!["originium-ore".to_string()],
+        recipes: vec![Recipe {
+            id: "split-originium-ore".to_string(),
+            facility: "separator".to_string(),
+            inputs: vec![ItemAmount {
+                item: "originium-ore".to_string(),
+                quantity: 1,
+            }],
+            outputs: vec![
+                ItemAmount {
+                    item: "originium-powder".to_string(),
+                    quantity: 2,
+                },
+                ItemAmount {
+                    item: "originium-shard".to_string(),
+                    quantity: 1,
+                },
+            ],
+            duration_ms: 2000,
+        }],
+    }
+}
+
 fn same_facility_chain_book() -> RecipeBook {
     RecipeBook {
         schema_version: 1,
@@ -444,31 +470,7 @@ fn handles_multi_output_shared_producer_without_double_counting() {
 
 #[test]
 fn reports_multi_output_surplus() {
-    let book = RecipeBook {
-        schema_version: 1,
-        external_items: vec!["originium-ore".to_string()],
-        recipes: vec![Recipe {
-            id: "split-originium-ore".to_string(),
-            facility: "separator".to_string(),
-            inputs: vec![ItemAmount {
-                item: "originium-ore".to_string(),
-                quantity: 1,
-            }],
-            outputs: vec![
-                ItemAmount {
-                    item: "originium-powder".to_string(),
-                    quantity: 2,
-                },
-                ItemAmount {
-                    item: "originium-shard".to_string(),
-                    quantity: 1,
-                },
-            ],
-            duration_ms: 2000,
-        }],
-    };
-
-    let report = ValidatedRecipeBook::try_from_recipe_book(book)
+    let report = ValidatedRecipeBook::try_from_recipe_book(surplus_book())
         .expect("valid book should promote")
         .calculate_throughput(&throughput_request("originium-powder", 1, 1000));
 
@@ -620,6 +622,171 @@ fn failed_throughput_input_becomes_facility_failure_report() {
 }
 
 #[test]
+fn builds_multi_step_recipe_wiring_graph() {
+    let throughput = ValidatedRecipeBook::try_from_recipe_book(multi_step_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-ingot", 1, 10000));
+
+    let report = build_recipe_wiring_graph(&throughput);
+
+    assert!(report.success);
+    assert_eq!(
+        report
+            .nodes
+            .iter()
+            .map(|node| node.id.as_str())
+            .collect::<Vec<_>>(),
+        [
+            "external:originium-ore",
+            "recipe:grind-originium-powder",
+            "recipe:smelt-originium-ingot",
+            "target:originium-ingot"
+        ]
+    );
+    assert_eq!(
+        report
+            .edges
+            .iter()
+            .map(|edge| {
+                (
+                    edge.source.as_str(),
+                    edge.target.as_str(),
+                    edge.kind.as_str(),
+                    edge.item.as_str(),
+                    edge.rate,
+                )
+            })
+            .collect::<Vec<_>>(),
+        [
+            (
+                "external:originium-ore",
+                "recipe:grind-originium-powder",
+                "external-input",
+                "originium-ore",
+                rate(1, 5)
+            ),
+            (
+                "recipe:grind-originium-powder",
+                "recipe:smelt-originium-ingot",
+                "recipe-flow",
+                "originium-powder",
+                rate(1, 5)
+            ),
+            (
+                "recipe:smelt-originium-ingot",
+                "target:originium-ingot",
+                "target-output",
+                "originium-ingot",
+                rate(1, 10)
+            )
+        ]
+    );
+}
+
+#[test]
+fn builds_external_target_wiring_graph() {
+    let throughput = ValidatedRecipeBook::try_from_recipe_book(valid_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-ore", 1, 1000));
+
+    let report = build_recipe_wiring_graph(&throughput);
+
+    assert!(report.success);
+    assert_eq!(
+        report
+            .nodes
+            .iter()
+            .map(|node| node.id.as_str())
+            .collect::<Vec<_>>(),
+        ["external:originium-ore", "target:originium-ore"]
+    );
+    assert_eq!(report.edges.len(), 1);
+    assert_eq!(report.edges[0].source, "external:originium-ore");
+    assert_eq!(report.edges[0].target, "target:originium-ore");
+    assert_eq!(report.edges[0].kind, "target-output");
+}
+
+#[test]
+fn builds_surplus_wiring_edge() {
+    let throughput = ValidatedRecipeBook::try_from_recipe_book(surplus_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-powder", 1, 1000));
+
+    let report = build_recipe_wiring_graph(&throughput);
+
+    assert!(report.success);
+    let surplus_edge = report
+        .edges
+        .iter()
+        .find(|edge| edge.kind == "surplus-output")
+        .expect("surplus edge should be present");
+
+    assert_eq!(surplus_edge.source, "recipe:split-originium-ore");
+    assert_eq!(surplus_edge.target, "surplus:originium-shard");
+    assert_eq!(surplus_edge.item, "originium-shard");
+    assert_eq!(surplus_edge.rate, rate(1, 2));
+}
+
+#[test]
+fn failed_throughput_input_becomes_wiring_failure_report() {
+    let throughput = RecipeThroughputReport::failure(ThroughputDiagnostic::error(
+        "unknown-target-item",
+        "/target/item",
+        Some("missing-item".to_string()),
+        "target item is unknown",
+    ));
+
+    let report = build_recipe_wiring_graph(&throughput);
+
+    assert!(!report.success);
+    assert!(report.nodes.is_empty());
+    assert!(report.edges.is_empty());
+    assert_wiring_diagnostic_codes(&report.diagnostics, &["upstream-throughput-failed"]);
+}
+
+#[test]
+fn malformed_successful_throughput_without_target_fails_wiring() {
+    let mut throughput = ValidatedRecipeBook::try_from_recipe_book(valid_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-powder", 1, 1000));
+    throughput.target = None;
+
+    let report = build_recipe_wiring_graph(&throughput);
+
+    assert!(!report.success);
+    assert_wiring_diagnostic_codes(&report.diagnostics, &["missing-target"]);
+}
+
+#[test]
+fn malformed_successful_throughput_without_producer_fails_wiring() {
+    let mut throughput = ValidatedRecipeBook::try_from_recipe_book(multi_step_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-ingot", 1, 10000));
+    throughput.recipe_rates[0].output_rates.clear();
+
+    let report = build_recipe_wiring_graph(&throughput);
+
+    assert!(!report.success);
+    assert_wiring_diagnostic_codes(&report.diagnostics, &["missing-producer"]);
+}
+
+#[test]
+fn malformed_successful_throughput_with_ambiguous_producer_fails_wiring() {
+    let mut throughput = ValidatedRecipeBook::try_from_recipe_book(multi_step_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-ingot", 1, 10000));
+    throughput.recipe_rates[1].output_rates.push(ItemRate {
+        item: "originium-powder".to_string(),
+        rate: rate(1, 10),
+    });
+
+    let report = build_recipe_wiring_graph(&throughput);
+
+    assert!(!report.success);
+    assert_wiring_diagnostic_codes(&report.diagnostics, &["ambiguous-producer"]);
+}
+
+#[test]
 fn rejects_unknown_recipe_fields_on_parse() {
     let error = serde_json::from_str::<RecipeBook>(
         r#"{
@@ -697,6 +864,23 @@ fn assert_diagnostic_codes(diagnostics: &[ThroughputDiagnostic], expected_codes:
 
 fn assert_facility_diagnostic_codes(
     diagnostics: &[FacilityRequirementDiagnostic],
+    expected_codes: &[&str],
+) {
+    let codes = diagnostics
+        .iter()
+        .map(|diagnostic| diagnostic.code)
+        .collect::<Vec<_>>();
+
+    for expected_code in expected_codes {
+        assert!(
+            codes.contains(expected_code),
+            "expected diagnostic code '{expected_code}', got {codes:?}"
+        );
+    }
+}
+
+fn assert_wiring_diagnostic_codes(
+    diagnostics: &[RecipeWiringGraphDiagnostic],
     expected_codes: &[&str],
 ) {
     let codes = diagnostics
