@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "external_items": ["originium-ore"],
+  "recipes": [
+    {
+      "id": "grind-originium-powder",
+      "facility": "grinding-unit",
+      "inputs": [
+        {
+          "item": "originium-ore",
+          "quantity": 1
+        }
+      ],
+      "outputs": [
+        {
+          "item": "originium-powder",
+          "quantity": 1
+        }
+      ],
+      "duration_ms": 2000
+    },
+    {
+      "id": "smelt-originium-ingot",
+      "facility": "smelter",
+      "inputs": [
+        {
+          "item": "originium-powder",
+          "quantity": 2
+        }
+      ],
+      "outputs": [
+        {
+          "item": "originium-ingot",
+          "quantity": 1
+        }
+      ],
+      "duration_ms": 5000
+    },
+    {
+      "id": "assemble-originium-casing",
+      "facility": "assembler",
+      "inputs": [
+        {
+          "item": "originium-ingot",
+          "quantity": 1
+        }
+      ],
+      "outputs": [
+        {
+          "item": "originium-casing",
+          "quantity": 1
+        }
+      ],
+      "duration_ms": 3000
+    }
+  ]
+}

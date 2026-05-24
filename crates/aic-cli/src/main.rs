@@ -1,7 +1,7 @@
 use std::{path::PathBuf, process::ExitCode};
 
-use aic_data::recipes::load_recipe_book;
-use anyhow::{Context, Result, ensure};
+use aic_data::recipes::{RecipeGraphError, load_recipe_book};
+use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
 
 #[derive(Debug, Parser)]
@@ -38,6 +38,16 @@ enum RecipesCommand {
         #[arg(long, short, value_name = "FILE")]
         file: PathBuf,
     },
+    /// Resolve the recipe dependency graph for a target item.
+    Graph {
+        /// Recipe JSON file to load.
+        #[arg(long, short, value_name = "FILE")]
+        file: PathBuf,
+
+        /// Target item ID to resolve.
+        #[arg(long, short, value_name = "ITEM")]
+        target: String,
+    },
 }
 
 fn main() -> ExitCode {
@@ -57,6 +67,7 @@ fn run() -> Result<()> {
         Command::CheckData => check_data(cli.data_dir),
         Command::Recipes { command } => match command {
             RecipesCommand::Validate { file } => validate_recipes(file),
+            RecipesCommand::Graph { file, target } => graph_recipes(file, target),
         },
     }
 }
@@ -90,4 +101,24 @@ fn validate_recipes(file: PathBuf) -> Result<()> {
     ensure!(report.valid, "recipe validation failed");
 
     Ok(())
+}
+
+fn graph_recipes(file: PathBuf, target: String) -> Result<()> {
+    let recipe_book = load_recipe_book(&file)?;
+
+    match recipe_book.resolve_graph(&target) {
+        Ok(graph) => {
+            serde_json::to_writer_pretty(std::io::stdout().lock(), &graph)
+                .context("failed to write recipe graph")?;
+            println!();
+            Ok(())
+        }
+        Err(RecipeGraphError::InvalidRecipeBook(report)) => {
+            serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+                .context("failed to write validation report")?;
+            println!();
+            bail!("recipe validation failed")
+        }
+        Err(error) => Err(error).context("failed to resolve recipe graph"),
+    }
 }

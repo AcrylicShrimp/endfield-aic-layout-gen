@@ -23,9 +23,51 @@ impl RecipeBook {
         validator.validate(self);
         validator.into_report()
     }
+
+    pub fn resolve_graph(&self, target_item: &str) -> Result<RecipeGraph, RecipeGraphError> {
+        if !is_kebab_case_id(target_item) {
+            return Err(RecipeGraphError::InvalidTargetId {
+                target_item: target_item.to_string(),
+            });
+        }
+
+        let validation_report = self.validate();
+        if !validation_report.valid {
+            return Err(RecipeGraphError::InvalidRecipeBook(validation_report));
+        }
+
+        let external_items = self
+            .external_items
+            .iter()
+            .map(String::as_str)
+            .collect::<HashSet<_>>();
+        let output_producers = self.unique_output_producers();
+
+        if !external_items.contains(target_item) && !output_producers.contains_key(target_item) {
+            return Err(RecipeGraphError::UnknownTargetItem {
+                target_item: target_item.to_string(),
+            });
+        }
+
+        let mut resolver = GraphResolver::new(target_item, &external_items, &output_producers);
+        resolver.resolve_item(target_item);
+        Ok(resolver.into_graph())
+    }
+
+    fn unique_output_producers(&self) -> HashMap<&str, &Recipe> {
+        let mut output_producers = HashMap::new();
+
+        for recipe in &self.recipes {
+            for output in &recipe.outputs {
+                output_producers.insert(output.item.as_str(), recipe);
+            }
+        }
+
+        output_producers
+    }
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct Recipe {
     pub id: String,
@@ -35,7 +77,7 @@ pub struct Recipe {
     pub duration_ms: i64,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ItemAmount {
     pub item: String,
@@ -54,6 +96,47 @@ pub struct ValidationDiagnostic {
     pub path: String,
     pub message: String,
 }
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct RecipeGraph {
+    pub target_item: String,
+    pub external_items: Vec<String>,
+    pub recipes: Vec<Recipe>,
+}
+
+#[derive(Debug)]
+pub enum RecipeGraphError {
+    InvalidTargetId { target_item: String },
+    InvalidRecipeBook(ValidationReport),
+    UnknownTargetItem { target_item: String },
+}
+
+impl std::fmt::Display for RecipeGraphError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::InvalidTargetId { target_item } => {
+                write!(
+                    formatter,
+                    "target item '{target_item}' must match ^[a-z0-9]+(-[a-z0-9]+)*$"
+                )
+            }
+            Self::InvalidRecipeBook(_) => {
+                write!(
+                    formatter,
+                    "recipe graph cannot be resolved from invalid recipe data"
+                )
+            }
+            Self::UnknownTargetItem { target_item } => {
+                write!(
+                    formatter,
+                    "target item '{target_item}' is neither external nor recipe-produced"
+                )
+            }
+        }
+    }
+}
+
+impl std::error::Error for RecipeGraphError {}
 
 pub fn load_recipe_book(path: impl AsRef<Path>) -> Result<RecipeBook, LoadRecipeBookError> {
     let path = path.as_ref();
@@ -98,6 +181,70 @@ impl std::error::Error for LoadRecipeBookError {
         match self {
             Self::Open { source, .. } => Some(source),
             Self::Parse { source, .. } => Some(source),
+        }
+    }
+}
+
+struct GraphResolver<'a> {
+    target_item: &'a str,
+    external_source_items: &'a HashSet<&'a str>,
+    output_producers: &'a HashMap<&'a str, &'a Recipe>,
+    seen_external_items: HashSet<&'a str>,
+    seen_recipe_ids: HashSet<&'a str>,
+    recipes: Vec<Recipe>,
+}
+
+impl<'a> GraphResolver<'a> {
+    fn new(
+        target_item: &'a str,
+        external_source_items: &'a HashSet<&'a str>,
+        output_producers: &'a HashMap<&'a str, &'a Recipe>,
+    ) -> Self {
+        Self {
+            target_item,
+            external_source_items,
+            output_producers,
+            seen_external_items: HashSet::new(),
+            seen_recipe_ids: HashSet::new(),
+            recipes: Vec::new(),
+        }
+    }
+
+    fn resolve_item(&mut self, item: &'a str) {
+        if self.external_source_items.contains(item) {
+            self.seen_external_items.insert(item);
+            return;
+        }
+
+        if let Some(recipe) = self.output_producers.get(item) {
+            self.resolve_recipe(recipe);
+        }
+    }
+
+    fn resolve_recipe(&mut self, recipe: &'a Recipe) {
+        if !self.seen_recipe_ids.insert(recipe.id.as_str()) {
+            return;
+        }
+
+        for input in &recipe.inputs {
+            self.resolve_item(input.item.as_str());
+        }
+
+        self.recipes.push(recipe.clone());
+    }
+
+    fn into_graph(self) -> RecipeGraph {
+        let mut external_items = self
+            .seen_external_items
+            .into_iter()
+            .map(str::to_string)
+            .collect::<Vec<_>>();
+        external_items.sort_unstable();
+
+        RecipeGraph {
+            target_item: self.target_item.to_string(),
+            external_items,
+            recipes: self.recipes,
         }
     }
 }
@@ -472,6 +619,41 @@ mod tests {
         }
     }
 
+    fn multi_step_book() -> RecipeBook {
+        RecipeBook {
+            schema_version: 1,
+            external_items: vec!["originium-ore".to_string()],
+            recipes: vec![
+                Recipe {
+                    id: "grind-originium-powder".to_string(),
+                    facility: "grinding-unit".to_string(),
+                    inputs: vec![ItemAmount {
+                        item: "originium-ore".to_string(),
+                        quantity: 1,
+                    }],
+                    outputs: vec![ItemAmount {
+                        item: "originium-powder".to_string(),
+                        quantity: 1,
+                    }],
+                    duration_ms: 2000,
+                },
+                Recipe {
+                    id: "smelt-originium-ingot".to_string(),
+                    facility: "smelter".to_string(),
+                    inputs: vec![ItemAmount {
+                        item: "originium-powder".to_string(),
+                        quantity: 2,
+                    }],
+                    outputs: vec![ItemAmount {
+                        item: "originium-ingot".to_string(),
+                        quantity: 1,
+                    }],
+                    duration_ms: 5000,
+                },
+            ],
+        }
+    }
+
     #[test]
     fn accepts_valid_recipe_book() {
         let report = valid_book().validate();
@@ -580,6 +762,56 @@ mod tests {
         let report = book.validate();
 
         assert_codes(&report, &["non-positive-quantity", "non-positive-duration"]);
+    }
+
+    #[test]
+    fn resolves_multi_step_graph_dependency_first() {
+        let graph = multi_step_book()
+            .resolve_graph("originium-ingot")
+            .expect("valid graph should resolve");
+
+        assert_eq!(graph.target_item, "originium-ingot");
+        assert_eq!(graph.external_items, ["originium-ore"]);
+        assert_eq!(
+            graph
+                .recipes
+                .iter()
+                .map(|recipe| recipe.id.as_str())
+                .collect::<Vec<_>>(),
+            ["grind-originium-powder", "smelt-originium-ingot"]
+        );
+    }
+
+    #[test]
+    fn resolves_external_target_without_recipes() {
+        let graph = multi_step_book()
+            .resolve_graph("originium-ore")
+            .expect("external target should resolve");
+
+        assert_eq!(graph.target_item, "originium-ore");
+        assert_eq!(graph.external_items, ["originium-ore"]);
+        assert!(graph.recipes.is_empty());
+    }
+
+    #[test]
+    fn rejects_unknown_graph_target() {
+        let error = multi_step_book()
+            .resolve_graph("missing-item")
+            .expect_err("unknown target should fail");
+
+        assert!(matches!(error, RecipeGraphError::UnknownTargetItem { .. }));
+    }
+
+    #[test]
+    fn rejects_graph_resolution_when_book_is_invalid() {
+        let mut book = valid_book();
+        book.recipes[0].inputs[0].item = "missing-item".to_string();
+
+        let error = book
+            .resolve_graph("originium-powder")
+            .expect_err("invalid book should fail before graph resolution");
+
+        assert!(matches!(error, RecipeGraphError::InvalidRecipeBook(_)));
     }
 
     fn assert_codes(report: &ValidationReport, expected_codes: &[&str]) {
