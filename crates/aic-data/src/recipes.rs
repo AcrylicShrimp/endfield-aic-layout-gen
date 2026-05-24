@@ -1,3 +1,4 @@
+mod facilities;
 mod graph;
 mod id;
 mod index;
@@ -7,6 +8,10 @@ mod throughput;
 mod validate;
 mod validated;
 
+pub use facilities::{
+    FacilityRequirementDiagnostic, FacilityRequirementReport, FacilityRequirementSummary,
+    RecipeFacilityRequirement, calculate_facility_requirements,
+};
 pub use graph::RecipeGraphError;
 pub use id::validate_target_item_id;
 pub use load::{LoadRecipeBookError, load_recipe_book};

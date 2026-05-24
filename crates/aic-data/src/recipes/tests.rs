@@ -102,6 +102,60 @@ fn multi_output_book() -> RecipeBook {
     }
 }
 
+fn same_facility_chain_book() -> RecipeBook {
+    RecipeBook {
+        schema_version: 1,
+        external_items: vec!["raw-a".to_string(), "raw-b".to_string()],
+        recipes: vec![
+            Recipe {
+                id: "make-a".to_string(),
+                facility: "assembler".to_string(),
+                inputs: vec![ItemAmount {
+                    item: "raw-a".to_string(),
+                    quantity: 1,
+                }],
+                outputs: vec![ItemAmount {
+                    item: "item-a".to_string(),
+                    quantity: 1,
+                }],
+                duration_ms: 1000,
+            },
+            Recipe {
+                id: "make-b".to_string(),
+                facility: "assembler".to_string(),
+                inputs: vec![ItemAmount {
+                    item: "raw-b".to_string(),
+                    quantity: 1,
+                }],
+                outputs: vec![ItemAmount {
+                    item: "item-b".to_string(),
+                    quantity: 1,
+                }],
+                duration_ms: 1000,
+            },
+            Recipe {
+                id: "make-c".to_string(),
+                facility: "assembler".to_string(),
+                inputs: vec![
+                    ItemAmount {
+                        item: "item-a".to_string(),
+                        quantity: 1,
+                    },
+                    ItemAmount {
+                        item: "item-b".to_string(),
+                        quantity: 1,
+                    },
+                ],
+                outputs: vec![ItemAmount {
+                    item: "item-c".to_string(),
+                    quantity: 1,
+                }],
+                duration_ms: 1000,
+            },
+        ],
+    }
+}
+
 fn rate(numerator: i64, denominator: i64) -> Rate {
     Rate {
         numerator,
@@ -487,6 +541,85 @@ fn rejects_unknown_throughput_target() {
 }
 
 #[test]
+fn calculates_single_recipe_facility_requirement() {
+    let throughput = ValidatedRecipeBook::try_from_recipe_book(valid_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-powder", 1, 2000));
+
+    let report = calculate_facility_requirements(&throughput);
+
+    assert!(report.success);
+    assert_eq!(report.recipe_requirements.len(), 1);
+    assert_eq!(report.recipe_requirements[0].required_facilities, 1);
+    assert_eq!(report.recipe_requirements[0].unused_capacity, rate(0, 1));
+    assert_eq!(report.facility_summaries[0].facility, "grinding-unit");
+    assert_eq!(report.facility_summaries[0].required_facilities, 1);
+}
+
+#[test]
+fn rounds_work_rate_above_one_up_to_multiple_facilities() {
+    let throughput = ValidatedRecipeBook::try_from_recipe_book(valid_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-powder", 4, 3000));
+
+    let report = calculate_facility_requirements(&throughput);
+
+    assert!(report.success);
+    assert_eq!(
+        report.recipe_requirements[0].work_seconds_per_second,
+        rate(8, 3)
+    );
+    assert_eq!(report.recipe_requirements[0].required_facilities, 3);
+    assert_eq!(report.recipe_requirements[0].unused_capacity, rate(1, 3));
+}
+
+#[test]
+fn external_target_requires_no_facilities() {
+    let throughput = ValidatedRecipeBook::try_from_recipe_book(valid_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-ore", 1, 1000));
+
+    let report = calculate_facility_requirements(&throughput);
+
+    assert!(report.success);
+    assert!(report.recipe_requirements.is_empty());
+    assert!(report.facility_summaries.is_empty());
+}
+
+#[test]
+fn aggregates_facility_summaries_without_recipe_sharing() {
+    let throughput = ValidatedRecipeBook::try_from_recipe_book(same_facility_chain_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("item-c", 1, 1000));
+
+    let report = calculate_facility_requirements(&throughput);
+
+    assert!(report.success);
+    assert_eq!(report.recipe_requirements.len(), 3);
+    assert_eq!(report.facility_summaries.len(), 1);
+    assert_eq!(report.facility_summaries[0].facility, "assembler");
+    assert_eq!(report.facility_summaries[0].required_facilities, 3);
+    assert_eq!(report.facility_summaries[0].unused_capacity, rate(0, 1));
+}
+
+#[test]
+fn failed_throughput_input_becomes_facility_failure_report() {
+    let throughput = RecipeThroughputReport::failure(ThroughputDiagnostic::error(
+        "unknown-target-item",
+        "/target/item",
+        Some("missing-item".to_string()),
+        "target item is unknown",
+    ));
+
+    let report = calculate_facility_requirements(&throughput);
+
+    assert!(!report.success);
+    assert!(report.recipe_requirements.is_empty());
+    assert!(report.facility_summaries.is_empty());
+    assert_facility_diagnostic_codes(&report.diagnostics, &["upstream-throughput-failed"]);
+}
+
+#[test]
 fn rejects_unknown_recipe_fields_on_parse() {
     let error = serde_json::from_str::<RecipeBook>(
         r#"{
@@ -549,6 +682,23 @@ fn assert_codes(report: &ValidationReport, expected_codes: &[&str]) {
 }
 
 fn assert_diagnostic_codes(diagnostics: &[ThroughputDiagnostic], expected_codes: &[&str]) {
+    let codes = diagnostics
+        .iter()
+        .map(|diagnostic| diagnostic.code)
+        .collect::<Vec<_>>();
+
+    for expected_code in expected_codes {
+        assert!(
+            codes.contains(expected_code),
+            "expected diagnostic code '{expected_code}', got {codes:?}"
+        );
+    }
+}
+
+fn assert_facility_diagnostic_codes(
+    diagnostics: &[FacilityRequirementDiagnostic],
+    expected_codes: &[&str],
+) {
     let codes = diagnostics
         .iter()
         .map(|diagnostic| diagnostic.code)

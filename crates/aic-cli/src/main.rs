@@ -1,8 +1,9 @@
 use std::{path::PathBuf, process::ExitCode};
 
 use aic_data::recipes::{
-    RecipeThroughputReport, RecipeThroughputRequest, ThroughputDiagnostic, ValidatedRecipeBook,
-    load_recipe_book, validate_recipe_book, validate_target_item_id, validate_throughput_request,
+    FacilityRequirementReport, RecipeThroughputReport, RecipeThroughputRequest,
+    ThroughputDiagnostic, ValidatedRecipeBook, calculate_facility_requirements, load_recipe_book,
+    validate_recipe_book, validate_target_item_id, validate_throughput_request,
 };
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
@@ -61,6 +62,16 @@ enum RecipesCommand {
         #[arg(long, short, value_name = "FILE")]
         request: PathBuf,
     },
+    /// Calculate recipe-dedicated facility requirements for a target request.
+    Facilities {
+        /// Recipe JSON file to load.
+        #[arg(long, short, value_name = "FILE")]
+        file: PathBuf,
+
+        /// Throughput request JSON file to load.
+        #[arg(long, short, value_name = "FILE")]
+        request: PathBuf,
+    },
 }
 
 fn main() -> ExitCode {
@@ -92,6 +103,7 @@ fn run() -> Result<CommandStatus> {
                 graph_recipes(file, target).map(|()| CommandStatus::Success)
             }
             RecipesCommand::Throughput { file, request } => throughput_recipes(file, request),
+            RecipesCommand::Facilities { file, request } => facilities_recipes(file, request),
         },
     }
 }
@@ -152,6 +164,36 @@ fn graph_recipes(file: PathBuf, target: String) -> Result<()> {
 }
 
 fn throughput_recipes(file: PathBuf, request: PathBuf) -> Result<CommandStatus> {
+    let report = calculate_throughput_report(file, request)?;
+    let success = report.success;
+    write_throughput_report(&report)?;
+
+    if success {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
+    }
+}
+
+fn facilities_recipes(file: PathBuf, request: PathBuf) -> Result<CommandStatus> {
+    let throughput_report = calculate_throughput_report(file, request)?;
+    if !throughput_report.success {
+        write_throughput_report(&throughput_report)?;
+        return Ok(CommandStatus::Failure);
+    }
+
+    let report = calculate_facility_requirements(&throughput_report);
+    let success = report.success;
+    write_facility_requirement_report(&report)?;
+
+    if success {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
+    }
+}
+
+fn calculate_throughput_report(file: PathBuf, request: PathBuf) -> Result<RecipeThroughputReport> {
     let recipe_book = load_recipe_book(&file)?;
     let request_json = std::fs::read_to_string(&request).with_context(|| {
         format!(
@@ -168,16 +210,13 @@ fn throughput_recipes(file: PathBuf, request: PathBuf) -> Result<CommandStatus> 
                 None,
                 error.to_string(),
             ));
-            write_throughput_report(&report)?;
-            return Ok(CommandStatus::Failure);
+            return Ok(report);
         }
     };
 
     let request_diagnostics = validate_throughput_request(&request);
     if !request_diagnostics.is_empty() {
-        let report = RecipeThroughputReport::failure_many(request_diagnostics);
-        write_throughput_report(&report)?;
-        return Ok(CommandStatus::Failure);
+        return Ok(RecipeThroughputReport::failure_many(request_diagnostics));
     }
 
     let validated_recipe_book = match ValidatedRecipeBook::try_from_recipe_book(recipe_book) {
@@ -190,20 +229,20 @@ fn throughput_recipes(file: PathBuf, request: PathBuf) -> Result<CommandStatus> 
         }
     };
 
-    let report = validated_recipe_book.calculate_throughput(&request);
-    let success = report.success;
-    write_throughput_report(&report)?;
-
-    if success {
-        Ok(CommandStatus::Success)
-    } else {
-        Ok(CommandStatus::Failure)
-    }
+    Ok(validated_recipe_book.calculate_throughput(&request))
 }
 
 fn write_throughput_report(report: &RecipeThroughputReport) -> Result<()> {
     serde_json::to_writer_pretty(std::io::stdout().lock(), report)
         .context("failed to write throughput report")?;
+    println!();
+
+    Ok(())
+}
+
+fn write_facility_requirement_report(report: &FacilityRequirementReport) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write facility requirement report")?;
     println!();
 
     Ok(())
