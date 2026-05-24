@@ -631,11 +631,7 @@ fn builds_multi_step_recipe_wiring_graph() {
 
     assert!(report.success);
     assert_eq!(
-        report
-            .nodes
-            .iter()
-            .map(|node| node.id.as_str())
-            .collect::<Vec<_>>(),
+        report.nodes.iter().map(wiring_node_id).collect::<Vec<_>>(),
         [
             "external:originium-ore",
             "recipe:grind-originium-powder",
@@ -693,11 +689,7 @@ fn builds_external_target_wiring_graph() {
 
     assert!(report.success);
     assert_eq!(
-        report
-            .nodes
-            .iter()
-            .map(|node| node.id.as_str())
-            .collect::<Vec<_>>(),
+        report.nodes.iter().map(wiring_node_id).collect::<Vec<_>>(),
         ["external:originium-ore", "target:originium-ore"]
     );
     assert_eq!(report.edges.len(), 1);
@@ -725,6 +717,73 @@ fn builds_surplus_wiring_edge() {
     assert_eq!(surplus_edge.target, "surplus:originium-shard");
     assert_eq!(surplus_edge.item, "originium-shard");
     assert_eq!(surplus_edge.rate, rate(1, 2));
+}
+
+#[test]
+fn serializes_recipe_wiring_nodes_as_discriminated_union() {
+    let throughput = ValidatedRecipeBook::try_from_recipe_book(surplus_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-powder", 1, 1000));
+
+    let report = build_recipe_wiring_graph(&throughput);
+
+    assert!(report.success);
+    assert!(matches!(
+        &report.nodes[0],
+        RecipeWiringGraphNode::External { id, item }
+            if id == "external:originium-ore" && item == "originium-ore"
+    ));
+    assert!(matches!(
+        &report.nodes[1],
+        RecipeWiringGraphNode::Recipe { id, recipe }
+            if id == "recipe:split-originium-ore" && recipe == "split-originium-ore"
+    ));
+    assert!(matches!(
+        &report.nodes[2],
+        RecipeWiringGraphNode::Target { id, item }
+            if id == "target:originium-powder" && item == "originium-powder"
+    ));
+    assert!(matches!(
+        &report.nodes[3],
+        RecipeWiringGraphNode::Surplus { id, item }
+            if id == "surplus:originium-shard" && item == "originium-shard"
+    ));
+
+    let json = serde_json::to_value(&report).expect("wiring report should serialize");
+    let nodes = json.get("nodes").expect("nodes should exist");
+    assert_eq!(
+        nodes,
+        &serde_json::json!([
+            {
+                "kind": "external",
+                "id": "external:originium-ore",
+                "item": "originium-ore"
+            },
+            {
+                "kind": "recipe",
+                "id": "recipe:split-originium-ore",
+                "recipe": "split-originium-ore"
+            },
+            {
+                "kind": "target",
+                "id": "target:originium-powder",
+                "item": "originium-powder"
+            },
+            {
+                "kind": "surplus",
+                "id": "surplus:originium-shard",
+                "item": "originium-shard"
+            }
+        ])
+    );
+    let nodes = nodes.as_array().expect("nodes should be an array");
+    assert!(nodes.iter().all(|node| {
+        !node
+            .as_object()
+            .expect("node should be an object")
+            .values()
+            .any(|value| value.is_null())
+    }));
 }
 
 #[test]
@@ -893,5 +952,14 @@ fn assert_wiring_diagnostic_codes(
             codes.contains(expected_code),
             "expected diagnostic code '{expected_code}', got {codes:?}"
         );
+    }
+}
+
+fn wiring_node_id(node: &RecipeWiringGraphNode) -> &str {
+    match node {
+        RecipeWiringGraphNode::External { id, .. }
+        | RecipeWiringGraphNode::Recipe { id, .. }
+        | RecipeWiringGraphNode::Target { id, .. }
+        | RecipeWiringGraphNode::Surplus { id, .. } => id,
     }
 }

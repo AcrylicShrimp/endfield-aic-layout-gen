@@ -40,11 +40,42 @@ impl RecipeWiringGraphReport {
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct RecipeWiringGraphNode {
-    pub id: String,
-    pub kind: String,
-    pub recipe: Option<String>,
-    pub item: Option<String>,
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum RecipeWiringGraphNode {
+    External { id: String, item: String },
+    Recipe { id: String, recipe: String },
+    Target { id: String, item: String },
+    Surplus { id: String, item: String },
+}
+
+impl RecipeWiringGraphNode {
+    fn external(item: &str) -> Self {
+        Self::External {
+            id: item_node_id("external", item),
+            item: item.to_string(),
+        }
+    }
+
+    fn recipe(recipe: &str) -> Self {
+        Self::Recipe {
+            id: recipe_node_id(recipe),
+            recipe: recipe.to_string(),
+        }
+    }
+
+    fn target(item: &str) -> Self {
+        Self::Target {
+            id: item_node_id("target", item),
+            item: item.to_string(),
+        }
+    }
+
+    fn surplus(item: &str) -> Self {
+        Self::Surplus {
+            id: item_node_id("surplus", item),
+            item: item.to_string(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -166,24 +197,19 @@ fn graph_nodes(throughput: &RecipeThroughputReport) -> Vec<RecipeWiringGraphNode
     let mut nodes = Vec::new();
 
     for external in &throughput.external_input_rates {
-        nodes.push(item_node("external", &external.item));
+        nodes.push(RecipeWiringGraphNode::external(&external.item));
     }
 
     for recipe_rate in &throughput.recipe_rates {
-        nodes.push(RecipeWiringGraphNode {
-            id: recipe_node_id(&recipe_rate.recipe),
-            kind: "recipe".to_string(),
-            recipe: Some(recipe_rate.recipe.clone()),
-            item: None,
-        });
+        nodes.push(RecipeWiringGraphNode::recipe(&recipe_rate.recipe));
     }
 
     if let Some(target) = &throughput.target {
-        nodes.push(item_node("target", &target.item));
+        nodes.push(RecipeWiringGraphNode::target(&target.item));
     }
 
     for surplus in &throughput.surplus_rates {
-        nodes.push(item_node("surplus", &surplus.item));
+        nodes.push(RecipeWiringGraphNode::surplus(&surplus.item));
     }
 
     nodes
@@ -287,15 +313,6 @@ fn missing_producer(item: &str, path: &str) -> RecipeWiringGraphDiagnostic {
         Some(item.to_string()),
         format!("item '{item}' has no external source or producer recipe"),
     )
-}
-
-fn item_node(kind: &str, item: &str) -> RecipeWiringGraphNode {
-    RecipeWiringGraphNode {
-        id: item_node_id(kind, item),
-        kind: kind.to_string(),
-        recipe: None,
-        item: Some(item.to_string()),
-    }
 }
 
 fn item_node_id(kind: &str, item: &str) -> String {
