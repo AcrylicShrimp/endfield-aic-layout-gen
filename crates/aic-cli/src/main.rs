@@ -1,6 +1,8 @@
 use std::{path::PathBuf, process::ExitCode};
 
-use aic_data::recipes::{RecipeGraphError, load_recipe_book};
+use aic_data::recipes::{
+    ValidatedRecipeBook, load_recipe_book, validate_recipe_book, validate_target_item_id,
+};
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
 
@@ -92,7 +94,7 @@ fn check_data(data_dir: PathBuf) -> Result<()> {
 
 fn validate_recipes(file: PathBuf) -> Result<()> {
     let recipe_book = load_recipe_book(&file)?;
-    let report = recipe_book.validate();
+    let report = validate_recipe_book(&recipe_book);
 
     serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
         .context("failed to write validation report")?;
@@ -105,20 +107,24 @@ fn validate_recipes(file: PathBuf) -> Result<()> {
 
 fn graph_recipes(file: PathBuf, target: String) -> Result<()> {
     let recipe_book = load_recipe_book(&file)?;
+    validate_target_item_id(&target).context("failed to resolve recipe graph")?;
 
-    match recipe_book.resolve_graph(&target) {
-        Ok(graph) => {
-            serde_json::to_writer_pretty(std::io::stdout().lock(), &graph)
-                .context("failed to write recipe graph")?;
-            println!();
-            Ok(())
-        }
-        Err(RecipeGraphError::InvalidRecipeBook(report)) => {
+    let validated_recipe_book = match ValidatedRecipeBook::try_from_recipe_book(recipe_book) {
+        Ok(validated_recipe_book) => validated_recipe_book,
+        Err(report) => {
             serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
                 .context("failed to write validation report")?;
             println!();
             bail!("recipe validation failed")
         }
-        Err(error) => Err(error).context("failed to resolve recipe graph"),
-    }
+    };
+
+    let graph = validated_recipe_book
+        .resolve_graph(&target)
+        .context("failed to resolve recipe graph")?;
+    serde_json::to_writer_pretty(std::io::stdout().lock(), &graph)
+        .context("failed to write recipe graph")?;
+    println!();
+
+    Ok(())
 }
