@@ -20,6 +20,12 @@
 - Prefix every crate name with `aic-`.
 - Keep shared dependency versions in the root workspace manifest when practical.
 
+## Rust Module Layout
+
+- Do not use `mod.rs` files for new modules.
+- Use the modern paired-file layout: `foo.rs` for the module entry point and `foo/` for its child modules.
+- When splitting an existing module, prefer `foo.rs` plus `foo/bar.rs`, `foo/baz.rs`, and similar child files.
+
 ## Dependency Policy
 
 - Before adding a dependency, run `cargo search <crate> --limit 1` to confirm the current latest published version.
@@ -39,6 +45,26 @@
 - All user-facing interaction is through command line interfaces.
 - Prefer explicit subcommands and flags over implicit behavior.
 - Error messages should explain what input or file path caused the failure.
+
+## Architecture And Cutover Policy
+
+- Prefer hard cutovers when replacing an internal contract or architecture.
+- Do not preserve obsolete interfaces through unnecessary bridging, rerouting, adapter layers, or compatibility shims.
+- During a cutover, it is acceptable for the project to fail to compile temporarily.
+- Complete cutovers must remove obsolete code paths and restore normal verification.
+- After a cutover, report what became simpler compared to the previous design.
+- Keep architecture as simple as possible. Add complexity only when it is required by an explicit contract, diagnostic requirement, or user-facing behavior.
+- Prefer the new contract over reusing old code. Delete or rewrite old code when reuse would distort the new design.
+- For external data or CLI contracts, make breaking changes explicit through schema versions, migration notes, or diagnostics instead of preserving obsolete internal code paths.
+
+## Contract And Diagnostic Design
+
+- Before implementing a substantial stage, define the stage contract first.
+- Stage contracts should specify input DTOs, output DTOs, invariants, failure modes, and diagnostic/report schemas.
+- Diagnostics are first-class outputs. Design them so callers can observe quality, failure causes, and important internal decisions without reading implementation details.
+- Each diagnostic should have a stable code, severity, stage identifier, human-readable message, and relevant entity reference when available.
+- Do not treat correct final output as sufficient evidence that a stage is well designed.
+- Prefer explicit, structured reports over ad hoc logging for stage behavior that needs to be inspected or tested.
 
 ## Documentation And TODOs
 
