@@ -136,6 +136,8 @@ impl Validator {
     }
 
     fn validate_item_amounts(&mut self, amounts: &[ItemAmount], path: String) {
+        let mut seen_items = HashSet::new();
+
         for (amount_index, amount) in amounts.iter().enumerate() {
             let amount_path = format!("{path}/{amount_index}");
             self.validate_id(
@@ -152,6 +154,20 @@ impl Validator {
                         "item '{}' quantity must be positive, found {}",
                         amount.item, amount.quantity
                     ),
+                );
+            }
+
+            if !seen_items.insert(&amount.item) {
+                let code = if path.ends_with("/inputs") {
+                    "duplicate-input-item"
+                } else {
+                    "duplicate-output-item"
+                };
+
+                self.push(
+                    code,
+                    format!("{amount_path}/item"),
+                    format!("item '{}' appears more than once in {path}", amount.item),
                 );
             }
         }

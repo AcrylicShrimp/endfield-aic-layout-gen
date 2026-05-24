@@ -1,7 +1,8 @@
 use std::{path::PathBuf, process::ExitCode};
 
 use aic_data::recipes::{
-    ValidatedRecipeBook, load_recipe_book, validate_recipe_book, validate_target_item_id,
+    RecipeThroughputReport, RecipeThroughputRequest, ThroughputDiagnostic, ValidatedRecipeBook,
+    load_recipe_book, validate_recipe_book, validate_target_item_id, validate_throughput_request,
 };
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
@@ -50,11 +51,22 @@ enum RecipesCommand {
         #[arg(long, short, value_name = "ITEM")]
         target: String,
     },
+    /// Calculate required recipe and item throughput for a target request.
+    Throughput {
+        /// Recipe JSON file to load.
+        #[arg(long, short, value_name = "FILE")]
+        file: PathBuf,
+
+        /// Throughput request JSON file to load.
+        #[arg(long, short, value_name = "FILE")]
+        request: PathBuf,
+    },
 }
 
 fn main() -> ExitCode {
     match run() {
-        Ok(()) => ExitCode::SUCCESS,
+        Ok(CommandStatus::Success) => ExitCode::SUCCESS,
+        Ok(CommandStatus::Failure) => ExitCode::FAILURE,
         Err(error) => {
             eprintln!("error: {error:#}");
             ExitCode::FAILURE
@@ -62,14 +74,24 @@ fn main() -> ExitCode {
     }
 }
 
-fn run() -> Result<()> {
+enum CommandStatus {
+    Success,
+    Failure,
+}
+
+fn run() -> Result<CommandStatus> {
     let cli = Cli::parse();
 
     match cli.command {
-        Command::CheckData => check_data(cli.data_dir),
+        Command::CheckData => check_data(cli.data_dir).map(|()| CommandStatus::Success),
         Command::Recipes { command } => match command {
-            RecipesCommand::Validate { file } => validate_recipes(file),
-            RecipesCommand::Graph { file, target } => graph_recipes(file, target),
+            RecipesCommand::Validate { file } => {
+                validate_recipes(file).map(|()| CommandStatus::Success)
+            }
+            RecipesCommand::Graph { file, target } => {
+                graph_recipes(file, target).map(|()| CommandStatus::Success)
+            }
+            RecipesCommand::Throughput { file, request } => throughput_recipes(file, request),
         },
     }
 }
@@ -124,6 +146,64 @@ fn graph_recipes(file: PathBuf, target: String) -> Result<()> {
         .context("failed to resolve recipe graph")?;
     serde_json::to_writer_pretty(std::io::stdout().lock(), &graph)
         .context("failed to write recipe graph")?;
+    println!();
+
+    Ok(())
+}
+
+fn throughput_recipes(file: PathBuf, request: PathBuf) -> Result<CommandStatus> {
+    let recipe_book = load_recipe_book(&file)?;
+    let request_json = std::fs::read_to_string(&request).with_context(|| {
+        format!(
+            "failed to read throughput request file '{}'",
+            request.display()
+        )
+    })?;
+    let request = match serde_json::from_str::<RecipeThroughputRequest>(&request_json) {
+        Ok(request) => request,
+        Err(error) => {
+            let report = RecipeThroughputReport::failure(ThroughputDiagnostic::error(
+                "invalid-throughput-request-json",
+                "/",
+                None,
+                error.to_string(),
+            ));
+            write_throughput_report(&report)?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
+
+    let request_diagnostics = validate_throughput_request(&request);
+    if !request_diagnostics.is_empty() {
+        let report = RecipeThroughputReport::failure_many(request_diagnostics);
+        write_throughput_report(&report)?;
+        return Ok(CommandStatus::Failure);
+    }
+
+    let validated_recipe_book = match ValidatedRecipeBook::try_from_recipe_book(recipe_book) {
+        Ok(validated_recipe_book) => validated_recipe_book,
+        Err(report) => {
+            serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+                .context("failed to write validation report")?;
+            println!();
+            bail!("recipe validation failed")
+        }
+    };
+
+    let report = validated_recipe_book.calculate_throughput(&request);
+    let success = report.success;
+    write_throughput_report(&report)?;
+
+    if success {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
+    }
+}
+
+fn write_throughput_report(report: &RecipeThroughputReport) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write throughput report")?;
     println!();
 
     Ok(())

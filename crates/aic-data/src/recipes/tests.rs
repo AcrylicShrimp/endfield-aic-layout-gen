@@ -55,6 +55,71 @@ fn multi_step_book() -> RecipeBook {
     }
 }
 
+fn multi_output_book() -> RecipeBook {
+    RecipeBook {
+        schema_version: 1,
+        external_items: vec!["originium-ore".to_string()],
+        recipes: vec![
+            Recipe {
+                id: "split-originium-ore".to_string(),
+                facility: "separator".to_string(),
+                inputs: vec![ItemAmount {
+                    item: "originium-ore".to_string(),
+                    quantity: 1,
+                }],
+                outputs: vec![
+                    ItemAmount {
+                        item: "originium-powder".to_string(),
+                        quantity: 1,
+                    },
+                    ItemAmount {
+                        item: "originium-shard".to_string(),
+                        quantity: 1,
+                    },
+                ],
+                duration_ms: 2000,
+            },
+            Recipe {
+                id: "assemble-originium-core".to_string(),
+                facility: "assembler".to_string(),
+                inputs: vec![
+                    ItemAmount {
+                        item: "originium-powder".to_string(),
+                        quantity: 1,
+                    },
+                    ItemAmount {
+                        item: "originium-shard".to_string(),
+                        quantity: 1,
+                    },
+                ],
+                outputs: vec![ItemAmount {
+                    item: "originium-core".to_string(),
+                    quantity: 1,
+                }],
+                duration_ms: 1000,
+            },
+        ],
+    }
+}
+
+fn rate(numerator: i64, denominator: i64) -> Rate {
+    Rate {
+        numerator,
+        denominator,
+    }
+}
+
+fn throughput_request(item: &str, quantity: i64, duration_ms: i64) -> RecipeThroughputRequest {
+    RecipeThroughputRequest {
+        schema_version: 1,
+        target: ThroughputTarget {
+            item: item.to_string(),
+            quantity,
+            duration_ms,
+        },
+    }
+}
+
 #[test]
 fn accepts_valid_recipe_book() {
     let report = valid_book().validate();
@@ -174,6 +239,23 @@ fn rejects_non_positive_numbers() {
 }
 
 #[test]
+fn rejects_duplicate_recipe_side_items() {
+    let mut book = valid_book();
+    book.recipes[0].inputs.push(ItemAmount {
+        item: "originium-ore".to_string(),
+        quantity: 2,
+    });
+    book.recipes[0].outputs.push(ItemAmount {
+        item: "originium-powder".to_string(),
+        quantity: 2,
+    });
+
+    let report = book.validate();
+
+    assert_codes(&report, &["duplicate-input-item", "duplicate-output-item"]);
+}
+
+#[test]
 fn rejects_promotion_when_book_is_invalid() {
     let mut book = valid_book();
     book.recipes[0].inputs[0].item = "missing-item".to_string();
@@ -226,6 +308,185 @@ fn rejects_unknown_graph_target() {
 }
 
 #[test]
+fn calculates_single_step_throughput() {
+    let report = ValidatedRecipeBook::try_from_recipe_book(valid_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-powder", 1, 2000));
+
+    assert!(report.success);
+    assert_eq!(report.target.expect("target should exist").rate, rate(1, 2));
+    assert_eq!(report.recipe_rates.len(), 1);
+    assert_eq!(
+        report.recipe_rates[0].recipe,
+        "grind-originium-powder".to_string()
+    );
+    assert_eq!(report.recipe_rates[0].runs_per_second, rate(1, 2));
+    assert_eq!(report.recipe_rates[0].work_seconds_per_second, rate(1, 1));
+    assert_eq!(
+        report.recipe_rates[0].limiting_outputs,
+        ["originium-powder"]
+    );
+    assert_eq!(report.external_input_rates[0].item, "originium-ore");
+    assert_eq!(report.external_input_rates[0].rate, rate(1, 2));
+}
+
+#[test]
+fn calculates_multi_step_throughput() {
+    let report = ValidatedRecipeBook::try_from_recipe_book(multi_step_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-ingot", 1, 10000));
+
+    assert!(report.success);
+    assert_eq!(
+        report
+            .recipe_rates
+            .iter()
+            .map(|recipe_rate| recipe_rate.recipe.as_str())
+            .collect::<Vec<_>>(),
+        ["grind-originium-powder", "smelt-originium-ingot"]
+    );
+    assert_eq!(report.recipe_rates[0].runs_per_second, rate(1, 5));
+    assert_eq!(report.recipe_rates[0].work_seconds_per_second, rate(2, 5));
+    assert_eq!(report.recipe_rates[1].runs_per_second, rate(1, 10));
+    assert_eq!(report.recipe_rates[1].work_seconds_per_second, rate(1, 2));
+    assert_eq!(report.external_input_rates[0].rate, rate(1, 5));
+}
+
+#[test]
+fn calculates_external_target_throughput() {
+    let report = ValidatedRecipeBook::try_from_recipe_book(multi_step_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-ore", 3, 6000));
+
+    assert!(report.success);
+    assert!(report.recipe_rates.is_empty());
+    assert_eq!(report.target.expect("target should exist").rate, rate(1, 2));
+    assert_eq!(report.external_input_rates.len(), 1);
+    assert_eq!(report.external_input_rates[0].item, "originium-ore");
+    assert_eq!(report.external_input_rates[0].rate, rate(1, 2));
+}
+
+#[test]
+fn handles_multi_output_shared_producer_without_double_counting() {
+    let report = ValidatedRecipeBook::try_from_recipe_book(multi_output_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-core", 1, 1000));
+
+    assert!(report.success);
+    let split_rate = report
+        .recipe_rates
+        .iter()
+        .find(|recipe_rate| recipe_rate.recipe == "split-originium-ore")
+        .expect("split recipe should be present");
+
+    assert_eq!(split_rate.runs_per_second, rate(1, 1));
+    assert_eq!(
+        split_rate.limiting_outputs,
+        ["originium-powder", "originium-shard"]
+    );
+    assert_eq!(report.external_input_rates[0].rate, rate(1, 1));
+    assert!(report.surplus_rates.is_empty());
+}
+
+#[test]
+fn reports_multi_output_surplus() {
+    let book = RecipeBook {
+        schema_version: 1,
+        external_items: vec!["originium-ore".to_string()],
+        recipes: vec![Recipe {
+            id: "split-originium-ore".to_string(),
+            facility: "separator".to_string(),
+            inputs: vec![ItemAmount {
+                item: "originium-ore".to_string(),
+                quantity: 1,
+            }],
+            outputs: vec![
+                ItemAmount {
+                    item: "originium-powder".to_string(),
+                    quantity: 2,
+                },
+                ItemAmount {
+                    item: "originium-shard".to_string(),
+                    quantity: 1,
+                },
+            ],
+            duration_ms: 2000,
+        }],
+    };
+
+    let report = ValidatedRecipeBook::try_from_recipe_book(book)
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-powder", 1, 1000));
+
+    assert!(report.success);
+    assert_eq!(report.recipe_rates[0].runs_per_second, rate(1, 2));
+    assert_eq!(report.surplus_rates.len(), 1);
+    assert_eq!(report.surplus_rates[0].item, "originium-shard");
+    assert_eq!(report.surplus_rates[0].rate, rate(1, 2));
+}
+
+#[test]
+fn rejects_unknown_throughput_request_fields_on_parse() {
+    let error = serde_json::from_str::<RecipeThroughputRequest>(
+        r#"{
+          "schema_version": 1,
+          "target": {
+            "item": "originium-powder",
+            "quantity": 1,
+            "duration_ms": 1000,
+            "extra": true
+          }
+        }"#,
+    )
+    .expect_err("unknown throughput request fields should be rejected");
+
+    assert!(error.to_string().contains("unknown field"));
+}
+
+#[test]
+fn rejects_invalid_throughput_target_rate() {
+    let report = ValidatedRecipeBook::try_from_recipe_book(valid_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("Bad_Target", 0, -1));
+
+    assert!(!report.success);
+    assert_diagnostic_codes(
+        &report.diagnostics,
+        &[
+            "invalid-target-id",
+            "non-positive-target-quantity",
+            "non-positive-target-duration",
+        ],
+    );
+}
+
+#[test]
+fn rejects_unsupported_throughput_request_schema_version() {
+    let mut request = throughput_request("originium-powder", 1, 1000);
+    request.schema_version = SUPPORTED_THROUGHPUT_REQUEST_SCHEMA_VERSION + 1;
+
+    let report = ValidatedRecipeBook::try_from_recipe_book(valid_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&request);
+
+    assert!(!report.success);
+    assert_diagnostic_codes(
+        &report.diagnostics,
+        &["unsupported-throughput-request-schema-version"],
+    );
+}
+
+#[test]
+fn rejects_unknown_throughput_target() {
+    let report = ValidatedRecipeBook::try_from_recipe_book(valid_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("missing-item", 1, 1000));
+
+    assert!(!report.success);
+    assert_diagnostic_codes(&report.diagnostics, &["unknown-target-item"]);
+}
+
+#[test]
 fn rejects_unknown_recipe_fields_on_parse() {
     let error = serde_json::from_str::<RecipeBook>(
         r#"{
@@ -275,6 +536,20 @@ fn assert_codes(report: &ValidationReport, expected_codes: &[&str]) {
 
     let codes = report
         .diagnostics
+        .iter()
+        .map(|diagnostic| diagnostic.code)
+        .collect::<Vec<_>>();
+
+    for expected_code in expected_codes {
+        assert!(
+            codes.contains(expected_code),
+            "expected diagnostic code '{expected_code}', got {codes:?}"
+        );
+    }
+}
+
+fn assert_diagnostic_codes(diagnostics: &[ThroughputDiagnostic], expected_codes: &[&str]) {
+    let codes = diagnostics
         .iter()
         .map(|diagnostic| diagnostic.code)
         .collect::<Vec<_>>();
