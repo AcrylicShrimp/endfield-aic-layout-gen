@@ -182,6 +182,41 @@ fn same_facility_chain_book() -> RecipeBook {
     }
 }
 
+fn split_instance_chain_book() -> RecipeBook {
+    RecipeBook {
+        schema_version: 1,
+        external_items: vec!["raw-material".to_string()],
+        recipes: vec![
+            Recipe {
+                id: "make-intermediate".to_string(),
+                facility: "fast-maker".to_string(),
+                inputs: vec![ItemAmount {
+                    item: "raw-material".to_string(),
+                    quantity: 1,
+                }],
+                outputs: vec![ItemAmount {
+                    item: "intermediate-item".to_string(),
+                    quantity: 1,
+                }],
+                duration_ms: 500,
+            },
+            Recipe {
+                id: "make-finished".to_string(),
+                facility: "slow-maker".to_string(),
+                inputs: vec![ItemAmount {
+                    item: "intermediate-item".to_string(),
+                    quantity: 1,
+                }],
+                outputs: vec![ItemAmount {
+                    item: "finished-item".to_string(),
+                    quantity: 1,
+                }],
+                duration_ms: 1000,
+            },
+        ],
+    }
+}
+
 fn rate(numerator: i64, denominator: i64) -> Rate {
     Rate {
         numerator,
@@ -787,6 +822,274 @@ fn serializes_recipe_wiring_nodes_as_discriminated_union() {
 }
 
 #[test]
+fn builds_logical_instance_wiring_for_multi_step_chain() {
+    let report = build_instance_wiring_report(
+        multi_step_book(),
+        throughput_request("originium-ingot", 1, 10000),
+    );
+
+    assert!(report.success);
+    assert_eq!(
+        report
+            .nodes
+            .iter()
+            .map(instance_wiring_node_id)
+            .collect::<Vec<_>>(),
+        [
+            "external:originium-ore",
+            "facility-instance:grind-originium-powder:0",
+            "facility-instance:smelt-originium-ingot:0",
+            "target:originium-ingot"
+        ]
+    );
+    assert_eq!(
+        report
+            .edges
+            .iter()
+            .map(instance_wiring_edge_tuple)
+            .collect::<Vec<_>>(),
+        [
+            (
+                "external:originium-ore",
+                "facility-instance:grind-originium-powder:0",
+                "external-input",
+                "originium-ore",
+                rate(1, 5)
+            ),
+            (
+                "facility-instance:grind-originium-powder:0",
+                "facility-instance:smelt-originium-ingot:0",
+                "recipe-flow",
+                "originium-powder",
+                rate(1, 5)
+            ),
+            (
+                "facility-instance:smelt-originium-ingot:0",
+                "target:originium-ingot",
+                "target-output",
+                "originium-ingot",
+                rate(1, 10)
+            )
+        ]
+    );
+}
+
+#[test]
+fn keeps_external_target_as_logical_instance_wiring_endpoint() {
+    let report =
+        build_instance_wiring_report(valid_book(), throughput_request("originium-ore", 1, 1000));
+
+    assert!(report.success);
+    assert_eq!(
+        report
+            .nodes
+            .iter()
+            .map(instance_wiring_node_id)
+            .collect::<Vec<_>>(),
+        ["external:originium-ore", "target:originium-ore"]
+    );
+    assert_eq!(
+        report
+            .edges
+            .iter()
+            .map(instance_wiring_edge_tuple)
+            .collect::<Vec<_>>(),
+        [(
+            "external:originium-ore",
+            "target:originium-ore",
+            "target-output",
+            "originium-ore",
+            rate(1, 1)
+        )]
+    );
+}
+
+#[test]
+fn splits_edges_across_source_and_target_recipe_instances() {
+    let report = build_instance_wiring_report(
+        split_instance_chain_book(),
+        throughput_request("finished-item", 3, 1000),
+    );
+
+    assert!(report.success);
+    assert_eq!(
+        report
+            .nodes
+            .iter()
+            .filter(|node| matches!(node, FacilityInstanceWiringNode::Facility { .. }))
+            .count(),
+        5
+    );
+    let first_source_instance = report
+        .nodes
+        .iter()
+        .find(|node| {
+            matches!(
+                node,
+                FacilityInstanceWiringNode::Facility { id, .. }
+                    if id == "facility-instance:make-intermediate:0"
+            )
+        })
+        .expect("first source facility instance should exist");
+    assert!(matches!(
+        first_source_instance,
+        FacilityInstanceWiringNode::Facility {
+            runs_per_second,
+            work_seconds_per_second,
+            unused_capacity,
+            ..
+        } if *runs_per_second == rate(3, 2)
+            && *work_seconds_per_second == rate(3, 4)
+            && *unused_capacity == rate(1, 4)
+    ));
+
+    let recipe_flow_edges = report
+        .edges
+        .iter()
+        .filter(|edge| edge.kind == "recipe-flow")
+        .map(instance_wiring_edge_tuple)
+        .collect::<Vec<_>>();
+
+    assert_eq!(
+        recipe_flow_edges,
+        [
+            (
+                "facility-instance:make-intermediate:0",
+                "facility-instance:make-finished:0",
+                "recipe-flow",
+                "intermediate-item",
+                rate(1, 1)
+            ),
+            (
+                "facility-instance:make-intermediate:0",
+                "facility-instance:make-finished:1",
+                "recipe-flow",
+                "intermediate-item",
+                rate(1, 2)
+            ),
+            (
+                "facility-instance:make-intermediate:1",
+                "facility-instance:make-finished:1",
+                "recipe-flow",
+                "intermediate-item",
+                rate(1, 2)
+            ),
+            (
+                "facility-instance:make-intermediate:1",
+                "facility-instance:make-finished:2",
+                "recipe-flow",
+                "intermediate-item",
+                rate(1, 1)
+            )
+        ]
+    );
+}
+
+#[test]
+fn builds_surplus_instance_wiring_edge() {
+    let report = build_instance_wiring_report(
+        surplus_book(),
+        throughput_request("originium-powder", 1, 1000),
+    );
+
+    assert!(report.success);
+    let surplus_edge = report
+        .edges
+        .iter()
+        .find(|edge| edge.kind == "surplus-output")
+        .expect("surplus edge should be present");
+
+    assert_eq!(
+        surplus_edge.source,
+        "facility-instance:split-originium-ore:0"
+    );
+    assert_eq!(surplus_edge.target, "surplus:originium-shard");
+    assert_eq!(surplus_edge.item, "originium-shard");
+    assert_eq!(surplus_edge.rate, rate(1, 2));
+}
+
+#[test]
+fn mismatched_successful_upstream_reports_fail_instance_wiring() {
+    let throughput = ValidatedRecipeBook::try_from_recipe_book(multi_step_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-ingot", 1, 10000));
+    let mut facilities = calculate_facility_requirements(&throughput);
+    let recipe_wiring = build_recipe_wiring_graph(&throughput);
+    facilities.recipe_requirements[0].facility = "other-facility".to_string();
+
+    let report = build_facility_instance_wiring(&throughput, &facilities, &recipe_wiring);
+
+    assert!(!report.success);
+    assert_instance_wiring_diagnostic_codes(&report.diagnostics, &["facility-id-mismatch"]);
+}
+
+#[test]
+fn malformed_successful_edge_kind_fails_instance_wiring() {
+    let throughput = ValidatedRecipeBook::try_from_recipe_book(multi_step_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-ingot", 1, 10000));
+    let facilities = calculate_facility_requirements(&throughput);
+    let mut recipe_wiring = build_recipe_wiring_graph(&throughput);
+    recipe_wiring.edges[0].kind = "recipe-flow".to_string();
+
+    let report = build_facility_instance_wiring(&throughput, &facilities, &recipe_wiring);
+
+    assert!(!report.success);
+    assert_instance_wiring_diagnostic_codes(&report.diagnostics, &["edge-kind-mismatch"]);
+}
+
+#[test]
+fn malformed_successful_throughput_without_target_fails_instance_wiring() {
+    let mut throughput = ValidatedRecipeBook::try_from_recipe_book(valid_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-powder", 1, 1000));
+    let facilities = calculate_facility_requirements(&throughput);
+    let recipe_wiring = build_recipe_wiring_graph(&throughput);
+    throughput.target = None;
+
+    let report = build_facility_instance_wiring(&throughput, &facilities, &recipe_wiring);
+
+    assert!(!report.success);
+    assert_instance_wiring_diagnostic_codes(&report.diagnostics, &["missing-target"]);
+}
+
+#[test]
+fn failed_upstream_reports_become_instance_wiring_failure_reports() {
+    let failed_throughput = RecipeThroughputReport::failure(ThroughputDiagnostic::error(
+        "unknown-target-item",
+        "/target/item",
+        Some("missing-item".to_string()),
+        "target item is unknown",
+    ));
+    let failed_facilities = calculate_facility_requirements(&failed_throughput);
+    let failed_wiring = build_recipe_wiring_graph(&failed_throughput);
+    let report =
+        build_facility_instance_wiring(&failed_throughput, &failed_facilities, &failed_wiring);
+    assert_instance_wiring_diagnostic_codes(&report.diagnostics, &["upstream-throughput-failed"]);
+
+    let throughput = ValidatedRecipeBook::try_from_recipe_book(valid_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&throughput_request("originium-powder", 1, 1000));
+    let mut facilities = calculate_facility_requirements(&throughput);
+    facilities.success = false;
+    let recipe_wiring = build_recipe_wiring_graph(&throughput);
+    let report = build_facility_instance_wiring(&throughput, &facilities, &recipe_wiring);
+    assert_instance_wiring_diagnostic_codes(
+        &report.diagnostics,
+        &["upstream-facility-requirements-failed"],
+    );
+
+    let facilities = calculate_facility_requirements(&throughput);
+    let mut recipe_wiring = build_recipe_wiring_graph(&throughput);
+    recipe_wiring.success = false;
+    let report = build_facility_instance_wiring(&throughput, &facilities, &recipe_wiring);
+    assert_instance_wiring_diagnostic_codes(
+        &report.diagnostics,
+        &["upstream-recipe-wiring-failed"],
+    );
+}
+
+#[test]
 fn failed_throughput_input_becomes_wiring_failure_report() {
     let throughput = RecipeThroughputReport::failure(ThroughputDiagnostic::error(
         "unknown-target-item",
@@ -955,6 +1258,23 @@ fn assert_wiring_diagnostic_codes(
     }
 }
 
+fn assert_instance_wiring_diagnostic_codes(
+    diagnostics: &[FacilityInstanceWiringDiagnostic],
+    expected_codes: &[&str],
+) {
+    let codes = diagnostics
+        .iter()
+        .map(|diagnostic| diagnostic.code)
+        .collect::<Vec<_>>();
+
+    for expected_code in expected_codes {
+        assert!(
+            codes.contains(expected_code),
+            "expected diagnostic code '{expected_code}', got {codes:?}"
+        );
+    }
+}
+
 fn wiring_node_id(node: &RecipeWiringGraphNode) -> &str {
     match node {
         RecipeWiringGraphNode::External { id, .. }
@@ -962,4 +1282,36 @@ fn wiring_node_id(node: &RecipeWiringGraphNode) -> &str {
         | RecipeWiringGraphNode::Target { id, .. }
         | RecipeWiringGraphNode::Surplus { id, .. } => id,
     }
+}
+
+fn instance_wiring_node_id(node: &FacilityInstanceWiringNode) -> &str {
+    match node {
+        FacilityInstanceWiringNode::Facility { id, .. }
+        | FacilityInstanceWiringNode::External { id, .. }
+        | FacilityInstanceWiringNode::Target { id, .. }
+        | FacilityInstanceWiringNode::Surplus { id, .. } => id,
+    }
+}
+
+fn instance_wiring_edge_tuple(edge: &FacilityInstanceWiringEdge) -> (&str, &str, &str, &str, Rate) {
+    (
+        edge.source.as_str(),
+        edge.target.as_str(),
+        edge.kind.as_str(),
+        edge.item.as_str(),
+        edge.rate,
+    )
+}
+
+fn build_instance_wiring_report(
+    book: RecipeBook,
+    request: RecipeThroughputRequest,
+) -> FacilityInstanceWiringReport {
+    let throughput = ValidatedRecipeBook::try_from_recipe_book(book)
+        .expect("valid book should promote")
+        .calculate_throughput(&request);
+    let facilities = calculate_facility_requirements(&throughput);
+    let recipe_wiring = build_recipe_wiring_graph(&throughput);
+
+    build_facility_instance_wiring(&throughput, &facilities, &recipe_wiring)
 }

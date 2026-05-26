@@ -2,6 +2,7 @@ mod facilities;
 mod graph;
 mod id;
 mod index;
+mod instances;
 mod load;
 mod model;
 mod throughput;
@@ -15,6 +16,10 @@ pub use facilities::{
 };
 pub use graph::RecipeGraphError;
 pub use id::validate_target_item_id;
+pub use instances::{
+    FacilityInstanceWiringDiagnostic, FacilityInstanceWiringEdge, FacilityInstanceWiringNode,
+    FacilityInstanceWiringReport, build_facility_instance_wiring,
+};
 pub use load::{LoadRecipeBookError, load_recipe_book};
 pub use model::{ItemAmount, Recipe, RecipeBook, RecipeGraph};
 pub use throughput::{

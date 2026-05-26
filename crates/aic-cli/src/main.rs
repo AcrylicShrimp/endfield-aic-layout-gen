@@ -1,10 +1,10 @@
 use std::{path::PathBuf, process::ExitCode};
 
 use aic_data::recipes::{
-    FacilityRequirementReport, RecipeThroughputReport, RecipeThroughputRequest,
-    RecipeWiringGraphReport, ThroughputDiagnostic, ValidatedRecipeBook, build_recipe_wiring_graph,
-    calculate_facility_requirements, load_recipe_book, validate_recipe_book,
-    validate_target_item_id, validate_throughput_request,
+    FacilityInstanceWiringReport, FacilityRequirementReport, RecipeThroughputReport,
+    RecipeThroughputRequest, RecipeWiringGraphReport, ThroughputDiagnostic, ValidatedRecipeBook,
+    build_facility_instance_wiring, build_recipe_wiring_graph, calculate_facility_requirements,
+    load_recipe_book, validate_recipe_book, validate_target_item_id, validate_throughput_request,
 };
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
@@ -83,6 +83,16 @@ enum RecipesCommand {
         #[arg(long, short, value_name = "FILE")]
         request: PathBuf,
     },
+    /// Build a logical facility-instance-level wiring plan for a target request.
+    InstanceWiring {
+        /// Recipe JSON file to load.
+        #[arg(long, short, value_name = "FILE")]
+        file: PathBuf,
+
+        /// Throughput request JSON file to load.
+        #[arg(long, short, value_name = "FILE")]
+        request: PathBuf,
+    },
 }
 
 fn main() -> ExitCode {
@@ -116,6 +126,9 @@ fn run() -> Result<CommandStatus> {
             RecipesCommand::Throughput { file, request } => throughput_recipes(file, request),
             RecipesCommand::Facilities { file, request } => facilities_recipes(file, request),
             RecipesCommand::WiringGraph { file, request } => wiring_graph_recipes(file, request),
+            RecipesCommand::InstanceWiring { file, request } => {
+                instance_wiring_recipes(file, request)
+            }
         },
     }
 }
@@ -223,6 +236,37 @@ fn wiring_graph_recipes(file: PathBuf, request: PathBuf) -> Result<CommandStatus
     }
 }
 
+fn instance_wiring_recipes(file: PathBuf, request: PathBuf) -> Result<CommandStatus> {
+    let throughput_report = calculate_throughput_report(file, request)?;
+    if !throughput_report.success {
+        write_throughput_report(&throughput_report)?;
+        return Ok(CommandStatus::Failure);
+    }
+
+    let facility_report = calculate_facility_requirements(&throughput_report);
+    if !facility_report.success {
+        write_facility_requirement_report(&facility_report)?;
+        return Ok(CommandStatus::Failure);
+    }
+
+    let recipe_wiring_report = build_recipe_wiring_graph(&throughput_report);
+    if !recipe_wiring_report.success {
+        write_recipe_wiring_graph_report(&recipe_wiring_report)?;
+        return Ok(CommandStatus::Failure);
+    }
+
+    let report =
+        build_facility_instance_wiring(&throughput_report, &facility_report, &recipe_wiring_report);
+    let success = report.success;
+    write_facility_instance_wiring_report(&report)?;
+
+    if success {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
+    }
+}
+
 fn calculate_throughput_report(file: PathBuf, request: PathBuf) -> Result<RecipeThroughputReport> {
     let recipe_book = load_recipe_book(&file)?;
     let request_json = std::fs::read_to_string(&request).with_context(|| {
@@ -281,6 +325,14 @@ fn write_facility_requirement_report(report: &FacilityRequirementReport) -> Resu
 fn write_recipe_wiring_graph_report(report: &RecipeWiringGraphReport) -> Result<()> {
     serde_json::to_writer_pretty(std::io::stdout().lock(), report)
         .context("failed to write recipe wiring graph report")?;
+    println!();
+
+    Ok(())
+}
+
+fn write_facility_instance_wiring_report(report: &FacilityInstanceWiringReport) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write facility instance wiring report")?;
     println!();
 
     Ok(())
