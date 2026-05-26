@@ -2,4 +2,11 @@
 
 This directory is reserved for runtime-loaded facility and recipe data.
 
-The schema is intentionally not defined in the initial setup. No facility or recipe data should be compiled into application code.
+No facility or recipe data should be compiled into application code.
+
+Current example files:
+
+- `examples/recipes.valid.json`: minimal valid recipe book.
+- `examples/recipes.graph.json`: recipe graph and throughput example data.
+- `examples/throughput.request.json`: throughput request example.
+- `examples/facilities.valid.json`: footprint-only facility catalog example.

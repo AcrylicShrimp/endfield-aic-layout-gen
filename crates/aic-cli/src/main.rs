@@ -1,5 +1,8 @@
 use std::{path::PathBuf, process::ExitCode};
 
+use aic_data::facilities::{
+    FacilityCatalogValidationReport, load_facility_catalog, validate_facility_catalog,
+};
 use aic_data::recipes::{
     FacilityInstanceWiringReport, FacilityRequirementReport, RecipeThroughputReport,
     RecipeThroughputRequest, RecipeWiringGraphReport, ThroughputDiagnostic, ValidatedRecipeBook,
@@ -28,10 +31,25 @@ struct Cli {
 enum Command {
     /// Check whether the external data directory can be read.
     CheckData,
+    /// Work with facility catalog data.
+    Facilities {
+        #[command(subcommand)]
+        command: FacilitiesCommand,
+    },
     /// Work with recipe data.
     Recipes {
         #[command(subcommand)]
         command: RecipesCommand,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+enum FacilitiesCommand {
+    /// Load and validate a facility catalog JSON file.
+    Validate {
+        /// Facility catalog JSON file to validate.
+        #[arg(long, short, value_name = "FILE")]
+        file: PathBuf,
     },
 }
 
@@ -116,6 +134,9 @@ fn run() -> Result<CommandStatus> {
 
     match cli.command {
         Command::CheckData => check_data(cli.data_dir).map(|()| CommandStatus::Success),
+        Command::Facilities { command } => match command {
+            FacilitiesCommand::Validate { file } => validate_facilities(file),
+        },
         Command::Recipes { command } => match command {
             RecipesCommand::Validate { file } => {
                 validate_recipes(file).map(|()| CommandStatus::Success)
@@ -149,6 +170,19 @@ fn check_data(data_dir: PathBuf) -> Result<()> {
 
     println!("external data directory: {}", data_dir.display());
     Ok(())
+}
+
+fn validate_facilities(file: PathBuf) -> Result<CommandStatus> {
+    let catalog = load_facility_catalog(&file)?;
+    let report = validate_facility_catalog(&catalog);
+    let valid = report.valid;
+    write_facility_catalog_validation_report(&report)?;
+
+    if valid {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
+    }
 }
 
 fn validate_recipes(file: PathBuf) -> Result<()> {
@@ -333,6 +367,16 @@ fn write_recipe_wiring_graph_report(report: &RecipeWiringGraphReport) -> Result<
 fn write_facility_instance_wiring_report(report: &FacilityInstanceWiringReport) -> Result<()> {
     serde_json::to_writer_pretty(std::io::stdout().lock(), report)
         .context("failed to write facility instance wiring report")?;
+    println!();
+
+    Ok(())
+}
+
+fn write_facility_catalog_validation_report(
+    report: &FacilityCatalogValidationReport,
+) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write facility catalog validation report")?;
     println!();
 
     Ok(())
