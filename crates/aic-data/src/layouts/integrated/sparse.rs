@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::time::Instant;
 
 use crate::layouts::{FacilityPlacement, FacilityPlacementBounds};
 use crate::logistics::{LogisticsComponentKind, TransportKind, ValidatedLogisticsComponentCatalog};
@@ -55,7 +56,7 @@ pub(super) fn construct(
                         continue;
                     }
                 };
-                match route_all(&input, &placements, &assigned, routing_height) {
+                match route_all(&input, &placements, &assigned, routing_height, None) {
                     Ok((routes, bridges)) => {
                         let report = success_report(
                             &input,
@@ -126,6 +127,7 @@ pub(super) fn construct_from_placements(
     input: ModelInput,
     components: &ValidatedLogisticsComponentCatalog,
     placements: Vec<FacilityPlacement>,
+    deadline: Instant,
 ) -> IntegratedLayoutReport {
     let placements = match index_placements(&input, placements) {
         Ok(placements) => placements,
@@ -136,8 +138,11 @@ pub(super) fn construct_from_placements(
     let mut port_failure = None;
     let mut best_routing_failure = None;
 
-    for routing_height in active_routing_heights(&input, &placements) {
+    'search: for routing_height in active_routing_heights(&input, &placements) {
         for order in route_orders(&input) {
+            if Instant::now() >= deadline {
+                break 'search;
+            }
             let assigned = match assign_facility_ports(&input, &placements, &order) {
                 Ok(assigned) => assigned,
                 Err(failure) => {
@@ -145,7 +150,13 @@ pub(super) fn construct_from_placements(
                     continue;
                 }
             };
-            match route_all(&input, &placements, &assigned, routing_height) {
+            match route_all(
+                &input,
+                &placements,
+                &assigned,
+                routing_height,
+                Some(deadline),
+            ) {
                 Ok((routes, bridges)) => {
                     let report = success_report(
                         &input,
@@ -171,12 +182,29 @@ pub(super) fn construct_from_placements(
                     {
                         best_routing_failure = Some(failure);
                     }
+                    if Instant::now() >= deadline {
+                        break 'search;
+                    }
                 }
             }
         }
     }
 
-    let diagnostic = if let Some(failure) = best_routing_failure {
+    let diagnostic = if Instant::now() >= deadline {
+        IntegratedLayoutDiagnostic::error(
+            "coordinate-routing-time-limit",
+            "/routes",
+            None,
+            format!(
+                "coordinate routing reached its worker deadline after constructing at most {} of {} capacity-split routes; this is not proof of infeasibility",
+                best_routing_failure
+                    .as_ref()
+                    .map(|failure| failure.routed)
+                    .unwrap_or(0),
+                input.edges.len(),
+            ),
+        )
+    } else if let Some(failure) = best_routing_failure {
         let edge = &input.edges[failure.edge_index].edge;
         IntegratedLayoutDiagnostic::error(
             "coordinate-routing-construction-failed",
@@ -509,6 +537,7 @@ fn route_all(
     placements: &BTreeMap<String, SparsePlacement>,
     assigned: &[AssignedRoute],
     routing_height: i32,
+    deadline: Option<Instant>,
 ) -> Result<RoutedWitness, RoutingFailure> {
     let cell_count = usize::try_from(input.width).expect("validated width is positive")
         * usize::try_from(routing_height).expect("routing height is positive");
@@ -520,6 +549,12 @@ fn route_all(
     let mut routes = Vec::with_capacity(assigned.len());
 
     for route in assigned {
+        if deadline.is_some_and(|deadline| Instant::now() >= deadline) {
+            return Err(RoutingFailure {
+                routed: routes.len(),
+                edge_index: route.edge_index,
+            });
+        }
         let edge = &input.edges[route.edge_index];
         let layer = layer_index(edge.transport);
         let source_options = endpoint_options(

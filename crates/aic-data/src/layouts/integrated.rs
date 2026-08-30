@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::ControlFlow;
-use std::time::Duration;
+use std::thread;
+use std::time::{Duration, Instant};
 
 use pumpkin_solver::Solver;
 use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
@@ -132,6 +133,17 @@ impl IntegratedLayoutDiagnostic {
             message: message.into(),
         }
     }
+
+    fn info_for(code: &'static str, entity: impl Into<String>, message: impl Into<String>) -> Self {
+        Self {
+            stage: STAGE,
+            severity: "info",
+            code,
+            path: "/".to_string(),
+            entity: Some(entity.into()),
+            message: message.into(),
+        }
+    }
 }
 
 impl IntegratedLayoutReport {
@@ -234,10 +246,187 @@ pub fn construct_coordinate_integrated_layout_with_time_limit(
     request: &FacilityPlacementRequest,
     time_limit: Duration,
 ) -> IntegratedLayoutReport {
+    let worker_limit = thread::available_parallelism()
+        .map(|parallelism| parallelism.get())
+        .unwrap_or(1)
+        .min(4);
+    let placement_widths = portfolio_widths(request.max_width, worker_limit);
+    let mut candidates = thread::scope(|scope| {
+        let mut workers = Vec::with_capacity(placement_widths.len());
+        for placement_width in placement_widths.iter().copied() {
+            workers.push(scope.spawn(move || {
+                solve_coordinate_candidate(
+                    instance_wiring,
+                    facilities,
+                    items,
+                    transports,
+                    logistics_components,
+                    request,
+                    placement_width,
+                    time_limit,
+                )
+            }));
+        }
+        workers
+            .into_iter()
+            .map(|worker| worker.join().expect("coordinate portfolio worker panicked"))
+            .collect::<Vec<_>>()
+    });
+
+    let successful_candidates = candidates
+        .iter()
+        .filter(|candidate| candidate.report.success)
+        .count();
+    let worker_diagnostics = candidates
+        .iter()
+        .map(|candidate| {
+            let message = candidate.score().map_or_else(
+                || {
+                    format!(
+                        "portfolio worker finished with status {} and no validated witness",
+                        integrated_status_name(candidate.report.status)
+                    )
+                },
+                |score| {
+                    format!(
+                        "portfolio worker produced a validated witness with area={}, max_side={}, route_cells={}, logistics_components={}",
+                        score.area,
+                        score.max_side,
+                        score.route_cells,
+                        score.logistics_components,
+                    )
+                },
+            );
+            IntegratedLayoutDiagnostic::info_for(
+                "parallel-portfolio-worker-result",
+                candidate.placement_width.to_string(),
+                message,
+            )
+        })
+        .collect::<Vec<_>>();
+    let best_index = candidates
+        .iter()
+        .enumerate()
+        .filter_map(|(index, candidate)| candidate.score().map(|score| (index, score)))
+        .min_by_key(|(_, score)| *score)
+        .map(|(index, _)| index);
+
+    let Some(best_index) = best_index else {
+        let mut report = candidates
+            .into_iter()
+            .find(|candidate| candidate.placement_width == request.max_width)
+            .expect("portfolio always contains the full-width worker")
+            .report;
+        report.diagnostics.extend(worker_diagnostics);
+        report.diagnostics.push(IntegratedLayoutDiagnostic::info(
+            "parallel-portfolio-no-witness",
+            format!(
+                "{} independent coordinate workers completed without a validated witness",
+                placement_widths.len()
+            ),
+        ));
+        return report;
+    };
+
+    let mut selected = candidates.swap_remove(best_index);
+    let score = selected.score().expect("selected candidate is successful");
+    selected.report.diagnostics.extend(worker_diagnostics);
+    selected
+        .report
+        .diagnostics
+        .push(IntegratedLayoutDiagnostic::info(
+            "parallel-portfolio-selected",
+            format!(
+                "selected placement width cap {} from {} validated witnesses across {} independent workers with score area={}, max_side={}, route_cells={}, logistics_components={}",
+                selected.placement_width,
+                successful_candidates,
+                placement_widths.len(),
+                score.area,
+                score.max_side,
+                score.route_cells,
+                score.logistics_components,
+            ),
+        ));
+    selected.report
+}
+
+fn integrated_status_name(status: IntegratedLayoutStatus) -> &'static str {
+    match status {
+        IntegratedLayoutStatus::Optimal => "optimal",
+        IntegratedLayoutStatus::Feasible => "feasible",
+        IntegratedLayoutStatus::Infeasible => "infeasible",
+        IntegratedLayoutStatus::InvalidInput => "invalid-input",
+        IntegratedLayoutStatus::Unknown => "unknown",
+    }
+}
+
+struct CoordinateCandidate {
+    placement_width: i64,
+    report: IntegratedLayoutReport,
+}
+
+impl CoordinateCandidate {
+    fn score(&self) -> Option<CoordinateCandidateScore> {
+        let bounds = self.report.bounds.as_ref()?;
+        self.report.success.then(|| CoordinateCandidateScore {
+            area: i128::from(bounds.width) * i128::from(bounds.height),
+            max_side: bounds.width.max(bounds.height),
+            route_cells: self
+                .report
+                .routes
+                .iter()
+                .map(|route| route.cells.len())
+                .sum(),
+            logistics_components: self.report.logistics_components.len(),
+            placement_width: self.placement_width,
+        })
+    }
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct CoordinateCandidateScore {
+    area: i128,
+    max_side: i64,
+    route_cells: usize,
+    logistics_components: usize,
+    placement_width: i64,
+}
+
+fn portfolio_widths(max_width: i64, worker_limit: usize) -> Vec<i64> {
+    let candidates = [
+        max_width,
+        max_width - max_width / 10,
+        max_width - max_width / 5,
+        max_width - max_width / 4,
+    ];
+    let mut seen = BTreeSet::new();
+    candidates
+        .into_iter()
+        .filter(|width| *width > 0 && seen.insert(*width))
+        .take(worker_limit.max(1))
+        .collect()
+}
+
+#[allow(clippy::too_many_arguments)]
+fn solve_coordinate_candidate(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    hard_request: &FacilityPlacementRequest,
+    placement_width: i64,
+    time_limit: Duration,
+) -> CoordinateCandidate {
+    let placement_request = FacilityPlacementRequest {
+        schema_version: hard_request.schema_version,
+        max_width: placement_width,
+        max_height: hard_request.max_height,
+    };
     let placement = solve_facility_placement_feasibly_with_time_limit(
         instance_wiring,
         facilities,
-        request,
+        &placement_request,
         COORDINATE_ROUTING_CLEARANCE,
         time_limit,
     );
@@ -268,10 +457,13 @@ pub fn construct_coordinate_integrated_layout_with_time_limit(
                 )
             },
         );
-        return IntegratedLayoutReport::failure(status, diagnostic);
+        return CoordinateCandidate {
+            placement_width,
+            report: IntegratedLayoutReport::failure(status, diagnostic),
+        };
     }
 
-    match prepare_model(instance_wiring, facilities, items, transports, request) {
+    let report = match prepare_model(instance_wiring, facilities, items, transports, hard_request) {
         Ok(input) => {
             let topology = match networks::plan_topology(
                 &input.networks,
@@ -280,16 +472,22 @@ pub fn construct_coordinate_integrated_layout_with_time_limit(
             ) {
                 Ok(topology) => topology,
                 Err(diagnostic) => {
-                    return IntegratedLayoutReport::failure(
-                        IntegratedLayoutStatus::InvalidInput,
-                        diagnostic,
-                    );
+                    return CoordinateCandidate {
+                        placement_width,
+                        report: IntegratedLayoutReport::failure(
+                            IntegratedLayoutStatus::InvalidInput,
+                            diagnostic,
+                        ),
+                    };
                 }
             };
             let mut report = sparse::construct_from_placements(
                 input,
                 logistics_components,
                 placement.placements,
+                Instant::now()
+                    .checked_add(time_limit.max(Duration::from_secs(5)))
+                    .unwrap_or_else(Instant::now),
             );
             if report.success {
                 report.diagnostics.push(IntegratedLayoutDiagnostic::info(
@@ -310,6 +508,10 @@ pub fn construct_coordinate_integrated_layout_with_time_limit(
         Err(diagnostic) => {
             IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
         }
+    };
+    CoordinateCandidate {
+        placement_width,
+        report,
     }
 }
 
@@ -1724,6 +1926,39 @@ mod tests {
             report.diagnostics[1].code,
             "routing-network-topology-planned"
         );
+        assert!(
+            report
+                .diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == "parallel-portfolio-selected")
+        );
+    }
+
+    #[test]
+    fn portfolio_uses_conservative_distinct_width_caps() {
+        assert_eq!(portfolio_widths(500, 4), vec![500, 450, 400, 375]);
+        assert_eq!(portfolio_widths(500, 2), vec![500, 450]);
+        assert_eq!(portfolio_widths(1, 4), vec![1]);
+    }
+
+    #[test]
+    fn portfolio_prefers_compact_area_before_routing_cost() {
+        let compact = CoordinateCandidateScore {
+            area: 20_176,
+            max_side: 388,
+            route_cells: 12_046,
+            logistics_components: 793,
+            placement_width: 400,
+        };
+        let wide = CoordinateCandidateScore {
+            area: 21_252,
+            max_side: 483,
+            route_cells: 10_198,
+            logistics_components: 618,
+            placement_width: 500,
+        };
+
+        assert!(compact < wide);
     }
 
     #[test]

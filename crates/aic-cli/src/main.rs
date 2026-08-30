@@ -169,7 +169,7 @@ enum LayoutsCommand {
         #[arg(long, value_name = "FILE")]
         placement_request: PathBuf,
 
-        /// Maximum solver search time before returning the best known status.
+        /// Maximum CP search time per portfolio worker before returning the best known status.
         #[arg(long, value_name = "SECONDS", default_value = "10")]
         time_limit_seconds: NonZeroU64,
 
@@ -207,7 +207,7 @@ enum LayoutsCommand {
         #[arg(long, value_name = "FILE")]
         placement_request: PathBuf,
 
-        /// Maximum solver search time before returning the best known status.
+        /// Maximum CP search time per portfolio worker before returning the best known status.
         #[arg(long, value_name = "SECONDS", default_value = "10")]
         time_limit_seconds: NonZeroU64,
 
