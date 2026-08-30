@@ -35,7 +35,7 @@ impl<'a> RecipeAnalysis<'a> {
 #[derive(Debug, Clone)]
 pub(crate) struct RecipeIndex {
     external_items: BTreeSet<String>,
-    output_producer_by_item: HashMap<String, String>,
+    output_producers_by_item: HashMap<String, Vec<String>>,
     recipe_by_id: HashMap<String, Recipe>,
 }
 
@@ -47,12 +47,16 @@ impl RecipeIndex {
             .into_iter()
             .map(str::to_string)
             .collect::<BTreeSet<_>>();
-        let mut output_producer_by_item = HashMap::new();
+        let mut output_producers_by_item = HashMap::new();
 
         for (item, producers) in analysis.output_producers {
-            if let Some(recipe) = producers.first() {
-                output_producer_by_item.insert(item.to_string(), recipe.id.clone());
-            }
+            let mut producer_ids = producers
+                .iter()
+                .map(|recipe| recipe.id.clone())
+                .collect::<Vec<_>>();
+            producer_ids.sort();
+            producer_ids.dedup();
+            output_producers_by_item.insert(item.to_string(), producer_ids);
         }
 
         let recipe_by_id = book
@@ -63,7 +67,7 @@ impl RecipeIndex {
 
         Self {
             external_items,
-            output_producer_by_item,
+            output_producers_by_item,
             recipe_by_id,
         }
     }
@@ -72,9 +76,11 @@ impl RecipeIndex {
         self.external_items.contains(item)
     }
 
-    pub fn producer_for(&self, item: &str) -> Option<&Recipe> {
-        self.output_producer_by_item
-            .get(item)
-            .and_then(|recipe_id| self.recipe_by_id.get(recipe_id))
+    pub fn producer_ids_for(&self, item: &str) -> Option<&[String]> {
+        self.output_producers_by_item.get(item).map(Vec::as_slice)
+    }
+
+    pub fn recipe(&self, recipe_id: &str) -> Option<&Recipe> {
+        self.recipe_by_id.get(recipe_id)
     }
 }

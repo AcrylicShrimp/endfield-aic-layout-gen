@@ -581,6 +581,15 @@ fn map_graph_error(error: RecipeGraphError) -> ThroughputDiagnostic {
             Some(item.clone()),
             format!("external input item '{item}' is neither external nor recipe-produced"),
         ),
+        RecipeGraphError::AmbiguousProducer { item, recipes } => ThroughputDiagnostic::error(
+            "ambiguous-recipe-producer",
+            "/recipes",
+            Some(item.clone()),
+            format!(
+                "item '{item}' is produced by multiple recipes: {}",
+                recipes.join(", ")
+            ),
+        ),
     }
 }
 

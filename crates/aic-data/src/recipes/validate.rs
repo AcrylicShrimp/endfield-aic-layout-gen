@@ -49,7 +49,6 @@ impl Validator {
         let analysis = RecipeAnalysis::from_raw(book);
         self.validate_external_output_overlap(book, &analysis);
         self.validate_input_links(book, &analysis);
-        self.validate_ambiguous_outputs(&analysis);
         self.validate_cycles(book, &analysis);
     }
 
@@ -206,29 +205,6 @@ impl Validator {
                         ),
                     );
                 }
-            }
-        }
-    }
-
-    fn validate_ambiguous_outputs(&mut self, analysis: &RecipeAnalysis) {
-        for (item, producers) in &analysis.output_producers {
-            let producer_ids = producers
-                .iter()
-                .map(|recipe| recipe.id.as_str())
-                .collect::<HashSet<_>>();
-
-            if producer_ids.len() > 1 {
-                let mut sorted_producer_ids = producer_ids.into_iter().collect::<Vec<_>>();
-                sorted_producer_ids.sort_unstable();
-
-                self.push(
-                    "ambiguous-output-producer",
-                    "/recipes",
-                    format!(
-                        "item '{item}' is produced by multiple recipes: {}",
-                        sorted_producer_ids.join(", ")
-                    ),
-                );
             }
         }
     }

@@ -11,6 +11,7 @@ pub enum RecipeGraphError {
     InvalidTargetId { target_item: String },
     UnknownTargetItem { target_item: String },
     UnknownExternalInput { item: String },
+    AmbiguousProducer { item: String, recipes: Vec<String> },
 }
 
 impl std::fmt::Display for RecipeGraphError {
@@ -34,6 +35,11 @@ impl std::fmt::Display for RecipeGraphError {
                     "external input item '{item}' is neither external nor recipe-produced"
                 )
             }
+            Self::AmbiguousProducer { item, recipes } => write!(
+                formatter,
+                "item '{item}' is produced by multiple recipes: {}",
+                recipes.join(", ")
+            ),
         }
     }
 }
@@ -53,7 +59,8 @@ impl ValidatedRecipeBook {
         validate_target_item_id(target_item)?;
 
         for item in external_inputs {
-            if !self.index().is_external_item(item) && self.index().producer_for(item).is_none() {
+            if !self.index().is_external_item(item) && self.index().producer_ids_for(item).is_none()
+            {
                 return Err(RecipeGraphError::UnknownExternalInput { item: item.clone() });
             }
         }
@@ -62,7 +69,7 @@ impl ValidatedRecipeBook {
 
         if !self.index().is_external_item(target_item)
             && !external_inputs.contains(target_item)
-            && self.index().producer_for(target_item).is_none()
+            && self.index().producer_ids_for(target_item).is_none()
         {
             return Err(RecipeGraphError::UnknownTargetItem {
                 target_item: target_item.to_string(),
@@ -70,7 +77,7 @@ impl ValidatedRecipeBook {
         }
 
         let mut resolver = GraphResolver::new(target_item, self.index(), external_inputs);
-        resolver.resolve_item(target_item);
+        resolver.resolve_item(target_item)?;
         Ok(resolver.into_graph())
     }
 }
@@ -100,27 +107,40 @@ impl<'a> GraphResolver<'a> {
         }
     }
 
-    fn resolve_item(&mut self, item: &str) {
+    fn resolve_item(&mut self, item: &str) -> Result<(), RecipeGraphError> {
         if self.index.is_external_item(item) || self.additional_external_items.contains(item) {
             self.seen_external_items.insert(item.to_string());
-            return;
+            return Ok(());
         }
 
-        if let Some(recipe) = self.index.producer_for(item) {
-            self.resolve_recipe(recipe);
+        let Some(producer_ids) = self.index.producer_ids_for(item) else {
+            return Ok(());
+        };
+        if producer_ids.len() != 1 {
+            return Err(RecipeGraphError::AmbiguousProducer {
+                item: item.to_string(),
+                recipes: producer_ids.to_vec(),
+            });
         }
+
+        let recipe = self
+            .index
+            .recipe(&producer_ids[0])
+            .expect("validated recipe index contains every producer recipe");
+        self.resolve_recipe(recipe)
     }
 
-    fn resolve_recipe(&mut self, recipe: &Recipe) {
+    fn resolve_recipe(&mut self, recipe: &Recipe) -> Result<(), RecipeGraphError> {
         if !self.seen_recipe_ids.insert(recipe.id.clone()) {
-            return;
+            return Ok(());
         }
 
         for input in &recipe.inputs {
-            self.resolve_item(&input.item);
+            self.resolve_item(&input.item)?;
         }
 
         self.recipes.push(recipe.clone());
+        Ok(())
     }
 
     fn into_graph(self) -> RecipeGraph {

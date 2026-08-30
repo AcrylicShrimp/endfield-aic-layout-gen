@@ -282,7 +282,7 @@ fn rejects_missing_input_links() {
 }
 
 #[test]
-fn rejects_ambiguous_output_producers() {
+fn defers_ambiguous_output_producers_until_graph_resolution() {
     let mut book = valid_book();
     book.recipes.push(Recipe {
         id: "alternate-originium-powder".to_string(),
@@ -298,9 +298,18 @@ fn rejects_ambiguous_output_producers() {
         duration_ms: 3000,
     });
 
-    let report = book.validate();
+    let validated = ValidatedRecipeBook::try_from_recipe_book(book)
+        .expect("structurally valid alternate recipes should promote");
+    let error = validated
+        .resolve_graph("originium-powder")
+        .expect_err("ambiguous producer should stop graph resolution");
 
-    assert_codes(&report, &["ambiguous-output-producer"]);
+    assert!(matches!(
+        error,
+        RecipeGraphError::AmbiguousProducer { item, recipes }
+            if item == "originium-powder"
+                && recipes == vec!["alternate-originium-powder", "grind-originium-powder"]
+    ));
 }
 
 #[test]
