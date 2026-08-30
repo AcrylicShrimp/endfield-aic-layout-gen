@@ -430,6 +430,87 @@ fn two_item_wiring() -> FacilityInstanceWiringReport {
     }
 }
 
+fn external_connector_wiring() -> FacilityInstanceWiringReport {
+    let rate = Rate {
+        numerator: 1,
+        denominator: 1,
+    };
+    FacilityInstanceWiringReport {
+        schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
+        success: true,
+        nodes: vec![
+            FacilityInstanceWiringNode::External {
+                id: "external-part".to_string(),
+                item: "part".to_string(),
+            },
+            FacilityInstanceWiringNode::Facility {
+                id: "processor".to_string(),
+                recipe: "processor-recipe".to_string(),
+                facility: "relay-machine".to_string(),
+                index: 0,
+                runs_per_second: rate,
+                work_seconds_per_second: rate,
+                unused_capacity: Rate::zero(),
+            },
+            FacilityInstanceWiringNode::Target {
+                id: "target-part".to_string(),
+                item: "part".to_string(),
+            },
+        ],
+        edges: vec![
+            FacilityInstanceWiringEdge::original(
+                "external-part",
+                "processor",
+                "external-input",
+                "part",
+                rate,
+            ),
+            FacilityInstanceWiringEdge::original(
+                "processor",
+                "target-part",
+                "target-output",
+                "part",
+                rate,
+            ),
+        ],
+        diagnostics: Vec::new(),
+    }
+}
+
+#[test]
+fn factored_shared_layer_selects_three_template_external_connectors() {
+    let (facilities, items, transports, components) = catalogs();
+    let input = super::prepare_model(
+        &external_connector_wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 4,
+            max_height: 3,
+        },
+    )
+    .expect("external connector fixture should prepare");
+
+    let report = super::exact::shared_layer::solve_factored_endpoints(input, &components, None);
+
+    assert!(report.success, "{:#?}", report.diagnostics);
+    assert_eq!(report.transport_networks.len(), 0);
+    assert_eq!(report.external_connectors.len(), 2);
+    assert!(
+        report
+            .external_connectors
+            .iter()
+            .all(|connector| !connector.cells.is_empty())
+    );
+    let exact = report.exact.expect("exact solve reports metrics");
+    assert_eq!(exact.model.external_connector_count, 2);
+    assert_eq!(exact.model.commodity_network_count, 0);
+    assert_eq!(exact.validation, ExactValidationStatus::Passed);
+}
+
 #[test]
 fn shared_layer_matches_dense_objective_for_two_belt_items() {
     let (facilities, items, transports, components) = catalogs();

@@ -1037,9 +1037,15 @@ fn used_geometry_bounds(report: &IntegratedLayoutReport) -> (i64, i64, i64, i64)
         maximum_y = maximum_y.max(placement.y + placement.height - 1);
     }
     for position in report
-        .transport_networks
+        .external_connectors
         .iter()
-        .flat_map(|network| network.cells.iter())
+        .flat_map(|connector| connector.cells.iter())
+        .chain(
+            report
+                .transport_networks
+                .iter()
+                .flat_map(|network| network.cells.iter()),
+        )
         .chain(
             report
                 .logistics_components

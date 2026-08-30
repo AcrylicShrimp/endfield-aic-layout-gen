@@ -33,9 +33,10 @@ use model::{
 pub use report::{
     ExactModelMetrics, ExactObjectiveKind, ExactObjectiveStageReport, ExactObjectiveValue,
     ExactProofStatus, ExactSolveReport, ExactTerminationReason, ExactValidationStatus,
-    INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic, IntegratedLayoutPhase,
-    IntegratedLayoutReport, IntegratedLayoutStatus, PlacedLogisticsComponent, TransportNetwork,
-    TransportNetworkEndpoint, TransportNetworkSegment, TransportNetworkTerminal,
+    ExternalBoundaryConnector, ExternalConnectorTemplate, INTEGRATED_LAYOUT_SCHEMA_VERSION,
+    IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutReport,
+    IntegratedLayoutStatus, PlacedLogisticsComponent, TransportNetwork, TransportNetworkEndpoint,
+    TransportNetworkSegment, TransportNetworkTerminal,
 };
 pub use research::{
     EXACT_ABLATION_MATRIX_SCHEMA_VERSION, ExactAblationCaseReport, ExactAblationFixation,
@@ -208,9 +209,15 @@ pub(super) fn canonicalize_report_geometry(report: &mut IntegratedLayoutReport) 
         minimum_y = minimum_y.min(placement.y);
     }
     for position in report
-        .transport_networks
+        .external_connectors
         .iter()
-        .flat_map(|network| network.cells.iter())
+        .flat_map(|connector| connector.cells.iter())
+        .chain(
+            report
+                .transport_networks
+                .iter()
+                .flat_map(|network| network.cells.iter()),
+        )
         .chain(
             report
                 .logistics_components
@@ -233,9 +240,15 @@ pub(super) fn canonicalize_report_geometry(report: &mut IntegratedLayoutReport) 
         placement.y -= minimum_y;
     }
     for position in report
-        .transport_networks
+        .external_connectors
         .iter_mut()
-        .flat_map(|network| network.cells.iter_mut())
+        .flat_map(|connector| connector.cells.iter_mut())
+        .chain(
+            report
+                .transport_networks
+                .iter_mut()
+                .flat_map(|network| network.cells.iter_mut()),
+        )
         .chain(
             report
                 .logistics_components
@@ -245,6 +258,14 @@ pub(super) fn canonicalize_report_geometry(report: &mut IntegratedLayoutReport) 
     {
         position.x -= minimum_x;
         position.y -= minimum_y;
+    }
+    for connector in &mut report.external_connectors {
+        if let Some(turn) = &mut connector.turn {
+            turn.x -= minimum_x;
+            turn.y -= minimum_y;
+        }
+        connector.exit.x -= minimum_x;
+        connector.exit.y -= minimum_y;
     }
     for network in &mut report.transport_networks {
         for segment in &mut network.segments {
@@ -264,6 +285,12 @@ pub(super) fn canonicalize_report_geometry(report: &mut IntegratedLayoutReport) 
         .map(|placement| placement.x + placement.width)
         .chain(
             report
+                .external_connectors
+                .iter()
+                .flat_map(|connector| connector.cells.iter().map(|cell| cell.x + 1)),
+        )
+        .chain(
+            report
                 .transport_networks
                 .iter()
                 .flat_map(|network| network.cells.iter().map(|cell| cell.x + 1)),
@@ -280,6 +307,12 @@ pub(super) fn canonicalize_report_geometry(report: &mut IntegratedLayoutReport) 
         .placements
         .iter()
         .map(|placement| placement.y + placement.height)
+        .chain(
+            report
+                .external_connectors
+                .iter()
+                .flat_map(|connector| connector.cells.iter().map(|cell| cell.y + 1)),
+        )
         .chain(
             report
                 .transport_networks

@@ -14,7 +14,7 @@ use crate::recipes::{
 
 use super::super::{
     IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutReport,
-    IntegratedLayoutStatus, prepare_exact_model, solve_exact_model,
+    IntegratedLayoutStatus, exact, prepare_exact_model, solve_exact_model,
 };
 
 // This schedules one ready SCC at a time. It changes only the sequence of complete cumulative
@@ -35,15 +35,21 @@ pub(in crate::layouts::integrated) fn solve_first_iterative_scc_phase(
         Ok(wiring) => wiring,
         Err(report) => return report,
     };
-    let mut report = solve_exact_model(
+    let input = match prepare_exact_model(
         &partial_wiring,
         facilities,
         items,
         transports,
         logistics_components,
         request,
+    ) {
+        Ok(input) => input,
+        Err(report) => return report,
+    };
+    let mut report = exact::shared_layer::solve_factored_endpoints(
+        input,
+        logistics_components,
         Some(time_limit),
-        None,
     );
     report.diagnostics.push(IntegratedLayoutDiagnostic::info(
         "research-first-scc-phase",
@@ -196,6 +202,7 @@ pub(in crate::layouts::integrated) fn solve_iterative_scc(
             bounds,
             placements: phase_report.placements.clone(),
             logistics_components: phase_report.logistics_components.clone(),
+            external_connectors: phase_report.external_connectors.clone(),
             transport_networks: phase_report.transport_networks.clone(),
             exact,
         });

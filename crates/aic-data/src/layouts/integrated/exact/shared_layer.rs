@@ -5,6 +5,9 @@ use pumpkin_solver::core::predicates::PredicateConstructor;
 use pumpkin_solver::core::results::ProblemSolution;
 use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
+use super::external_connectors::{
+    self, ConnectorSelector, ModelExternalConnector, UsedBoundsVariables,
+};
 use super::extract::rate_from_flow_units;
 use super::formulation::{
     DIRECTIONS, direction_between, direction_index, external_endpoint_options, generate_candidates,
@@ -153,7 +156,24 @@ fn solve_with_endpoint_encoding(
     endpoint_encoding: EndpointEncoding,
 ) -> IntegratedLayoutReport {
     let construction_started = Instant::now();
+    let original_requirement_count = input.edges.len();
+    let (input, external_requirements) = match endpoint_encoding {
+        EndpointEncoding::Flattened => (input, Vec::new()),
+        EndpointEncoding::Factored => {
+            match external_connectors::partition_external_requirements(&input) {
+                Ok(partitioned) => partitioned,
+                Err(diagnostic) => {
+                    return IntegratedLayoutReport::failure(
+                        IntegratedLayoutStatus::InvalidInput,
+                        diagnostic,
+                    );
+                }
+            }
+        }
+    };
     let mut model_metrics = initial_metrics(&input);
+    model_metrics.route_requirement_count = original_requirement_count;
+    model_metrics.external_connector_count = external_requirements.len();
     let cell_count = input.cell_count as usize;
     let mut solver = RecordedModel::default();
     let tag = solver.new_constraint_tag();
@@ -171,6 +191,8 @@ fn solve_with_endpoint_encoding(
             ),
         );
     }
+    let placement_choices = matches!(endpoint_encoding, EndpointEncoding::Factored)
+        .then(|| build_placement_choices(&mut solver, &model_instances, &mut model_metrics, tag));
     let model_terminals = match endpoint_encoding {
         EndpointEncoding::Flattened => {
             let edge_endpoint_options = build_endpoint_options(
@@ -186,10 +208,56 @@ fn solve_with_endpoint_encoding(
             &mut solver,
             &input,
             &model_instances,
+            placement_choices
+                .as_ref()
+                .expect("factored endpoint encoding has placement choices"),
             &mut model_metrics,
             tag,
         ),
     };
+
+    let used_bounds = external_connectors::new_used_bounds(&mut solver, &input);
+    let connector_selectors = external_requirements
+        .iter()
+        .enumerate()
+        .map(|(index, requirement)| {
+            let selector = build_factored_selector(
+                &mut solver,
+                &input,
+                &model_instances,
+                placement_choices
+                    .as_ref()
+                    .expect("external connectors require factored placement choices"),
+                index,
+                "external",
+                &requirement.facility_endpoint,
+                &mut model_metrics,
+                tag,
+            );
+            ConnectorSelector {
+                geometry_key: selector.facility_key,
+                port_choice: selector.port_choice,
+                port_ids: selector.port_ids,
+                facility_instance: selector.instance,
+                reachable_geometry_keys: selector.facility_keys,
+            }
+        })
+        .collect::<Vec<_>>();
+    let external_connectors = external_connectors::build(
+        &mut solver,
+        &input,
+        &external_requirements,
+        connector_selectors,
+        used_bounds,
+        &mut model_metrics,
+        tag,
+    );
+    external_connectors::validate_unique_ports(
+        &mut solver,
+        &external_connectors,
+        &mut model_metrics,
+        tag,
+    );
 
     let mut layers = Vec::new();
     let mut branch_components = Vec::new();
@@ -219,6 +287,19 @@ fn solve_with_endpoint_encoding(
         );
         layers.push(layer);
     }
+    external_connectors::post_collisions(
+        &mut solver,
+        &input,
+        &occupancy,
+        |transport, cell| {
+            layers
+                .iter()
+                .find(|layer| layer.transport == transport)
+                .map(|layer| layer.route_cells[cell])
+        },
+        &external_connectors,
+        tag,
+    );
 
     let objectives = match build_objectives(
         &mut solver,
@@ -227,6 +308,8 @@ fn solve_with_endpoint_encoding(
         &layers,
         &branch_components,
         &bridges,
+        &external_connectors,
+        used_bounds,
         &mut model_metrics,
         tag,
     ) {
@@ -260,12 +343,16 @@ fn solve_with_endpoint_encoding(
                 &layers,
                 &branch_components,
                 &bridges,
+                &external_connectors,
             )
         },
     );
     let mut report = search.report;
     let validation = if report.success {
-        match crate::layouts::integrated::witness::validate(&input, logistics_components, &report) {
+        match external_connectors::validate_witness(&input, &external_requirements, &report)
+            .and_then(|()| {
+                crate::layouts::integrated::witness::validate(&input, logistics_components, &report)
+            }) {
             Ok(()) => match super::validate_objective_witness(&report, &search.stages) {
                 Ok(()) => ExactValidationStatus::Passed,
                 Err(diagnostic) => {
@@ -289,7 +376,7 @@ fn solve_with_endpoint_encoding(
         report,
         match endpoint_encoding {
             EndpointEncoding::Flattened => "joint-shared-transport-layer-v1",
-            EndpointEncoding::Factored => "joint-shared-transport-layer-factored-endpoints-v1",
+            EndpointEncoding::Factored => "joint-shared-transport-layer-external-connectors-v1",
         },
         model_metrics,
         model_complexity,
@@ -300,6 +387,44 @@ fn solve_with_endpoint_encoding(
         validation,
         search.stages,
     )
+}
+
+fn build_placement_choices(
+    solver: &mut RecordedModel,
+    instances: &[ModelInstance],
+    metrics: &mut ExactModelMetrics,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> BTreeMap<String, PlacementChoice> {
+    instances
+        .iter()
+        .map(|instance| {
+            let upper_bound = i32::try_from(instance.candidates.len() - 1)
+                .expect("placement candidate count fits i32");
+            let choice = solver.new_variable(
+                VariableFamily::Placement,
+                0,
+                upper_bound,
+                format!("factored-placement-choice-{}", instance.input.id),
+            );
+            metrics.placement_variables += 1;
+            let mut definition = vec![choice.scaled(1)];
+            definition.extend(instance.candidates.iter().enumerate().skip(1).map(
+                |(index, candidate)| {
+                    candidate
+                        .selected
+                        .scaled(-i32::try_from(index).expect("placement candidate index fits i32"))
+                },
+            ));
+            solver.post_equals(
+                ConstraintFamily::PlacementChoice,
+                definition,
+                0,
+                upper_bound.unsigned_abs() as u64,
+                tag,
+            );
+            (instance.input.id.clone(), PlacementChoice { choice })
+        })
+        .collect()
 }
 
 fn initial_metrics(input: &ModelInput) -> ExactModelMetrics {
@@ -537,40 +662,10 @@ fn build_factored_terminals(
     solver: &mut RecordedModel,
     input: &ModelInput,
     instances: &[ModelInstance],
+    placement_choices: &BTreeMap<String, PlacementChoice>,
     metrics: &mut ExactModelMetrics,
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) -> Vec<Vec<SharedTerminal>> {
-    let placement_choices = instances
-        .iter()
-        .map(|instance| {
-            let upper_bound = i32::try_from(instance.candidates.len() - 1)
-                .expect("placement candidate count fits i32");
-            let choice = solver.new_variable(
-                VariableFamily::Placement,
-                0,
-                upper_bound,
-                format!("factored-placement-choice-{}", instance.input.id),
-            );
-            metrics.placement_variables += 1;
-            let mut definition = vec![choice.scaled(1)];
-            definition.extend(instance.candidates.iter().enumerate().skip(1).map(
-                |(index, candidate)| {
-                    candidate
-                        .selected
-                        .scaled(-i32::try_from(index).expect("placement candidate index fits i32"))
-                },
-            ));
-            solver.post_equals(
-                ConstraintFamily::PlacementChoice,
-                definition,
-                0,
-                upper_bound.unsigned_abs() as u64,
-                tag,
-            );
-            (instance.input.id.clone(), PlacementChoice { choice })
-        })
-        .collect::<BTreeMap<_, _>>();
-
     let edge_endpoints = input
         .edges
         .iter()
@@ -581,7 +676,7 @@ fn build_factored_terminals(
                     solver,
                     input,
                     instances,
-                    &placement_choices,
+                    placement_choices,
                     edge_index,
                     "source",
                     &edge.source,
@@ -592,7 +687,7 @@ fn build_factored_terminals(
                     solver,
                     input,
                     instances,
-                    &placement_choices,
+                    placement_choices,
                     edge_index,
                     "target",
                     &edge.target,
@@ -609,7 +704,7 @@ fn build_factored_terminals(
                     solver,
                     input,
                     instances,
-                    &placement_choices,
+                    placement_choices,
                     edge_index,
                     "target",
                     &edge.target,
@@ -626,7 +721,7 @@ fn build_factored_terminals(
                     solver,
                     input,
                     instances,
-                    &placement_choices,
+                    placement_choices,
                     edge_index,
                     "source",
                     &edge.source,
@@ -1740,6 +1835,8 @@ fn build_objectives(
     layers: &[SharedLayer],
     branches: &[SharedBranchComponent],
     bridges: &[ModelBridge],
+    external_connectors: &[ModelExternalConnector],
+    used_bounds: UsedBoundsVariables,
     metrics: &mut ExactModelMetrics,
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) -> Result<ExactObjectives, IntegratedLayoutDiagnostic> {
@@ -1754,7 +1851,12 @@ fn build_objectives(
                 facility_occupancy[cell]
                     .iter()
                     .copied()
-                    .chain(layers.iter().map(|layer| layer.route_cells[cell])),
+                    .chain(layers.iter().map(|layer| layer.route_cells[cell]))
+                    .chain(
+                        external_connectors
+                            .iter()
+                            .map(|connector| external_connectors::cells(connector)[cell]),
+                    ),
                 tag,
             )
         })
@@ -1762,18 +1864,6 @@ fn build_objectives(
     metrics.objective_variables += used_cells.len() + 2;
     require_canonical_origin(solver, input, &used_cells, tag);
 
-    let used_width = solver.new_variable(
-        VariableFamily::Objective,
-        1,
-        input.width,
-        "used-bounding-box-width",
-    );
-    let used_height = solver.new_variable(
-        VariableFamily::Objective,
-        1,
-        input.height,
-        "used-bounding-box-height",
-    );
     solver.post_maximum(
         ConstraintFamily::BoundingBox,
         used_cells
@@ -1784,7 +1874,7 @@ fn build_objectives(
                 used.scaled(x + 1)
             })
             .collect(),
-        used_width,
+        used_bounds.width,
         input.width as u64,
         tag,
     );
@@ -1798,7 +1888,7 @@ fn build_objectives(
                 used.scaled(y + 1)
             })
             .collect(),
-        used_height,
+        used_bounds.height,
         input.height as u64,
         tag,
     );
@@ -1810,8 +1900,8 @@ fn build_objectives(
     );
     solver.post_times(
         ConstraintFamily::BoundingBox,
-        used_width,
-        used_height,
+        used_bounds.width,
+        used_bounds.height,
         used_bounding_box_area,
         tag,
     );
@@ -1823,7 +1913,7 @@ fn build_objectives(
     );
     solver.post_maximum(
         ConstraintFamily::BoundingBox,
-        vec![used_width.scaled(1), used_height.scaled(1)],
+        vec![used_bounds.width.scaled(1), used_bounds.height.scaled(1)],
         maximum_used_side,
         1,
         tag,
@@ -1833,6 +1923,11 @@ fn build_objectives(
     let physical_tiles = layers
         .iter()
         .flat_map(|layer| layer.route_cells.iter().copied())
+        .chain(
+            external_connectors
+                .iter()
+                .flat_map(|connector| external_connectors::cells(connector).iter().copied()),
+        )
         .collect::<Vec<_>>();
     let physical_transport_tiles =
         post_sum_variable(solver, "physical-transport-tiles", &physical_tiles, tag)?;
@@ -1852,6 +1947,7 @@ fn build_objectives(
             ));
         }
     }
+    turns.extend(external_connectors.iter().map(external_connectors::turn));
     let total_route_turns = post_sum_variable(solver, "total-route-turns", &turns, tag)?;
     metrics.objective_variables += 1;
 
@@ -1973,6 +2069,7 @@ fn extract_report(
     layers: &[SharedLayer],
     branches: &[SharedBranchComponent],
     bridges: &[ModelBridge],
+    model_external_connectors: &[ModelExternalConnector],
 ) -> IntegratedLayoutReport {
     let mut placements = instances
         .iter()
@@ -2151,13 +2248,18 @@ fn extract_report(
         bounds: None,
         placements,
         logistics_components,
+        external_connectors: external_connectors::extract(
+            solution,
+            input,
+            model_external_connectors,
+        ),
         transport_networks,
         phases: Vec::new(),
         exact: None,
         diagnostics: vec![
             IntegratedLayoutDiagnostic::info(
-                "experimental-shared-transport-layer",
-                "facility placement, port assignment, and item-labelled flow were solved jointly on one physical grid per transport layer",
+                "experimental-shared-layer-external-connectors",
+                "facility placement, port assignment, three-template external connectors, and internal item-labelled flow were solved jointly",
             ),
             IntegratedLayoutDiagnostic::info(
                 if status == IntegratedLayoutStatus::Optimal {

@@ -9,7 +9,7 @@ use crate::research::ModelComplexityMetrics;
 use super::WorldGridPosition;
 
 const STAGE: &str = "integrated-layout";
-pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 17;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 18;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -29,6 +29,7 @@ pub struct IntegratedLayoutReport {
     pub bounds: Option<FacilityPlacementBounds>,
     pub placements: Vec<FacilityPlacement>,
     pub logistics_components: Vec<PlacedLogisticsComponent>,
+    pub external_connectors: Vec<ExternalBoundaryConnector>,
     pub transport_networks: Vec<TransportNetwork>,
     pub phases: Vec<IntegratedLayoutPhase>,
     pub exact: Option<ExactSolveReport>,
@@ -90,6 +91,8 @@ pub struct ExactModelMetrics {
     pub network_requirement_reference_count: usize,
     pub network_terminal_count: usize,
     pub external_terminal_count: usize,
+    pub external_connector_count: usize,
+    pub external_connector_variables: usize,
     pub maximum_network_flow_scale: i64,
     pub maximum_line_capacity_units: i32,
     pub total_terminal_flow_units: i64,
@@ -147,6 +150,7 @@ pub struct IntegratedLayoutPhase {
     pub bounds: FacilityPlacementBounds,
     pub placements: Vec<FacilityPlacement>,
     pub logistics_components: Vec<PlacedLogisticsComponent>,
+    pub external_connectors: Vec<ExternalBoundaryConnector>,
     pub transport_networks: Vec<TransportNetwork>,
     pub exact: ExactSolveReport,
 }
@@ -159,6 +163,32 @@ pub struct PlacedLogisticsComponent {
     pub transport: TransportKind,
     pub position: WorldGridPosition,
     pub rotation: i64,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ExternalConnectorTemplate {
+    Forward,
+    Left,
+    Right,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ExternalBoundaryConnector {
+    pub id: String,
+    pub requirement_id: String,
+    pub external_node: String,
+    pub facility_instance: String,
+    pub port: String,
+    pub item: String,
+    pub transport: TransportKind,
+    pub direction: FacilityPortDirection,
+    pub rate: Rate,
+    pub template: ExternalConnectorTemplate,
+    pub cells: Vec<WorldGridPosition>,
+    pub turn: Option<WorldGridPosition>,
+    pub boundary_side: FacilityPortEdge,
+    pub exit: WorldGridPosition,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -258,6 +288,7 @@ impl IntegratedLayoutReport {
             bounds: None,
             placements: Vec::new(),
             logistics_components: Vec::new(),
+            external_connectors: Vec::new(),
             transport_networks: Vec::new(),
             phases: Vec::new(),
             exact: None,

@@ -55,6 +55,12 @@ impl LayoutScore {
                     .iter()
                     .map(move |cell| (network.transport, cell.x, cell.y))
             })
+            .chain(report.external_connectors.iter().flat_map(|connector| {
+                connector
+                    .cells
+                    .iter()
+                    .map(move |cell| (connector.transport, cell.x, cell.y))
+            }))
             .collect::<BTreeSet<_>>()
             .len();
         Some(Self {
@@ -66,7 +72,12 @@ impl LayoutScore {
                 .transport_networks
                 .iter()
                 .map(network_turn_count)
-                .sum(),
+                .sum::<usize>()
+                + report
+                    .external_connectors
+                    .iter()
+                    .filter(|connector| connector.turn.is_some())
+                    .count(),
             maximum_used_side: bounds.width.max(bounds.height),
             logistics_component_count: report.logistics_components.len(),
             moved_prior_facility_count,
@@ -76,7 +87,12 @@ impl LayoutScore {
                 .transport_networks
                 .iter()
                 .map(|network| network.cells.len())
-                .sum(),
+                .sum::<usize>()
+                + report
+                    .external_connectors
+                    .iter()
+                    .map(|connector| connector.cells.len())
+                    .sum::<usize>(),
         })
     }
 }
@@ -156,6 +172,7 @@ mod tests {
             }),
             placements: vec![placement("facility", 4, 4, 90), placement("new", 0, 0, 0)],
             logistics_components: Vec::new(),
+            external_connectors: Vec::new(),
             transport_networks: vec![network(TransportKind::Belt), network(TransportKind::Belt)],
             phases: Vec::new(),
             exact: None,
