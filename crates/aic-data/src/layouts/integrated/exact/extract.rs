@@ -4,10 +4,11 @@ use pumpkin_solver::core::results::ProblemSolution;
 
 use super::super::{
     FacilityPlacement, INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic,
-    IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRoute, ModelInput, WorldGridPosition,
-    canonicalize_report_geometry, world_position,
+    IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRoute, ModelInput,
+    PlacedLogisticsComponent, WorldGridPosition, canonicalize_report_geometry, world_position,
 };
-use super::{Arc, EndpointOption, ModelInstance, ModelRoute};
+use super::{Arc, EndpointOption, ModelBridge, ModelInstance, ModelRoute};
+use crate::logistics::LogisticsComponentKind;
 
 pub(in crate::layouts::integrated) fn extract_report(
     solution: &impl ProblemSolution,
@@ -15,6 +16,7 @@ pub(in crate::layouts::integrated) fn extract_report(
     input: &ModelInput,
     instances: &[ModelInstance],
     model_routes: &[ModelRoute],
+    model_bridges: &[ModelBridge],
 ) -> IntegratedLayoutReport {
     let mut placements = Vec::new();
     for instance in instances {
@@ -61,6 +63,40 @@ pub(in crate::layouts::integrated) fn extract_report(
                 cells,
             }
         })
+        .collect::<Vec<_>>();
+    let logistics_components = model_bridges
+        .iter()
+        .filter(|bridge| solution.get_integer_value(bridge.selected) == 1)
+        .map(|bridge| {
+            let position = world_position(bridge.cell, input.width);
+            let owners = routes
+                .iter()
+                .filter(|route| {
+                    route.transport == bridge.transport && route.cells.contains(&position)
+                })
+                .map(|route| route.requirement_id.clone())
+                .collect::<BTreeSet<_>>();
+            let rotation = bridge
+                .rotations
+                .iter()
+                .find(|(_, selected)| solution.get_integer_value(*selected) == 1)
+                .map(|(rotation, _)| *rotation)
+                .expect("selected bridge has exactly one selected rotation");
+            PlacedLogisticsComponent {
+                id: super::super::retained::logistics_component_id(
+                    LogisticsComponentKind::Bridge,
+                    bridge.transport,
+                    position.x,
+                    position.y,
+                    &owners,
+                ),
+                component: bridge.component.clone(),
+                kind: LogisticsComponentKind::Bridge,
+                transport: bridge.transport,
+                position,
+                rotation,
+            }
+        })
         .collect();
 
     let mut report = IntegratedLayoutReport {
@@ -69,7 +105,7 @@ pub(in crate::layouts::integrated) fn extract_report(
         status,
         bounds: None,
         placements,
-        logistics_components: Vec::new(),
+        logistics_components,
         routes,
         phases: Vec::new(),
         exact: None,

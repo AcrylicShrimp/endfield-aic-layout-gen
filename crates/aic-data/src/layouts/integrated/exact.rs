@@ -18,6 +18,7 @@ use super::{
     IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRouteEndpoint, ModelInput,
     TransportKind, ValidatedLogisticsComponentCatalog, witness,
 };
+use crate::logistics::LogisticsComponentKind;
 
 mod extract;
 mod formulation;
@@ -25,8 +26,9 @@ mod metrics;
 
 use extract::extract_report;
 use formulation::{
-    external_endpoint_options, generate_candidates, grid_arcs, model_facility_endpoint_options,
-    post_acyclic_route_ordering, post_at_most_one, post_equals_one,
+    external_endpoint_options, generate_candidates, grid_arcs, incident_arcs_by_axis,
+    model_facility_endpoint_options, post_acyclic_route_ordering, post_at_most_one,
+    post_bridge_crossing, post_equals_one,
 };
 use metrics::{elapsed_millis, finish_report};
 
@@ -64,6 +66,17 @@ struct ModelRoute {
     source_options: Vec<EndpointOption>,
     target_options: Vec<EndpointOption>,
     arcs: Vec<Arc>,
+    route_cells: Vec<DomainId>,
+    horizontal_incident: Vec<Vec<DomainId>>,
+    vertical_incident: Vec<Vec<DomainId>>,
+}
+
+struct ModelBridge {
+    transport: TransportKind,
+    cell: usize,
+    component: String,
+    selected: DomainId,
+    rotations: Vec<(i64, DomainId)>,
 }
 
 pub(super) fn solve(
@@ -119,8 +132,6 @@ pub(super) fn solve(
     }
 
     let mut model_routes = Vec::with_capacity(input.edges.len());
-    let mut belt_route_cells_by_grid = vec![Vec::<DomainId>::new(); cell_count];
-    let mut pipe_route_cells_by_grid = vec![Vec::<DomainId>::new(); cell_count];
     let mut route_arc_variables = Vec::new();
     for (edge_index, edge) in input.edges.iter().enumerate() {
         let (source_options, target_options) = match (&edge.source, &edge.target) {
@@ -184,6 +195,8 @@ pub(super) fn solve(
 
         let (arcs, incoming, outgoing) =
             grid_arcs(&mut solver, edge_index, input.width, input.height);
+        let (horizontal_incident, vertical_incident) =
+            incident_arcs_by_axis(&arcs, cell_count, input.width);
         model_metrics.route_arc_variables += arcs.len();
         model_metrics.route_cell_variables += cell_count;
         model_metrics.route_order_variables += cell_count;
@@ -198,13 +211,11 @@ pub(super) fn solve(
             target_by_cell[option.cell].push(option.selected);
         }
 
+        let mut route_cells = Vec::with_capacity(cell_count);
         for cell in 0..cell_count {
             let route_cell =
                 solver.new_named_bounded_integer(0, 1, format!("route-{edge_index}-cell-{cell}"));
-            match edge.transport {
-                TransportKind::Belt => belt_route_cells_by_grid[cell].push(route_cell),
-                TransportKind::Pipe => pipe_route_cells_by_grid[cell].push(route_cell),
-            }
+            route_cells.push(route_cell);
 
             let mut conservation = Vec::new();
             conservation.extend(outgoing[cell].iter().map(|variable| variable.scaled(1)));
@@ -243,24 +254,69 @@ pub(super) fn solve(
             source_options,
             target_options,
             arcs,
+            route_cells,
+            horizontal_incident,
+            vertical_incident,
         });
     }
 
-    for cell in 0..cell_count {
-        for layer in [
-            &belt_route_cells_by_grid[cell],
-            &pipe_route_cells_by_grid[cell],
-        ] {
-            let exclusion = occupancy[cell]
+    let mut model_bridges = Vec::with_capacity(cell_count * 2);
+    for (transport, transport_name) in
+        [(TransportKind::Belt, "belt"), (TransportKind::Pipe, "pipe")]
+    {
+        let definition = logistics_components
+            .component_by_kind(transport, LogisticsComponentKind::Bridge)
+            .expect("validated catalog has every bridge capability");
+        let routes = model_routes
+            .iter()
+            .enumerate()
+            .filter(|(index, _)| input.edges[*index].transport == transport)
+            .collect::<Vec<_>>();
+        for cell in 0..cell_count {
+            let selected =
+                solver.new_named_bounded_integer(0, 1, format!("{transport_name}-bridge-{cell}"));
+            let rotations = definition
+                .allowed_rotations
                 .iter()
-                .chain(layer.iter())
-                .map(|variable| variable.scaled(1))
+                .map(|rotation| {
+                    (
+                        *rotation,
+                        solver.new_named_bounded_integer(
+                            0,
+                            1,
+                            format!("{transport_name}-bridge-{cell}-rotation-{rotation}"),
+                        ),
+                    )
+                })
                 .collect::<Vec<_>>();
-            if exclusion.len() > 1 {
-                solver
-                    .add_constraint(pumpkin_solver::less_than_or_equals(exclusion, 1, tag))
-                    .post();
-            }
+            let mut rotation_definition = rotations
+                .iter()
+                .map(|(_, variable)| variable.scaled(1))
+                .collect::<Vec<_>>();
+            rotation_definition.push(selected.scaled(-1));
+            solver
+                .add_constraint(pumpkin_solver::equals(rotation_definition, 0, tag))
+                .post();
+            let (owner_variables, crossing_constraints) = post_bridge_crossing(
+                &mut solver,
+                transport_name,
+                cell,
+                selected,
+                &occupancy[cell],
+                &routes,
+                tag,
+            );
+            model_metrics.bridge_variables += 1;
+            model_metrics.bridge_rotation_variables += rotations.len();
+            model_metrics.crossing_owner_variables += owner_variables;
+            model_metrics.crossing_constraints += crossing_constraints + 1;
+            model_bridges.push(ModelBridge {
+                transport,
+                cell,
+                component: definition.id.clone(),
+                selected,
+                rotations,
+            });
         }
     }
 
@@ -305,6 +361,7 @@ pub(super) fn solve(
             &input,
             &model_instances,
             &model_routes,
+            &model_bridges,
         ),
         OptimisationResult::Satisfiable(solution) | OptimisationResult::Stopped(solution, ()) => {
             extract_report(
@@ -313,6 +370,7 @@ pub(super) fn solve(
                 &input,
                 &model_instances,
                 &model_routes,
+                &model_bridges,
             )
         }
         OptimisationResult::Unsatisfiable => IntegratedLayoutReport::failure(

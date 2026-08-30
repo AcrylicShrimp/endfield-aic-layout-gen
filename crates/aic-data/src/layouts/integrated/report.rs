@@ -8,7 +8,7 @@ use crate::recipes::{FacilityInstanceWiringProjection, Rate};
 use super::{DeterministicCandidateKey, LayoutScore, WorldGridPosition};
 
 const STAGE: &str = "integrated-layout";
-pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 6;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 7;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -59,6 +59,10 @@ pub struct ExactModelMetrics {
     pub route_arc_variables: usize,
     pub route_order_variables: usize,
     pub acyclicity_constraints: usize,
+    pub bridge_variables: usize,
+    pub bridge_rotation_variables: usize,
+    pub crossing_owner_variables: usize,
+    pub crossing_constraints: usize,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]

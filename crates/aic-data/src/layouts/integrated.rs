@@ -750,6 +750,32 @@ mod tests {
         }
     }
 
+    fn corridor_facility(
+        id: &str,
+        width: i64,
+        height: i64,
+        port_x: i64,
+        port_y: i64,
+        direction: FacilityPortDirection,
+        edge: FacilityPortEdge,
+    ) -> FacilityDefinition {
+        FacilityDefinition {
+            id: id.to_string(),
+            footprint: FacilityFootprint { width, height },
+            allowed_rotations: vec![0],
+            ports: vec![FacilityPortDefinition {
+                id: "port".to_string(),
+                direction,
+                transport: TransportKind::Belt,
+                position: FacilityPortPosition {
+                    x: port_x,
+                    y: port_y,
+                },
+                edge,
+            }],
+        }
+    }
+
     fn wiring() -> FacilityInstanceWiringReport {
         FacilityInstanceWiringReport {
             schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
@@ -979,6 +1005,10 @@ mod tests {
         assert_eq!(exact.model.route_arc_variables, 6);
         assert_eq!(exact.model.route_order_variables, 4);
         assert_eq!(exact.model.acyclicity_constraints, 6);
+        assert_eq!(exact.model.bridge_variables, 8);
+        assert_eq!(exact.model.bridge_rotation_variables, 32);
+        assert_eq!(exact.model.crossing_owner_variables, 8);
+        assert_eq!(exact.model.crossing_constraints, 48);
         assert_eq!(exact.objective_route_cells, Some(1));
         assert_eq!(exact.proof, ExactProofStatus::ProvenOptimal);
         assert_eq!(exact.validation, ExactValidationStatus::Passed);
@@ -1665,6 +1695,135 @@ mod tests {
 
         assert!(!report.success);
         assert_eq!(report.status, IntegratedLayoutStatus::Infeasible);
+    }
+
+    #[test]
+    fn jointly_selects_and_extracts_a_perpendicular_belt_bridge() {
+        let facilities = ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
+            schema_version: 3,
+            facilities: vec![
+                corridor_facility(
+                    "top",
+                    7,
+                    2,
+                    3,
+                    1,
+                    FacilityPortDirection::Output,
+                    FacilityPortEdge::South,
+                ),
+                corridor_facility(
+                    "bottom",
+                    7,
+                    2,
+                    3,
+                    0,
+                    FacilityPortDirection::Input,
+                    FacilityPortEdge::North,
+                ),
+                corridor_facility(
+                    "left",
+                    2,
+                    3,
+                    1,
+                    1,
+                    FacilityPortDirection::Output,
+                    FacilityPortEdge::East,
+                ),
+                corridor_facility(
+                    "right",
+                    2,
+                    3,
+                    0,
+                    1,
+                    FacilityPortDirection::Input,
+                    FacilityPortEdge::West,
+                ),
+            ],
+        })
+        .expect("crossing fixture facilities should validate");
+        let items = ValidatedItemCatalog::try_from_catalog(ItemCatalog {
+            schema_version: SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+            items: vec![ItemDefinition {
+                id: "part".to_string(),
+                transport: TransportKind::Belt,
+            }],
+        })
+        .expect("crossing fixture items should validate");
+        let node = |id: &str, facility: &str| FacilityInstanceWiringNode::Facility {
+            id: id.to_string(),
+            recipe: id.to_string(),
+            facility: facility.to_string(),
+            index: 0,
+            runs_per_second: Rate {
+                numerator: 1,
+                denominator: 1,
+            },
+            work_seconds_per_second: Rate {
+                numerator: 1,
+                denominator: 1,
+            },
+            unused_capacity: Rate::zero(),
+        };
+        let wiring = FacilityInstanceWiringReport {
+            schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
+            success: true,
+            nodes: vec![
+                node("top-instance", "top"),
+                node("bottom-instance", "bottom"),
+                node("left-instance", "left"),
+                node("right-instance", "right"),
+            ],
+            edges: vec![
+                FacilityInstanceWiringEdge::original(
+                    "top-instance",
+                    "bottom-instance",
+                    "vertical",
+                    "part",
+                    Rate {
+                        numerator: 1,
+                        denominator: 1,
+                    },
+                ),
+                FacilityInstanceWiringEdge::original(
+                    "left-instance",
+                    "right-instance",
+                    "horizontal",
+                    "part",
+                    Rate {
+                        numerator: 1,
+                        denominator: 1,
+                    },
+                ),
+            ],
+            diagnostics: Vec::new(),
+        };
+
+        let report = solve_integrated_layout(
+            &wiring,
+            &facilities,
+            &items,
+            &transport_catalog(),
+            &logistics_component_catalog(),
+            &FacilityPlacementRequest {
+                schema_version: 2,
+                max_width: 7,
+                max_height: 7,
+            },
+        );
+
+        assert!(report.success, "{:#?}", report.diagnostics);
+        assert_eq!(report.status, IntegratedLayoutStatus::Optimal);
+        assert_eq!(report.routes.len(), 2);
+        assert_eq!(report.logistics_components.len(), 1);
+        let bridge = &report.logistics_components[0];
+        assert_eq!(bridge.kind, LogisticsComponentKind::Bridge);
+        assert_eq!(bridge.transport, TransportKind::Belt);
+        assert!(
+            report
+                .routes
+                .iter()
+                .all(|route| route.cells.contains(&bridge.position))
+        );
     }
 
     #[test]

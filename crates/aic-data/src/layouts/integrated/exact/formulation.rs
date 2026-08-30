@@ -5,7 +5,7 @@ use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 use super::super::{
     EndpointInput, InstanceInput, IntegratedRouteEndpoint, candidate_port_connections, grid_index,
 };
-use super::{Arc, Candidate, EndpointOption, ModelInstance};
+use super::{Arc, Candidate, EndpointOption, ModelInstance, ModelRoute};
 
 pub(in crate::layouts::integrated) fn generate_candidates(
     solver: &mut Solver,
@@ -181,6 +181,127 @@ pub(in crate::layouts::integrated) fn grid_arcs(
     (arcs, incoming, outgoing)
 }
 
+pub(in crate::layouts::integrated) fn incident_arcs_by_axis(
+    arcs: &[Arc],
+    cell_count: usize,
+    width: i32,
+) -> (Vec<Vec<DomainId>>, Vec<Vec<DomainId>>) {
+    let mut horizontal = vec![Vec::new(); cell_count];
+    let mut vertical = vec![Vec::new(); cell_count];
+    for arc in arcs {
+        let axis = if arc.from / width as usize == arc.to / width as usize {
+            &mut horizontal
+        } else {
+            &mut vertical
+        };
+        axis[arc.from].push(arc.selected);
+        axis[arc.to].push(arc.selected);
+    }
+    (horizontal, vertical)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn post_bridge_crossing(
+    solver: &mut Solver,
+    transport_name: &str,
+    cell: usize,
+    bridge: DomainId,
+    occupancy: &[DomainId],
+    routes: &[(usize, &ModelRoute)],
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> (usize, usize) {
+    let mut horizontal_owners = Vec::with_capacity(routes.len());
+    let mut vertical_owners = Vec::with_capacity(routes.len());
+    for (route_index, route) in routes {
+        let horizontal_owner = solver.new_named_bounded_integer(
+            0,
+            1,
+            format!("{transport_name}-bridge-{cell}-horizontal-route-{route_index}"),
+        );
+        let vertical_owner = solver.new_named_bounded_integer(
+            0,
+            1,
+            format!("{transport_name}-bridge-{cell}-vertical-route-{route_index}"),
+        );
+        let mut horizontal_straight = route.horizontal_incident[cell]
+            .iter()
+            .map(|variable| variable.scaled(1))
+            .collect::<Vec<_>>();
+        horizontal_straight.push(horizontal_owner.scaled(-2));
+        solver
+            .add_constraint(pumpkin_solver::greater_than_or_equals(
+                horizontal_straight,
+                0,
+                tag,
+            ))
+            .post();
+        let mut vertical_straight = route.vertical_incident[cell]
+            .iter()
+            .map(|variable| variable.scaled(1))
+            .collect::<Vec<_>>();
+        vertical_straight.push(vertical_owner.scaled(-2));
+        solver
+            .add_constraint(pumpkin_solver::greater_than_or_equals(
+                vertical_straight,
+                0,
+                tag,
+            ))
+            .post();
+        horizontal_owners.push(horizontal_owner);
+        vertical_owners.push(vertical_owner);
+    }
+
+    let mut horizontal_definition = horizontal_owners
+        .iter()
+        .map(|variable| variable.scaled(1))
+        .collect::<Vec<_>>();
+    horizontal_definition.push(bridge.scaled(-1));
+    solver
+        .add_constraint(pumpkin_solver::equals(horizontal_definition, 0, tag))
+        .post();
+    let mut vertical_definition = vertical_owners
+        .iter()
+        .map(|variable| variable.scaled(1))
+        .collect::<Vec<_>>();
+    vertical_definition.push(bridge.scaled(-1));
+    solver
+        .add_constraint(pumpkin_solver::equals(vertical_definition, 0, tag))
+        .post();
+
+    let route_cells = routes
+        .iter()
+        .map(|(_, route)| route.route_cells[cell])
+        .collect::<Vec<_>>();
+    let mut minimum_crossing_occupancy = route_cells
+        .iter()
+        .map(|variable| variable.scaled(1))
+        .collect::<Vec<_>>();
+    minimum_crossing_occupancy.push(bridge.scaled(-2));
+    solver
+        .add_constraint(pumpkin_solver::greater_than_or_equals(
+            minimum_crossing_occupancy,
+            0,
+            tag,
+        ))
+        .post();
+
+    let mut maximum_occupancy = occupancy
+        .iter()
+        .chain(route_cells.iter())
+        .map(|variable| variable.scaled(1))
+        .collect::<Vec<_>>();
+    maximum_occupancy.push(bridge.scaled(-1));
+    solver
+        .add_constraint(pumpkin_solver::less_than_or_equals(
+            maximum_occupancy,
+            1,
+            tag,
+        ))
+        .post();
+
+    (routes.len() * 2, routes.len() * 2 + 4)
+}
+
 pub(in crate::layouts::integrated) fn post_acyclic_route_ordering(
     solver: &mut Solver,
     edge_index: usize,
@@ -251,7 +372,71 @@ mod tests {
     use pumpkin_solver::core::results::SatisfactionResult;
     use pumpkin_solver::core::termination::Indefinite;
 
-    use super::{Arc, post_acyclic_route_ordering};
+    use super::{Arc, post_acyclic_route_ordering, post_bridge_crossing};
+    use crate::layouts::integrated::exact::ModelRoute;
+
+    fn fixed_route(
+        solver: &mut Solver,
+        tag: pumpkin_solver::core::proof::ConstraintTag,
+        name: &str,
+        horizontal: bool,
+    ) -> ModelRoute {
+        let route_cell = solver.new_named_bounded_integer(0, 1, format!("{name}-cell"));
+        solver.add_clause([route_cell.equality_predicate(1)], tag);
+        let first = solver.new_named_bounded_integer(0, 1, format!("{name}-first"));
+        let second = solver.new_named_bounded_integer(0, 1, format!("{name}-second"));
+        solver.add_clause([first.equality_predicate(1)], tag);
+        solver.add_clause([second.equality_predicate(1)], tag);
+        ModelRoute {
+            source_options: Vec::new(),
+            target_options: Vec::new(),
+            arcs: Vec::new(),
+            route_cells: vec![route_cell],
+            horizontal_incident: vec![if horizontal {
+                vec![first, second]
+            } else {
+                Vec::new()
+            }],
+            vertical_incident: vec![if horizontal {
+                Vec::new()
+            } else {
+                vec![first, second]
+            }],
+        }
+    }
+
+    fn crossing_is_satisfiable(horizontal_routes: usize, vertical_routes: usize) -> bool {
+        let mut solver = Solver::default();
+        let tag = solver.new_constraint_tag();
+        let bridge = solver.new_named_bounded_integer(0, 1, "bridge");
+        solver.add_clause([bridge.equality_predicate(1)], tag);
+        let mut routes = Vec::new();
+        for index in 0..horizontal_routes {
+            routes.push(fixed_route(
+                &mut solver,
+                tag,
+                &format!("horizontal-{index}"),
+                true,
+            ));
+        }
+        for index in 0..vertical_routes {
+            routes.push(fixed_route(
+                &mut solver,
+                tag,
+                &format!("vertical-{index}"),
+                false,
+            ));
+        }
+        let indexed = routes.iter().enumerate().collect::<Vec<_>>();
+        post_bridge_crossing(&mut solver, "belt", 0, bridge, &[], &indexed, tag);
+
+        let mut brancher = solver.default_brancher();
+        let mut resolver = ResolutionResolver::default();
+        matches!(
+            solver.satisfy(&mut brancher, &mut Indefinite, &mut resolver),
+            SatisfactionResult::Satisfiable(_)
+        )
+    }
 
     #[test]
     fn route_ordering_rejects_a_disconnected_directed_cycle() {
@@ -285,5 +470,15 @@ mod tests {
         let result = solver.satisfy(&mut brancher, &mut Indefinite, &mut resolver);
 
         assert!(matches!(result, SatisfactionResult::Unsatisfiable(_, _, _)));
+    }
+
+    #[test]
+    fn bridge_accepts_exactly_one_horizontal_and_one_vertical_route() {
+        assert!(crossing_is_satisfiable(1, 1));
+    }
+
+    #[test]
+    fn bridge_rejects_two_parallel_routes() {
+        assert!(!crossing_is_satisfiable(2, 0));
     }
 }
