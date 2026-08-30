@@ -4,8 +4,8 @@ use std::time::{Duration, Instant};
 use crate::facilities::ValidatedFacilityCatalog;
 use crate::layouts::growth::plan_facility_growth;
 use crate::layouts::placement::{
-    solve_anchored_facility_placement_with_time_limit,
     solve_facility_placement_feasibly_with_time_limit,
+    solve_hinted_facility_placement_with_time_limit,
 };
 use crate::layouts::{FacilityPlacement, FacilityPlacementRequest, FacilityPlacementStatus};
 use crate::logistics::{
@@ -23,8 +23,6 @@ use super::{
     IntegratedLayoutReport, IntegratedLayoutStatus, PRODUCTION_FACILITY_GAP,
     frame_placements_for_routing, prepare_model, route_turn_count, sparse,
 };
-
-const ANCHOR_RADII: [i64; 3] = [0, 4, 12];
 
 #[allow(clippy::too_many_arguments)]
 pub fn construct_iterative_scc_layout_with_time_limit(
@@ -98,49 +96,36 @@ pub fn construct_iterative_scc_layout_with_time_limit(
             }
         };
 
-        let attempts = if anchors.is_empty() {
-            vec![None]
+        let placement = if anchors.is_empty() {
+            solve_facility_placement_feasibly_with_time_limit(
+                &partial_wiring,
+                facilities,
+                request,
+                PRODUCTION_FACILITY_GAP,
+                time_limit,
+            )
         } else {
-            ANCHOR_RADII
-                .into_iter()
-                .map(Some)
-                .chain(std::iter::once(None))
-                .collect()
+            solve_hinted_facility_placement_with_time_limit(
+                &partial_wiring,
+                facilities,
+                request,
+                PRODUCTION_FACILITY_GAP,
+                &anchors,
+                time_limit,
+            )
         };
-        let mut attempt_reports = Vec::with_capacity(attempts.len());
+        let mut attempt_reports = Vec::with_capacity(2);
         let mut selected = None;
-
-        for movement_radius in attempts {
-            let placement = match movement_radius {
-                Some(radius) => solve_anchored_facility_placement_with_time_limit(
-                    &partial_wiring,
-                    facilities,
-                    request,
-                    PRODUCTION_FACILITY_GAP,
-                    &anchors,
-                    radius,
-                    time_limit,
-                ),
-                None => solve_facility_placement_feasibly_with_time_limit(
-                    &partial_wiring,
-                    facilities,
-                    request,
-                    PRODUCTION_FACILITY_GAP,
-                    time_limit,
-                ),
-            };
-            if !placement.success {
-                attempt_reports.push(IntegratedLayoutPhaseAttempt {
-                    movement_radius,
-                    status: placement_status(placement.status),
-                    diagnostic_code: placement
-                        .diagnostics
-                        .first()
-                        .map(|diagnostic| diagnostic.code.to_string()),
-                });
-                continue;
-            }
-
+        if !placement.success {
+            attempt_reports.push(IntegratedLayoutPhaseAttempt {
+                placement_hint_count: anchors.len(),
+                status: placement_status(placement.status),
+                diagnostic_code: placement
+                    .diagnostics
+                    .first()
+                    .map(|diagnostic| diagnostic.code.to_string()),
+            });
+        } else {
             let input = match prepare_model(&partial_wiring, facilities, items, transports, request)
             {
                 Ok(input) => input,
@@ -153,27 +138,26 @@ pub fn construct_iterative_scc_layout_with_time_limit(
                     return report;
                 }
             };
-            let Some(framed_placements) = frame_placements_for_routing(
+            let framed_placements = frame_placements_for_routing(
                 placement.placements,
                 request.max_width,
                 request.max_height,
-            ) else {
-                attempt_reports.push(IntegratedLayoutPhaseAttempt {
-                    movement_radius,
-                    status: IntegratedLayoutStatus::Unknown,
-                    diagnostic_code: Some("iterative-routing-frame-does-not-fit".to_string()),
-                });
-                continue;
-            };
-            let mut routed = sparse::construct_from_placements(
-                input,
-                logistics_components,
-                framed_placements,
-                routing_deadline(time_limit),
             );
-            if !routed.success && movement_radius.is_none() {
-                let fallback_input =
-                    match prepare_model(&partial_wiring, facilities, items, transports, request) {
+            if let Some(framed_placements) = framed_placements {
+                let mut routed = sparse::construct_from_placements(
+                    input,
+                    logistics_components,
+                    framed_placements,
+                    routing_deadline(time_limit),
+                );
+                if !routed.success {
+                    let fallback_input = match prepare_model(
+                        &partial_wiring,
+                        facilities,
+                        items,
+                        transports,
+                        request,
+                    ) {
                         Ok(input) => input,
                         Err(diagnostic) => {
                             let mut report = IntegratedLayoutReport::failure(
@@ -184,29 +168,35 @@ pub fn construct_iterative_scc_layout_with_time_limit(
                             return report;
                         }
                     };
-                routed = sparse::construct(fallback_input, logistics_components);
-            }
-            attempt_reports.push(IntegratedLayoutPhaseAttempt {
-                movement_radius,
-                status: routed.status,
-                diagnostic_code: routed
-                    .diagnostics
-                    .first()
-                    .map(|diagnostic| diagnostic.code.to_string()),
-            });
-            if routed.success {
-                selected = Some((movement_radius, routed));
-                break;
+                    routed = sparse::construct(fallback_input, logistics_components);
+                }
+                attempt_reports.push(IntegratedLayoutPhaseAttempt {
+                    placement_hint_count: anchors.len(),
+                    status: routed.status,
+                    diagnostic_code: routed
+                        .diagnostics
+                        .first()
+                        .map(|diagnostic| diagnostic.code.to_string()),
+                });
+                if routed.success {
+                    selected = Some(routed);
+                }
+            } else {
+                attempt_reports.push(IntegratedLayoutPhaseAttempt {
+                    placement_hint_count: anchors.len(),
+                    status: IntegratedLayoutStatus::Unknown,
+                    diagnostic_code: Some("iterative-routing-frame-does-not-fit".to_string()),
+                });
             }
         }
 
-        let Some((selected_movement_radius, mut phase_report)) = selected else {
+        let Some(mut phase_report) = selected else {
             let attempt_summary = attempt_reports
                 .iter()
                 .map(|attempt| {
                     format!(
-                        "radius={:?}, status={:?}, diagnostic={}",
-                        attempt.movement_radius,
+                        "placement_hints={}, status={:?}, diagnostic={}",
+                        attempt.placement_hint_count,
                         attempt.status,
                         attempt.diagnostic_code.as_deref().unwrap_or("none"),
                     )
@@ -251,7 +241,7 @@ pub fn construct_iterative_scc_layout_with_time_limit(
             introduced_components: phase.components.clone(),
             introduced_facilities: phase.facilities.clone(),
             cumulative_facility_count: cumulative_facilities.len(),
-            selected_movement_radius,
+            prior_placement_hint_count: anchors.len(),
             bounds,
             placements: phase_report.placements.clone(),
             logistics_components: phase_report.logistics_components.clone(),
@@ -265,10 +255,10 @@ pub fn construct_iterative_scc_layout_with_time_limit(
             "iterative-scc-phase-solved",
             format!("phase:{}", phase.index),
             format!(
-                "solved output-first SCC growth phase {} with {} cumulative facilities using movement radius {:?}",
+                "solved output-first SCC growth phase {} with {} cumulative facilities using {} prior coordinate hints without movement constraints",
                 phase.index,
                 cumulative_facilities.len(),
-                selected_movement_radius,
+                anchors.len(),
             ),
         ));
         latest_success = Some(phase_report);

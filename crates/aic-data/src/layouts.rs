@@ -26,8 +26,8 @@ pub use integrated::{
 pub use placement::{
     FacilityPlacement, FacilityPlacementBounds, FacilityPlacementDiagnostic,
     FacilityPlacementReport, FacilityPlacementRequest, FacilityPlacementStatus,
-    SUPPORTED_FACILITY_PLACEMENT_SCHEMA_VERSION, solve_anchored_facility_placement_with_time_limit,
-    solve_facility_placement, validate_facility_placement_request,
+    SUPPORTED_FACILITY_PLACEMENT_SCHEMA_VERSION, solve_facility_placement,
+    validate_facility_placement_request,
 };
 pub use ports::{
     FacilityPortProjectionDiagnostic, FacilityPortProjectionReport, PlacedFacilityPort,

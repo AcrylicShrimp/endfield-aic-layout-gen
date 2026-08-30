@@ -86,7 +86,7 @@ pub struct IntegratedLayoutPhase {
     pub introduced_components: Vec<String>,
     pub introduced_facilities: Vec<String>,
     pub cumulative_facility_count: usize,
-    pub selected_movement_radius: Option<i64>,
+    pub prior_placement_hint_count: usize,
     pub bounds: FacilityPlacementBounds,
     pub placements: Vec<FacilityPlacement>,
     pub logistics_components: Vec<PlacedLogisticsComponent>,
@@ -99,7 +99,7 @@ pub struct IntegratedLayoutPhase {
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct IntegratedLayoutPhaseAttempt {
-    pub movement_radius: Option<i64>,
+    pub placement_hint_count: usize,
     pub status: IntegratedLayoutStatus,
     pub diagnostic_code: Option<String>,
 }

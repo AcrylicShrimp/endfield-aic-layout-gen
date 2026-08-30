@@ -367,13 +367,10 @@ fn page_metrics(page: &RenderPage<'_>) -> String {
         .filter(|component| component.kind == LogisticsComponentKind::Bridge)
         .count();
     let phase_detail = page.phase.map_or_else(String::new, |phase| {
-        let radius = phase
-            .selected_movement_radius
-            .map_or_else(|| "global".to_string(), |radius| radius.to_string());
         format!(
-            " · +{} facilities · radius {} · {} turns",
+            " · +{} facilities · {} prior hints · {} turns",
             phase.introduced_facilities.len(),
-            radius,
+            phase.prior_placement_hint_count,
             phase.route_turns,
         )
     });
@@ -870,7 +867,7 @@ mod tests {
             introduced_components: vec![format!("component:{index:04}")],
             introduced_facilities: vec!["facility:<one>".to_string()],
             cumulative_facility_count: 1,
-            selected_movement_radius: if index == 0 { None } else { Some(0) },
+            prior_placement_hint_count: usize::from(index > 0),
             bounds: report.bounds.clone().expect("test report has bounds"),
             placements: report.placements.clone(),
             logistics_components: report.logistics_components.clone(),
