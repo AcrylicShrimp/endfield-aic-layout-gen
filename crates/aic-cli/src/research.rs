@@ -23,6 +23,8 @@ use anyhow::{Context, Result, ensure};
 use clap::Subcommand;
 use sha2::{Digest, Sha256};
 
+mod first_phase;
+
 #[derive(Debug, Subcommand)]
 pub(crate) enum ResearchCommand {
     /// Validate a benchmark workload identity without building a solver model.
@@ -49,6 +51,32 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "FILE")]
         output: Option<PathBuf>,
     },
+    /// Solve only cumulative SCC phase 0 for a controlled exact-model experiment.
+    SolveFirstPhase {
+        /// Benchmark workload manifest JSON file to solve.
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+
+        /// Root used to resolve portable input paths in the workload manifest.
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Exact solver wall-clock budget in milliseconds.
+        #[arg(long, value_name = "MILLISECONDS")]
+        time_limit_ms: u64,
+
+        /// JSON artifact path.
+        #[arg(long, value_name = "FILE")]
+        output: PathBuf,
+
+        /// Optional standalone HTML result, including structured failure evidence.
+        #[arg(long, value_name = "FILE")]
+        visualization_output: Option<PathBuf>,
+    },
 }
 
 pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
@@ -60,6 +88,21 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             placement_request,
             output,
         } => analyze_workload(workload, workspace_root, placement_request, output),
+        ResearchCommand::SolveFirstPhase {
+            workload,
+            workspace_root,
+            placement_request,
+            time_limit_ms,
+            output,
+            visualization_output,
+        } => first_phase::solve(
+            workload,
+            workspace_root,
+            placement_request,
+            time_limit_ms,
+            output,
+            visualization_output,
+        ),
     }
 }
 
@@ -72,14 +115,14 @@ fn validate_workload(file: PathBuf) -> Result<bool> {
     Ok(report.valid)
 }
 
-struct ResolvedWorkloadPaths {
-    recipes: PathBuf,
-    source_plan: PathBuf,
-    facility_catalog: PathBuf,
-    item_catalog: PathBuf,
-    transport_catalog: PathBuf,
-    logistics_component_catalog: PathBuf,
-    localization_catalog: Option<PathBuf>,
+pub(super) struct ResolvedWorkloadPaths {
+    pub(super) recipes: PathBuf,
+    pub(super) source_plan: PathBuf,
+    pub(super) facility_catalog: PathBuf,
+    pub(super) item_catalog: PathBuf,
+    pub(super) transport_catalog: PathBuf,
+    pub(super) logistics_component_catalog: PathBuf,
+    pub(super) localization_catalog: Option<PathBuf>,
 }
 
 fn analyze_workload(
@@ -224,7 +267,7 @@ fn analyze_workload(
     Ok(true)
 }
 
-fn load_contextual_recipe_request(
+pub(super) fn load_contextual_recipe_request(
     recipes: &Path,
     source_plan: &Path,
 ) -> Result<(ValidatedRecipeBook, RecipeSourcePlanRequest)> {
@@ -246,7 +289,7 @@ fn load_contextual_recipe_request(
     Ok((book, source_plan))
 }
 
-fn resolve_workload_paths(
+pub(super) fn resolve_workload_paths(
     workspace_root: &Path,
     inputs: &BenchmarkWorkloadInputs,
 ) -> ResolvedWorkloadPaths {

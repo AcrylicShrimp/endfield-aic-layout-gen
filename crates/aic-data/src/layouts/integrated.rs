@@ -77,6 +77,27 @@ pub fn solve_integrated_layout_with_time_limit(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
+pub fn solve_first_integrated_layout_phase_with_time_limit(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    time_limit: Duration,
+) -> IntegratedLayoutReport {
+    harness::solve_first_iterative_scc_phase(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+        time_limit,
+    )
+}
+
 fn solve_integrated_layout_with_optional_time_limit(
     instance_wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,

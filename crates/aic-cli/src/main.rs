@@ -1710,4 +1710,45 @@ mod tests {
         assert_eq!(placement_request, PathBuf::from("bounds.json"));
         assert_eq!(output, Some(PathBuf::from("report.json")));
     }
+
+    #[test]
+    fn parses_first_phase_research_solve_with_explicit_budget() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "solve-first-phase",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--time-limit-ms",
+            "5000",
+            "--output",
+            "report.json",
+            "--visualization-output",
+            "report.html",
+        ])
+        .expect("first-phase research solve CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::SolveFirstPhase {
+                    workload,
+                    workspace_root,
+                    placement_request,
+                    time_limit_ms,
+                    output,
+                    visualization_output,
+                },
+        } = cli.command
+        else {
+            panic!("expected first-phase research solve command")
+        };
+        assert_eq!(workload, PathBuf::from("workload.json"));
+        assert_eq!(workspace_root, PathBuf::from("."));
+        assert_eq!(placement_request, PathBuf::from("bounds.json"));
+        assert_eq!(time_limit_ms, 5_000);
+        assert_eq!(output, PathBuf::from("report.json"));
+        assert_eq!(visualization_output, Some(PathBuf::from("report.html")));
+    }
 }
