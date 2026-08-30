@@ -1564,9 +1564,6 @@ fn write_layout_visualization(
     let Some(output) = output else {
         return Ok(());
     };
-    if !layout.success {
-        return Ok(());
-    }
     let html = render_integrated_layout_html_with_localization(layout, localization).map_err(
         |diagnostic| {
             anyhow::anyhow!(

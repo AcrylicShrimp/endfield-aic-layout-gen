@@ -28,12 +28,12 @@ pub fn render_integrated_layout_html_with_localization(
     report: &IntegratedLayoutReport,
     localization: Option<&ValidatedLocalizationCatalog>,
 ) -> Result<String, IntegratedLayoutDiagnostic> {
-    if !report.success {
+    if !report.success && report.phases.is_empty() {
         return Err(IntegratedLayoutDiagnostic::error(
-            "layout-visualization-requires-success",
-            "/",
+            "layout-visualization-has-no-snapshots",
+            "/phases",
             None,
-            "layout visualization requires a successful integrated layout report",
+            "failed layout visualization requires at least one completed phase snapshot",
         ));
     }
     let pages = collect_pages(report)?;
@@ -46,6 +46,11 @@ pub fn render_integrated_layout_html_with_localization(
         .map(|route| route.cells.len())
         .sum::<usize>();
     let final_metrics = page_metrics(final_page);
+    let run_status = if report.success {
+        "<span class=\"run-status success\">FEASIBLE</span>"
+    } else {
+        "<span class=\"run-status failure\">FAILED · PARTIAL HISTORY</span>"
+    };
     let mut html = String::with_capacity(total_route_cells.saturating_mul(10).max(32_768));
     write!(
         html,
@@ -62,6 +67,9 @@ pub fn render_integrated_layout_html_with_localization(
   #aic-layout-viewer {{ height: 100vh; display: grid; grid-template-rows: auto 1fr; }}
   .toolbar {{ display: flex; align-items: center; gap: 14px; min-height: 48px; padding: 8px 12px; border-bottom: 1px solid #294153; background: #0b1722; flex-wrap: wrap; }}
   .title {{ color: #f2f8ff; font-weight: 700; letter-spacing: .04em; }}
+  .run-status {{ border: 1px solid currentColor; padding: 3px 6px; font-size: 11px; }}
+  .run-status.success {{ color: #6ff2bd; }}
+  .run-status.failure {{ color: #ff6b9c; }}
   .metrics {{ color: #8ba8bd; font-size: 12px; margin-right: auto; }}
   .phase-nav {{ display: inline-flex; align-items: center; gap: 7px; }}
   .phase-label {{ min-width: 92px; color: #cbe7f8; font-size: 12px; text-align: center; }}
@@ -111,6 +119,7 @@ pub fn render_integrated_layout_html_with_localization(
 <div id="aic-layout-viewer">
   <div class="toolbar">
     <span class="title">AIC LAYOUT WIREFRAME</span>
+    {}
     <span class="phase-nav"><button type="button" data-previous>Previous</button><span class="phase-label" data-phase-label></span><button type="button" data-next>Next</button></span>
     <span class="metrics" data-metrics>{}</span>
     <button type="button" data-toggle="belt-layer" aria-pressed="true"><span class="swatch belt-swatch"></span>Belt (<span data-belt-summary>{}</span>)</button>
@@ -127,6 +136,7 @@ pub fn render_integrated_layout_html_with_localization(
         <pattern id="major-grid" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="url(#minor-grid)"/><path class="grid-major" d="M 10 0 L 0 0 0 10" fill="none"/></pattern>
       </defs>
 "##,
+        run_status,
         final_metrics,
         transport_summary(final_page.routes, TransportKind::Belt),
         transport_summary(final_page.routes, TransportKind::Pipe),
@@ -138,7 +148,14 @@ pub fn render_integrated_layout_html_with_localization(
     .expect("writing to String cannot fail");
 
     for (index, page) in pages.iter().enumerate() {
-        render_page(&mut html, page, index, pages.len(), localization);
+        render_page(
+            &mut html,
+            page,
+            index,
+            pages.len(),
+            !report.success && index + 1 == pages.len(),
+            localization,
+        );
     }
 
     html.push_str(
@@ -301,6 +318,7 @@ fn render_page(
     page: &RenderPage<'_>,
     index: usize,
     page_count: usize,
+    partial_final: bool,
     localization: Option<&ValidatedLocalizationCatalog>,
 ) {
     let width = page.bounds.width.max(1);
@@ -310,10 +328,13 @@ fn render_page(
     } else {
         " hidden-phase"
     };
-    let phase_label = page.phase.map_or_else(
+    let mut phase_label = page.phase.map_or_else(
         || "Final layout".to_string(),
         |phase| format!("Phase {}/{}", phase.index + 1, page_count),
     );
+    if partial_final {
+        phase_label.push_str(" · last valid");
+    }
     writeln!(
         html,
         "      <g class=\"phase-page{hidden}\" data-base-view=\"-2 -2 {} {}\" data-phase-label=\"{}\" data-metrics=\"{}\" data-belt-summary=\"{}\" data-pipe-summary=\"{}\">",
@@ -990,18 +1011,32 @@ mod tests {
         assert!(html.contains("facility:&lt;one&gt;"));
         assert!(html.contains("recipe&amp;one"));
         assert!(!html.contains("https://"));
+
+        report.success = false;
+        report.status = IntegratedLayoutStatus::Unknown;
+        report.diagnostics.push(IntegratedLayoutDiagnostic::error(
+            "later-phase-failed",
+            "/phases/2",
+            Some("phase:2".to_string()),
+            "the next phase failed",
+        ));
+        let partial = render_integrated_layout_html(&report)
+            .expect("failed layout with completed snapshots should render automatically");
+        assert!(partial.contains("FAILED · PARTIAL HISTORY"));
+        assert!(partial.contains("Phase 2/2 · last valid"));
+        assert_eq!(partial.matches("class=\"phase-page").count(), 2);
     }
 
     #[test]
-    fn rejects_a_failed_layout_report() {
+    fn rejects_a_failed_layout_without_completed_snapshots() {
         let report = IntegratedLayoutReport::invalid(IntegratedLayoutDiagnostic::error(
             "test", "/", None, "test",
         ));
 
         let diagnostic = render_integrated_layout_html(&report)
-            .expect_err("failed layout should not render a misleading wireframe");
+            .expect_err("failed layout without history has no geometry to render");
 
-        assert_eq!(diagnostic.code, "layout-visualization-requires-success");
+        assert_eq!(diagnostic.code, "layout-visualization-has-no-snapshots");
     }
 
     #[test]
