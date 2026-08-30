@@ -17,7 +17,8 @@ use crate::recipes::{
 };
 
 use super::{
-    ExactProofStatus, ExactValidationStatus, IntegratedLayoutStatus, solve_integrated_layout,
+    ExactObjectiveKind, ExactObjectiveValue, ExactProofStatus, ExactValidationStatus,
+    IntegratedLayoutStatus, solve_integrated_layout,
 };
 
 fn facility(
@@ -338,6 +339,34 @@ fn exact_solver_jointly_places_selects_ports_routes_and_validates() {
     assert_eq!(exact.model.network_terminal_count, 2);
     assert_eq!(exact.model.external_terminal_count, 0);
     assert!(exact.model.network_flow_variables > 0);
+    assert!(exact.model.objective_variables > 0);
+    assert_eq!(
+        exact.objective,
+        Some(ExactObjectiveValue {
+            used_bounding_box_area: 3,
+            physical_transport_tiles: 1,
+            total_route_turns: 0,
+            maximum_used_side: 3,
+            logistics_component_count: 0,
+        })
+    );
+    assert_eq!(
+        exact
+            .objective_stages
+            .iter()
+            .map(|stage| stage.objective)
+            .collect::<Vec<_>>(),
+        vec![
+            ExactObjectiveKind::UsedBoundingBoxArea,
+            ExactObjectiveKind::PhysicalTransportTiles,
+            ExactObjectiveKind::TotalRouteTurns,
+            ExactObjectiveKind::MaximumUsedSide,
+            ExactObjectiveKind::LogisticsComponentCount,
+        ]
+    );
+    assert!(exact.objective_stages.iter().all(|stage| {
+        stage.proof == ExactProofStatus::ProvenOptimal && stage.incumbent == stage.best_bound
+    }));
     assert_eq!(exact.proof, ExactProofStatus::ProvenOptimal);
     assert_eq!(exact.validation, ExactValidationStatus::Passed);
 }

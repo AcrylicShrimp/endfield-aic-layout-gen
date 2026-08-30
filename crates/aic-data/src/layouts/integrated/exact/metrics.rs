@@ -1,8 +1,9 @@
 use std::time::Duration;
 
 use super::super::{
-    ExactModelMetrics, ExactProofStatus, ExactSolveReport, ExactTerminationReason,
-    ExactValidationStatus, IntegratedLayoutReport, IntegratedLayoutStatus,
+    ExactModelMetrics, ExactObjectiveStageReport, ExactObjectiveValue, ExactProofStatus,
+    ExactSolveReport, ExactTerminationReason, ExactValidationStatus, IntegratedLayoutReport,
+    IntegratedLayoutStatus, LayoutScore,
 };
 
 pub(super) fn finish_report(
@@ -12,6 +13,7 @@ pub(super) fn finish_report(
     search_ms: u64,
     observed_incumbents: usize,
     validation: ExactValidationStatus,
+    objective_stages: Vec<ExactObjectiveStageReport>,
 ) -> IntegratedLayoutReport {
     let (termination, proof) = match report.status {
         IntegratedLayoutStatus::Optimal => (
@@ -29,15 +31,15 @@ pub(super) fn finish_report(
             (ExactTerminationReason::Unknown, ExactProofStatus::Unproven)
         }
     };
-    let objective_route_cells = report.success.then(|| {
-        report
-            .transport_networks
-            .iter()
-            .map(|network| network.cells.len())
-            .sum()
+    let objective = LayoutScore::from_report(&report, &[]).map(|score| ExactObjectiveValue {
+        used_bounding_box_area: score.used_bounding_box_area,
+        physical_transport_tiles: score.physical_transport_tiles,
+        total_route_turns: score.total_route_turns,
+        maximum_used_side: score.maximum_used_side,
+        logistics_component_count: score.logistics_component_count,
     });
     report.exact = Some(ExactSolveReport {
-        formulation: "joint-commodity-components-v3",
+        formulation: "joint-lexicographic-layout-v4",
         model,
         construction_ms,
         search_ms,
@@ -46,10 +48,8 @@ pub(super) fn finish_report(
         } else {
             observed_incumbents
         },
-        objective_route_cells,
-        best_bound_route_cells: (proof == ExactProofStatus::ProvenOptimal)
-            .then_some(objective_route_cells)
-            .flatten(),
+        objective,
+        objective_stages,
         termination,
         proof,
         validation,

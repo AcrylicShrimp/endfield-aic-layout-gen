@@ -28,11 +28,12 @@ use model::{
     required_facility_area,
 };
 pub use report::{
-    ExactModelMetrics, ExactProofStatus, ExactSolveReport, ExactTerminationReason,
-    ExactValidationStatus, INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic,
-    IntegratedLayoutPhase, IntegratedLayoutPhaseAttempt, IntegratedLayoutPhaseOptimization,
-    IntegratedLayoutReport, IntegratedLayoutStatus, PlacedLogisticsComponent, TransportNetwork,
-    TransportNetworkEndpoint, TransportNetworkSegment, TransportNetworkTerminal,
+    ExactModelMetrics, ExactObjectiveKind, ExactObjectiveStageReport, ExactObjectiveValue,
+    ExactProofStatus, ExactSolveReport, ExactTerminationReason, ExactValidationStatus,
+    INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic, IntegratedLayoutPhase,
+    IntegratedLayoutPhaseAttempt, IntegratedLayoutPhaseOptimization, IntegratedLayoutReport,
+    IntegratedLayoutStatus, PlacedLogisticsComponent, TransportNetwork, TransportNetworkEndpoint,
+    TransportNetworkSegment, TransportNetworkTerminal,
 };
 pub use score::{DeterministicCandidateKey, LayoutScore};
 

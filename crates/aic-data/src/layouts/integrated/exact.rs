@@ -1,22 +1,14 @@
 use std::collections::{BTreeMap, BTreeSet};
-use std::ops::ControlFlow;
-use std::sync::Arc as Shared;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
 use pumpkin_solver::Solver;
-use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
-use pumpkin_solver::core::DefaultBrancher;
-use pumpkin_solver::core::optimisation::OptimisationDirection;
-use pumpkin_solver::core::optimisation::linear_sat_unsat::LinearSatUnsat;
-use pumpkin_solver::core::results::{OptimisationResult, SolutionReference};
-use pumpkin_solver::core::termination::TimeBudget;
 use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
 use super::{
-    EndpointInput, ExactModelMetrics, FacilityPortEdge, InstanceInput, IntegratedLayoutDiagnostic,
-    IntegratedLayoutReport, IntegratedLayoutStatus, ModelInput, TransportKind,
-    TransportNetworkEndpoint, ValidatedLogisticsComponentCatalog, witness,
+    EndpointInput, ExactModelMetrics, ExactObjectiveKind, ExactObjectiveStageReport,
+    FacilityPortEdge, InstanceInput, IntegratedLayoutDiagnostic, IntegratedLayoutReport,
+    IntegratedLayoutStatus, LayoutScore, ModelInput, TransportKind, TransportNetworkEndpoint,
+    ValidatedLogisticsComponentCatalog, witness,
 };
 use crate::facilities::FacilityPortDirection;
 use crate::logistics::CardinalDirection;
@@ -25,6 +17,7 @@ use crate::logistics::LogisticsComponentKind;
 mod extract;
 mod formulation;
 mod metrics;
+mod objective;
 
 use extract::extract_report;
 use formulation::{
@@ -34,6 +27,7 @@ use formulation::{
     post_bridge_crossing, post_equals_one,
 };
 use metrics::{elapsed_millis, finish_report};
+use objective::{build_objectives, optimise_lexicographically};
 
 struct Candidate {
     rotation: i64,
@@ -337,7 +331,6 @@ pub(super) fn solve(
 
     let mut model_networks = Vec::with_capacity(input.networks.len());
     let mut model_branch_components = Vec::new();
-    let mut route_arc_variables = Vec::new();
     for (network_index, network) in input.networks.iter().enumerate() {
         let terminals = network
             .terminals()
@@ -581,7 +574,6 @@ pub(super) fn solve(
         for pair in undirected_arc_pairs(&arcs) {
             post_at_most_one(&mut solver, pair.into_iter().map(|arc| arc.selected), tag);
         }
-        route_arc_variables.extend(arcs.iter().map(|arc| arc.selected));
         model_networks.push(ModelNetwork {
             input_index: network_index,
             line_capacity_units: network.line_capacity_units(),
@@ -659,83 +651,58 @@ pub(super) fn solve(
         }
     }
 
-    let route_length =
-        solver.new_named_bounded_integer(0, route_arc_variables.len() as i32, "total-route-length");
-    let mut route_length_definition = route_arc_variables
-        .iter()
-        .map(|variable| variable.scaled(1))
-        .collect::<Vec<_>>();
-    route_length_definition.push(route_length.scaled(-1));
-    solver
-        .add_constraint(pumpkin_solver::equals(route_length_definition, 0, tag))
-        .post();
+    let objectives = match build_objectives(
+        &mut solver,
+        &input,
+        &occupancy,
+        &model_networks,
+        &model_branch_components,
+        &model_bridges,
+        &mut model_metrics,
+        tag,
+    ) {
+        Ok(objectives) => objectives,
+        Err(diagnostic) => {
+            return IntegratedLayoutReport::failure(
+                IntegratedLayoutStatus::InvalidInput,
+                diagnostic,
+            );
+        }
+    };
 
     let construction_ms = elapsed_millis(construction_started.elapsed());
-    let mut brancher = solver.default_brancher();
-    let mut resolver = ResolutionResolver::default();
-    let incumbent_count = Shared::new(AtomicUsize::new(0));
-    let callback_incumbent_count = Shared::clone(&incumbent_count);
-    let callback = move |_: &Solver,
-                         _: SolutionReference,
-                         _: &DefaultBrancher,
-                         _: &ResolutionResolver|
-          -> ControlFlow<()> {
-        callback_incumbent_count.fetch_add(1, Ordering::Relaxed);
-        ControlFlow::Continue(())
-    };
-    let mut termination = time_limit.map(TimeBudget::starting_now);
-    let search_started = Instant::now();
-    let result = solver.optimise(
-        &mut brancher,
-        &mut termination,
-        &mut resolver,
-        LinearSatUnsat::new(OptimisationDirection::Minimise, route_length, callback),
-    );
-    let search_ms = elapsed_millis(search_started.elapsed());
-
-    let mut report = match result {
-        OptimisationResult::Optimal(solution) => extract_report(
-            &solution,
-            IntegratedLayoutStatus::Optimal,
-            &input,
-            &model_instances,
-            &model_networks,
-            &model_branch_components,
-            &model_bridges,
-        ),
-        OptimisationResult::Satisfiable(solution) | OptimisationResult::Stopped(solution, ()) => {
+    let search = optimise_lexicographically(
+        &mut solver,
+        objectives,
+        time_limit,
+        tag,
+        |solution, status| {
             extract_report(
-                &solution,
-                IntegratedLayoutStatus::Feasible,
+                solution,
+                status,
                 &input,
                 &model_instances,
                 &model_networks,
                 &model_branch_components,
                 &model_bridges,
             )
-        }
-        OptimisationResult::Unsatisfiable => IntegratedLayoutReport::failure(
-            IntegratedLayoutStatus::Infeasible,
-            IntegratedLayoutDiagnostic::error(
-                "integrated-layout-infeasible",
-                "/",
-                None,
-                "facility placement, port selection, and route constraints are infeasible",
-            ),
-        ),
-        OptimisationResult::Unknown => IntegratedLayoutReport::failure(
-            IntegratedLayoutStatus::Unknown,
-            IntegratedLayoutDiagnostic::error(
-                "integrated-layout-unknown",
-                "/",
-                None,
-                "solver terminated without a solution or proof",
-            ),
-        ),
-    };
+        },
+    );
+    let mut report = search.report;
+    let objective_stages = search.stages;
+    let search_ms = search.search_ms;
+    let observed_incumbents = search.incumbent_count;
     let validation = if report.success {
         match witness::validate(&input, logistics_components, &report) {
-            Ok(()) => super::ExactValidationStatus::Passed,
+            Ok(()) => match validate_objective_witness(&report, &objective_stages) {
+                Ok(()) => super::ExactValidationStatus::Passed,
+                Err(diagnostic) => {
+                    report.success = false;
+                    report.status = IntegratedLayoutStatus::Unknown;
+                    report.diagnostics.push(diagnostic);
+                    super::ExactValidationStatus::Failed
+                }
+            },
             Err(diagnostic) => {
                 report.success = false;
                 report.status = IntegratedLayoutStatus::Unknown;
@@ -746,7 +713,6 @@ pub(super) fn solve(
     } else {
         super::ExactValidationStatus::NotAttempted
     };
-    let observed_incumbents = incumbent_count.load(Ordering::Relaxed);
     finish_report(
         report,
         model_metrics,
@@ -754,5 +720,50 @@ pub(super) fn solve(
         search_ms,
         observed_incumbents,
         validation,
+        objective_stages,
     )
+}
+
+fn validate_objective_witness(
+    report: &IntegratedLayoutReport,
+    stages: &[ExactObjectiveStageReport],
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let score = LayoutScore::from_report(report, &[]).ok_or_else(|| {
+        IntegratedLayoutDiagnostic::error(
+            "invalid-exact-objective-witness",
+            "/exact/objective",
+            None,
+            "successful exact witness has no scoreable used geometry",
+        )
+    })?;
+    for stage in stages {
+        let Some(incumbent) = stage.incumbent else {
+            continue;
+        };
+        let observed = match stage.objective {
+            ExactObjectiveKind::UsedBoundingBoxArea => {
+                i64::try_from(score.used_bounding_box_area).ok()
+            }
+            ExactObjectiveKind::PhysicalTransportTiles => {
+                i64::try_from(score.physical_transport_tiles).ok()
+            }
+            ExactObjectiveKind::TotalRouteTurns => i64::try_from(score.total_route_turns).ok(),
+            ExactObjectiveKind::MaximumUsedSide => Some(score.maximum_used_side),
+            ExactObjectiveKind::LogisticsComponentCount => {
+                i64::try_from(score.logistics_component_count).ok()
+            }
+        };
+        if observed != Some(incumbent) {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "invalid-exact-objective-witness",
+                "/exact/objective",
+                None,
+                format!(
+                    "solver objective {:?} is {incumbent}, but the extracted witness reports {:?}",
+                    stage.objective, observed
+                ),
+            ));
+        }
+    }
+    Ok(())
 }

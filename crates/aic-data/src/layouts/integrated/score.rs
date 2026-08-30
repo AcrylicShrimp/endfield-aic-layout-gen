@@ -8,15 +8,15 @@ use super::IntegratedLayoutReport;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LayoutScore {
-    pub total_route_cells: usize,
-    pub total_route_turns: usize,
     pub used_bounding_box_area: u64,
-    pub maximum_used_side: i64,
     pub physical_transport_tiles: usize,
+    pub total_route_turns: usize,
+    pub maximum_used_side: i64,
     pub logistics_component_count: usize,
     pub moved_prior_facility_count: usize,
     pub total_prior_facility_manhattan_displacement: u64,
     pub rotation_change_count: usize,
+    pub total_route_cells: usize,
 }
 
 impl LayoutScore {
@@ -58,25 +58,25 @@ impl LayoutScore {
             .collect::<BTreeSet<_>>()
             .len();
         Some(Self {
-            total_route_cells: report
-                .transport_networks
-                .iter()
-                .map(|network| network.cells.len())
-                .sum(),
+            used_bounding_box_area: u64::try_from(bounds.width)
+                .ok()?
+                .checked_mul(u64::try_from(bounds.height).ok()?)?,
+            physical_transport_tiles,
             total_route_turns: report
                 .transport_networks
                 .iter()
                 .map(network_turn_count)
                 .sum(),
-            used_bounding_box_area: u64::try_from(bounds.width)
-                .ok()?
-                .checked_mul(u64::try_from(bounds.height).ok()?)?,
             maximum_used_side: bounds.width.max(bounds.height),
-            physical_transport_tiles,
             logistics_component_count: report.logistics_components.len(),
             moved_prior_facility_count,
             total_prior_facility_manhattan_displacement,
             rotation_change_count,
+            total_route_cells: report
+                .transport_networks
+                .iter()
+                .map(|network| network.cells.len())
+                .sum(),
         })
     }
 }
@@ -146,40 +146,41 @@ mod tests {
     #[test]
     fn score_is_lexicographic_in_the_documented_priority_order() {
         let base = LayoutScore {
-            total_route_cells: 10,
-            total_route_turns: 4,
             used_bounding_box_area: 100,
-            maximum_used_side: 10,
             physical_transport_tiles: 9,
+            total_route_turns: 4,
+            maximum_used_side: 10,
             logistics_component_count: 2,
             moved_prior_facility_count: 1,
             total_prior_facility_manhattan_displacement: 3,
             rotation_change_count: 1,
+            total_route_cells: 10,
         };
-        let mut longer = base;
-        longer.total_route_cells += 1;
+        let mut more_tiles = base;
+        more_tiles.physical_transport_tiles += 1;
         let mut bendier = base;
         bendier.total_route_turns += 1;
         let mut larger = base;
         larger.used_bounding_box_area += 1;
-        assert!(base < longer);
+        assert!(base < more_tiles);
         assert!(base < bendier);
         assert!(base < larger);
-        assert!(longer > bendier, "route length outranks every later field");
+        assert!(larger > more_tiles, "used area outranks every later field");
+        assert!(more_tiles > bendier, "physical tiles outrank route turns");
     }
 
     #[test]
     fn candidate_key_breaks_only_equal_score_ties() {
         let score = LayoutScore {
-            total_route_cells: 1,
-            total_route_turns: 0,
             used_bounding_box_area: 1,
-            maximum_used_side: 1,
             physical_transport_tiles: 1,
+            total_route_turns: 0,
+            maximum_used_side: 1,
             logistics_component_count: 0,
             moved_prior_facility_count: 0,
             total_prior_facility_manhattan_displacement: 0,
             rotation_change_count: 0,
+            total_route_cells: 1,
         };
         let first = CandidateRank {
             score,

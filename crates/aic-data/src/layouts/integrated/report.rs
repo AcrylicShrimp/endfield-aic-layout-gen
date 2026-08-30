@@ -8,7 +8,7 @@ use crate::recipes::Rate;
 use super::{DeterministicCandidateKey, LayoutScore, WorldGridPosition};
 
 const STAGE: &str = "integrated-layout";
-pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 12;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 13;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -41,11 +41,39 @@ pub struct ExactSolveReport {
     pub construction_ms: u64,
     pub search_ms: u64,
     pub incumbent_count: usize,
-    pub objective_route_cells: Option<usize>,
-    pub best_bound_route_cells: Option<usize>,
+    pub objective: Option<ExactObjectiveValue>,
+    pub objective_stages: Vec<ExactObjectiveStageReport>,
     pub termination: ExactTerminationReason,
     pub proof: ExactProofStatus,
     pub validation: ExactValidationStatus,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+pub struct ExactObjectiveValue {
+    pub used_bounding_box_area: u64,
+    pub physical_transport_tiles: usize,
+    pub total_route_turns: usize,
+    pub maximum_used_side: i64,
+    pub logistics_component_count: usize,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+pub struct ExactObjectiveStageReport {
+    pub objective: ExactObjectiveKind,
+    pub incumbent: Option<i64>,
+    pub best_bound: Option<i64>,
+    pub search_ms: u64,
+    pub proof: ExactProofStatus,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ExactObjectiveKind {
+    UsedBoundingBoxArea,
+    PhysicalTransportTiles,
+    TotalRouteTurns,
+    MaximumUsedSide,
+    LogisticsComponentCount,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Default)]
@@ -69,6 +97,7 @@ pub struct ExactModelMetrics {
     pub route_arc_variables: usize,
     pub network_flow_variables: usize,
     pub branch_component_variables: usize,
+    pub objective_variables: usize,
     pub route_order_variables: usize,
     pub acyclicity_constraints: usize,
     pub bridge_variables: usize,
