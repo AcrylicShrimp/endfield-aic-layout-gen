@@ -131,6 +131,28 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
     },
+    /// Compare flattened and factored endpoint encodings on the shared-layer phase-0 model.
+    CompareFirstPhaseFactoredEndpoints {
+        /// Benchmark workload manifest JSON file to solve.
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+
+        /// Root used to resolve portable input paths in the workload manifest.
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Wall-clock budget given independently to each formulation.
+        #[arg(long, value_name = "MILLISECONDS")]
+        time_limit_ms: u64,
+
+        /// Directory receiving comparison JSON and flattened/factored HTML artifacts.
+        #[arg(long, value_name = "DIR")]
+        output_dir: PathBuf,
+    },
 }
 
 pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
@@ -186,6 +208,21 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             placement_request,
             time_limit_ms,
             output_dir,
+            shared_layer::Comparison::SharedLayer,
+        ),
+        ResearchCommand::CompareFirstPhaseFactoredEndpoints {
+            workload,
+            workspace_root,
+            placement_request,
+            time_limit_ms,
+            output_dir,
+        } => shared_layer::run(
+            workload,
+            workspace_root,
+            placement_request,
+            time_limit_ms,
+            output_dir,
+            shared_layer::Comparison::FactoredEndpoints,
         ),
     }
 }

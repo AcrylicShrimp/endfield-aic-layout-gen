@@ -28,12 +28,18 @@ The experimental encoding keeps the existing exact facility-placement choice and
 
 - one integer port-choice variable for each logical facility endpoint;
 - one integer terminal-geometry variable identifying the selected connection cell and arm
-  direction; and
-- an exact allowed-tuples constraint relating placement choice, port choice, and terminal geometry.
+  direction;
+- one exact combined index defined as `placement_index * port_count + port_index`; and
+- solver-native element constraints that map that index to terminal geometry.
 
 For an external endpoint paired with a facility endpoint, the same placement and port choice
 produces the external terminal geometry with the opposite arm direction. No external coordinate is
 selected independently.
+
+Out-of-bounds placement-port entries map to a sentinel outside the terminal-geometry domain, so the
+element propagator removes exactly those entries. Pumpkin's generic positive-table constraint is
+not used because version 0.5 internally creates one row literal per tuple, which would recreate the
+Cartesian Boolean state that this experiment is intended to remove.
 
 Routing constraints consume equality literals derived from terminal geometry. These literals are
 derived state, not placement-port candidates: one literal represents one reachable physical
@@ -41,8 +47,8 @@ cell-direction result even when several placement-port tuples produce it.
 
 ## Exact Semantics
 
-The allowed-tuples relation contains every placement-port tuple whose outward connection cell lies
-inside the caller's hard bounds. It contains no other tuple. Therefore the experimental encoding
+The element arrays contain every placement-port entry whose outward connection cell lies inside the
+caller's hard bounds and mark every other entry invalid. Therefore the experimental encoding
 must preserve:
 
 - every legal facility origin and rotation;

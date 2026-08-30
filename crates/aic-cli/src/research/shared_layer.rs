@@ -4,7 +4,8 @@ use std::time::Duration;
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    FacilityPlacementRequest, compare_first_integrated_layout_phase_shared_layer,
+    FacilityPlacementRequest, compare_first_integrated_layout_phase_factored_endpoints,
+    compare_first_integrated_layout_phase_shared_layer,
     render_integrated_layout_html_with_localization,
 };
 use aic_data::logistics::{
@@ -20,12 +21,18 @@ use anyhow::{Context, Result, ensure};
 use super::first_phase::{load_localization, write_bytes, write_json};
 use super::{load_contextual_recipe_request, resolve_workload_paths};
 
+pub(super) enum Comparison {
+    SharedLayer,
+    FactoredEndpoints,
+}
+
 pub(super) fn run(
     workload_path: PathBuf,
     workspace_root: PathBuf,
     placement_request_path: PathBuf,
     time_limit_ms: u64,
     output_dir: PathBuf,
+    comparison: Comparison,
 ) -> Result<bool> {
     let time_limit = NonZeroU64::new(time_limit_ms)
         .context("research shared-layer time_limit_ms must be positive")?;
@@ -84,22 +91,8 @@ pub(super) fn run(
         )
     })?;
 
-    let report = compare_first_integrated_layout_phase_shared_layer(
-        &wiring,
-        &facilities,
-        &items,
-        &transports,
-        &components,
-        &placement_request,
-        Duration::from_millis(time_limit.get()),
-    )
-    .map_err(|layout| anyhow::anyhow!("failed to prepare shared-layer comparison: {layout:?}"))?;
-    write_json(&output_dir.join("comparison.json"), &report)?;
     let localization = load_localization(paths.localization_catalog.as_ref())?;
-    for (name, layout) in [
-        ("dense", &report.dense),
-        ("shared-layer", &report.shared_layer),
-    ] {
+    let render = |name: &str, layout: &aic_data::layouts::IntegratedLayoutReport| -> Result<()> {
         let html = render_integrated_layout_html_with_localization(layout, localization.as_ref())
             .map_err(|diagnostic| {
             anyhow::anyhow!(
@@ -112,7 +105,45 @@ pub(super) fn run(
             &output_dir.join(format!("{name}.html")),
             html.as_bytes(),
             "shared-layer comparison visualization",
-        )?;
-    }
-    Ok(report.shared_layer.success)
+        )
+    };
+    let success = match comparison {
+        Comparison::SharedLayer => {
+            let report = compare_first_integrated_layout_phase_shared_layer(
+                &wiring,
+                &facilities,
+                &items,
+                &transports,
+                &components,
+                &placement_request,
+                Duration::from_millis(time_limit.get()),
+            )
+            .map_err(|layout| {
+                anyhow::anyhow!("failed to prepare shared-layer comparison: {layout:?}")
+            })?;
+            write_json(&output_dir.join("comparison.json"), &report)?;
+            render("dense", &report.dense)?;
+            render("shared-layer", &report.shared_layer)?;
+            report.shared_layer.success
+        }
+        Comparison::FactoredEndpoints => {
+            let report = compare_first_integrated_layout_phase_factored_endpoints(
+                &wiring,
+                &facilities,
+                &items,
+                &transports,
+                &components,
+                &placement_request,
+                Duration::from_millis(time_limit.get()),
+            )
+            .map_err(|layout| {
+                anyhow::anyhow!("failed to prepare factored-endpoint comparison: {layout:?}")
+            })?;
+            write_json(&output_dir.join("comparison.json"), &report)?;
+            render("flattened", &report.flattened)?;
+            render("factored", &report.factored)?;
+            report.factored.success
+        }
+    };
+    Ok(success)
 }

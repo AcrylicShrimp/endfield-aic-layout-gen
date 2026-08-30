@@ -13,6 +13,49 @@ use super::{IntegratedLayoutReport, exact, harness, prepare_exact_model};
 
 pub const EXACT_ABLATION_MATRIX_SCHEMA_VERSION: u32 = 1;
 pub const SHARED_LAYER_COMPARISON_SCHEMA_VERSION: u32 = 1;
+pub const FACTORED_ENDPOINT_COMPARISON_SCHEMA_VERSION: u32 = 1;
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct FactoredEndpointComparisonReport {
+    pub schema_version: u32,
+    pub search_budget_ms_per_formulation: u64,
+    pub flattened: IntegratedLayoutReport,
+    pub factored: IntegratedLayoutReport,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn compare_first_integrated_layout_phase_factored_endpoints(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    search_budget: Duration,
+) -> Result<FactoredEndpointComparisonReport, IntegratedLayoutReport> {
+    let first_phase_wiring = harness::first_iterative_scc_wiring(instance_wiring)?;
+    let input = prepare_exact_model(
+        &first_phase_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+    )?;
+    let flattened =
+        exact::shared_layer::solve(input.clone(), logistics_components, Some(search_budget));
+    let factored = exact::shared_layer::solve_factored_endpoints(
+        input,
+        logistics_components,
+        Some(search_budget),
+    );
+    Ok(FactoredEndpointComparisonReport {
+        schema_version: FACTORED_ENDPOINT_COMPARISON_SCHEMA_VERSION,
+        search_budget_ms_per_formulation: millis(search_budget),
+        flattened,
+        factored,
+    })
+}
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct SharedLayerComparisonReport {

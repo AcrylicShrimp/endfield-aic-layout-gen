@@ -39,7 +39,9 @@ pub use report::{
 };
 pub use research::{
     EXACT_ABLATION_MATRIX_SCHEMA_VERSION, ExactAblationCaseReport, ExactAblationFixation,
-    ExactAblationMatrixReport, SHARED_LAYER_COMPARISON_SCHEMA_VERSION, SharedLayerComparisonReport,
+    ExactAblationMatrixReport, FACTORED_ENDPOINT_COMPARISON_SCHEMA_VERSION,
+    FactoredEndpointComparisonReport, SHARED_LAYER_COMPARISON_SCHEMA_VERSION,
+    SharedLayerComparisonReport, compare_first_integrated_layout_phase_factored_endpoints,
     compare_first_integrated_layout_phase_shared_layer,
     decompose_first_integrated_layout_phase_pair,
 };

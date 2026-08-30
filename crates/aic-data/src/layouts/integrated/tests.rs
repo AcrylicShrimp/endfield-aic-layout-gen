@@ -448,7 +448,8 @@ fn shared_layer_matches_dense_objective_for_two_belt_items() {
     )
     .expect("two-item fixture should prepare");
     let dense = super::exact::solve_with_prior_solution(input.clone(), &components, None, None);
-    let shared = super::exact::shared_layer::solve(input, &components, None);
+    let shared = super::exact::shared_layer::solve(input.clone(), &components, None);
+    let factored = super::exact::shared_layer::solve_factored_endpoints(input, &components, None);
 
     assert!(dense.success, "dense diagnostics: {:#?}", dense.diagnostics);
     assert!(
@@ -456,9 +457,18 @@ fn shared_layer_matches_dense_objective_for_two_belt_items() {
         "shared-layer diagnostics: {:#?}",
         shared.diagnostics
     );
+    assert!(
+        factored.success,
+        "factored endpoint diagnostics: {:#?}",
+        factored.diagnostics
+    );
     assert_eq!(
         dense.exact.as_ref().and_then(|exact| exact.objective),
         shared.exact.as_ref().and_then(|exact| exact.objective)
+    );
+    assert_eq!(
+        dense.exact.as_ref().and_then(|exact| exact.objective),
+        factored.exact.as_ref().and_then(|exact| exact.objective)
     );
     assert!(
         shared

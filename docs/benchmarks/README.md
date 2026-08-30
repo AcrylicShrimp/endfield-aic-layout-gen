@@ -39,6 +39,11 @@ compares the dense per-network routing grid with an exact shared belt/pipe layer
 shared formulation reduces the recorded 12 by 12 phase-zero model substantially but does not find
 a first incumbent within five or fifteen seconds.
 
+The ninth checkpoint, `heavy-xiranite-minimum-rate.ninth-factored-endpoint-report.md`, replaces
+flattened placement-times-port endpoint Booleans with exact independent port choices and
+solver-native element geometry. It measures endpoint state, placement-routing coupling, build
+time, and peak RSS reductions, while recording that the first-incumbent cliff remains.
+
 Regenerate it from a release binary with:
 
 ```bash

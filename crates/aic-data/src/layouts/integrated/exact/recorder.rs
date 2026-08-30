@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::ops::{Deref, DerefMut};
 
 use pumpkin_solver::Solver;
+use pumpkin_solver::core::predicates::Predicate;
 use pumpkin_solver::core::proof::ConstraintTag;
 use pumpkin_solver::core::variables::{AffineView, DomainId, Literal, TransformableVariable};
 
@@ -15,6 +16,7 @@ use crate::research::{
 pub(super) enum VariableFamily {
     Placement,
     Endpoint,
+    EndpointGeometry,
     RouteCell,
     RouteArc,
     Flow,
@@ -33,6 +35,7 @@ impl VariableFamily {
         match self {
             Self::Placement => "placement",
             Self::Endpoint => "endpoint",
+            Self::EndpointGeometry => "endpoint-geometry",
             Self::RouteCell => "route-cell",
             Self::RouteArc => "route-arc",
             Self::Flow => "flow",
@@ -48,7 +51,10 @@ impl VariableFamily {
     }
 
     fn placement_side(self) -> bool {
-        matches!(self, Self::Placement | Self::Endpoint)
+        matches!(
+            self,
+            Self::Placement | Self::Endpoint | Self::EndpointGeometry
+        )
     }
 
     fn routing_side(self) -> bool {
@@ -224,6 +230,30 @@ impl RecordedModel {
             },
         );
         variable
+    }
+
+    pub(super) fn new_named_literal_for_predicate(
+        &mut self,
+        family: VariableFamily,
+        predicate: Predicate,
+        tag: ConstraintTag,
+        name: impl Into<String>,
+    ) -> Literal {
+        let literal = self
+            .solver
+            .new_named_literal_for_predicate(predicate, tag, name);
+        let variable = *literal.get_integer_variable().inner();
+        self.recorder.variables.insert(
+            variable,
+            VariableRecord {
+                family,
+                cardinality: 2,
+                degree: 0,
+                parent: variable,
+                rank: 0,
+            },
+        );
+        literal
     }
 
     pub(super) fn post_equals(
@@ -408,6 +438,31 @@ impl RecordedModel {
         self.record_constraint(family, ConstraintRelation::Other, &terms, 1);
         self.solver
             .add_constraint(pumpkin_solver::table(variables, rows, tag))
+            .post();
+    }
+
+    pub(super) fn post_constant_element(
+        &mut self,
+        family: ConstraintFamily,
+        index: DomainId,
+        values: Vec<i32>,
+        result: DomainId,
+        tag: ConstraintTag,
+    ) {
+        let maximum_absolute_coefficient = values
+            .iter()
+            .map(|value| value.unsigned_abs() as u64)
+            .max()
+            .unwrap_or(1)
+            .max(1);
+        self.record_constraint(
+            family,
+            ConstraintRelation::Other,
+            &[index.scaled(1), result.scaled(1)],
+            maximum_absolute_coefficient,
+        );
+        self.solver
+            .add_constraint(pumpkin_solver::element(index, values, result, tag))
             .post();
     }
 
