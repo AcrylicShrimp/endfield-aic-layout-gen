@@ -1,5 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
-use std::ops::ControlFlow;
+use std::collections::BTreeSet;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -13,6 +12,8 @@ use crate::logistics::{
 };
 use crate::recipes::FacilityInstanceWiringReport;
 
+use super::WorldGridPosition;
+use super::placement::solve_facility_placement_feasibly_with_time_limit;
 #[cfg(test)]
 use crate::facilities::{
     FacilityDefinition, FacilityPortDefinition, FacilityPortDirection, FacilityPortPosition,
@@ -22,17 +23,6 @@ use crate::recipes::{
     FACILITY_INSTANCE_WIRING_SCHEMA_VERSION, FacilityInstanceWiringEdge,
     FacilityInstanceWiringNode, Rate,
 };
-use pumpkin_solver::Solver;
-use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
-use pumpkin_solver::core::DefaultBrancher;
-use pumpkin_solver::core::optimisation::OptimisationDirection;
-use pumpkin_solver::core::optimisation::linear_sat_unsat::LinearSatUnsat;
-use pumpkin_solver::core::results::{OptimisationResult, SolutionReference};
-use pumpkin_solver::core::termination::TimeBudget;
-use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
-
-use super::WorldGridPosition;
-use super::placement::solve_facility_placement_feasibly_with_time_limit;
 
 mod budget;
 mod exact;
@@ -50,10 +40,7 @@ mod score;
 mod sparse;
 mod witness;
 
-use exact::{
-    external_endpoint_options, extract_report, generate_candidates, grid_arcs,
-    model_facility_endpoint_options, post_at_most_one, post_equals_one,
-};
+use exact::solve;
 pub use extension::{
     IncumbentExtensionCounts, IncumbentExtensionResult, PhaseIncumbent, extend_phase_incumbent,
 };
@@ -552,275 +539,6 @@ fn solve_integrated_layout_with_optional_time_limit(
         Err(diagnostic) => {
             IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
         }
-    }
-}
-
-struct Candidate {
-    rotation: i64,
-    x: i32,
-    y: i32,
-    width: i32,
-    height: i32,
-    occupied_cells: Vec<usize>,
-    port_connections: BTreeMap<String, usize>,
-    selected: DomainId,
-}
-
-struct ModelInstance {
-    input: InstanceInput,
-    candidates: Vec<Candidate>,
-}
-
-struct EndpointOption {
-    endpoint: IntegratedRouteEndpoint,
-    cell: usize,
-    selected: DomainId,
-    external_side: Option<FacilityPortEdge>,
-}
-
-#[derive(Clone, Copy)]
-struct Arc {
-    from: usize,
-    to: usize,
-    selected: DomainId,
-}
-
-struct ModelRoute {
-    source_options: Vec<EndpointOption>,
-    target_options: Vec<EndpointOption>,
-    arcs: Vec<Arc>,
-}
-
-fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> IntegratedLayoutReport {
-    let mut solver = Solver::default();
-    let tag = solver.new_constraint_tag();
-    let cell_count = (input.width as usize) * (input.height as usize);
-    let mut occupancy = vec![Vec::<DomainId>::new(); cell_count];
-    let mut model_instances = Vec::with_capacity(input.instances.len());
-
-    for instance in std::mem::take(&mut input.instances) {
-        let candidates = generate_candidates(&mut solver, &instance, input.width, input.height);
-        if candidates.is_empty() {
-            return IntegratedLayoutReport::failure(
-                IntegratedLayoutStatus::Infeasible,
-                IntegratedLayoutDiagnostic::error(
-                    "facility-has-no-placement-candidate",
-                    "/",
-                    Some(instance.id),
-                    "facility has no rotation and origin within the hard layout bounds",
-                ),
-            );
-        }
-        post_equals_one(
-            &mut solver,
-            candidates.iter().map(|candidate| candidate.selected),
-            tag,
-        );
-        for candidate in &candidates {
-            for cell in &candidate.occupied_cells {
-                occupancy[*cell].push(candidate.selected);
-            }
-        }
-        model_instances.push(ModelInstance {
-            input: instance,
-            candidates,
-        });
-    }
-
-    for cell_candidates in &occupancy {
-        post_at_most_one(&mut solver, cell_candidates.iter().copied(), tag);
-    }
-
-    let mut model_routes = Vec::with_capacity(input.edges.len());
-    let mut belt_route_cells_by_grid = vec![Vec::<DomainId>::new(); cell_count];
-    let mut pipe_route_cells_by_grid = vec![Vec::<DomainId>::new(); cell_count];
-    let mut route_arc_variables = Vec::new();
-    for (edge_index, edge) in input.edges.iter().enumerate() {
-        let (source_options, target_options) = match (&edge.source, &edge.target) {
-            (EndpointInput::Facility { .. }, EndpointInput::Facility { .. }) => (
-                model_facility_endpoint_options(
-                    &mut solver,
-                    edge_index,
-                    "source",
-                    &edge.source,
-                    &model_instances,
-                    tag,
-                ),
-                model_facility_endpoint_options(
-                    &mut solver,
-                    edge_index,
-                    "target",
-                    &edge.target,
-                    &model_instances,
-                    tag,
-                ),
-            ),
-            (EndpointInput::External { node }, EndpointInput::Facility { .. }) => {
-                let target = model_facility_endpoint_options(
-                    &mut solver,
-                    edge_index,
-                    "target",
-                    &edge.target,
-                    &model_instances,
-                    tag,
-                );
-                (external_endpoint_options(node, &target), target)
-            }
-            (EndpointInput::Facility { .. }, EndpointInput::External { node }) => {
-                let source = model_facility_endpoint_options(
-                    &mut solver,
-                    edge_index,
-                    "source",
-                    &edge.source,
-                    &model_instances,
-                    tag,
-                );
-                let target = external_endpoint_options(node, &source);
-                (source, target)
-            }
-            (EndpointInput::External { .. }, EndpointInput::External { .. }) => unreachable!(
-                "external-to-external requirements are rejected during model preparation"
-            ),
-        };
-
-        let (arcs, incoming, outgoing) =
-            grid_arcs(&mut solver, edge_index, input.width, input.height);
-        let mut source_by_cell = vec![Vec::<DomainId>::new(); cell_count];
-        let mut target_by_cell = vec![Vec::<DomainId>::new(); cell_count];
-        for option in &source_options {
-            source_by_cell[option.cell].push(option.selected);
-        }
-        for option in &target_options {
-            target_by_cell[option.cell].push(option.selected);
-        }
-
-        for cell in 0..cell_count {
-            let route_cell =
-                solver.new_named_bounded_integer(0, 1, format!("route-{edge_index}-cell-{cell}"));
-            match edge.transport {
-                TransportKind::Belt => belt_route_cells_by_grid[cell].push(route_cell),
-                TransportKind::Pipe => pipe_route_cells_by_grid[cell].push(route_cell),
-            }
-
-            let mut conservation = Vec::new();
-            conservation.extend(outgoing[cell].iter().map(|variable| variable.scaled(1)));
-            conservation.extend(incoming[cell].iter().map(|variable| variable.scaled(-1)));
-            conservation.extend(
-                source_by_cell[cell]
-                    .iter()
-                    .map(|variable| variable.scaled(-1)),
-            );
-            conservation.extend(
-                target_by_cell[cell]
-                    .iter()
-                    .map(|variable| variable.scaled(1)),
-            );
-            solver
-                .add_constraint(pumpkin_solver::equals(conservation, 0, tag))
-                .post();
-
-            post_at_most_one(&mut solver, incoming[cell].iter().copied(), tag);
-            post_at_most_one(&mut solver, outgoing[cell].iter().copied(), tag);
-
-            let mut route_definition = vec![route_cell.scaled(1)];
-            route_definition.extend(outgoing[cell].iter().map(|variable| variable.scaled(-1)));
-            route_definition.extend(
-                target_by_cell[cell]
-                    .iter()
-                    .map(|variable| variable.scaled(-1)),
-            );
-            solver
-                .add_constraint(pumpkin_solver::equals(route_definition, 0, tag))
-                .post();
-        }
-
-        route_arc_variables.extend(arcs.iter().map(|arc| arc.selected));
-        model_routes.push(ModelRoute {
-            source_options,
-            target_options,
-            arcs,
-        });
-    }
-
-    for cell in 0..cell_count {
-        for layer in [
-            &belt_route_cells_by_grid[cell],
-            &pipe_route_cells_by_grid[cell],
-        ] {
-            let exclusion = occupancy[cell]
-                .iter()
-                .chain(layer.iter())
-                .map(|variable| variable.scaled(1))
-                .collect::<Vec<_>>();
-            if exclusion.len() > 1 {
-                solver
-                    .add_constraint(pumpkin_solver::less_than_or_equals(exclusion, 1, tag))
-                    .post();
-            }
-        }
-    }
-
-    let route_length =
-        solver.new_named_bounded_integer(0, route_arc_variables.len() as i32, "total-route-length");
-    let mut route_length_definition = route_arc_variables
-        .iter()
-        .map(|variable| variable.scaled(1))
-        .collect::<Vec<_>>();
-    route_length_definition.push(route_length.scaled(-1));
-    solver
-        .add_constraint(pumpkin_solver::equals(route_length_definition, 0, tag))
-        .post();
-
-    let mut brancher = solver.default_brancher();
-    let mut resolver = ResolutionResolver::default();
-    let callback = |_: &Solver,
-                    _: SolutionReference,
-                    _: &DefaultBrancher,
-                    _: &ResolutionResolver|
-     -> ControlFlow<()> { ControlFlow::Continue(()) };
-    let mut termination = time_limit.map(TimeBudget::starting_now);
-    let result = solver.optimise(
-        &mut brancher,
-        &mut termination,
-        &mut resolver,
-        LinearSatUnsat::new(OptimisationDirection::Minimise, route_length, callback),
-    );
-
-    match result {
-        OptimisationResult::Optimal(solution) => extract_report(
-            &solution,
-            IntegratedLayoutStatus::Optimal,
-            &input,
-            &model_instances,
-            &model_routes,
-        ),
-        OptimisationResult::Satisfiable(solution) | OptimisationResult::Stopped(solution, ()) => {
-            extract_report(
-                &solution,
-                IntegratedLayoutStatus::Feasible,
-                &input,
-                &model_instances,
-                &model_routes,
-            )
-        }
-        OptimisationResult::Unsatisfiable => IntegratedLayoutReport::failure(
-            IntegratedLayoutStatus::Infeasible,
-            IntegratedLayoutDiagnostic::error(
-                "integrated-layout-infeasible",
-                "/",
-                None,
-                "facility placement, port selection, and route constraints are infeasible",
-            ),
-        ),
-        OptimisationResult::Unknown => IntegratedLayoutReport::failure(
-            IntegratedLayoutStatus::Unknown,
-            IntegratedLayoutDiagnostic::error(
-                "integrated-layout-unknown",
-                "/",
-                None,
-                "solver terminated without a solution or proof",
-            ),
-        ),
     }
 }
 

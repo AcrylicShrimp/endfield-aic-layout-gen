@@ -3,9 +3,9 @@ use pumpkin_solver::Solver;
 use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
 use super::super::{
-    Arc, Candidate, EndpointInput, EndpointOption, InstanceInput, IntegratedRouteEndpoint,
-    ModelInstance, candidate_port_connections, grid_index,
+    EndpointInput, InstanceInput, IntegratedRouteEndpoint, candidate_port_connections, grid_index,
 };
+use super::{Arc, Candidate, EndpointOption, ModelInstance};
 
 pub(in crate::layouts::integrated) fn generate_candidates(
     solver: &mut Solver,

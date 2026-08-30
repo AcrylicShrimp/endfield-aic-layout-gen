@@ -3,11 +3,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use pumpkin_solver::core::results::ProblemSolution;
 
 use super::super::{
-    Arc, EndpointOption, FacilityPlacement, INTEGRATED_LAYOUT_SCHEMA_VERSION,
-    IntegratedLayoutDiagnostic, IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRoute,
-    ModelInput, ModelInstance, ModelRoute, WorldGridPosition, canonicalize_report_geometry,
-    world_position,
+    FacilityPlacement, INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic,
+    IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRoute, ModelInput, WorldGridPosition,
+    canonicalize_report_geometry, world_position,
 };
+use super::{Arc, EndpointOption, ModelInstance, ModelRoute};
 
 pub(in crate::layouts::integrated) fn extract_report(
     solution: &impl ProblemSolution,
