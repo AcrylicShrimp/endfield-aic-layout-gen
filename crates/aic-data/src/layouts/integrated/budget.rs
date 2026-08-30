@@ -92,6 +92,23 @@ impl StrategyBudget {
         available.min(self.strategy_deadline.saturating_duration_since(now))
     }
 
+    pub(super) fn begin_final_refinement(&mut self, now: Instant) -> GrowthPhaseBudget {
+        let grant = self.final_refinement_grant(now);
+        self.ordinary_pool = Duration::ZERO;
+        self.reserve_remaining = Duration::ZERO;
+        GrowthPhaseBudget {
+            strategy_deadline: self.strategy_deadline,
+            phase_started: now,
+            ordinary_grant: grant,
+            deadline: min_instant(
+                self.strategy_deadline,
+                now.checked_add(grant).unwrap_or(now),
+            ),
+            reserve_borrowed: Duration::ZERO,
+            borrow_used: true,
+        }
+    }
+
     #[cfg(test)]
     fn ordinary_pool(&self) -> Duration {
         self.ordinary_pool
@@ -175,6 +192,16 @@ mod tests {
             budget.final_refinement_grant(now + Duration::from_millis(300)),
             Duration::from_millis(700)
         );
+    }
+
+    #[test]
+    fn final_refinement_consumes_the_remaining_pools_once() {
+        let now = Instant::now();
+        let mut budget = StrategyBudget::new(&config(), now);
+        let final_budget = budget.begin_final_refinement(now);
+
+        assert_eq!(final_budget.remaining(now), Duration::from_secs(1));
+        assert_eq!(budget.final_refinement_grant(now), Duration::ZERO);
     }
 
     #[test]

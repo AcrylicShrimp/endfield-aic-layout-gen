@@ -330,7 +330,13 @@ fn render_page(
     };
     let mut phase_label = page.phase.map_or_else(
         || "Final layout".to_string(),
-        |phase| format!("Phase {}/{}", phase.index + 1, page_count),
+        |phase| {
+            if phase.introduced_components.is_empty() {
+                "Final refinement".to_string()
+            } else {
+                format!("Phase {}/{}", phase.index + 1, page_count)
+            }
+        },
     );
     if partial_final {
         phase_label.push_str(" · last valid");
@@ -388,10 +394,18 @@ fn page_metrics(page: &RenderPage<'_>) -> String {
         .filter(|component| component.kind == LogisticsComponentKind::Bridge)
         .count();
     let phase_detail = page.phase.map_or_else(String::new, |phase| {
+        let route_delta = phase
+            .optimization
+            .score_delta
+            .as_ref()
+            .map_or(0, |delta| delta.total_route_cells);
         format!(
-            " · +{} facilities · {} prior hints · {} turns",
+            " · +{} facilities · {} prior hints · route Δ{:+} · {} reused routes · {} moved facilities · {} turns",
             phase.introduced_facilities.len(),
             phase.prior_placement_hint_count,
+            route_delta,
+            phase.optimization.route_changes.reused,
+            phase.optimization.facility_changes.moved_prior,
             phase.route_turns,
         )
     });

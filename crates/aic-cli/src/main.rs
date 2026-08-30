@@ -183,7 +183,7 @@ enum LayoutsCommand {
         #[arg(long, value_enum, default_value = "coordinate-feasibility")]
         strategy: IntegratedLayoutStrategy,
 
-        /// Standalone HTML wireframe file to write for a successful layout.
+        /// Standalone HTML wireframe for a success or completed partial history.
         #[arg(long, value_name = "FILE")]
         visualization_output: Option<PathBuf>,
 
@@ -229,7 +229,7 @@ enum LayoutsCommand {
         #[arg(long, value_enum, default_value = "coordinate-feasibility")]
         strategy: IntegratedLayoutStrategy,
 
-        /// Standalone HTML wireframe file to write for a successful layout.
+        /// Standalone HTML wireframe for a success or completed partial history.
         #[arg(long, value_name = "FILE")]
         visualization_output: Option<PathBuf>,
 

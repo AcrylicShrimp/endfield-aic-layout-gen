@@ -222,7 +222,7 @@ fn iterative_phase_uses_extension_as_an_initial_incumbent_then_searches_more_can
     );
 
     assert!(report.success, "{:#?}", report.diagnostics);
-    assert_eq!(report.phases.len(), 2);
+    assert_eq!(report.phases.len(), 3);
     let grown = &report.phases[1];
     let initial = grown
         .optimization
@@ -249,6 +249,22 @@ fn iterative_phase_uses_extension_as_an_initial_incumbent_then_searches_more_can
         .expect("growth phase should end with a global neighborhood");
     assert_eq!(global.free_facility_ids.len(), 2);
     assert!(global.fixed_facility_ids.is_empty());
+    let final_refinement = report
+        .phases
+        .last()
+        .expect("completed strategy should append final refinement history");
+    assert!(final_refinement.introduced_components.is_empty());
+    assert_eq!(final_refinement.optimization.neighborhoods.len(), 1);
+    assert_eq!(final_refinement.optimization.neighborhoods[0].rank, 3);
+    assert!(
+        final_refinement.optimization.final_incumbent.score
+            <= final_refinement
+                .optimization
+                .initial_incumbent
+                .as_ref()
+                .expect("final refinement starts from the completed growth witness")
+                .score
+    );
 }
 
 #[test]

@@ -227,6 +227,7 @@ pub fn construct_iterative_scc_layout_with_cancellation(
             latest_success.as_ref(),
             &mut strategy_budget,
             &mut phase_budget,
+            false,
             cancellation_requested,
         ) {
             Ok(search) => search,
@@ -414,15 +415,135 @@ pub fn construct_iterative_scc_layout_with_cancellation(
     }
 
     let mut report = latest_success.expect("non-empty growth plan produced a final report");
+    let final_started = Instant::now();
+    let mut final_budget = strategy_budget.begin_final_refinement(final_started);
+    let minimum_attempt = std::time::Duration::from_millis(config.minimum_phase_attempt_ms);
+    if final_budget.remaining(final_started) >= minimum_attempt && !cancellation_requested() {
+        let prior_reference = report.placements.clone();
+        let full_wiring = previous_partial_wiring
+            .as_ref()
+            .expect("completed growth has a full cumulative wiring report");
+        let final_search = optimize_cumulative_phase(
+            growth.phases.len(),
+            Some(full_wiring),
+            full_wiring,
+            facilities,
+            items,
+            transports,
+            logistics_components,
+            request,
+            config,
+            &policy_table,
+            &growth.components,
+            &[],
+            &cumulative_facilities,
+            &prior_reference,
+            Some(&report),
+            &mut strategy_budget,
+            &mut final_budget,
+            true,
+            cancellation_requested,
+        );
+        if let Ok(PhaseSearchResult {
+            incumbent: Some(selected),
+            initial_incumbent,
+            attempts,
+            candidate_counts,
+            route_changes,
+            neighborhoods,
+            incumbent_extension_ms,
+            placement_ms,
+            routing_ms,
+            validation_ms,
+            termination_reason,
+        }) = final_search
+        {
+            let final_score = selected.score;
+            let final_incumbent = IntegratedLayoutIncumbentSummary {
+                score: final_score,
+                candidate_key: selected.candidate_key,
+                provenance: selected.provenance,
+            };
+            let mut refined = selected.witness;
+            let bounds = refined
+                .bounds
+                .clone()
+                .expect("final refinement incumbent has canonical bounds");
+            let route_turns = refined.routes.iter().map(route_turn_count).sum();
+            let route_cells = refined.routes.iter().map(|route| route.cells.len()).sum();
+            let bridge_count = refined
+                .logistics_components
+                .iter()
+                .filter(|component| component.kind == LogisticsComponentKind::Bridge)
+                .count();
+            snapshots.push(IntegratedLayoutPhase {
+                index: growth.phases.len(),
+                introduced_components: Vec::new(),
+                introduced_facilities: Vec::new(),
+                ready_component_count: 0,
+                selected_component_count: 0,
+                deferred_component_count: 0,
+                oversized_component_count: 0,
+                cumulative_facility_count: refined.placements.len(),
+                cumulative_route_requirement_count: refined.routes.len(),
+                prior_placement_hint_count: prior_reference.len(),
+                bounds: bounds.clone(),
+                placements: refined.placements.clone(),
+                logistics_components: refined.logistics_components.clone(),
+                routes: refined.routes.clone(),
+                route_turns,
+                route_cells,
+                bridge_count,
+                attempts,
+                optimization: IntegratedLayoutPhaseOptimization {
+                    search_bounds: crate::layouts::FacilityPlacementBounds {
+                        width: request.max_width,
+                        height: request.max_height,
+                    },
+                    canonical_used_bounds: bounds,
+                    score_delta: initial_incumbent.as_ref().map(|initial| {
+                        LayoutScoreDelta::between(initial.score, final_incumbent.score)
+                    }),
+                    initial_incumbent,
+                    final_incumbent,
+                    candidate_counts,
+                    facility_changes: FacilityChangeCounts {
+                        unchanged_prior: prior_reference
+                            .len()
+                            .saturating_sub(final_score.moved_prior_facility_count),
+                        moved_prior: final_score.moved_prior_facility_count,
+                        newly_placed: 0,
+                        rotation_changed: final_score.rotation_change_count,
+                    },
+                    route_changes,
+                    neighborhoods,
+                    elapsed_ms: PhaseElapsedMilliseconds {
+                        graph_construction: 0,
+                        incumbent_extension: incumbent_extension_ms,
+                        placement: placement_ms,
+                        routing: routing_ms,
+                        validation: Some(validation_ms),
+                        total: elapsed_milliseconds(final_started),
+                    },
+                    termination_reason,
+                    optimality: OptimizationProofStatus::Unproven,
+                },
+            });
+            refined.diagnostics.push(IntegratedLayoutDiagnostic::info(
+                "iterative-scc-final-refinement-complete",
+                "executed the reserved full-graph refinement with every facility free and the completed growth witness as the initial incumbent",
+            ));
+            report = refined;
+        }
+    }
     report.phases = snapshots;
     report.diagnostics.push(IntegratedLayoutDiagnostic::info(
         "iterative-scc-layout-complete",
         format!(
             "constructed and validated the full layout through {} output-first SCC growth phases",
-            report.phases.len(),
+            growth.phases.len(),
         ),
     ));
-    let _final_refinement_grant = strategy_budget.final_refinement_grant(Instant::now());
     report
 }
 
@@ -459,6 +580,7 @@ fn optimize_cumulative_phase(
     prior_witness: Option<&IntegratedLayoutReport>,
     strategy_budget: &mut StrategyBudget,
     phase_budget: &mut GrowthPhaseBudget,
+    final_refinement: bool,
     cancellation_requested: &dyn Fn() -> bool,
 ) -> Result<PhaseSearchResult, IntegratedLayoutDiagnostic> {
     let extension_started = Instant::now();
@@ -479,7 +601,36 @@ fn optimize_cumulative_phase(
         }
         _ => None,
     };
-    if let (Some(previous_wiring), Some(prior_witness)) = (previous_wiring, prior_witness) {
+    if final_refinement {
+        let prior_witness = prior_witness.expect("final refinement requires a prior witness");
+        let retained = fallback_retained
+            .as_ref()
+            .expect("final refinement requires retained full-graph state");
+        let score = LayoutScore::from_report(prior_witness, prior_reference)
+            .expect("validated final incumbent must be scoreable");
+        let candidate_key = DeterministicCandidateKey {
+            phase_index,
+            refinement_kind: RefinementKind::IncumbentExtension,
+            neighborhood_rank: 0,
+            restart_index: 0,
+            policy_index: 0,
+            attempt_index: 0,
+            yield_index: 0,
+        };
+        initial_incumbent = Some(IntegratedLayoutIncumbentSummary {
+            score,
+            candidate_key,
+            provenance: IncumbentProvenance::ExtendedPriorPhase,
+        });
+        incumbent = Some(PhaseIncumbent {
+            cumulative_graph_key: retained.graph_key.clone(),
+            cumulative_graph_fingerprint: retained.graph_fingerprint.clone(),
+            witness: prior_witness.clone(),
+            score,
+            candidate_key,
+            provenance: IncumbentProvenance::ExtendedPriorPhase,
+        });
+    } else if let (Some(previous_wiring), Some(prior_witness)) = (previous_wiring, prior_witness) {
         let now = Instant::now();
         let phase_remaining = phase_budget.remaining(now);
         let extension_grant = (phase_remaining / 4)
@@ -545,7 +696,12 @@ fn optimize_cumulative_phase(
     let mut validation_ms = 0_u64;
     let attempt_limit = config.candidate_attempts_per_neighborhood;
     let mut cancelled = false;
-    for neighborhood_rank in 0..=3 {
+    let neighborhood_ranks: &[usize] = if final_refinement {
+        &[3]
+    } else {
+        &[0, 1, 2, 3]
+    };
+    for (neighborhood_offset, neighborhood_rank) in neighborhood_ranks.iter().copied().enumerate() {
         if cancellation_requested() {
             cancelled = true;
             break;
@@ -557,7 +713,7 @@ fn optimize_cumulative_phase(
             fixed_facility_ids: plan.fixed_facility_ids.clone(),
         };
         let now = Instant::now();
-        let remaining_neighborhoods = 4 - neighborhood_rank;
+        let remaining_neighborhoods = neighborhood_ranks.len() - neighborhood_offset;
         let neighborhood_grant = phase_budget.remaining(now)
             / u32::try_from(remaining_neighborhoods)
                 .unwrap_or(u32::MAX)
@@ -652,7 +808,11 @@ fn optimize_cumulative_phase(
                 for candidate in batch.candidates {
                     let candidate_key = DeterministicCandidateKey {
                         phase_index,
-                        refinement_kind: RefinementKind::GrowthNeighborhood,
+                        refinement_kind: if final_refinement {
+                            RefinementKind::FinalGlobal
+                        } else {
+                            RefinementKind::GrowthNeighborhood
+                        },
                         neighborhood_rank,
                         restart_index,
                         policy_index,
@@ -803,9 +963,13 @@ fn optimize_cumulative_phase(
                             witness: routed,
                             score,
                             candidate_key,
-                            provenance: IncumbentProvenance::NeighborhoodCandidate {
-                                neighborhood_rank,
-                                attempt_index,
+                            provenance: if final_refinement {
+                                IncumbentProvenance::FinalGlobalRefinement { attempt_index }
+                            } else {
+                                IncumbentProvenance::NeighborhoodCandidate {
+                                    neighborhood_rank,
+                                    attempt_index,
+                                }
                             },
                         });
                     }

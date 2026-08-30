@@ -101,7 +101,7 @@ fn one_facility_external_routes_are_minimal_and_search_domain_independent() {
 
     for (report, expected_search_width) in [(&large_report, 500), (&small_report, 50)] {
         assert!(report.success, "{:#?}", report.diagnostics);
-        assert_eq!(report.phases.len(), 1);
+        assert_eq!(report.phases.len(), 2);
         let phase = &report.phases[0];
         assert_eq!(phase.ready_component_count, 1);
         assert_eq!(phase.selected_component_count, 1);
@@ -120,6 +120,11 @@ fn one_facility_external_routes_are_minimal_and_search_domain_independent() {
             phase.optimization.search_bounds.width,
             expected_search_width
         );
+        let final_refinement = &report.phases[1];
+        assert!(final_refinement.introduced_components.is_empty());
+        assert_eq!(final_refinement.routes.len(), 3);
+        assert_eq!(final_refinement.route_cells, 3);
+        assert_eq!(final_refinement.optimization.neighborhoods[0].rank, 3);
         for route in &phase.routes {
             assert_eq!(route.cells.len(), 1);
             assert!(matches!(
