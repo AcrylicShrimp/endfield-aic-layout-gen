@@ -59,9 +59,19 @@ pub struct IntegratedRoute {
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct IntegratedRouteEndpoint {
-    pub instance: String,
-    pub port: String,
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum IntegratedRouteEndpoint {
+    Facility { instance: String, port: String },
+    Boundary { node: String, side: BoundarySide },
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum BoundarySide {
+    North,
+    East,
+    South,
+    West,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -139,11 +149,19 @@ struct ModelInput {
 
 struct EdgeInput {
     edge: FacilityInstanceWiringEdge,
-    source_instance: String,
-    target_instance: String,
-    source_ports: Vec<FacilityPortDefinition>,
-    target_ports: Vec<FacilityPortDefinition>,
+    source: EndpointInput,
+    target: EndpointInput,
     transport: TransportKind,
+}
+
+enum EndpointInput {
+    Facility {
+        instance: String,
+        ports: Vec<FacilityPortDefinition>,
+    },
+    Boundary {
+        node: String,
+    },
 }
 
 struct InstanceInput {
@@ -174,6 +192,18 @@ fn prepare_model(
             diagnostic.entity.clone(),
             diagnostic.message.clone(),
         ));
+    }
+    let mut node_by_id = BTreeMap::new();
+    for (index, node) in instance_wiring.nodes.iter().enumerate() {
+        let id = wiring_node_id(node);
+        if node_by_id.insert(id, node).is_some() {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "duplicate-wiring-node",
+                format!("/nodes/{index}/id"),
+                Some(id.to_string()),
+                format!("wiring node '{id}' appears more than once"),
+            ));
+        }
     }
     let mut instances = Vec::new();
     let mut seen = BTreeSet::new();
@@ -230,20 +260,18 @@ fn prepare_model(
 
     let mut edges = Vec::with_capacity(instance_wiring.edges.len());
     for (edge_index, edge) in instance_wiring.edges.iter().cloned().enumerate() {
-        let source = instances
-            .iter()
-            .find(|instance| instance.id == edge.source)
-            .ok_or_else(|| unsupported_external_endpoint(edge_index, "source", &edge.source))?;
-        let target = instances
-            .iter()
-            .find(|instance| instance.id == edge.target)
-            .ok_or_else(|| unsupported_external_endpoint(edge_index, "target", &edge.target))?;
-        if source.id == target.id {
+        let source_node = node_by_id
+            .get(edge.source.as_str())
+            .ok_or_else(|| missing_route_endpoint(edge_index, "source", edge.source.as_str()))?;
+        let target_node = node_by_id
+            .get(edge.target.as_str())
+            .ok_or_else(|| missing_route_endpoint(edge_index, "target", edge.target.as_str()))?;
+        if edge.source == edge.target {
             return Err(IntegratedLayoutDiagnostic::error(
                 "unsupported-self-route",
                 format!("/edges/{edge_index}"),
-                Some(source.id.clone()),
-                "integrated routing does not support a route from an instance to itself",
+                Some(edge.source.clone()),
+                "integrated routing does not support a route from a node to itself",
             ));
         }
 
@@ -258,37 +286,27 @@ fn prepare_model(
                 ),
             )
         })?;
-        let source_ports = compatible_ports(
-            &source.definition,
+        let source = prepare_endpoint(
+            edge_index,
+            "source",
+            source_node,
+            &instances,
             FacilityPortDirection::Output,
             item.transport,
-        );
-        let target_ports = compatible_ports(
-            &target.definition,
+            &edge.item,
+        )?;
+        let target = prepare_endpoint(
+            edge_index,
+            "target",
+            target_node,
+            &instances,
             FacilityPortDirection::Input,
             item.transport,
-        );
-        if source_ports.is_empty() {
-            return Err(missing_compatible_port(
-                edge_index,
-                &source.id,
-                "output",
-                item.transport,
-            ));
-        }
-        if target_ports.is_empty() {
-            return Err(missing_compatible_port(
-                edge_index,
-                &target.id,
-                "input",
-                item.transport,
-            ));
-        }
+            &edge.item,
+        )?;
         edges.push(EdgeInput {
-            source_instance: source.id.clone(),
-            target_instance: target.id.clone(),
-            source_ports,
-            target_ports,
+            source,
+            target,
             transport: item.transport,
             edge,
         });
@@ -306,6 +324,95 @@ fn prepare_model(
     })
 }
 
+fn wiring_node_id(node: &FacilityInstanceWiringNode) -> &str {
+    match node {
+        FacilityInstanceWiringNode::Facility { id, .. }
+        | FacilityInstanceWiringNode::External { id, .. }
+        | FacilityInstanceWiringNode::Target { id, .. }
+        | FacilityInstanceWiringNode::Surplus { id, .. } => id,
+    }
+}
+
+fn prepare_endpoint(
+    edge_index: usize,
+    endpoint_kind: &str,
+    node: &FacilityInstanceWiringNode,
+    instances: &[InstanceInput],
+    port_direction: FacilityPortDirection,
+    transport: TransportKind,
+    item: &str,
+) -> Result<EndpointInput, IntegratedLayoutDiagnostic> {
+    match node {
+        FacilityInstanceWiringNode::Facility { id, .. } => {
+            let instance = instances
+                .iter()
+                .find(|instance| instance.id == *id)
+                .expect("every prepared facility node has an instance");
+            let ports = compatible_ports(&instance.definition, port_direction, transport);
+            if ports.is_empty() {
+                let direction = match port_direction {
+                    FacilityPortDirection::Input => "input",
+                    FacilityPortDirection::Output => "output",
+                };
+                return Err(missing_compatible_port(
+                    edge_index, id, direction, transport,
+                ));
+            }
+            Ok(EndpointInput::Facility {
+                instance: id.clone(),
+                ports,
+            })
+        }
+        FacilityInstanceWiringNode::External {
+            id,
+            item: node_item,
+        } if endpoint_kind == "source" => {
+            prepare_boundary_endpoint(edge_index, endpoint_kind, id, node_item, item)
+        }
+        FacilityInstanceWiringNode::Target {
+            id,
+            item: node_item,
+        }
+        | FacilityInstanceWiringNode::Surplus {
+            id,
+            item: node_item,
+        } if endpoint_kind == "target" => {
+            prepare_boundary_endpoint(edge_index, endpoint_kind, id, node_item, item)
+        }
+        _ => Err(IntegratedLayoutDiagnostic::error(
+            "invalid-route-endpoint-kind",
+            format!("/edges/{edge_index}/{endpoint_kind}"),
+            Some(wiring_node_id(node).to_string()),
+            format!(
+                "wiring node '{}' cannot be used as a route {endpoint_kind}",
+                wiring_node_id(node)
+            ),
+        )),
+    }
+}
+
+fn prepare_boundary_endpoint(
+    edge_index: usize,
+    endpoint_kind: &str,
+    node: &str,
+    node_item: &str,
+    edge_item: &str,
+) -> Result<EndpointInput, IntegratedLayoutDiagnostic> {
+    if node_item != edge_item {
+        return Err(IntegratedLayoutDiagnostic::error(
+            "boundary-item-mismatch",
+            format!("/edges/{edge_index}/item"),
+            Some(node.to_string()),
+            format!(
+                "boundary {endpoint_kind} node '{node}' carries item '{node_item}' but the route carries '{edge_item}'"
+            ),
+        ));
+    }
+    Ok(EndpointInput::Boundary {
+        node: node.to_string(),
+    })
+}
+
 fn compatible_ports(
     definition: &FacilityDefinition,
     direction: FacilityPortDirection,
@@ -319,16 +426,16 @@ fn compatible_ports(
         .collect()
 }
 
-fn unsupported_external_endpoint(
+fn missing_route_endpoint(
     edge_index: usize,
     kind: &str,
     endpoint: &str,
 ) -> IntegratedLayoutDiagnostic {
     IntegratedLayoutDiagnostic::error(
-        "unsupported-external-route-endpoint",
+        "missing-route-endpoint",
         format!("/edges/{edge_index}/{kind}"),
         Some(endpoint.to_string()),
-        format!("integrated routing currently requires a facility {kind} endpoint"),
+        format!("route {kind} node '{endpoint}' is absent from the wiring graph"),
     )
 }
 
@@ -372,7 +479,7 @@ struct ModelInstance {
 }
 
 struct EndpointOption {
-    port: String,
+    endpoint: IntegratedRouteEndpoint,
     cell: usize,
     selected: DomainId,
 }
@@ -434,28 +541,24 @@ fn solve(mut input: ModelInput) -> IntegratedLayoutReport {
     let mut route_cells_by_grid = vec![Vec::<DomainId>::new(); cell_count];
     let mut route_arc_variables = Vec::new();
     for (edge_index, edge) in input.edges.iter().enumerate() {
-        let source_index = model_instances
-            .iter()
-            .position(|instance| instance.input.id == edge.source_instance)
-            .expect("prepared source instance exists");
-        let target_index = model_instances
-            .iter()
-            .position(|instance| instance.input.id == edge.target_instance)
-            .expect("prepared target instance exists");
-        let source_options = endpoint_options(
+        let source_options = model_endpoint_options(
             &mut solver,
             edge_index,
             "source",
-            &model_instances[source_index],
-            &edge.source_ports,
+            &edge.source,
+            &model_instances,
+            input.width,
+            input.height,
             tag,
         );
-        let target_options = endpoint_options(
+        let target_options = model_endpoint_options(
             &mut solver,
             edge_index,
             "target",
-            &model_instances[target_index],
-            &edge.target_ports,
+            &edge.target,
+            &model_instances,
+            input.width,
+            input.height,
             tag,
         );
 
@@ -758,7 +861,10 @@ fn endpoint_options(
             );
             candidate_options.push(selected);
             options.push(EndpointOption {
-                port: port.id.clone(),
+                endpoint: IntegratedRouteEndpoint::Facility {
+                    instance: instance.input.id.clone(),
+                    port: port.id.clone(),
+                },
                 cell: candidate.port_connections[&port.id],
                 selected,
             });
@@ -772,6 +878,67 @@ fn endpoint_options(
             .add_constraint(pumpkin_solver::equals(definition, 0, tag))
             .post();
     }
+    post_equals_one(solver, options.iter().map(|option| option.selected), tag);
+    options
+}
+
+#[allow(clippy::too_many_arguments)]
+fn model_endpoint_options(
+    solver: &mut Solver,
+    edge_index: usize,
+    endpoint_kind: &str,
+    endpoint: &EndpointInput,
+    instances: &[ModelInstance],
+    width: i32,
+    height: i32,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> Vec<EndpointOption> {
+    match endpoint {
+        EndpointInput::Facility { instance, ports } => {
+            let instance = instances
+                .iter()
+                .find(|model_instance| model_instance.input.id == *instance)
+                .expect("prepared endpoint instance exists");
+            endpoint_options(solver, edge_index, endpoint_kind, instance, ports, tag)
+        }
+        EndpointInput::Boundary { node } => {
+            boundary_endpoint_options(solver, edge_index, endpoint_kind, node, width, height, tag)
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn boundary_endpoint_options(
+    solver: &mut Solver,
+    edge_index: usize,
+    endpoint_kind: &str,
+    node: &str,
+    width: i32,
+    height: i32,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> Vec<EndpointOption> {
+    let mut positions = Vec::new();
+    positions.extend((0..width).map(|x| (BoundarySide::North, x, 0)));
+    positions.extend((0..height).map(|y| (BoundarySide::East, width - 1, y)));
+    positions.extend((0..width).map(|x| (BoundarySide::South, x, height - 1)));
+    positions.extend((0..height).map(|y| (BoundarySide::West, 0, y)));
+
+    let options = positions
+        .into_iter()
+        .enumerate()
+        .map(|(option_index, (side, x, y))| EndpointOption {
+            endpoint: IntegratedRouteEndpoint::Boundary {
+                node: node.to_string(),
+                side,
+            },
+            cell: grid_index(x, y, width),
+            selected: solver.new_named_bounded_integer(
+                0,
+                1,
+                format!("edge-{edge_index}-{endpoint_kind}-boundary-{option_index}"),
+            ),
+        })
+        .collect::<Vec<_>>();
     post_equals_one(solver, options.iter().map(|option| option.selected), tag);
     options
 }
@@ -895,14 +1062,8 @@ fn extract_report(
                 used_height = used_height.max(cell.y + 1);
             }
             IntegratedRoute {
-                source: IntegratedRouteEndpoint {
-                    instance: edge.source_instance.clone(),
-                    port: source.port.clone(),
-                },
-                target: IntegratedRouteEndpoint {
-                    instance: edge.target_instance.clone(),
-                    port: target.port.clone(),
-                },
+                source: source.endpoint.clone(),
+                target: target.endpoint.clone(),
                 item: edge.edge.item.clone(),
                 rate: edge.edge.rate,
                 transport: edge.transport,
@@ -1134,8 +1295,14 @@ mod tests {
         assert_eq!(report.status, IntegratedLayoutStatus::Optimal);
         assert_eq!(report.routes.len(), 1);
         assert_eq!(report.routes[0].transport, TransportKind::Belt);
-        assert_eq!(report.routes[0].source.port, "output");
-        assert_eq!(report.routes[0].target.port, "input");
+        assert!(matches!(
+            &report.routes[0].source,
+            IntegratedRouteEndpoint::Facility { port, .. } if port == "output"
+        ));
+        assert!(matches!(
+            &report.routes[0].target,
+            IntegratedRouteEndpoint::Facility { port, .. } if port == "input"
+        ));
         assert_eq!(report.routes[0].cells.len(), 2);
         assert_eq!(report.placements.len(), 2);
     }
@@ -1383,6 +1550,143 @@ mod tests {
                 .map(|route| route.cells.len())
                 .sum::<usize>()
         );
+    }
+
+    #[test]
+    fn routes_external_input_and_target_to_boundary_terminals() {
+        let facilities = ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
+            schema_version: 3,
+            facilities: vec![facility_with_ports(
+                "processor",
+                &[
+                    (
+                        "input",
+                        FacilityPortDirection::Input,
+                        FacilityPortEdge::West,
+                    ),
+                    (
+                        "output",
+                        FacilityPortDirection::Output,
+                        FacilityPortEdge::East,
+                    ),
+                ],
+            )],
+        })
+        .expect("facility catalog should validate");
+        let items = ValidatedItemCatalog::try_from_catalog(ItemCatalog {
+            schema_version: SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+            items: vec![
+                ItemDefinition {
+                    id: "ore".to_string(),
+                    transport: TransportKind::Belt,
+                },
+                ItemDefinition {
+                    id: "product".to_string(),
+                    transport: TransportKind::Belt,
+                },
+            ],
+        })
+        .expect("item catalog should validate");
+        let mut wiring = FacilityInstanceWiringReport {
+            success: true,
+            nodes: vec![
+                FacilityInstanceWiringNode::External {
+                    id: "external:ore".to_string(),
+                    item: "ore".to_string(),
+                },
+                FacilityInstanceWiringNode::Facility {
+                    id: "recipe:process#1".to_string(),
+                    recipe: "process".to_string(),
+                    facility: "processor".to_string(),
+                    index: 1,
+                    runs_per_second: Rate {
+                        numerator: 1,
+                        denominator: 1,
+                    },
+                    work_seconds_per_second: Rate {
+                        numerator: 1,
+                        denominator: 1,
+                    },
+                    unused_capacity: Rate::zero(),
+                },
+                FacilityInstanceWiringNode::Target {
+                    id: "target:product".to_string(),
+                    item: "product".to_string(),
+                },
+            ],
+            edges: vec![
+                FacilityInstanceWiringEdge {
+                    source: "external:ore".to_string(),
+                    target: "recipe:process#1".to_string(),
+                    kind: "external-input".to_string(),
+                    item: "ore".to_string(),
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 1,
+                    },
+                },
+                FacilityInstanceWiringEdge {
+                    source: "recipe:process#1".to_string(),
+                    target: "target:product".to_string(),
+                    kind: "target".to_string(),
+                    item: "product".to_string(),
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 1,
+                    },
+                },
+            ],
+            diagnostics: Vec::new(),
+        };
+
+        let report = solve_integrated_layout(
+            &wiring,
+            &facilities,
+            &items,
+            &FacilityPlacementRequest {
+                schema_version: 2,
+                max_width: 5,
+                max_height: 1,
+            },
+        );
+
+        assert!(report.success, "{:#?}", report.diagnostics);
+        assert_eq!(report.routes.len(), 2);
+        assert!(matches!(
+            &report.routes[0].source,
+            IntegratedRouteEndpoint::Boundary { node, .. } if node == "external:ore"
+        ));
+        assert!(matches!(
+            &report.routes[0].target,
+            IntegratedRouteEndpoint::Facility { instance, port }
+                if instance == "recipe:process#1" && port == "input"
+        ));
+        assert!(matches!(
+            &report.routes[1].source,
+            IntegratedRouteEndpoint::Facility { instance, port }
+                if instance == "recipe:process#1" && port == "output"
+        ));
+        assert!(matches!(
+            &report.routes[1].target,
+            IntegratedRouteEndpoint::Boundary { node, .. } if node == "target:product"
+        ));
+
+        let FacilityInstanceWiringNode::External { item, .. } = &mut wiring.nodes[0] else {
+            unreachable!("the first test node is external")
+        };
+        *item = "product".to_string();
+        let mismatch = solve_integrated_layout(
+            &wiring,
+            &facilities,
+            &items,
+            &FacilityPlacementRequest {
+                schema_version: 2,
+                max_width: 5,
+                max_height: 1,
+            },
+        );
+        assert!(!mismatch.success);
+        assert_eq!(mismatch.diagnostics[0].code, "boundary-item-mismatch");
     }
 
     #[test]
