@@ -44,6 +44,12 @@ flattened placement-times-port endpoint Booleans with exact independent port cho
 solver-native element geometry. It measures endpoint state, placement-routing coupling, build
 time, and peak RSS reductions, while recording that the first-incumbent cliff remains.
 
+The tenth checkpoint, `heavy-xiranite-minimum-rate.tenth-factored-network-decomposition-report.md`,
+rebuilds every single, pair, and full phase-zero network subset under the factored shared-layer
+formulation. It locates the earliest validated-output boundary inside the two-requirement Xiranite
+Powder network and separates that boundary from the later one-layer versus two-layer composition
+growth.
+
 Regenerate it from a release binary with:
 
 ```bash

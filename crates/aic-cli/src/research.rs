@@ -23,6 +23,7 @@ use anyhow::{Context, Result, ensure};
 use clap::Subcommand;
 use sha2::{Digest, Sha256};
 
+mod factored_networks;
 mod first_phase;
 mod pair_cliff;
 mod shared_layer;
@@ -153,6 +154,28 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
     },
+    /// Rebuild the factored shared-layer phase-0 model for every network subset size.
+    DecomposeFirstPhaseFactoredNetworks {
+        /// Benchmark workload manifest JSON file to solve.
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+
+        /// Root used to resolve portable input paths in the workload manifest.
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Wall-clock budget given independently to every network-subset case.
+        #[arg(long, value_name = "MILLISECONDS")]
+        case_time_limit_ms: u64,
+
+        /// Directory receiving summary JSON and per-case JSON/HTML artifacts.
+        #[arg(long, value_name = "DIR")]
+        output_dir: PathBuf,
+    },
 }
 
 pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
@@ -223,6 +246,19 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             time_limit_ms,
             output_dir,
             shared_layer::Comparison::FactoredEndpoints,
+        ),
+        ResearchCommand::DecomposeFirstPhaseFactoredNetworks {
+            workload,
+            workspace_root,
+            placement_request,
+            case_time_limit_ms,
+            output_dir,
+        } => factored_networks::run(
+            workload,
+            workspace_root,
+            placement_request,
+            case_time_limit_ms,
+            output_dir,
         ),
     }
 }

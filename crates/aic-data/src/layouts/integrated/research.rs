@@ -14,6 +14,87 @@ use super::{IntegratedLayoutReport, exact, harness, prepare_exact_model};
 pub const EXACT_ABLATION_MATRIX_SCHEMA_VERSION: u32 = 1;
 pub const SHARED_LAYER_COMPARISON_SCHEMA_VERSION: u32 = 1;
 pub const FACTORED_ENDPOINT_COMPARISON_SCHEMA_VERSION: u32 = 1;
+pub const FACTORED_NETWORK_DECOMPOSITION_SCHEMA_VERSION: u32 = 1;
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct FactoredNetworkSubsetCaseReport {
+    pub id: String,
+    pub network_indices: Vec<usize>,
+    pub selected_networks: Vec<String>,
+    pub search_budget_ms: u64,
+    pub layout: IntegratedLayoutReport,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct FactoredNetworkDecompositionReport {
+    pub schema_version: u32,
+    pub search_budget_ms_per_case: u64,
+    pub cases: Vec<FactoredNetworkSubsetCaseReport>,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn decompose_first_integrated_layout_phase_factored_networks(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    search_budget: Duration,
+) -> Result<FactoredNetworkDecompositionReport, IntegratedLayoutReport> {
+    let first_phase_wiring = harness::first_iterative_scc_wiring(instance_wiring)?;
+    let input = prepare_exact_model(
+        &first_phase_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+    )?;
+    let network_count = input.networks.len();
+    let mut selections = (0..network_count)
+        .map(|index| vec![index])
+        .collect::<Vec<_>>();
+    for first in 0..network_count {
+        for second in (first + 1)..network_count {
+            selections.push(vec![first, second]);
+        }
+    }
+    if network_count > 2 {
+        selections.push((0..network_count).collect());
+    }
+
+    let mut cases = Vec::with_capacity(selections.len());
+    for indices in selections {
+        let (case_input, selected_networks) = input
+            .clone()
+            .select_network_indices(&indices)
+            .map_err(IntegratedLayoutReport::invalid)?;
+        let id = match indices.as_slice() {
+            [index] => format!("single-{index}"),
+            [first, second] => format!("pair-{first}-{second}"),
+            _ => "full".to_string(),
+        };
+        let layout = exact::shared_layer::solve_factored_endpoints(
+            case_input,
+            logistics_components,
+            Some(search_budget),
+        );
+        cases.push(FactoredNetworkSubsetCaseReport {
+            id,
+            network_indices: indices,
+            selected_networks,
+            search_budget_ms: millis(search_budget),
+            layout,
+        });
+    }
+
+    Ok(FactoredNetworkDecompositionReport {
+        schema_version: FACTORED_NETWORK_DECOMPOSITION_SCHEMA_VERSION,
+        search_budget_ms_per_case: millis(search_budget),
+        cases,
+    })
+}
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct FactoredEndpointComparisonReport {

@@ -1872,4 +1872,41 @@ mod tests {
         assert_eq!(time_limit_ms, 5_000);
         assert_eq!(output_dir, PathBuf::from("factored-endpoints"));
     }
+
+    #[test]
+    fn parses_first_phase_factored_network_decomposition() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "decompose-first-phase-factored-networks",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--case-time-limit-ms",
+            "5000",
+            "--output-dir",
+            "factored-networks",
+        ])
+        .expect("first-phase factored-network decomposition CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::DecomposeFirstPhaseFactoredNetworks {
+                    workload,
+                    workspace_root,
+                    placement_request,
+                    case_time_limit_ms,
+                    output_dir,
+                },
+        } = cli.command
+        else {
+            panic!("expected first-phase factored-network decomposition command")
+        };
+        assert_eq!(workload, PathBuf::from("workload.json"));
+        assert_eq!(workspace_root, PathBuf::from("."));
+        assert_eq!(placement_request, PathBuf::from("bounds.json"));
+        assert_eq!(case_time_limit_ms, 5_000);
+        assert_eq!(output_dir, PathBuf::from("factored-networks"));
+    }
 }
