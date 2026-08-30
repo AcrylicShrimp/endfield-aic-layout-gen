@@ -12,11 +12,10 @@ pub use integrated::{
     ExactModelMetrics, ExactObjectiveKind, ExactObjectiveStageReport, ExactObjectiveValue,
     ExactProofStatus, ExactSolveReport, ExactTerminationReason, ExactValidationStatus,
     INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic, IntegratedLayoutPhase,
-    IntegratedLayoutPhaseAttempt, IntegratedLayoutPhaseOptimization, IntegratedLayoutReport,
-    IntegratedLayoutStatus, PlacedLogisticsComponent, TransportNetwork, TransportNetworkEndpoint,
-    TransportNetworkSegment, TransportNetworkTerminal, render_integrated_layout_html,
-    render_integrated_layout_html_with_localization, solve_integrated_layout,
-    solve_integrated_layout_with_time_limit,
+    IntegratedLayoutReport, IntegratedLayoutStatus, PlacedLogisticsComponent, TransportNetwork,
+    TransportNetworkEndpoint, TransportNetworkSegment, TransportNetworkTerminal,
+    render_integrated_layout_html, render_integrated_layout_html_with_localization,
+    solve_integrated_layout, solve_integrated_layout_with_time_limit,
 };
 
 pub use placement::{

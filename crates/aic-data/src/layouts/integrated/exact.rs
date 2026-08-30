@@ -164,14 +164,6 @@ fn undirected_arc_pairs(arcs: &[Arc]) -> Vec<[Arc; 2]> {
         .collect()
 }
 
-pub(super) fn solve(
-    input: ModelInput,
-    logistics_components: &ValidatedLogisticsComponentCatalog,
-    time_limit: Option<Duration>,
-) -> IntegratedLayoutReport {
-    solve_with_prior_solution(input, logistics_components, time_limit, None)
-}
-
 pub(super) fn solve_with_prior_solution(
     input: ModelInput,
     logistics_components: &ValidatedLogisticsComponentCatalog,

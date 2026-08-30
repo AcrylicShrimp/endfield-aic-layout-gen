@@ -404,6 +404,15 @@ fn exact_solver_jointly_places_selects_ports_routes_and_validates() {
     let serialized = serde_json::to_value(&report).expect("report should serialize");
     assert!(serialized.get("transport_networks").is_some());
     assert!(serialized.get("routes").is_none());
+    assert_eq!(report.phases.len(), 2);
+    assert_eq!(report.phases[0].cumulative_facility_count, 1);
+    assert_eq!(report.phases[1].cumulative_facility_count, 2);
+    assert_eq!(report.phases[0].exact.model.hint_variables, 0);
+    assert!(report.phases[1].exact.model.hint_variables > 0);
+    let serialized_phase = &serialized["phases"][0];
+    assert!(serialized_phase.get("exact").is_some());
+    assert!(serialized_phase.get("attempts").is_none());
+    assert!(serialized_phase.get("optimization").is_none());
     let exact = report.exact.expect("exact metrics should be present");
     assert_eq!(exact.model.commodity_network_count, 1);
     assert_eq!(exact.model.commodity_item_count, 1);

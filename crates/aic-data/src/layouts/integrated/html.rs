@@ -434,19 +434,15 @@ fn page_metrics(page: &RenderPage<'_>) -> String {
         .filter(|component| component.kind == LogisticsComponentKind::Bridge)
         .count();
     let phase_detail = page.phase.map_or_else(String::new, |phase| {
-        let route_delta = phase
-            .optimization
-            .score_delta
-            .as_ref()
-            .map_or(0, |delta| delta.total_route_cells);
+        let objective = phase.exact.objective;
         format!(
-            " · +{} facilities · {} prior hints · route Δ{:+} · {} reused routes · {} moved facilities · {} turns",
+            " · +{} facilities · {} warm-start variables · area {} · {} transport tiles · {} turns · {} ms search",
             phase.introduced_facilities.len(),
-            phase.prior_placement_hint_count,
-            route_delta,
-            phase.optimization.route_changes.reused,
-            phase.optimization.facility_changes.moved_prior,
-            phase.route_turns,
+            phase.exact.model.hint_variables,
+            objective.map_or(0, |value| value.used_bounding_box_area),
+            objective.map_or(0, |value| value.physical_transport_tiles),
+            objective.map_or(0, |value| value.total_route_turns),
+            phase.exact.search_ms,
         )
     });
     format!(
@@ -864,8 +860,9 @@ fn xml_escape(value: &str) -> String {
 mod tests {
     use crate::facilities::{FacilityPortDirection, FacilityPortEdge};
     use crate::layouts::{
-        FacilityPlacement, FacilityPlacementBounds, INTEGRATED_LAYOUT_SCHEMA_VERSION,
-        IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutPhaseOptimization,
+        ExactModelMetrics, ExactProofStatus, ExactSolveReport, ExactTerminationReason,
+        ExactValidationStatus, FacilityPlacement, FacilityPlacementBounds,
+        INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic, IntegratedLayoutPhase,
         IntegratedLayoutReport, IntegratedLayoutStatus, TransportNetwork, TransportNetworkEndpoint,
         TransportNetworkSegment, TransportNetworkTerminal, WorldGridPosition,
     };
@@ -876,12 +873,6 @@ mod tests {
     use crate::logistics::TransportKind;
     use crate::recipes::Rate;
 
-    use super::super::report::{
-        CandidateCounts, FacilityChangeCounts, IncumbentProvenance,
-        IntegratedLayoutIncumbentSummary, OptimizationProofStatus, OptimizationTerminationReason,
-        PhaseElapsedMilliseconds, RouteChangeCounts,
-    };
-    use super::super::score::{DeterministicCandidateKey, LayoutScore, RefinementKind};
     use super::{
         endpoint_arrow_direction, estimated_label_width, facility_port_cell,
         render_integrated_layout_html, render_integrated_layout_html_with_localization,
@@ -965,72 +956,33 @@ mod tests {
             index,
             introduced_components: vec![format!("component:{index:04}")],
             introduced_facilities: vec!["facility:<one>".to_string()],
-            ready_component_count: 1,
-            selected_component_count: 1,
-            deferred_component_count: 0,
-            oversized_component_count: 0,
             cumulative_facility_count: 1,
             cumulative_route_requirement_count: 1,
-            prior_placement_hint_count: usize::from(index > 0),
             bounds: report.bounds.clone().expect("test report has bounds"),
             placements: report.placements.clone(),
             logistics_components: report.logistics_components.clone(),
             transport_networks: report.transport_networks.clone(),
-            route_turns: 0,
-            route_cells: 2,
-            bridge_count: 0,
-            attempts: Vec::new(),
-            optimization: IntegratedLayoutPhaseOptimization {
-                search_bounds: FacilityPlacementBounds {
-                    width: 8,
-                    height: 6,
+            exact: ExactSolveReport {
+                formulation: "test",
+                model: ExactModelMetrics {
+                    hint_variables: usize::from(index > 0),
+                    ..ExactModelMetrics::default()
                 },
-                canonical_used_bounds: report.bounds.clone().expect("test report has bounds"),
-                initial_incumbent: None,
-                final_incumbent: IntegratedLayoutIncumbentSummary {
-                    score: LayoutScore {
-                        total_route_cells: 2,
-                        total_route_turns: 0,
-                        used_bounding_box_area: 48,
-                        maximum_used_side: 8,
-                        physical_transport_tiles: 2,
-                        logistics_component_count: 0,
-                        moved_prior_facility_count: 0,
-                        total_prior_facility_manhattan_displacement: 0,
-                        rotation_change_count: 0,
-                    },
-                    candidate_key: DeterministicCandidateKey {
-                        phase_index: index,
-                        refinement_kind: RefinementKind::GrowthNeighborhood,
-                        neighborhood_rank: 3,
-                        restart_index: 0,
-                        policy_index: 0,
-                        attempt_index: 0,
-                        yield_index: 0,
-                    },
-                    provenance: IncumbentProvenance::NeighborhoodCandidate {
-                        neighborhood_rank: 3,
-                        attempt_index: 0,
-                    },
-                },
-                score_delta: None,
-                candidate_counts: CandidateCounts {
-                    generated: 1,
-                    routed: 1,
-                    validated: 1,
-                    improved: 1,
-                    rejected: 0,
-                    timed_out: 0,
-                },
-                facility_changes: FacilityChangeCounts::default(),
-                route_changes: RouteChangeCounts {
-                    new: 1,
-                    ..RouteChangeCounts::default()
-                },
-                neighborhoods: Vec::new(),
-                elapsed_ms: PhaseElapsedMilliseconds::default(),
-                termination_reason: OptimizationTerminationReason::NeighborhoodScheduleExhausted,
-                optimality: OptimizationProofStatus::NotAttempted,
+                construction_ms: 1,
+                search_ms: 2,
+                first_incumbent_ms: Some(1),
+                incumbent_count: 1,
+                objective: Some(crate::layouts::ExactObjectiveValue {
+                    used_bounding_box_area: 48,
+                    physical_transport_tiles: 2,
+                    total_route_turns: 0,
+                    maximum_used_side: 8,
+                    logistics_component_count: 0,
+                }),
+                objective_stages: Vec::new(),
+                termination: ExactTerminationReason::Feasible,
+                proof: ExactProofStatus::Unproven,
+                validation: ExactValidationStatus::Passed,
             },
         };
         report.phases = vec![phase(0), phase(1)];

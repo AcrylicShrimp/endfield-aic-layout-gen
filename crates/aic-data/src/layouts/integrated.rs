@@ -12,6 +12,7 @@ use super::WorldGridPosition;
 
 mod exact;
 mod geometry;
+mod harness;
 mod html;
 mod identity;
 mod model;
@@ -20,7 +21,6 @@ mod report;
 mod score;
 mod witness;
 
-use exact::solve;
 use geometry::{candidate_port_connections, grid_index, world_position};
 pub use html::{render_integrated_layout_html, render_integrated_layout_html_with_localization};
 use model::{
@@ -31,11 +31,10 @@ pub use report::{
     ExactModelMetrics, ExactObjectiveKind, ExactObjectiveStageReport, ExactObjectiveValue,
     ExactProofStatus, ExactSolveReport, ExactTerminationReason, ExactValidationStatus,
     INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic, IntegratedLayoutPhase,
-    IntegratedLayoutPhaseAttempt, IntegratedLayoutPhaseOptimization, IntegratedLayoutReport,
-    IntegratedLayoutStatus, PlacedLogisticsComponent, TransportNetwork, TransportNetworkEndpoint,
-    TransportNetworkSegment, TransportNetworkTerminal,
+    IntegratedLayoutReport, IntegratedLayoutStatus, PlacedLogisticsComponent, TransportNetwork,
+    TransportNetworkEndpoint, TransportNetworkSegment, TransportNetworkTerminal,
 };
-pub use score::{DeterministicCandidateKey, LayoutScore};
+pub use score::LayoutScore;
 
 pub fn solve_integrated_layout(
     instance_wiring: &FacilityInstanceWiringReport,
@@ -85,7 +84,28 @@ fn solve_integrated_layout_with_optional_time_limit(
     request: &FacilityPlacementRequest,
     time_limit: Option<Duration>,
 ) -> IntegratedLayoutReport {
-    match prepare_model(
+    harness::solve_iterative_scc(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+        time_limit,
+    )
+}
+
+fn solve_exact_model(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    time_limit: Option<Duration>,
+    prior_solution: Option<&IntegratedLayoutReport>,
+) -> IntegratedLayoutReport {
+    match prepare_exact_model(
         instance_wiring,
         facilities,
         items,
@@ -93,33 +113,53 @@ fn solve_integrated_layout_with_optional_time_limit(
         logistics_components,
         request,
     ) {
-        Ok(input) => match required_facility_area(&input) {
-            Ok(required_area) => {
-                let available_area = i64::from(input.width) * i64::from(input.height);
-                if required_area > available_area {
-                    IntegratedLayoutReport::failure(
-                        IntegratedLayoutStatus::Infeasible,
-                        IntegratedLayoutDiagnostic::error(
-                            "facility-area-exceeds-layout-bounds",
-                            "/",
-                            None,
-                            format!(
-                                "facility footprints require at least {required_area} cells but hard layout bounds provide {available_area} cells"
-                            ),
-                        ),
-                    )
-                } else {
-                    solve(input, logistics_components, time_limit)
-                }
-            }
-            Err(diagnostic) => {
-                IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
-            }
-        },
-        Err(diagnostic) => {
-            IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
-        }
+        Ok(input) => exact::solve_with_prior_solution(
+            input,
+            logistics_components,
+            time_limit,
+            prior_solution,
+        ),
+        Err(report) => report,
     }
+}
+
+fn prepare_exact_model(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+) -> Result<ModelInput, IntegratedLayoutReport> {
+    let input = prepare_model(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+    )
+    .map_err(|diagnostic| {
+        IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
+    })?;
+    let required_area = required_facility_area(&input).map_err(|diagnostic| {
+        IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
+    })?;
+    let available_area = i64::from(input.width) * i64::from(input.height);
+    if required_area > available_area {
+        return Err(IntegratedLayoutReport::failure(
+            IntegratedLayoutStatus::Infeasible,
+            IntegratedLayoutDiagnostic::error(
+                "facility-area-exceeds-layout-bounds",
+                "/",
+                None,
+                format!(
+                    "facility footprints require at least {required_area} cells but hard layout bounds provide {available_area} cells"
+                ),
+            ),
+        ));
+    }
+    Ok(input)
 }
 
 pub(super) fn canonicalize_report_geometry(report: &mut IntegratedLayoutReport) {

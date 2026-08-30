@@ -106,32 +106,6 @@ fn network_turn_count(network: &super::TransportNetwork) -> usize {
         .count()
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-#[serde(rename_all = "kebab-case")]
-pub enum RefinementKind {
-    IncumbentExtension,
-    GrowthNeighborhood,
-    FinalGlobal,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-pub struct DeterministicCandidateKey {
-    pub phase_index: usize,
-    pub refinement_kind: RefinementKind,
-    pub neighborhood_rank: usize,
-    pub restart_index: usize,
-    pub policy_index: usize,
-    pub attempt_index: usize,
-    pub yield_index: usize,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, PartialOrd, Ord)]
-#[cfg(test)]
-pub struct CandidateRank {
-    pub score: LayoutScore,
-    pub deterministic_candidate_key: DeterministicCandidateKey,
-}
-
 #[cfg(test)]
 mod tests {
     use crate::layouts::{
@@ -170,30 +144,6 @@ mod tests {
     }
 
     #[test]
-    fn candidate_key_breaks_only_equal_score_ties() {
-        let score = LayoutScore {
-            used_bounding_box_area: 1,
-            physical_transport_tiles: 1,
-            total_route_turns: 0,
-            maximum_used_side: 1,
-            logistics_component_count: 0,
-            moved_prior_facility_count: 0,
-            total_prior_facility_manhattan_displacement: 0,
-            rotation_change_count: 0,
-            total_route_cells: 1,
-        };
-        let first = CandidateRank {
-            score,
-            deterministic_candidate_key: key(0),
-        };
-        let second = CandidateRank {
-            score,
-            deterministic_candidate_key: key(1),
-        };
-        assert!(first < second);
-    }
-
-    #[test]
     fn computes_unique_transport_tiles_and_fixed_reference_movement() {
         let prior = placement("facility", 2, 3, 0);
         let mut report = IntegratedLayoutReport {
@@ -220,18 +170,6 @@ mod tests {
         assert_eq!(score.moved_prior_facility_count, 1);
         assert_eq!(score.total_prior_facility_manhattan_displacement, 3);
         assert_eq!(score.rotation_change_count, 1);
-    }
-
-    fn key(yield_index: usize) -> DeterministicCandidateKey {
-        DeterministicCandidateKey {
-            phase_index: 0,
-            refinement_kind: RefinementKind::GrowthNeighborhood,
-            neighborhood_rank: 0,
-            restart_index: 0,
-            policy_index: 0,
-            attempt_index: 0,
-            yield_index,
-        }
     }
 
     fn placement(instance: &str, x: i64, y: i64, rotation: i64) -> FacilityPlacement {
