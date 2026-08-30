@@ -7,8 +7,9 @@ use crate::layouts::FacilityPlacement;
 use crate::logistics::{LogisticsComponentKind, TransportKind, ValidatedLogisticsComponentCatalog};
 
 use super::{
-    EndpointInput, IntegratedLayoutDiagnostic, IntegratedLayoutReport, IntegratedLayoutStatus,
-    IntegratedRoute, IntegratedRouteEndpoint, ModelInput, PlacedLogisticsComponent,
+    EndpointInput, EndpointPortSelection, IntegratedLayoutDiagnostic, IntegratedLayoutReport,
+    IntegratedLayoutStatus, IntegratedRoute, IntegratedRouteEndpoint, ModelInput,
+    PlacedLogisticsComponent, RetainedRoutingResult, RetainedRoutingState, RoutingConflict,
     candidate_port_connections, grid_index, world_position,
 };
 
@@ -256,6 +257,210 @@ pub(super) fn construct_from_placements(
     IntegratedLayoutReport::failure(IntegratedLayoutStatus::Unknown, diagnostic)
 }
 
+pub(super) fn construct_from_retained(
+    input: ModelInput,
+    components: &ValidatedLogisticsComponentCatalog,
+    placements: Vec<FacilityPlacement>,
+    retained: &RetainedRoutingState,
+    explicit_invalidated_requirement_ids: &BTreeSet<String>,
+    deadline: Instant,
+) -> RetainedRoutingResult {
+    if let Some(unknown) = explicit_invalidated_requirement_ids
+        .iter()
+        .find(|requirement_id| {
+            !input
+                .edges
+                .iter()
+                .any(|edge| edge.requirement_id == requirement_id.as_str())
+        })
+    {
+        return retained_failure(
+            IntegratedLayoutDiagnostic::error(
+                "unknown-retained-route-requirement",
+                "/invalidated_requirement_ids",
+                Some(unknown.clone()),
+                format!(
+                    "invalidated route requirement '{unknown}' is absent from the current graph"
+                ),
+            ),
+            BTreeSet::new(),
+            BTreeSet::new(),
+            None,
+        );
+    }
+    let placements = match index_placements(&input, placements) {
+        Ok(placements) => placements,
+        Err(diagnostic) => {
+            return retained_failure(diagnostic, BTreeSet::new(), BTreeSet::new(), None);
+        }
+    };
+    let invalidated = invalidation_closure(
+        &input,
+        &placements,
+        retained,
+        explicit_invalidated_requirement_ids,
+    );
+    let current_index_by_id = input
+        .edges
+        .iter()
+        .enumerate()
+        .map(|(index, edge)| (edge.requirement_id.as_str(), index))
+        .collect::<BTreeMap<_, _>>();
+    let reused = retained
+        .retained_routes
+        .keys()
+        .filter(|requirement_id| {
+            current_index_by_id.contains_key(requirement_id.as_str())
+                && !invalidated.contains(requirement_id.as_str())
+        })
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let route_order = input
+        .edges
+        .iter()
+        .enumerate()
+        .filter(|(_, edge)| invalidated.contains(&edge.requirement_id))
+        .map(|(index, _)| index)
+        .collect::<Vec<_>>();
+    let assigned = match assign_subset_ports(&input, &placements, &route_order, retained, &reused) {
+        Ok(assigned) => assigned,
+        Err(failure) => {
+            let requirement_id = input.edges[failure.edge_index].requirement_id.clone();
+            let conflict = RoutingConflict {
+                code: "retained-subset-port-assignment-failed".to_string(),
+                failed_requirement_ids: vec![requirement_id.clone()],
+                related_facility_ids: vec![failure.instance.clone()],
+                related_scc_ids: Vec::new(),
+                blocked_cells: Vec::new(),
+                blocking_requirement_ids: reused.iter().cloned().collect(),
+                blocking_component_ids: Vec::new(),
+                message: format!(
+                    "facility '{}' has no available compatible port for retained subset route '{}'",
+                    failure.instance, requirement_id
+                ),
+            };
+            return retained_failure(
+                IntegratedLayoutDiagnostic::error(
+                    "retained-subset-port-assignment-failed",
+                    format!("/routes/{requirement_id}"),
+                    Some(requirement_id),
+                    conflict.message.clone(),
+                ),
+                invalidated,
+                reused,
+                Some(conflict),
+            );
+        }
+    };
+
+    let mut best_failure = None;
+    for routing_height in active_routing_heights(&input, &placements) {
+        if Instant::now() >= deadline {
+            break;
+        }
+        match route_subset(
+            &input,
+            &placements,
+            &assigned,
+            retained,
+            &reused,
+            routing_height,
+            deadline,
+        ) {
+            Ok((routes, bridges)) => {
+                let report = success_report(
+                    &input,
+                    components,
+                    placements,
+                    routes,
+                    bridges,
+                    "retained-subset-routing-feasible",
+                    "retained routes were preserved while the invalidated subset was rerouted and the complete witness was validated",
+                );
+                let report = validate_success_report(&input, components, report);
+                if report.success {
+                    return RetainedRoutingResult {
+                        report,
+                        invalidated_requirement_ids: invalidated.into_iter().collect(),
+                        reused_requirement_ids: reused.into_iter().collect(),
+                        conflict: None,
+                    };
+                }
+                return retained_failure(
+                    report.diagnostics.first().cloned().unwrap_or_else(|| {
+                        IntegratedLayoutDiagnostic::error(
+                            "retained-subset-validation-failed",
+                            "/",
+                            None,
+                            "retained subset witness validation failed without a diagnostic",
+                        )
+                    }),
+                    invalidated,
+                    reused,
+                    None,
+                );
+            }
+            Err(failure) => best_failure = Some(failure),
+        }
+    }
+
+    let failure = best_failure;
+    let failed_requirement_id = failure
+        .as_ref()
+        .map(|failure| input.edges[failure.edge_index].requirement_id.clone());
+    let blocking_requirement_ids = reused
+        .iter()
+        .filter(|requirement_id| {
+            failed_requirement_id.as_ref().is_none_or(|failed| {
+                let failed_transport = input.edges[current_index_by_id[failed.as_str()]].transport;
+                retained.retained_routes[*requirement_id].transport == failed_transport
+            })
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    let blocking_component_ids = retained
+        .retained_components
+        .values()
+        .filter(|component| {
+            component
+                .owner_requirement_ids
+                .iter()
+                .any(|owner| reused.contains(owner))
+        })
+        .map(|component| component.id.clone())
+        .collect::<Vec<_>>();
+    let related_facility_ids = failure
+        .as_ref()
+        .map(|failure| edge_facility_ids(&input.edges[failure.edge_index]))
+        .unwrap_or_default();
+    let failed_requirement_ids = failed_requirement_id.into_iter().collect::<Vec<_>>();
+    let conflict = RoutingConflict {
+        code: "retained-subset-routing-failed".to_string(),
+        failed_requirement_ids: failed_requirement_ids.clone(),
+        related_facility_ids,
+        related_scc_ids: Vec::new(),
+        blocked_cells: Vec::new(),
+        blocking_requirement_ids,
+        blocking_component_ids,
+        message: "retained subset routing exhausted the available route search without a complete witness; this is not proof of infeasibility".to_string(),
+    };
+    retained_failure(
+        IntegratedLayoutDiagnostic::error(
+            if Instant::now() >= deadline {
+                "retained-subset-routing-time-limit"
+            } else {
+                "retained-subset-routing-failed"
+            },
+            "/routes",
+            failed_requirement_ids.first().cloned(),
+            conflict.message.clone(),
+        ),
+        invalidated,
+        reused,
+        Some(conflict),
+    )
+}
+
 fn index_placements(
     input: &ModelInput,
     placements: Vec<FacilityPlacement>,
@@ -488,6 +693,7 @@ fn assign_facility_ports(
                     placements,
                     &mut reserved[layer],
                     None,
+                    None,
                 )?;
                 let target = assign_facility_endpoint(
                     *edge_index,
@@ -496,6 +702,7 @@ fn assign_facility_ports(
                     placements,
                     &mut reserved[layer],
                     Some(source.cell),
+                    None,
                 )?;
                 (source, target)
             }
@@ -507,6 +714,7 @@ fn assign_facility_ports(
                     placements,
                     &mut reserved[layer],
                     None,
+                    None,
                 )?;
                 (external_endpoint(node, &target), target)
             }
@@ -517,6 +725,7 @@ fn assign_facility_ports(
                     &edge.source,
                     placements,
                     &mut reserved[layer],
+                    None,
                     None,
                 )?;
                 let target = external_endpoint(node, &source);
@@ -536,6 +745,215 @@ fn assign_facility_ports(
     Ok(assigned)
 }
 
+fn assign_subset_ports(
+    input: &ModelInput,
+    placements: &BTreeMap<String, SparsePlacement>,
+    order: &[usize],
+    retained: &RetainedRoutingState,
+    reused: &BTreeSet<String>,
+) -> Result<Vec<AssignedRoute>, PortAssignmentFailure> {
+    let mut reserved = [BTreeSet::new(), BTreeSet::new()];
+    for requirement_id in reused {
+        let route = &retained.retained_routes[requirement_id];
+        let layer = layer_index(route.transport);
+        let assignment = &retained.selected_ports[requirement_id];
+        for selection in [&assignment.source, &assignment.target] {
+            if let Some(cell) = selection_connection_cell(selection, placements) {
+                reserved[layer].insert(cell);
+            }
+        }
+    }
+
+    let mut assigned = Vec::with_capacity(order.len());
+    for edge_index in order {
+        let edge = &input.edges[*edge_index];
+        let layer = layer_index(edge.transport);
+        let preferred = retained.selected_ports.get(&edge.requirement_id);
+        let (source, target) = match (&edge.source, &edge.target) {
+            (EndpointInput::Facility { .. }, EndpointInput::Facility { .. }) => {
+                let source = assign_facility_endpoint(
+                    *edge_index,
+                    "source",
+                    &edge.source,
+                    placements,
+                    &mut reserved[layer],
+                    None,
+                    preferred.map(|assignment| selection_port_id(&assignment.source)),
+                )?;
+                let target = assign_facility_endpoint(
+                    *edge_index,
+                    "target",
+                    &edge.target,
+                    placements,
+                    &mut reserved[layer],
+                    Some(source.cell),
+                    preferred.map(|assignment| selection_port_id(&assignment.target)),
+                )?;
+                (source, target)
+            }
+            (EndpointInput::External { node }, EndpointInput::Facility { .. }) => {
+                let target = assign_facility_endpoint(
+                    *edge_index,
+                    "target",
+                    &edge.target,
+                    placements,
+                    &mut reserved[layer],
+                    None,
+                    preferred.map(|assignment| selection_port_id(&assignment.target)),
+                )?;
+                (external_endpoint(node, &target), target)
+            }
+            (EndpointInput::Facility { .. }, EndpointInput::External { node }) => {
+                let source = assign_facility_endpoint(
+                    *edge_index,
+                    "source",
+                    &edge.source,
+                    placements,
+                    &mut reserved[layer],
+                    None,
+                    preferred.map(|assignment| selection_port_id(&assignment.source)),
+                )?;
+                let target = external_endpoint(node, &source);
+                (source, target)
+            }
+            (EndpointInput::External { .. }, EndpointInput::External { .. }) => unreachable!(
+                "external-to-external requirements are rejected during model preparation"
+            ),
+        };
+        assigned.push(AssignedRoute {
+            edge_index: *edge_index,
+            source,
+            target,
+        });
+    }
+    Ok(assigned)
+}
+
+fn selection_connection_cell(
+    selection: &EndpointPortSelection,
+    placements: &BTreeMap<String, SparsePlacement>,
+) -> Option<usize> {
+    let (instance, port) = selection_identity(selection);
+    placements
+        .get(instance)?
+        .port_connections
+        .get(port)
+        .copied()
+}
+
+fn selection_port_id(selection: &EndpointPortSelection) -> &str {
+    selection_identity(selection).1
+}
+
+fn selection_identity(selection: &EndpointPortSelection) -> (&str, &str) {
+    match selection {
+        EndpointPortSelection::FacilityPort {
+            facility_instance_id,
+            port_id,
+        }
+        | EndpointPortSelection::ExternalDangling {
+            facility_instance_id,
+            port_id,
+            ..
+        } => (facility_instance_id, port_id),
+    }
+}
+
+fn invalidation_closure(
+    input: &ModelInput,
+    placements: &BTreeMap<String, SparsePlacement>,
+    retained: &RetainedRoutingState,
+    explicit: &BTreeSet<String>,
+) -> BTreeSet<String> {
+    let current_by_id = input
+        .edges
+        .iter()
+        .map(|edge| (edge.requirement_id.as_str(), edge))
+        .collect::<BTreeMap<_, _>>();
+    let mut invalidated = explicit.clone();
+    for edge in &input.edges {
+        match retained.retained_routes.get(&edge.requirement_id) {
+            Some(route) if route.requirement_fingerprint == edge.requirement_fingerprint => {}
+            _ => {
+                invalidated.insert(edge.requirement_id.clone());
+            }
+        }
+    }
+    let moved_facilities = placements
+        .iter()
+        .filter(|(instance, placement)| {
+            let facility_definition_changed = retained
+                .graph_key
+                .facilities
+                .iter()
+                .find(|record| record.facility_instance_id == instance.as_str())
+                .is_none_or(|record| record.flattened_facility_id != placement.placement.facility);
+            retained
+                .retained_placements
+                .get(instance.as_str())
+                .is_none_or(|prior| {
+                    facility_definition_changed
+                        || prior.x != placement.placement.x
+                        || prior.y != placement.placement.y
+                        || prior.rotation != placement.placement.rotation
+                })
+        })
+        .map(|(instance, _)| instance.as_str())
+        .collect::<BTreeSet<_>>();
+    for edge in &input.edges {
+        if endpoint_in_facilities(&edge.source, &moved_facilities)
+            || endpoint_in_facilities(&edge.target, &moved_facilities)
+        {
+            invalidated.insert(edge.requirement_id.clone());
+        }
+    }
+
+    for (requirement_id, route) in &retained.retained_routes {
+        let Some(edge) = current_by_id.get(requirement_id.as_str()) else {
+            continue;
+        };
+        if route.requirement_fingerprint != edge.requirement_fingerprint
+            || retained
+                .selected_ports
+                .get(requirement_id)
+                .is_none_or(|assignment| {
+                    [&assignment.source, &assignment.target]
+                        .into_iter()
+                        .any(|selection| selection_connection_cell(selection, placements).is_none())
+                })
+        {
+            invalidated.insert(requirement_id.clone());
+        }
+    }
+
+    loop {
+        let before = invalidated.len();
+        for component in retained.retained_components.values() {
+            if component
+                .owner_requirement_ids
+                .iter()
+                .any(|owner| invalidated.contains(owner))
+            {
+                invalidated.extend(
+                    component
+                        .owner_requirement_ids
+                        .iter()
+                        .filter(|owner| current_by_id.contains_key(owner.as_str()))
+                        .cloned(),
+                );
+            }
+        }
+        if invalidated.len() == before {
+            break;
+        }
+    }
+    invalidated
+}
+
+fn endpoint_in_facilities(endpoint: &EndpointInput, facilities: &BTreeSet<&str>) -> bool {
+    matches!(endpoint, EndpointInput::Facility { instance, .. } if facilities.contains(instance.as_str()))
+}
+
 fn assign_facility_endpoint(
     edge_index: usize,
     endpoint_kind: &'static str,
@@ -543,26 +961,46 @@ fn assign_facility_endpoint(
     placements: &BTreeMap<String, SparsePlacement>,
     reserved: &mut BTreeSet<usize>,
     allowed_reserved: Option<usize>,
+    preferred_port_id: Option<&str>,
 ) -> Result<FixedEndpoint, PortAssignmentFailure> {
     match endpoint {
         EndpointInput::Facility { instance, ports } => {
             let placement = placements
                 .get(instance)
                 .expect("prepared facility endpoint has a sparse placement");
-            let (port, cell) = ports
-                .iter()
-                .filter_map(|port| {
+            let preferred = preferred_port_id.and_then(|preferred| {
+                ports
+                    .iter()
+                    .filter(|port| port.id == preferred)
+                    .find_map(|port| {
+                        placement
+                            .port_connections
+                            .get(&port.id)
+                            .map(|cell| (port, *cell))
+                            .filter(|(_, cell)| {
+                                !reserved.contains(cell) || allowed_reserved == Some(*cell)
+                            })
+                    })
+            });
+            let fallback = || {
+                ports.iter().find_map(|port| {
                     placement
                         .port_connections
                         .get(&port.id)
                         .map(|cell| (port, *cell))
+                        .filter(|(_, cell)| {
+                            !reserved.contains(cell) || allowed_reserved == Some(*cell)
+                        })
                 })
-                .find(|(_, cell)| !reserved.contains(cell) || allowed_reserved == Some(*cell))
-                .ok_or_else(|| PortAssignmentFailure {
-                    edge_index,
-                    endpoint_kind,
-                    instance: instance.clone(),
-                })?;
+            };
+            let (port, cell) =
+                preferred
+                    .or_else(fallback)
+                    .ok_or_else(|| PortAssignmentFailure {
+                        edge_index,
+                        endpoint_kind,
+                        instance: instance.clone(),
+                    })?;
             reserved.insert(cell);
             Ok(FixedEndpoint {
                 endpoint: IntegratedRouteEndpoint::Facility {
@@ -659,6 +1097,190 @@ fn route_all(
     }
 
     Ok((routes, bridges))
+}
+
+fn route_subset(
+    input: &ModelInput,
+    placements: &BTreeMap<String, SparsePlacement>,
+    assigned: &[AssignedRoute],
+    retained: &RetainedRoutingState,
+    reused: &BTreeSet<String>,
+    routing_height: i32,
+    deadline: Instant,
+) -> Result<RoutedWitness, RoutingFailure> {
+    let cell_count = usize::try_from(input.width).expect("validated width is positive")
+        * usize::try_from(routing_height).expect("routing height is positive");
+    let facility_cells = facility_cells(input, placements, cell_count)
+        .expect("retained placements are non-overlapping and in bounds");
+    let reserved = reserved_cells_with_retained(input, assigned, retained, reused, placements);
+    let current_index_by_id = input
+        .edges
+        .iter()
+        .enumerate()
+        .map(|(index, edge)| (edge.requirement_id.as_str(), index))
+        .collect::<BTreeMap<_, _>>();
+    let mut used = [vec![None; cell_count], vec![None; cell_count]];
+    let mut bridges = BTreeSet::new();
+    let retained_component_cells = retained
+        .retained_components
+        .values()
+        .filter(|component| {
+            component
+                .owner_requirement_ids
+                .iter()
+                .all(|owner| reused.contains(owner))
+        })
+        .map(|component| {
+            (
+                component.transport,
+                grid_index(
+                    component.cell.x as i32,
+                    component.cell.y as i32,
+                    input.width,
+                ),
+            )
+        })
+        .collect::<BTreeSet<_>>();
+    let mut routes = Vec::with_capacity(reused.len() + assigned.len());
+    for requirement_id in reused {
+        let edge_index = current_index_by_id[requirement_id.as_str()];
+        let route = retained.retained_routes[requirement_id].clone();
+        let layer = layer_index(route.transport);
+        let cells = route
+            .cells
+            .iter()
+            .map(|cell| {
+                if cell.y >= i64::from(routing_height) {
+                    return None;
+                }
+                Some(grid_index(cell.x as i32, cell.y as i32, input.width))
+            })
+            .collect::<Option<Vec<_>>>()
+            .ok_or(RoutingFailure {
+                routed: routes.len(),
+                edge_index,
+            })?;
+        for (path_index, cell) in cells.iter().enumerate() {
+            if facility_cells[*cell] {
+                return Err(RoutingFailure {
+                    routed: routes.len(),
+                    edge_index,
+                });
+            }
+            if retained_component_cells.contains(&(route.transport, *cell)) {
+                used[layer][*cell] = Some(RouteCellShape::Crossed);
+                bridges.insert((route.transport, *cell));
+            } else if used[layer][*cell].is_none() {
+                used[layer][*cell] = Some(route_cell_shape(&cells, path_index, input.width));
+            } else {
+                return Err(RoutingFailure {
+                    routed: routes.len(),
+                    edge_index,
+                });
+            }
+        }
+        routes.push((edge_index, route));
+    }
+
+    for route in assigned {
+        if Instant::now() >= deadline {
+            return Err(RoutingFailure {
+                routed: routes.len(),
+                edge_index: route.edge_index,
+            });
+        }
+        let edge = &input.edges[route.edge_index];
+        let layer = layer_index(edge.transport);
+        let Some((source, target, cells)) = find_path(
+            input.width,
+            routing_height,
+            std::slice::from_ref(&route.source),
+            std::slice::from_ref(&route.target),
+            &facility_cells,
+            &used[layer],
+            &reserved[layer],
+        ) else {
+            return Err(RoutingFailure {
+                routed: routes.len(),
+                edge_index: route.edge_index,
+            });
+        };
+        for (path_index, cell) in cells.iter().enumerate() {
+            let shape = route_cell_shape(&cells, path_index, input.width);
+            match used[layer][*cell] {
+                None => used[layer][*cell] = Some(shape),
+                Some(existing) if crossing_allowed(existing, shape) => {
+                    used[layer][*cell] = Some(RouteCellShape::Crossed);
+                    bridges.insert((edge.transport, *cell));
+                }
+                Some(_) => unreachable!("path search only returns valid crossings"),
+            }
+        }
+        routes.push((
+            route.edge_index,
+            IntegratedRoute {
+                requirement_id: edge.requirement_id.clone(),
+                requirement_fingerprint: edge.requirement_fingerprint.clone(),
+                source: source.endpoint,
+                target: target.endpoint,
+                item: edge.edge.item.clone(),
+                rate: edge.edge.rate,
+                transport: edge.transport,
+                cells: cells
+                    .into_iter()
+                    .map(|cell| world_position(cell, input.width))
+                    .collect(),
+            },
+        ));
+    }
+    Ok((routes, bridges))
+}
+
+fn reserved_cells_with_retained(
+    input: &ModelInput,
+    assigned: &[AssignedRoute],
+    retained: &RetainedRoutingState,
+    reused: &BTreeSet<String>,
+    placements: &BTreeMap<String, SparsePlacement>,
+) -> [BTreeSet<usize>; 2] {
+    let mut reserved = reserved_cells(input, assigned);
+    for requirement_id in reused {
+        let route = &retained.retained_routes[requirement_id];
+        let layer = layer_index(route.transport);
+        let assignment = &retained.selected_ports[requirement_id];
+        for selection in [&assignment.source, &assignment.target] {
+            if let Some(cell) = selection_connection_cell(selection, placements) {
+                reserved[layer].insert(cell);
+            }
+        }
+    }
+    reserved
+}
+
+fn retained_failure(
+    diagnostic: IntegratedLayoutDiagnostic,
+    invalidated: BTreeSet<String>,
+    reused: BTreeSet<String>,
+    conflict: Option<RoutingConflict>,
+) -> RetainedRoutingResult {
+    RetainedRoutingResult {
+        report: IntegratedLayoutReport::failure(IntegratedLayoutStatus::Unknown, diagnostic),
+        invalidated_requirement_ids: invalidated.into_iter().collect(),
+        reused_requirement_ids: reused.into_iter().collect(),
+        conflict,
+    }
+}
+
+fn edge_facility_ids(edge: &super::EdgeInput) -> Vec<String> {
+    [&edge.source, &edge.target]
+        .into_iter()
+        .filter_map(|endpoint| match endpoint {
+            EndpointInput::Facility { instance, .. } => Some(instance.clone()),
+            EndpointInput::External { .. } => None,
+        })
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect()
 }
 
 fn active_routing_heights(

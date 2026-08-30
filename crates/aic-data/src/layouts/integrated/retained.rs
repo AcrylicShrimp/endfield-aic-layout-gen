@@ -4,6 +4,7 @@ use serde::Serialize;
 use sha2::{Digest, Sha256};
 
 use crate::facilities::FacilityPortEdge;
+use crate::layouts::FacilityPlacement;
 use crate::logistics::{LogisticsComponentKind, TransportKind};
 use crate::recipes::{FacilityInstanceWiringProjectedEndpoint, FacilityInstanceWiringProjection};
 
@@ -42,12 +43,33 @@ pub struct CumulativeGraphFingerprint {
 pub struct RetainedRoutingState {
     pub graph_key: CumulativeGraphKey,
     pub graph_fingerprint: CumulativeGraphFingerprint,
+    pub retained_placements: BTreeMap<String, FacilityPlacement>,
     pub retained_routes: BTreeMap<String, IntegratedRoute>,
     pub retained_components: BTreeMap<String, RetainedComponent>,
     pub occupied_cells_by_transport:
         BTreeMap<TransportKind, BTreeMap<GridCellKey, RetainedOccupant>>,
     pub selected_ports: BTreeMap<String, SelectedPortAssignment>,
     pub invalidated_requirement_ids: BTreeSet<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct RoutingConflict {
+    pub code: String,
+    pub failed_requirement_ids: Vec<String>,
+    pub related_facility_ids: Vec<String>,
+    pub related_scc_ids: Vec<String>,
+    pub blocked_cells: Vec<GridCellKey>,
+    pub blocking_requirement_ids: Vec<String>,
+    pub blocking_component_ids: Vec<String>,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct RetainedRoutingResult {
+    pub report: IntegratedLayoutReport,
+    pub invalidated_requirement_ids: Vec<String>,
+    pub reused_requirement_ids: Vec<String>,
+    pub conflict: Option<RoutingConflict>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -101,6 +123,18 @@ impl RetainedRoutingState {
     ) -> Result<Self, IntegratedLayoutDiagnostic> {
         let graph_key = graph_key(input);
         let graph_fingerprint = graph_fingerprint(&graph_key);
+        let retained_placements = report
+            .placements
+            .iter()
+            .cloned()
+            .map(|placement| (placement.instance.clone(), placement))
+            .collect::<BTreeMap<_, _>>();
+        if retained_placements.len() != report.placements.len() {
+            return Err(invalid(
+                "/placements",
+                "retained routing state cannot contain duplicate facility instances",
+            ));
+        }
         let retained_routes = report
             .routes
             .iter()
@@ -178,6 +212,7 @@ impl RetainedRoutingState {
         Ok(Self {
             graph_key,
             graph_fingerprint,
+            retained_placements,
             retained_routes,
             retained_components,
             occupied_cells_by_transport,

@@ -60,7 +60,8 @@ pub use report::{
 pub use retained::{
     CUMULATIVE_GRAPH_KEY_SCHEMA_VERSION, CumulativeGraphFingerprint, CumulativeGraphKey,
     EndpointPortSelection, FacilityGraphRecord, GridCellKey, RequirementGraphRecord,
-    RetainedComponent, RetainedOccupant, RetainedRoutingState, SelectedPortAssignment,
+    RetainedComponent, RetainedOccupant, RetainedRoutingResult, RetainedRoutingState,
+    RoutingConflict, SelectedPortAssignment,
 };
 pub use score::{CandidateRank, DeterministicCandidateKey, LayoutScore, RefinementKind};
 
@@ -305,6 +306,51 @@ pub fn construct_sparse_integrated_layout(
         Err(diagnostic) => {
             IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
         }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn reroute_integrated_layout_subset(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    prior_report: &IntegratedLayoutReport,
+    invalidated_requirement_ids: &BTreeSet<String>,
+    time_limit: Duration,
+) -> RetainedRoutingResult {
+    let input = match prepare_model(instance_wiring, facilities, items, transports, request) {
+        Ok(input) => input,
+        Err(diagnostic) => return failed_retained_result(diagnostic),
+    };
+    if let Err(diagnostic) = witness::validate(&input, logistics_components, prior_report) {
+        return failed_retained_result(diagnostic);
+    }
+    let retained = match RetainedRoutingState::from_validated_report(&input, prior_report) {
+        Ok(retained) => retained,
+        Err(diagnostic) => return failed_retained_result(diagnostic),
+    };
+    let deadline = Instant::now()
+        .checked_add(time_limit)
+        .unwrap_or_else(Instant::now);
+    sparse::construct_from_retained(
+        input,
+        logistics_components,
+        prior_report.placements.clone(),
+        &retained,
+        invalidated_requirement_ids,
+        deadline,
+    )
+}
+
+fn failed_retained_result(diagnostic: IntegratedLayoutDiagnostic) -> RetainedRoutingResult {
+    RetainedRoutingResult {
+        report: IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic),
+        invalidated_requirement_ids: Vec::new(),
+        reused_requirement_ids: Vec::new(),
+        conflict: None,
     }
 }
 
@@ -2261,6 +2307,89 @@ mod tests {
     }
 
     #[test]
+    fn empty_subset_routing_reuses_the_complete_valid_witness() {
+        let (facilities, items, transports) = catalogs();
+        let components = logistics_component_catalog();
+        let wiring = wiring();
+        let request = FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 4,
+            max_height: 1,
+        };
+        let report = solve_integrated_layout(&wiring, &facilities, &items, &transports, &request);
+        let result = reroute_integrated_layout_subset(
+            &wiring,
+            &facilities,
+            &items,
+            &transports,
+            &components,
+            &request,
+            &report,
+            &BTreeSet::new(),
+            Duration::from_secs(1),
+        );
+
+        assert!(result.report.success, "{:#?}", result.report.diagnostics);
+        assert!(result.invalidated_requirement_ids.is_empty());
+        assert_eq!(
+            result.reused_requirement_ids,
+            vec![report.routes[0].requirement_id.clone()]
+        );
+        assert_eq!(result.report.placements, report.placements);
+        assert_eq!(result.report.routes, report.routes);
+        assert_eq!(
+            result.report.logistics_components,
+            report.logistics_components
+        );
+    }
+
+    #[test]
+    fn moving_a_facility_invalidates_and_reroutes_its_incident_requirement() {
+        let (facilities, items, transports) = catalogs();
+        let components = logistics_component_catalog();
+        let wiring = wiring();
+        let request = FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 40,
+            max_height: 30,
+        };
+        let input = prepare_model(&wiring, &facilities, &items, &transports, &request)
+            .expect("fixture model should prepare");
+        let report = construct_coordinate_integrated_layout_with_time_limit(
+            &wiring,
+            &facilities,
+            &items,
+            &transports,
+            &components,
+            &request,
+            Duration::from_secs(1),
+        );
+        let retained = retained::RetainedRoutingState::from_validated_report(&input, &report)
+            .expect("fixture retained state should build");
+        let mut moved = report.placements.clone();
+        let source = moved
+            .iter_mut()
+            .find(|placement| placement.instance == "recipe:source#1")
+            .expect("source fixture placement should exist");
+        source.y += 2;
+        let result = sparse::construct_from_retained(
+            input,
+            &components,
+            moved,
+            &retained,
+            &BTreeSet::new(),
+            Instant::now() + Duration::from_secs(1),
+        );
+
+        assert!(result.report.success, "{:#?}", result.report.diagnostics);
+        assert_eq!(
+            result.invalidated_requirement_ids,
+            vec![report.routes[0].requirement_id.clone()]
+        );
+        assert!(result.reused_requirement_ids.is_empty());
+    }
+
+    #[test]
     fn coordinate_feasibility_stops_at_a_valid_routed_witness() {
         let (facilities, items, transports) = catalogs();
         let report = construct_coordinate_integrated_layout_with_time_limit(
@@ -2521,17 +2650,13 @@ mod tests {
             ),
         ];
 
-        let report = solve_integrated_layout(
-            &wiring,
-            &facilities,
-            &items,
-            &transport_catalog(),
-            &FacilityPlacementRequest {
-                schema_version: 2,
-                max_width: 7,
-                max_height: 1,
-            },
-        );
+        let transports = transport_catalog();
+        let request = FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 7,
+            max_height: 1,
+        };
+        let report = solve_integrated_layout(&wiring, &facilities, &items, &transports, &request);
 
         assert!(report.success, "{:#?}", report.diagnostics);
         assert_eq!(report.status, IntegratedLayoutStatus::Optimal);
@@ -2551,6 +2676,40 @@ mod tests {
             .flat_map(|route| route.cells.iter().map(|cell| (cell.x, cell.y)))
             .collect::<BTreeSet<_>>();
         assert_eq!(route_cells.len(), 2);
+
+        let invalidated = [report.routes[0].requirement_id.clone()]
+            .into_iter()
+            .collect::<BTreeSet<_>>();
+        let retained_route = report.routes[1].clone();
+        let result = reroute_integrated_layout_subset(
+            &wiring,
+            &facilities,
+            &items,
+            &transports,
+            &logistics_component_catalog(),
+            &request,
+            &report,
+            &invalidated,
+            Duration::from_secs(1),
+        );
+        assert!(result.report.success, "{:#?}", result.report.diagnostics);
+        assert_eq!(
+            result.invalidated_requirement_ids,
+            invalidated.into_iter().collect::<Vec<_>>()
+        );
+        assert_eq!(
+            result.reused_requirement_ids,
+            vec![retained_route.requirement_id.clone()]
+        );
+        assert_eq!(
+            result
+                .report
+                .routes
+                .iter()
+                .find(|route| route.requirement_id == retained_route.requirement_id)
+                .expect("retained route should remain in the complete witness"),
+            &retained_route
+        );
     }
 
     #[test]
