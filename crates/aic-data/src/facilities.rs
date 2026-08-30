@@ -7,6 +7,7 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
+use crate::logistics::TransportKind;
 use crate::stable_id::{STABLE_ID_PATTERN, is_stable_id};
 
 mod validated;
@@ -51,7 +52,7 @@ pub struct FacilityFootprint {
 pub struct FacilityPortDefinition {
     pub id: String,
     pub direction: FacilityPortDirection,
-    pub transport: FacilityPortTransport,
+    pub transport: TransportKind,
     pub position: FacilityPortPosition,
     pub edge: FacilityPortEdge,
 }
@@ -61,13 +62,6 @@ pub struct FacilityPortDefinition {
 pub enum FacilityPortDirection {
     Input,
     Output,
-}
-
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "kebab-case")]
-pub enum FacilityPortTransport {
-    Belt,
-    Pipe,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
@@ -428,14 +422,14 @@ mod tests {
                     FacilityPortDefinition {
                         id: "solid-input".to_string(),
                         direction: FacilityPortDirection::Input,
-                        transport: FacilityPortTransport::Belt,
+                        transport: TransportKind::Belt,
                         position: FacilityPortPosition { x: 1, y: 1 },
                         edge: FacilityPortEdge::South,
                     },
                     FacilityPortDefinition {
                         id: "solid-output".to_string(),
                         direction: FacilityPortDirection::Output,
-                        transport: FacilityPortTransport::Belt,
+                        transport: TransportKind::Belt,
                         position: FacilityPortPosition { x: 1, y: 0 },
                         edge: FacilityPortEdge::North,
                     },
@@ -700,21 +694,21 @@ mod tests {
             FacilityPortDefinition {
                 id: "Invalid Port".to_string(),
                 direction: FacilityPortDirection::Input,
-                transport: FacilityPortTransport::Belt,
+                transport: TransportKind::Belt,
                 position: FacilityPortPosition { x: 1, y: 1 },
                 edge: FacilityPortEdge::South,
             },
             FacilityPortDefinition {
                 id: "shared-port".to_string(),
                 direction: FacilityPortDirection::Input,
-                transport: FacilityPortTransport::Belt,
+                transport: TransportKind::Belt,
                 position: FacilityPortPosition { x: 0, y: 1 },
                 edge: FacilityPortEdge::West,
             },
             FacilityPortDefinition {
                 id: "shared-port".to_string(),
                 direction: FacilityPortDirection::Output,
-                transport: FacilityPortTransport::Pipe,
+                transport: TransportKind::Pipe,
                 position: FacilityPortPosition { x: 2, y: 0 },
                 edge: FacilityPortEdge::East,
             },
@@ -739,14 +733,14 @@ mod tests {
             FacilityPortDefinition {
                 id: "outside".to_string(),
                 direction: FacilityPortDirection::Input,
-                transport: FacilityPortTransport::Belt,
+                transport: TransportKind::Belt,
                 position: FacilityPortPosition { x: 3, y: 1 },
                 edge: FacilityPortEdge::East,
             },
             FacilityPortDefinition {
                 id: "inside".to_string(),
                 direction: FacilityPortDirection::Output,
-                transport: FacilityPortTransport::Pipe,
+                transport: TransportKind::Pipe,
                 position: FacilityPortPosition { x: 1, y: 1 },
                 edge: FacilityPortEdge::North,
             },

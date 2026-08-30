@@ -1,8 +1,8 @@
 # External Data
 
-This directory is reserved for runtime-loaded facility and recipe data.
+This directory is reserved for runtime-loaded facility, item, and recipe data.
 
-No facility or recipe data should be compiled into application code.
+No facility, item, recipe, or transport-balance data should be compiled into application code.
 
 Current example files:
 
@@ -10,4 +10,5 @@ Current example files:
 - `examples/recipes.graph.json`: recipe graph and throughput example data.
 - `examples/throughput.request.json`: throughput request example.
 - `examples/facilities.valid.json`: footprint, allowed-rotation, and directional-port facility catalog example.
+- `examples/items.valid.json`: fixed belt-or-pipe transport kind for every item.
 - `examples/placement.request.json`: facility placement system-bound constraints example.

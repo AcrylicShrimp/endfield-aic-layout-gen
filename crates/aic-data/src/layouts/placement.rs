@@ -691,8 +691,9 @@ mod tests {
     use super::*;
     use crate::facilities::{
         FacilityCatalog, FacilityDefinition, FacilityPortDefinition, FacilityPortDirection,
-        FacilityPortEdge, FacilityPortPosition, FacilityPortTransport,
+        FacilityPortEdge, FacilityPortPosition,
     };
+    use crate::logistics::TransportKind;
     use crate::recipes::{FacilityInstanceWiringNode, Rate};
 
     fn request(max_width: i64) -> FacilityPlacementRequest {
@@ -797,7 +798,7 @@ mod tests {
                 ports: vec![FacilityPortDefinition {
                     id: "output".to_string(),
                     direction: FacilityPortDirection::Output,
-                    transport: FacilityPortTransport::Belt,
+                    transport: TransportKind::Belt,
                     position: FacilityPortPosition { x: 1, y: 0 },
                     edge: FacilityPortEdge::North,
                 }],

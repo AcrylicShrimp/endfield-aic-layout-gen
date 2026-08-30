@@ -8,6 +8,7 @@ use aic_data::layouts::{
     FacilityPlacementDiagnostic, FacilityPlacementReport, FacilityPlacementRequest,
     solve_facility_placement,
 };
+use aic_data::logistics::{ItemCatalogValidationReport, load_item_catalog, validate_item_catalog};
 use aic_data::recipes::{
     FacilityInstanceWiringReport, FacilityRequirementReport, RecipeThroughputReport,
     RecipeThroughputRequest, RecipeWiringGraphReport, ThroughputDiagnostic, ValidatedRecipeBook,
@@ -41,6 +42,11 @@ enum Command {
         #[command(subcommand)]
         command: FacilitiesCommand,
     },
+    /// Work with item transport data.
+    Items {
+        #[command(subcommand)]
+        command: ItemsCommand,
+    },
     /// Generate spatial layouts.
     Layouts {
         #[command(subcommand)]
@@ -58,6 +64,16 @@ enum FacilitiesCommand {
     /// Load and validate a facility catalog JSON file.
     Validate {
         /// Facility catalog JSON file to validate.
+        #[arg(long, short, value_name = "FILE")]
+        file: PathBuf,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+enum ItemsCommand {
+    /// Load and validate an item catalog JSON file.
+    Validate {
+        /// Item catalog JSON file to validate.
         #[arg(long, short, value_name = "FILE")]
         file: PathBuf,
     },
@@ -169,6 +185,9 @@ fn run() -> Result<CommandStatus> {
         Command::Facilities { command } => match command {
             FacilitiesCommand::Validate { file } => validate_facilities(file),
         },
+        Command::Items { command } => match command {
+            ItemsCommand::Validate { file } => validate_items(file),
+        },
         Command::Layouts { command } => match command {
             LayoutsCommand::PlaceFacilities {
                 recipes,
@@ -222,6 +241,19 @@ fn validate_facilities(file: PathBuf) -> Result<CommandStatus> {
     let report = validate_facility_catalog(&catalog);
     let valid = report.valid;
     write_facility_catalog_validation_report(&report)?;
+
+    if valid {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
+    }
+}
+
+fn validate_items(file: PathBuf) -> Result<CommandStatus> {
+    let catalog = load_item_catalog(&file)?;
+    let report = validate_item_catalog(&catalog);
+    let valid = report.valid;
+    write_item_catalog_validation_report(&report)?;
 
     if valid {
         Ok(CommandStatus::Success)
@@ -493,6 +525,14 @@ fn write_facility_catalog_validation_report(
 ) -> Result<()> {
     serde_json::to_writer_pretty(std::io::stdout().lock(), report)
         .context("failed to write facility catalog validation report")?;
+    println!();
+
+    Ok(())
+}
+
+fn write_item_catalog_validation_report(report: &ItemCatalogValidationReport) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write item catalog validation report")?;
     println!();
 
     Ok(())

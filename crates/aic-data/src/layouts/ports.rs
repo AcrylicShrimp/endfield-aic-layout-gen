@@ -3,9 +3,9 @@ use std::collections::BTreeSet;
 use serde::Serialize;
 
 use crate::facilities::{
-    FacilityPortDirection, FacilityPortEdge, FacilityPortPosition, FacilityPortTransport,
-    ValidatedFacilityCatalog,
+    FacilityPortDirection, FacilityPortEdge, FacilityPortPosition, ValidatedFacilityCatalog,
 };
+use crate::logistics::TransportKind;
 
 use super::{
     FacilityPlacement, FacilityPlacementReport, FacilityPlacementRequest,
@@ -27,7 +27,7 @@ pub struct PlacedFacilityPort {
     pub facility: String,
     pub port: String,
     pub direction: FacilityPortDirection,
-    pub transport: FacilityPortTransport,
+    pub transport: TransportKind,
     pub position: WorldGridPosition,
     pub edge: FacilityPortEdge,
     pub connection: WorldGridPosition,
@@ -382,7 +382,7 @@ mod tests {
                 ports: vec![FacilityPortDefinition {
                     id: "input".to_string(),
                     direction: FacilityPortDirection::Input,
-                    transport: FacilityPortTransport::Belt,
+                    transport: TransportKind::Belt,
                     position: FacilityPortPosition { x: 1, y: 1 },
                     edge: FacilityPortEdge::South,
                 }],
