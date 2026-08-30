@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -24,6 +25,24 @@ def write_json(path: Path, value: Any) -> None:
 
 def stable_id(source_id: str) -> str:
     return source_id.replace("_", "-")
+
+
+def localized_value(
+    text_map: dict[str, str], text_reference: dict[str, Any] | None, fallback: str
+) -> tuple[str, str]:
+    if text_reference is not None:
+        value = text_map.get(str(text_reference["id"]), "").strip()
+        if value:
+            return value, "official"
+    return fallback, "id-fallback"
+
+
+def file_sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as file:
+        for chunk in iter(lambda: file.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def item_transport(item: dict[str, Any]) -> str:
@@ -81,12 +100,21 @@ def main() -> None:
     args = parser.parse_args()
 
     source = args.source
-    buildings = load_json(source / "FactoryBuildingTable.json")
-    items = load_json(source / "FactoryItemTable.json")
-    crafts = load_json(source / "FactoryMachineCraftTable.json")
-    crafters = load_json(source / "FactoryMachineCrafterTable.json")
-    belts = load_json(source / "FactoryGridBeltTable.json")
-    pipes = load_json(source / "FactoryLiquidPipeTable.json")
+    table_source = source / "table-cfg"
+    localization_source = source / "i18n" / "ko-KR"
+    source_manifest = load_json(source / "manifest.json")
+    buildings = load_json(table_source / "FactoryBuildingTable.json")
+    items = load_json(table_source / "FactoryItemTable.json")
+    crafts = load_json(table_source / "FactoryMachineCraftTable.json")
+    crafters = load_json(table_source / "FactoryMachineCrafterTable.json")
+    belts = load_json(table_source / "FactoryGridBeltTable.json")
+    pipes = load_json(table_source / "FactoryLiquidPipeTable.json")
+    item_display_records = load_json(table_source / "ItemTable.json")
+    item_text = load_json(localization_source / "ItemTable.json")
+    building_text = load_json(localization_source / "FactoryBuildingTable.json")
+    mode_text = load_json(localization_source / "FactoryMachineCraftModeTable.json")
+    craft_text = load_json(localization_source / "FactoryMachineCraftTable.json")
+    modes = load_json(table_source / "FactoryMachineCraftModeTable.json")
 
     if len(belts) != 1 or len(pipes) != 1:
         raise ValueError("expected exactly one belt and one pipe transport definition")
@@ -191,6 +219,75 @@ def main() -> None:
         for item_id in sorted(items)
     ]
 
+    localized_items = []
+    for item_id in sorted(items):
+        normalized_id = stable_id(item_id)
+        display_record = item_display_records.get(item_id)
+        display_name, display_name_source = localized_value(
+            item_text,
+            display_record.get("name") if display_record is not None else None,
+            normalized_id,
+        )
+        localized_items.append(
+            {
+                "id": normalized_id,
+                "display_name": display_name,
+                "display_name_source": display_name_source,
+            }
+        )
+
+    localized_modes = []
+    for mode_id, mode in sorted(modes.items()):
+        normalized_id = stable_id(mode_id)
+        display_name, display_name_source = localized_value(
+            mode_text, mode.get("machineModeTypeName"), normalized_id
+        )
+        localized_modes.append(
+            {
+                "id": normalized_id,
+                "display_name": display_name,
+                "display_name_source": display_name_source,
+            }
+        )
+
+    localized_facilities = []
+    for machine_id, mode in sorted(mode_recipes):
+        facility_id = f"{stable_id(machine_id)}-mode-{stable_id(mode)}"
+        facility_name, facility_name_source = localized_value(
+            building_text, buildings[machine_id].get("name"), stable_id(machine_id)
+        )
+        mode_record = modes.get(mode)
+        mode_name, mode_name_source = localized_value(
+            mode_text,
+            mode_record.get("machineModeTypeName") if mode_record is not None else None,
+            stable_id(mode),
+        )
+        localized_facilities.append(
+            {
+                "id": facility_id,
+                "base_facility": stable_id(machine_id),
+                "facility_name": facility_name,
+                "facility_name_source": facility_name_source,
+                "mode": stable_id(mode),
+                "mode_name": mode_name,
+                "mode_name_source": mode_name_source,
+            }
+        )
+
+    localized_recipe_descriptions = []
+    for source_recipe_id, craft in sorted(crafts.items()):
+        recipe_id = stable_id(source_recipe_id)
+        description, description_source = localized_value(
+            craft_text, craft.get("formulaDesc"), recipe_id
+        )
+        localized_recipe_descriptions.append(
+            {
+                "id": recipe_id,
+                "description": description,
+                "description_source": description_source,
+            }
+        )
+
     write_json(
         args.output / "items.json",
         {"schema_version": 1, "items": normalized_items},
@@ -227,6 +324,51 @@ def main() -> None:
             "schema_version": 1,
             "external_items": sorted(consumed_items - produced_items),
             "recipes": normalized_recipes,
+        },
+    )
+    write_json(
+        args.output / "localization.ko-KR.json",
+        {
+            "schema_version": 1,
+            "locale": "ko-KR",
+            "items": localized_items,
+            "facilities": localized_facilities,
+            "modes": localized_modes,
+            "recipe_descriptions": localized_recipe_descriptions,
+        },
+    )
+
+    generated_files = [
+        "facilities.json",
+        "items.json",
+        "localization.ko-KR.json",
+        "recipes.json",
+        "transports.json",
+    ]
+    write_json(
+        args.output / "manifest.json",
+        {
+            "schema_version": 1,
+            "source_upstream_commit": source_manifest["upstream_commit"],
+            "generator": "tools/normalize_game_data.py",
+            "counts": {
+                "items": len(normalized_items),
+                "transports": 2,
+                "facilities": len(normalized_facilities),
+                "recipes": len(normalized_recipes),
+                "external_items": len(consumed_items - produced_items),
+                "localized_items": len(localized_items),
+                "localized_facilities": len(localized_facilities),
+                "localized_modes": len(localized_modes),
+                "localized_recipe_descriptions": len(localized_recipe_descriptions),
+            },
+            "files": [
+                {
+                    "path": file_name,
+                    "sha256": file_sha256(args.output / file_name),
+                }
+                for file_name in generated_files
+            ],
         },
     )
 

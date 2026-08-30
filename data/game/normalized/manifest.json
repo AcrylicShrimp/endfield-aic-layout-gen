@@ -7,7 +7,11 @@
     "transports": 2,
     "facilities": 28,
     "recipes": 305,
-    "external_items": 10
+    "external_items": 10,
+    "localized_items": 538,
+    "localized_facilities": 28,
+    "localized_modes": 7,
+    "localized_recipe_descriptions": 305
   },
   "files": [
     {
@@ -17,6 +21,10 @@
     {
       "path": "items.json",
       "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+    },
+    {
+      "path": "localization.ko-KR.json",
+      "sha256": "f0aab4bc3f7f57cf104026ae09436a6aa921fa2bfec5beee5c2625bcb016e8e4"
     },
     {
       "path": "recipes.json",

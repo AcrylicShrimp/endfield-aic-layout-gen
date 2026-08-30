@@ -4,7 +4,7 @@ These runtime catalogs are deterministically generated from the vendored source 
 
 ```sh
 python3 tools/normalize_game_data.py \
-  --source data/game/source/table-cfg \
+  --source data/game/source \
   --output data/game/normalized
 ```
 
@@ -13,6 +13,7 @@ Current snapshot contents:
 - `items.json`: 538 items with fixed `belt` or `pipe` transport.
 - `facilities.json`: 28 recipe-capable machine-mode combinations flattened into dedicated facilities.
 - `recipes.json`: 305 machine recipes and 10 raw external input items.
+- `localization.ko-KR.json`: Korean display data for 538 items, 28 flattened facilities, 7 modes, and 305 recipe formula descriptions.
 
 ## Normalization Rules
 
@@ -27,6 +28,6 @@ Current snapshot contents:
 - All four quarter-turn rotations are enabled for recipe-capable facilities.
 - Recipe duration is `progressRound * 1000` milliseconds.
 - Items consumed but never produced by a machine recipe become recipe-book external items.
+- Official Korean strings are joined by source text ID; a missing string uses the unchanged stable ID and records `id-fallback` instead of deriving a name.
 
 The source snapshot remains authoritative. Do not hand-edit generated catalogs; change the normalizer or source snapshot and regenerate them.
-

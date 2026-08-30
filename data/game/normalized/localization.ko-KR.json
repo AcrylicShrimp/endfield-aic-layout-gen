@@ -1,0 +1,4514 @@
+{
+  "schema_version": 1,
+  "locale": "ko-KR",
+  "items": [
+    {
+      "id": "item-activity-xiranite-bottle",
+      "display_name": "실험용 식양 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-activity-xiranite-cmpt",
+      "display_name": "실험용 식양 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-activity-xiranite-enr-bottle",
+      "display_name": "실험용 중식양 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-activity-xiranite-enr-cmpt",
+      "display_name": "실험용 중식양 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-activity-xiranite-enr-hulu",
+      "display_name": "식양 옥 호리병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-activity-xiranite-enr-tool",
+      "display_name": "실험용 옥동 발산기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-activity-xiranite-hulu",
+      "display_name": "식양 호리병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-agfly-1-agmelee-1-moss-2-1",
+      "display_name": "스타 퓨전 젤리",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-agmelee-1-moss-1-lbmob-1-1",
+      "display_name": "대체육 메밀꽃 볶음",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-agmelee-1-sp-2-slimeml-1-1",
+      "display_name": "매운 원석충 구이",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-agrange-1-erhound-1-sp-1-1",
+      "display_name": "제이컵의 유산",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-agrange-1-lbshamman-bottled-1",
+      "display_name": "간편 진통 연고",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-agrange-1-moss-2-lbmob-1-1",
+      "display_name": "이상한 수제 사탕",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-flower1spc-1",
+      "display_name": "메밀꽃 회복제(소)",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-flower1spc-2",
+      "display_name": "메밀꽃 회복제(대)",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-flower1spc-3",
+      "display_name": "메밀꽃 회복제(특)",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-flower2spc-1",
+      "display_name": "시트론 혼합제(소)",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-flower2spc-2",
+      "display_name": "시트론 혼합제(대)",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-flower2spc-3",
+      "display_name": "시트론 혼합제(특)",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-food-1",
+      "display_name": "시트론 통조림",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-food-2",
+      "display_name": "시트론 통조림(중)",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-food-3",
+      "display_name": "시트론 통조림(대)",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-food-4",
+      "display_name": "금초 청량음료",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-food-5",
+      "display_name": "고급 금초 청량음료",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-grass1spc-1",
+      "display_name": "금초 냉차",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-grass1spc-2",
+      "display_name": "금초 냉차(대)",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-grass2spc-1",
+      "display_name": "야침 스프레이",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-grass2spc-2",
+      "display_name": "야침 스프레이(대)",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-insec1-1",
+      "display_name": "아츠를 각인한 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-insec1-2",
+      "display_name": "아츠를 각인한 금속 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-insec2-1",
+      "display_name": "아츠가 부여된 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-insec2-2",
+      "display_name": "아츠가 부여된 금속 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-moss-1-2-1",
+      "display_name": "혼란의 약제",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-moss-2-animal-1",
+      "display_name": "이상한 고기 소스",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-rec-hp-1",
+      "display_name": "메밀꽃 치유 캡슐",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-rec-hp-2",
+      "display_name": "메밀꽃 치유 캡슐(중)",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-rec-hp-3",
+      "display_name": "메밀꽃 치유 캡슐(대)",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-rec-hp-4",
+      "display_name": "야침 주사약",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-bottled-rec-hp-5",
+      "display_name": "고급 야침 주사약",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-carbon-enr",
+      "display_name": "안정된 카본 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-carbon-enr-powder",
+      "display_name": "고밀도 카본 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-carbon-mtl",
+      "display_name": "카본 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-carbon-powder",
+      "display_name": "카본 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-copper-bottle",
+      "display_name": "적동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-copper-cmpt",
+      "display_name": "적동 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-copper-enr",
+      "display_name": "혁동 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-copper-enr2",
+      "display_name": "작동 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-copper-enr2-cmpt",
+      "display_name": "작동 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-copper-enr-bottle",
+      "display_name": "혁동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-copper-enr-cmpt",
+      "display_name": "혁동 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-copper-jar",
+      "display_name": "적동 내압 캔",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-copper-nugget",
+      "display_name": "적동 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-copper-ore",
+      "display_name": "적동 광석",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-copper-powder",
+      "display_name": "적동 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-corp1-animal-1",
+      "display_name": "협곡 파이",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-corp2-animal-1",
+      "display_name": "매운 볶음 고기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-corp3-animal-1",
+      "display_name": "푹 삶은 갈비 미삼탕",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-corp3-grass1-1",
+      "display_name": "원기 회복 탕약",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-corp4-animal-1",
+      "display_name": "무릉 볶음밥",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-corp4-grass2-1",
+      "display_name": "채소 볶음밥",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-corp4-spc",
+      "display_name": "로도스 아일랜드 특별 제작 식량",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-crystal-enr",
+      "display_name": "정련된 오리고 크러스트",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-crystal-enr-powder",
+      "display_name": "고밀도 오리고 크러스트 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-crystal-powder",
+      "display_name": "오리고 크러스트 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-crystal-shell",
+      "display_name": "오리고 크러스트",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-device-balloon-recycle-1",
+      "display_name": "부유식 회수기 I",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-device-balloon-recycle-2",
+      "display_name": "부유식 회수기 II",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-device-balloon-recycle-3",
+      "display_name": "부유식 회수기 III",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-device-xiranite-nexus-1",
+      "display_name": "중추 식양 장치",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-device-xiranite-nexus-2",
+      "display_name": "중추 식양 장치 · 확장 I형",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-device-xiranite-nexus-3",
+      "display_name": "중추 식양 장치 · 확장 II형",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-device-xiranite-radar-1",
+      "display_name": "침식 안개 스캔 모듈",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-dog-1-slimeml-1-1",
+      "display_name": "고기들의 회의",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-dog-hsmob-corp-1",
+      "display_name": "전씨네 특제 고기국수",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-agdisk-1",
+      "display_name": "전도 초상석",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-agfly-1",
+      "display_name": "구멍이 뚫린 이향석",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-agmelee-1",
+      "display_name": "굳은 상태의 이향석",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-agrange-1",
+      "display_name": "활성 상태의 이향석",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-agshield-1",
+      "display_name": "천연 결정 덩어리",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-dog-1",
+      "display_name": "비스트의 고기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-enemycommon-1",
+      "display_name": "해석된 결정 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-erhound-1",
+      "display_name": "향이 강한 육포",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-ethillu-1",
+      "display_name": "메아리의 먼지",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-firebat-1",
+      "display_name": "특수 기름",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-hsbear-1",
+      "display_name": "하울러비스트의 털 묶음",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-hscrane-1",
+      "display_name": "죽림충 번데기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-hsfly-1",
+      "display_name": "수등충 등추",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-hshog-1",
+      "display_name": "프릭비스트의 내장",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-hsmino-1",
+      "display_name": "청파죽령",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-hsmob-1",
+      "display_name": "파릇파릇한 죽순",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-hstiger-1",
+      "display_name": "레이커비스트의 긴 털",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-hvybow-1",
+      "display_name": "대형 안개의 쇠뇌",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-jzmonk-1",
+      "display_name": "백년 숙성 진피",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-jzogre-1",
+      "display_name": "꼬리 금갑",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-klbuds-1",
+      "display_name": "잔영의 이슬 방울",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-klcaps-1",
+      "display_name": "진형 파괴자의 칼 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-klcreatures-1",
+      "display_name": "그림자 비스트의 돌",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-lbmob-1",
+      "display_name": "풀 씨앗 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-lbroshan-1",
+      "display_name": "파괴자의 권갑",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-lbshamman-1",
+      "display_name": "연골 분말",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-lbshield-1",
+      "display_name": "쓴맛 나는 밀가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-lbtough-1",
+      "display_name": "산산조각 난 도끼날",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-mimicw-1",
+      "display_name": "니드웜의 수염",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-sandb-1",
+      "display_name": "큰 도끼뿔",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-slimeml-1",
+      "display_name": "벌레의 고기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-wgabyss-1",
+      "display_name": "속성 발효주",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-wgshoal-1",
+      "display_name": "검고 달콤한 물",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-wgslime-1",
+      "display_name": "진득한 물",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-drop-wgthorns-1",
+      "display_name": "천연 탄산수",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-equip-script-1",
+      "display_name": "자수정 장비 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-equip-script-2",
+      "display_name": "페리움 장비 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-equip-script-3",
+      "display_name": "크리스톤 장비 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-equip-script-4",
+      "display_name": "식양 장비 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-equip-script-4-1",
+      "display_name": "적동 장비 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-equip-script-4-2",
+      "display_name": "혁동 장비 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-equip-script-4-3",
+      "display_name": "작동 장비 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-erhound-1-agmelee-1-moss-1-1",
+      "display_name": "안갯불에 물든 꽃",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-ethillu-1-wgslime-1-wgthorns-1-1",
+      "display_name": "메아리의 비약",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copper-acid",
+      "display_name": "적동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copper-copper",
+      "display_name": "적동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copper-copper-enr",
+      "display_name": "적동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copper-grass-1",
+      "display_name": "적동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copper-grass-2",
+      "display_name": "적동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copper-sewage",
+      "display_name": "적동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copper-water",
+      "display_name": "적동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copper-xiranite",
+      "display_name": "적동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copper-xiranite-enr",
+      "display_name": "적동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copper-xiranite-lowpoly",
+      "display_name": "적동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copper-xiranite-poly",
+      "display_name": "적동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copperenr-acid",
+      "display_name": "혁동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copperenr-copper",
+      "display_name": "혁동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copperenr-copper-enr",
+      "display_name": "혁동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copperenr-grass-1",
+      "display_name": "혁동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copperenr-grass-2",
+      "display_name": "혁동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copperenr-sewage",
+      "display_name": "혁동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copperenr-water",
+      "display_name": "혁동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copperenr-xiranite",
+      "display_name": "혁동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copperenr-xiranite-enr",
+      "display_name": "혁동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copperenr-xiranite-lowpoly",
+      "display_name": "혁동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-copperenr-xiranite-poly",
+      "display_name": "혁동 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glass-acid",
+      "display_name": "자수정 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glass-copper",
+      "display_name": "자수정 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glass-copper-enr",
+      "display_name": "자수정 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glass-grass-1",
+      "display_name": "자수정 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glass-grass-2",
+      "display_name": "자수정 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glass-sewage",
+      "display_name": "자수정 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glass-water",
+      "display_name": "자수정 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glass-xiranite",
+      "display_name": "자수정 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glass-xiranite-enr",
+      "display_name": "자수정 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glass-xiranite-lowpoly",
+      "display_name": "자수정 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glass-xiranite-poly",
+      "display_name": "자수정 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glassenr-acid",
+      "display_name": "크리스톤 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glassenr-copper",
+      "display_name": "크리스톤 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glassenr-copper-enr",
+      "display_name": "크리스톤 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glassenr-grass-1",
+      "display_name": "크리스톤 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glassenr-grass-2",
+      "display_name": "크리스톤 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glassenr-sewage",
+      "display_name": "크리스톤 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glassenr-water",
+      "display_name": "크리스톤 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glassenr-xiranite",
+      "display_name": "크리스톤 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glassenr-xiranite-enr",
+      "display_name": "크리스톤 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glassenr-xiranite-lowpoly",
+      "display_name": "크리스톤 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-glassenr-xiranite-poly",
+      "display_name": "크리스톤 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-iron-acid",
+      "display_name": "페리움 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-iron-copper",
+      "display_name": "페리움 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-iron-copper-enr",
+      "display_name": "페리움 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-iron-grass-1",
+      "display_name": "페리움 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-iron-grass-2",
+      "display_name": "페리움 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-iron-sewage",
+      "display_name": "페리움 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-iron-water",
+      "display_name": "페리움 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-iron-xiranite",
+      "display_name": "페리움 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-iron-xiranite-enr",
+      "display_name": "페리움 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-iron-xiranite-lowpoly",
+      "display_name": "페리움 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-iron-xiranite-poly",
+      "display_name": "페리움 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-ironenr-acid",
+      "display_name": "강철 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-ironenr-copper",
+      "display_name": "강철 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-ironenr-copper-enr",
+      "display_name": "강철 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-ironenr-grass-1",
+      "display_name": "강철 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-ironenr-grass-2",
+      "display_name": "강철 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-ironenr-sewage",
+      "display_name": "강철 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-ironenr-water",
+      "display_name": "강철 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-ironenr-xiranite",
+      "display_name": "강철 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-ironenr-xiranite-enr",
+      "display_name": "강철 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-ironenr-xiranite-lowpoly",
+      "display_name": "강철 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-ironenr-xiranite-poly",
+      "display_name": "강철 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fbottle-xiranenr-grass-2",
+      "display_name": "실험용 중식양 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fertilize-1",
+      "display_name": "비료 테스트 1",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-fertilize-2",
+      "display_name": "비료 테스트 2",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-filter-core",
+      "display_name": "분리 필터",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-firebat-1-agrange-1-1",
+      "display_name": "식용 지옥의 용광로",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gas-acid",
+      "display_name": "산성 기체",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gas-copper",
+      "display_name": "기체 적동",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gas-copper-enr",
+      "display_name": "기체 혁동",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gas-copper-enr2",
+      "display_name": "기체 작동",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gas-inert",
+      "display_name": "비활성 기체",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gas-water",
+      "display_name": "수증기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gas-xiranite",
+      "display_name": "식양 기체",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gas-xiranite-enr",
+      "display_name": "중식양 기체",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gasjar-copper-gas-acid",
+      "display_name": "적동 내압 캔",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gasjar-copper-gas-copper",
+      "display_name": "적동 내압 캔",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gasjar-copper-gas-copper-enr",
+      "display_name": "적동 내압 캔",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gasjar-copper-gas-copper-enr2",
+      "display_name": "적동 내압 캔",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gasjar-copper-gas-inert",
+      "display_name": "적동 내압 캔",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gasjar-copper-gas-water",
+      "display_name": "적동 내압 캔",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gasjar-copper-gas-xiranite",
+      "display_name": "적동 내압 캔",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-gasjar-copper-gas-xiranite-enr",
+      "display_name": "적동 내압 캔",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-glass-bottle",
+      "display_name": "자수정 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-glass-cmpt",
+      "display_name": "자수정 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-glass-enr-bottle",
+      "display_name": "크리스톤 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-glass-enr-cmpt",
+      "display_name": "크리스톤 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-hscrane-1-hsmob-1-grass-1-1",
+      "display_name": "판 사부의 계란찜",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-hsfly-1-slimeml-1-hsmob-1-1",
+      "display_name": "삶은 식양 완자",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-hshog-1-hsmob-1-slimeml-1-1",
+      "display_name": "무릉 볶음",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-hsmob-1-dog-1-1",
+      "display_name": "죽순 고기볶음",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-hsmob-1-grass-2-1",
+      "display_name": "제철 채소볶음",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-iron-bottle",
+      "display_name": "페리움 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-iron-cmpt",
+      "display_name": "페리움 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-iron-enr",
+      "display_name": "강철 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-iron-enr-bottle",
+      "display_name": "강철 병",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-iron-enr-cmpt",
+      "display_name": "강철 부품",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-iron-enr-powder",
+      "display_name": "고밀도 페리움 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-iron-nugget",
+      "display_name": "페리움 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-iron-ore",
+      "display_name": "페리움 광석",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-iron-powder",
+      "display_name": "페리움 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-jzmonk-1-hsmob-1-1",
+      "display_name": "진피 죽순 무침",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-klbuds-1-hsfly-1-1",
+      "display_name": "재앙 정화의 비약",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-klcreatures-1-wgthorns-1-1",
+      "display_name": "축석의 비약",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-lbmob-1-dog-1-moss-1-1",
+      "display_name": "세쉬카풍 스테이크",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-lbmob-1-lbshamman-1-sp-1-1",
+      "display_name": "연골 과자",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-lbmob-1-moss-2-bottled-1",
+      "display_name": "비법의 성신차",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-lbshamman-1-agmelee-1-1",
+      "display_name": "즉석 곰탕",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-lbshield-1-slimeml-1-dog-1-1",
+      "display_name": "존 어르신의 햄버거",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-liquid-acid",
+      "display_name": "산성 침적물",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-liquid-copper",
+      "display_name": "적동 용액",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-liquid-copper-enr",
+      "display_name": "혁동 용액",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-liquid-plant-grass-1",
+      "display_name": "금초 용액",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-liquid-plant-grass-2",
+      "display_name": "야침 용액",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-liquid-sewage",
+      "display_name": "오염수",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-liquid-water",
+      "display_name": "청정수",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-liquid-xiranite",
+      "display_name": "액화 식양",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-liquid-xiranite-enr",
+      "display_name": "액화 중식양",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-liquid-xiranite-lowpoly",
+      "display_name": "불활성 양정 폐액",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-liquid-xiranite-poly",
+      "display_name": "양정 폐액",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-mimicw-1-moss-1-moss-2-1",
+      "display_name": "개업일 고깃국",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-muck-feces-1",
+      "display_name": "버든비스트의 배설물",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-muck-xiranite-1",
+      "display_name": "팽지박",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-originium-enr-powder",
+      "display_name": "고밀도 오리지늄 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-originium-ore",
+      "display_name": "오리지늄 광물",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-originium-powder",
+      "display_name": "오리지늄 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-bbflower-1",
+      "display_name": "아케톤",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-bbflower-powder-1",
+      "display_name": "아케톤 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-bbflower-seed-1",
+      "display_name": "아케톤 씨앗",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-crylplant-1-1",
+      "display_name": "칼코덴드라",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-crylplant-1-2",
+      "display_name": "크리소덴드라",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-crylplant-1-3",
+      "display_name": "비트로덴드라",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-crylplant-2-1",
+      "display_name": "침식된 옥 잎",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-crylplant-2-2",
+      "display_name": "바위아겔로스 잎",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-crylplant-2-3",
+      "display_name": "붉은 창 잎",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-crylplant-seed-1-1",
+      "display_name": "칼코덴드라 줄기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-crylplant-seed-1-2",
+      "display_name": "크리소덴드라 줄기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-crylplant-seed-1-3",
+      "display_name": "비트로덴드라 줄기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-crylplant-seed-2-1",
+      "display_name": "침식된 옥 잎 줄기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-crylplant-seed-2-2",
+      "display_name": "바위아겔로스 잎 줄기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-crylplant-seed-2-3",
+      "display_name": "붉은 창 잎 줄기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-grass-1",
+      "display_name": "금초",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-grass-2",
+      "display_name": "야침",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-grass-powder-1",
+      "display_name": "금초 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-grass-powder-2",
+      "display_name": "야침 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-grass-seed-1",
+      "display_name": "금초 씨앗",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-grass-seed-2",
+      "display_name": "야침 씨앗",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-grass-spc-1",
+      "display_name": "우거진 금초",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-grass-spc-2",
+      "display_name": "가시 야침",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-grass-spc-powder-1",
+      "display_name": "우거진 금초 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-grass-spc-powder-2",
+      "display_name": "가시 야침 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-moss-1",
+      "display_name": "메밀꽃",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-moss-2",
+      "display_name": "시트론",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-moss-3",
+      "display_name": "샌드리프",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-moss-enr-powder-1",
+      "display_name": "고운 메밀꽃 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-moss-enr-powder-2",
+      "display_name": "고운 시트론 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-moss-powder-1",
+      "display_name": "메밀꽃 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-moss-powder-2",
+      "display_name": "시트론 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-moss-powder-3",
+      "display_name": "샌드리프 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-moss-seed-1",
+      "display_name": "메밀꽃 씨앗",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-moss-seed-2",
+      "display_name": "시트론 씨앗",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-moss-seed-3",
+      "display_name": "샌드리프 씨앗",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-moss-spc-1",
+      "display_name": "화염 메밀꽃",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-moss-spc-2",
+      "display_name": "다크 시트론",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-moss-spc-powder-1",
+      "display_name": "화염 메밀꽃 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-moss-spc-powder-2",
+      "display_name": "다크 시트론 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-mushroom-1-1",
+      "display_name": "연한 붉은 기둥 버섯",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-mushroom-1-2",
+      "display_name": "보통 붉은 기둥 버섯",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-mushroom-1-3",
+      "display_name": "진한 붉은 기둥 버섯",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-mushroom-2-1",
+      "display_name": "피버섯",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-mushroom-2-2",
+      "display_name": "스타게이트 버섯",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-mushroom-2-3",
+      "display_name": "탈로스 버섯",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-mushroom-seed-1-1",
+      "display_name": "연한 붉은 기둥 버섯 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-mushroom-seed-1-2",
+      "display_name": "보통 붉은 기둥 버섯 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-mushroom-seed-1-3",
+      "display_name": "진한 붉은 기둥 버섯 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-mushroom-seed-2-1",
+      "display_name": "피버섯 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-mushroom-seed-2-2",
+      "display_name": "스타게이트 버섯 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-mushroom-seed-2-3",
+      "display_name": "탈로스 버섯 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-mushroom-spc-2-1",
+      "display_name": "희귀 진균",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-sp-1",
+      "display_name": "회보리",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-sp-2",
+      "display_name": "쓴맛 나는 고추",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-sp-3",
+      "display_name": "홍옥 인삼",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-sp-4",
+      "display_name": "금석벼",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-sp-seed-1",
+      "display_name": "회보리 씨앗",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-sp-seed-2",
+      "display_name": "쓴맛 나는 고추 씨앗",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-sp-seed-3",
+      "display_name": "홍옥 인삼 씨앗",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-sp-seed-4",
+      "display_name": "금석벼 씨앗",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-spcstone-1-1",
+      "display_name": "연한 흑암석",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-spcstone-1-2",
+      "display_name": "일반 흑암석",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-spcstone-1-3",
+      "display_name": "진한 흑암석",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-spcstone-2-1",
+      "display_name": "화염석",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-spcstone-2-2",
+      "display_name": "무릉석",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-spcstone-2-3",
+      "display_name": "프로토콜 문양석",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-spcstone-seed-1-1",
+      "display_name": "연한 흑암석 덩이",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-spcstone-seed-1-2",
+      "display_name": "일반 흑암석 덩이",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-spcstone-seed-1-3",
+      "display_name": "진한 흑암석 덩이",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-spcstone-seed-2-1",
+      "display_name": "화염석 덩이",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-spcstone-seed-2-2",
+      "display_name": "무릉석 덩이",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-spcstone-seed-2-3",
+      "display_name": "프로토콜 문양석 덩이",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-tundra-impts",
+      "display_name": "식물 부산물",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-tundra-insect-1",
+      "display_name": "야광 풍뎅이",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-tundra-insect-2",
+      "display_name": "화염 풍뎅이",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-tundra-insect-powder-1",
+      "display_name": "야광 풍뎅이 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-tundra-insect-powder-2",
+      "display_name": "화염 풍뎅이 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-plant-tundra-wood",
+      "display_name": "원목",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-air-dancer-1",
+      "display_name": "풍선 교수",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-cannon-1",
+      "display_name": "유탄 타워",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-cannon-2",
+      "display_name": "고폭 유탄 타워",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-debuff-1",
+      "display_name": "'피클링' MK-I",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-fog-1",
+      "display_name": "'포이즌 머드' MK-I",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-frost-1",
+      "display_name": "액체 질소 타워",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-jet-1",
+      "display_name": "급류 타워",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-laser-1",
+      "display_name": "빔 타워",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-laser-2",
+      "display_name": "고에너지 빔 타워",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-lightning-1",
+      "display_name": "전류 타워",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-lightning-2",
+      "display_name": "갑2형 '전하'",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-medic-1",
+      "display_name": "의료 타워",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-rocket-1",
+      "display_name": "중추 박격포",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-shockwave-1",
+      "display_name": "전 방향 음파 타워",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-sniper-1",
+      "display_name": "감시 타워",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-trap-1",
+      "display_name": "AF1 '아머 멜터'",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-turret-1",
+      "display_name": "총기 타워",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-turret-2",
+      "display_name": "확장 총기 타워",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-battle-turret-3",
+      "display_name": "'폭우' 총기 타워",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-carrier-1",
+      "display_name": "간편 보관소",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-cat-tree-1",
+      "display_name": "작은 하울러비스트 이동식 선반",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-chubby-lung-balloon-1",
+      "display_name": "드래곤 버블 풍선",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-chubby-lung-stone-1",
+      "display_name": "드래곤 버블 돌기둥",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-cmpt-mc-1",
+      "display_name": "부품 가공기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-dismantler-1",
+      "display_name": "분해기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-display-stand-1",
+      "display_name": "'아이돌의 모습' 스탠드",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-doll-1",
+      "display_name": "'샛별' 인형 · 동행 버전",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-dumper-1",
+      "display_name": "액체 배출 장치",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-dumper-nop-1",
+      "display_name": "item-port-dumper-nop-1",
+      "display_name_source": "id-fallback"
+    },
+    {
+      "id": "item-port-filling-pd-mc-1",
+      "display_name": "충진기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-furnance-1",
+      "display_name": "정련로",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-furnance-nop-1",
+      "display_name": "item-port-furnance-nop-1",
+      "display_name_source": "id-fallback"
+    },
+    {
+      "id": "item-port-gas-pump-1",
+      "display_name": "기체 수집기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-gas-reactor-1",
+      "display_name": "기체 반응로",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-gas-storager-1",
+      "display_name": "저장용 가스통",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-grinder-1",
+      "display_name": "분쇄기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-jail-1",
+      "display_name": "호 · 뢰 · 관",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-liquid-cleaner-1",
+      "display_name": "오염수 처리기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-liquid-purifier-1",
+      "display_name": "정제기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-liquid-storager-1",
+      "display_name": "액체 저장 탱크",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-liquid-storager-nop-1",
+      "display_name": "item-port-liquid-storager-nop-1",
+      "display_name_source": "id-fallback"
+    },
+    {
+      "id": "item-port-loader-1",
+      "display_name": "창고 입력 포트",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-log-hongs-bus",
+      "display_name": "창고 입출력 라인 기초 장치",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-log-hongs-bus-source",
+      "display_name": "창고 입출력 라인 핵심 장치",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-marker-1",
+      "display_name": "전언 신호기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-microphone-1",
+      "display_name": "'리본의 소리' 마이크",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-miner-1",
+      "display_name": "휴대용 오리지늄 채굴기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-miner-2",
+      "display_name": "전동 채굴기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-miner-3",
+      "display_name": "전동 채굴기 II",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-miner-4",
+      "display_name": "수력 채굴기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-mix-pool-1",
+      "display_name": "반응기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-mix-pool-2",
+      "display_name": "확장 반응기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-pear-blossom-bonsai-1",
+      "display_name": "배꽃 조경",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-phase-trans-1",
+      "display_name": "액체 · 기체 전환기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-phase-trans-2",
+      "display_name": "고체 · 기체 전환기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-photo-frame-1",
+      "display_name": "선홍빛 기억",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-planter-1",
+      "display_name": "재배기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-power-diffuser-1",
+      "display_name": "전력 공급기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-power-diffuser-2",
+      "display_name": "식양 전력 공급기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-power-pole-2",
+      "display_name": "중계기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-power-pole-3",
+      "display_name": "식양 중계기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-power-port-1",
+      "display_name": "전력 단말기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-power-sta-1",
+      "display_name": "열에너지 뱅크",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-power-terminal-1",
+      "display_name": "item-port-power-terminal-1",
+      "display_name_source": "id-fallback"
+    },
+    {
+      "id": "item-port-pump-1",
+      "display_name": "양수기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-pump-2",
+      "display_name": "내산성 양수기 II",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-seedcol-1",
+      "display_name": "씨앗 추출기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-shaper-1",
+      "display_name": "성형기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-signboard-1",
+      "display_name": "충격적인 맛!",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-soil-1",
+      "display_name": "item-port-soil-1",
+      "display_name_source": "id-fallback"
+    },
+    {
+      "id": "item-port-soil-2",
+      "display_name": "item-port-soil-2",
+      "display_name_source": "id-fallback"
+    },
+    {
+      "id": "item-port-soil-bbflower-1",
+      "display_name": "아케톤 논배미",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-soil-grass-1",
+      "display_name": "금초 논배미",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-soil-grass-2",
+      "display_name": "야침 논배미",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-soil-grass-fast-1",
+      "display_name": "시뮬레이션 금초 논배미",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-soil-grass-fast-2",
+      "display_name": "시뮬레이션 야침 논배미",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-soil-moss-1",
+      "display_name": "메밀꽃 논배미",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-soil-moss-2",
+      "display_name": "시트론 논배미",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-soil-moss-3",
+      "display_name": "샌드리프 논배미",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-soil-sp-1",
+      "display_name": "회보리 논배미",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-soil-sp-2",
+      "display_name": "쓴맛 나는 고추 논배미",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-soil-sp-3",
+      "display_name": "홍옥 인삼 논배미",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-soil-sp-4",
+      "display_name": "금석벼 논배미",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-soil-sp-fast-3",
+      "display_name": "시뮬레이션 홍옥 인삼 논배미",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-soil-sp-fast-4",
+      "display_name": "시뮬레이션 금석벼 논배미",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-sp-hub-1",
+      "display_name": "프로토콜 코어",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-sp-sub-hub-1",
+      "display_name": "서브 코어",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-squirter-1",
+      "display_name": "스프링클러",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-squirter-nop-1",
+      "display_name": "item-port-squirter-nop-1",
+      "display_name_source": "id-fallback"
+    },
+    {
+      "id": "item-port-storager-1",
+      "display_name": "프로토콜 저장함",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-storager-nop-1",
+      "display_name": "item-port-storager-nop-1",
+      "display_name_source": "id-fallback"
+    },
+    {
+      "id": "item-port-thickener-1",
+      "display_name": "연마기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-tools-asm-mc-1",
+      "display_name": "포장기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-travel-pole-1",
+      "display_name": "집라인 후크",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-travel-pole-2",
+      "display_name": "장거리 집라인 후크",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-travel-pole-nop-1",
+      "display_name": "집라인 후크",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-udpipe-loader-1",
+      "display_name": "암관 입구",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-udpipe-loader-2",
+      "display_name": "다중 암관 입구",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-udpipe-unloader-1",
+      "display_name": "암관 출구",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-udpipe-unloader-2",
+      "display_name": "다중 암관 출구",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-unloader-1",
+      "display_name": "창고 출력 포트",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-vaporizer-1",
+      "display_name": "기체 분산기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-winder-1",
+      "display_name": "장비 부품 합성기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-port-xiranite-oven-1",
+      "display_name": "천화로",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-proc-battery-1",
+      "display_name": "저용량 협곡 배터리",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-proc-battery-2",
+      "display_name": "중용량 협곡 배터리",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-proc-battery-3",
+      "display_name": "대용량 협곡 배터리",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-proc-battery-4",
+      "display_name": "저용량 무릉 배터리",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-proc-battery-5",
+      "display_name": "중용량 무릉 배터리",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-proc-bomb-1",
+      "display_name": "공업 폭발물",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-quartz-enr",
+      "display_name": "크리스톤 섬유",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-quartz-enr-powder",
+      "display_name": "크리스톤 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-quartz-glass",
+      "display_name": "자수정 섬유",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-quartz-powder",
+      "display_name": "자수정 가루",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-quartz-sand",
+      "display_name": "자수정 광석",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-quest-e1m5-inhibit",
+      "display_name": "광석병 억제제",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-slimeml-1-agrange-1-moss-2-1",
+      "display_name": "꿀벌레 푸딩",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-slimeml-1-erhound-1-agfly-1-1",
+      "display_name": "손으로 찢은 벌레 고기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-sp-1-moss-1-agmelee-1-1",
+      "display_name": "거점 지역의 비상식량",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-sp-2-moss-2-agrange-1-1",
+      "display_name": "매운 절임 과일",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-spaceship-cmpt-1",
+      "display_name": "기초 우주 건축 재료",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-spaceship-cmpt-2",
+      "display_name": "고급 우주 건축 재료",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-1-1",
+      "display_name": "기밀 파일: 아겔로스 썩은 풀",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-1-10",
+      "display_name": "황금 조각상: 진강척",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-1-11",
+      "display_name": "액침 표본: 침식 갑판",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-1-12",
+      "display_name": "액침 표본: 지옥의 용광로 파편",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-1-2",
+      "display_name": "기밀 파일: 지하 격투가",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-1-3",
+      "display_name": "황금 조각상: 거대한 뚱뚱새",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-1-4",
+      "display_name": "황금 조각상: 안드레",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-1-5",
+      "display_name": "액침 표본: 빵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-1-6",
+      "display_name": "액침 표본: 다용도 공구",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-1-7",
+      "display_name": "기밀 파일: 육류 가공 공장",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-1-8",
+      "display_name": "기밀 파일: 직원 숙소 구역",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-1-9",
+      "display_name": "황금 조각상: 타타",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-2-1",
+      "display_name": "기밀 파일: 아부레이",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-2-2",
+      "display_name": "기밀 파일: 협곡 계획",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-2-3",
+      "display_name": "황금 조각상: 진천우",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-2-4",
+      "display_name": "황금 조각상: 마크",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-2-5",
+      "display_name": "액침 표본: 오리지늄 나뭇가지",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-2-6",
+      "display_name": "액침 표본: 폭격 신호기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-3-1",
+      "display_name": "기밀 파일: 울프팀",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-3-2",
+      "display_name": "기밀 파일: 아겔로스 용광로",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-3-3",
+      "display_name": "황금 조각상: 울프가드",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-3-4",
+      "display_name": "황금 조각상: 시추기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-3-5",
+      "display_name": "액침 표본: 델타 아겔로스",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-3-6",
+      "display_name": "액침 표본: 오리지늄 덩이",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-4-1",
+      "display_name": "기밀 파일: 거대 무기",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-4-2",
+      "display_name": "기밀 파일: 4번 성당",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-4-3",
+      "display_name": "황금 조각상: 이본",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-4-4",
+      "display_name": "황금 조각상: 콜린스",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-4-5",
+      "display_name": "액침 표본: 풍선 교수",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-4-6",
+      "display_name": "액침 표본: 천체",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-5-1",
+      "display_name": "기밀 파일: 안전국 직원",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-5-2",
+      "display_name": "기밀 파일: 유언 편지",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-5-3",
+      "display_name": "황금 조각상: 낡은 폭탄새",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-5-4",
+      "display_name": "황금 조각상: 크로",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-5-5",
+      "display_name": "액침 표본: 아츠 유닛",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-5-6",
+      "display_name": "액침 표본: 고요의 헌화",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-6-1",
+      "display_name": "기밀 파일: 로댄",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-6-2",
+      "display_name": "기밀 파일: 본 크러셔 내란",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-6-3",
+      "display_name": "황금 조각상: 펠리카",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-6-4",
+      "display_name": "황금 조각상: 제강호",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-6-5",
+      "display_name": "액침 표본: 본 크러셔 인형",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-collection-6-6",
+      "display_name": "액침 표본: 잔흔",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-1",
+      "display_name": "마스크 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-10",
+      "display_name": "고에너지 바위 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-11",
+      "display_name": "전술 장비 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-2",
+      "display_name": "왜곡된 마스크 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-3",
+      "display_name": "녹슨 금속 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-4",
+      "display_name": "검게 녹슨 금속 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-5",
+      "display_name": "부착 결정 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-6",
+      "display_name": "오염된 부착 결정 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-7",
+      "display_name": "파이프 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-8",
+      "display_name": "질긴 파이프 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-9",
+      "display_name": "무거운 바위 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-key-3",
+      "display_name": "폭발 유닛 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-key-4",
+      "display_name": "호박색 바위 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-key-5",
+      "display_name": "도끼 장갑 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-key-6",
+      "display_name": "낙석 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-key-7",
+      "display_name": "열기 화살 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-key-8",
+      "display_name": "불멸의 결정벽 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-key-9",
+      "display_name": "수차 안갯불 조각",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-1-1",
+      "display_name": "미형성 소결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-1-2",
+      "display_name": "미형성 중결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-1-3",
+      "display_name": "미형성 대결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-1-4",
+      "display_name": "거친 소결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-1-5",
+      "display_name": "거친 중결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-1-6",
+      "display_name": "거친 대결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-2-1",
+      "display_name": "일반 소결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-2-2",
+      "display_name": "일반 중결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-2-3",
+      "display_name": "일반 대결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-3-1",
+      "display_name": "양질 소결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-3-2",
+      "display_name": "양질 중결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-3-3",
+      "display_name": "양질 대결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-4-1",
+      "display_name": "희귀 소결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-4-2",
+      "display_name": "희귀 중결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-4-3",
+      "display_name": "희귀 대결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-5-1",
+      "display_name": "진귀 소결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-5-2",
+      "display_name": "진귀 중결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-5-3",
+      "display_name": "진귀 대결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-6-1",
+      "display_name": "찬란 소결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-6-2",
+      "display_name": "찬란 중결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-weekraid-ore-6-3",
+      "display_name": "찬란 대결핵",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-wgshoal-1-grass-1-grass-2-1",
+      "display_name": "작은 설탕 그림",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-wgslime-1-hsmob-1-grass-2-1",
+      "display_name": "드래곤 버블 채소 젤리",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-wgslime-1-wgthorns-1-1",
+      "display_name": "신비한 탄산음료",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-wgthorns-1-hshog-1-hsmob-1-1",
+      "display_name": "기름 폭발 볶음",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-xiranite-enr-powder",
+      "display_name": "중식양",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-xiranite-lowpoly",
+      "display_name": "경양정",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-xiranite-poly",
+      "display_name": "양정",
+      "display_name_source": "official"
+    },
+    {
+      "id": "item-xiranite-powder",
+      "display_name": "식양",
+      "display_name_source": "official"
+    }
+  ],
+  "facilities": [
+    {
+      "id": "component-mc-1-mode-normal",
+      "base_facility": "component-mc-1",
+      "facility_name": "부품 가공기",
+      "facility_name_source": "official",
+      "mode": "normal",
+      "mode_name": "기본 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "dismantler-1-mode-gasliquid",
+      "base_facility": "dismantler-1",
+      "facility_name": "분해기",
+      "facility_name_source": "official",
+      "mode": "gasliquid",
+      "mode_name": "기체 · 액체 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "dismantler-1-mode-liquid",
+      "base_facility": "dismantler-1",
+      "facility_name": "분해기",
+      "facility_name_source": "official",
+      "mode": "liquid",
+      "mode_name": "액체 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "filling-powder-mc-1-mode-gasliquid",
+      "base_facility": "filling-powder-mc-1",
+      "facility_name": "충진기",
+      "facility_name_source": "official",
+      "mode": "gasliquid",
+      "mode_name": "기체 · 액체 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "filling-powder-mc-1-mode-liquid",
+      "base_facility": "filling-powder-mc-1",
+      "facility_name": "충진기",
+      "facility_name_source": "official",
+      "mode": "liquid",
+      "mode_name": "액체 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "filling-powder-mc-1-mode-normal",
+      "base_facility": "filling-powder-mc-1",
+      "facility_name": "충진기",
+      "facility_name_source": "official",
+      "mode": "normal",
+      "mode_name": "기본 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "furnance-1-mode-liquid",
+      "base_facility": "furnance-1",
+      "facility_name": "정련로",
+      "facility_name_source": "official",
+      "mode": "liquid",
+      "mode_name": "액체 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "furnance-1-mode-normal",
+      "base_facility": "furnance-1",
+      "facility_name": "정련로",
+      "facility_name_source": "official",
+      "mode": "normal",
+      "mode_name": "기본 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "gas-reactor-1-mode-gas",
+      "base_facility": "gas-reactor-1",
+      "facility_name": "기체 반응로",
+      "facility_name_source": "official",
+      "mode": "gas",
+      "mode_name": "기체 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "grinder-1-mode-normal",
+      "base_facility": "grinder-1",
+      "facility_name": "분쇄기",
+      "facility_name_source": "official",
+      "mode": "normal",
+      "mode_name": "기본 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "liquid-purifier-1-mode-gas",
+      "base_facility": "liquid-purifier-1",
+      "facility_name": "정제기",
+      "facility_name_source": "official",
+      "mode": "gas",
+      "mode_name": "기체 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "liquid-purifier-1-mode-liquid",
+      "base_facility": "liquid-purifier-1",
+      "facility_name": "정제기",
+      "facility_name_source": "official",
+      "mode": "liquid",
+      "mode_name": "액체 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "mix-pool-1-mode-liquid",
+      "base_facility": "mix-pool-1",
+      "facility_name": "반응기",
+      "facility_name_source": "official",
+      "mode": "liquid",
+      "mode_name": "액체 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "mix-pool-2-mode-liquid",
+      "base_facility": "mix-pool-2",
+      "facility_name": "확장 반응기",
+      "facility_name_source": "official",
+      "mode": "liquid",
+      "mode_name": "액체 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "planter-1-mode-liquid",
+      "base_facility": "planter-1",
+      "facility_name": "재배기",
+      "facility_name_source": "official",
+      "mode": "liquid",
+      "mode_name": "액체 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "planter-1-mode-normal",
+      "base_facility": "planter-1",
+      "facility_name": "재배기",
+      "facility_name_source": "official",
+      "mode": "normal",
+      "mode_name": "기본 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "seedcollector-1-mode-normal",
+      "base_facility": "seedcollector-1",
+      "facility_name": "씨앗 추출기",
+      "facility_name_source": "official",
+      "mode": "normal",
+      "mode_name": "기본 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "shaper-1-mode-gas",
+      "base_facility": "shaper-1",
+      "facility_name": "성형기",
+      "facility_name_source": "official",
+      "mode": "gas",
+      "mode_name": "기체 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "shaper-1-mode-normal",
+      "base_facility": "shaper-1",
+      "facility_name": "성형기",
+      "facility_name_source": "official",
+      "mode": "normal",
+      "mode_name": "기본 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "thickener-1-mode-normal",
+      "base_facility": "thickener-1",
+      "facility_name": "연마기",
+      "facility_name_source": "official",
+      "mode": "normal",
+      "mode_name": "기본 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "tools-assebling-mc-1-mode-normal",
+      "base_facility": "tools-assebling-mc-1",
+      "facility_name": "포장기",
+      "facility_name_source": "official",
+      "mode": "normal",
+      "mode_name": "기본 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "transmuter-1-mode-gastrans",
+      "base_facility": "transmuter-1",
+      "facility_name": "액체 · 기체 전환기",
+      "facility_name_source": "official",
+      "mode": "gastrans",
+      "mode_name": "기체 생산",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "transmuter-1-mode-liquidtrans",
+      "base_facility": "transmuter-1",
+      "facility_name": "액체 · 기체 전환기",
+      "facility_name_source": "official",
+      "mode": "liquidtrans",
+      "mode_name": "액체 생산",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "transmuter-2-mode-gastrans",
+      "base_facility": "transmuter-2",
+      "facility_name": "고체 · 기체 전환기",
+      "facility_name_source": "official",
+      "mode": "gastrans",
+      "mode_name": "기체 생산",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "transmuter-2-mode-solidtrans",
+      "base_facility": "transmuter-2",
+      "facility_name": "고체 · 기체 전환기",
+      "facility_name_source": "official",
+      "mode": "solidtrans",
+      "mode_name": "고체 생산",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "winder-1-mode-normal",
+      "base_facility": "winder-1",
+      "facility_name": "장비 부품 합성기",
+      "facility_name_source": "official",
+      "mode": "normal",
+      "mode_name": "기본 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "xiranite-oven-1-mode-gasliquid",
+      "base_facility": "xiranite-oven-1",
+      "facility_name": "천화로",
+      "facility_name_source": "official",
+      "mode": "gasliquid",
+      "mode_name": "기체 · 액체 모드",
+      "mode_name_source": "official"
+    },
+    {
+      "id": "xiranite-oven-1-mode-liquid",
+      "base_facility": "xiranite-oven-1",
+      "facility_name": "천화로",
+      "facility_name_source": "official",
+      "mode": "liquid",
+      "mode_name": "액체 모드",
+      "mode_name_source": "official"
+    }
+  ],
+  "modes": [
+    {
+      "id": "gas",
+      "display_name": "기체 모드",
+      "display_name_source": "official"
+    },
+    {
+      "id": "gasliquid",
+      "display_name": "기체 · 액체 모드",
+      "display_name_source": "official"
+    },
+    {
+      "id": "gastrans",
+      "display_name": "기체 생산",
+      "display_name_source": "official"
+    },
+    {
+      "id": "liquid",
+      "display_name": "액체 모드",
+      "display_name_source": "official"
+    },
+    {
+      "id": "liquidtrans",
+      "display_name": "액체 생산",
+      "display_name_source": "official"
+    },
+    {
+      "id": "normal",
+      "display_name": "기본 모드",
+      "display_name_source": "official"
+    },
+    {
+      "id": "solidtrans",
+      "display_name": "고체 생산",
+      "display_name_source": "official"
+    }
+  ],
+  "recipe_descriptions": [
+    {
+      "id": "component-activity-xiranite-cmpt-1",
+      "description": "실험용 식양 부품 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "component-activity-xiranite-enr-cmpt-1",
+      "description": "실험용 중식양 부품 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "component-copper-cmpt-1",
+      "description": "적동 부품 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "component-copper-enr2-cmpt-1",
+      "description": "작동 부품 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "component-copper-enr-cmpt-1",
+      "description": "혁동 부품 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "component-glass-cmpt-1",
+      "description": "자수정 부품 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "component-glass-enr-cmpt-1",
+      "description": "크리스톤 부품 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "component-iron-cmpt-1",
+      "description": "페리움 부품 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "component-iron-enr-cmpt-1",
+      "description": "강철 부품 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copper-acid-1",
+      "description": "적동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copper-copper-1",
+      "description": "적동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copper-copper-enr-1",
+      "description": "적동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copper-grass-1-1",
+      "description": "적동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copper-grass-2-1",
+      "description": "적동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copper-sewage-1",
+      "description": "적동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copper-water-1",
+      "description": "적동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copper-xiranite-1",
+      "description": "적동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copper-xiranite-enr-1",
+      "description": "적동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copper-xiranite-lowpoly-1",
+      "description": "적동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copper-xiranite-poly-1",
+      "description": "적동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperenr-acid-1",
+      "description": "혁동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperenr-copper-1",
+      "description": "혁동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperenr-copper-enr-1",
+      "description": "혁동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperenr-grass-1-1",
+      "description": "혁동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperenr-grass-2-1",
+      "description": "혁동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperenr-sewage-1",
+      "description": "혁동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperenr-water-1",
+      "description": "혁동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperenr-xiranite-1",
+      "description": "혁동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperenr-xiranite-enr-1",
+      "description": "혁동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperenr-xiranite-lowpoly-1",
+      "description": "혁동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperenr-xiranite-poly-1",
+      "description": "혁동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperjar-gas-acid-1",
+      "description": "적동 내압 캔 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperjar-gas-copper-1",
+      "description": "적동 내압 캔 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperjar-gas-copper-enr2-1",
+      "description": "적동 내압 캔 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperjar-gas-copper-enr-1",
+      "description": "적동 내압 캔 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperjar-gas-inert-1",
+      "description": "적동 내압 캔 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperjar-gas-water-1",
+      "description": "적동 내압 캔 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperjar-gas-xiranite-1",
+      "description": "적동 내압 캔 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-copperjar-gas-xiranite-enr-1",
+      "description": "적동 내압 캔 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glass-acid-1",
+      "description": "자수정 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glass-copper-1",
+      "description": "자수정 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glass-copper-enr-1",
+      "description": "자수정 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glass-grass-1-1",
+      "description": "자수정 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glass-grass-2-1",
+      "description": "자수정 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glass-sewage-1",
+      "description": "자수정 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glass-water-1",
+      "description": "자수정 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glass-xiranite-1",
+      "description": "자수정 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glass-xiranite-enr-1",
+      "description": "자수정 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glass-xiranite-lowpoly-1",
+      "description": "자수정 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glass-xiranite-poly-1",
+      "description": "자수정 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glassenr-acid-1",
+      "description": "크리스톤 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glassenr-copper-1",
+      "description": "크리스톤 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glassenr-copper-enr-1",
+      "description": "크리스톤 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glassenr-grass-1-1",
+      "description": "크리스톤 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glassenr-grass-2-1",
+      "description": "크리스톤 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glassenr-sewage-1",
+      "description": "크리스톤 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glassenr-water-1",
+      "description": "크리스톤 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glassenr-xiranite-1",
+      "description": "크리스톤 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glassenr-xiranite-enr-1",
+      "description": "크리스톤 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glassenr-xiranite-lowpoly-1",
+      "description": "크리스톤 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-glassenr-xiranite-poly-1",
+      "description": "크리스톤 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-iron-acid-1",
+      "description": "페리움 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-iron-copper-1",
+      "description": "페리움 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-iron-copper-enr-1",
+      "description": "페리움 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-iron-grass-1-1",
+      "description": "페리움 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-iron-grass-2-1",
+      "description": "페리움 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-iron-sewage-1",
+      "description": "페리움 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-iron-water-1",
+      "description": "페리움 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-iron-xiranite-1",
+      "description": "페리움 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-iron-xiranite-enr-1",
+      "description": "페리움 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-iron-xiranite-lowpoly-1",
+      "description": "페리움 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-iron-xiranite-poly-1",
+      "description": "페리움 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-ironenr-acid-1",
+      "description": "강철 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-ironenr-copper-1",
+      "description": "강철 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-ironenr-copper-enr-1",
+      "description": "강철 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-ironenr-grass-1-1",
+      "description": "강철 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-ironenr-grass-2-1",
+      "description": "강철 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-ironenr-sewage-1",
+      "description": "강철 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-ironenr-water-1",
+      "description": "강철 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-ironenr-xiranite-1",
+      "description": "강철 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-ironenr-xiranite-enr-1",
+      "description": "강철 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-ironenr-xiranite-lowpoly-1",
+      "description": "강철 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-ironenr-xiranite-poly-1",
+      "description": "강철 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "dismantler-xiranenr-grass-2-1",
+      "description": "실험용 중식양 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copper-acid",
+      "description": "산성 침적물(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copper-copper",
+      "description": "적동 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copper-copper-enr",
+      "description": "혁동 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copper-grass-1",
+      "description": "금초 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copper-grass-2",
+      "description": "야침 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copper-sewage",
+      "description": "오염수(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copper-water",
+      "description": "청정수(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copper-xiranite",
+      "description": "액화 식양(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copper-xiranite-enr",
+      "description": "액화 중식양(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copper-xiranite-lowpoly",
+      "description": "불활성 양정 폐액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copper-xiranite-poly",
+      "description": "양정 폐액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copperenr-acid",
+      "description": "산성 침적물(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copperenr-copper",
+      "description": "적동 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copperenr-copper-enr",
+      "description": "혁동 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copperenr-grass-1",
+      "description": "금초 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copperenr-grass-2",
+      "description": "야침 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copperenr-sewage",
+      "description": "오염수(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copperenr-water",
+      "description": "청정수(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copperenr-xiranite",
+      "description": "액화 식양(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copperenr-xiranite-enr",
+      "description": "액화 중식양(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copperenr-xiranite-lowpoly",
+      "description": "불활성 양정 폐액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-copperenr-xiranite-poly",
+      "description": "양정 폐액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-food-1-1",
+      "description": "시트론 통조림 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-food-2-1",
+      "description": "시트론 통조림(중) 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-food-3-1",
+      "description": "시트론 통조림(대) 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glass-acid",
+      "description": "산성 침적물(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glass-copper",
+      "description": "적동 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glass-copper-enr",
+      "description": "혁동 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glass-grass-1",
+      "description": "금초 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glass-grass-2",
+      "description": "야침 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glass-sewage",
+      "description": "오염수(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glass-water",
+      "description": "청정수(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glass-xiranite",
+      "description": "액화 식양(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glass-xiranite-enr",
+      "description": "액화 중식양(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glass-xiranite-lowpoly",
+      "description": "불활성 양정 폐액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glass-xiranite-poly",
+      "description": "양정 폐액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glassenr-acid",
+      "description": "산성 침적물(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glassenr-copper",
+      "description": "적동 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glassenr-copper-enr",
+      "description": "혁동 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glassenr-grass-1",
+      "description": "금초 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glassenr-grass-2",
+      "description": "야침 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glassenr-sewage",
+      "description": "오염수(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glassenr-water",
+      "description": "청정수(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glassenr-xiranite",
+      "description": "액화 식양(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glassenr-xiranite-enr",
+      "description": "액화 중식양(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glassenr-xiranite-lowpoly",
+      "description": "불활성 양정 폐액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-glassenr-xiranite-poly",
+      "description": "양정 폐액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-iron-acid",
+      "description": "산성 침적물(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-iron-copper",
+      "description": "적동 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-iron-copper-enr",
+      "description": "혁동 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-iron-grass-1",
+      "description": "금초 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-iron-grass-2",
+      "description": "야침 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-iron-sewage",
+      "description": "오염수(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-iron-water",
+      "description": "청정수(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-iron-xiranite",
+      "description": "액화 식양(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-iron-xiranite-enr",
+      "description": "액화 중식양(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-iron-xiranite-lowpoly",
+      "description": "불활성 양정 폐액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-iron-xiranite-poly",
+      "description": "양정 폐액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-ironenr-acid",
+      "description": "산성 침적물(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-ironenr-copper",
+      "description": "적동 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-ironenr-copper-enr",
+      "description": "혁동 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-ironenr-grass-1",
+      "description": "금초 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-ironenr-grass-2",
+      "description": "야침 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-ironenr-sewage",
+      "description": "오염수(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-ironenr-water",
+      "description": "청정수(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-ironenr-xiranite",
+      "description": "액화 식양(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-ironenr-xiranite-enr",
+      "description": "액화 중식양(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-ironenr-xiranite-lowpoly",
+      "description": "불활성 양정 폐액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-ironenr-xiranite-poly",
+      "description": "양정 폐액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-rec-hp-1-1",
+      "description": "메밀꽃 치유 캡슐 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-rec-hp-2-1",
+      "description": "메밀꽃 치유 캡슐(중) 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-rec-hp-3-1",
+      "description": "메밀꽃 치유 캡슐(대) 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-bottled-xiranenr-grass-2",
+      "description": "야침 용액(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-copperjar-copper-enr2-1",
+      "description": "기체 작동(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-copperjar-gas-acid-1",
+      "description": "산성 기체(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-copperjar-gas-copper-1",
+      "description": "기체 적동(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-copperjar-gas-copper-enr-1",
+      "description": "기체 혁동(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-copperjar-gas-inert-1",
+      "description": "비활성 기체(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-copperjar-gas-water-1",
+      "description": "수증기(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-copperjar-gas-xiranite-1",
+      "description": "식양 기체(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "filling-copperjar-gas-xiranite-enr-1",
+      "description": "중식양 기체(주입)",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-carbon-enr-1",
+      "description": "안정된 카본 조각 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-carbon-enr-powder-1",
+      "description": "고밀도 카본 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-carbon-enr-powder-2",
+      "description": "고밀도 카본 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-carbon-material-1",
+      "description": "카본 조각 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-carbon-material-2",
+      "description": "카본 조각 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-carbon-material-3",
+      "description": "카본 조각 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-carbon-material-4",
+      "description": "카본 조각 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-carbon-material-5",
+      "description": "카본 조각 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-carbon-material-6",
+      "description": "카본 조각 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-carbon-powder-1",
+      "description": "카본 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-carbon-powder-2",
+      "description": "카본 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-carbon-powder-3",
+      "description": "카본 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-carbon-powder-4",
+      "description": "카본 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-carbon-powder-5",
+      "description": "카본 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-copper-nugget-1",
+      "description": "적동 조각 생산(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-crystal-enr-1",
+      "description": "정련된 오리고 크러스트 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-crystal-enr-powder-1",
+      "description": "고밀도 오리고 크러스트 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-crystal-powder-1",
+      "description": "오리고 크러스트 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-crystal-shell-1",
+      "description": "오리고 크러스트 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-crystal-shell-2",
+      "description": "오리고 크러스트 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-iron-enr-1",
+      "description": "강철 조각 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-iron-nugget-1",
+      "description": "페리움 조각 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-iron-nugget-2",
+      "description": "페리움 조각 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-quartz-enr-1",
+      "description": "크리스톤 섬유 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-quartz-glass-1",
+      "description": "자수정 섬유 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "furnance-quartz-glass-2",
+      "description": "자수정 섬유 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "gas-reactor-gas-copper-enr2-1",
+      "description": "기체 작동 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "grinder-carbon-powder-1",
+      "description": "카본 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "grinder-copper-powder-1",
+      "description": "적동 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "grinder-crystal-powder-1",
+      "description": "오리고 크러스트 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "grinder-iron-powder-1",
+      "description": "페리움 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "grinder-originium-powder-1",
+      "description": "오리지늄 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "grinder-plant-bbflower-powder-1-1",
+      "description": "아케톤 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "grinder-plant-grass-powder-1-1",
+      "description": "금초 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "grinder-plant-grass-powder-2-1",
+      "description": "야침 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "grinder-plant-moss-powder-1-1",
+      "description": "메밀꽃 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "grinder-plant-moss-powder-2-1",
+      "description": "시트론 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "grinder-plant-moss-powder-3-1",
+      "description": "샌드리프 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "grinder-quartz-powder-1",
+      "description": "자수정 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-purifier-copper-enr-1",
+      "description": "혁동 용액 정제",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-purifier-gas-copper-enr-1",
+      "description": "기체 혁동 정제",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-purifier-gas-copper-enr-2",
+      "description": "기체 혁동 정제",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-purifier-gas-xiranite-enr-1",
+      "description": "중식양 기체 정제",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-purifier-gas-xiranite-enr-2",
+      "description": "중식양 기체 정제",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-purifier-xiranite-poly-1",
+      "description": "양정 폐액 정제",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-1-gas-gas-acid-1",
+      "description": "산성 기체 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-1-gas-gas-copper-1",
+      "description": "기체 적동 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-1-gas-gas-copper-enr-1",
+      "description": "기체 혁동 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-1-gas-gas-water-1",
+      "description": "수증기 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-1-gas-gas-xiranite-1",
+      "description": "식양 기체 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-1-gas-gas-xiranite-enr-1",
+      "description": "중식양 기체 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-1-liquid-liquid-acid-1",
+      "description": "산성 침적물 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-1-liquid-liquid-copper-1",
+      "description": "적동 용액 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-1-liquid-liquid-copper-enr-1",
+      "description": "혁동 용액 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-1-liquid-liquid-water-1",
+      "description": "청정수 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-1-liquid-liquid-xiranite-1",
+      "description": "액화 식양 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-1-liquid-liquid-xiranite-enr-1",
+      "description": "액화 중식양 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-2-gas-gas-copper-1",
+      "description": "기체 적동 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-2-gas-gas-copper-enr2-1",
+      "description": "기체 작동 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-2-gas-gas-copper-enr-1",
+      "description": "기체 혁동 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-2-gas-gas-xiranite-1",
+      "description": "식양 기체 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-2-gas-gas-xiranite-enr-1",
+      "description": "중식양 기체 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-2-solid-copper-enr2-1",
+      "description": "작동 조각 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-2-solid-copper-enr-1",
+      "description": "혁동 조각 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-2-solid-copper-nugget-1",
+      "description": "적동 조각 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-2-solid-xiranite-enr-powder-1",
+      "description": "중식양 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "liquid-transmuter-2-solid-xiranite-powder-1",
+      "description": "식양 전환",
+      "description_source": "official"
+    },
+    {
+      "id": "planter-plant-bbflower-1",
+      "description": "아케톤 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "planter-plant-grass-1-1",
+      "description": "금초 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "planter-plant-grass-2-1",
+      "description": "야침 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "planter-plant-moss-1-1",
+      "description": "메밀꽃 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "planter-plant-moss-2-1",
+      "description": "시트론 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "planter-plant-moss-3-1",
+      "description": "샌드리프 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-copper-enr-1",
+      "description": "혁동 조각 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-copper-enr-2",
+      "description": "혁동 조각 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-liquid-copper-1",
+      "description": "적동 용액 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-liquid-copper-2",
+      "description": "적동 용액 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-liquid-liquid-xiranite-1",
+      "description": "액화 식양 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-liquid-liquid-xiranite-2",
+      "description": "액화 식양 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-liquid-plant-grass-1-1",
+      "description": "금초 용액 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-liquid-plant-grass-1-2",
+      "description": "금초 용액 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-liquid-plant-grass-2-1",
+      "description": "야침 용액 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-liquid-plant-grass-2-2",
+      "description": "야침 용액 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-liquid-xiranite-enr-1",
+      "description": "액화 중식양 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-liquid-xiranite-enr-2",
+      "description": "액화 중식양 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-liquid-xiranite-poly-1",
+      "description": "양정 폐액 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-liquid-xiranite-poly-2",
+      "description": "양정 폐액 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-xiranite-poly-1",
+      "description": "양정 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "pool-xiranite-poly-2",
+      "description": "양정 합성(액체)",
+      "description_source": "official"
+    },
+    {
+      "id": "seedcollector-plant-bbflower-1",
+      "description": "아케톤 씨앗 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "seedcollector-plant-grass-1-1",
+      "description": "금초 씨앗 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "seedcollector-plant-grass-2-1",
+      "description": "야침 씨앗 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "seedcollector-plant-moss-1-1",
+      "description": "메밀꽃 씨앗 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "seedcollector-plant-moss-2-1",
+      "description": "시트론 씨앗 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "seedcollector-plant-moss-3-1",
+      "description": "샌드리프 씨앗 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "seedcollector-plant-sp-1",
+      "description": "회보리 씨앗 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "seedcollector-plant-sp-2",
+      "description": "쓴맛 나는 고추 씨앗 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "seedcollector-plant-sp-3",
+      "description": "홍옥 인삼 씨앗 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "seedcollector-plant-sp-4",
+      "description": "금석벼 씨앗 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "shaper-activity-xiranite-bottle-1",
+      "description": "실험용 식양 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "shaper-activity-xiranite-enr-bottle-1",
+      "description": "실험용 중식양 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "shaper-copper-bottle-1",
+      "description": "적동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "shaper-copper-enr-bottle-1",
+      "description": "혁동 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "shaper-gas-copper-jar-1",
+      "description": "적동 내압 캔 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "shaper-glass-bottle-1",
+      "description": "자수정 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "shaper-glass-enr-bottle-1",
+      "description": "크리스톤 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "shaper-iron-bottle-1",
+      "description": "페리움 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "shaper-iron-enr-bottle-1",
+      "description": "강철 병 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "thickener-carbon-enr-powder-1",
+      "description": "고밀도 카본 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "thickener-crystal-enr-powder-1",
+      "description": "고밀도 오리고 크러스트 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "thickener-iron-enr-powder-1",
+      "description": "고밀도 페리움 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "thickener-originium-enr-powder-1",
+      "description": "고밀도 오리지늄 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "thickener-plant-moss-enr-powder-1-1",
+      "description": "고운 메밀꽃 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "thickener-plant-moss-enr-powder-2-1",
+      "description": "고운 시트론 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "thickener-quartz-enr-powder-1",
+      "description": "크리스톤 가루 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "tools-proc-activity-xiranite-enr-hulu-1",
+      "description": "식양 옥 호리병 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "tools-proc-activity-xiranite-enr-tool-1",
+      "description": "실험용 옥동 발산기 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "tools-proc-activity-xiranite-hulu-1",
+      "description": "식양 호리병 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "tools-proc-battery-1-1",
+      "description": "저용량 협곡 배터리 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "tools-proc-battery-2-1",
+      "description": "중용량 협곡 배터리 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "tools-proc-battery-3-1",
+      "description": "대용량 협곡 배터리 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "tools-proc-battery-4-1",
+      "description": "저용량 무릉 배터리 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "tools-proc-battery-5-1",
+      "description": "중용량 무릉 배터리 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "tools-proc-bomb-1-1",
+      "description": "공업 폭발물 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "tools-proc-filter-core-2",
+      "description": "분리 필터 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "tools-proc-food-4-1",
+      "description": "금초 청량음료 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "tools-proc-food-5-1",
+      "description": "고급 금초 청량음료 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "tools-proc-rec-hp-4-1",
+      "description": "야침 주사약 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "tools-proc-rec-hp-5-1",
+      "description": "고급 야침 주사약 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "winder-equip-script-1",
+      "description": "자수정 장비 부품 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "winder-equip-script-2",
+      "description": "페리움 장비 부품 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "winder-equip-script-3",
+      "description": "크리스톤 장비 부품 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "winder-equip-script-4",
+      "description": "식양 장비 부품 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "winder-equip-script-4-1",
+      "description": "적동 장비 부품 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "winder-equip-script-4-2",
+      "description": "혁동 장비 부품 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "winder-equip-script-4-3",
+      "description": "작동 장비 부품 합성",
+      "description_source": "official"
+    },
+    {
+      "id": "xiranite-oven-muck-xiranite-1",
+      "description": "팽지박 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "xiranite-oven-xiranite-enr-powder-1",
+      "description": "중식양 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "xiranite-oven-xiranite-powder-1",
+      "description": "식양 생산",
+      "description_source": "official"
+    },
+    {
+      "id": "xiranite-oven-xiranite-powder-2",
+      "description": "식양 생산",
+      "description_source": "official"
+    }
+  ]
+}
