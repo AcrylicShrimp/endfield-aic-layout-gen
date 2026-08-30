@@ -443,19 +443,22 @@ mod tests {
             item: "item".to_string(),
         });
         FacilityInstanceWiringReport {
+            schema_version: crate::recipes::FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
             success: true,
             nodes,
             edges: edges
                 .iter()
-                .map(|(source, target)| FacilityInstanceWiringEdge {
-                    source: (*source).to_string(),
-                    target: (*target).to_string(),
-                    kind: "production".to_string(),
-                    item: "item".to_string(),
-                    rate: Rate {
-                        numerator: 1,
-                        denominator: 1,
-                    },
+                .map(|(source, target)| {
+                    FacilityInstanceWiringEdge::original(
+                        *source,
+                        *target,
+                        "production",
+                        "item",
+                        Rate {
+                            numerator: 1,
+                            denominator: 1,
+                        },
+                    )
                 })
                 .collect(),
             diagnostics: Vec::<FacilityInstanceWiringDiagnostic>::new(),

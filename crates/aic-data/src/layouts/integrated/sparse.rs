@@ -604,6 +604,8 @@ fn route_all(
         routes.push((
             route.edge_index,
             IntegratedRoute {
+                requirement_id: edge.requirement_id.clone(),
+                requirement_fingerprint: edge.requirement_fingerprint.clone(),
                 source: source.endpoint,
                 target: target.endpoint,
                 item: edge.edge.item.clone(),
@@ -916,6 +918,7 @@ fn success_report(
     debug_assert!(used_height <= i64::from(input.height));
 
     IntegratedLayoutReport {
+        schema_version: super::INTEGRATED_LAYOUT_SCHEMA_VERSION,
         success: true,
         status: IntegratedLayoutStatus::Feasible,
         bounds: Some(FacilityPlacementBounds {

@@ -11,7 +11,8 @@ use aic_data::logistics::{
     load_item_catalog, load_logistics_component_catalog, load_transport_catalog,
 };
 use aic_data::recipes::{
-    FacilityInstanceWiringEdge, FacilityInstanceWiringNode, FacilityInstanceWiringReport, Rate,
+    FACILITY_INSTANCE_WIRING_SCHEMA_VERSION, FacilityInstanceWiringEdge,
+    FacilityInstanceWiringNode, FacilityInstanceWiringReport, Rate,
 };
 
 #[test]
@@ -143,6 +144,7 @@ fn graph_fixture(
             .map(|source| wiring_edge(source, "target", "item", "target")),
     );
     plan_facility_growth(&FacilityInstanceWiringReport {
+        schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
         success: true,
         nodes,
         edges,
@@ -152,6 +154,7 @@ fn graph_fixture(
 
 fn one_facility_wiring_fixture() -> FacilityInstanceWiringReport {
     FacilityInstanceWiringReport {
+        schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
         success: true,
         nodes: vec![
             facility_node("facility:oven", "xiranite-oven-1-mode-liquid"),
@@ -208,16 +211,16 @@ fn facility_node(id: &str, facility: &str) -> FacilityInstanceWiringNode {
 }
 
 fn wiring_edge(source: &str, target: &str, item: &str, kind: &str) -> FacilityInstanceWiringEdge {
-    FacilityInstanceWiringEdge {
-        source: source.to_string(),
-        target: target.to_string(),
-        kind: kind.to_string(),
-        item: item.to_string(),
-        rate: Rate {
+    FacilityInstanceWiringEdge::original(
+        source,
+        target,
+        kind,
+        item,
+        Rate {
             numerator: 1,
             denominator: 10,
         },
-    }
+    )
 }
 
 fn unit_rate() -> Rate {

@@ -383,13 +383,13 @@ fn split_flow(
 
     while source_index < sources.len() && target_index < targets.len() {
         let rate = source_remaining.min(target_remaining);
-        edges.push(FacilityInstanceWiringEdge {
-            source: sources[source_index].clone(),
-            target: targets[target_index].clone(),
-            kind: kind.to_string(),
-            item: item.to_string(),
+        edges.push(FacilityInstanceWiringEdge::original(
+            sources[source_index].clone(),
+            targets[target_index].clone(),
+            kind,
+            item,
             rate,
-        });
+        ));
         source_remaining = source_remaining
             .checked_sub(rate)
             .map_err(map_throughput_arithmetic)?;

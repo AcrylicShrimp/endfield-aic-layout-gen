@@ -22,9 +22,11 @@ pub use facilities::{
 pub use graph::RecipeGraphError;
 pub use id::validate_target_item_id;
 pub use instances::{
-    FacilityInstanceWiringDiagnostic, FacilityInstanceWiringEdge, FacilityInstanceWiringNode,
+    FACILITY_INSTANCE_WIRING_SCHEMA_VERSION, FacilityInstanceWiringDiagnostic,
+    FacilityInstanceWiringEdge, FacilityInstanceWiringNode,
+    FacilityInstanceWiringProjectedEndpoint, FacilityInstanceWiringProjection,
     FacilityInstanceWiringReport, build_contextual_facility_instance_wiring,
-    build_facility_instance_wiring,
+    build_facility_instance_wiring, facility_instance_wiring_edge_id,
 };
 pub use load::{LoadRecipeBookError, load_recipe_book};
 pub use model::{ItemAmount, Recipe, RecipeBook, RecipeGraph};

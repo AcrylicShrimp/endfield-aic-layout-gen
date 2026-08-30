@@ -738,16 +738,17 @@ fn xml_escape(value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use crate::layouts::{
-        BoundarySide, FacilityPlacement, FacilityPlacementBounds, IntegratedLayoutDiagnostic,
-        IntegratedLayoutPhase, IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRoute,
-        IntegratedRouteEndpoint, WorldGridPosition,
+        BoundarySide, FacilityPlacement, FacilityPlacementBounds, INTEGRATED_LAYOUT_SCHEMA_VERSION,
+        IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutReport,
+        IntegratedLayoutStatus, IntegratedRoute, IntegratedRouteEndpoint,
+        RouteRequirementFingerprint, WorldGridPosition,
     };
     use crate::localization::{
         LocalizationCatalog, LocalizationTextSource, LocalizedFacility, LocalizedName,
         ValidatedLocalizationCatalog,
     };
     use crate::logistics::TransportKind;
-    use crate::recipes::Rate;
+    use crate::recipes::{FacilityInstanceWiringProjection, Rate};
 
     use super::{
         endpoint_arrow_direction, estimated_label_width, render_integrated_layout_html,
@@ -757,6 +758,7 @@ mod tests {
     #[test]
     fn renders_a_self_contained_wireframe_with_transport_layers() {
         let mut report = IntegratedLayoutReport {
+            schema_version: INTEGRATED_LAYOUT_SCHEMA_VERSION,
             success: true,
             status: IntegratedLayoutStatus::Feasible,
             bounds: Some(FacilityPlacementBounds {
@@ -775,6 +777,18 @@ mod tests {
             }],
             logistics_components: Vec::new(),
             routes: vec![IntegratedRoute {
+                requirement_id: "wiring-edge:test:lane:0000".to_string(),
+                requirement_fingerprint: RouteRequirementFingerprint {
+                    source: "external".to_string(),
+                    target: "facility:<one>".to_string(),
+                    item: "item&one".to_string(),
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 1,
+                    },
+                    transport: TransportKind::Belt,
+                    projection: FacilityInstanceWiringProjection::Original,
+                },
                 source: IntegratedRouteEndpoint::Boundary {
                     node: "external".to_string(),
                     side: BoundarySide::West,

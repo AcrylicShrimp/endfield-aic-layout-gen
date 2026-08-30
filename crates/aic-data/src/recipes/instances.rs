@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 
 use crate::recipes::{
     FacilityRequirementReport, Rate, RecipeFacilityRequirement, RecipeRunRate,
@@ -12,9 +13,11 @@ mod contextual;
 pub use contextual::build_contextual_facility_instance_wiring;
 
 const STAGE: &str = "facility-instance-wiring";
+pub const FACILITY_INSTANCE_WIRING_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct FacilityInstanceWiringReport {
+    pub schema_version: u32,
     pub success: bool,
     pub nodes: Vec<FacilityInstanceWiringNode>,
     pub edges: Vec<FacilityInstanceWiringEdge>,
@@ -26,7 +29,12 @@ impl FacilityInstanceWiringReport {
         nodes: Vec<FacilityInstanceWiringNode>,
         edges: Vec<FacilityInstanceWiringEdge>,
     ) -> Self {
+        let edges = match canonicalize_edges(edges) {
+            Ok(edges) => edges,
+            Err(diagnostic) => return Self::failure(diagnostic),
+        };
         Self {
+            schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
             success: true,
             nodes,
             edges,
@@ -41,6 +49,7 @@ impl FacilityInstanceWiringReport {
 
     fn failure(diagnostic: FacilityInstanceWiringDiagnostic) -> Self {
         Self {
+            schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
             success: false,
             nodes: Vec::new(),
             edges: Vec::new(),
@@ -131,11 +140,93 @@ impl FacilityInstanceWiringNode {
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct FacilityInstanceWiringEdge {
+    pub id: String,
     pub source: String,
     pub target: String,
     pub kind: String,
     pub item: String,
     pub rate: Rate,
+    pub projection: FacilityInstanceWiringProjection,
+}
+
+impl FacilityInstanceWiringEdge {
+    pub fn original(
+        source: impl Into<String>,
+        target: impl Into<String>,
+        kind: impl Into<String>,
+        item: impl Into<String>,
+        rate: Rate,
+    ) -> Self {
+        let source = source.into();
+        let target = target.into();
+        let kind = kind.into();
+        let item = item.into();
+        Self {
+            id: facility_instance_wiring_edge_id(&source, &target, &kind, &item),
+            source,
+            target,
+            kind,
+            item,
+            rate,
+            projection: FacilityInstanceWiringProjection::Original,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum FacilityInstanceWiringProjection {
+    Original,
+    FrontierExternal {
+        missing_facility: String,
+        original_endpoint: FacilityInstanceWiringProjectedEndpoint,
+    },
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum FacilityInstanceWiringProjectedEndpoint {
+    Source,
+    Target,
+}
+
+pub fn facility_instance_wiring_edge_id(
+    source: &str,
+    target: &str,
+    kind: &str,
+    item: &str,
+) -> String {
+    let mut digest = Sha256::new();
+    for part in [source, target, kind, item] {
+        digest.update((part.len() as u64).to_be_bytes());
+        digest.update(part.as_bytes());
+    }
+    let digest = digest.finalize();
+    let mut encoded = String::with_capacity(digest.len() * 2);
+    for byte in digest {
+        use std::fmt::Write as _;
+        write!(&mut encoded, "{byte:02x}").expect("writing to a String cannot fail");
+    }
+    format!("wiring-edge:{encoded}")
+}
+
+fn canonicalize_edges(
+    edges: Vec<FacilityInstanceWiringEdge>,
+) -> Result<Vec<FacilityInstanceWiringEdge>, FacilityInstanceWiringDiagnostic> {
+    let mut rates = BTreeMap::<(String, String, String, String), Rate>::new();
+    for edge in edges {
+        let key = (edge.source, edge.target, edge.kind, edge.item);
+        let rate = rates.entry(key).or_insert_with(Rate::zero);
+        *rate = rate
+            .checked_add(edge.rate)
+            .map_err(map_throughput_arithmetic)?;
+    }
+    Ok(rates
+        .into_iter()
+        .map(|((source, target, kind, item), rate)| {
+            FacilityInstanceWiringEdge::original(source, target, kind, item, rate)
+        })
+        .collect())
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -593,13 +684,7 @@ fn expanded_edge(
     edge: &RecipeWiringEdge,
     rate: Rate,
 ) -> FacilityInstanceWiringEdge {
-    FacilityInstanceWiringEdge {
-        source,
-        target,
-        kind: edge.kind.clone(),
-        item: edge.item.clone(),
-        rate,
-    }
+    FacilityInstanceWiringEdge::original(source, target, edge.kind.clone(), edge.item.clone(), rate)
 }
 
 fn instance_ids_for_recipe(
@@ -806,4 +891,92 @@ fn arithmetic_overflow() -> FacilityInstanceWiringDiagnostic {
         None,
         "arithmetic overflow while building facility instance wiring",
     )
+}
+
+#[cfg(test)]
+mod identity_tests {
+    use super::*;
+
+    #[test]
+    fn canonicalizes_duplicate_edges_before_assigning_stable_ids() {
+        let first = FacilityInstanceWiringEdge::original(
+            "source",
+            "target",
+            "production",
+            "item",
+            Rate {
+                numerator: 1,
+                denominator: 3,
+            },
+        );
+        let second = FacilityInstanceWiringEdge::original(
+            "source",
+            "target",
+            "production",
+            "item",
+            Rate {
+                numerator: 2,
+                denominator: 3,
+            },
+        );
+
+        let report = FacilityInstanceWiringReport::success(Vec::new(), vec![second, first]);
+
+        assert!(report.success);
+        assert_eq!(
+            report.schema_version,
+            FACILITY_INSTANCE_WIRING_SCHEMA_VERSION
+        );
+        assert_eq!(
+            serde_json::to_value(&report).expect("wiring report should serialize")["schema_version"],
+            FACILITY_INSTANCE_WIRING_SCHEMA_VERSION
+        );
+        assert_eq!(report.edges.len(), 1);
+        assert_eq!(
+            report.edges[0].rate,
+            Rate {
+                numerator: 1,
+                denominator: 1
+            }
+        );
+        assert_eq!(
+            report.edges[0].id,
+            facility_instance_wiring_edge_id("source", "target", "production", "item")
+        );
+        assert_eq!(
+            report.edges[0].projection,
+            FacilityInstanceWiringProjection::Original
+        );
+    }
+
+    #[test]
+    fn duplicate_edge_rate_overflow_is_a_structured_wiring_failure() {
+        let edges = vec![
+            FacilityInstanceWiringEdge::original(
+                "source",
+                "target",
+                "production",
+                "item",
+                Rate {
+                    numerator: i64::MAX,
+                    denominator: 1,
+                },
+            ),
+            FacilityInstanceWiringEdge::original(
+                "source",
+                "target",
+                "production",
+                "item",
+                Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            ),
+        ];
+
+        let report = FacilityInstanceWiringReport::success(Vec::new(), edges);
+
+        assert!(!report.success);
+        assert_eq!(report.diagnostics[0].code, "arithmetic-overflow");
+    }
 }

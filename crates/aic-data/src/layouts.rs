@@ -9,9 +9,10 @@ pub use growth::{
 };
 
 pub use integrated::{
-    BoundarySide, IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutPhaseAttempt,
-    IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRoute, IntegratedRouteEndpoint,
-    PlacedLogisticsComponent, construct_coordinate_integrated_layout_with_time_limit,
+    BoundarySide, INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic,
+    IntegratedLayoutPhase, IntegratedLayoutPhaseAttempt, IntegratedLayoutReport,
+    IntegratedLayoutStatus, IntegratedRoute, IntegratedRouteEndpoint, PlacedLogisticsComponent,
+    RouteRequirementFingerprint, construct_coordinate_integrated_layout_with_time_limit,
     construct_iterative_scc_layout_with_time_limit, construct_sparse_integrated_layout,
     render_integrated_layout_html, render_integrated_layout_html_with_localization,
     solve_integrated_layout, solve_integrated_layout_with_time_limit,

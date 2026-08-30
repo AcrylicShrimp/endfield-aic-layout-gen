@@ -26,7 +26,9 @@ use crate::logistics::{
     ValidatedLogisticsComponentCatalog, ValidatedTransportCatalog,
 };
 use crate::recipes::{
-    FacilityInstanceWiringEdge, FacilityInstanceWiringNode, FacilityInstanceWiringReport, Rate,
+    FACILITY_INSTANCE_WIRING_SCHEMA_VERSION, FacilityInstanceWiringEdge,
+    FacilityInstanceWiringNode, FacilityInstanceWiringProjection, FacilityInstanceWiringReport,
+    Rate, facility_instance_wiring_edge_id,
 };
 
 use super::WorldGridPosition;
@@ -43,6 +45,7 @@ pub use iterative::construct_iterative_scc_layout_with_time_limit;
 
 const STAGE: &str = "integrated-layout";
 const COORDINATE_ROUTING_CLEARANCE: i64 = 10;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -56,6 +59,7 @@ pub enum IntegratedLayoutStatus {
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct IntegratedLayoutReport {
+    pub schema_version: u32,
     pub success: bool,
     pub status: IntegratedLayoutStatus,
     pub bounds: Option<FacilityPlacementBounds>,
@@ -102,12 +106,24 @@ pub struct PlacedLogisticsComponent {
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct IntegratedRoute {
+    pub requirement_id: String,
+    pub requirement_fingerprint: RouteRequirementFingerprint,
     pub source: IntegratedRouteEndpoint,
     pub target: IntegratedRouteEndpoint,
     pub item: String,
     pub rate: Rate,
     pub transport: TransportKind,
     pub cells: Vec<WorldGridPosition>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct RouteRequirementFingerprint {
+    pub source: String,
+    pub target: String,
+    pub item: String,
+    pub rate: Rate,
+    pub transport: TransportKind,
+    pub projection: FacilityInstanceWiringProjection,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -183,6 +199,7 @@ impl IntegratedLayoutReport {
 
     fn failure(status: IntegratedLayoutStatus, diagnostic: IntegratedLayoutDiagnostic) -> Self {
         Self {
+            schema_version: INTEGRATED_LAYOUT_SCHEMA_VERSION,
             success: false,
             status,
             bounds: None,
@@ -632,6 +649,8 @@ struct ModelInput {
 }
 
 struct EdgeInput {
+    requirement_id: String,
+    requirement_fingerprint: RouteRequirementFingerprint,
     edge: FacilityInstanceWiringEdge,
     source: EndpointInput,
     target: EndpointInput,
@@ -669,6 +688,17 @@ fn prepare_model(
             "/",
             None,
             "integrated layout requires successful facility instance wiring",
+        ));
+    }
+    if instance_wiring.schema_version != FACILITY_INSTANCE_WIRING_SCHEMA_VERSION {
+        return Err(IntegratedLayoutDiagnostic::error(
+            "unsupported-facility-instance-wiring-schema-version",
+            "/schema_version",
+            None,
+            format!(
+                "facility instance wiring schema version {} is unsupported; expected {}",
+                instance_wiring.schema_version, FACILITY_INSTANCE_WIRING_SCHEMA_VERSION
+            ),
         ));
     }
     if let Some(diagnostic) = validate_facility_placement_request(request).first() {
@@ -745,7 +775,32 @@ fn prepare_model(
     instances.sort_by(|left, right| left.id.cmp(&right.id));
 
     let mut edges = Vec::new();
+    let mut edge_ids = BTreeSet::new();
     for (edge_index, edge) in instance_wiring.edges.iter().cloned().enumerate() {
+        if !edge_ids.insert(edge.id.clone()) {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "duplicate-wiring-edge-id",
+                format!("/edges/{edge_index}/id"),
+                Some(edge.id.clone()),
+                format!("wiring edge ID '{}' appears more than once", edge.id),
+            ));
+        }
+        if matches!(&edge.projection, FacilityInstanceWiringProjection::Original)
+            && edge.id
+                != facility_instance_wiring_edge_id(
+                    &edge.source,
+                    &edge.target,
+                    &edge.kind,
+                    &edge.item,
+                )
+        {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "invalid-wiring-edge-id",
+                format!("/edges/{edge_index}/id"),
+                Some(edge.id.clone()),
+                "original wiring edge ID does not match its canonical endpoint, kind, and item tuple",
+            ));
+        }
         let source_node = node_by_id
             .get(edge.source.as_str())
             .ok_or_else(|| missing_route_endpoint(edge_index, "source", edge.source.as_str()))?;
@@ -803,9 +858,21 @@ fn prepare_model(
             &edge.item,
         )?;
         let mut remaining_rate = edge.rate;
+        let mut lane_index = 0_usize;
         while !remaining_rate.is_zero() {
             let route_rate = remaining_rate.min(capacity_rate);
+            let requirement_id = format!("{}:lane:{lane_index:04}", edge.id);
+            let requirement_fingerprint = RouteRequirementFingerprint {
+                source: edge.source.clone(),
+                target: edge.target.clone(),
+                item: edge.item.clone(),
+                rate: route_rate,
+                transport: item.transport,
+                projection: edge.projection.clone(),
+            };
             edges.push(EdgeInput {
+                requirement_id,
+                requirement_fingerprint,
                 source: source.clone(),
                 target: target.clone(),
                 transport: item.transport,
@@ -822,6 +889,7 @@ fn prepare_model(
                     "route capacity splitting exceeded the exact rate domain",
                 )
             })?;
+            lane_index += 1;
         }
     }
 
@@ -1573,6 +1641,8 @@ fn extract_report(
                 used_height = used_height.max(cell.y + 1);
             }
             IntegratedRoute {
+                requirement_id: edge.requirement_id.clone(),
+                requirement_fingerprint: edge.requirement_fingerprint.clone(),
                 source: source.endpoint.clone(),
                 target: target.endpoint.clone(),
                 item: edge.edge.item.clone(),
@@ -1584,6 +1654,7 @@ fn extract_report(
         .collect();
 
     IntegratedLayoutReport {
+        schema_version: INTEGRATED_LAYOUT_SCHEMA_VERSION,
         success: true,
         status,
         bounds: Some(FacilityPlacementBounds {
@@ -1745,6 +1816,7 @@ mod tests {
 
     fn wiring() -> FacilityInstanceWiringReport {
         FacilityInstanceWiringReport {
+            schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
             success: true,
             nodes: vec![
                 FacilityInstanceWiringNode::Facility {
@@ -1778,16 +1850,16 @@ mod tests {
                     unused_capacity: Rate::zero(),
                 },
             ],
-            edges: vec![FacilityInstanceWiringEdge {
-                source: "recipe:source#1".to_string(),
-                target: "recipe:target#1".to_string(),
-                kind: "intermediate".to_string(),
-                item: "part".to_string(),
-                rate: Rate {
+            edges: vec![FacilityInstanceWiringEdge::original(
+                "recipe:source#1",
+                "recipe:target#1",
+                "intermediate",
+                "part",
+                Rate {
                     numerator: 1,
                     denominator: 1,
                 },
-            }],
+            )],
             diagnostics: Vec::new(),
         }
     }
@@ -1917,8 +1989,9 @@ mod tests {
     #[test]
     fn jointly_places_selects_ports_and_routes_one_edge() {
         let (facilities, items, transports) = catalogs();
+        let wiring = wiring();
         let report = solve_integrated_layout(
-            &wiring(),
+            &wiring,
             &facilities,
             &items,
             &transports,
@@ -1930,8 +2003,25 @@ mod tests {
         );
 
         assert!(report.success, "{:#?}", report.diagnostics);
+        assert_eq!(report.schema_version, INTEGRATED_LAYOUT_SCHEMA_VERSION);
+        assert_eq!(
+            serde_json::to_value(&report).expect("layout report should serialize")["schema_version"],
+            INTEGRATED_LAYOUT_SCHEMA_VERSION
+        );
         assert_eq!(report.status, IntegratedLayoutStatus::Optimal);
         assert_eq!(report.routes.len(), 1);
+        assert_eq!(
+            report.routes[0].requirement_id,
+            format!("{}:lane:0000", wiring.edges[0].id)
+        );
+        assert_eq!(
+            report.routes[0].requirement_fingerprint.source,
+            wiring.edges[0].source
+        );
+        assert_eq!(
+            report.routes[0].requirement_fingerprint.target,
+            wiring.edges[0].target
+        );
         assert_eq!(report.routes[0].transport, TransportKind::Belt);
         assert!(matches!(
             &report.routes[0].source,
@@ -1943,6 +2033,47 @@ mod tests {
         ));
         assert_eq!(report.routes[0].cells.len(), 2);
         assert_eq!(report.placements.len(), 2);
+    }
+
+    #[test]
+    fn witness_validation_joins_routes_by_stable_requirement_id() {
+        let (facilities, items, transports) = catalogs();
+        let components = logistics_component_catalog();
+        let wiring = wiring();
+        let request = FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 4,
+            max_height: 1,
+        };
+        let input = prepare_model(&wiring, &facilities, &items, &transports, &request)
+            .expect("fixture model should prepare");
+        let report = solve_integrated_layout(&wiring, &facilities, &items, &transports, &request);
+        assert!(report.success, "{:#?}", report.diagnostics);
+
+        let mut duplicate = report.clone();
+        duplicate.routes.push(duplicate.routes[0].clone());
+        let error = witness::validate(&input, &components, &duplicate)
+            .expect_err("duplicate requirement IDs must fail");
+        assert_eq!(error.path, "/routes/1/requirement_id");
+
+        let mut missing = report.clone();
+        missing.routes.clear();
+        let error = witness::validate(&input, &components, &missing)
+            .expect_err("missing requirement IDs must fail");
+        assert_eq!(error.path, "/routes");
+        assert!(error.message.contains("is missing"));
+
+        let mut unexpected = report.clone();
+        unexpected.routes[0].requirement_id = "unexpected:lane:0000".to_string();
+        let error = witness::validate(&input, &components, &unexpected)
+            .expect_err("unexpected requirement IDs must fail");
+        assert_eq!(error.path, "/routes/0/requirement_id");
+
+        let mut mismatched = report;
+        mismatched.routes[0].requirement_fingerprint.item = "different-item".to_string();
+        let error = witness::validate(&input, &components, &mismatched)
+            .expect_err("mismatched requirement fingerprints must fail");
+        assert_eq!(error.path, "/routes/0/requirement_fingerprint");
     }
 
     #[test]
@@ -2172,26 +2303,26 @@ mod tests {
             },
         );
         wiring.edges = vec![
-            FacilityInstanceWiringEdge {
-                source: "recipe:source#1".to_string(),
-                target: "recipe:middle#1".to_string(),
-                kind: "intermediate".to_string(),
-                item: "part-a".to_string(),
-                rate: Rate {
+            FacilityInstanceWiringEdge::original(
+                "recipe:source#1",
+                "recipe:middle#1",
+                "intermediate",
+                "part-a",
+                Rate {
                     numerator: 1,
                     denominator: 1,
                 },
-            },
-            FacilityInstanceWiringEdge {
-                source: "recipe:middle#1".to_string(),
-                target: "recipe:target#1".to_string(),
-                kind: "intermediate".to_string(),
-                item: "part-b".to_string(),
-                rate: Rate {
+            ),
+            FacilityInstanceWiringEdge::original(
+                "recipe:middle#1",
+                "recipe:target#1",
+                "intermediate",
+                "part-b",
+                Rate {
                     numerator: 1,
                     denominator: 1,
                 },
-            },
+            ),
         ];
 
         let report = solve_integrated_layout(
@@ -2284,26 +2415,26 @@ mod tests {
         .expect("item catalog should validate");
         let mut wiring = wiring();
         wiring.edges = vec![
-            FacilityInstanceWiringEdge {
-                source: "recipe:source#1".to_string(),
-                target: "recipe:target#1".to_string(),
-                kind: "intermediate".to_string(),
-                item: "solid".to_string(),
-                rate: Rate {
+            FacilityInstanceWiringEdge::original(
+                "recipe:source#1",
+                "recipe:target#1",
+                "intermediate",
+                "solid",
+                Rate {
                     numerator: 1,
                     denominator: 1,
                 },
-            },
-            FacilityInstanceWiringEdge {
-                source: "recipe:source#1".to_string(),
-                target: "recipe:target#1".to_string(),
-                kind: "intermediate".to_string(),
-                item: "liquid".to_string(),
-                rate: Rate {
+            ),
+            FacilityInstanceWiringEdge::original(
+                "recipe:source#1",
+                "recipe:target#1",
+                "intermediate",
+                "liquid",
+                Rate {
                     numerator: 1,
                     denominator: 1,
                 },
-            },
+            ),
         ];
 
         let report = solve_integrated_layout(
@@ -2361,26 +2492,26 @@ mod tests {
         .expect("item catalog should validate");
         let mut wiring = wiring();
         wiring.edges = vec![
-            FacilityInstanceWiringEdge {
-                source: "recipe:source#1".to_string(),
-                target: "recipe:target#1".to_string(),
-                kind: "intermediate".to_string(),
-                item: "solid-a".to_string(),
-                rate: Rate {
+            FacilityInstanceWiringEdge::original(
+                "recipe:source#1",
+                "recipe:target#1",
+                "intermediate",
+                "solid-a",
+                Rate {
                     numerator: 1,
                     denominator: 1,
                 },
-            },
-            FacilityInstanceWiringEdge {
-                source: "recipe:source#1".to_string(),
-                target: "recipe:target#1".to_string(),
-                kind: "intermediate".to_string(),
-                item: "solid-b".to_string(),
-                rate: Rate {
+            ),
+            FacilityInstanceWiringEdge::original(
+                "recipe:source#1",
+                "recipe:target#1",
+                "intermediate",
+                "solid-b",
+                Rate {
                     numerator: 1,
                     denominator: 1,
                 },
-            },
+            ),
         ];
 
         let report = solve_integrated_layout(
@@ -2436,6 +2567,7 @@ mod tests {
         })
         .expect("item catalog should validate");
         let wiring = FacilityInstanceWiringReport {
+            schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
             success: true,
             nodes: vec![
                 FacilityInstanceWiringNode::Facility {
@@ -2470,26 +2602,26 @@ mod tests {
                 },
             ],
             edges: vec![
-                FacilityInstanceWiringEdge {
-                    source: "recipe:grow#1".to_string(),
-                    target: "recipe:collect#1".to_string(),
-                    kind: "intermediate".to_string(),
-                    item: "crop".to_string(),
-                    rate: Rate {
+                FacilityInstanceWiringEdge::original(
+                    "recipe:grow#1",
+                    "recipe:collect#1",
+                    "intermediate",
+                    "crop",
+                    Rate {
                         numerator: 1,
                         denominator: 1,
                     },
-                },
-                FacilityInstanceWiringEdge {
-                    source: "recipe:collect#1".to_string(),
-                    target: "recipe:grow#1".to_string(),
-                    kind: "intermediate".to_string(),
-                    item: "seed".to_string(),
-                    rate: Rate {
+                ),
+                FacilityInstanceWiringEdge::original(
+                    "recipe:collect#1",
+                    "recipe:grow#1",
+                    "intermediate",
+                    "seed",
+                    Rate {
                         numerator: 1,
                         denominator: 1,
                     },
-                },
+                ),
             ],
             diagnostics: Vec::new(),
         };
@@ -2559,6 +2691,7 @@ mod tests {
         })
         .expect("item catalog should validate");
         let mut wiring = FacilityInstanceWiringReport {
+            schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
             success: true,
             nodes: vec![
                 FacilityInstanceWiringNode::External {
@@ -2586,26 +2719,26 @@ mod tests {
                 },
             ],
             edges: vec![
-                FacilityInstanceWiringEdge {
-                    source: "external:ore".to_string(),
-                    target: "recipe:process#1".to_string(),
-                    kind: "external-input".to_string(),
-                    item: "ore".to_string(),
-                    rate: Rate {
+                FacilityInstanceWiringEdge::original(
+                    "external:ore",
+                    "recipe:process#1",
+                    "external-input",
+                    "ore",
+                    Rate {
                         numerator: 1,
                         denominator: 1,
                     },
-                },
-                FacilityInstanceWiringEdge {
-                    source: "recipe:process#1".to_string(),
-                    target: "target:product".to_string(),
-                    kind: "target".to_string(),
-                    item: "product".to_string(),
-                    rate: Rate {
+                ),
+                FacilityInstanceWiringEdge::original(
+                    "recipe:process#1",
+                    "target:product",
+                    "target",
+                    "product",
+                    Rate {
                         numerator: 1,
                         denominator: 1,
                     },
-                },
+                ),
             ],
             diagnostics: Vec::new(),
         };
@@ -2728,6 +2861,15 @@ mod tests {
         .expect("capacity splitting should prepare a valid model");
 
         assert_eq!(input.edges.len(), 2);
+        let original_edge_id = wiring().edges[0].id.clone();
+        assert_eq!(
+            input.edges[0].requirement_id,
+            format!("{original_edge_id}:lane:0000")
+        );
+        assert_eq!(
+            input.edges[1].requirement_id,
+            format!("{original_edge_id}:lane:0001")
+        );
         assert!(input.edges.iter().all(|edge| {
             edge.edge.rate
                 == Rate {

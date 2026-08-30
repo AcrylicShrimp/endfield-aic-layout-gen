@@ -4,8 +4,9 @@ use crate::layouts::FacilityPlacement;
 use crate::logistics::{LogisticsComponentKind, TransportKind, ValidatedLogisticsComponentCatalog};
 
 use super::{
-    BoundarySide, EndpointInput, IntegratedLayoutDiagnostic, IntegratedLayoutReport,
-    IntegratedRouteEndpoint, ModelInput, candidate_port_connections, grid_index,
+    BoundarySide, EndpointInput, INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic,
+    IntegratedLayoutReport, IntegratedRouteEndpoint, ModelInput, candidate_port_connections,
+    grid_index,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -20,6 +21,15 @@ pub(super) fn validate(
     components: &ValidatedLogisticsComponentCatalog,
     report: &IntegratedLayoutReport,
 ) -> Result<(), IntegratedLayoutDiagnostic> {
+    if report.schema_version != INTEGRATED_LAYOUT_SCHEMA_VERSION {
+        return Err(invalid(
+            "/schema_version",
+            format!(
+                "witness schema version {} does not match supported version {}",
+                report.schema_version, INTEGRATED_LAYOUT_SCHEMA_VERSION
+            ),
+        ));
+    }
     if report.placements.len() != input.instances.len() {
         return Err(invalid(
             "/placements",
@@ -30,17 +40,6 @@ pub(super) fn validate(
             ),
         ));
     }
-    if report.routes.len() != input.edges.len() {
-        return Err(invalid(
-            "/routes",
-            format!(
-                "witness has {} routes for {} capacity-split flows",
-                report.routes.len(),
-                input.edges.len()
-            ),
-        ));
-    }
-
     let cell_count = input.width as usize * input.height as usize;
     let placements = validate_placements(input, report, cell_count)?;
     let mut layer_cells = [vec![Vec::new(); cell_count], vec![Vec::new(); cell_count]];
@@ -57,7 +56,47 @@ pub(super) fn validate(
         .max()
         .unwrap_or(0);
 
-    for (route_index, (expected, route)) in input.edges.iter().zip(&report.routes).enumerate() {
+    let mut expected_by_id = BTreeMap::new();
+    for expected in &input.edges {
+        if expected_by_id
+            .insert(expected.requirement_id.as_str(), expected)
+            .is_some()
+        {
+            return Err(invalid(
+                "/routes",
+                format!(
+                    "prepared route requirement ID '{}' appears more than once",
+                    expected.requirement_id
+                ),
+            ));
+        }
+    }
+    let mut actual_ids = BTreeSet::new();
+    for (route_index, route) in report.routes.iter().enumerate() {
+        if !actual_ids.insert(route.requirement_id.as_str()) {
+            return Err(invalid(
+                format!("/routes/{route_index}/requirement_id"),
+                format!(
+                    "route requirement ID '{}' appears more than once",
+                    route.requirement_id
+                ),
+            ));
+        }
+        let Some(expected) = expected_by_id.get(route.requirement_id.as_str()).copied() else {
+            return Err(invalid(
+                format!("/routes/{route_index}/requirement_id"),
+                format!(
+                    "route requirement ID '{}' is not expected by the prepared model",
+                    route.requirement_id
+                ),
+            ));
+        };
+        if route.requirement_fingerprint != expected.requirement_fingerprint {
+            return Err(invalid(
+                format!("/routes/{route_index}/requirement_fingerprint"),
+                "route requirement fingerprint does not match the prepared capacity-split flow",
+            ));
+        }
         if route.item != expected.edge.item
             || route.rate != expected.edge.rate
             || route.transport != expected.transport
@@ -146,6 +185,15 @@ pub(super) fn validate(
             }
             layer_cells[layer][*cell].push(segment_shape(&cells, path_index, input.width));
         }
+    }
+    if let Some(missing) = expected_by_id
+        .keys()
+        .find(|requirement_id| !actual_ids.contains(**requirement_id))
+    {
+        return Err(invalid(
+            "/routes",
+            format!("required route '{missing}' is missing from the witness"),
+        ));
     }
 
     validate_crossings(input, components, report, &placements, &layer_cells)?;

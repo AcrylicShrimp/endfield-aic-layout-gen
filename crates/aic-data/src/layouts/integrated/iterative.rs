@@ -13,7 +13,9 @@ use crate::logistics::{
     ValidatedTransportCatalog,
 };
 use crate::recipes::{
-    FacilityInstanceWiringEdge, FacilityInstanceWiringNode, FacilityInstanceWiringReport,
+    FacilityInstanceWiringEdge, FacilityInstanceWiringNode,
+    FacilityInstanceWiringProjectedEndpoint, FacilityInstanceWiringProjection,
+    FacilityInstanceWiringReport,
 };
 
 use super::{
@@ -83,7 +85,6 @@ pub fn construct_iterative_scc_layout_with_time_limit(
         let partial_wiring = match project_cumulative_wiring(
             instance_wiring,
             &cumulative_facilities,
-            phase.index,
             total_facilities,
         ) {
             Ok(wiring) => wiring,
@@ -265,7 +266,6 @@ fn placement_status(status: FacilityPlacementStatus) -> IntegratedLayoutStatus {
 fn project_cumulative_wiring(
     wiring: &FacilityInstanceWiringReport,
     cumulative_facilities: &BTreeSet<String>,
-    phase_index: usize,
     total_facilities: usize,
 ) -> Result<FacilityInstanceWiringReport, IntegratedLayoutDiagnostic> {
     if cumulative_facilities.len() == total_facilities {
@@ -317,17 +317,22 @@ fn project_cumulative_wiring(
         ) {
             (true, true, true, true) => projected_edges.push(edge.clone()),
             (true, true, false, true) => {
-                let boundary_id = format!("iterative-external:{phase_index}:{edge_index}");
+                let boundary_id = format!("iterative-external:{}", edge.id);
                 synthetic_nodes.push(FacilityInstanceWiringNode::External {
                     id: boundary_id.clone(),
                     item: edge.item.clone(),
                 });
                 projected_edges.push(FacilityInstanceWiringEdge {
+                    id: edge.id.clone(),
                     source: boundary_id,
                     target: edge.target.clone(),
                     kind: edge.kind.clone(),
                     item: edge.item.clone(),
                     rate: edge.rate,
+                    projection: FacilityInstanceWiringProjection::FrontierExternal {
+                        missing_facility: edge.source.clone(),
+                        original_endpoint: FacilityInstanceWiringProjectedEndpoint::Source,
+                    },
                 });
             }
             (true, true, true, false) => {
@@ -355,6 +360,7 @@ fn project_cumulative_wiring(
         .collect::<Vec<_>>();
     projected_nodes.extend(synthetic_nodes);
     Ok(FacilityInstanceWiringReport {
+        schema_version: wiring.schema_version,
         success: true,
         nodes: projected_nodes,
         edges: projected_edges,
@@ -376,7 +382,9 @@ mod tests {
     use std::collections::BTreeSet;
 
     use crate::recipes::{
-        FacilityInstanceWiringEdge, FacilityInstanceWiringNode, FacilityInstanceWiringReport, Rate,
+        FacilityInstanceWiringEdge, FacilityInstanceWiringNode,
+        FacilityInstanceWiringProjectedEndpoint, FacilityInstanceWiringProjection,
+        FacilityInstanceWiringReport, Rate,
     };
 
     use super::project_cumulative_wiring;
@@ -384,19 +392,36 @@ mod tests {
     #[test]
     fn replaces_missing_upstream_facilities_with_phase_boundaries() {
         let wiring = chain_wiring();
+        let original = wiring
+            .edges
+            .iter()
+            .find(|edge| edge.source == "facility:a")
+            .expect("fixture has the upstream edge");
+        let boundary_id = format!("iterative-external:{}", original.id);
         let projected =
-            project_cumulative_wiring(&wiring, &BTreeSet::from(["facility:b".to_string()]), 0, 2)
+            project_cumulative_wiring(&wiring, &BTreeSet::from(["facility:b".to_string()]), 2)
                 .expect("output phase should project");
 
         assert_eq!(projected.edges.len(), 2);
         assert!(projected.nodes.iter().any(|node| matches!(
             node,
             FacilityInstanceWiringNode::External { id, item }
-                if id == "iterative-external:0:0" && item == "middle"
+                if id == &boundary_id && item == "middle"
         )));
-        assert!(projected.edges.iter().any(|edge| {
-            edge.source == "iterative-external:0:0" && edge.target == "facility:b"
-        }));
+        let projected_edge = projected
+            .edges
+            .iter()
+            .find(|edge| edge.source == boundary_id)
+            .expect("projected wiring has the frontier edge");
+        assert_eq!(projected_edge.id, original.id);
+        assert_eq!(projected_edge.target, "facility:b");
+        assert_eq!(
+            projected_edge.projection,
+            FacilityInstanceWiringProjection::FrontierExternal {
+                missing_facility: "facility:a".to_string(),
+                original_endpoint: FacilityInstanceWiringProjectedEndpoint::Source,
+            }
+        );
     }
 
     #[test]
@@ -405,7 +430,6 @@ mod tests {
         let projected = project_cumulative_wiring(
             &wiring,
             &BTreeSet::from(["facility:a".to_string(), "facility:b".to_string()]),
-            1,
             2,
         )
         .expect("complete phase should project");
@@ -433,6 +457,7 @@ mod tests {
             },
         };
         FacilityInstanceWiringReport {
+            schema_version: crate::recipes::FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
             success: true,
             nodes: vec![
                 facility("facility:a"),
@@ -443,26 +468,26 @@ mod tests {
                 },
             ],
             edges: vec![
-                FacilityInstanceWiringEdge {
-                    source: "facility:a".to_string(),
-                    target: "facility:b".to_string(),
-                    kind: "production".to_string(),
-                    item: "middle".to_string(),
-                    rate: Rate {
+                FacilityInstanceWiringEdge::original(
+                    "facility:a",
+                    "facility:b",
+                    "production",
+                    "middle",
+                    Rate {
                         numerator: 1,
                         denominator: 1,
                     },
-                },
-                FacilityInstanceWiringEdge {
-                    source: "facility:b".to_string(),
-                    target: "target:final".to_string(),
-                    kind: "target".to_string(),
-                    item: "final".to_string(),
-                    rate: Rate {
+                ),
+                FacilityInstanceWiringEdge::original(
+                    "facility:b",
+                    "target:final",
+                    "target",
+                    "final",
+                    Rate {
                         numerator: 1,
                         denominator: 1,
                     },
-                },
+                ),
             ],
             diagnostics: Vec::new(),
         }

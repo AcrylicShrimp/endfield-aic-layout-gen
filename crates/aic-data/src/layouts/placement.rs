@@ -1155,6 +1155,7 @@ mod tests {
 
     fn wiring(nodes: Vec<FacilityInstanceWiringNode>) -> FacilityInstanceWiringReport {
         FacilityInstanceWiringReport {
+            schema_version: crate::recipes::FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
             success: true,
             nodes,
             edges: Vec::new(),
@@ -1435,6 +1436,7 @@ mod tests {
     #[test]
     fn rejects_failed_instance_wiring() {
         let failed_wiring = FacilityInstanceWiringReport {
+            schema_version: crate::recipes::FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
             success: false,
             nodes: Vec::new(),
             edges: Vec::new(),

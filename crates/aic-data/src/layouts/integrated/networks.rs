@@ -370,14 +370,18 @@ mod tests {
         transport: TransportKind,
         rate: Rate,
     ) -> EdgeInput {
+        let edge = FacilityInstanceWiringEdge::original(source, target, "intermediate", item, rate);
         EdgeInput {
-            edge: FacilityInstanceWiringEdge {
+            requirement_id: format!("{}:lane:0000", edge.id),
+            requirement_fingerprint: super::super::RouteRequirementFingerprint {
                 source: source.to_string(),
                 target: target.to_string(),
-                kind: "intermediate".to_string(),
                 item: item.to_string(),
                 rate,
+                transport,
+                projection: edge.projection.clone(),
             },
+            edge,
             source: EndpointInput::Boundary {
                 node: source.to_string(),
             },
