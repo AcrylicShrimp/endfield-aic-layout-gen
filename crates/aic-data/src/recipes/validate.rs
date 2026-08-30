@@ -1,9 +1,9 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use serde::Serialize;
 
 use crate::recipes::{
-    ItemAmount, Recipe, RecipeBook,
+    ItemAmount, RecipeBook,
     id::{STABLE_ID_PATTERN, is_stable_id},
     index::RecipeAnalysis,
 };
@@ -49,7 +49,6 @@ impl Validator {
         let analysis = RecipeAnalysis::from_raw(book);
         self.validate_external_output_overlap(book, &analysis);
         self.validate_input_links(book, &analysis);
-        self.validate_cycles(book, &analysis);
     }
 
     fn into_report(self) -> ValidationReport {
@@ -209,89 +208,6 @@ impl Validator {
         }
     }
 
-    fn validate_cycles(&mut self, book: &RecipeBook, analysis: &RecipeAnalysis) {
-        let recipe_by_id = book
-            .recipes
-            .iter()
-            .map(|recipe| (recipe.id.as_str(), recipe))
-            .collect::<HashMap<_, _>>();
-        let mut states = HashMap::<&str, VisitState>::new();
-        let mut stack = Vec::<&str>::new();
-
-        for recipe in &book.recipes {
-            self.visit_recipe_for_cycles(
-                recipe.id.as_str(),
-                &recipe_by_id,
-                &analysis.output_producers,
-                &mut states,
-                &mut stack,
-            );
-        }
-    }
-
-    fn visit_recipe_for_cycles<'a>(
-        &mut self,
-        recipe_id: &'a str,
-        recipe_by_id: &HashMap<&'a str, &'a Recipe>,
-        output_producers: &HashMap<&'a str, Vec<&'a Recipe>>,
-        states: &mut HashMap<&'a str, VisitState>,
-        stack: &mut Vec<&'a str>,
-    ) {
-        match states.get(recipe_id) {
-            Some(VisitState::Done) => return,
-            Some(VisitState::Visiting) => {
-                self.report_cycle(recipe_id, stack);
-                return;
-            }
-            None => {}
-        }
-
-        states.insert(recipe_id, VisitState::Visiting);
-        stack.push(recipe_id);
-
-        let Some(recipe) = recipe_by_id.get(recipe_id) else {
-            stack.pop();
-            states.insert(recipe_id, VisitState::Done);
-            return;
-        };
-
-        for input in &recipe.inputs {
-            let Some(producers) = output_producers.get(input.item.as_str()) else {
-                continue;
-            };
-
-            if producers.len() != 1 {
-                continue;
-            }
-
-            self.visit_recipe_for_cycles(
-                producers[0].id.as_str(),
-                recipe_by_id,
-                output_producers,
-                states,
-                stack,
-            );
-        }
-
-        stack.pop();
-        states.insert(recipe_id, VisitState::Done);
-    }
-
-    fn report_cycle(&mut self, repeated_recipe_id: &str, stack: &[&str]) {
-        let start_index = stack
-            .iter()
-            .position(|recipe_id| *recipe_id == repeated_recipe_id)
-            .unwrap_or(0);
-        let mut cycle = stack[start_index..].to_vec();
-        cycle.push(repeated_recipe_id);
-
-        self.push(
-            "recipe-cycle",
-            "/recipes",
-            format!("cyclic recipe dependency detected: {}", cycle.join(" -> ")),
-        );
-    }
-
     fn validate_id(&mut self, code: &'static str, path: impl Into<String>, value: &str) {
         if !is_stable_id(value) {
             self.push(
@@ -309,10 +225,4 @@ impl Validator {
             message: message.into(),
         });
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum VisitState {
-    Visiting,
-    Done,
 }

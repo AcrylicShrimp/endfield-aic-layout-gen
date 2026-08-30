@@ -12,6 +12,7 @@ pub enum RecipeGraphError {
     UnknownTargetItem { target_item: String },
     UnknownExternalInput { item: String },
     AmbiguousProducer { item: String, recipes: Vec<String> },
+    RecipeCycle { recipes: Vec<String> },
 }
 
 impl std::fmt::Display for RecipeGraphError {
@@ -39,6 +40,11 @@ impl std::fmt::Display for RecipeGraphError {
                 formatter,
                 "item '{item}' is produced by multiple recipes: {}",
                 recipes.join(", ")
+            ),
+            Self::RecipeCycle { recipes } => write!(
+                formatter,
+                "cyclic recipe dependency encountered: {}",
+                recipes.join(" -> ")
             ),
         }
     }
@@ -86,7 +92,9 @@ struct GraphResolver<'a> {
     target_item: String,
     index: &'a RecipeIndex,
     seen_external_items: BTreeSet<String>,
-    seen_recipe_ids: HashSet<String>,
+    resolved_recipe_ids: HashSet<String>,
+    visiting_recipe_ids: HashSet<String>,
+    recipe_stack: Vec<String>,
     recipes: Vec<Recipe>,
     additional_external_items: BTreeSet<String>,
 }
@@ -101,7 +109,9 @@ impl<'a> GraphResolver<'a> {
             target_item: target_item.to_string(),
             index,
             seen_external_items: BTreeSet::new(),
-            seen_recipe_ids: HashSet::new(),
+            resolved_recipe_ids: HashSet::new(),
+            visiting_recipe_ids: HashSet::new(),
+            recipe_stack: Vec::new(),
             recipes: Vec::new(),
             additional_external_items,
         }
@@ -131,14 +141,30 @@ impl<'a> GraphResolver<'a> {
     }
 
     fn resolve_recipe(&mut self, recipe: &Recipe) -> Result<(), RecipeGraphError> {
-        if !self.seen_recipe_ids.insert(recipe.id.clone()) {
+        if self.resolved_recipe_ids.contains(&recipe.id) {
             return Ok(());
         }
+        if self.visiting_recipe_ids.contains(&recipe.id) {
+            let start = self
+                .recipe_stack
+                .iter()
+                .position(|recipe_id| recipe_id == &recipe.id)
+                .unwrap_or(0);
+            let mut recipes = self.recipe_stack[start..].to_vec();
+            recipes.push(recipe.id.clone());
+            return Err(RecipeGraphError::RecipeCycle { recipes });
+        }
+
+        self.visiting_recipe_ids.insert(recipe.id.clone());
+        self.recipe_stack.push(recipe.id.clone());
 
         for input in &recipe.inputs {
             self.resolve_item(&input.item)?;
         }
 
+        self.recipe_stack.pop();
+        self.visiting_recipe_ids.remove(&recipe.id);
+        self.resolved_recipe_ids.insert(recipe.id.clone());
         self.recipes.push(recipe.clone());
         Ok(())
     }

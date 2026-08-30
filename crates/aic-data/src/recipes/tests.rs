@@ -313,7 +313,7 @@ fn defers_ambiguous_output_producers_until_graph_resolution() {
 }
 
 #[test]
-fn rejects_cycles() {
+fn defers_cycles_until_graph_resolution() {
     let book = RecipeBook {
         schema_version: 1,
         external_items: vec![],
@@ -347,9 +347,17 @@ fn rejects_cycles() {
         ],
     };
 
-    let report = book.validate();
+    let validated = ValidatedRecipeBook::try_from_recipe_book(book)
+        .expect("structurally valid cyclic recipes should promote");
+    let error = validated
+        .resolve_graph("item-a")
+        .expect_err("encountered cycle should stop graph resolution");
 
-    assert_codes(&report, &["recipe-cycle"]);
+    assert!(matches!(
+        error,
+        RecipeGraphError::RecipeCycle { recipes }
+            if recipes == vec!["make-a", "make-b", "make-a"]
+    ));
 }
 
 #[test]

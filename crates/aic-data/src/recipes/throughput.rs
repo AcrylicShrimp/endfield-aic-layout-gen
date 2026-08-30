@@ -590,6 +590,15 @@ fn map_graph_error(error: RecipeGraphError) -> ThroughputDiagnostic {
                 recipes.join(", ")
             ),
         ),
+        RecipeGraphError::RecipeCycle { recipes } => ThroughputDiagnostic::error(
+            "recipe-cycle",
+            "/recipes",
+            None,
+            format!(
+                "cyclic recipe dependency encountered: {}",
+                recipes.join(" -> ")
+            ),
+        ),
     }
 }
 
