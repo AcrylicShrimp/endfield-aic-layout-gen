@@ -115,7 +115,7 @@ fn one_facility_external_routes_are_minimal_and_search_domain_independent() {
             phase.optimization.final_incumbent.score.total_route_cells,
             phase.route_cells
         );
-        assert_eq!(phase.optimization.candidate_counts.validated, 1);
+        assert!(phase.optimization.candidate_counts.validated >= 2);
         assert_eq!(
             phase.optimization.search_bounds.width,
             expected_search_width

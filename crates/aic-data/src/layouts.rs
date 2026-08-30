@@ -24,11 +24,11 @@ pub use integrated::{
     RetainedComponent, RetainedOccupant, RetainedRoutingResult, RetainedRoutingState,
     RouteChangeCounts, RouteRequirementFingerprint, RoutingConflict, RoutingOrderPolicy,
     SelectedPortAssignment, construct_coordinate_integrated_layout_with_time_limit,
-    construct_iterative_scc_layout, construct_sparse_integrated_layout, extend_phase_incumbent,
-    render_integrated_layout_html, render_integrated_layout_html_with_localization,
-    reroute_integrated_layout_subset, solve_integrated_layout,
-    solve_integrated_layout_with_time_limit, validate_candidate_policy_table,
-    validate_iterative_optimization_config,
+    construct_iterative_scc_layout, construct_iterative_scc_layout_with_cancellation,
+    construct_sparse_integrated_layout, extend_phase_incumbent, render_integrated_layout_html,
+    render_integrated_layout_html_with_localization, reroute_integrated_layout_subset,
+    solve_integrated_layout, solve_integrated_layout_with_time_limit,
+    validate_candidate_policy_table, validate_iterative_optimization_config,
 };
 
 pub use placement::{

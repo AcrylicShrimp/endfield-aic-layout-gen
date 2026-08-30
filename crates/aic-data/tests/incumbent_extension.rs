@@ -3,8 +3,10 @@ use std::time::{Duration, Instant};
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    FacilityPlacementRequest, IncumbentProvenance, SUPPORTED_FACILITY_PLACEMENT_SCHEMA_VERSION,
-    construct_sparse_integrated_layout, extend_phase_incumbent,
+    FacilityPlacementRequest, IncumbentProvenance, IterativeOptimizationConfig,
+    SUPPORTED_FACILITY_PLACEMENT_SCHEMA_VERSION, construct_iterative_scc_layout,
+    construct_iterative_scc_layout_with_cancellation, construct_sparse_integrated_layout,
+    extend_phase_incumbent,
 };
 use aic_data::logistics::{
     ValidatedItemCatalog, ValidatedLogisticsComponentCatalog, ValidatedTransportCatalog,
@@ -193,6 +195,70 @@ fn branch_extension_reuses_every_unchanged_route_exactly() {
                 .find(|route| route.requirement_id == requirement_id),
         );
     }
+}
+
+#[test]
+fn iterative_phase_uses_extension_as_an_initial_incumbent_then_searches_more_candidates() {
+    let catalogs = Catalogs::load();
+    let request = FacilityPlacementRequest {
+        schema_version: SUPPORTED_FACILITY_PLACEMENT_SCHEMA_VERSION,
+        max_width: 50,
+        max_height: 50,
+    };
+    let (_, current, _) = chain_phase_wiring();
+    let config = IterativeOptimizationConfig {
+        total_time_limit_ms: 4_000,
+        ..IterativeOptimizationConfig::default()
+    };
+
+    let report = construct_iterative_scc_layout(
+        &current,
+        &catalogs.facilities,
+        &catalogs.items,
+        &catalogs.transports,
+        &catalogs.components,
+        &request,
+        &config,
+    );
+
+    assert!(report.success, "{:#?}", report.diagnostics);
+    assert_eq!(report.phases.len(), 2);
+    let grown = &report.phases[1];
+    let initial = grown
+        .optimization
+        .initial_incumbent
+        .as_ref()
+        .expect("second phase should extend the first phase incumbent");
+    assert_eq!(initial.provenance, IncumbentProvenance::ExtendedPriorPhase);
+    assert!(grown.optimization.candidate_counts.validated >= 2);
+    assert!(grown.optimization.final_incumbent.score <= initial.score);
+    assert!(grown.optimization.score_delta.is_some());
+}
+
+#[test]
+fn cancellation_stops_before_starting_another_solver_stage() {
+    let catalogs = Catalogs::load();
+    let request = FacilityPlacementRequest {
+        schema_version: SUPPORTED_FACILITY_PLACEMENT_SCHEMA_VERSION,
+        max_width: 50,
+        max_height: 50,
+    };
+    let (_, current, _) = chain_phase_wiring();
+
+    let report = construct_iterative_scc_layout_with_cancellation(
+        &current,
+        &catalogs.facilities,
+        &catalogs.items,
+        &catalogs.transports,
+        &catalogs.components,
+        &request,
+        &IterativeOptimizationConfig::default(),
+        &|| true,
+    );
+
+    assert!(!report.success);
+    assert_eq!(report.diagnostics[0].code, "iterative-scc-cancelled");
+    assert!(report.phases.is_empty());
 }
 
 struct Catalogs {

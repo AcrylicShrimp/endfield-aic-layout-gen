@@ -10,7 +10,7 @@ use super::{
     EndpointInput, EndpointPortSelection, IntegratedLayoutDiagnostic, IntegratedLayoutReport,
     IntegratedLayoutStatus, IntegratedRoute, IntegratedRouteEndpoint, ModelInput,
     PlacedLogisticsComponent, RetainedRoutingResult, RetainedRoutingState, RoutingConflict,
-    candidate_port_connections, grid_index, world_position,
+    RoutingOrderPolicy, candidate_port_connections, grid_index, world_position,
 };
 
 const PLACEMENT_GAPS: [i32; 5] = [12, 8, 4, 2, 1];
@@ -42,14 +42,6 @@ pub(super) fn construct(
     construct_with_deadline(input, components, None)
 }
 
-pub(super) fn construct_until(
-    input: ModelInput,
-    components: &ValidatedLogisticsComponentCatalog,
-    deadline: Instant,
-) -> IntegratedLayoutReport {
-    construct_with_deadline(input, components, Some(deadline))
-}
-
 fn construct_with_deadline(
     input: ModelInput,
     components: &ValidatedLogisticsComponentCatalog,
@@ -62,7 +54,7 @@ fn construct_with_deadline(
             continue;
         };
         for routing_height in active_routing_heights(&input, &placements) {
-            for order in route_orders(&input) {
+            for order in route_orders(&input, None) {
                 if deadline.is_some_and(|deadline| Instant::now() >= deadline) {
                     break 'search;
                 }
@@ -153,6 +145,16 @@ pub(super) fn construct_from_placements(
     placements: Vec<FacilityPlacement>,
     deadline: Instant,
 ) -> IntegratedLayoutReport {
+    construct_from_placements_with_policy(input, components, placements, None, deadline)
+}
+
+pub(super) fn construct_from_placements_with_policy(
+    input: ModelInput,
+    components: &ValidatedLogisticsComponentCatalog,
+    placements: Vec<FacilityPlacement>,
+    routing_order_policy: Option<RoutingOrderPolicy>,
+    deadline: Instant,
+) -> IntegratedLayoutReport {
     let placements = match index_placements(&input, placements) {
         Ok(placements) => placements,
         Err(diagnostic) => {
@@ -163,7 +165,7 @@ pub(super) fn construct_from_placements(
     let mut best_routing_failure = None;
 
     'search: for routing_height in active_routing_heights(&input, &placements) {
-        for order in route_orders(&input) {
+        for order in route_orders(&input, routing_order_policy) {
             if Instant::now() >= deadline {
                 break 'search;
             }
@@ -265,6 +267,26 @@ pub(super) fn construct_from_retained(
     explicit_invalidated_requirement_ids: &BTreeSet<String>,
     deadline: Instant,
 ) -> RetainedRoutingResult {
+    construct_from_retained_with_policy(
+        input,
+        components,
+        placements,
+        retained,
+        explicit_invalidated_requirement_ids,
+        None,
+        deadline,
+    )
+}
+
+pub(super) fn construct_from_retained_with_policy(
+    input: ModelInput,
+    components: &ValidatedLogisticsComponentCatalog,
+    placements: Vec<FacilityPlacement>,
+    retained: &RetainedRoutingState,
+    explicit_invalidated_requirement_ids: &BTreeSet<String>,
+    routing_order_policy: Option<RoutingOrderPolicy>,
+    deadline: Instant,
+) -> RetainedRoutingResult {
     if let Some(unknown) = explicit_invalidated_requirement_ids
         .iter()
         .find(|requirement_id| {
@@ -315,12 +337,9 @@ pub(super) fn construct_from_retained(
         })
         .cloned()
         .collect::<BTreeSet<_>>();
-    let route_order = input
-        .edges
-        .iter()
-        .enumerate()
-        .filter(|(_, edge)| invalidated.contains(&edge.requirement_id))
-        .map(|(index, _)| index)
+    let route_order = preferred_route_order(&input, routing_order_policy)
+        .into_iter()
+        .filter(|index| invalidated.contains(&input.edges[*index].requirement_id))
         .collect::<Vec<_>>();
     let assigned = match assign_subset_ports(&input, &placements, &route_order, retained, &reused) {
         Ok(assigned) => assigned,
@@ -620,7 +639,10 @@ fn place_on_shelves(input: &ModelInput, gap: i32) -> Option<BTreeMap<String, Spa
     Some(placements)
 }
 
-fn route_orders(input: &ModelInput) -> Vec<Vec<usize>> {
+fn route_orders(
+    input: &ModelInput,
+    preferred_policy: Option<RoutingOrderPolicy>,
+) -> Vec<Vec<usize>> {
     let original = (0..input.edges.len()).collect::<Vec<_>>();
     let mut reversed = original.clone();
     reversed.reverse();
@@ -658,12 +680,44 @@ fn route_orders(input: &ModelInput) -> Vec<Vec<usize>> {
         facility_first,
         external_first,
     ];
+    if let Some(preferred_policy) = preferred_policy {
+        let preferred = preferred_route_order(input, Some(preferred_policy));
+        orders.retain(|order| order != &preferred);
+        orders.insert(0, preferred);
+    }
     for seed in 1_u64..=96 {
         let mut shuffled = (0..input.edges.len()).collect::<Vec<_>>();
         shuffled.sort_by_key(|index| deterministic_order_key(*index as u64, seed));
         orders.push(shuffled);
     }
     orders
+}
+
+fn preferred_route_order(input: &ModelInput, policy: Option<RoutingOrderPolicy>) -> Vec<usize> {
+    let mut order = (0..input.edges.len()).collect::<Vec<_>>();
+    match policy {
+        Some(RoutingOrderPolicy::FacilityFirst) => order.sort_by_key(|index| {
+            let edge = &input.edges[*index];
+            let boundaries = usize::from(matches!(edge.source, EndpointInput::External { .. }))
+                + usize::from(matches!(edge.target, EndpointInput::External { .. }));
+            (boundaries, *index)
+        }),
+        Some(RoutingOrderPolicy::ExternalFirst) => order.sort_by_key(|index| {
+            let edge = &input.edges[*index];
+            let boundaries = usize::from(matches!(edge.source, EndpointInput::External { .. }))
+                + usize::from(matches!(edge.target, EndpointInput::External { .. }));
+            (std::cmp::Reverse(boundaries), *index)
+        }),
+        Some(RoutingOrderPolicy::NetworkFirst) => {
+            order = input
+                .networks
+                .iter()
+                .flat_map(|network| network.route_indices().iter().copied())
+                .collect();
+        }
+        None => {}
+    }
+    order
 }
 
 fn deterministic_order_key(index: u64, seed: u64) -> u64 {

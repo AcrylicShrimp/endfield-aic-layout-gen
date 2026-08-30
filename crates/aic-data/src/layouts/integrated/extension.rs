@@ -13,8 +13,8 @@ use crate::recipes::FacilityInstanceWiringReport;
 use super::{
     CandidateRank, CumulativeGraphFingerprint, CumulativeGraphKey, DeterministicCandidateKey,
     EndpointInput, IncumbentProvenance, IntegratedLayoutDiagnostic, IntegratedLayoutReport,
-    LayoutScore, ModelInput, RefinementKind, RetainedRoutingState, RoutingConflict,
-    candidate_port_connections, prepare_model, retained, sparse, witness,
+    LayoutScore, ModelInput, PRODUCTION_FACILITY_GAP, RefinementKind, RetainedRoutingState,
+    RoutingConflict, candidate_port_connections, prepare_model, retained, sparse, witness,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -306,7 +306,9 @@ fn extend_placements(
                 instance.definition.footprint.height,
                 rotation,
             );
-            for y in 0..=(i64::from(input.height) - height) {
+            let (maximum_x, maximum_y) =
+                compact_extension_limits(input, &placements, width, height);
+            for y in 0..=maximum_y {
                 if Instant::now() >= deadline {
                     let conflict = placement_conflict(
                         "incumbent-extension-time-limit",
@@ -315,7 +317,7 @@ fn extend_placements(
                     );
                     return Err(Box::new((conflict_diagnostic(&conflict), conflict)));
                 }
-                for x in 0..=(i64::from(input.width) - width) {
+                for x in 0..=maximum_x {
                     if !placement_candidate_is_legal(
                         input,
                         instance,
@@ -367,6 +369,31 @@ fn extend_placements(
     }
     placements.sort_by(|left, right| left.instance.cmp(&right.instance));
     Ok(placements)
+}
+
+fn compact_extension_limits(
+    input: &ModelInput,
+    placements: &[FacilityPlacement],
+    width: i64,
+    height: i64,
+) -> (i64, i64) {
+    let used_right = placements
+        .iter()
+        .map(|placement| placement.x + placement.width)
+        .max()
+        .unwrap_or(0);
+    let used_bottom = placements
+        .iter()
+        .map(|placement| placement.y + placement.height)
+        .max()
+        .unwrap_or(0);
+    let search_right = (used_right + width + PRODUCTION_FACILITY_GAP).min(i64::from(input.width));
+    let search_bottom =
+        (used_bottom + height + PRODUCTION_FACILITY_GAP).min(i64::from(input.height));
+    (
+        (search_right - width).max(0),
+        (search_bottom - height).max(0),
+    )
 }
 
 #[allow(clippy::too_many_arguments)]

@@ -49,6 +49,34 @@ pub struct CandidatePolicy {
     pub max_candidate_yields: usize,
 }
 
+impl Default for CandidatePolicyTable {
+    fn default() -> Self {
+        Self {
+            schema_version: CANDIDATE_POLICY_TABLE_SCHEMA_VERSION,
+            policies: vec![
+                CandidatePolicy {
+                    id: "prior-hint-facility-first".to_string(),
+                    placement_policy: PlacementPolicy::PriorHint,
+                    routing_order_policy: RoutingOrderPolicy::FacilityFirst,
+                    max_candidate_yields: 2,
+                },
+                CandidatePolicy {
+                    id: "compact-shelf-network-first".to_string(),
+                    placement_policy: PlacementPolicy::CompactShelf,
+                    routing_order_policy: RoutingOrderPolicy::NetworkFirst,
+                    max_candidate_yields: 2,
+                },
+                CandidatePolicy {
+                    id: "alternating-shelf-external-first".to_string(),
+                    placement_policy: PlacementPolicy::AlternatingShelf,
+                    routing_order_policy: RoutingOrderPolicy::ExternalFirst,
+                    max_candidate_yields: 2,
+                },
+            ],
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum RoutingOrderPolicy {
@@ -219,6 +247,24 @@ mod tests {
         assert_eq!(config.candidate_attempts_per_neighborhood, 3);
         assert_eq!(config.same_neighborhood_restart_limit, 1);
         assert!(validate_iterative_optimization_config(&config).is_ok());
+    }
+
+    #[test]
+    fn default_candidate_policies_are_valid_and_prior_hint_first() {
+        let table = CandidatePolicyTable::default();
+
+        assert!(validate_candidate_policy_table(&table).is_ok());
+        assert_eq!(table.policies.len(), 3);
+        assert_eq!(
+            table.policies[0].placement_policy,
+            PlacementPolicy::PriorHint
+        );
+        assert!(
+            table
+                .policies
+                .iter()
+                .all(|policy| policy.max_candidate_yields > 1)
+        );
     }
 
     #[test]

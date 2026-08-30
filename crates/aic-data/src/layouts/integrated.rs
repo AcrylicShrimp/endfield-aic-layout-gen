@@ -34,6 +34,7 @@ use crate::recipes::{
 use super::WorldGridPosition;
 use super::placement::solve_facility_placement_feasibly_with_time_limit;
 
+mod budget;
 mod extension;
 mod html;
 mod iterative;
@@ -49,7 +50,9 @@ pub use extension::{
     IncumbentExtensionCounts, IncumbentExtensionResult, PhaseIncumbent, extend_phase_incumbent,
 };
 pub use html::{render_integrated_layout_html, render_integrated_layout_html_with_localization};
-pub use iterative::construct_iterative_scc_layout;
+pub use iterative::{
+    construct_iterative_scc_layout, construct_iterative_scc_layout_with_cancellation,
+};
 pub use optimization::{
     CANDIDATE_POLICY_TABLE_SCHEMA_VERSION, CandidatePolicy, CandidatePolicyTable,
     ITERATIVE_OPTIMIZATION_CONFIG_SCHEMA_VERSION, IterativeOptimizationConfig,
