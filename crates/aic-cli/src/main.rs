@@ -1,7 +1,12 @@
 use std::{path::PathBuf, process::ExitCode};
 
 use aic_data::facilities::{
-    FacilityCatalogValidationReport, load_facility_catalog, validate_facility_catalog,
+    FacilityCatalogValidationReport, ValidatedFacilityCatalog, load_facility_catalog,
+    validate_facility_catalog,
+};
+use aic_data::layouts::{
+    FacilityPlacementDiagnostic, FacilityPlacementReport, FacilityPlacementRequest,
+    solve_facility_placement,
 };
 use aic_data::recipes::{
     FacilityInstanceWiringReport, FacilityRequirementReport, RecipeThroughputReport,
@@ -36,6 +41,11 @@ enum Command {
         #[command(subcommand)]
         command: FacilitiesCommand,
     },
+    /// Generate spatial layouts.
+    Layouts {
+        #[command(subcommand)]
+        command: LayoutsCommand,
+    },
     /// Work with recipe data.
     Recipes {
         #[command(subcommand)]
@@ -50,6 +60,28 @@ enum FacilitiesCommand {
         /// Facility catalog JSON file to validate.
         #[arg(long, short, value_name = "FILE")]
         file: PathBuf,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+enum LayoutsCommand {
+    /// Place facility instances within a maximum grid width.
+    PlaceFacilities {
+        /// Recipe JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        recipes: PathBuf,
+
+        /// Throughput request JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        throughput_request: PathBuf,
+
+        /// Facility catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        facility_catalog: PathBuf,
+
+        /// Facility placement request JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
     },
 }
 
@@ -136,6 +168,19 @@ fn run() -> Result<CommandStatus> {
         Command::CheckData => check_data(cli.data_dir).map(|()| CommandStatus::Success),
         Command::Facilities { command } => match command {
             FacilitiesCommand::Validate { file } => validate_facilities(file),
+        },
+        Command::Layouts { command } => match command {
+            LayoutsCommand::PlaceFacilities {
+                recipes,
+                throughput_request,
+                facility_catalog,
+                placement_request,
+            } => place_facilities(
+                recipes,
+                throughput_request,
+                facility_catalog,
+                placement_request,
+            ),
         },
         Command::Recipes { command } => match command {
             RecipesCommand::Validate { file } => {
@@ -301,6 +346,77 @@ fn instance_wiring_recipes(file: PathBuf, request: PathBuf) -> Result<CommandSta
     }
 }
 
+fn place_facilities(
+    recipes: PathBuf,
+    throughput_request: PathBuf,
+    facility_catalog: PathBuf,
+    placement_request: PathBuf,
+) -> Result<CommandStatus> {
+    let throughput_report = calculate_throughput_report(recipes, throughput_request)?;
+    if !throughput_report.success {
+        write_throughput_report(&throughput_report)?;
+        return Ok(CommandStatus::Failure);
+    }
+
+    let facility_report = calculate_facility_requirements(&throughput_report);
+    if !facility_report.success {
+        write_facility_requirement_report(&facility_report)?;
+        return Ok(CommandStatus::Failure);
+    }
+
+    let recipe_wiring_report = build_recipe_wiring_graph(&throughput_report);
+    if !recipe_wiring_report.success {
+        write_recipe_wiring_graph_report(&recipe_wiring_report)?;
+        return Ok(CommandStatus::Failure);
+    }
+
+    let instance_wiring_report =
+        build_facility_instance_wiring(&throughput_report, &facility_report, &recipe_wiring_report);
+    if !instance_wiring_report.success {
+        write_facility_instance_wiring_report(&instance_wiring_report)?;
+        return Ok(CommandStatus::Failure);
+    }
+
+    let raw_catalog = load_facility_catalog(&facility_catalog)?;
+    let validated_catalog = match ValidatedFacilityCatalog::try_from_catalog(raw_catalog) {
+        Ok(catalog) => catalog,
+        Err(report) => {
+            write_facility_catalog_validation_report(&report)?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
+
+    let request_json = std::fs::read_to_string(&placement_request).with_context(|| {
+        format!(
+            "failed to read facility placement request file '{}'",
+            placement_request.display()
+        )
+    })?;
+    let request = match serde_json::from_str::<FacilityPlacementRequest>(&request_json) {
+        Ok(request) => request,
+        Err(error) => {
+            let report = FacilityPlacementReport::invalid(FacilityPlacementDiagnostic::error(
+                "invalid-facility-placement-request-json",
+                "/",
+                None,
+                error.to_string(),
+            ));
+            write_facility_placement_report(&report)?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
+
+    let report = solve_facility_placement(&instance_wiring_report, &validated_catalog, &request);
+    let success = report.success;
+    write_facility_placement_report(&report)?;
+
+    if success {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
+    }
+}
+
 fn calculate_throughput_report(file: PathBuf, request: PathBuf) -> Result<RecipeThroughputReport> {
     let recipe_book = load_recipe_book(&file)?;
     let request_json = std::fs::read_to_string(&request).with_context(|| {
@@ -377,6 +493,14 @@ fn write_facility_catalog_validation_report(
 ) -> Result<()> {
     serde_json::to_writer_pretty(std::io::stdout().lock(), report)
         .context("failed to write facility catalog validation report")?;
+    println!();
+
+    Ok(())
+}
+
+fn write_facility_placement_report(report: &FacilityPlacementReport) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write facility placement report")?;
     println!();
 
     Ok(())

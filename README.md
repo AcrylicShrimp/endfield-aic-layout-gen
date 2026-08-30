@@ -24,3 +24,13 @@ Resolve the dependency graph for a target item:
 ```bash
 cargo run -p aic-cli -- recipes graph --file data/examples/recipes.graph.json --target originium-casing
 ```
+
+Generate a feasible facility placement from the full production pipeline:
+
+```bash
+cargo run -p aic-cli -- layouts place-facilities \
+  --recipes data/examples/recipes.graph.json \
+  --throughput-request data/examples/throughput.request.json \
+  --facility-catalog data/examples/facilities.valid.json \
+  --placement-request data/examples/placement.request.json
+```
