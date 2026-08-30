@@ -57,6 +57,20 @@
 - Prefer the new contract over reusing old code. Delete or rewrite old code when reuse would distort the new design.
 - For external data or CLI contracts, make breaking changes explicit through schema versions, migration notes, or diagnostics instead of preserving obsolete internal code paths.
 
+## Exact Solver And Heuristic Policy
+
+- The authoritative optimizer must solve facility placement, facility rotation, directional port selection, and belt/pipe routing in one joint constraint model for each cumulative production graph.
+- Routing is the primary optimization concern. Minimize total route cells first and total route turns second before later compactness or stability tie-breakers.
+- A placement-candidate generator followed by a separate heuristic router and post-hoc candidate scoring is not a joint solve and must not be used as the authoritative optimization path.
+- Hand-written layout or routing heuristics are prohibited unless the user gives explicit approval before implementation. This prohibition includes deterministic or randomized shelf placement, constructive placement, routing-order portfolios, greedy port assignment, greedy path selection, corridor restriction, coordinate templates, and data-specific placement rules.
+- Do not introduce a heuristic merely as an intermediate implementation step, fallback, warm start, or performance optimization without the same prior approval.
+- Reusing a complete prior solver solution as a hint for the enlarged exact model is allowed. A hint must never alter feasibility, exclude a legal solution, or become a permanent coordinate constraint.
+- Sound lower bounds, completeness-preserving domain reductions, exact symmetry breaking, canonical translation, stable entity ordering, solver presolve, and solver-native search are allowed because they do not replace or restrict the intended solution set heuristically.
+- Any domain restriction that can exclude a legal solution is a heuristic, even when it is described as an active window, crop, corridor, neighborhood, or practical bound. It requires prior user approval.
+- If an exact joint formulation cannot meet the required runtime or memory budget, stop and report the measured blocker. Explain the proposed heuristic, why exact alternatives are insufficient, and the expected correctness or quality loss, then obtain explicit user approval before proceeding.
+- Existing heuristic optimizer paths must not be extended during the joint-solver cutover. Remove them when the replacement is complete instead of preserving them as compatibility fallbacks.
+- Before committing each solver slice, compare the implementation against this policy and the current accepted design. Treat agreement with a superseded or incorrect plan as a failure, not as evidence that architectural drift is absent.
+
 ## Contract And Diagnostic Design
 
 - Before implementing a substantial stage, define the stage contract first.
