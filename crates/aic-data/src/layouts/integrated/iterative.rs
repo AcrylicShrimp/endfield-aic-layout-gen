@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::time::Instant;
 
 use crate::facilities::ValidatedFacilityCatalog;
-use crate::layouts::growth::plan_facility_growth;
+use crate::layouts::growth::{FacilityGrowthComponent, plan_facility_growth};
 use crate::layouts::placement::search_facility_placement_candidates;
 use crate::layouts::{
     FacilityPlacement, FacilityPlacementRequest, FacilityPlacementSearchScope,
@@ -21,14 +21,17 @@ use crate::recipes::{
 use super::{
     CandidateCounts, CandidatePolicyTable, CandidateRank, DeterministicCandidateKey,
     FacilityChangeCounts, IncumbentProvenance, IntegratedLayoutDiagnostic,
-    IntegratedLayoutIncumbentSummary, IntegratedLayoutPhase, IntegratedLayoutPhaseAttempt,
-    IntegratedLayoutPhaseOptimization, IntegratedLayoutReport, IntegratedLayoutStatus,
-    IterativeOptimizationConfig, LayoutScore, LayoutScoreDelta, OptimizationProofStatus,
-    OptimizationTerminationReason, PRODUCTION_FACILITY_GAP, PhaseElapsedMilliseconds,
-    PhaseIncumbent, RefinementKind, RetainedRoutingState, RouteChangeCounts,
+    IntegratedLayoutIncumbentSummary, IntegratedLayoutNeighborhoodReport, IntegratedLayoutPhase,
+    IntegratedLayoutPhaseAttempt, IntegratedLayoutPhaseOptimization, IntegratedLayoutReport,
+    IntegratedLayoutStatus, IterativeOptimizationConfig, LayoutScore, LayoutScoreDelta,
+    OptimizationProofStatus, OptimizationTerminationReason, PRODUCTION_FACILITY_GAP,
+    PhaseElapsedMilliseconds, PhaseIncumbent, RefinementKind, RetainedRoutingState,
+    RouteChangeCounts, RoutingConflict,
     budget::{GrowthPhaseBudget, StrategyBudget},
-    extend_phase_incumbent, frame_placements_for_routing, prepare_model, route_turn_count, sparse,
-    validate_candidate_policy_table, validate_iterative_optimization_config,
+    extend_phase_incumbent, frame_placements_for_routing,
+    neighborhood::NeighborhoodGraph,
+    prepare_model, route_turn_count, sparse, validate_candidate_policy_table,
+    validate_iterative_optimization_config,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -217,6 +220,8 @@ pub fn construct_iterative_scc_layout_with_cancellation(
             request,
             config,
             &policy_table,
+            &growth.components,
+            &phase.facilities,
             &cumulative_facilities,
             &prior_reference,
             latest_success.as_ref(),
@@ -240,6 +245,7 @@ pub fn construct_iterative_scc_layout_with_cancellation(
             attempts: attempt_reports,
             candidate_counts,
             route_changes,
+            neighborhoods,
             incumbent_extension_ms,
             placement_ms,
             routing_ms,
@@ -337,6 +343,7 @@ pub fn construct_iterative_scc_layout_with_cancellation(
                 rotation_changed: final_score.rotation_change_count,
             },
             route_changes,
+            neighborhoods,
             elapsed_ms: PhaseElapsedMilliseconds {
                 graph_construction: graph_construction_ms,
                 incumbent_extension: incumbent_extension_ms,
@@ -425,6 +432,7 @@ struct PhaseSearchResult {
     attempts: Vec<IntegratedLayoutPhaseAttempt>,
     candidate_counts: CandidateCounts,
     route_changes: RouteChangeCounts,
+    neighborhoods: Vec<IntegratedLayoutNeighborhoodReport>,
     incumbent_extension_ms: u64,
     placement_ms: u64,
     routing_ms: u64,
@@ -444,6 +452,8 @@ fn optimize_cumulative_phase(
     request: &FacilityPlacementRequest,
     config: &IterativeOptimizationConfig,
     policy_table: &CandidatePolicyTable,
+    growth_components: &[FacilityGrowthComponent],
+    introduced_facilities: &[String],
     cumulative_facilities: &BTreeSet<String>,
     prior_reference: &[FacilityPlacement],
     prior_witness: Option<&IntegratedLayoutReport>,
@@ -457,6 +467,18 @@ fn optimize_cumulative_phase(
     let mut initial_incumbent = None;
     let mut route_changes = RouteChangeCounts::default();
     let mut attempts = Vec::new();
+    let mut conflicts = Vec::<RoutingConflict>::new();
+    let fallback_retained = match (previous_wiring, prior_witness) {
+        (Some(previous_wiring), Some(prior_witness)) => {
+            let previous_input =
+                prepare_model(previous_wiring, facilities, items, transports, request)?;
+            Some(RetainedRoutingState::from_validated_report(
+                &previous_input,
+                prior_witness,
+            )?)
+        }
+        _ => None,
+    };
     if let (Some(previous_wiring), Some(prior_witness)) = (previous_wiring, prior_witness) {
         let now = Instant::now();
         let phase_remaining = phase_budget.remaining(now);
@@ -485,6 +507,9 @@ fn optimize_cumulative_phase(
             rerouted: extension.counts.rerouted_routes,
             new: extension.counts.new_routes,
         };
+        if let Some(conflict) = extension.conflict.clone() {
+            conflicts.push(conflict);
+        }
         if let Some(extended) = extension.incumbent {
             initial_incumbent = Some(IntegratedLayoutIncumbentSummary {
                 score: extended.score,
@@ -503,264 +528,325 @@ fn optimize_cumulative_phase(
         }
     }
     let incumbent_extension_ms = elapsed_milliseconds(extension_started);
-    let placement_scope = FacilityPlacementSearchScope {
-        free_facility_ids: cumulative_facilities.clone(),
-        fixed_facility_ids: BTreeSet::new(),
-    };
+    let neighborhood_input = prepare_model(current_wiring, facilities, items, transports, request)?;
+    let neighborhood_graph = NeighborhoodGraph::from_model(
+        &neighborhood_input,
+        growth_components,
+        cumulative_facilities,
+    );
+    let introduced_facilities = introduced_facilities
+        .iter()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let mut neighborhoods = Vec::new();
     let mut candidate_counts = CandidateCounts::default();
     let mut placement_ms = 0_u64;
     let mut routing_ms = 0_u64;
     let mut validation_ms = 0_u64;
     let attempt_limit = config.candidate_attempts_per_neighborhood;
     let mut cancelled = false;
-    let mut restart_index = 0_usize;
+    for neighborhood_rank in 0..=3 {
+        if cancellation_requested() {
+            cancelled = true;
+            break;
+        }
+        let conflict_start = conflicts.len();
+        let plan = neighborhood_graph.plan(neighborhood_rank, &introduced_facilities, &conflicts);
+        let placement_scope = FacilityPlacementSearchScope {
+            free_facility_ids: plan.free_facility_ids.clone(),
+            fixed_facility_ids: plan.fixed_facility_ids.clone(),
+        };
+        let now = Instant::now();
+        let remaining_neighborhoods = 4 - neighborhood_rank;
+        let neighborhood_grant = phase_budget.remaining(now)
+            / u32::try_from(remaining_neighborhoods)
+                .unwrap_or(u32::MAX)
+                .max(1);
+        let mut neighborhood_deadline = min_instant(
+            phase_budget.deadline(),
+            now.checked_add(neighborhood_grant).unwrap_or(now),
+        );
+        let improvements_before_neighborhood = candidate_counts.improved;
+        let mut restart_index = 0_usize;
 
-    loop {
-        let improvements_before_pass = candidate_counts.improved;
-        let mut attempt_index = 0_usize;
-        while attempt_index < attempt_limit {
-            if cancellation_requested() {
-                cancelled = true;
-                break;
-            }
-            let now = Instant::now();
-            let remaining_slots = attempt_limit - attempt_index;
-            let mut remaining = phase_budget.remaining(now);
-            let mut attempt_grant =
-                remaining / u32::try_from(remaining_slots).unwrap_or(u32::MAX).max(1);
-            if attempt_grant < minimum_attempt {
-                let borrowed = if incumbent.is_none() {
-                    strategy_budget.borrow_for_missing_incumbent(phase_budget)
-                } else {
-                    std::time::Duration::ZERO
-                };
-                if !borrowed.is_zero() {
-                    remaining = phase_budget.remaining(now);
-                    attempt_grant = remaining;
+        loop {
+            let improvements_before_pass = candidate_counts.improved;
+            let mut attempt_index = 0_usize;
+            while attempt_index < attempt_limit {
+                if cancellation_requested() {
+                    cancelled = true;
+                    break;
                 }
+                let now = Instant::now();
+                let remaining_slots = attempt_limit - attempt_index;
+                let mut remaining = neighborhood_deadline.saturating_duration_since(now);
+                let mut attempt_grant =
+                    remaining / u32::try_from(remaining_slots).unwrap_or(u32::MAX).max(1);
                 if attempt_grant < minimum_attempt {
-                    break;
+                    let borrowed = if neighborhood_rank == 3 && incumbent.is_none() {
+                        strategy_budget.borrow_for_missing_incumbent(phase_budget)
+                    } else {
+                        std::time::Duration::ZERO
+                    };
+                    if !borrowed.is_zero() {
+                        neighborhood_deadline = phase_budget.deadline();
+                        remaining = neighborhood_deadline.saturating_duration_since(now);
+                        attempt_grant = remaining;
+                    }
+                    if attempt_grant < minimum_attempt {
+                        break;
+                    }
                 }
-            }
-            let attempt_deadline = min_instant(
-                phase_budget.deadline(),
-                now.checked_add(attempt_grant).unwrap_or(now),
-            );
-            let policy_index = attempt_index % policy_table.policies.len();
-            let policy = &policy_table.policies[policy_index];
-            let hints = incumbent
-                .as_ref()
-                .map(|incumbent| incumbent.witness.placements.clone())
-                .unwrap_or_else(|| prior_reference.to_vec());
-            let producer_started = Instant::now();
-            let producer_deadline = min_instant(
-                attempt_deadline,
-                producer_started
-                    .checked_add(attempt_grant / 2)
-                    .unwrap_or(producer_started),
-            );
-            let batch = search_facility_placement_candidates(
-                current_wiring,
-                facilities,
-                request,
-                PRODUCTION_FACILITY_GAP,
-                &hints,
-                &placement_scope,
-                policy.placement_policy,
-                policy.max_candidate_yields,
-                producer_deadline,
-            );
-            placement_ms = placement_ms.saturating_add(elapsed_milliseconds(producer_started));
-            candidate_counts.generated = candidate_counts
-                .generated
-                .saturating_add(batch.candidates.len());
-            candidate_counts.timed_out = candidate_counts
-                .timed_out
-                .saturating_add(usize::from(batch.timed_out));
-            if cancellation_requested() {
-                cancelled = true;
-                break;
-            }
-            if batch.candidates.is_empty() {
-                attempts.push(IntegratedLayoutPhaseAttempt {
-                    candidate_key: None,
-                    policy_id: Some(policy.id.clone()),
-                    placement_hint_count: hints.len(),
-                    status: placement_status(batch.status),
-                    diagnostic_code: batch
-                        .diagnostics
-                        .first()
-                        .map(|diagnostic| diagnostic.code.to_string()),
-                });
-            }
-
-            for candidate in batch.candidates {
-                let candidate_key = DeterministicCandidateKey {
-                    phase_index,
-                    refinement_kind: RefinementKind::GrowthNeighborhood,
-                    neighborhood_rank: 3,
-                    restart_index,
-                    policy_index,
-                    attempt_index,
-                    yield_index: candidate.yield_index,
-                };
-                if Instant::now() >= attempt_deadline {
-                    candidate_counts.timed_out += 1;
-                    attempts.push(IntegratedLayoutPhaseAttempt {
-                        candidate_key: Some(candidate_key),
-                        policy_id: Some(policy.id.clone()),
-                        placement_hint_count: hints.len(),
-                        status: IntegratedLayoutStatus::Unknown,
-                        diagnostic_code: Some("candidate-routing-deadline-exhausted".to_string()),
-                    });
-                    break;
-                }
+                let attempt_deadline = min_instant(
+                    neighborhood_deadline,
+                    now.checked_add(attempt_grant).unwrap_or(now),
+                );
+                let policy_index = attempt_index % policy_table.policies.len();
+                let policy = &policy_table.policies[policy_index];
+                let hints = incumbent
+                    .as_ref()
+                    .map(|incumbent| incumbent.witness.placements.clone())
+                    .unwrap_or_else(|| prior_reference.to_vec());
+                let producer_started = Instant::now();
+                let producer_deadline = min_instant(
+                    attempt_deadline,
+                    producer_started
+                        .checked_add(attempt_grant / 2)
+                        .unwrap_or(producer_started),
+                );
+                let batch = search_facility_placement_candidates(
+                    current_wiring,
+                    facilities,
+                    request,
+                    PRODUCTION_FACILITY_GAP,
+                    &hints,
+                    &placement_scope,
+                    policy.placement_policy,
+                    policy.max_candidate_yields,
+                    producer_deadline,
+                );
+                placement_ms = placement_ms.saturating_add(elapsed_milliseconds(producer_started));
+                candidate_counts.generated = candidate_counts
+                    .generated
+                    .saturating_add(batch.candidates.len());
+                candidate_counts.timed_out = candidate_counts
+                    .timed_out
+                    .saturating_add(usize::from(batch.timed_out));
                 if cancellation_requested() {
                     cancelled = true;
                     break;
                 }
-                let Some(placements) = frame_placements_for_routing(
-                    candidate.report.placements,
-                    request.max_width,
-                    request.max_height,
-                ) else {
-                    candidate_counts.rejected += 1;
+                if batch.candidates.is_empty() {
                     attempts.push(IntegratedLayoutPhaseAttempt {
-                        candidate_key: Some(candidate_key),
+                        candidate_key: None,
                         policy_id: Some(policy.id.clone()),
                         placement_hint_count: hints.len(),
-                        status: IntegratedLayoutStatus::Unknown,
-                        diagnostic_code: Some("iterative-routing-frame-does-not-fit".to_string()),
-                    });
-                    continue;
-                };
-                let routing_started = Instant::now();
-                candidate_counts.routed += 1;
-                let input = prepare_model(current_wiring, facilities, items, transports, request)?;
-                let (routed, candidate_route_changes) = if let Some(current_incumbent) = &incumbent
-                {
-                    let retained = RetainedRoutingState::from_validated_report(
-                        &input,
-                        &current_incumbent.witness,
-                    )?;
-                    let routed = sparse::construct_from_retained_with_policy(
-                        input,
-                        logistics_components,
-                        placements,
-                        &retained,
-                        &BTreeSet::new(),
-                        Some(policy.routing_order_policy),
-                        attempt_deadline,
-                    );
-                    let changes = RouteChangeCounts {
-                        reused: routed.reused_requirement_ids.len(),
-                        invalidated: routed.invalidated_requirement_ids.len(),
-                        rerouted: routed
-                            .invalidated_requirement_ids
-                            .iter()
-                            .filter(|requirement_id| {
-                                retained.retained_routes.contains_key(*requirement_id)
-                            })
-                            .count(),
-                        new: routed
-                            .invalidated_requirement_ids
-                            .iter()
-                            .filter(|requirement_id| {
-                                !retained.retained_routes.contains_key(*requirement_id)
-                            })
-                            .count(),
-                    };
-                    (routed.report, changes)
-                } else {
-                    let routed = sparse::construct_from_placements_with_policy(
-                        input,
-                        logistics_components,
-                        placements,
-                        Some(policy.routing_order_policy),
-                        attempt_deadline,
-                    );
-                    let changes = RouteChangeCounts {
-                        new: routed.routes.len(),
-                        ..RouteChangeCounts::default()
-                    };
-                    (routed, changes)
-                };
-                routing_ms = routing_ms.saturating_add(elapsed_milliseconds(routing_started));
-                if cancellation_requested() {
-                    cancelled = true;
-                    break;
-                }
-                if !routed.success || Instant::now() > attempt_deadline {
-                    candidate_counts.rejected += 1;
-                    candidate_counts.timed_out += usize::from(Instant::now() > attempt_deadline);
-                    attempts.push(IntegratedLayoutPhaseAttempt {
-                        candidate_key: Some(candidate_key),
-                        policy_id: Some(policy.id.clone()),
-                        placement_hint_count: hints.len(),
-                        status: routed.status,
-                        diagnostic_code: routed
+                        status: placement_status(batch.status),
+                        diagnostic_code: batch
                             .diagnostics
                             .first()
                             .map(|diagnostic| diagnostic.code.to_string()),
                     });
-                    continue;
                 }
-                let validation_started = Instant::now();
-                let validation_input =
-                    prepare_model(current_wiring, facilities, items, transports, request)?;
-                super::witness::validate(&validation_input, logistics_components, &routed)?;
-                let retained =
-                    RetainedRoutingState::from_validated_report(&validation_input, &routed)?;
-                validation_ms =
-                    validation_ms.saturating_add(elapsed_milliseconds(validation_started));
-                candidate_counts.validated += 1;
-                let score = LayoutScore::from_report(&routed, prior_reference)
-                    .expect("validated routed candidate must be scoreable");
-                let rank = CandidateRank {
-                    score,
-                    deterministic_candidate_key: candidate_key,
-                };
-                let improves = incumbent.as_ref().is_none_or(|current| {
-                    rank < CandidateRank {
-                        score: current.score,
-                        deterministic_candidate_key: current.candidate_key,
+
+                for candidate in batch.candidates {
+                    let candidate_key = DeterministicCandidateKey {
+                        phase_index,
+                        refinement_kind: RefinementKind::GrowthNeighborhood,
+                        neighborhood_rank,
+                        restart_index,
+                        policy_index,
+                        attempt_index,
+                        yield_index: candidate.yield_index,
+                    };
+                    if Instant::now() >= attempt_deadline {
+                        candidate_counts.timed_out += 1;
+                        attempts.push(IntegratedLayoutPhaseAttempt {
+                            candidate_key: Some(candidate_key),
+                            policy_id: Some(policy.id.clone()),
+                            placement_hint_count: hints.len(),
+                            status: IntegratedLayoutStatus::Unknown,
+                            diagnostic_code: Some(
+                                "candidate-routing-deadline-exhausted".to_string(),
+                            ),
+                        });
+                        break;
                     }
-                });
-                if improves {
-                    candidate_counts.improved += 1;
-                    route_changes = candidate_route_changes;
-                    incumbent = Some(PhaseIncumbent {
-                        cumulative_graph_key: retained.graph_key,
-                        cumulative_graph_fingerprint: retained.graph_fingerprint,
-                        witness: routed,
+                    if cancellation_requested() {
+                        cancelled = true;
+                        break;
+                    }
+                    let Some(placements) = frame_placements_for_routing(
+                        candidate.report.placements,
+                        request.max_width,
+                        request.max_height,
+                    ) else {
+                        candidate_counts.rejected += 1;
+                        attempts.push(IntegratedLayoutPhaseAttempt {
+                            candidate_key: Some(candidate_key),
+                            policy_id: Some(policy.id.clone()),
+                            placement_hint_count: hints.len(),
+                            status: IntegratedLayoutStatus::Unknown,
+                            diagnostic_code: Some(
+                                "iterative-routing-frame-does-not-fit".to_string(),
+                            ),
+                        });
+                        continue;
+                    };
+                    let routing_started = Instant::now();
+                    candidate_counts.routed += 1;
+                    let input =
+                        prepare_model(current_wiring, facilities, items, transports, request)?;
+                    let retained = if let Some(current_incumbent) = &incumbent {
+                        Some(RetainedRoutingState::from_validated_report(
+                            &input,
+                            &current_incumbent.witness,
+                        )?)
+                    } else {
+                        fallback_retained.clone()
+                    };
+                    let (routed, candidate_route_changes, conflict) =
+                        if let Some(retained) = retained {
+                            let routed = sparse::construct_from_retained_with_policy(
+                                input,
+                                logistics_components,
+                                placements,
+                                &retained,
+                                &plan.invalidated_requirement_ids,
+                                Some(policy.routing_order_policy),
+                                attempt_deadline,
+                            );
+                            let changes = RouteChangeCounts {
+                                reused: routed.reused_requirement_ids.len(),
+                                invalidated: routed.invalidated_requirement_ids.len(),
+                                rerouted: routed
+                                    .invalidated_requirement_ids
+                                    .iter()
+                                    .filter(|requirement_id| {
+                                        retained.retained_routes.contains_key(*requirement_id)
+                                    })
+                                    .count(),
+                                new: routed
+                                    .invalidated_requirement_ids
+                                    .iter()
+                                    .filter(|requirement_id| {
+                                        !retained.retained_routes.contains_key(*requirement_id)
+                                    })
+                                    .count(),
+                            };
+                            (routed.report, changes, routed.conflict)
+                        } else {
+                            let routed = sparse::construct_from_placements_with_policy(
+                                input,
+                                logistics_components,
+                                placements,
+                                Some(policy.routing_order_policy),
+                                attempt_deadline,
+                            );
+                            let changes = RouteChangeCounts {
+                                new: routed.routes.len(),
+                                ..RouteChangeCounts::default()
+                            };
+                            (routed, changes, None)
+                        };
+                    if let Some(conflict) = conflict {
+                        conflicts.push(conflict);
+                    }
+                    routing_ms = routing_ms.saturating_add(elapsed_milliseconds(routing_started));
+                    if cancellation_requested() {
+                        cancelled = true;
+                        break;
+                    }
+                    if !routed.success || Instant::now() > attempt_deadline {
+                        candidate_counts.rejected += 1;
+                        candidate_counts.timed_out +=
+                            usize::from(Instant::now() > attempt_deadline);
+                        attempts.push(IntegratedLayoutPhaseAttempt {
+                            candidate_key: Some(candidate_key),
+                            policy_id: Some(policy.id.clone()),
+                            placement_hint_count: hints.len(),
+                            status: routed.status,
+                            diagnostic_code: routed
+                                .diagnostics
+                                .first()
+                                .map(|diagnostic| diagnostic.code.to_string()),
+                        });
+                        continue;
+                    }
+                    let validation_started = Instant::now();
+                    let validation_input =
+                        prepare_model(current_wiring, facilities, items, transports, request)?;
+                    super::witness::validate(&validation_input, logistics_components, &routed)?;
+                    let retained =
+                        RetainedRoutingState::from_validated_report(&validation_input, &routed)?;
+                    validation_ms =
+                        validation_ms.saturating_add(elapsed_milliseconds(validation_started));
+                    candidate_counts.validated += 1;
+                    let score = LayoutScore::from_report(&routed, prior_reference)
+                        .expect("validated routed candidate must be scoreable");
+                    let rank = CandidateRank {
                         score,
-                        candidate_key,
-                        provenance: IncumbentProvenance::NeighborhoodCandidate {
-                            neighborhood_rank: 3,
-                            attempt_index,
-                        },
+                        deterministic_candidate_key: candidate_key,
+                    };
+                    let improves = incumbent.as_ref().is_none_or(|current| {
+                        rank < CandidateRank {
+                            score: current.score,
+                            deterministic_candidate_key: current.candidate_key,
+                        }
+                    });
+                    if improves {
+                        candidate_counts.improved += 1;
+                        route_changes = candidate_route_changes;
+                        incumbent = Some(PhaseIncumbent {
+                            cumulative_graph_key: retained.graph_key,
+                            cumulative_graph_fingerprint: retained.graph_fingerprint,
+                            witness: routed,
+                            score,
+                            candidate_key,
+                            provenance: IncumbentProvenance::NeighborhoodCandidate {
+                                neighborhood_rank,
+                                attempt_index,
+                            },
+                        });
+                    }
+                    attempts.push(IntegratedLayoutPhaseAttempt {
+                        candidate_key: Some(candidate_key),
+                        policy_id: Some(policy.id.clone()),
+                        placement_hint_count: hints.len(),
+                        status: IntegratedLayoutStatus::Feasible,
+                        diagnostic_code: None,
                     });
                 }
-                attempts.push(IntegratedLayoutPhaseAttempt {
-                    candidate_key: Some(candidate_key),
-                    policy_id: Some(policy.id.clone()),
-                    placement_hint_count: hints.len(),
-                    status: IntegratedLayoutStatus::Feasible,
-                    diagnostic_code: None,
-                });
+                if cancelled {
+                    break;
+                }
+                attempt_index += 1;
             }
-            if cancelled {
+            if cancelled
+                || candidate_counts.improved == improvements_before_pass
+                || restart_index >= config.same_neighborhood_restart_limit
+            {
                 break;
             }
-            attempt_index += 1;
+            restart_index += 1;
         }
-        if cancelled
-            || candidate_counts.improved == improvements_before_pass
-            || restart_index >= config.same_neighborhood_restart_limit
-        {
+        neighborhoods.push(IntegratedLayoutNeighborhoodReport {
+            rank: plan.rank,
+            free_facility_ids: plan.free_facility_ids.into_iter().collect(),
+            fixed_facility_ids: plan.fixed_facility_ids.into_iter().collect(),
+            invalidated_requirement_ids: plan.invalidated_requirement_ids.into_iter().collect(),
+            escalation_causes: plan.escalation_causes,
+            conflict_codes: conflicts[conflict_start..]
+                .iter()
+                .map(|conflict| conflict.code.clone())
+                .collect::<BTreeSet<_>>()
+                .into_iter()
+                .collect(),
+            improved: candidate_counts.improved > improvements_before_neighborhood,
+        });
+        if cancelled {
             break;
         }
-        restart_index += 1;
     }
 
     let termination_reason = if cancelled {
@@ -780,6 +866,7 @@ fn optimize_cumulative_phase(
         attempts,
         candidate_counts,
         route_changes,
+        neighborhoods,
         incumbent_extension_ms,
         placement_ms,
         routing_ms,

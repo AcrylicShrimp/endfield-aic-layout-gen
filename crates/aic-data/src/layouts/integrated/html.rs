@@ -931,6 +931,7 @@ mod tests {
                     new: 1,
                     ..RouteChangeCounts::default()
                 },
+                neighborhoods: Vec::new(),
                 elapsed_ms: PhaseElapsedMilliseconds::default(),
                 termination_reason: OptimizationTerminationReason::NeighborhoodScheduleExhausted,
                 optimality: OptimizationProofStatus::NotAttempted,

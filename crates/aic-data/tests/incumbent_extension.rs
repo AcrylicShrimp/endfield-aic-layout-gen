@@ -233,6 +233,22 @@ fn iterative_phase_uses_extension_as_an_initial_incumbent_then_searches_more_can
     assert!(grown.optimization.candidate_counts.validated >= 2);
     assert!(grown.optimization.final_incumbent.score <= initial.score);
     assert!(grown.optimization.score_delta.is_some());
+    assert_eq!(
+        grown
+            .optimization
+            .neighborhoods
+            .iter()
+            .map(|neighborhood| neighborhood.rank)
+            .collect::<Vec<_>>(),
+        vec![0, 1, 2, 3]
+    );
+    let global = grown
+        .optimization
+        .neighborhoods
+        .last()
+        .expect("growth phase should end with a global neighborhood");
+    assert_eq!(global.free_facility_ids.len(), 2);
+    assert!(global.fixed_facility_ids.is_empty());
 }
 
 #[test]

@@ -38,6 +38,7 @@ mod budget;
 mod extension;
 mod html;
 mod iterative;
+mod neighborhood;
 mod networks;
 mod optimization;
 mod report;
@@ -61,8 +62,9 @@ pub use optimization::{
 };
 pub use report::{
     CandidateCounts, FacilityChangeCounts, IncumbentProvenance, IntegratedLayoutIncumbentSummary,
-    IntegratedLayoutPhaseOptimization, LayoutScoreDelta, OptimizationProofStatus,
-    OptimizationTerminationReason, PhaseElapsedMilliseconds, RouteChangeCounts,
+    IntegratedLayoutNeighborhoodReport, IntegratedLayoutPhaseOptimization, LayoutScoreDelta,
+    OptimizationProofStatus, OptimizationTerminationReason, PhaseElapsedMilliseconds,
+    RouteChangeCounts,
 };
 pub use retained::{
     CUMULATIVE_GRAPH_KEY_SCHEMA_VERSION, CumulativeGraphFingerprint, CumulativeGraphKey,
@@ -75,7 +77,7 @@ pub use score::{CandidateRank, DeterministicCandidateKey, LayoutScore, Refinemen
 const STAGE: &str = "integrated-layout";
 const PRODUCTION_FACILITY_GAP: i64 = 1;
 const COORDINATE_ROUTING_FRAME: i64 = 1;
-pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 4;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 5;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]

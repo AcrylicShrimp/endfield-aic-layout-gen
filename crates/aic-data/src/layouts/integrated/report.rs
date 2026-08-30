@@ -34,9 +34,21 @@ pub struct IntegratedLayoutPhaseOptimization {
     pub candidate_counts: CandidateCounts,
     pub facility_changes: FacilityChangeCounts,
     pub route_changes: RouteChangeCounts,
+    pub neighborhoods: Vec<IntegratedLayoutNeighborhoodReport>,
     pub elapsed_ms: PhaseElapsedMilliseconds,
     pub termination_reason: OptimizationTerminationReason,
     pub optimality: OptimizationProofStatus,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct IntegratedLayoutNeighborhoodReport {
+    pub rank: usize,
+    pub free_facility_ids: Vec<String>,
+    pub fixed_facility_ids: Vec<String>,
+    pub invalidated_requirement_ids: Vec<String>,
+    pub escalation_causes: Vec<String>,
+    pub conflict_codes: Vec<String>,
+    pub improved: bool,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Default)]
