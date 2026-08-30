@@ -7,6 +7,10 @@ use crate::recipes::{
     RecipeThroughputReport, RecipeWiringEdge, RecipeWiringGraphNode, RecipeWiringGraphReport,
 };
 
+mod contextual;
+
+pub use contextual::build_contextual_facility_instance_wiring;
+
 const STAGE: &str = "facility-instance-wiring";
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]

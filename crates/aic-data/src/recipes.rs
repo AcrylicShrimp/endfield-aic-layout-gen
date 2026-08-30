@@ -14,14 +14,17 @@ mod validated;
 mod wiring;
 
 pub use facilities::{
+    ContextualFacilityRequirement, ContextualFacilityRequirementReport,
     FacilityRequirementDiagnostic, FacilityRequirementReport, FacilityRequirementSummary,
-    RecipeFacilityRequirement, calculate_facility_requirements,
+    RecipeFacilityRequirement, calculate_contextual_facility_requirements,
+    calculate_facility_requirements,
 };
 pub use graph::RecipeGraphError;
 pub use id::validate_target_item_id;
 pub use instances::{
     FacilityInstanceWiringDiagnostic, FacilityInstanceWiringEdge, FacilityInstanceWiringNode,
-    FacilityInstanceWiringReport, build_facility_instance_wiring,
+    FacilityInstanceWiringReport, build_contextual_facility_instance_wiring,
+    build_facility_instance_wiring,
 };
 pub use load::{LoadRecipeBookError, load_recipe_book};
 pub use model::{ItemAmount, Recipe, RecipeBook, RecipeGraph};

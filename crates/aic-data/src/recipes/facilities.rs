@@ -2,7 +2,10 @@ use std::collections::BTreeMap;
 
 use serde::Serialize;
 
-use crate::recipes::{Rate, RecipeRunRate, RecipeThroughputReport};
+use crate::recipes::{
+    ContextualRecipeRunRate, ContextualThroughputReport, Rate, RecipeRunRate,
+    RecipeThroughputReport,
+};
 
 const STAGE: &str = "recipe-facilities";
 
@@ -56,6 +59,53 @@ pub struct FacilityRequirementSummary {
     pub facility: String,
     pub required_facilities: i64,
     pub unused_capacity: Rate,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ContextualFacilityRequirementReport {
+    pub success: bool,
+    pub occurrence_requirements: Vec<ContextualFacilityRequirement>,
+    pub facility_summaries: Vec<FacilityRequirementSummary>,
+    pub diagnostics: Vec<FacilityRequirementDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ContextualFacilityRequirement {
+    pub occurrence: String,
+    pub path: String,
+    pub recipe: String,
+    pub facility: String,
+    pub work_seconds_per_second: Rate,
+    pub required_facilities: i64,
+    pub unused_capacity: Rate,
+}
+
+impl ContextualFacilityRequirementReport {
+    fn success(
+        occurrence_requirements: Vec<ContextualFacilityRequirement>,
+        facility_summaries: Vec<FacilityRequirementSummary>,
+    ) -> Self {
+        Self {
+            success: true,
+            occurrence_requirements,
+            facility_summaries,
+            diagnostics: vec![FacilityRequirementDiagnostic::info(
+                "contextual-facility-requirements-calculated",
+                "/",
+                None,
+                "contextual facility requirements were calculated",
+            )],
+        }
+    }
+
+    fn failure(diagnostic: FacilityRequirementDiagnostic) -> Self {
+        Self {
+            success: false,
+            occurrence_requirements: Vec::new(),
+            facility_summaries: Vec::new(),
+            diagnostics: vec![diagnostic],
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -129,6 +179,79 @@ pub fn calculate_facility_requirements(
     };
 
     FacilityRequirementReport::success(recipe_requirements, facility_summaries)
+}
+
+pub fn calculate_contextual_facility_requirements(
+    throughput: &ContextualThroughputReport,
+) -> ContextualFacilityRequirementReport {
+    if !throughput.success {
+        return ContextualFacilityRequirementReport::failure(FacilityRequirementDiagnostic::error(
+            "upstream-contextual-throughput-failed",
+            "/",
+            None,
+            "contextual facility requirements require successful contextual throughput",
+        ));
+    }
+
+    let mut occurrence_requirements = Vec::with_capacity(throughput.recipe_rates.len());
+    for recipe_rate in &throughput.recipe_rates {
+        let requirement = match contextual_requirement_from_recipe_rate(recipe_rate) {
+            Ok(requirement) => requirement,
+            Err(diagnostic) => {
+                return ContextualFacilityRequirementReport::failure(diagnostic);
+            }
+        };
+        occurrence_requirements.push(requirement);
+    }
+
+    let facility_summaries = match summarize_contextual_by_facility(&occurrence_requirements) {
+        Ok(summaries) => summaries,
+        Err(diagnostic) => return ContextualFacilityRequirementReport::failure(diagnostic),
+    };
+
+    ContextualFacilityRequirementReport::success(occurrence_requirements, facility_summaries)
+}
+
+fn contextual_requirement_from_recipe_rate(
+    recipe_rate: &ContextualRecipeRunRate,
+) -> Result<ContextualFacilityRequirement, FacilityRequirementDiagnostic> {
+    let required_facilities = ceil_rate(recipe_rate.work_seconds_per_second)?;
+    let unused_capacity =
+        unused_capacity(required_facilities, recipe_rate.work_seconds_per_second)?;
+
+    Ok(ContextualFacilityRequirement {
+        occurrence: recipe_rate.occurrence.clone(),
+        path: recipe_rate.path.clone(),
+        recipe: recipe_rate.recipe.clone(),
+        facility: recipe_rate.facility.clone(),
+        work_seconds_per_second: recipe_rate.work_seconds_per_second,
+        required_facilities,
+        unused_capacity,
+    })
+}
+
+fn summarize_contextual_by_facility(
+    requirements: &[ContextualFacilityRequirement],
+) -> Result<Vec<FacilityRequirementSummary>, FacilityRequirementDiagnostic> {
+    let mut summaries = BTreeMap::<String, FacilityRequirementSummary>::new();
+    for requirement in requirements {
+        let summary = summaries
+            .entry(requirement.facility.clone())
+            .or_insert_with(|| FacilityRequirementSummary {
+                facility: requirement.facility.clone(),
+                required_facilities: 0,
+                unused_capacity: Rate::zero(),
+            });
+        summary.required_facilities = summary
+            .required_facilities
+            .checked_add(requirement.required_facilities)
+            .ok_or_else(arithmetic_overflow)?;
+        summary.unused_capacity = summary
+            .unused_capacity
+            .checked_add(requirement.unused_capacity)
+            .map_err(map_throughput_arithmetic)?;
+    }
+    Ok(summaries.into_values().collect())
 }
 
 fn requirement_from_recipe_rate(
