@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::ControlFlow;
+use std::time::Duration;
 
 use pumpkin_solver::Solver;
 use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
@@ -7,7 +8,7 @@ use pumpkin_solver::core::DefaultBrancher;
 use pumpkin_solver::core::optimisation::OptimisationDirection;
 use pumpkin_solver::core::optimisation::linear_sat_unsat::LinearSatUnsat;
 use pumpkin_solver::core::results::{OptimisationResult, ProblemSolution, SolutionReference};
-use pumpkin_solver::core::termination::Indefinite;
+use pumpkin_solver::core::termination::TimeBudget;
 use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 use serde::Serialize;
 
@@ -85,7 +86,7 @@ pub struct IntegratedLayoutDiagnostic {
 }
 
 impl IntegratedLayoutDiagnostic {
-    fn error(
+    pub fn error(
         code: &'static str,
         path: impl Into<String>,
         entity: Option<String>,
@@ -114,6 +115,10 @@ impl IntegratedLayoutDiagnostic {
 }
 
 impl IntegratedLayoutReport {
+    pub fn invalid(diagnostic: IntegratedLayoutDiagnostic) -> Self {
+        Self::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
+    }
+
     fn failure(status: IntegratedLayoutStatus, diagnostic: IntegratedLayoutDiagnostic) -> Self {
         Self {
             success: false,
@@ -132,8 +137,40 @@ pub fn solve_integrated_layout(
     items: &ValidatedItemCatalog,
     request: &FacilityPlacementRequest,
 ) -> IntegratedLayoutReport {
+    solve_integrated_layout_with_optional_time_limit(
+        instance_wiring,
+        facilities,
+        items,
+        request,
+        None,
+    )
+}
+
+pub fn solve_integrated_layout_with_time_limit(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    request: &FacilityPlacementRequest,
+    time_limit: Duration,
+) -> IntegratedLayoutReport {
+    solve_integrated_layout_with_optional_time_limit(
+        instance_wiring,
+        facilities,
+        items,
+        request,
+        Some(time_limit),
+    )
+}
+
+fn solve_integrated_layout_with_optional_time_limit(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    request: &FacilityPlacementRequest,
+    time_limit: Option<Duration>,
+) -> IntegratedLayoutReport {
     match prepare_model(instance_wiring, facilities, items, request) {
-        Ok(input) => solve(input),
+        Ok(input) => solve(input, time_limit),
         Err(diagnostic) => {
             IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
         }
@@ -497,7 +534,7 @@ struct ModelRoute {
     arcs: Vec<Arc>,
 }
 
-fn solve(mut input: ModelInput) -> IntegratedLayoutReport {
+fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> IntegratedLayoutReport {
     let mut solver = Solver::default();
     let tag = solver.new_constraint_tag();
     let cell_count = (input.width as usize) * (input.height as usize);
@@ -598,24 +635,14 @@ fn solve(mut input: ModelInput) -> IntegratedLayoutReport {
             post_at_most_one(&mut solver, incoming[cell].iter().copied(), tag);
             post_at_most_one(&mut solver, outgoing[cell].iter().copied(), tag);
 
-            let mut distinct_endpoints = Vec::new();
-            distinct_endpoints.extend(
+            post_at_most_one(
+                &mut solver,
                 source_by_cell[cell]
                     .iter()
-                    .map(|variable| variable.scaled(1)),
+                    .chain(target_by_cell[cell].iter())
+                    .copied(),
+                tag,
             );
-            distinct_endpoints.extend(
-                target_by_cell[cell]
-                    .iter()
-                    .map(|variable| variable.scaled(1)),
-            );
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(
-                    distinct_endpoints,
-                    1,
-                    tag,
-                ))
-                .post();
 
             let mut route_definition = vec![route_cell.scaled(1)];
             route_definition.extend(outgoing[cell].iter().map(|variable| variable.scaled(-1)));
@@ -672,9 +699,10 @@ fn solve(mut input: ModelInput) -> IntegratedLayoutReport {
                     _: &DefaultBrancher,
                     _: &ResolutionResolver|
      -> ControlFlow<()> { ControlFlow::Continue(()) };
+    let mut termination = time_limit.map(TimeBudget::starting_now);
     let result = solver.optimise(
         &mut brancher,
-        &mut Indefinite,
+        &mut termination,
         &mut resolver,
         LinearSatUnsat::new(OptimisationDirection::Minimise, route_length, callback),
     );
@@ -1305,6 +1333,50 @@ mod tests {
         ));
         assert_eq!(report.routes[0].cells.len(), 2);
         assert_eq!(report.placements.len(), 2);
+    }
+
+    #[test]
+    fn handles_grid_cells_without_endpoint_candidates() {
+        let facilities = ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
+            schema_version: 3,
+            facilities: vec![
+                facility(
+                    "source-machine",
+                    "output",
+                    FacilityPortDirection::Output,
+                    FacilityPortEdge::East,
+                ),
+                facility(
+                    "target-machine",
+                    "input",
+                    FacilityPortDirection::Input,
+                    FacilityPortEdge::East,
+                ),
+            ],
+        })
+        .expect("facility catalog should validate");
+        let items = ValidatedItemCatalog::try_from_catalog(ItemCatalog {
+            schema_version: SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+            items: vec![ItemDefinition {
+                id: "part".to_string(),
+                transport: TransportKind::Belt,
+            }],
+        })
+        .expect("item catalog should validate");
+
+        let report = solve_integrated_layout(
+            &wiring(),
+            &facilities,
+            &items,
+            &FacilityPlacementRequest {
+                schema_version: 2,
+                max_width: 4,
+                max_height: 2,
+            },
+        );
+
+        assert!(report.success, "{:#?}", report.diagnostics);
+        assert_eq!(report.routes.len(), 1);
     }
 
     #[test]

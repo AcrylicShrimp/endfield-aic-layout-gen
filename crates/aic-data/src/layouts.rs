@@ -3,8 +3,9 @@ mod placement;
 mod ports;
 
 pub use integrated::{
-    IntegratedLayoutDiagnostic, IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRoute,
-    IntegratedRouteEndpoint, solve_integrated_layout,
+    BoundarySide, IntegratedLayoutDiagnostic, IntegratedLayoutReport, IntegratedLayoutStatus,
+    IntegratedRoute, IntegratedRouteEndpoint, solve_integrated_layout,
+    solve_integrated_layout_with_time_limit,
 };
 
 pub use placement::{
