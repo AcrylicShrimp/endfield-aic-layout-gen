@@ -39,6 +39,7 @@ mod iterative;
 mod networks;
 mod optimization;
 mod report;
+mod retained;
 mod score;
 mod sparse;
 mod witness;
@@ -56,12 +57,17 @@ pub use report::{
     IntegratedLayoutPhaseOptimization, LayoutScoreDelta, OptimizationProofStatus,
     OptimizationTerminationReason, PhaseElapsedMilliseconds, RouteChangeCounts,
 };
+pub use retained::{
+    CUMULATIVE_GRAPH_KEY_SCHEMA_VERSION, CumulativeGraphFingerprint, CumulativeGraphKey,
+    EndpointPortSelection, FacilityGraphRecord, GridCellKey, RequirementGraphRecord,
+    RetainedComponent, RetainedOccupant, RetainedRoutingState, SelectedPortAssignment,
+};
 pub use score::{CandidateRank, DeterministicCandidateKey, LayoutScore, RefinementKind};
 
 const STAGE: &str = "integrated-layout";
 const PRODUCTION_FACILITY_GAP: i64 = 1;
 const COORDINATE_ROUTING_FRAME: i64 = 1;
-pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 2;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 3;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -2221,6 +2227,37 @@ mod tests {
         let error = witness::validate(&input, &components, &mismatched)
             .expect_err("mismatched requirement fingerprints must fail");
         assert_eq!(error.path, "/routes/0/requirement_fingerprint");
+    }
+
+    #[test]
+    fn builds_collision_checked_retained_state_from_a_valid_witness() {
+        let (facilities, items, transports) = catalogs();
+        let components = logistics_component_catalog();
+        let wiring = wiring();
+        let request = FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 4,
+            max_height: 1,
+        };
+        let input = prepare_model(&wiring, &facilities, &items, &transports, &request)
+            .expect("fixture model should prepare");
+        let report = solve_integrated_layout(&wiring, &facilities, &items, &transports, &request);
+        witness::validate(&input, &components, &report).expect("fixture witness should validate");
+
+        let state = retained::RetainedRoutingState::from_validated_report(&input, &report)
+            .expect("valid witness should produce retained state");
+        assert_eq!(state.retained_routes.len(), 1);
+        assert_eq!(state.selected_ports.len(), 1);
+        assert!(state.invalidated_requirement_ids.is_empty());
+        assert_eq!(state.graph_fingerprint.sha256_hex.len(), 64);
+        assert_eq!(
+            state
+                .occupied_cells_by_transport
+                .get(&TransportKind::Belt)
+                .expect("belt occupancy should exist")
+                .len(),
+            1
+        );
     }
 
     #[test]

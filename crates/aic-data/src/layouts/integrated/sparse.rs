@@ -83,13 +83,7 @@ fn construct_with_deadline(
                             "sparse-integrated-layout-feasible",
                             "sparse construction produced a feasible placement and routing witness; optimality is not proven",
                         );
-                        return match super::witness::validate(&input, components, &report) {
-                            Ok(()) => report,
-                            Err(diagnostic) => IntegratedLayoutReport::failure(
-                                IntegratedLayoutStatus::Unknown,
-                                diagnostic,
-                            ),
-                        };
+                        return validate_success_report(&input, components, report);
                     }
                     Err(failure) => {
                         if best_routing_failure
@@ -196,13 +190,7 @@ pub(super) fn construct_from_placements(
                         "coordinate-integrated-layout-feasible",
                         "coordinate CP placement and sparse routing produced a validated feasible witness; optimality is not proven",
                     );
-                    return match super::witness::validate(&input, components, &report) {
-                        Ok(()) => report,
-                        Err(diagnostic) => IntegratedLayoutReport::failure(
-                            IntegratedLayoutStatus::Unknown,
-                            diagnostic,
-                        ),
-                    };
+                    return validate_success_report(&input, components, report);
                 }
                 Err(failure) => {
                     if best_routing_failure
@@ -886,8 +874,22 @@ fn success_report(
                 .component_by_kind(transport, LogisticsComponentKind::Bridge)
                 .expect("validated catalog has every transport bridge capability");
             let position = world_position(cell, input.width);
+            let owners = routes
+                .iter()
+                .filter(|route| {
+                    route.transport == transport
+                        && route.cells.iter().any(|route_cell| route_cell == &position)
+                })
+                .map(|route| route.requirement_id.clone())
+                .collect::<BTreeSet<_>>();
             PlacedLogisticsComponent {
-                id: format!("bridge:{transport:?}:{}:{}", position.x, position.y).to_lowercase(),
+                id: super::retained::logistics_component_id(
+                    LogisticsComponentKind::Bridge,
+                    transport,
+                    position.x,
+                    position.y,
+                    &owners,
+                ),
                 component: definition.id.clone(),
                 kind: definition.kind,
                 transport,
@@ -911,6 +913,22 @@ fn success_report(
         )],
     };
     super::canonicalize_report_geometry(&mut report);
+    report
+}
+
+fn validate_success_report(
+    input: &ModelInput,
+    components: &ValidatedLogisticsComponentCatalog,
+    report: IntegratedLayoutReport,
+) -> IntegratedLayoutReport {
+    if let Err(diagnostic) = super::witness::validate(input, components, &report) {
+        return IntegratedLayoutReport::failure(IntegratedLayoutStatus::Unknown, diagnostic);
+    }
+    if let Err(diagnostic) =
+        super::retained::RetainedRoutingState::from_validated_report(input, &report)
+    {
+        return IntegratedLayoutReport::failure(IntegratedLayoutStatus::Unknown, diagnostic);
+    }
     report
 }
 
