@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "target": {
+    "item": "originium-powder",
+    "quantity": 1,
+    "duration_ms": 2000
+  },
+  "source_selections": []
+}

@@ -5,6 +5,7 @@ mod index;
 mod instances;
 mod load;
 mod model;
+mod production_graph;
 mod selection;
 mod source_plan;
 mod throughput;
@@ -24,6 +25,10 @@ pub use instances::{
 };
 pub use load::{LoadRecipeBookError, load_recipe_book};
 pub use model::{ItemAmount, Recipe, RecipeBook, RecipeGraph};
+pub use production_graph::{
+    ContextualProductionEdge, ContextualProductionFlowKind, ContextualProductionGraphDiagnostic,
+    ContextualProductionGraphReport, ContextualProductionNode, build_contextual_production_graph,
+};
 pub use selection::{
     RecipeSelectionCheckReport, RecipeSelectionCheckStatus, RecipeSelectionDiagnostic,
     check_recipe_selections,
