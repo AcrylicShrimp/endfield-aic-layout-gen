@@ -1,5 +1,11 @@
+mod integrated;
 mod placement;
 mod ports;
+
+pub use integrated::{
+    IntegratedLayoutDiagnostic, IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRoute,
+    IntegratedRouteEndpoint, solve_integrated_layout,
+};
 
 pub use placement::{
     FacilityPlacement, FacilityPlacementBounds, FacilityPlacementDiagnostic,
