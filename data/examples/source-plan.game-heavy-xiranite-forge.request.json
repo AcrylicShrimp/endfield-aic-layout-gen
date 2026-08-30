@@ -26,6 +26,58 @@
         "kind": "recipe",
         "recipe": "xiranite-oven-xiranite-powder-1"
       }
+    },
+    {
+      "path": "/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-sewage",
+      "source": {
+        "kind": "external-input"
+      }
+    },
+    {
+      "path": "/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite",
+      "source": {
+        "kind": "recipe",
+        "recipe": "pool-liquid-liquid-xiranite-1"
+      }
+    },
+    {
+      "path": "/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder",
+      "source": {
+        "kind": "recipe",
+        "recipe": "furnance-carbon-enr-powder-2"
+      }
+    },
+    {
+      "path": "/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-liquid-water",
+      "source": {
+        "kind": "external-input"
+      }
+    },
+    {
+      "path": "/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-liquid-water",
+      "source": {
+        "kind": "external-input"
+      }
+    },
+    {
+      "path": "/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder",
+      "source": {
+        "kind": "recipe",
+        "recipe": "xiranite-oven-xiranite-powder-1"
+      }
+    },
+    {
+      "path": "/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder",
+      "source": {
+        "kind": "recipe",
+        "recipe": "furnance-carbon-enr-powder-2"
+      }
+    },
+    {
+      "path": "/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-liquid-water",
+      "source": {
+        "kind": "external-input"
+      }
     }
   ]
 }
