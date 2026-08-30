@@ -14,8 +14,9 @@ pub use integrated::{
     INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic, IntegratedLayoutPhase,
     IntegratedLayoutReport, IntegratedLayoutStatus, PlacedLogisticsComponent, TransportNetwork,
     TransportNetworkEndpoint, TransportNetworkSegment, TransportNetworkTerminal,
-    render_integrated_layout_html, render_integrated_layout_html_with_localization,
-    solve_integrated_layout, solve_integrated_layout_with_time_limit,
+    analyze_integrated_layout_search_space, render_integrated_layout_html,
+    render_integrated_layout_html_with_localization, solve_integrated_layout,
+    solve_integrated_layout_with_time_limit,
 };
 
 pub use placement::{

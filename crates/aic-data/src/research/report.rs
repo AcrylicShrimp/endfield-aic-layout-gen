@@ -17,6 +17,14 @@ pub struct SearchSpaceAnalysisReport {
     pub diagnostics: Vec<AnalysisDiagnostic>,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct StaticSearchSpaceAnalysis {
+    pub ir: IrComplexityMetrics,
+    pub model_estimate: ModelComplexityMetrics,
+    pub diagnostics: Vec<AnalysisDiagnostic>,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct WorkloadIdentity {
@@ -74,8 +82,8 @@ pub struct IrComplexityMetrics {
     pub rotations_per_facility: CountDistribution,
     pub placement_candidates_per_facility: CountDistribution,
     pub placement_log2_volume: f64,
-    pub compatible_ports_per_endpoint: CountDistribution,
-    pub endpoint_options_per_terminal: CountDistribution,
+    pub compatible_ports_per_facility_endpoint: CountDistribution,
+    pub endpoint_options_per_facility_endpoint: CountDistribution,
     pub endpoint_log2_volume: f64,
     pub logical_wiring_edges: u64,
     pub capacity_split_lanes: u64,
@@ -112,8 +120,8 @@ pub struct GraphStructureMetrics {
     pub maximum_degree: u64,
     pub p95_degree: u64,
     pub density: f64,
-    pub articulation_points: u64,
-    pub biconnected_blocks: u64,
+    pub articulation_points: Option<u64>,
+    pub biconnected_blocks: Option<u64>,
     pub scc_count: u64,
     pub cyclic_scc_count: u64,
     pub maximum_scc_size: u64,
@@ -121,7 +129,7 @@ pub struct GraphStructureMetrics {
     pub maximum_condensation_width: u64,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct PhaseGrowthMetrics {
     pub phase_index: u64,
@@ -132,29 +140,59 @@ pub struct PhaseGrowthMetrics {
     pub cumulative_networks: u64,
     pub introduced_terminals: u64,
     pub cumulative_terminals: u64,
-    pub frontier_cut_lanes: u64,
+    pub frontier_cut_logical_edges: u64,
     pub frontier_cut_networks: u64,
+    pub formulation: PhaseFormulationEstimate,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[serde(deny_unknown_fields)]
+pub struct PhaseFormulationEstimate {
+    pub coverage: MetricCoverage,
+    pub grid_cells: u64,
+    pub placement_variables: u64,
+    pub endpoint_variables: u64,
+    pub route_cell_variables: u64,
+    pub route_arc_variables: u64,
+    pub flow_variables: u64,
+    pub route_order_variables: u64,
+    pub terminal_presence_and_arm_variables: u64,
+    pub branch_component_variables: u64,
+    pub bridge_variables: u64,
+    pub bridge_rotation_variables: u64,
+    pub crossing_owner_variables: u64,
+    pub covered_variable_lower_bound: u64,
+    pub covered_log2_domain_volume: f64,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ModelComplexityMetrics {
     pub variables: VariableDomainMetrics,
-    pub constraints: ConstraintSummaryMetrics,
-    pub factor_graph: FactorGraphMetrics,
-    pub coupling: CouplingMetrics,
-    pub symmetry: SymmetryMetrics,
+    pub constraints: Option<ConstraintSummaryMetrics>,
+    pub factor_graph: Option<FactorGraphMetrics>,
+    pub coupling: Option<CouplingMetrics>,
+    pub symmetry: Option<SymmetryMetrics>,
     pub estimated_bytes: Option<u64>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct VariableDomainMetrics {
+    pub coverage: MetricCoverage,
     pub total_variables: u64,
     pub boolean_variables: u64,
     pub integer_variables: u64,
     pub log2_domain_volume: f64,
     pub by_family: Vec<VariableFamilyMetrics>,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum MetricCoverage {
+    Complete,
+    PartialLowerBound,
+    Unavailable,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]

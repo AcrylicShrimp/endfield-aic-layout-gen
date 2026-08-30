@@ -178,7 +178,7 @@ pub(in crate::layouts::integrated) fn solve_iterative_scc(
     report
 }
 
-fn project_cumulative_wiring(
+pub(in crate::layouts::integrated) fn project_cumulative_wiring(
     wiring: &FacilityInstanceWiringReport,
     cumulative_facilities: &BTreeSet<String>,
     total_facilities: usize,

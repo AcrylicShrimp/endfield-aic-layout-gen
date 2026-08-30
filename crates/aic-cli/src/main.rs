@@ -38,10 +38,13 @@ use aic_data::recipes::{
     localize_recipe_source_check_report, validate_recipe_book, validate_target_item_id,
     validate_throughput_request,
 };
-use aic_data::research::{load_benchmark_workload_manifest, validate_benchmark_workload_manifest};
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
 use serde::Serialize;
+
+mod research;
+
+use research::ResearchCommand;
 
 #[derive(Debug, Parser)]
 #[command(
@@ -381,16 +384,6 @@ enum RecipesCommand {
     },
 }
 
-#[derive(Debug, Subcommand)]
-enum ResearchCommand {
-    /// Validate a benchmark workload identity without building a solver model.
-    ValidateWorkload {
-        /// Benchmark workload manifest JSON file to validate.
-        #[arg(long, short, value_name = "FILE")]
-        file: PathBuf,
-    },
-}
-
 fn main() -> ExitCode {
     match run() {
         Ok(CommandStatus::Success) => ExitCode::SUCCESS,
@@ -538,23 +531,13 @@ fn run() -> Result<CommandStatus> {
                 instance_wiring_recipes(file, request)
             }
         },
-        Command::Research { command } => match command {
-            ResearchCommand::ValidateWorkload { file } => validate_research_workload(file),
-        },
-    }
-}
-
-fn validate_research_workload(file: PathBuf) -> Result<CommandStatus> {
-    let manifest = load_benchmark_workload_manifest(&file)?;
-    let report = validate_benchmark_workload_manifest(&manifest);
-    let valid = report.valid;
-    serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
-        .context("failed to write benchmark workload validation report")?;
-    println!();
-    if valid {
-        Ok(CommandStatus::Success)
-    } else {
-        Ok(CommandStatus::Failure)
+        Command::Research { command } => research::run(command).map(|success| {
+            if success {
+                CommandStatus::Success
+            } else {
+                CommandStatus::Failure
+            }
+        }),
     }
 }
 
@@ -1693,5 +1676,38 @@ mod tests {
             panic!("expected research workload validation command")
         };
         assert_eq!(file, PathBuf::from("workload.json"));
+    }
+
+    #[test]
+    fn parses_static_research_analysis_without_a_solver_budget() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "analyze-workload",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--output",
+            "report.json",
+        ])
+        .expect("static research analysis CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::AnalyzeWorkload {
+                    workload,
+                    workspace_root,
+                    placement_request,
+                    output,
+                },
+        } = cli.command
+        else {
+            panic!("expected static research analysis command")
+        };
+        assert_eq!(workload, PathBuf::from("workload.json"));
+        assert_eq!(workspace_root, PathBuf::from("."));
+        assert_eq!(placement_request, PathBuf::from("bounds.json"));
+        assert_eq!(output, Some(PathBuf::from("report.json")));
     }
 }

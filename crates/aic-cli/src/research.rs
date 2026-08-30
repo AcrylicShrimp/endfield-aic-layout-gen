@@ -1,0 +1,315 @@
+use std::{
+    io::Write,
+    path::{Path, PathBuf},
+};
+
+use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
+use aic_data::layouts::{FacilityPlacementRequest, analyze_integrated_layout_search_space};
+use aic_data::logistics::{
+    ValidatedItemCatalog, ValidatedLogisticsComponentCatalog, ValidatedTransportCatalog,
+    load_item_catalog, load_logistics_component_catalog, load_transport_catalog,
+};
+use aic_data::recipes::{
+    RecipeSourcePlanRequest, ValidatedRecipeBook, build_contextual_facility_instance_wiring,
+    calculate_contextual_facility_requirements, load_recipe_book,
+};
+use aic_data::research::{
+    AnalysisInputFileIdentity, AnalysisInputRole, BenchmarkRequestBounds, BenchmarkWorkloadInputs,
+    FormulationIdentity, SEARCH_SPACE_ANALYSIS_SCHEMA_VERSION, SearchSpaceAnalysisReport,
+    ValidatedBenchmarkWorkloadManifest, WorkloadIdentity, load_benchmark_workload_manifest,
+    validate_benchmark_workload_manifest,
+};
+use anyhow::{Context, Result, ensure};
+use clap::Subcommand;
+use sha2::{Digest, Sha256};
+
+#[derive(Debug, Subcommand)]
+pub(crate) enum ResearchCommand {
+    /// Validate a benchmark workload identity without building a solver model.
+    ValidateWorkload {
+        /// Benchmark workload manifest JSON file to validate.
+        #[arg(long, short, value_name = "FILE")]
+        file: PathBuf,
+    },
+    /// Estimate search-space growth without constructing a Pumpkin model.
+    AnalyzeWorkload {
+        /// Benchmark workload manifest JSON file to analyze.
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+
+        /// Root used to resolve portable input paths in the workload manifest.
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Optional JSON artifact path. The full report is always written to stdout.
+        #[arg(long, value_name = "FILE")]
+        output: Option<PathBuf>,
+    },
+}
+
+pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
+    match command {
+        ResearchCommand::ValidateWorkload { file } => validate_workload(file),
+        ResearchCommand::AnalyzeWorkload {
+            workload,
+            workspace_root,
+            placement_request,
+            output,
+        } => analyze_workload(workload, workspace_root, placement_request, output),
+    }
+}
+
+fn validate_workload(file: PathBuf) -> Result<bool> {
+    let manifest = load_benchmark_workload_manifest(&file)?;
+    let report = validate_benchmark_workload_manifest(&manifest);
+    serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+        .context("failed to write benchmark workload validation report")?;
+    println!();
+    Ok(report.valid)
+}
+
+struct ResolvedWorkloadPaths {
+    recipes: PathBuf,
+    source_plan: PathBuf,
+    facility_catalog: PathBuf,
+    item_catalog: PathBuf,
+    transport_catalog: PathBuf,
+    logistics_component_catalog: PathBuf,
+    localization_catalog: Option<PathBuf>,
+}
+
+fn analyze_workload(
+    workload_path: PathBuf,
+    workspace_root: PathBuf,
+    placement_request_path: PathBuf,
+    output: Option<PathBuf>,
+) -> Result<bool> {
+    let manifest = load_benchmark_workload_manifest(&workload_path)?;
+    let validated = match ValidatedBenchmarkWorkloadManifest::try_from_manifest(manifest) {
+        Ok(validated) => validated,
+        Err(report) => {
+            serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+                .context("failed to write benchmark workload validation report")?;
+            println!();
+            return Ok(false);
+        }
+    };
+    let manifest = validated.manifest();
+    let paths = resolve_workload_paths(&workspace_root, &manifest.inputs);
+    let (book, source_plan) = load_contextual_recipe_request(&paths.recipes, &paths.source_plan)?;
+    ensure!(
+        source_plan.target.item == manifest.expected_target.item
+            && source_plan.target.quantity == manifest.expected_target.quantity
+            && source_plan.target.duration_ms == manifest.expected_target.duration_ms,
+        "benchmark workload '{}' expected target does not match source plan '{}'",
+        manifest.id,
+        paths.source_plan.display()
+    );
+    let throughput = book.calculate_contextual_throughput(&source_plan);
+    ensure!(throughput.success, "benchmark contextual throughput failed");
+    let requirements = calculate_contextual_facility_requirements(&throughput);
+    ensure!(
+        requirements.success,
+        "benchmark facility requirements failed"
+    );
+    let wiring = build_contextual_facility_instance_wiring(&throughput, &requirements);
+    ensure!(wiring.success, "benchmark facility instance wiring failed");
+
+    let facilities =
+        ValidatedFacilityCatalog::try_from_catalog(load_facility_catalog(&paths.facility_catalog)?)
+            .map_err(|report| anyhow::anyhow!("facility catalog validation failed: {report:?}"))?;
+    let items = ValidatedItemCatalog::try_from_catalog(load_item_catalog(&paths.item_catalog)?)
+        .map_err(|report| anyhow::anyhow!("item catalog validation failed: {report:?}"))?;
+    let transports = ValidatedTransportCatalog::try_from_catalog(load_transport_catalog(
+        &paths.transport_catalog,
+    )?)
+    .map_err(|report| anyhow::anyhow!("transport catalog validation failed: {report:?}"))?;
+    let components = ValidatedLogisticsComponentCatalog::try_from_catalog(
+        load_logistics_component_catalog(&paths.logistics_component_catalog)?,
+    )
+    .map_err(|report| anyhow::anyhow!("logistics component validation failed: {report:?}"))?;
+    let placement_request_path = workspace_root.join(placement_request_path);
+    let placement_request_json =
+        std::fs::read_to_string(&placement_request_path).with_context(|| {
+            format!(
+                "failed to read research placement request '{}'",
+                placement_request_path.display()
+            )
+        })?;
+    let placement_request = serde_json::from_str::<FacilityPlacementRequest>(
+        &placement_request_json,
+    )
+    .with_context(|| {
+        format!(
+            "failed to parse research placement request '{}'",
+            placement_request_path.display()
+        )
+    })?;
+    let static_analysis = analyze_integrated_layout_search_space(
+        &wiring,
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &placement_request,
+    )
+    .map_err(|diagnostic| {
+        anyhow::anyhow!(
+            "search-space analysis failed with {}: {}",
+            diagnostic.code,
+            diagnostic.message
+        )
+    })?;
+
+    let mut input_identities = input_identities(&paths)?;
+    input_identities.push(AnalysisInputFileIdentity {
+        role: AnalysisInputRole::PlacementRequest,
+        path: placement_request_path.display().to_string(),
+        sha256: file_sha256(&placement_request_path)?,
+    });
+    let report = SearchSpaceAnalysisReport {
+        schema_version: SEARCH_SPACE_ANALYSIS_SCHEMA_VERSION,
+        workload: WorkloadIdentity {
+            workload_id: manifest.id.clone(),
+            manifest_sha256: validated.manifest_sha256().to_string(),
+            inputs: input_identities,
+        },
+        formulation: FormulationIdentity {
+            formulation: "joint-lexicographic-layout-v4".to_string(),
+            solver: "pumpkin".to_string(),
+            solver_version: "0.5".to_string(),
+            source_revision: None,
+            configuration_sha256: text_sha256(
+                "joint-lexicographic-layout-v4:iterative-scc-one-ready",
+            ),
+        },
+        request_bounds: BenchmarkRequestBounds {
+            max_width: u32::try_from(placement_request.max_width)
+                .context("research max_width does not fit report domain")?,
+            max_height: u32::try_from(placement_request.max_height)
+                .context("research max_height does not fit report domain")?,
+        },
+        ir: static_analysis.ir,
+        model_estimate: static_analysis.model_estimate,
+        model_actual: None,
+        estimate_error: None,
+        diagnostics: static_analysis.diagnostics,
+    };
+    let encoded = serde_json::to_vec_pretty(&report)
+        .context("failed to serialize search-space analysis report")?;
+    if let Some(output) = output {
+        if let Some(parent) = output
+            .parent()
+            .filter(|parent| !parent.as_os_str().is_empty())
+        {
+            std::fs::create_dir_all(parent).with_context(|| {
+                format!(
+                    "failed to create analysis output directory '{}'",
+                    parent.display()
+                )
+            })?;
+        }
+        std::fs::write(&output, &encoded)
+            .with_context(|| format!("failed to write analysis report '{}'", output.display()))?;
+    }
+    std::io::stdout()
+        .lock()
+        .write_all(&encoded)
+        .context("failed to write search-space analysis report")?;
+    println!();
+    Ok(true)
+}
+
+fn load_contextual_recipe_request(
+    recipes: &Path,
+    source_plan: &Path,
+) -> Result<(ValidatedRecipeBook, RecipeSourcePlanRequest)> {
+    let recipe_book = load_recipe_book(recipes)?;
+    let book = ValidatedRecipeBook::try_from_recipe_book(recipe_book)
+        .map_err(|report| anyhow::anyhow!("recipe validation failed: {report:?}"))?;
+    let source_plan_json = std::fs::read_to_string(source_plan).with_context(|| {
+        format!(
+            "failed to read recipe source-plan request '{}'",
+            source_plan.display()
+        )
+    })?;
+    let source_plan = serde_json::from_str(&source_plan_json).with_context(|| {
+        format!(
+            "failed to parse recipe source-plan request '{}'",
+            source_plan.display()
+        )
+    })?;
+    Ok((book, source_plan))
+}
+
+fn resolve_workload_paths(
+    workspace_root: &Path,
+    inputs: &BenchmarkWorkloadInputs,
+) -> ResolvedWorkloadPaths {
+    ResolvedWorkloadPaths {
+        recipes: workspace_root.join(&inputs.recipes),
+        source_plan: workspace_root.join(&inputs.source_plan),
+        facility_catalog: workspace_root.join(&inputs.facility_catalog),
+        item_catalog: workspace_root.join(&inputs.item_catalog),
+        transport_catalog: workspace_root.join(&inputs.transport_catalog),
+        logistics_component_catalog: workspace_root.join(&inputs.logistics_component_catalog),
+        localization_catalog: inputs
+            .localization_catalog
+            .as_ref()
+            .map(|path| workspace_root.join(path)),
+    }
+}
+
+fn input_identities(paths: &ResolvedWorkloadPaths) -> Result<Vec<AnalysisInputFileIdentity>> {
+    let mut inputs = vec![
+        input_identity(AnalysisInputRole::Recipes, &paths.recipes)?,
+        input_identity(AnalysisInputRole::SourcePlan, &paths.source_plan)?,
+        input_identity(AnalysisInputRole::FacilityCatalog, &paths.facility_catalog)?,
+        input_identity(AnalysisInputRole::ItemCatalog, &paths.item_catalog)?,
+        input_identity(
+            AnalysisInputRole::TransportCatalog,
+            &paths.transport_catalog,
+        )?,
+        input_identity(
+            AnalysisInputRole::LogisticsComponentCatalog,
+            &paths.logistics_component_catalog,
+        )?,
+    ];
+    if let Some(localization) = &paths.localization_catalog {
+        inputs.push(input_identity(
+            AnalysisInputRole::LocalizationCatalog,
+            localization,
+        )?);
+    }
+    Ok(inputs)
+}
+
+fn input_identity(role: AnalysisInputRole, path: &Path) -> Result<AnalysisInputFileIdentity> {
+    Ok(AnalysisInputFileIdentity {
+        role,
+        path: path.display().to_string(),
+        sha256: file_sha256(path)?,
+    })
+}
+
+fn file_sha256(path: &Path) -> Result<String> {
+    let bytes = std::fs::read(path)
+        .with_context(|| format!("failed to hash research input '{}'", path.display()))?;
+    Ok(hex_sha256(Sha256::digest(bytes)))
+}
+
+fn text_sha256(value: &str) -> String {
+    hex_sha256(Sha256::digest(value.as_bytes()))
+}
+
+fn hex_sha256(digest: impl AsRef<[u8]>) -> String {
+    digest
+        .as_ref()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}

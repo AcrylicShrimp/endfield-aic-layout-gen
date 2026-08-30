@@ -10,6 +10,7 @@ use crate::recipes::FacilityInstanceWiringReport;
 
 use super::WorldGridPosition;
 
+mod analysis;
 mod exact;
 mod geometry;
 mod harness;
@@ -21,6 +22,7 @@ mod report;
 mod score;
 mod witness;
 
+pub use analysis::analyze_integrated_layout_search_space;
 use geometry::{candidate_port_connections, grid_index, world_position};
 pub use html::{render_integrated_layout_html, render_integrated_layout_html_with_localization};
 use model::{
