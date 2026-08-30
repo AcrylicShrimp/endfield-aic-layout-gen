@@ -8,8 +8,10 @@ This directory stores normalized diagnostic measurements, not generated layouts 
 
 The Heavy Xiranite research checkpoints are documented in
 `heavy-xiranite-minimum-rate.first-search-space-report.md` and
-`heavy-xiranite-minimum-rate.second-model-structure-report.md`. Their 50 by 50 bounds are diagnostic
-request ceilings only, not project defaults or canonical game limits.
+`heavy-xiranite-minimum-rate.second-model-structure-report.md`. The third checkpoint,
+`heavy-xiranite-minimum-rate.third-bound-sensitivity-report.md`, compares the same exact first SCC
+phase under seven square request ceilings. These bounds are diagnostic request ceilings only, not
+project defaults or canonical game limits.
 
 Regenerate it from a release binary with:
 

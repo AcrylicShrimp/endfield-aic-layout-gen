@@ -1,0 +1,1586 @@
+{
+  "schema_version": 2,
+  "workload": {
+    "workload_id": "heavy-xiranite-minimum-rate",
+    "manifest_sha256": "d9018af56cfec3f7aabbfeb660617a93e9a809dccfff7294c21bfaca0d7cfa3e",
+    "inputs": [
+      {
+        "role": "recipes",
+        "path": "./data/game/normalized/recipes.json",
+        "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+      },
+      {
+        "role": "source-plan",
+        "path": "./data/examples/source-plan.game-heavy-xiranite-forge.request.json",
+        "sha256": "5302d96a5177ed2f3fde55fe13539187f7601b6667b0f0588980dca01ccd320c"
+      },
+      {
+        "role": "facility-catalog",
+        "path": "./data/game/normalized/facilities.json",
+        "sha256": "db398048ac401024f7bae80c05ae59d4a9fb9a037f6836f33d26c5d08f0bcf96"
+      },
+      {
+        "role": "item-catalog",
+        "path": "./data/game/normalized/items.json",
+        "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+      },
+      {
+        "role": "transport-catalog",
+        "path": "./data/game/normalized/transports.json",
+        "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+      },
+      {
+        "role": "logistics-component-catalog",
+        "path": "./data/game/normalized/logistics-components.json",
+        "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+      },
+      {
+        "role": "localization-catalog",
+        "path": "./data/game/normalized/localization.ko-KR.json",
+        "sha256": "f0aab4bc3f7f57cf104026ae09436a6aa921fa2bfec5beee5c2625bcb016e8e4"
+      },
+      {
+        "role": "placement-request",
+        "path": "./data/benchmarks/requests/placement.20x20.request.json",
+        "sha256": "16394f894108340b2b8dc64d15ede479a77d7ea24f0af05c5cbceab2f05adb8b"
+      }
+    ]
+  },
+  "formulation": {
+    "formulation": "joint-lexicographic-layout-v4",
+    "solver": "pumpkin",
+    "solver_version": "0.5",
+    "source_revision": null,
+    "configuration_sha256": "249b9185000f33f2181918d9eb8c55b987b1893b28cd20d3ddd16093461a39b3"
+  },
+  "request_bounds": {
+    "max_width": 20,
+    "max_height": 20
+  },
+  "ir": {
+    "facility_count": 59,
+    "facility_type_count": 7,
+    "required_facility_area": 1133,
+    "grid_cell_count": 400,
+    "facility_area_slack": null,
+    "rotations_per_facility": {
+      "samples": 59,
+      "total": 236,
+      "minimum": 4,
+      "maximum": 4,
+      "p50": 4,
+      "p95": 4
+    },
+    "placement_candidates_per_facility": {
+      "samples": 59,
+      "total": 66104,
+      "minimum": 1020,
+      "maximum": 1296,
+      "p50": 1024,
+      "p95": 1296
+    },
+    "placement_log2_volume": 597.1029706817307,
+    "compatible_ports_per_facility_endpoint": {
+      "samples": 197,
+      "total": 852,
+      "minimum": 1,
+      "maximum": 6,
+      "p50": 5,
+      "p95": 6
+    },
+    "endpoint_options_per_facility_endpoint": {
+      "samples": 197,
+      "total": 865296,
+      "minimum": 960,
+      "maximum": 5760,
+      "p50": 4800,
+      "p95": 5752
+    },
+    "endpoint_log2_volume": 2373.624705452984,
+    "logical_wiring_edges": 96,
+    "capacity_split_lanes": 102,
+    "commodity_networks": 16,
+    "belt_networks": 11,
+    "pipe_networks": 5,
+    "terminals_per_network": {
+      "samples": 16,
+      "total": 204,
+      "minimum": 2,
+      "maximum": 48,
+      "p50": 12,
+      "p95": 24
+    },
+    "external_terminals": 7,
+    "maximum_flow_scale": 18,
+    "maximum_line_capacity_units": 9,
+    "total_terminal_flow_units": 312,
+    "graph": {
+      "vertices": 59,
+      "edges": 89,
+      "weak_components": 1,
+      "mean_degree": 3.016949152542373,
+      "maximum_degree": 6,
+      "p95_degree": 6,
+      "density": 0.026008182349503216,
+      "articulation_points": null,
+      "biconnected_blocks": null,
+      "scc_count": 41,
+      "cyclic_scc_count": 8,
+      "maximum_scc_size": 5,
+      "condensation_depth": 8,
+      "maximum_condensation_width": 8
+    },
+    "phases": [
+      {
+        "phase_index": 0,
+        "introduced_scc_ids": [
+          "component:0040"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 1,
+        "introduced_networks": 3,
+        "cumulative_networks": 3,
+        "introduced_terminals": 8,
+        "cumulative_terminals": 8,
+        "frontier_cut_logical_edges": 3,
+        "frontier_cut_networks": 2,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 1024,
+          "endpoint_variables": 15360,
+          "route_cell_variables": 1200,
+          "route_arc_variables": 4560,
+          "flow_variables": 4560,
+          "route_order_variables": 1200,
+          "terminal_presence_and_arm_variables": 19200,
+          "branch_component_variables": 9600,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 2400,
+          "covered_variable_lower_bound": 63104,
+          "covered_log2_domain_volume": 76695.10113305463
+        }
+      },
+      {
+        "phase_index": 1,
+        "introduced_scc_ids": [
+          "component:0014"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 2,
+        "introduced_networks": 3,
+        "cumulative_networks": 6,
+        "introduced_terminals": 6,
+        "cumulative_terminals": 14,
+        "frontier_cut_logical_edges": 3,
+        "frontier_cut_networks": 2,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 2048,
+          "endpoint_variables": 23040,
+          "route_cell_variables": 2400,
+          "route_arc_variables": 9120,
+          "flow_variables": 9120,
+          "route_order_variables": 2400,
+          "terminal_presence_and_arm_variables": 38400,
+          "branch_component_variables": 19200,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 4800,
+          "covered_variable_lower_bound": 114528,
+          "covered_log2_domain_volume": 143319.72067347067
+        }
+      },
+      {
+        "phase_index": 2,
+        "introduced_scc_ids": [
+          "component:0038"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 3,
+        "introduced_networks": 2,
+        "cumulative_networks": 8,
+        "introduced_terminals": 6,
+        "cumulative_terminals": 20,
+        "frontier_cut_logical_edges": 4,
+        "frontier_cut_networks": 3,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 3072,
+          "endpoint_variables": 38400,
+          "route_cell_variables": 3200,
+          "route_arc_variables": 12160,
+          "flow_variables": 12160,
+          "route_order_variables": 3200,
+          "terminal_presence_and_arm_variables": 51200,
+          "branch_component_variables": 25600,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 6400,
+          "covered_variable_lower_bound": 159392,
+          "covered_log2_domain_volume": 196308.1363295192
+        }
+      },
+      {
+        "phase_index": 3,
+        "introduced_scc_ids": [
+          "component:0039"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 4,
+        "introduced_networks": 0,
+        "cumulative_networks": 8,
+        "introduced_terminals": 6,
+        "cumulative_terminals": 26,
+        "frontier_cut_logical_edges": 5,
+        "frontier_cut_networks": 2,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 4096,
+          "endpoint_variables": 53760,
+          "route_cell_variables": 3200,
+          "route_arc_variables": 12160,
+          "flow_variables": 12160,
+          "route_order_variables": 3200,
+          "terminal_presence_and_arm_variables": 51200,
+          "branch_component_variables": 25600,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 6400,
+          "covered_variable_lower_bound": 175776,
+          "covered_log2_domain_volume": 212692.1363295192
+        }
+      },
+      {
+        "phase_index": 4,
+        "introduced_scc_ids": [
+          "component:0013"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 5,
+        "introduced_networks": 0,
+        "cumulative_networks": 8,
+        "introduced_terminals": 4,
+        "cumulative_terminals": 30,
+        "frontier_cut_logical_edges": 5,
+        "frontier_cut_networks": 2,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 5120,
+          "endpoint_variables": 59520,
+          "route_cell_variables": 3200,
+          "route_arc_variables": 12160,
+          "flow_variables": 12160,
+          "route_order_variables": 3200,
+          "terminal_presence_and_arm_variables": 51200,
+          "branch_component_variables": 25600,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 6400,
+          "covered_variable_lower_bound": 182560,
+          "covered_log2_domain_volume": 219476.1363295192
+        }
+      },
+      {
+        "phase_index": 5,
+        "introduced_scc_ids": [
+          "component:0034"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 6,
+        "introduced_networks": 1,
+        "cumulative_networks": 9,
+        "introduced_terminals": 2,
+        "cumulative_terminals": 32,
+        "frontier_cut_logical_edges": 5,
+        "frontier_cut_networks": 3,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 6416,
+          "endpoint_variables": 66864,
+          "route_cell_variables": 3600,
+          "route_arc_variables": 13680,
+          "flow_variables": 13680,
+          "route_order_variables": 3600,
+          "terminal_presence_and_arm_variables": 57600,
+          "branch_component_variables": 28800,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 7200,
+          "covered_variable_lower_bound": 205440,
+          "covered_log2_domain_volume": 245413.6788054291
+        }
+      },
+      {
+        "phase_index": 6,
+        "introduced_scc_ids": [
+          "component:0035"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 7,
+        "introduced_networks": 0,
+        "cumulative_networks": 9,
+        "introduced_terminals": 2,
+        "cumulative_terminals": 34,
+        "frontier_cut_logical_edges": 5,
+        "frontier_cut_networks": 3,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 7712,
+          "endpoint_variables": 74208,
+          "route_cell_variables": 3600,
+          "route_arc_variables": 13680,
+          "flow_variables": 13680,
+          "route_order_variables": 3600,
+          "terminal_presence_and_arm_variables": 57600,
+          "branch_component_variables": 28800,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 7200,
+          "covered_variable_lower_bound": 214080,
+          "covered_log2_domain_volume": 254053.6788054291
+        }
+      },
+      {
+        "phase_index": 7,
+        "introduced_scc_ids": [
+          "component:0036"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 8,
+        "introduced_networks": 0,
+        "cumulative_networks": 9,
+        "introduced_terminals": 2,
+        "cumulative_terminals": 36,
+        "frontier_cut_logical_edges": 5,
+        "frontier_cut_networks": 3,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 9008,
+          "endpoint_variables": 81552,
+          "route_cell_variables": 3600,
+          "route_arc_variables": 13680,
+          "flow_variables": 13680,
+          "route_order_variables": 3600,
+          "terminal_presence_and_arm_variables": 57600,
+          "branch_component_variables": 28800,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 7200,
+          "covered_variable_lower_bound": 222720,
+          "covered_log2_domain_volume": 262693.6788054291
+        }
+      },
+      {
+        "phase_index": 8,
+        "introduced_scc_ids": [
+          "component:0037"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 9,
+        "introduced_networks": 0,
+        "cumulative_networks": 9,
+        "introduced_terminals": 2,
+        "cumulative_terminals": 38,
+        "frontier_cut_logical_edges": 5,
+        "frontier_cut_networks": 2,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 10304,
+          "endpoint_variables": 88896,
+          "route_cell_variables": 3600,
+          "route_arc_variables": 13680,
+          "flow_variables": 13680,
+          "route_order_variables": 3600,
+          "terminal_presence_and_arm_variables": 57600,
+          "branch_component_variables": 28800,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 7200,
+          "covered_variable_lower_bound": 231360,
+          "covered_log2_domain_volume": 271333.6788054291
+        }
+      },
+      {
+        "phase_index": 9,
+        "introduced_scc_ids": [
+          "component:0012"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 10,
+        "introduced_networks": 0,
+        "cumulative_networks": 9,
+        "introduced_terminals": 6,
+        "cumulative_terminals": 44,
+        "frontier_cut_logical_edges": 6,
+        "frontier_cut_networks": 2,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 11328,
+          "endpoint_variables": 104256,
+          "route_cell_variables": 3600,
+          "route_arc_variables": 13680,
+          "flow_variables": 13680,
+          "route_order_variables": 3600,
+          "terminal_presence_and_arm_variables": 57600,
+          "branch_component_variables": 28800,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 7200,
+          "covered_variable_lower_bound": 247744,
+          "covered_log2_domain_volume": 287717.6788054291
+        }
+      },
+      {
+        "phase_index": 10,
+        "introduced_scc_ids": [
+          "component:0030"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 11,
+        "introduced_networks": 1,
+        "cumulative_networks": 10,
+        "introduced_terminals": 2,
+        "cumulative_terminals": 46,
+        "frontier_cut_logical_edges": 6,
+        "frontier_cut_networks": 3,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 12624,
+          "endpoint_variables": 111600,
+          "route_cell_variables": 4000,
+          "route_arc_variables": 15200,
+          "flow_variables": 15200,
+          "route_order_variables": 4000,
+          "terminal_presence_and_arm_variables": 64000,
+          "branch_component_variables": 32000,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 8000,
+          "covered_variable_lower_bound": 270624,
+          "covered_log2_domain_volume": 313655.221281339
+        }
+      },
+      {
+        "phase_index": 11,
+        "introduced_scc_ids": [
+          "component:0031"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 12,
+        "introduced_networks": 0,
+        "cumulative_networks": 10,
+        "introduced_terminals": 2,
+        "cumulative_terminals": 48,
+        "frontier_cut_logical_edges": 6,
+        "frontier_cut_networks": 3,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 13920,
+          "endpoint_variables": 118944,
+          "route_cell_variables": 4000,
+          "route_arc_variables": 15200,
+          "flow_variables": 15200,
+          "route_order_variables": 4000,
+          "terminal_presence_and_arm_variables": 64000,
+          "branch_component_variables": 32000,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 8000,
+          "covered_variable_lower_bound": 279264,
+          "covered_log2_domain_volume": 322295.221281339
+        }
+      },
+      {
+        "phase_index": 12,
+        "introduced_scc_ids": [
+          "component:0032"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 13,
+        "introduced_networks": 0,
+        "cumulative_networks": 10,
+        "introduced_terminals": 2,
+        "cumulative_terminals": 50,
+        "frontier_cut_logical_edges": 6,
+        "frontier_cut_networks": 3,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 15216,
+          "endpoint_variables": 126288,
+          "route_cell_variables": 4000,
+          "route_arc_variables": 15200,
+          "flow_variables": 15200,
+          "route_order_variables": 4000,
+          "terminal_presence_and_arm_variables": 64000,
+          "branch_component_variables": 32000,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 8000,
+          "covered_variable_lower_bound": 287904,
+          "covered_log2_domain_volume": 330935.221281339
+        }
+      },
+      {
+        "phase_index": 13,
+        "introduced_scc_ids": [
+          "component:0033"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 14,
+        "introduced_networks": 0,
+        "cumulative_networks": 10,
+        "introduced_terminals": 2,
+        "cumulative_terminals": 52,
+        "frontier_cut_logical_edges": 6,
+        "frontier_cut_networks": 2,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 16512,
+          "endpoint_variables": 133632,
+          "route_cell_variables": 4000,
+          "route_arc_variables": 15200,
+          "flow_variables": 15200,
+          "route_order_variables": 4000,
+          "terminal_presence_and_arm_variables": 64000,
+          "branch_component_variables": 32000,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 8000,
+          "covered_variable_lower_bound": 296544,
+          "covered_log2_domain_volume": 339575.221281339
+        }
+      },
+      {
+        "phase_index": 14,
+        "introduced_scc_ids": [
+          "component:0010"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 15,
+        "introduced_networks": 0,
+        "cumulative_networks": 10,
+        "introduced_terminals": 2,
+        "cumulative_terminals": 54,
+        "frontier_cut_logical_edges": 6,
+        "frontier_cut_networks": 3,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 17808,
+          "endpoint_variables": 140976,
+          "route_cell_variables": 4000,
+          "route_arc_variables": 15200,
+          "flow_variables": 15200,
+          "route_order_variables": 4000,
+          "terminal_presence_and_arm_variables": 64000,
+          "branch_component_variables": 32000,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 8000,
+          "covered_variable_lower_bound": 305184,
+          "covered_log2_domain_volume": 348215.221281339
+        }
+      },
+      {
+        "phase_index": 15,
+        "introduced_scc_ids": [
+          "component:0011"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 16,
+        "introduced_networks": 0,
+        "cumulative_networks": 10,
+        "introduced_terminals": 2,
+        "cumulative_terminals": 56,
+        "frontier_cut_logical_edges": 6,
+        "frontier_cut_networks": 2,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 19104,
+          "endpoint_variables": 148320,
+          "route_cell_variables": 4000,
+          "route_arc_variables": 15200,
+          "flow_variables": 15200,
+          "route_order_variables": 4000,
+          "terminal_presence_and_arm_variables": 64000,
+          "branch_component_variables": 32000,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 8000,
+          "covered_variable_lower_bound": 313824,
+          "covered_log2_domain_volume": 356855.221281339
+        }
+      },
+      {
+        "phase_index": 16,
+        "introduced_scc_ids": [
+          "component:0026"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 17,
+        "introduced_networks": 2,
+        "cumulative_networks": 12,
+        "introduced_terminals": 6,
+        "cumulative_terminals": 62,
+        "frontier_cut_logical_edges": 7,
+        "frontier_cut_networks": 4,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 20124,
+          "endpoint_variables": 171336,
+          "route_cell_variables": 4800,
+          "route_arc_variables": 18240,
+          "flow_variables": 18240,
+          "route_order_variables": 4800,
+          "terminal_presence_and_arm_variables": 76800,
+          "branch_component_variables": 38400,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 9600,
+          "covered_variable_lower_bound": 366340,
+          "covered_log2_domain_volume": 415486.3062331588
+        }
+      },
+      {
+        "phase_index": 17,
+        "introduced_scc_ids": [
+          "component:0027"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 18,
+        "introduced_networks": 0,
+        "cumulative_networks": 12,
+        "introduced_terminals": 6,
+        "cumulative_terminals": 68,
+        "frontier_cut_logical_edges": 8,
+        "frontier_cut_networks": 4,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 21144,
+          "endpoint_variables": 194352,
+          "route_cell_variables": 4800,
+          "route_arc_variables": 18240,
+          "flow_variables": 18240,
+          "route_order_variables": 4800,
+          "terminal_presence_and_arm_variables": 76800,
+          "branch_component_variables": 38400,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 9600,
+          "covered_variable_lower_bound": 390376,
+          "covered_log2_domain_volume": 439522.3062331588
+        }
+      },
+      {
+        "phase_index": 18,
+        "introduced_scc_ids": [
+          "component:0028"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 19,
+        "introduced_networks": 0,
+        "cumulative_networks": 12,
+        "introduced_terminals": 6,
+        "cumulative_terminals": 74,
+        "frontier_cut_logical_edges": 9,
+        "frontier_cut_networks": 4,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 22164,
+          "endpoint_variables": 217368,
+          "route_cell_variables": 4800,
+          "route_arc_variables": 18240,
+          "flow_variables": 18240,
+          "route_order_variables": 4800,
+          "terminal_presence_and_arm_variables": 76800,
+          "branch_component_variables": 38400,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 9600,
+          "covered_variable_lower_bound": 414412,
+          "covered_log2_domain_volume": 463558.3062331588
+        }
+      },
+      {
+        "phase_index": 19,
+        "introduced_scc_ids": [
+          "component:0029"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 20,
+        "introduced_networks": 0,
+        "cumulative_networks": 12,
+        "introduced_terminals": 6,
+        "cumulative_terminals": 80,
+        "frontier_cut_logical_edges": 10,
+        "frontier_cut_networks": 3,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 23184,
+          "endpoint_variables": 240384,
+          "route_cell_variables": 4800,
+          "route_arc_variables": 18240,
+          "flow_variables": 18240,
+          "route_order_variables": 4800,
+          "terminal_presence_and_arm_variables": 76800,
+          "branch_component_variables": 38400,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 9600,
+          "covered_variable_lower_bound": 438448,
+          "covered_log2_domain_volume": 487594.3062331588
+        }
+      },
+      {
+        "phase_index": 20,
+        "introduced_scc_ids": [
+          "component:0008"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 21,
+        "introduced_networks": 0,
+        "cumulative_networks": 12,
+        "introduced_terminals": 2,
+        "cumulative_terminals": 82,
+        "frontier_cut_logical_edges": 10,
+        "frontier_cut_networks": 4,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 24480,
+          "endpoint_variables": 247728,
+          "route_cell_variables": 4800,
+          "route_arc_variables": 18240,
+          "flow_variables": 18240,
+          "route_order_variables": 4800,
+          "terminal_presence_and_arm_variables": 76800,
+          "branch_component_variables": 38400,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 9600,
+          "covered_variable_lower_bound": 447088,
+          "covered_log2_domain_volume": 496234.3062331588
+        }
+      },
+      {
+        "phase_index": 21,
+        "introduced_scc_ids": [
+          "component:0009"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 22,
+        "introduced_networks": 0,
+        "cumulative_networks": 12,
+        "introduced_terminals": 2,
+        "cumulative_terminals": 84,
+        "frontier_cut_logical_edges": 10,
+        "frontier_cut_networks": 3,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 25776,
+          "endpoint_variables": 255072,
+          "route_cell_variables": 4800,
+          "route_arc_variables": 18240,
+          "flow_variables": 18240,
+          "route_order_variables": 4800,
+          "terminal_presence_and_arm_variables": 76800,
+          "branch_component_variables": 38400,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 9600,
+          "covered_variable_lower_bound": 455728,
+          "covered_log2_domain_volume": 504874.3062331588
+        }
+      },
+      {
+        "phase_index": 22,
+        "introduced_scc_ids": [
+          "component:0019"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 23,
+        "introduced_networks": 1,
+        "cumulative_networks": 13,
+        "introduced_terminals": 4,
+        "cumulative_terminals": 88,
+        "frontier_cut_logical_edges": 11,
+        "frontier_cut_networks": 4,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 27072,
+          "endpoint_variables": 269760,
+          "route_cell_variables": 5200,
+          "route_arc_variables": 19760,
+          "flow_variables": 19760,
+          "route_order_variables": 5200,
+          "terminal_presence_and_arm_variables": 83200,
+          "branch_component_variables": 41600,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 10400,
+          "covered_variable_lower_bound": 485952,
+          "covered_log2_domain_volume": 539044.9917101648
+        }
+      },
+      {
+        "phase_index": 23,
+        "introduced_scc_ids": [
+          "component:0020"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 24,
+        "introduced_networks": 0,
+        "cumulative_networks": 13,
+        "introduced_terminals": 4,
+        "cumulative_terminals": 92,
+        "frontier_cut_logical_edges": 12,
+        "frontier_cut_networks": 4,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 28368,
+          "endpoint_variables": 284448,
+          "route_cell_variables": 5200,
+          "route_arc_variables": 19760,
+          "flow_variables": 19760,
+          "route_order_variables": 5200,
+          "terminal_presence_and_arm_variables": 83200,
+          "branch_component_variables": 41600,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 10400,
+          "covered_variable_lower_bound": 501936,
+          "covered_log2_domain_volume": 555028.9917101648
+        }
+      },
+      {
+        "phase_index": 24,
+        "introduced_scc_ids": [
+          "component:0021"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 25,
+        "introduced_networks": 0,
+        "cumulative_networks": 13,
+        "introduced_terminals": 4,
+        "cumulative_terminals": 96,
+        "frontier_cut_logical_edges": 13,
+        "frontier_cut_networks": 4,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 29664,
+          "endpoint_variables": 299136,
+          "route_cell_variables": 5200,
+          "route_arc_variables": 19760,
+          "flow_variables": 19760,
+          "route_order_variables": 5200,
+          "terminal_presence_and_arm_variables": 83200,
+          "branch_component_variables": 41600,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 10400,
+          "covered_variable_lower_bound": 517920,
+          "covered_log2_domain_volume": 571012.9917101648
+        }
+      },
+      {
+        "phase_index": 25,
+        "introduced_scc_ids": [
+          "component:0022"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 26,
+        "introduced_networks": 0,
+        "cumulative_networks": 13,
+        "introduced_terminals": 4,
+        "cumulative_terminals": 100,
+        "frontier_cut_logical_edges": 14,
+        "frontier_cut_networks": 3,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 30960,
+          "endpoint_variables": 313824,
+          "route_cell_variables": 5200,
+          "route_arc_variables": 19760,
+          "flow_variables": 19760,
+          "route_order_variables": 5200,
+          "terminal_presence_and_arm_variables": 83200,
+          "branch_component_variables": 41600,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 10400,
+          "covered_variable_lower_bound": 533904,
+          "covered_log2_domain_volume": 586996.9917101648
+        }
+      },
+      {
+        "phase_index": 26,
+        "introduced_scc_ids": [
+          "component:0024"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 27,
+        "introduced_networks": 1,
+        "cumulative_networks": 14,
+        "introduced_terminals": 4,
+        "cumulative_terminals": 104,
+        "frontier_cut_logical_edges": 14,
+        "frontier_cut_networks": 4,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 32256,
+          "endpoint_variables": 328512,
+          "route_cell_variables": 5600,
+          "route_arc_variables": 21280,
+          "flow_variables": 21280,
+          "route_order_variables": 5600,
+          "terminal_presence_and_arm_variables": 89600,
+          "branch_component_variables": 44800,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 11200,
+          "covered_variable_lower_bound": 564128,
+          "covered_log2_domain_volume": 623807.8648903036
+        }
+      },
+      {
+        "phase_index": 27,
+        "introduced_scc_ids": [
+          "component:0025"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 28,
+        "introduced_networks": 0,
+        "cumulative_networks": 14,
+        "introduced_terminals": 4,
+        "cumulative_terminals": 108,
+        "frontier_cut_logical_edges": 14,
+        "frontier_cut_networks": 3,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 33552,
+          "endpoint_variables": 343200,
+          "route_cell_variables": 5600,
+          "route_arc_variables": 21280,
+          "flow_variables": 21280,
+          "route_order_variables": 5600,
+          "terminal_presence_and_arm_variables": 89600,
+          "branch_component_variables": 44800,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 11200,
+          "covered_variable_lower_bound": 580112,
+          "covered_log2_domain_volume": 639791.8648903036
+        }
+      },
+      {
+        "phase_index": 28,
+        "introduced_scc_ids": [
+          "component:0006"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 29,
+        "introduced_networks": 0,
+        "cumulative_networks": 14,
+        "introduced_terminals": 6,
+        "cumulative_terminals": 114,
+        "frontier_cut_logical_edges": 15,
+        "frontier_cut_networks": 5,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 34572,
+          "endpoint_variables": 366216,
+          "route_cell_variables": 5600,
+          "route_arc_variables": 21280,
+          "flow_variables": 21280,
+          "route_order_variables": 5600,
+          "terminal_presence_and_arm_variables": 89600,
+          "branch_component_variables": 44800,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 11200,
+          "covered_variable_lower_bound": 604148,
+          "covered_log2_domain_volume": 663827.8648903036
+        }
+      },
+      {
+        "phase_index": 29,
+        "introduced_scc_ids": [
+          "component:0007"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 30,
+        "introduced_networks": 0,
+        "cumulative_networks": 14,
+        "introduced_terminals": 6,
+        "cumulative_terminals": 120,
+        "frontier_cut_logical_edges": 16,
+        "frontier_cut_networks": 4,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 35592,
+          "endpoint_variables": 389232,
+          "route_cell_variables": 5600,
+          "route_arc_variables": 21280,
+          "flow_variables": 21280,
+          "route_order_variables": 5600,
+          "terminal_presence_and_arm_variables": 89600,
+          "branch_component_variables": 44800,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 11200,
+          "covered_variable_lower_bound": 628184,
+          "covered_log2_domain_volume": 687863.8648903036
+        }
+      },
+      {
+        "phase_index": 30,
+        "introduced_scc_ids": [
+          "component:0015"
+        ],
+        "introduced_facilities": 3,
+        "cumulative_facilities": 33,
+        "introduced_networks": 1,
+        "cumulative_networks": 15,
+        "introduced_terminals": 8,
+        "cumulative_terminals": 128,
+        "frontier_cut_logical_edges": 14,
+        "frontier_cut_networks": 4,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 38664,
+          "endpoint_variables": 437232,
+          "route_cell_variables": 6000,
+          "route_arc_variables": 22800,
+          "flow_variables": 22800,
+          "route_order_variables": 6000,
+          "terminal_presence_and_arm_variables": 96000,
+          "branch_component_variables": 48000,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 12000,
+          "covered_variable_lower_bound": 693496,
+          "covered_log2_domain_volume": 756233.4073662134
+        }
+      },
+      {
+        "phase_index": 31,
+        "introduced_scc_ids": [
+          "component:0016"
+        ],
+        "introduced_facilities": 3,
+        "cumulative_facilities": 36,
+        "introduced_networks": 0,
+        "cumulative_networks": 15,
+        "introduced_terminals": 8,
+        "cumulative_terminals": 136,
+        "frontier_cut_logical_edges": 12,
+        "frontier_cut_networks": 4,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 41736,
+          "endpoint_variables": 485232,
+          "route_cell_variables": 6000,
+          "route_arc_variables": 22800,
+          "flow_variables": 22800,
+          "route_order_variables": 6000,
+          "terminal_presence_and_arm_variables": 96000,
+          "branch_component_variables": 48000,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 12000,
+          "covered_variable_lower_bound": 744568,
+          "covered_log2_domain_volume": 807305.4073662134
+        }
+      },
+      {
+        "phase_index": 32,
+        "introduced_scc_ids": [
+          "component:0017"
+        ],
+        "introduced_facilities": 3,
+        "cumulative_facilities": 39,
+        "introduced_networks": 0,
+        "cumulative_networks": 15,
+        "introduced_terminals": 8,
+        "cumulative_terminals": 144,
+        "frontier_cut_logical_edges": 10,
+        "frontier_cut_networks": 4,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 44808,
+          "endpoint_variables": 533232,
+          "route_cell_variables": 6000,
+          "route_arc_variables": 22800,
+          "flow_variables": 22800,
+          "route_order_variables": 6000,
+          "terminal_presence_and_arm_variables": 96000,
+          "branch_component_variables": 48000,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 12000,
+          "covered_variable_lower_bound": 795640,
+          "covered_log2_domain_volume": 858377.4073662134
+        }
+      },
+      {
+        "phase_index": 33,
+        "introduced_scc_ids": [
+          "component:0018"
+        ],
+        "introduced_facilities": 3,
+        "cumulative_facilities": 42,
+        "introduced_networks": 0,
+        "cumulative_networks": 15,
+        "introduced_terminals": 8,
+        "cumulative_terminals": 152,
+        "frontier_cut_logical_edges": 8,
+        "frontier_cut_networks": 3,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 47880,
+          "endpoint_variables": 581232,
+          "route_cell_variables": 6000,
+          "route_arc_variables": 22800,
+          "flow_variables": 22800,
+          "route_order_variables": 6000,
+          "terminal_presence_and_arm_variables": 96000,
+          "branch_component_variables": 48000,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 12000,
+          "covered_variable_lower_bound": 846712,
+          "covered_log2_domain_volume": 909449.4073662134
+        }
+      },
+      {
+        "phase_index": 34,
+        "introduced_scc_ids": [
+          "component:0023"
+        ],
+        "introduced_facilities": 5,
+        "cumulative_facilities": 47,
+        "introduced_networks": 1,
+        "cumulative_networks": 16,
+        "introduced_terminals": 16,
+        "cumulative_terminals": 168,
+        "frontier_cut_logical_edges": 4,
+        "frontier_cut_networks": 2,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 53000,
+          "endpoint_variables": 677232,
+          "route_cell_variables": 6400,
+          "route_arc_variables": 24320,
+          "flow_variables": 24320,
+          "route_order_variables": 6400,
+          "terminal_presence_and_arm_variables": 102400,
+          "branch_component_variables": 51200,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 12800,
+          "covered_variable_lower_bound": 962072,
+          "covered_log2_domain_volume": 1031396.2805463522
+        }
+      },
+      {
+        "phase_index": 35,
+        "introduced_scc_ids": [
+          "component:0002"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 48,
+        "introduced_networks": 0,
+        "cumulative_networks": 16,
+        "introduced_terminals": 4,
+        "cumulative_terminals": 172,
+        "frontier_cut_logical_edges": 5,
+        "frontier_cut_networks": 3,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 54296,
+          "endpoint_variables": 691920,
+          "route_cell_variables": 6400,
+          "route_arc_variables": 24320,
+          "flow_variables": 24320,
+          "route_order_variables": 6400,
+          "terminal_presence_and_arm_variables": 102400,
+          "branch_component_variables": 51200,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 12800,
+          "covered_variable_lower_bound": 978056,
+          "covered_log2_domain_volume": 1047380.2805463522
+        }
+      },
+      {
+        "phase_index": 36,
+        "introduced_scc_ids": [
+          "component:0003"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 49,
+        "introduced_networks": 0,
+        "cumulative_networks": 16,
+        "introduced_terminals": 4,
+        "cumulative_terminals": 176,
+        "frontier_cut_logical_edges": 6,
+        "frontier_cut_networks": 2,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 55592,
+          "endpoint_variables": 706608,
+          "route_cell_variables": 6400,
+          "route_arc_variables": 24320,
+          "flow_variables": 24320,
+          "route_order_variables": 6400,
+          "terminal_presence_and_arm_variables": 102400,
+          "branch_component_variables": 51200,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 12800,
+          "covered_variable_lower_bound": 994040,
+          "covered_log2_domain_volume": 1063364.2805463523
+        }
+      },
+      {
+        "phase_index": 37,
+        "introduced_scc_ids": [
+          "component:0005"
+        ],
+        "introduced_facilities": 1,
+        "cumulative_facilities": 50,
+        "introduced_networks": 0,
+        "cumulative_networks": 16,
+        "introduced_terminals": 4,
+        "cumulative_terminals": 180,
+        "frontier_cut_logical_edges": 6,
+        "frontier_cut_networks": 2,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 56888,
+          "endpoint_variables": 721296,
+          "route_cell_variables": 6400,
+          "route_arc_variables": 24320,
+          "flow_variables": 24320,
+          "route_order_variables": 6400,
+          "terminal_presence_and_arm_variables": 102400,
+          "branch_component_variables": 51200,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 12800,
+          "covered_variable_lower_bound": 1010024,
+          "covered_log2_domain_volume": 1079348.2805463523
+        }
+      },
+      {
+        "phase_index": 38,
+        "introduced_scc_ids": [
+          "component:0000"
+        ],
+        "introduced_facilities": 3,
+        "cumulative_facilities": 53,
+        "introduced_networks": 0,
+        "cumulative_networks": 16,
+        "introduced_terminals": 8,
+        "cumulative_terminals": 188,
+        "frontier_cut_logical_edges": 4,
+        "frontier_cut_networks": 2,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 59960,
+          "endpoint_variables": 769296,
+          "route_cell_variables": 6400,
+          "route_arc_variables": 24320,
+          "flow_variables": 24320,
+          "route_order_variables": 6400,
+          "terminal_presence_and_arm_variables": 102400,
+          "branch_component_variables": 51200,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 12800,
+          "covered_variable_lower_bound": 1061096,
+          "covered_log2_domain_volume": 1130420.2805463523
+        }
+      },
+      {
+        "phase_index": 39,
+        "introduced_scc_ids": [
+          "component:0001"
+        ],
+        "introduced_facilities": 3,
+        "cumulative_facilities": 56,
+        "introduced_networks": 0,
+        "cumulative_networks": 16,
+        "introduced_terminals": 8,
+        "cumulative_terminals": 196,
+        "frontier_cut_logical_edges": 2,
+        "frontier_cut_networks": 1,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 63032,
+          "endpoint_variables": 817296,
+          "route_cell_variables": 6400,
+          "route_arc_variables": 24320,
+          "flow_variables": 24320,
+          "route_order_variables": 6400,
+          "terminal_presence_and_arm_variables": 102400,
+          "branch_component_variables": 51200,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 12800,
+          "covered_variable_lower_bound": 1112168,
+          "covered_log2_domain_volume": 1181492.2805463523
+        }
+      },
+      {
+        "phase_index": 40,
+        "introduced_scc_ids": [
+          "component:0004"
+        ],
+        "introduced_facilities": 3,
+        "cumulative_facilities": 59,
+        "introduced_networks": 0,
+        "cumulative_networks": 16,
+        "introduced_terminals": 8,
+        "cumulative_terminals": 204,
+        "frontier_cut_logical_edges": 0,
+        "frontier_cut_networks": 0,
+        "formulation": {
+          "coverage": "partial-lower-bound",
+          "grid_cells": 400,
+          "placement_variables": 66104,
+          "endpoint_variables": 865296,
+          "route_cell_variables": 6400,
+          "route_arc_variables": 24320,
+          "flow_variables": 24320,
+          "route_order_variables": 6400,
+          "terminal_presence_and_arm_variables": 102400,
+          "branch_component_variables": 51200,
+          "bridge_variables": 800,
+          "bridge_rotation_variables": 3200,
+          "crossing_owner_variables": 12800,
+          "covered_variable_lower_bound": 1163240,
+          "covered_log2_domain_volume": 1232564.2805463523
+        }
+      }
+    ]
+  },
+  "model_estimate": {
+    "variables": {
+      "coverage": "partial-lower-bound",
+      "total_variables": 1163240,
+      "boolean_variables": 1132520,
+      "integer_variables": 30720,
+      "log2_domain_volume": 1232564.2805463523,
+      "by_family": [
+        {
+          "family": "placement",
+          "total_variables": 66104,
+          "boolean_variables": 66104,
+          "integer_variables": 0,
+          "domains": {
+            "minimum": 2,
+            "maximum": 2,
+            "p50": 2,
+            "p95": 2,
+            "log2_volume": 66104.0
+          }
+        },
+        {
+          "family": "endpoint",
+          "total_variables": 865296,
+          "boolean_variables": 865296,
+          "integer_variables": 0,
+          "domains": {
+            "minimum": 2,
+            "maximum": 2,
+            "p50": 2,
+            "p95": 2,
+            "log2_volume": 865296.0
+          }
+        },
+        {
+          "family": "route-cell",
+          "total_variables": 6400,
+          "boolean_variables": 6400,
+          "integer_variables": 0,
+          "domains": {
+            "minimum": 2,
+            "maximum": 2,
+            "p50": 2,
+            "p95": 2,
+            "log2_volume": 6400.0
+          }
+        },
+        {
+          "family": "route-arc",
+          "total_variables": 24320,
+          "boolean_variables": 24320,
+          "integer_variables": 0,
+          "domains": {
+            "minimum": 2,
+            "maximum": 2,
+            "p50": 2,
+            "p95": 2,
+            "log2_volume": 24320.0
+          }
+        },
+        {
+          "family": "flow",
+          "total_variables": 24320,
+          "boolean_variables": 0,
+          "integer_variables": 24320,
+          "domains": {
+            "minimum": 2,
+            "maximum": 10,
+            "p50": 3,
+            "p95": 10,
+            "log2_volume": 44723.60093179386
+          }
+        },
+        {
+          "family": "route-order",
+          "total_variables": 6400,
+          "boolean_variables": 0,
+          "integer_variables": 6400,
+          "domains": {
+            "minimum": 400,
+            "maximum": 400,
+            "p50": 400,
+            "p95": 400,
+            "log2_volume": 55320.67961455824
+          }
+        },
+        {
+          "family": "terminal-presence-and-arm",
+          "total_variables": 102400,
+          "boolean_variables": 102400,
+          "integer_variables": 0,
+          "domains": {
+            "minimum": 2,
+            "maximum": 2,
+            "p50": 2,
+            "p95": 2,
+            "log2_volume": 102400.0
+          }
+        },
+        {
+          "family": "branch-component",
+          "total_variables": 51200,
+          "boolean_variables": 51200,
+          "integer_variables": 0,
+          "domains": {
+            "minimum": 2,
+            "maximum": 2,
+            "p50": 2,
+            "p95": 2,
+            "log2_volume": 51200.0
+          }
+        },
+        {
+          "family": "bridge",
+          "total_variables": 800,
+          "boolean_variables": 800,
+          "integer_variables": 0,
+          "domains": {
+            "minimum": 2,
+            "maximum": 2,
+            "p50": 2,
+            "p95": 2,
+            "log2_volume": 800.0
+          }
+        },
+        {
+          "family": "bridge-rotation",
+          "total_variables": 3200,
+          "boolean_variables": 3200,
+          "integer_variables": 0,
+          "domains": {
+            "minimum": 2,
+            "maximum": 2,
+            "p50": 2,
+            "p95": 2,
+            "log2_volume": 3200.0
+          }
+        },
+        {
+          "family": "crossing-owner",
+          "total_variables": 12800,
+          "boolean_variables": 12800,
+          "integer_variables": 0,
+          "domains": {
+            "minimum": 2,
+            "maximum": 2,
+            "p50": 2,
+            "p95": 2,
+            "log2_volume": 12800.0
+          }
+        }
+      ]
+    },
+    "constraints": null,
+    "factor_graph": null,
+    "coupling": null,
+    "symmetry": null,
+    "estimated_bytes": null
+  },
+  "model_actual": null,
+  "estimate_error": null,
+  "diagnostics": [
+    {
+      "stage": "ir-search-space-analysis",
+      "severity": "info",
+      "code": "static-search-space-analysis-complete",
+      "path": "/",
+      "entity": null,
+      "message": "estimated the current dense formulation across 41 cumulative SCC phases without constructing a Pumpkin model"
+    },
+    {
+      "stage": "ir-search-space-analysis",
+      "severity": "warning",
+      "code": "partial-formulation-estimate",
+      "path": "/model_estimate",
+      "entity": null,
+      "message": "variable totals are a covered lower bound; objective auxiliaries, exact constraints, factor-graph incidence, coupling, and symmetry require the authoritative model recorder"
+    }
+  ]
+}
