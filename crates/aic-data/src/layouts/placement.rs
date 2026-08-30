@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::ops::ControlFlow;
 use std::time::Duration;
 
@@ -264,6 +264,7 @@ pub(crate) fn solve_facility_placement_feasibly_with_time_limit(
         Ok(instances) => instances,
         Err(diagnostic) => return FacilityPlacementReport::invalid(diagnostic),
     };
+    let anchors = BTreeMap::new();
 
     match solve_feasibly(
         instances,
@@ -271,6 +272,63 @@ pub(crate) fn solve_facility_placement_feasibly_with_time_limit(
         request.max_height,
         minimum_clearance,
         time_limit,
+        &anchors,
+        None,
+    ) {
+        Ok(report) => report,
+        Err(PlacementFailure::Invalid(diagnostic)) => FacilityPlacementReport::invalid(diagnostic),
+        Err(PlacementFailure::Infeasible(diagnostic)) => {
+            FacilityPlacementReport::infeasible(diagnostic)
+        }
+    }
+}
+
+pub fn solve_anchored_facility_placement_with_time_limit(
+    instance_wiring: &FacilityInstanceWiringReport,
+    catalog: &ValidatedFacilityCatalog,
+    request: &FacilityPlacementRequest,
+    minimum_clearance: i64,
+    anchors: &[FacilityPlacement],
+    movement_radius: i64,
+    time_limit: Duration,
+) -> FacilityPlacementReport {
+    if !instance_wiring.success {
+        return FacilityPlacementReport::invalid(FacilityPlacementDiagnostic::error(
+            "upstream-instance-wiring-failed",
+            "/",
+            None,
+            "anchored facility placement requires successful facility instance wiring",
+        ));
+    }
+    let request_diagnostics = validate_facility_placement_request(request);
+    if !request_diagnostics.is_empty() {
+        return FacilityPlacementReport::invalid_many(request_diagnostics);
+    }
+    if movement_radius < 0 {
+        return FacilityPlacementReport::invalid(FacilityPlacementDiagnostic::error(
+            "negative-anchor-movement-radius",
+            "/movement_radius",
+            None,
+            format!("anchor movement_radius must be non-negative, found {movement_radius}"),
+        ));
+    }
+
+    let instances = match collect_instances(instance_wiring, catalog) {
+        Ok(instances) => instances,
+        Err(diagnostic) => return FacilityPlacementReport::invalid(diagnostic),
+    };
+    let anchors = match collect_anchors(&instances, anchors) {
+        Ok(anchors) => anchors,
+        Err(diagnostic) => return FacilityPlacementReport::invalid(diagnostic),
+    };
+    match solve_feasibly(
+        instances,
+        request.max_width,
+        request.max_height,
+        minimum_clearance,
+        time_limit,
+        &anchors,
+        Some(movement_radius),
     ) {
         Ok(report) => report,
         Err(PlacementFailure::Invalid(diagnostic)) => FacilityPlacementReport::invalid(diagnostic),
@@ -341,6 +399,67 @@ fn collect_instances(
     Ok(instances)
 }
 
+fn collect_anchors(
+    instances: &[InstanceSpec],
+    anchors: &[FacilityPlacement],
+) -> Result<BTreeMap<String, FacilityPlacement>, FacilityPlacementDiagnostic> {
+    let instance_by_id = instances
+        .iter()
+        .map(|instance| (instance.instance.as_str(), instance))
+        .collect::<BTreeMap<_, _>>();
+    let mut anchor_by_id = BTreeMap::new();
+    for (index, anchor) in anchors.iter().enumerate() {
+        let Some(instance) = instance_by_id.get(anchor.instance.as_str()) else {
+            return Err(FacilityPlacementDiagnostic::error(
+                "unknown-placement-anchor",
+                format!("/anchors/{index}/instance"),
+                Some(anchor.instance.clone()),
+                format!(
+                    "placement anchor references unknown facility instance '{}'",
+                    anchor.instance
+                ),
+            ));
+        };
+        if anchor.x < 0 || anchor.y < 0 {
+            return Err(FacilityPlacementDiagnostic::error(
+                "negative-placement-anchor-coordinate",
+                format!("/anchors/{index}"),
+                Some(anchor.instance.clone()),
+                format!(
+                    "placement anchor '{}' must have non-negative coordinates, found ({}, {})",
+                    anchor.instance, anchor.x, anchor.y
+                ),
+            ));
+        }
+        if !instance.allowed_rotations.contains(&anchor.rotation) {
+            return Err(FacilityPlacementDiagnostic::error(
+                "unsupported-placement-anchor-rotation",
+                format!("/anchors/{index}/rotation"),
+                Some(anchor.instance.clone()),
+                format!(
+                    "placement anchor '{}' uses rotation {} which is not allowed by facility '{}'",
+                    anchor.instance, anchor.rotation, instance.facility
+                ),
+            ));
+        }
+        if anchor_by_id
+            .insert(anchor.instance.clone(), anchor.clone())
+            .is_some()
+        {
+            return Err(FacilityPlacementDiagnostic::error(
+                "duplicate-placement-anchor",
+                format!("/anchors/{index}/instance"),
+                Some(anchor.instance.clone()),
+                format!(
+                    "facility instance '{}' has more than one placement anchor",
+                    anchor.instance
+                ),
+            ));
+        }
+    }
+    Ok(anchor_by_id)
+}
+
 fn solve_optimally(
     mut instances: Vec<InstanceSpec>,
     max_width: i64,
@@ -360,8 +479,9 @@ fn solve_optimally(
     }
 
     instances.sort_by(|left, right| left.instance.cmp(&right.instance));
+    let anchors = BTreeMap::new();
     let (mut solver, used_height, model_instances) =
-        build_model(instances, max_width, max_height, 0)?;
+        build_model(instances, max_width, max_height, 0, &anchors, None)?;
 
     let mut brancher = solver.default_brancher();
     let mut resolver = ResolutionResolver::default();
@@ -419,6 +539,8 @@ fn solve_feasibly(
     max_height: i64,
     minimum_clearance: i64,
     time_limit: Duration,
+    anchors: &BTreeMap<String, FacilityPlacement>,
+    movement_radius: Option<i64>,
 ) -> Result<FacilityPlacementReport, PlacementFailure> {
     if instances.is_empty() {
         return Ok(FacilityPlacementReport::solved(
@@ -434,13 +556,20 @@ fn solve_feasibly(
     }
 
     instances.sort_by(|left, right| left.instance.cmp(&right.instance));
-    let (mut solver, _used_height, model_instances) =
-        build_model(instances, max_width, max_height, minimum_clearance)?;
-    let mut brancher = if let Some((variables, values)) = shelf_warm_start(
+    let (mut solver, _used_height, model_instances) = build_model(
+        instances,
+        max_width,
+        max_height,
+        minimum_clearance,
+        anchors,
+        movement_radius,
+    )?;
+    let mut brancher = if let Some((variables, values)) = anchor_aware_warm_start(
         &model_instances,
         solver_i32(max_width, None, "layout max_width")?,
         solver_i32(max_height, None, "layout max_height")?,
         solver_i32(minimum_clearance, None, "minimum clearance")?,
+        anchors,
     ) {
         DynamicBrancher::new(vec![
             Box::new(WarmStart::new(&variables, &values)),
@@ -457,8 +586,16 @@ fn solve_feasibly(
             &satisfiable.solution(),
             &model_instances,
             FacilityPlacementStatus::Feasible,
-            "facility-placement-feasible",
-            "facility placement is feasible; optimality was not requested",
+            if anchors.is_empty() {
+                "facility-placement-feasible"
+            } else {
+                "anchored-facility-placement-feasible"
+            },
+            if anchors.is_empty() {
+                "facility placement is feasible; optimality was not requested"
+            } else {
+                "facility placement is feasible within the requested anchor movement radius"
+            },
         ),
         SatisfactionResult::Unsatisfiable(_, _, _) => Ok(FacilityPlacementReport::infeasible(
             FacilityPlacementDiagnostic::error(
@@ -477,6 +614,47 @@ fn solve_feasibly(
             ),
         )),
     }
+}
+
+fn anchor_aware_warm_start(
+    instances: &[ModelInstance],
+    max_width: i32,
+    max_height: i32,
+    minimum_clearance: i32,
+    anchors: &BTreeMap<String, FacilityPlacement>,
+) -> Option<(Vec<DomainId>, Vec<i32>)> {
+    let shelf = shelf_warm_start(instances, max_width, max_height, minimum_clearance);
+    let mut values_by_instance = shelf.map(|(_, values)| {
+        instances
+            .iter()
+            .zip(values.chunks_exact(2))
+            .map(|(instance, coordinates)| {
+                (
+                    instance.spec.instance.as_str(),
+                    (coordinates[0], coordinates[1]),
+                )
+            })
+            .collect::<BTreeMap<_, _>>()
+    });
+
+    for (instance, anchor) in anchors {
+        let x = i32::try_from(anchor.x).ok()?;
+        let y = i32::try_from(anchor.y).ok()?;
+        values_by_instance
+            .get_or_insert_with(BTreeMap::new)
+            .insert(instance, (x, y));
+    }
+    let values_by_instance = values_by_instance?;
+    let mut variables = Vec::with_capacity(values_by_instance.len() * 2);
+    let mut values = Vec::with_capacity(values_by_instance.len() * 2);
+    for instance in instances {
+        let Some((x, y)) = values_by_instance.get(instance.spec.instance.as_str()) else {
+            continue;
+        };
+        variables.extend([instance.x, instance.y]);
+        values.extend([*x, *y]);
+    }
+    Some((variables, values))
 }
 
 fn shelf_warm_start(
@@ -516,10 +694,15 @@ fn build_model(
     max_width: i64,
     max_height: i64,
     minimum_clearance: i64,
+    anchors: &BTreeMap<String, FacilityPlacement>,
+    movement_radius: Option<i64>,
 ) -> Result<(Solver, DomainId, Vec<ModelInstance>), PlacementFailure> {
     let max_width = solver_i32(max_width, None, "layout max_width")?;
     let max_height = solver_i32(max_height, None, "layout max_height")?;
     let minimum_clearance = solver_i32(minimum_clearance, None, "minimum clearance")?;
+    let movement_radius = movement_radius
+        .map(|radius| solver_i32(radius, None, "anchor movement_radius"))
+        .transpose()?;
     if minimum_clearance < 0 {
         return Err(PlacementFailure::Invalid(
             FacilityPlacementDiagnostic::error(
@@ -542,6 +725,10 @@ fn build_model(
         let y = solver.new_named_bounded_integer(0, max_height, format!("{}-y", instance.instance));
         let orientations = solver_orientations(&mut solver, &instance, max_width)?;
         post_exactly_one_orientation(&mut solver, &orientations, constraint_tag);
+
+        if let (Some(anchor), Some(radius)) = (anchors.get(&instance.instance), movement_radius) {
+            post_anchor_bounds(&mut solver, x, y, anchor, radius, constraint_tag)?;
+        }
 
         for orientation in &orientations {
             solver
@@ -600,6 +787,51 @@ fn build_model(
         constraint_tag,
     );
     Ok((solver, used_height, model_instances))
+}
+
+fn post_anchor_bounds(
+    solver: &mut Solver,
+    x: DomainId,
+    y: DomainId,
+    anchor: &FacilityPlacement,
+    radius: i32,
+    constraint_tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> Result<(), PlacementFailure> {
+    let anchor_x = solver_i32(anchor.x, Some(&anchor.instance), "anchor x")?;
+    let anchor_y = solver_i32(anchor.y, Some(&anchor.instance), "anchor y")?;
+    let minimum_x = anchor_x.saturating_sub(radius);
+    let maximum_x = anchor_x.saturating_add(radius);
+    let minimum_y = anchor_y.saturating_sub(radius);
+    let maximum_y = anchor_y.saturating_add(radius);
+    solver
+        .add_constraint(pumpkin_solver::less_than_or_equals(
+            vec![x.scaled(-1)],
+            -minimum_x,
+            constraint_tag,
+        ))
+        .post();
+    solver
+        .add_constraint(pumpkin_solver::less_than_or_equals(
+            vec![x.scaled(1)],
+            maximum_x,
+            constraint_tag,
+        ))
+        .post();
+    solver
+        .add_constraint(pumpkin_solver::less_than_or_equals(
+            vec![y.scaled(-1)],
+            -minimum_y,
+            constraint_tag,
+        ))
+        .post();
+    solver
+        .add_constraint(pumpkin_solver::less_than_or_equals(
+            vec![y.scaled(1)],
+            maximum_y,
+            constraint_tag,
+        ))
+        .post();
+    Ok(())
 }
 
 struct ModelInstance {
@@ -1037,6 +1269,127 @@ mod tests {
     }
 
     #[test]
+    fn keeps_an_anchored_facility_inside_its_movement_radius() {
+        let validated = catalog(
+            FacilityFootprint {
+                width: 2,
+                height: 2,
+            },
+            vec![0],
+        );
+        let anchored_instance = "assemble-casing:0";
+        let anchor = placement_anchor(anchored_instance, 5, 5);
+
+        let report = solve_anchored_facility_placement_with_time_limit(
+            &wiring(vec![
+                facility_node(anchored_instance),
+                facility_node("assemble-casing:1"),
+            ]),
+            &validated,
+            &request_with_bounds(10, 10),
+            0,
+            &[anchor],
+            0,
+            Duration::from_secs(1),
+        );
+
+        assert!(report.success, "{report:?}");
+        let placement = report
+            .placements
+            .iter()
+            .find(|placement| placement.instance == anchored_instance)
+            .expect("anchored instance should be placed");
+        assert_eq!((placement.x, placement.y), (5, 5));
+        assert_eq!(
+            report.diagnostics[0].code,
+            "anchored-facility-placement-feasible"
+        );
+    }
+
+    #[test]
+    fn expands_an_anchor_only_as_far_as_the_requested_radius() {
+        let validated = catalog(
+            FacilityFootprint {
+                width: 2,
+                height: 2,
+            },
+            vec![0],
+        );
+        let instance = "assemble-casing:0";
+        let anchor = placement_anchor(instance, 8, 8);
+        let wiring = wiring(vec![facility_node(instance)]);
+        let request = request_with_bounds(9, 9);
+
+        let fixed = solve_anchored_facility_placement_with_time_limit(
+            &wiring,
+            &validated,
+            &request,
+            0,
+            std::slice::from_ref(&anchor),
+            0,
+            Duration::from_secs(1),
+        );
+        let movable = solve_anchored_facility_placement_with_time_limit(
+            &wiring,
+            &validated,
+            &request,
+            0,
+            &[anchor],
+            1,
+            Duration::from_secs(1),
+        );
+
+        assert_eq!(
+            fixed.status,
+            FacilityPlacementStatus::Infeasible,
+            "{fixed:?}"
+        );
+        assert!(movable.success, "{movable:?}");
+        assert_eq!((movable.placements[0].x, movable.placements[0].y), (7, 7));
+    }
+
+    #[test]
+    fn rejects_invalid_placement_anchors() {
+        let validated = catalog(
+            FacilityFootprint {
+                width: 2,
+                height: 2,
+            },
+            vec![0],
+        );
+        let wiring = wiring(vec![facility_node("assemble-casing:0")]);
+        let unknown = placement_anchor("assemble-casing:missing", 0, 0);
+
+        let negative_radius = solve_anchored_facility_placement_with_time_limit(
+            &wiring,
+            &validated,
+            &request(10),
+            0,
+            &[],
+            -1,
+            Duration::from_secs(1),
+        );
+        let unknown_anchor = solve_anchored_facility_placement_with_time_limit(
+            &wiring,
+            &validated,
+            &request(10),
+            0,
+            &[unknown],
+            0,
+            Duration::from_secs(1),
+        );
+
+        assert_eq!(
+            negative_radius.diagnostics[0].code,
+            "negative-anchor-movement-radius"
+        );
+        assert_eq!(
+            unknown_anchor.diagnostics[0].code,
+            "unknown-placement-anchor"
+        );
+    }
+
+    #[test]
     fn produces_zero_bounds_for_empty_facility_layout() {
         let report = solve_facility_placement(
             &wiring(Vec::new()),
@@ -1280,5 +1633,18 @@ mod tests {
         .expect_err("unknown placement request fields should be rejected");
 
         assert!(error.to_string().contains("unknown field"));
+    }
+
+    fn placement_anchor(instance: &str, x: i64, y: i64) -> FacilityPlacement {
+        FacilityPlacement {
+            instance: instance.to_string(),
+            recipe: "assemble-casing".to_string(),
+            facility: "assembler".to_string(),
+            x,
+            y,
+            width: 2,
+            height: 2,
+            rotation: 0,
+        }
     }
 }
