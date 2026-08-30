@@ -79,14 +79,15 @@ pub fn render_integrated_layout_html_with_localization(
   .route-cell {{ shape-rendering: crispEdges; }}
   .route-cell-belt {{ fill: #f1b84b; fill-opacity: .58; stroke: #ffd77c; stroke-width: .05; }}
   .route-cell-pipe {{ fill: #59c7f2; fill-opacity: .62; stroke: #b3ebff; stroke-width: .06; }}
-  .route-group:hover .route-cell {{ fill-opacity: .95; stroke: #ffffff; stroke-width: .12; }}
+  .route-direction {{ fill: #071019; stroke: #ffffff; stroke-width: .7px; vector-effect: non-scaling-stroke; pointer-events: none; }}
   [data-inspect] {{ cursor: pointer; }}
-  [data-inspect].selected .route-cell, [data-inspect].selected {{ filter: brightness(1.45); }}
+  .route-group.selected .route-cell {{ fill-opacity: .95; stroke: #ffffff; stroke-width: .12; }}
+  .endpoint.selected, .facility.selected, .component.selected {{ stroke: #ffffff; stroke-width: 2px; }}
   .endpoint {{ vector-effect: non-scaling-stroke; stroke-width: 1px; }}
   .endpoint-belt {{ fill: #f1b84b; stroke: #251a07; }}
   .endpoint-pipe {{ fill: #59c7f2; stroke: #071c26; }}
-  .port-input {{ stroke: #ffffff; }}
-  .port-output {{ stroke: #ffffff; stroke-linejoin: round; }}
+  .port-input {{ stroke: #6ff2bd; stroke-width: 1.6px; stroke-linejoin: round; }}
+  .port-output {{ stroke: #ff6b9c; stroke-width: 1.6px; stroke-linejoin: round; }}
   .boundary {{ fill: #071019; stroke: #ffec99; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }}
   .facility {{ fill: #10293a; fill-opacity: .92; stroke: #d7efff; stroke-width: 1.25px; vector-effect: non-scaling-stroke; }}
   .facility.introduced {{ fill: #163c34; stroke: #6ff2bd; stroke-width: 2px; }}
@@ -114,7 +115,7 @@ pub fn render_integrated_layout_html_with_localization(
     <span class="metrics" data-metrics>{}</span>
     <button type="button" data-toggle="belt-layer" aria-pressed="true"><span class="swatch belt-swatch"></span>Belt (<span data-belt-summary>{}</span>)</button>
     <button type="button" data-toggle="pipe-layer" aria-pressed="true"><span class="swatch pipe-swatch"></span>Pipe (<span data-pipe-summary>{}</span>)</button>
-    <span title="Port marker shapes">○ IN · ◇ OUT</span>
+    <span title="Arrows follow material flow"><span style="color:#6ff2bd">➤ IN</span> · <span style="color:#ff6b9c">➤ OUT</span></span>
     <button type="button" data-toggle="component-layer" aria-pressed="true">Components</button>
     <button type="button" data-toggle="label-layer" aria-pressed="true">Labels</button>
     <button type="button" data-reset>Reset view</button>
@@ -143,7 +144,7 @@ pub fn render_integrated_layout_html_with_localization(
     html.push_str(
         r#"    </svg>
     <aside class="inspect-panel" data-inspector hidden><div class="inspect-header"><strong>Layout details</strong><button type="button" data-inspector-close>Close</button></div><pre class="inspect-content" data-inspector-content></pre></aside>
-    <div class="help">wheel: zoom · drag: pan · hover: preview · click: pin details</div>
+    <div class="help">wheel: zoom · drag: pan · click: inspect</div>
   </div>
 </div>
 <script>
@@ -196,8 +197,6 @@ pub fn render_integrated_layout_html_with_localization(
   });
   root.querySelector('[data-reset]').addEventListener('click', () => { view = base.slice(); applyView(); });
   root.querySelector('[data-inspector-close]').addEventListener('click', () => selectDetails(null));
-  svg.addEventListener('pointerover', (event) => { if (!pinned) showDetails(inspectTarget(event.target)); });
-  svg.addEventListener('pointerout', (event) => { if (!pinned && !inspectTarget(event.relatedTarget)) showDetails(null); });
   svg.addEventListener('click', (event) => selectDetails(inspectTarget(event.target)));
   svg.addEventListener('wheel', (event) => {
     event.preventDefault();
@@ -425,7 +424,7 @@ fn render_routes(
         ));
         writeln!(
             html,
-            "          <g class=\"route-group\" data-inspect=\"{title}\" tabindex=\"0\">"
+            "          <g class=\"route-group\" data-inspect=\"{title}\">"
         )
         .expect("writing to String cannot fail");
         for cell in &route.cells {
@@ -436,32 +435,41 @@ fn render_routes(
             )
             .expect("writing to String cannot fail");
         }
+        for index in (4..route.cells.len().saturating_sub(1)).step_by(8) {
+            let points = flow_arrow_points(
+                &route.cells[index],
+                &route.cells[index],
+                &route.cells[index + 1],
+                0.34,
+                0.22,
+            );
+            writeln!(
+                html,
+                "            <polygon class=\"route-direction\" points=\"{points}\"/>"
+            )
+            .expect("writing to String cannot fail");
+        }
         html.push_str("          </g>\n");
         let endpoint_class = match transport {
             TransportKind::Belt => "endpoint-belt",
             TransportKind::Pipe => "endpoint-pipe",
         };
-        for (is_source, endpoint, peer, cell) in [
-            (
-                true,
-                &route.source,
-                &route.target,
-                route.cells.first().expect("route is non-empty"),
-            ),
-            (
-                false,
-                &route.target,
-                &route.source,
-                route.cells.last().expect("route is non-empty"),
-            ),
+        let first = route.cells.first().expect("route is non-empty");
+        let last = route.cells.last().expect("route is non-empty");
+        let second = route.cells.get(1).unwrap_or(first);
+        let penultimate = route
+            .cells
+            .get(route.cells.len().saturating_sub(2))
+            .unwrap_or(last);
+        for (is_source, endpoint, peer, cell, direction_target) in [
+            (true, &route.source, &route.target, first, second),
+            (false, &route.target, &route.source, last, last),
         ] {
             let boundary_class = if matches!(endpoint, IntegratedRouteEndpoint::Boundary { .. }) {
                 " boundary"
             } else {
                 ""
             };
-            let center_x = cell.x as f64 + 0.5;
-            let center_y = cell.y as f64 + 0.5;
             let role = endpoint_role(endpoint, is_source);
             let tooltip = xml_escape(&format!(
                 "{role} | item {} | rate {} | {} | peer {}",
@@ -470,30 +478,52 @@ fn render_routes(
                 endpoint_name(endpoint),
                 endpoint_name(peer),
             ));
-            match endpoint {
-                IntegratedRouteEndpoint::Facility { .. } if is_source => writeln!(
-                    html,
-                    "          <polygon class=\"endpoint port-output {endpoint_class}\" data-inspect=\"{tooltip}\" tabindex=\"0\" points=\"{center_x:.2},{:.2} {:.2},{center_y:.2} {center_x:.2},{:.2} {:.2},{center_y:.2}\"/>",
-                    center_y - 0.46,
-                    center_x + 0.46,
-                    center_y + 0.46,
-                    center_x - 0.46,
-                ),
-                IntegratedRouteEndpoint::Facility { .. } => writeln!(
-                    html,
-                    "          <circle class=\"endpoint port-input {endpoint_class}\" data-inspect=\"{tooltip}\" tabindex=\"0\" cx=\"{center_x:.2}\" cy=\"{center_y:.2}\" r=\".42\"/>",
-                ),
-                IntegratedRouteEndpoint::Boundary { .. } => writeln!(
-                    html,
-                    "          <rect class=\"endpoint {endpoint_class}{boundary_class}\" data-inspect=\"{tooltip}\" tabindex=\"0\" x=\"{:.2}\" y=\"{:.2}\" width=\".84\" height=\".84\"/>",
-                    center_x - 0.42,
-                    center_y - 0.42,
-                ),
-            }
+            let direction_source = if is_source { cell } else { penultimate };
+            let points = flow_arrow_points(cell, direction_source, direction_target, 0.48, 0.36);
+            let role_class = if is_source {
+                "port-output"
+            } else {
+                "port-input"
+            };
+            writeln!(
+                html,
+                "          <polygon class=\"endpoint {role_class} {endpoint_class}{boundary_class}\" data-inspect=\"{tooltip}\" points=\"{points}\"/>"
+            )
             .expect("writing to String cannot fail");
         }
     }
     html.push_str("        </g>\n");
+}
+
+fn flow_arrow_points(
+    center: &super::WorldGridPosition,
+    from: &super::WorldGridPosition,
+    to: &super::WorldGridPosition,
+    forward: f64,
+    half_width: f64,
+) -> String {
+    let dx = (to.x - from.x).signum() as f64;
+    let dy = (to.y - from.y).signum() as f64;
+    let (dx, dy) = if dx == 0.0 && dy == 0.0 {
+        (1.0, 0.0)
+    } else {
+        (dx, dy)
+    };
+    let center_x = center.x as f64 + 0.5;
+    let center_y = center.y as f64 + 0.5;
+    let tip_x = center_x + dx * forward;
+    let tip_y = center_y + dy * forward;
+    let base_x = center_x - dx * forward * 0.7;
+    let base_y = center_y - dy * forward * 0.7;
+    let perpendicular_x = -dy * half_width;
+    let perpendicular_y = dx * half_width;
+    format!(
+        "{tip_x:.2},{tip_y:.2} {:.2},{:.2} {:.2},{:.2}",
+        base_x + perpendicular_x,
+        base_y + perpendicular_y,
+        base_x - perpendicular_x,
+        base_y - perpendicular_y,
+    )
 }
 
 fn endpoint_role(endpoint: &IntegratedRouteEndpoint, is_source: bool) -> &'static str {
@@ -528,7 +558,7 @@ fn render_components(html: &mut String, components: &[PlacedLogisticsComponent])
         };
         writeln!(
             html,
-            "        <circle class=\"component {class}\" data-inspect=\"{}\" tabindex=\"0\" cx=\"{:.1}\" cy=\"{:.1}\" r=\".34\"/>",
+            "        <circle class=\"component {class}\" data-inspect=\"{}\" cx=\"{:.1}\" cy=\"{:.1}\" r=\".34\"/>",
             xml_escape(&format!(
                 "logistics component | {} | {} | {:?}",
                 component.id, component.component, component.transport
@@ -574,7 +604,7 @@ fn render_facilities(
         };
         writeln!(
             html,
-            "        <rect class=\"facility{introduced}\" data-inspect=\"{title}\" tabindex=\"0\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"/>",
+            "        <rect class=\"facility{introduced}\" data-inspect=\"{title}\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"/>",
             placement.x, placement.y, placement.width, placement.height,
         )
         .expect("writing to String cannot fail");
@@ -588,16 +618,28 @@ fn render_facilities(
             });
         let center_x = placement.x as f64 + placement.width as f64 / 2.0;
         let center_y = placement.y as f64 + placement.height as f64 / 2.0;
-        let text_length = (placement.width as f64 - 0.6).max(0.5);
+        let available_width = (placement.width as f64 - 0.6).max(0.5);
+        let fit_attributes = if estimated_label_width(facility_name) > available_width {
+            format!(" textLength=\"{available_width:.2}\" lengthAdjust=\"spacingAndGlyphs\"")
+        } else {
+            String::new()
+        };
         writeln!(
             html,
-            "        <text class=\"facility-label\" x=\"{center_x:.2}\" y=\"{:.2}\"><tspan x=\"{center_x:.2}\" textLength=\"{text_length:.2}\" lengthAdjust=\"spacingAndGlyphs\">{}</tspan><tspan class=\"facility-index\" x=\"{center_x:.2}\" dy=\"1\">F{index:02}</tspan></text>",
+            "        <text class=\"facility-label\" x=\"{center_x:.2}\" y=\"{:.2}\"><tspan x=\"{center_x:.2}\"{fit_attributes}>{}</tspan><tspan class=\"facility-index\" x=\"{center_x:.2}\" dy=\"1\">F{index:02}</tspan></text>",
             center_y - 0.45,
             xml_escape(facility_name),
         )
         .expect("writing to String cannot fail");
     }
     html.push_str("      </g>\n");
+}
+
+fn estimated_label_width(value: &str) -> f64 {
+    value
+        .chars()
+        .map(|character| if character.is_ascii() { 0.43 } else { 0.72 })
+        .sum()
 }
 
 fn localized_item_name(localization: Option<&ValidatedLocalizationCatalog>, item: &str) -> String {
@@ -643,7 +685,10 @@ mod tests {
     use crate::logistics::TransportKind;
     use crate::recipes::Rate;
 
-    use super::{render_integrated_layout_html, render_integrated_layout_html_with_localization};
+    use super::{
+        estimated_label_width, render_integrated_layout_html,
+        render_integrated_layout_html_with_localization,
+    };
 
     #[test]
     fn renders_a_self_contained_wireframe_with_transport_layers() {
@@ -738,8 +783,13 @@ mod tests {
         assert!(html.contains("factory input boundary"));
         assert!(html.contains("facility input port"));
         assert!(html.contains("port-input endpoint-belt"));
+        assert!(html.contains("color:#6ff2bd\">➤ IN"));
         assert!(html.contains("data-inspector-content"));
         assert!(html.contains("data-inspect=\"factory input boundary"));
+        assert!(html.contains("click: inspect"));
+        assert!(!html.contains("pointerover"));
+        assert!(!html.contains("tabindex=\"0\""));
+        assert!(!html.contains("filter: brightness"));
         assert!(html.contains("Belt (<span data-belt-summary>2 tiles</span>)"));
         assert_eq!(html.matches("class=\"phase-page").count(), 2);
         assert!(html.contains("data-previous"));
@@ -761,5 +811,11 @@ mod tests {
             .expect_err("failed layout should not render a misleading wireframe");
 
         assert_eq!(diagnostic.code, "layout-visualization-requires-success");
+    }
+
+    #[test]
+    fn preserves_short_korean_facility_label_proportions() {
+        assert!(estimated_label_width("천화로") < 4.4);
+        assert!(estimated_label_width("xiranite-oven-1-mode-liquid") > 4.4);
     }
 }
