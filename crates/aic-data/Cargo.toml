@@ -8,6 +8,7 @@ publish = false
 
 [dependencies]
 pumpkin-solver.workspace = true
+good_lp.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 

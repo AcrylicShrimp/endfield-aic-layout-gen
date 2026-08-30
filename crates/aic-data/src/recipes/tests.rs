@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use super::*;
 
 fn valid_book() -> RecipeBook {
@@ -313,7 +315,7 @@ fn defers_ambiguous_output_producers_until_graph_resolution() {
 }
 
 #[test]
-fn defers_cycles_until_graph_resolution() {
+fn resolves_cycles_for_material_balance_planning() {
     let book = RecipeBook {
         schema_version: 1,
         external_items: vec![],
@@ -349,15 +351,116 @@ fn defers_cycles_until_graph_resolution() {
 
     let validated = ValidatedRecipeBook::try_from_recipe_book(book)
         .expect("structurally valid cyclic recipes should promote");
-    let error = validated
+    let graph = validated
         .resolve_graph("item-a")
-        .expect_err("encountered cycle should stop graph resolution");
+        .expect("cyclic graph should resolve for material-balance planning");
 
-    assert!(matches!(
-        error,
-        RecipeGraphError::RecipeCycle { recipes }
-            if recipes == vec!["make-a", "make-b", "make-a"]
-    ));
+    assert_eq!(graph.recipes.len(), 2);
+    assert_eq!(
+        graph
+            .recipes
+            .iter()
+            .map(|recipe| recipe.id.as_str())
+            .collect::<Vec<_>>(),
+        vec!["make-b", "make-a"]
+    );
+}
+
+#[test]
+fn calculates_amplifying_cycle_as_steady_state_flow() {
+    let book = RecipeBook {
+        schema_version: 1,
+        external_items: vec![],
+        recipes: vec![
+            Recipe {
+                id: "grow-crop".to_string(),
+                facility: "planter".to_string(),
+                inputs: vec![ItemAmount {
+                    item: "seed".to_string(),
+                    quantity: 1,
+                }],
+                outputs: vec![ItemAmount {
+                    item: "crop".to_string(),
+                    quantity: 2,
+                }],
+                duration_ms: 1000,
+            },
+            Recipe {
+                id: "collect-seed".to_string(),
+                facility: "seed-collector".to_string(),
+                inputs: vec![ItemAmount {
+                    item: "crop".to_string(),
+                    quantity: 1,
+                }],
+                outputs: vec![ItemAmount {
+                    item: "seed".to_string(),
+                    quantity: 2,
+                }],
+                duration_ms: 1000,
+            },
+        ],
+    };
+    let report = ValidatedRecipeBook::try_from_recipe_book(book)
+        .expect("cyclic recipe book should promote")
+        .calculate_throughput(&throughput_request("crop", 1, 1000));
+
+    assert!(report.success, "{:#?}", report.diagnostics);
+    assert_eq!(report.external_input_rates, Vec::<ItemRate>::new());
+    assert_eq!(
+        report.bootstrap_item_options,
+        vec!["crop".to_string(), "seed".to_string()]
+    );
+    assert_eq!(report.recipe_rates.len(), 2);
+    let rates = report
+        .recipe_rates
+        .iter()
+        .map(|recipe| (recipe.recipe.as_str(), recipe.runs_per_second))
+        .collect::<BTreeMap<_, _>>();
+    assert_eq!(rates["grow-crop"], rate(2, 3));
+    assert_eq!(rates["collect-seed"], rate(1, 3));
+    assert_eq!(report.diagnostics[0].code, "cyclic-throughput-calculated");
+}
+
+#[test]
+fn rejects_non_amplifying_cycle_with_target_drain() {
+    let book = RecipeBook {
+        schema_version: 1,
+        external_items: vec![],
+        recipes: vec![
+            Recipe {
+                id: "grow-crop".to_string(),
+                facility: "planter".to_string(),
+                inputs: vec![ItemAmount {
+                    item: "seed".to_string(),
+                    quantity: 1,
+                }],
+                outputs: vec![ItemAmount {
+                    item: "crop".to_string(),
+                    quantity: 1,
+                }],
+                duration_ms: 1000,
+            },
+            Recipe {
+                id: "collect-seed".to_string(),
+                facility: "seed-collector".to_string(),
+                inputs: vec![ItemAmount {
+                    item: "crop".to_string(),
+                    quantity: 1,
+                }],
+                outputs: vec![ItemAmount {
+                    item: "seed".to_string(),
+                    quantity: 1,
+                }],
+                duration_ms: 1000,
+            },
+        ],
+    };
+    let report = ValidatedRecipeBook::try_from_recipe_book(book)
+        .expect("cyclic recipe book should promote")
+        .calculate_throughput(&throughput_request("crop", 1, 1000));
+
+    assert!(!report.success);
+    assert_eq!(report.diagnostics[0].code, "cyclic-throughput-infeasible");
 }
 
 #[test]

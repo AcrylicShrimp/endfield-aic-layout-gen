@@ -7,6 +7,8 @@ use crate::recipes::{
     id::{STABLE_ID_PATTERN, is_stable_id},
 };
 
+mod cyclic;
+
 const STAGE: &str = "recipe-throughput";
 
 pub const SUPPORTED_THROUGHPUT_REQUEST_SCHEMA_VERSION: u32 = 2;
@@ -221,6 +223,7 @@ pub struct RecipeThroughputReport {
     pub external_input_rates: Vec<ItemRate>,
     pub item_demand_rates: Vec<ItemRate>,
     pub surplus_rates: Vec<ItemRate>,
+    pub bootstrap_item_options: Vec<String>,
     pub diagnostics: Vec<ThroughputDiagnostic>,
 }
 
@@ -237,6 +240,7 @@ impl RecipeThroughputReport {
             external_input_rates: Vec::new(),
             item_demand_rates: Vec::new(),
             surplus_rates: Vec::new(),
+            bootstrap_item_options: Vec::new(),
             diagnostics,
         }
     }
@@ -385,6 +389,15 @@ impl ValidatedRecipeBook {
             Err(diagnostic) => return RecipeThroughputReport::failure(diagnostic),
         };
 
+        if let Some(bootstrap_item_options) = cyclic::bootstrap_items(&graph) {
+            return cyclic::calculate_cyclic_throughput(
+                &graph,
+                request,
+                target_rate,
+                bootstrap_item_options,
+            );
+        }
+
         let mut item_demands = BTreeMap::<String, Rate>::new();
         item_demands.insert(request.target.item.clone(), target_rate);
 
@@ -462,6 +475,7 @@ impl ValidatedRecipeBook {
                 .filter(|(_, rate)| !rate.is_zero())
                 .map(|(item, rate)| ItemRate { item, rate })
                 .collect(),
+            bootstrap_item_options: Vec::new(),
             diagnostics: build_success_diagnostics(&request.target.item),
         }
     }
@@ -588,15 +602,6 @@ fn map_graph_error(error: RecipeGraphError) -> ThroughputDiagnostic {
             format!(
                 "item '{item}' is produced by multiple recipes: {}",
                 recipes.join(", ")
-            ),
-        ),
-        RecipeGraphError::RecipeCycle { recipes } => ThroughputDiagnostic::error(
-            "recipe-cycle",
-            "/recipes",
-            None,
-            format!(
-                "cyclic recipe dependency encountered: {}",
-                recipes.join(" -> ")
             ),
         ),
     }
