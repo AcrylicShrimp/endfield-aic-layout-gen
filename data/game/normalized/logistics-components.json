@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "components": [
+    {
+      "id": "log-converger",
+      "transport": "belt",
+      "kind": "converger",
+      "footprint": {
+        "width": 1,
+        "height": 1
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "input_directions": [
+        "north",
+        "east",
+        "west"
+      ],
+      "output_directions": [
+        "south"
+      ],
+      "capacity": {
+        "quantity": 1,
+        "duration_ms": 2000
+      }
+    },
+    {
+      "id": "log-splitter",
+      "transport": "belt",
+      "kind": "splitter",
+      "footprint": {
+        "width": 1,
+        "height": 1
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "input_directions": [
+        "north"
+      ],
+      "output_directions": [
+        "east",
+        "south",
+        "west"
+      ],
+      "capacity": {
+        "quantity": 1,
+        "duration_ms": 2000
+      }
+    },
+    {
+      "id": "log-connector",
+      "transport": "belt",
+      "kind": "bridge",
+      "footprint": {
+        "width": 1,
+        "height": 1
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "input_directions": [
+        "north",
+        "east",
+        "south",
+        "west"
+      ],
+      "output_directions": [
+        "north",
+        "east",
+        "south",
+        "west"
+      ],
+      "capacity": {
+        "quantity": 1,
+        "duration_ms": 2000
+      }
+    },
+    {
+      "id": "log-pipe-converger",
+      "transport": "pipe",
+      "kind": "converger",
+      "footprint": {
+        "width": 1,
+        "height": 1
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "input_directions": [
+        "north",
+        "east",
+        "west"
+      ],
+      "output_directions": [
+        "south"
+      ],
+      "capacity": {
+        "quantity": 1,
+        "duration_ms": 500
+      }
+    },
+    {
+      "id": "log-pipe-splitter",
+      "transport": "pipe",
+      "kind": "splitter",
+      "footprint": {
+        "width": 1,
+        "height": 1
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "input_directions": [
+        "north"
+      ],
+      "output_directions": [
+        "east",
+        "south",
+        "west"
+      ],
+      "capacity": {
+        "quantity": 1,
+        "duration_ms": 500
+      }
+    },
+    {
+      "id": "log-pipe-connector",
+      "transport": "pipe",
+      "kind": "bridge",
+      "footprint": {
+        "width": 1,
+        "height": 1
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "input_directions": [
+        "north",
+        "east",
+        "south",
+        "west"
+      ],
+      "output_directions": [
+        "north",
+        "east",
+        "south",
+        "west"
+      ],
+      "capacity": {
+        "quantity": 1,
+        "duration_ms": 500
+      }
+    }
+  ]
+}

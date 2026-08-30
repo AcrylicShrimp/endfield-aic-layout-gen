@@ -15,6 +15,7 @@ Current snapshot contents:
 - `facilities.json`: 28 recipe-capable machine-mode combinations flattened into dedicated facilities.
 - `recipes.json`: 305 machine recipes and 10 raw external input items.
 - `localization.ko-KR.json`: Korean display data for 538 items, 28 flattened facilities, 7 modes, and 305 recipe formula descriptions.
+- `logistics-components.json`: belt and pipe splitter, converger, and logistics-bridge topology.
 
 ## Normalization Rules
 
@@ -31,5 +32,6 @@ Current snapshot contents:
 - Items consumed but never produced by a machine recipe become recipe-book external items.
 - Official Korean strings are joined by source text ID; a missing string uses the unchanged stable ID and records `id-fallback` instead of deriving a name.
 - Blueprint limits are copied exactly from `FacBlueprintConst` and remain external game data.
+- Logistics component directions and capacities are copied from the dedicated belt and pipe router/connector tables; source `connector` records normalize as logistics bridges.
 
 The source snapshot remains authoritative. Do not hand-edit generated catalogs; change the normalizer or source snapshot and regenerate them.

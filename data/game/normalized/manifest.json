@@ -6,6 +6,7 @@
     "blueprint_limits": 1,
     "items": 538,
     "transports": 2,
+    "logistics_components": 6,
     "facilities": 28,
     "recipes": 305,
     "external_items": 10,
@@ -26,6 +27,10 @@
     {
       "path": "items.json",
       "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+    },
+    {
+      "path": "logistics-components.json",
+      "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
     },
     {
       "path": "localization.ko-KR.json",

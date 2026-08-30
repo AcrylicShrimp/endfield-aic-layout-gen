@@ -93,6 +93,57 @@ def normalized_port(
     }
 
 
+def heading(rotation_y: int) -> str:
+    headings = {0: "north", 90: "east", 180: "south", 270: "west"}
+    try:
+        return headings[rotation_y]
+    except KeyError as error:
+        raise ValueError(f"unsupported logistics component rotation {rotation_y}") from error
+
+
+def opposite(direction: str) -> str:
+    return {
+        "north": "south",
+        "east": "west",
+        "south": "north",
+        "west": "east",
+    }[direction]
+
+
+def component_directions(
+    ports: list[dict[str, Any]], direction: str
+) -> list[str]:
+    directions = []
+    for port in ports:
+        port_heading = heading(port["rotation"]["y"])
+        directions.append(opposite(port_heading) if direction == "input" else port_heading)
+    return sorted(set(directions), key=("north", "east", "south", "west").index)
+
+
+def normalized_logistics_component(
+    source_id: str, component: dict[str, Any], transport: str, kind: str
+) -> dict[str, Any]:
+    unit_data = (
+        component["gridUnitData"]
+        if transport == "belt"
+        else component["liquidUnitData"]
+    )
+    capacity = {
+        "quantity": unit_data.get("volume", 1),
+        "duration_ms": unit_data["msPerRound"],
+    }
+    return {
+        "id": stable_id(source_id),
+        "transport": transport,
+        "kind": kind,
+        "footprint": {"width": component["range"]["x"], "height": component["range"]["z"]},
+        "allowed_rotations": [0, 90, 180, 270],
+        "input_directions": component_directions(component["inputPorts"], "input"),
+        "output_directions": component_directions(component["outputPorts"], "output"),
+        "capacity": capacity,
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--source", type=Path, required=True)
@@ -116,6 +167,10 @@ def main() -> None:
     mode_text = load_json(localization_source / "FactoryMachineCraftModeTable.json")
     craft_text = load_json(localization_source / "FactoryMachineCraftTable.json")
     modes = load_json(table_source / "FactoryMachineCraftModeTable.json")
+    belt_routers = load_json(table_source / "FactoryGridRouterTable.json")
+    belt_bridges = load_json(table_source / "FactoryGridConnecterTable.json")
+    pipe_routers = load_json(table_source / "FactoryLiquidRouterTable.json")
+    pipe_bridges = load_json(table_source / "FactoryLiquidConnectorTable.json")
 
     if len(belts) != 1 or len(pipes) != 1:
         raise ValueError("expected exactly one belt and one pipe transport definition")
@@ -219,6 +274,20 @@ def main() -> None:
         {"id": stable_id(item_id), "transport": transports_by_item[item_id]}
         for item_id in sorted(items)
     ]
+
+    normalized_logistics_components = []
+    for transport, component_groups in [
+        ("belt", [(belt_routers, None), (belt_bridges, "bridge")]),
+        ("pipe", [(pipe_routers, None), (pipe_bridges, "bridge")]),
+    ]:
+        for components, fixed_kind in component_groups:
+            for source_id, component in sorted(components.items()):
+                kind = fixed_kind
+                if kind is None:
+                    kind = "splitter" if "splitter" in source_id else "converger"
+                normalized_logistics_components.append(
+                    normalized_logistics_component(source_id, component, transport, kind)
+                )
 
     localized_items = []
     for item_id in sorted(items):
@@ -347,11 +416,19 @@ def main() -> None:
             "max_nodes": blueprint_limits["BlueprintNodeCountLimit"],
         },
     )
+    write_json(
+        args.output / "logistics-components.json",
+        {
+            "schema_version": 1,
+            "components": normalized_logistics_components,
+        },
+    )
 
     generated_files = [
         "blueprint-limits.json",
         "facilities.json",
         "items.json",
+        "logistics-components.json",
         "localization.ko-KR.json",
         "recipes.json",
         "transports.json",
@@ -366,6 +443,7 @@ def main() -> None:
                 "blueprint_limits": 1,
                 "items": len(normalized_items),
                 "transports": 2,
+                "logistics_components": len(normalized_logistics_components),
                 "facilities": len(normalized_facilities),
                 "recipes": len(normalized_recipes),
                 "external_items": len(consumed_items - produced_items),
