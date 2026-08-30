@@ -12,7 +12,8 @@ pub use integrated::{
     BoundarySide, IntegratedLayoutDiagnostic, IntegratedLayoutReport, IntegratedLayoutStatus,
     IntegratedRoute, IntegratedRouteEndpoint, PlacedLogisticsComponent,
     construct_coordinate_integrated_layout_with_time_limit, construct_sparse_integrated_layout,
-    solve_integrated_layout, solve_integrated_layout_with_time_limit,
+    render_integrated_layout_html, solve_integrated_layout,
+    solve_integrated_layout_with_time_limit,
 };
 
 pub use placement::{

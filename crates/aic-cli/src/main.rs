@@ -1,4 +1,9 @@
-use std::{num::NonZeroU64, path::PathBuf, process::ExitCode, time::Duration};
+use std::{
+    num::NonZeroU64,
+    path::{Path, PathBuf},
+    process::ExitCode,
+    time::Duration,
+};
 
 use aic_data::facilities::{
     FacilityCatalogValidationReport, ValidatedFacilityCatalog, load_facility_catalog,
@@ -8,7 +13,8 @@ use aic_data::layouts::{
     FacilityPlacementDiagnostic, FacilityPlacementReport, FacilityPlacementRequest,
     IntegratedLayoutDiagnostic, IntegratedLayoutReport,
     construct_coordinate_integrated_layout_with_time_limit, construct_sparse_integrated_layout,
-    solve_facility_placement, solve_integrated_layout_with_time_limit,
+    render_integrated_layout_html, solve_facility_placement,
+    solve_integrated_layout_with_time_limit,
 };
 use aic_data::localization::{
     LocalizationCatalogValidationReport, ValidatedLocalizationCatalog, load_localization_catalog,
@@ -176,6 +182,10 @@ enum LayoutsCommand {
         /// Integrated solving strategy.
         #[arg(long, value_enum, default_value = "coordinate-feasibility")]
         strategy: IntegratedLayoutStrategy,
+
+        /// Standalone HTML wireframe file to write for a successful layout.
+        #[arg(long, value_name = "FILE")]
+        visualization_output: Option<PathBuf>,
     },
     /// Resolve contextual sources and solve placement, ports, and routing.
     SolveContextual {
@@ -214,6 +224,10 @@ enum LayoutsCommand {
         /// Integrated solving strategy.
         #[arg(long, value_enum, default_value = "coordinate-feasibility")]
         strategy: IntegratedLayoutStrategy,
+
+        /// Standalone HTML wireframe file to write for a successful layout.
+        #[arg(long, value_name = "FILE")]
+        visualization_output: Option<PathBuf>,
     },
 }
 
@@ -438,6 +452,7 @@ fn run() -> Result<CommandStatus> {
                 placement_request,
                 time_limit_seconds,
                 strategy,
+                visualization_output,
             } => solve_layout(
                 recipes,
                 throughput_request,
@@ -448,6 +463,7 @@ fn run() -> Result<CommandStatus> {
                 placement_request,
                 time_limit_seconds,
                 strategy,
+                visualization_output,
             ),
             LayoutsCommand::SolveContextual {
                 recipes,
@@ -459,6 +475,7 @@ fn run() -> Result<CommandStatus> {
                 placement_request,
                 time_limit_seconds,
                 strategy,
+                visualization_output,
             } => solve_contextual_layout(
                 recipes,
                 source_plan,
@@ -469,6 +486,7 @@ fn run() -> Result<CommandStatus> {
                 placement_request,
                 time_limit_seconds,
                 strategy,
+                visualization_output,
             ),
         },
         Command::Localization { command } => match command {
@@ -1042,6 +1060,7 @@ fn solve_layout(
     placement_request: PathBuf,
     time_limit_seconds: NonZeroU64,
     strategy: IntegratedLayoutStrategy,
+    visualization_output: Option<PathBuf>,
 ) -> Result<CommandStatus> {
     let throughput_report = calculate_throughput_report(recipes, throughput_request)?;
     if !throughput_report.success {
@@ -1152,6 +1171,7 @@ fn solve_layout(
         ),
     };
     let success = report.success;
+    write_layout_visualization(visualization_output.as_deref(), &report)?;
     write_layout_solve_report(&throughput_report.bootstrap_item_options, &report)?;
 
     if success {
@@ -1172,6 +1192,7 @@ fn solve_contextual_layout(
     placement_request: PathBuf,
     time_limit_seconds: NonZeroU64,
     strategy: IntegratedLayoutStrategy,
+    visualization_output: Option<PathBuf>,
 ) -> Result<CommandStatus> {
     let (book, source_plan) = match load_contextual_recipe_request(&recipes, &source_plan)? {
         Ok(inputs) => inputs,
@@ -1286,6 +1307,7 @@ fn solve_contextual_layout(
         ),
     };
     let success = layout.success;
+    write_layout_visualization(visualization_output.as_deref(), &layout)?;
     write_contextual_layout_solve_report(&throughput, &facility_requirements, &wiring, &layout)?;
 
     if success {
@@ -1468,6 +1490,31 @@ fn write_facility_placement_report(report: &FacilityPlacementReport) -> Result<(
     Ok(())
 }
 
+fn write_layout_visualization(
+    output: Option<&Path>,
+    layout: &IntegratedLayoutReport,
+) -> Result<()> {
+    let Some(output) = output else {
+        return Ok(());
+    };
+    if !layout.success {
+        return Ok(());
+    }
+    let html = render_integrated_layout_html(layout).map_err(|diagnostic| {
+        anyhow::anyhow!(
+            "layout visualization failed with {}: {}",
+            diagnostic.code,
+            diagnostic.message
+        )
+    })?;
+    std::fs::write(output, html).with_context(|| {
+        format!(
+            "failed to write layout visualization file '{}'",
+            output.display()
+        )
+    })
+}
+
 fn write_layout_solve_report(
     bootstrap_item_options: &[String],
     layout: &IntegratedLayoutReport,
@@ -1527,5 +1574,43 @@ mod tests {
         assert_eq!(value["success"], false);
         assert_eq!(value["bootstrap_item_options"][0], "seed");
         assert_eq!(value["layout"]["status"], "invalid-input");
+    }
+
+    #[test]
+    fn parses_contextual_layout_visualization_output() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "layouts",
+            "solve-contextual",
+            "--recipes",
+            "recipes.json",
+            "--source-plan",
+            "source-plan.json",
+            "--facility-catalog",
+            "facilities.json",
+            "--item-catalog",
+            "items.json",
+            "--transport-catalog",
+            "transports.json",
+            "--logistics-component-catalog",
+            "components.json",
+            "--placement-request",
+            "placement.json",
+            "--visualization-output",
+            "layout.html",
+        ])
+        .expect("contextual visualization CLI should parse");
+
+        let Command::Layouts {
+            command:
+                LayoutsCommand::SolveContextual {
+                    visualization_output,
+                    ..
+                },
+        } = cli.command
+        else {
+            panic!("expected contextual layout command")
+        };
+        assert_eq!(visualization_output, Some(PathBuf::from("layout.html")));
     }
 }

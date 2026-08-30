@@ -32,9 +32,12 @@ use crate::recipes::{
 use super::WorldGridPosition;
 use super::placement::solve_facility_placement_feasibly_with_time_limit;
 
+mod html;
 mod networks;
 mod sparse;
 mod witness;
+
+pub use html::render_integrated_layout_html;
 
 const STAGE: &str = "integrated-layout";
 const COORDINATE_ROUTING_CLEARANCE: i64 = 10;
