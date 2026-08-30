@@ -12,6 +12,20 @@
         "kind": "recipe",
         "recipe": "xiranite-oven-xiranite-enr-powder-1"
       }
+    },
+    {
+      "path": "/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly",
+      "source": {
+        "kind": "recipe",
+        "recipe": "pool-liquid-xiranite-poly-1"
+      }
+    },
+    {
+      "path": "/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder",
+      "source": {
+        "kind": "recipe",
+        "recipe": "xiranite-oven-xiranite-powder-1"
+      }
     }
   ]
 }
