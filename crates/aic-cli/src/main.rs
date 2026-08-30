@@ -10,7 +10,8 @@ use aic_data::layouts::{
     solve_integrated_layout_with_time_limit,
 };
 use aic_data::localization::{
-    LocalizationCatalogValidationReport, load_localization_catalog, validate_localization_coverage,
+    LocalizationCatalogValidationReport, ValidatedLocalizationCatalog, load_localization_catalog,
+    validate_localization_coverage,
 };
 use aic_data::logistics::{
     ItemCatalogValidationReport, TransportCatalogValidationReport, ValidatedItemCatalog,
@@ -20,15 +21,16 @@ use aic_data::logistics::{
 use aic_data::recipes::{
     ContextualFacilityRequirementReport, ContextualProductionGraphReport,
     ContextualThroughputReport, FacilityInstanceWiringReport, FacilityRequirementReport,
-    RecipeSelectionCheckReport, RecipeSelectionCheckStatus, RecipeSelectionDiagnostic,
-    RecipeSourceCheckReport, RecipeSourceCheckStatus, RecipeSourceDiagnostic,
-    RecipeSourcePlanRequest, RecipeThroughputReport, RecipeThroughputRequest,
-    RecipeWiringGraphReport, ThroughputDiagnostic, ValidatedRecipeBook, ValidationReport,
-    build_contextual_facility_instance_wiring, build_contextual_production_graph,
+    LocalizedRecipeSourceCheckReport, RecipeSelectionCheckReport, RecipeSelectionCheckStatus,
+    RecipeSelectionDiagnostic, RecipeSourceCheckReport, RecipeSourceCheckStatus,
+    RecipeSourceDiagnostic, RecipeSourcePlanRequest, RecipeThroughputReport,
+    RecipeThroughputRequest, RecipeWiringGraphReport, ThroughputDiagnostic, ValidatedRecipeBook,
+    ValidationReport, build_contextual_facility_instance_wiring, build_contextual_production_graph,
     build_facility_instance_wiring, build_recipe_wiring_graph,
     calculate_contextual_facility_requirements, calculate_facility_requirements,
-    check_recipe_selections, check_recipe_source_plan, load_recipe_book, validate_recipe_book,
-    validate_target_item_id, validate_throughput_request,
+    check_recipe_selections, check_recipe_source_plan, load_recipe_book,
+    localize_recipe_source_check_report, validate_recipe_book, validate_target_item_id,
+    validate_throughput_request,
 };
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
@@ -256,6 +258,10 @@ enum RecipesCommand {
         /// Hierarchical source-plan request JSON file to check.
         #[arg(long, short, value_name = "FILE")]
         request: PathBuf,
+
+        /// Localization catalog used for all display names in the report.
+        #[arg(long, value_name = "FILE")]
+        localization: PathBuf,
     },
     /// Project a ready source hierarchy into a contextual production graph.
     ProductionGraph {
@@ -450,9 +456,11 @@ fn run() -> Result<CommandStatus> {
             RecipesCommand::CheckSelections { file, request } => {
                 check_recipe_selections_command(file, request)
             }
-            RecipesCommand::CheckSources { file, request } => {
-                check_recipe_sources_command(file, request)
-            }
+            RecipesCommand::CheckSources {
+                file,
+                request,
+                localization,
+            } => check_recipe_sources_command(file, request, localization),
             RecipesCommand::ProductionGraph { file, request } => {
                 production_graph_command(file, request)
             }
@@ -661,8 +669,20 @@ fn check_recipe_selections_command(file: PathBuf, request: PathBuf) -> Result<Co
     Ok(status)
 }
 
-fn check_recipe_sources_command(file: PathBuf, request: PathBuf) -> Result<CommandStatus> {
+fn check_recipe_sources_command(
+    file: PathBuf,
+    request: PathBuf,
+    localization: PathBuf,
+) -> Result<CommandStatus> {
     let recipe_book = load_recipe_book(&file)?;
+    let localization = load_localization_catalog(&localization)?;
+    let localization = match ValidatedLocalizationCatalog::try_from_catalog(localization) {
+        Ok(localization) => localization,
+        Err(report) => {
+            write_localization_catalog_validation_report(&report)?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
     let request_json = std::fs::read_to_string(&request).with_context(|| {
         format!(
             "failed to read recipe source-plan request file '{}'",
@@ -678,7 +698,8 @@ fn check_recipe_sources_command(file: PathBuf, request: PathBuf) -> Result<Comma
                 None,
                 error.to_string(),
             )]);
-            write_recipe_source_check_report(&report)?;
+            let report = localize_recipe_source_check_report(report, &localization);
+            write_localized_recipe_source_check_report(&report)?;
             return Ok(CommandStatus::Failure);
         }
     };
@@ -697,7 +718,8 @@ fn check_recipe_sources_command(file: PathBuf, request: PathBuf) -> Result<Comma
     } else {
         CommandStatus::Success
     };
-    write_recipe_source_check_report(&report)?;
+    let report = localize_recipe_source_check_report(report, &localization);
+    write_localized_recipe_source_check_report(&report)?;
     Ok(status)
 }
 
@@ -1229,9 +1251,11 @@ fn write_recipe_selection_check_report(report: &RecipeSelectionCheckReport) -> R
     Ok(())
 }
 
-fn write_recipe_source_check_report(report: &RecipeSourceCheckReport) -> Result<()> {
+fn write_localized_recipe_source_check_report(
+    report: &LocalizedRecipeSourceCheckReport,
+) -> Result<()> {
     serde_json::to_writer_pretty(std::io::stdout().lock(), report)
-        .context("failed to write recipe source check report")?;
+        .context("failed to write localized recipe source check report")?;
     println!();
 
     Ok(())

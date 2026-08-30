@@ -37,9 +37,12 @@ pub use selection::{
     check_recipe_selections,
 };
 pub use source_plan::{
+    LocalizedItemAmount, LocalizedRecipeFacility, LocalizedRecipeSourceCheckReport,
+    LocalizedRecipeSourceGroup, LocalizedRecipeSourceNode, LocalizedRecipeSourceOption,
     RecipeSource, RecipeSourceCheckReport, RecipeSourceCheckStatus, RecipeSourceDiagnostic,
     RecipeSourceGroup, RecipeSourceNode, RecipeSourcePlanRequest, RecipeSourceResolution,
     RecipeSourceSelection, SUPPORTED_RECIPE_SOURCE_PLAN_SCHEMA_VERSION, check_recipe_source_plan,
+    localize_recipe_source_check_report,
 };
 pub use throughput::{
     ContextualExternalInputRate, ContextualMaterialFlowRate, ContextualRecipeRunRate,

@@ -2,9 +2,12 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use serde::{Deserialize, Serialize};
 
-use crate::recipes::{
-    Recipe, ThroughputTarget, ValidatedRecipeBook,
-    id::{STABLE_ID_PATTERN, is_stable_id},
+use crate::{
+    localization::{LocalizationTextSource, ValidatedLocalizationCatalog},
+    recipes::{
+        ItemAmount, Recipe, ThroughputTarget, ValidatedRecipeBook,
+        id::{STABLE_ID_PATTERN, is_stable_id},
+    },
 };
 
 const STAGE: &str = "recipe-source-check";
@@ -84,6 +87,69 @@ pub struct RecipeSourceDiagnostic {
     pub path: String,
     pub entity: Option<String>,
     pub message: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct LocalizedRecipeSourceCheckReport {
+    pub locale: String,
+    pub ready: bool,
+    pub status: RecipeSourceCheckStatus,
+    pub root: Option<LocalizedRecipeSourceNode>,
+    pub source_catalog: Vec<LocalizedRecipeSourceGroup>,
+    pub required_selection_paths: Vec<String>,
+    pub diagnostics: Vec<RecipeSourceDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct LocalizedRecipeSourceNode {
+    pub path: String,
+    pub item: String,
+    pub item_name: String,
+    pub item_name_source: LocalizationTextSource,
+    pub external_input_allowed: bool,
+    pub resolution: RecipeSourceResolution,
+    pub selected_source: Option<RecipeSource>,
+    pub children: Vec<LocalizedRecipeSourceNode>,
+    pub cycle_to_path: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct LocalizedRecipeSourceGroup {
+    pub item: String,
+    pub item_name: String,
+    pub item_name_source: LocalizationTextSource,
+    pub external_input_supported: bool,
+    pub recipes: Vec<LocalizedRecipeSourceOption>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct LocalizedRecipeSourceOption {
+    pub id: String,
+    pub description: String,
+    pub description_source: LocalizationTextSource,
+    pub facility: LocalizedRecipeFacility,
+    pub inputs: Vec<LocalizedItemAmount>,
+    pub outputs: Vec<LocalizedItemAmount>,
+    pub duration_ms: i64,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct LocalizedRecipeFacility {
+    pub id: String,
+    pub base_facility: String,
+    pub facility_name: String,
+    pub facility_name_source: LocalizationTextSource,
+    pub mode: String,
+    pub mode_name: String,
+    pub mode_name_source: LocalizationTextSource,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct LocalizedItemAmount {
+    pub item: String,
+    pub item_name: String,
+    pub item_name_source: LocalizationTextSource,
+    pub quantity: i64,
 }
 
 impl RecipeSourceCheckReport {
@@ -243,6 +309,136 @@ pub fn check_recipe_source_plan(
             required_selection_paths,
         }
     }
+}
+
+pub fn localize_recipe_source_check_report(
+    report: RecipeSourceCheckReport,
+    localization: &ValidatedLocalizationCatalog,
+) -> LocalizedRecipeSourceCheckReport {
+    LocalizedRecipeSourceCheckReport {
+        locale: localization.catalog().locale.clone(),
+        ready: report.ready,
+        status: report.status,
+        root: report
+            .root
+            .map(|node| localize_source_node(node, localization)),
+        source_catalog: report
+            .source_catalog
+            .into_iter()
+            .map(|group| localize_source_group(group, localization))
+            .collect(),
+        required_selection_paths: report.required_selection_paths,
+        diagnostics: report.diagnostics,
+    }
+}
+
+fn localize_source_node(
+    node: RecipeSourceNode,
+    localization: &ValidatedLocalizationCatalog,
+) -> LocalizedRecipeSourceNode {
+    let (item_name, item_name_source) = localized_item_name(&node.item, localization);
+    LocalizedRecipeSourceNode {
+        path: node.path,
+        item: node.item,
+        item_name,
+        item_name_source,
+        external_input_allowed: node.external_input_allowed,
+        resolution: node.resolution,
+        selected_source: node.selected_source,
+        children: node
+            .children
+            .into_iter()
+            .map(|child| localize_source_node(child, localization))
+            .collect(),
+        cycle_to_path: node.cycle_to_path,
+    }
+}
+
+fn localize_source_group(
+    group: RecipeSourceGroup,
+    localization: &ValidatedLocalizationCatalog,
+) -> LocalizedRecipeSourceGroup {
+    let (item_name, item_name_source) = localized_item_name(&group.item, localization);
+    LocalizedRecipeSourceGroup {
+        item: group.item,
+        item_name,
+        item_name_source,
+        external_input_supported: group.external_input_supported,
+        recipes: group
+            .recipes
+            .into_iter()
+            .map(|recipe| localize_recipe_option(recipe, localization))
+            .collect(),
+    }
+}
+
+fn localize_recipe_option(
+    recipe: Recipe,
+    localization: &ValidatedLocalizationCatalog,
+) -> LocalizedRecipeSourceOption {
+    let description = localization.recipe_description(&recipe.id);
+    let facility = localization.facility(&recipe.facility);
+    LocalizedRecipeSourceOption {
+        id: recipe.id.clone(),
+        description: description
+            .map(|description| description.description.clone())
+            .unwrap_or_else(|| recipe.id.clone()),
+        description_source: description
+            .map(|description| description.description_source)
+            .unwrap_or(LocalizationTextSource::IdFallback),
+        facility: LocalizedRecipeFacility {
+            id: recipe.facility.clone(),
+            base_facility: facility
+                .map(|facility| facility.base_facility.clone())
+                .unwrap_or_else(|| recipe.facility.clone()),
+            facility_name: facility
+                .map(|facility| facility.facility_name.clone())
+                .unwrap_or_else(|| recipe.facility.clone()),
+            facility_name_source: facility
+                .map(|facility| facility.facility_name_source)
+                .unwrap_or(LocalizationTextSource::IdFallback),
+            mode: facility
+                .map(|facility| facility.mode.clone())
+                .unwrap_or_else(|| recipe.facility.clone()),
+            mode_name: facility
+                .map(|facility| facility.mode_name.clone())
+                .unwrap_or_else(|| recipe.facility.clone()),
+            mode_name_source: facility
+                .map(|facility| facility.mode_name_source)
+                .unwrap_or(LocalizationTextSource::IdFallback),
+        },
+        inputs: localize_item_amounts(recipe.inputs, localization),
+        outputs: localize_item_amounts(recipe.outputs, localization),
+        duration_ms: recipe.duration_ms,
+    }
+}
+
+fn localize_item_amounts(
+    amounts: Vec<ItemAmount>,
+    localization: &ValidatedLocalizationCatalog,
+) -> Vec<LocalizedItemAmount> {
+    amounts
+        .into_iter()
+        .map(|amount| {
+            let (item_name, item_name_source) = localized_item_name(&amount.item, localization);
+            LocalizedItemAmount {
+                item: amount.item,
+                item_name,
+                item_name_source,
+                quantity: amount.quantity,
+            }
+        })
+        .collect()
+}
+
+fn localized_item_name(
+    item_id: &str,
+    localization: &ValidatedLocalizationCatalog,
+) -> (String, LocalizationTextSource) {
+    localization.item(item_id).map_or_else(
+        || (item_id.to_string(), LocalizationTextSource::IdFallback),
+        |item| (item.display_name.clone(), item.display_name_source),
+    )
 }
 
 fn validate_request(request: &RecipeSourcePlanRequest) -> Vec<RecipeSourceDiagnostic> {
@@ -481,7 +677,13 @@ impl SourceHierarchyBuilder<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::recipes::{ItemAmount, RecipeBook};
+    use crate::{
+        localization::{
+            LocalizationCatalog, LocalizationTextSource, LocalizedFacility, LocalizedItem,
+            LocalizedName, LocalizedRecipeDescription, ValidatedLocalizationCatalog,
+        },
+        recipes::{ItemAmount, RecipeBook},
+    };
 
     fn recipe(id: &str, input: &str, output: &str) -> Recipe {
         Recipe {
@@ -530,6 +732,67 @@ mod tests {
             ],
         })
         .expect("contextual source book should validate")
+    }
+
+    fn localization(book: &ValidatedRecipeBook) -> ValidatedLocalizationCatalog {
+        let item_ids = book
+            .recipe_book()
+            .recipes
+            .iter()
+            .flat_map(|recipe| recipe.inputs.iter().chain(&recipe.outputs))
+            .map(|amount| amount.item.clone())
+            .collect::<BTreeSet<_>>();
+        let facility_ids = book
+            .recipe_book()
+            .recipes
+            .iter()
+            .map(|recipe| recipe.facility.clone())
+            .collect::<BTreeSet<_>>();
+        let recipe_descriptions = book
+            .recipe_book()
+            .recipes
+            .iter()
+            .map(|recipe| LocalizedRecipeDescription {
+                id: recipe.id.clone(),
+                description: format!("{} 설명", recipe.id),
+                description_source: LocalizationTextSource::Official,
+            })
+            .collect();
+        ValidatedLocalizationCatalog::try_from_catalog(LocalizationCatalog {
+            schema_version: 1,
+            locale: "ko-KR".to_string(),
+            items: item_ids
+                .into_iter()
+                .map(|id| LocalizedItem {
+                    display_name: if id == "shared-material" {
+                        "공유 재료".to_string()
+                    } else {
+                        format!("{id} 이름")
+                    },
+                    id,
+                    display_name_source: LocalizationTextSource::Official,
+                })
+                .collect(),
+            facilities: facility_ids
+                .into_iter()
+                .map(|id| LocalizedFacility {
+                    base_facility: id.clone(),
+                    facility_name: format!("{id} 설비"),
+                    facility_name_source: LocalizationTextSource::Official,
+                    mode: "normal".to_string(),
+                    mode_name: "기본 모드".to_string(),
+                    mode_name_source: LocalizationTextSource::Official,
+                    id,
+                })
+                .collect(),
+            modes: vec![LocalizedName {
+                id: "normal".to_string(),
+                display_name: "기본 모드".to_string(),
+                display_name_source: LocalizationTextSource::Official,
+            }],
+            recipe_descriptions,
+        })
+        .expect("test localization should validate")
     }
 
     fn request(source_selections: Vec<RecipeSourceSelection>) -> RecipeSourcePlanRequest {
@@ -586,6 +849,24 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec!["make-shared-a", "make-shared-b"]
         );
+    }
+
+    #[test]
+    fn localizes_hierarchy_groups_and_recipe_details() {
+        let book = contextual_book();
+        let report = check_recipe_source_plan(&book, &request(Vec::new()));
+        let report = localize_recipe_source_check_report(report, &localization(&book));
+        let shared_group = report
+            .source_catalog
+            .iter()
+            .find(|group| group.item == "shared-material")
+            .expect("shared-material choices should exist");
+
+        assert_eq!(report.locale, "ko-KR");
+        assert_eq!(shared_group.item_name, "공유 재료");
+        assert_eq!(shared_group.recipes[0].description, "make-shared-a 설명");
+        assert_eq!(shared_group.recipes[0].facility.mode_name, "기본 모드");
+        assert_eq!(shared_group.recipes[0].outputs[0].item_name, "공유 재료");
     }
 
     #[test]
