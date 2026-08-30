@@ -9,7 +9,7 @@ This repository is a Rust virtual workspace. Crates live under `crates/` and use
 - `crates/aic-cli`: command line entry point
 - `crates/aic-data`: external data models, loaders, validators, and graph resolution
 
-Facility and recipe data must stay outside the compiled application and be loaded from external data files at runtime.
+Facility and recipe data must stay outside the compiled application and be loaded from external data files at runtime. Facility catalogs include canonical footprints, allowed rotations, and directional belt or pipe ports; placed ports can be projected into world-grid routing endpoints.
 
 ## Recipe Commands
 
