@@ -8,7 +8,13 @@ use crate::recipes::{
     id::{STABLE_ID_PATTERN, is_stable_id},
 };
 
+mod contextual;
 mod cyclic;
+
+pub use contextual::{
+    ContextualExternalInputRate, ContextualMaterialFlowRate, ContextualRecipeRunRate,
+    ContextualSurplusRate, ContextualThroughputDiagnostic, ContextualThroughputReport,
+};
 
 const STAGE: &str = "recipe-throughput";
 

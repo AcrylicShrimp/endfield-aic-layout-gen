@@ -15,11 +15,11 @@ use aic_data::logistics::{
     validate_transport_catalog,
 };
 use aic_data::recipes::{
-    ContextualProductionGraphReport, FacilityInstanceWiringReport, FacilityRequirementReport,
-    RecipeSelectionCheckReport, RecipeSelectionCheckStatus, RecipeSelectionDiagnostic,
-    RecipeSourceCheckReport, RecipeSourceCheckStatus, RecipeSourceDiagnostic,
-    RecipeSourcePlanRequest, RecipeThroughputReport, RecipeThroughputRequest,
-    RecipeWiringGraphReport, ThroughputDiagnostic, ValidatedRecipeBook,
+    ContextualProductionGraphReport, ContextualThroughputReport, FacilityInstanceWiringReport,
+    FacilityRequirementReport, RecipeSelectionCheckReport, RecipeSelectionCheckStatus,
+    RecipeSelectionDiagnostic, RecipeSourceCheckReport, RecipeSourceCheckStatus,
+    RecipeSourceDiagnostic, RecipeSourcePlanRequest, RecipeThroughputReport,
+    RecipeThroughputRequest, RecipeWiringGraphReport, ThroughputDiagnostic, ValidatedRecipeBook,
     build_contextual_production_graph, build_facility_instance_wiring, build_recipe_wiring_graph,
     calculate_facility_requirements, check_recipe_selections, check_recipe_source_plan,
     load_recipe_book, validate_recipe_book, validate_target_item_id, validate_throughput_request,
@@ -204,6 +204,16 @@ enum RecipesCommand {
         #[arg(long, short, value_name = "FILE")]
         request: PathBuf,
     },
+    /// Calculate path-specific recipe and material flow rates.
+    ContextualThroughput {
+        /// Recipe JSON file to load.
+        #[arg(long, short, value_name = "FILE")]
+        file: PathBuf,
+
+        /// Hierarchical source-plan request JSON file to calculate.
+        #[arg(long, short, value_name = "FILE")]
+        request: PathBuf,
+    },
     /// Calculate required recipe and item throughput for a target request.
     Throughput {
         /// Recipe JSON file to load.
@@ -328,6 +338,9 @@ fn run() -> Result<CommandStatus> {
             }
             RecipesCommand::ProductionGraph { file, request } => {
                 production_graph_command(file, request)
+            }
+            RecipesCommand::ContextualThroughput { file, request } => {
+                contextual_throughput_command(file, request)
             }
             RecipesCommand::Throughput { file, request } => throughput_recipes(file, request),
             RecipesCommand::Facilities { file, request } => facilities_recipes(file, request),
@@ -571,6 +584,41 @@ fn production_graph_command(file: PathBuf, request: PathBuf) -> Result<CommandSt
     let report = build_contextual_production_graph(&validated_recipe_book, &request);
     let success = report.success;
     write_contextual_production_graph_report(&report)?;
+
+    if success {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
+    }
+}
+
+fn contextual_throughput_command(file: PathBuf, request: PathBuf) -> Result<CommandStatus> {
+    let recipe_book = load_recipe_book(&file)?;
+    let request_json = std::fs::read_to_string(&request).with_context(|| {
+        format!(
+            "failed to read recipe source-plan request file '{}'",
+            request.display()
+        )
+    })?;
+    let request =
+        serde_json::from_str::<RecipeSourcePlanRequest>(&request_json).with_context(|| {
+            format!(
+                "failed to parse recipe source-plan request file '{}'",
+                request.display()
+            )
+        })?;
+    let validated_recipe_book = match ValidatedRecipeBook::try_from_recipe_book(recipe_book) {
+        Ok(validated_recipe_book) => validated_recipe_book,
+        Err(report) => {
+            serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+                .context("failed to write validation report")?;
+            println!();
+            return Ok(CommandStatus::Failure);
+        }
+    };
+    let report = validated_recipe_book.calculate_contextual_throughput(&request);
+    let success = report.success;
+    write_contextual_throughput_report(&report)?;
 
     if success {
         Ok(CommandStatus::Success)
@@ -882,6 +930,14 @@ fn write_contextual_production_graph_report(
 ) -> Result<()> {
     serde_json::to_writer_pretty(std::io::stdout().lock(), report)
         .context("failed to write contextual production graph report")?;
+    println!();
+
+    Ok(())
+}
+
+fn write_contextual_throughput_report(report: &ContextualThroughputReport) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write contextual throughput report")?;
     println!();
 
     Ok(())

@@ -238,11 +238,11 @@ pub(super) fn calculate_cyclic_throughput(
     }
 }
 
-fn rate_as_f64(rate: Rate) -> f64 {
+pub(super) fn rate_as_f64(rate: Rate) -> f64 {
     rate.numerator as f64 / rate.denominator as f64
 }
 
-fn approximate_rate(value: f64) -> Result<Rate, ThroughputDiagnostic> {
+pub(super) fn approximate_rate(value: f64) -> Result<Rate, ThroughputDiagnostic> {
     if !value.is_finite() || value < -1e-9 {
         return Err(ThroughputDiagnostic::error(
             "invalid-cyclic-rate",

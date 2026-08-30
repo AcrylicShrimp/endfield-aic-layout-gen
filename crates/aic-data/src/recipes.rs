@@ -39,7 +39,9 @@ pub use source_plan::{
     RecipeSourceSelection, SUPPORTED_RECIPE_SOURCE_PLAN_SCHEMA_VERSION, check_recipe_source_plan,
 };
 pub use throughput::{
-    ItemRate, Rate, RecipeProducerSelection, RecipeProducerSelectionGroup, RecipeRunRate,
+    ContextualExternalInputRate, ContextualMaterialFlowRate, ContextualRecipeRunRate,
+    ContextualSurplusRate, ContextualThroughputDiagnostic, ContextualThroughputReport, ItemRate,
+    Rate, RecipeProducerSelection, RecipeProducerSelectionGroup, RecipeRunRate,
     RecipeThroughputReport, RecipeThroughputRequest, SUPPORTED_THROUGHPUT_REQUEST_SCHEMA_VERSION,
     ThroughputDiagnostic, ThroughputTarget, validate_throughput_request,
 };
