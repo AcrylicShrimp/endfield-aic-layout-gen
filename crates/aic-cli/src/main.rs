@@ -38,6 +38,7 @@ use aic_data::recipes::{
     localize_recipe_source_check_report, validate_recipe_book, validate_target_item_id,
     validate_throughput_request,
 };
+use aic_data::research::{load_benchmark_workload_manifest, validate_benchmark_workload_manifest};
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
 use serde::Serialize;
@@ -90,6 +91,11 @@ enum Command {
     Recipes {
         #[command(subcommand)]
         command: RecipesCommand,
+    },
+    /// Validate and run layout-solver research workloads.
+    Research {
+        #[command(subcommand)]
+        command: ResearchCommand,
     },
 }
 
@@ -375,6 +381,16 @@ enum RecipesCommand {
     },
 }
 
+#[derive(Debug, Subcommand)]
+enum ResearchCommand {
+    /// Validate a benchmark workload identity without building a solver model.
+    ValidateWorkload {
+        /// Benchmark workload manifest JSON file to validate.
+        #[arg(long, short, value_name = "FILE")]
+        file: PathBuf,
+    },
+}
+
 fn main() -> ExitCode {
     match run() {
         Ok(CommandStatus::Success) => ExitCode::SUCCESS,
@@ -522,6 +538,23 @@ fn run() -> Result<CommandStatus> {
                 instance_wiring_recipes(file, request)
             }
         },
+        Command::Research { command } => match command {
+            ResearchCommand::ValidateWorkload { file } => validate_research_workload(file),
+        },
+    }
+}
+
+fn validate_research_workload(file: PathBuf) -> Result<CommandStatus> {
+    let manifest = load_benchmark_workload_manifest(&file)?;
+    let report = validate_benchmark_workload_manifest(&manifest);
+    let valid = report.valid;
+    serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+        .context("failed to write benchmark workload validation report")?;
+    println!();
+    if valid {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
     }
 }
 
@@ -1640,5 +1673,25 @@ mod tests {
         .expect_err("the obsolete optimizer strategy switch must not parse");
 
         assert_eq!(error.kind(), clap::error::ErrorKind::UnknownArgument);
+    }
+
+    #[test]
+    fn parses_research_workload_validation() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "validate-workload",
+            "--file",
+            "workload.json",
+        ])
+        .expect("research workload validation CLI should parse");
+
+        let Command::Research {
+            command: ResearchCommand::ValidateWorkload { file },
+        } = cli.command
+        else {
+            panic!("expected research workload validation command")
+        };
+        assert_eq!(file, PathBuf::from("workload.json"));
     }
 }

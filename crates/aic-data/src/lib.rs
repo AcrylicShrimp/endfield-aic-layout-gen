@@ -5,3 +5,4 @@ pub mod layouts;
 pub mod localization;
 pub mod logistics;
 pub mod recipes;
+pub mod research;

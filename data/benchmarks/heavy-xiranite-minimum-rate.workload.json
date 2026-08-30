@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "id": "heavy-xiranite-minimum-rate",
+  "description": "Complete Heavy Xiranite contextual production graph at the minimum requested rate",
+  "kind": "contextual-source-plan",
+  "inputs": {
+    "recipes": "data/game/normalized/recipes.json",
+    "source_plan": "data/examples/source-plan.game-heavy-xiranite-forge.request.json",
+    "facility_catalog": "data/game/normalized/facilities.json",
+    "item_catalog": "data/game/normalized/items.json",
+    "transport_catalog": "data/game/normalized/transports.json",
+    "logistics_component_catalog": "data/game/normalized/logistics-components.json",
+    "localization_catalog": "data/game/normalized/localization.ko-KR.json"
+  },
+  "expected_target": {
+    "item": "item-xiranite-enr-powder",
+    "quantity": 1,
+    "duration_ms": 10000
+  }
+}
