@@ -2,6 +2,8 @@ use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
 
+pub use super::super::placement::PlacementPolicy;
+
 pub const ITERATIVE_OPTIMIZATION_CONFIG_SCHEMA_VERSION: u32 = 1;
 pub const CANDIDATE_POLICY_TABLE_SCHEMA_VERSION: u32 = 1;
 
@@ -45,14 +47,6 @@ pub struct CandidatePolicy {
     pub placement_policy: PlacementPolicy,
     pub routing_order_policy: RoutingOrderPolicy,
     pub max_candidate_yields: usize,
-}
-
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "kebab-case")]
-pub enum PlacementPolicy {
-    PriorHint,
-    CompactShelf,
-    AlternatingShelf,
 }
 
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]

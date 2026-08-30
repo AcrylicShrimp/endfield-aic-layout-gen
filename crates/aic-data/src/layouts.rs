@@ -32,10 +32,11 @@ pub use integrated::{
 };
 
 pub use placement::{
-    FacilityPlacement, FacilityPlacementBounds, FacilityPlacementDiagnostic,
-    FacilityPlacementReport, FacilityPlacementRequest, FacilityPlacementStatus,
-    SUPPORTED_FACILITY_PLACEMENT_SCHEMA_VERSION, solve_facility_placement,
-    validate_facility_placement_request,
+    FacilityPlacement, FacilityPlacementBounds, FacilityPlacementCandidate,
+    FacilityPlacementCandidateBatch, FacilityPlacementDiagnostic, FacilityPlacementReport,
+    FacilityPlacementRequest, FacilityPlacementSearchScope, FacilityPlacementStatus,
+    SUPPORTED_FACILITY_PLACEMENT_SCHEMA_VERSION, search_facility_placement_candidates,
+    solve_facility_placement, validate_facility_placement_request,
 };
 pub use ports::{
     FacilityPortProjectionDiagnostic, FacilityPortProjectionReport, PlacedFacilityPort,

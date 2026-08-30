@@ -3,11 +3,11 @@ use std::time::{Duration, Instant};
 
 use crate::facilities::ValidatedFacilityCatalog;
 use crate::layouts::growth::plan_facility_growth;
-use crate::layouts::placement::{
-    solve_facility_placement_feasibly_with_time_limit,
-    solve_hinted_facility_placement_with_time_limit,
+use crate::layouts::placement::search_facility_placement_candidates;
+use crate::layouts::{
+    FacilityPlacement, FacilityPlacementRequest, FacilityPlacementSearchScope,
+    FacilityPlacementStatus, PlacementPolicy,
 };
-use crate::layouts::{FacilityPlacement, FacilityPlacementRequest, FacilityPlacementStatus};
 use crate::logistics::{
     LogisticsComponentKind, ValidatedItemCatalog, ValidatedLogisticsComponentCatalog,
     ValidatedTransportCatalog,
@@ -141,8 +141,10 @@ pub fn construct_iterative_scc_layout(
             }
         };
         let graph_construction_ms = elapsed_milliseconds(graph_started);
-        let phase_time_limit = strategy_deadline.saturating_duration_since(Instant::now());
-        if phase_time_limit.is_zero() {
+        if strategy_deadline
+            .saturating_duration_since(Instant::now())
+            .is_zero()
+        {
             let mut report = IntegratedLayoutReport::failure(
                 IntegratedLayoutStatus::Unknown,
                 IntegratedLayoutDiagnostic::error(
@@ -158,77 +160,45 @@ pub fn construct_iterative_scc_layout(
 
         let prior_reference = anchors.clone();
         let placement_started = Instant::now();
-        let placement = if anchors.is_empty() {
-            solve_facility_placement_feasibly_with_time_limit(
-                &partial_wiring,
-                facilities,
-                request,
-                PRODUCTION_FACILITY_GAP,
-                phase_time_limit,
-            )
-        } else {
-            solve_hinted_facility_placement_with_time_limit(
-                &partial_wiring,
-                facilities,
-                request,
-                PRODUCTION_FACILITY_GAP,
-                &anchors,
-                phase_time_limit,
-            )
+        let placement_scope = FacilityPlacementSearchScope {
+            free_facility_ids: cumulative_facilities.clone(),
+            fixed_facility_ids: BTreeSet::new(),
         };
+        let mut placement_batch = search_facility_placement_candidates(
+            &partial_wiring,
+            facilities,
+            request,
+            PRODUCTION_FACILITY_GAP,
+            &anchors,
+            &placement_scope,
+            PlacementPolicy::PriorHint,
+            1,
+            strategy_deadline,
+        );
+        let placement = placement_batch
+            .candidates
+            .pop()
+            .map(|candidate| candidate.report);
         let placement_ms = elapsed_milliseconds(placement_started);
         let mut attempt_reports = Vec::with_capacity(2);
         let mut selected = None;
         let mut candidate_counts = CandidateCounts::default();
         let mut routing_ms = 0;
-        if !placement.success {
-            attempt_reports.push(IntegratedLayoutPhaseAttempt {
+        match placement {
+            None => attempt_reports.push(IntegratedLayoutPhaseAttempt {
                 candidate_key: None,
                 policy_id: None,
                 placement_hint_count: anchors.len(),
-                status: placement_status(placement.status),
-                diagnostic_code: placement
+                status: placement_status(placement_batch.status),
+                diagnostic_code: placement_batch
                     .diagnostics
                     .first()
                     .map(|diagnostic| diagnostic.code.to_string()),
-            });
-        } else {
-            candidate_counts.generated += 1;
-            let input = match prepare_model(&partial_wiring, facilities, items, transports, request)
-            {
-                Ok(input) => input,
-                Err(diagnostic) => {
-                    let mut report = IntegratedLayoutReport::failure(
-                        IntegratedLayoutStatus::InvalidInput,
-                        diagnostic,
-                    );
-                    report.phases = snapshots;
-                    return report;
-                }
-            };
-            let framed_placements = frame_placements_for_routing(
-                placement.placements,
-                request.max_width,
-                request.max_height,
-            );
-            if let Some(framed_placements) = framed_placements {
-                let routing_started = Instant::now();
-                candidate_counts.routed += 1;
-                let mut routed = sparse::construct_from_placements(
-                    input,
-                    logistics_components,
-                    framed_placements,
-                    strategy_deadline,
-                );
-                if !routed.success {
-                    candidate_counts.rejected += 1;
-                    let fallback_input = match prepare_model(
-                        &partial_wiring,
-                        facilities,
-                        items,
-                        transports,
-                        request,
-                    ) {
+            }),
+            Some(placement) => {
+                candidate_counts.generated += 1;
+                let input =
+                    match prepare_model(&partial_wiring, facilities, items, transports, request) {
                         Ok(input) => input,
                         Err(diagnostic) => {
                             let mut report = IntegratedLayoutReport::failure(
@@ -239,48 +209,82 @@ pub fn construct_iterative_scc_layout(
                             return report;
                         }
                     };
-                    candidate_counts.generated += 1;
+                let framed_placements = frame_placements_for_routing(
+                    placement.placements,
+                    request.max_width,
+                    request.max_height,
+                );
+                if let Some(framed_placements) = framed_placements {
+                    let routing_started = Instant::now();
                     candidate_counts.routed += 1;
-                    routed = sparse::construct_until(
-                        fallback_input,
+                    let mut routed = sparse::construct_from_placements(
+                        input,
                         logistics_components,
+                        framed_placements,
                         strategy_deadline,
                     );
+                    if !routed.success {
+                        candidate_counts.rejected += 1;
+                        let fallback_input = match prepare_model(
+                            &partial_wiring,
+                            facilities,
+                            items,
+                            transports,
+                            request,
+                        ) {
+                            Ok(input) => input,
+                            Err(diagnostic) => {
+                                let mut report = IntegratedLayoutReport::failure(
+                                    IntegratedLayoutStatus::InvalidInput,
+                                    diagnostic,
+                                );
+                                report.phases = snapshots;
+                                return report;
+                            }
+                        };
+                        candidate_counts.generated += 1;
+                        candidate_counts.routed += 1;
+                        routed = sparse::construct_until(
+                            fallback_input,
+                            logistics_components,
+                            strategy_deadline,
+                        );
+                    }
+                    routing_ms = elapsed_milliseconds(routing_started);
+                    attempt_reports.push(IntegratedLayoutPhaseAttempt {
+                        candidate_key: Some(DeterministicCandidateKey {
+                            phase_index: phase.index,
+                            refinement_kind: RefinementKind::GrowthNeighborhood,
+                            neighborhood_rank: 3,
+                            restart_index: 0,
+                            policy_index: 0,
+                            attempt_index: candidate_counts.routed.saturating_sub(1),
+                            yield_index: 0,
+                        }),
+                        policy_id: None,
+                        placement_hint_count: anchors.len(),
+                        status: routed.status,
+                        diagnostic_code: routed
+                            .diagnostics
+                            .first()
+                            .map(|diagnostic| diagnostic.code.to_string()),
+                    });
+                    if routed.success {
+                        candidate_counts.validated += 1;
+                        candidate_counts.improved += 1;
+                        selected = Some(routed);
+                    } else if candidate_counts.rejected < candidate_counts.routed {
+                        candidate_counts.rejected += 1;
+                    }
+                } else {
+                    attempt_reports.push(IntegratedLayoutPhaseAttempt {
+                        candidate_key: None,
+                        policy_id: None,
+                        placement_hint_count: anchors.len(),
+                        status: IntegratedLayoutStatus::Unknown,
+                        diagnostic_code: Some("iterative-routing-frame-does-not-fit".to_string()),
+                    });
                 }
-                routing_ms = elapsed_milliseconds(routing_started);
-                attempt_reports.push(IntegratedLayoutPhaseAttempt {
-                    candidate_key: Some(DeterministicCandidateKey {
-                        phase_index: phase.index,
-                        refinement_kind: RefinementKind::GrowthNeighborhood,
-                        neighborhood_rank: 3,
-                        restart_index: 0,
-                        policy_index: 0,
-                        attempt_index: candidate_counts.routed.saturating_sub(1),
-                        yield_index: 0,
-                    }),
-                    policy_id: None,
-                    placement_hint_count: anchors.len(),
-                    status: routed.status,
-                    diagnostic_code: routed
-                        .diagnostics
-                        .first()
-                        .map(|diagnostic| diagnostic.code.to_string()),
-                });
-                if routed.success {
-                    candidate_counts.validated += 1;
-                    candidate_counts.improved += 1;
-                    selected = Some(routed);
-                } else if candidate_counts.rejected < candidate_counts.routed {
-                    candidate_counts.rejected += 1;
-                }
-            } else {
-                attempt_reports.push(IntegratedLayoutPhaseAttempt {
-                    candidate_key: None,
-                    policy_id: None,
-                    placement_hint_count: anchors.len(),
-                    status: IntegratedLayoutStatus::Unknown,
-                    diagnostic_code: Some("iterative-routing-frame-does-not-fit".to_string()),
-                });
             }
         }
 

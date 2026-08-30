@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::ControlFlow;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use pumpkin_solver::Solver;
 use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
@@ -10,6 +10,7 @@ use pumpkin_solver::core::branching::branchers::warm_start::WarmStart;
 use pumpkin_solver::core::constraints::NegatableConstraint;
 use pumpkin_solver::core::optimisation::OptimisationDirection;
 use pumpkin_solver::core::optimisation::linear_sat_unsat::LinearSatUnsat;
+use pumpkin_solver::core::predicates::PredicateConstructor;
 use pumpkin_solver::core::results::{
     OptimisationResult, ProblemSolution, SatisfactionResult, SolutionReference,
 };
@@ -30,6 +31,35 @@ pub struct FacilityPlacementRequest {
     pub schema_version: u32,
     pub max_width: i64,
     pub max_height: i64,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum PlacementPolicy {
+    PriorHint,
+    CompactShelf,
+    AlternatingShelf,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct FacilityPlacementSearchScope {
+    pub free_facility_ids: BTreeSet<String>,
+    pub fixed_facility_ids: BTreeSet<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct FacilityPlacementCandidate {
+    pub yield_index: usize,
+    pub report: FacilityPlacementReport,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct FacilityPlacementCandidateBatch {
+    pub status: FacilityPlacementStatus,
+    pub candidates: Vec<FacilityPlacementCandidate>,
+    pub attempted_candidate_count: usize,
+    pub timed_out: bool,
+    pub diagnostics: Vec<FacilityPlacementDiagnostic>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -262,15 +292,12 @@ pub(crate) fn solve_facility_placement_feasibly_with_time_limit(
         Ok(instances) => instances,
         Err(diagnostic) => return FacilityPlacementReport::invalid(diagnostic),
     };
-    let hints = BTreeMap::new();
-
     match solve_feasibly(
         instances,
         request.max_width,
         request.max_height,
         minimum_clearance,
         time_limit,
-        &hints,
     ) {
         Ok(report) => report,
         Err(PlacementFailure::Invalid(diagnostic)) => FacilityPlacementReport::invalid(diagnostic),
@@ -280,51 +307,181 @@ pub(crate) fn solve_facility_placement_feasibly_with_time_limit(
     }
 }
 
-pub(crate) fn solve_hinted_facility_placement_with_time_limit(
+#[allow(clippy::too_many_arguments)]
+pub fn search_facility_placement_candidates(
     instance_wiring: &FacilityInstanceWiringReport,
     catalog: &ValidatedFacilityCatalog,
     request: &FacilityPlacementRequest,
     minimum_clearance: i64,
     hints: &[FacilityPlacement],
-    time_limit: Duration,
-) -> FacilityPlacementReport {
+    scope: &FacilityPlacementSearchScope,
+    policy: PlacementPolicy,
+    max_candidate_yields: usize,
+    deadline: Instant,
+) -> FacilityPlacementCandidateBatch {
+    let invalid_batch = |diagnostics| FacilityPlacementCandidateBatch {
+        status: FacilityPlacementStatus::InvalidInput,
+        candidates: Vec::new(),
+        attempted_candidate_count: 0,
+        timed_out: false,
+        diagnostics,
+    };
     if !instance_wiring.success {
-        return FacilityPlacementReport::invalid(FacilityPlacementDiagnostic::error(
+        return invalid_batch(vec![FacilityPlacementDiagnostic::error(
             "upstream-instance-wiring-failed",
             "/",
             None,
-            "hinted facility placement requires successful facility instance wiring",
-        ));
+            "facility placement candidate search requires successful facility instance wiring",
+        )]);
     }
     let request_diagnostics = validate_facility_placement_request(request);
     if !request_diagnostics.is_empty() {
-        return FacilityPlacementReport::invalid_many(request_diagnostics);
+        return invalid_batch(request_diagnostics);
+    }
+    if max_candidate_yields == 0 {
+        return invalid_batch(vec![FacilityPlacementDiagnostic::error(
+            "placement-candidate-yield-limit-must-be-positive",
+            "/max_candidate_yields",
+            None,
+            "facility placement candidate yield limit must be positive",
+        )]);
     }
     let instances = match collect_instances(instance_wiring, catalog) {
         Ok(instances) => instances,
-        Err(diagnostic) => return FacilityPlacementReport::invalid(diagnostic),
+        Err(diagnostic) => return invalid_batch(vec![diagnostic]),
     };
     let hints = match collect_hints(&instances, hints) {
         Ok(hints) => hints,
-        Err(diagnostic) => return FacilityPlacementReport::invalid(diagnostic),
+        Err(diagnostic) => return invalid_batch(vec![diagnostic]),
     };
-    match solve_feasibly(
-        instances,
-        request.max_width,
-        request.max_height,
-        minimum_clearance,
-        time_limit,
-        &hints,
-    ) {
-        Ok(report) => report,
-        Err(PlacementFailure::Invalid(diagnostic)) => FacilityPlacementReport::invalid(diagnostic),
-        Err(PlacementFailure::Infeasible(diagnostic)) => {
-            FacilityPlacementReport::infeasible(diagnostic)
+    if let Err(diagnostic) = validate_search_scope(&instances, scope, &hints) {
+        return invalid_batch(vec![diagnostic]);
+    }
+
+    let mut candidates = Vec::new();
+    let mut attempted_candidate_count = 0;
+    let mut diagnostics = Vec::new();
+    let mut timed_out = false;
+    let mut terminal_status = FacilityPlacementStatus::Feasible;
+    while candidates.len() < max_candidate_yields {
+        let remaining = deadline.saturating_duration_since(Instant::now());
+        if remaining.is_zero() {
+            timed_out = true;
+            break;
         }
+        attempted_candidate_count += 1;
+        let report = match solve_candidate_feasibly(
+            instances.clone(),
+            request.max_width,
+            request.max_height,
+            minimum_clearance,
+            remaining,
+            &hints,
+            scope,
+            policy,
+            candidates.len(),
+            &candidates,
+        ) {
+            Ok(report) => report,
+            Err(PlacementFailure::Invalid(diagnostic)) => {
+                terminal_status = FacilityPlacementStatus::InvalidInput;
+                diagnostics.push(diagnostic);
+                break;
+            }
+            Err(PlacementFailure::Infeasible(diagnostic)) => {
+                terminal_status = FacilityPlacementStatus::Infeasible;
+                diagnostics.push(diagnostic);
+                break;
+            }
+        };
+        if report.success {
+            candidates.push(FacilityPlacementCandidate {
+                yield_index: candidates.len(),
+                report,
+            });
+            continue;
+        }
+        timed_out = report.status == FacilityPlacementStatus::Unknown;
+        terminal_status = report.status.clone();
+        diagnostics.extend(report.diagnostics);
+        break;
+    }
+    FacilityPlacementCandidateBatch {
+        status: if candidates.is_empty() {
+            if timed_out {
+                FacilityPlacementStatus::Unknown
+            } else {
+                terminal_status
+            }
+        } else {
+            FacilityPlacementStatus::Feasible
+        },
+        candidates,
+        attempted_candidate_count,
+        timed_out,
+        diagnostics,
     }
 }
 
-#[derive(Debug)]
+fn validate_search_scope(
+    instances: &[InstanceSpec],
+    scope: &FacilityPlacementSearchScope,
+    hints: &BTreeMap<String, FacilityPlacement>,
+) -> Result<(), FacilityPlacementDiagnostic> {
+    if let Some(instance) = scope
+        .free_facility_ids
+        .intersection(&scope.fixed_facility_ids)
+        .next()
+    {
+        return Err(FacilityPlacementDiagnostic::error(
+            "placement-search-scope-overlap",
+            "/scope",
+            Some(instance.clone()),
+            format!("facility instance '{instance}' is both free and fixed"),
+        ));
+    }
+    let expected = instances
+        .iter()
+        .map(|instance| instance.instance.as_str())
+        .collect::<BTreeSet<_>>();
+    let actual = scope
+        .free_facility_ids
+        .iter()
+        .chain(&scope.fixed_facility_ids)
+        .map(String::as_str)
+        .collect::<BTreeSet<_>>();
+    if let Some(unknown) = actual.difference(&expected).next() {
+        return Err(FacilityPlacementDiagnostic::error(
+            "unknown-placement-search-scope-facility",
+            "/scope",
+            Some((*unknown).to_string()),
+            format!("placement search scope references unknown facility instance '{unknown}'"),
+        ));
+    }
+    if let Some(missing) = expected.difference(&actual).next() {
+        return Err(FacilityPlacementDiagnostic::error(
+            "incomplete-placement-search-scope",
+            "/scope",
+            Some((*missing).to_string()),
+            format!("placement search scope does not classify facility instance '{missing}'"),
+        ));
+    }
+    if let Some(missing_hint) = scope
+        .fixed_facility_ids
+        .iter()
+        .find(|instance| !hints.contains_key(instance.as_str()))
+    {
+        return Err(FacilityPlacementDiagnostic::error(
+            "fixed-placement-missing-hint",
+            "/hints",
+            Some(missing_hint.clone()),
+            format!("fixed facility instance '{missing_hint}' requires a placement hint"),
+        ));
+    }
+    Ok(())
+}
+
+#[derive(Debug, Clone)]
 struct InstanceSpec {
     instance: String,
     recipe: String,
@@ -522,7 +679,6 @@ fn solve_feasibly(
     max_height: i64,
     minimum_clearance: i64,
     time_limit: Duration,
-    hints: &BTreeMap<String, FacilityPlacement>,
 ) -> Result<FacilityPlacementReport, PlacementFailure> {
     if instances.is_empty() {
         return Ok(FacilityPlacementReport::solved(
@@ -540,12 +696,11 @@ fn solve_feasibly(
     instances.sort_by(|left, right| left.instance.cmp(&right.instance));
     let (mut solver, _used_height, model_instances) =
         build_model(instances, max_width, max_height, minimum_clearance)?;
-    let mut brancher = if let Some((variables, values)) = hint_aware_warm_start(
+    let mut brancher = if let Some((variables, values)) = shelf_warm_start(
         &model_instances,
         solver_i32(max_width, None, "layout max_width")?,
         solver_i32(max_height, None, "layout max_height")?,
         solver_i32(minimum_clearance, None, "minimum clearance")?,
-        hints,
     ) {
         DynamicBrancher::new(vec![
             Box::new(WarmStart::new(&variables, &values)),
@@ -562,16 +717,8 @@ fn solve_feasibly(
             &satisfiable.solution(),
             &model_instances,
             FacilityPlacementStatus::Feasible,
-            if hints.is_empty() {
-                "facility-placement-feasible"
-            } else {
-                "hinted-facility-placement-feasible"
-            },
-            if hints.is_empty() {
-                "facility placement is feasible; optimality was not requested"
-            } else {
-                "facility placement is feasible; prior coordinates influenced search order without constraining the solution"
-            },
+            "facility-placement-feasible",
+            "facility placement is feasible; optimality was not requested",
         ),
         SatisfactionResult::Unsatisfiable(_, _, _) => Ok(FacilityPlacementReport::infeasible(
             FacilityPlacementDiagnostic::error(
@@ -592,45 +739,271 @@ fn solve_feasibly(
     }
 }
 
-fn hint_aware_warm_start(
+#[allow(clippy::too_many_arguments)]
+fn solve_candidate_feasibly(
+    mut instances: Vec<InstanceSpec>,
+    max_width: i64,
+    max_height: i64,
+    minimum_clearance: i64,
+    time_limit: Duration,
+    hints: &BTreeMap<String, FacilityPlacement>,
+    scope: &FacilityPlacementSearchScope,
+    policy: PlacementPolicy,
+    yield_index: usize,
+    excluded_candidates: &[FacilityPlacementCandidate],
+) -> Result<FacilityPlacementReport, PlacementFailure> {
+    if instances.is_empty() {
+        return Ok(FacilityPlacementReport::solved(
+            FacilityPlacementStatus::Feasible,
+            FacilityPlacementBounds {
+                width: 0,
+                height: 0,
+            },
+            Vec::new(),
+            "facility-placement-candidate",
+            "facility placement candidate search produced the empty placement",
+        ));
+    }
+
+    instances.sort_by(|left, right| left.instance.cmp(&right.instance));
+    let (mut solver, _used_height, model_instances) =
+        build_model(instances, max_width, max_height, minimum_clearance)?;
+    post_fixed_placements(
+        &mut solver,
+        &model_instances,
+        &scope.fixed_facility_ids,
+        hints,
+    )?;
+    post_excluded_candidates(&mut solver, &model_instances, excluded_candidates)?;
+    let max_width = solver_i32(max_width, None, "layout max_width")?;
+    let max_height = solver_i32(max_height, None, "layout max_height")?;
+    let minimum_clearance = solver_i32(minimum_clearance, None, "minimum clearance")?;
+    let mut branchers: Vec<Box<dyn pumpkin_solver::core::branching::Brancher>> = Vec::new();
+    if let Some(warm_start) = candidate_warm_start(
+        &model_instances,
+        max_width,
+        max_height,
+        minimum_clearance,
+        hints,
+        &scope.fixed_facility_ids,
+        policy,
+        yield_index,
+    ) {
+        branchers.push(Box::new(WarmStart::new(
+            &warm_start.orientation_variables,
+            &warm_start.orientation_values,
+        )));
+        branchers.push(Box::new(WarmStart::new(
+            &warm_start.coordinate_variables,
+            &warm_start.coordinate_values,
+        )));
+    }
+    branchers.push(Box::new(solver.default_brancher()));
+    let mut brancher = DynamicBrancher::new(branchers);
+    let mut resolver = ResolutionResolver::default();
+    let mut termination = TimeBudget::starting_now(time_limit);
+
+    match solver.satisfy(&mut brancher, &mut termination, &mut resolver) {
+        SatisfactionResult::Satisfiable(satisfiable) => solved_report(
+            &satisfiable.solution(),
+            &model_instances,
+            FacilityPlacementStatus::Feasible,
+            "facility-placement-candidate",
+            "facility placement candidate was produced with coordinate and rotation hints",
+        ),
+        SatisfactionResult::Unsatisfiable(_, _, _) => Ok(FacilityPlacementReport::infeasible(
+            FacilityPlacementDiagnostic::error(
+                "facility-placement-candidates-exhausted",
+                "/",
+                None,
+                "facility placement candidate search exhausted the remaining distinct solutions",
+            ),
+        )),
+        SatisfactionResult::Unknown(_, _, _) => Ok(FacilityPlacementReport::unknown(
+            FacilityPlacementDiagnostic::error(
+                "facility-placement-candidate-time-limit",
+                "/",
+                None,
+                "facility placement candidate search reached its deadline",
+            ),
+        )),
+    }
+}
+
+fn post_fixed_placements(
+    solver: &mut Solver,
+    instances: &[ModelInstance],
+    fixed_facility_ids: &BTreeSet<String>,
+    hints: &BTreeMap<String, FacilityPlacement>,
+) -> Result<(), PlacementFailure> {
+    let constraint_tag = solver.new_constraint_tag();
+    for instance in instances
+        .iter()
+        .filter(|instance| fixed_facility_ids.contains(&instance.spec.instance))
+    {
+        let hint = hints
+            .get(&instance.spec.instance)
+            .expect("validated fixed facility has a placement hint");
+        let x = solver_i32(hint.x, Some(&hint.instance), "fixed x coordinate")?;
+        let y = solver_i32(hint.y, Some(&hint.instance), "fixed y coordinate")?;
+        let orientation = instance
+            .orientations
+            .iter()
+            .find(|orientation| orientation.rotation == hint.rotation)
+            .expect("validated hint rotation has a model orientation");
+        solver.add_clause([instance.x.equality_predicate(x)], constraint_tag);
+        solver.add_clause([instance.y.equality_predicate(y)], constraint_tag);
+        solver.add_clause([orientation.literal.get_true_predicate()], constraint_tag);
+    }
+    Ok(())
+}
+
+fn post_excluded_candidates(
+    solver: &mut Solver,
+    instances: &[ModelInstance],
+    excluded_candidates: &[FacilityPlacementCandidate],
+) -> Result<(), PlacementFailure> {
+    let constraint_tag = solver.new_constraint_tag();
+    for candidate in excluded_candidates {
+        let by_instance = candidate
+            .report
+            .placements
+            .iter()
+            .map(|placement| (placement.instance.as_str(), placement))
+            .collect::<BTreeMap<_, _>>();
+        let mut differs = Vec::with_capacity(instances.len() * 3);
+        for instance in instances {
+            let placement = by_instance
+                .get(instance.spec.instance.as_str())
+                .ok_or_else(|| {
+                    PlacementFailure::Invalid(FacilityPlacementDiagnostic::error(
+                        "invalid-excluded-placement-candidate",
+                        "/excluded_candidates",
+                        Some(instance.spec.instance.clone()),
+                        "excluded placement candidate is missing a facility instance",
+                    ))
+                })?;
+            let x = solver_i32(
+                placement.x,
+                Some(&placement.instance),
+                "excluded x coordinate",
+            )?;
+            let y = solver_i32(
+                placement.y,
+                Some(&placement.instance),
+                "excluded y coordinate",
+            )?;
+            let orientation = instance
+                .orientations
+                .iter()
+                .find(|orientation| orientation.rotation == placement.rotation)
+                .ok_or_else(|| {
+                    PlacementFailure::Invalid(FacilityPlacementDiagnostic::error(
+                        "invalid-excluded-placement-candidate",
+                        "/excluded_candidates",
+                        Some(instance.spec.instance.clone()),
+                        "excluded placement candidate uses an unavailable rotation",
+                    ))
+                })?;
+            differs.extend([
+                instance.x.disequality_predicate(x),
+                instance.y.disequality_predicate(y),
+                orientation.literal.get_false_predicate(),
+            ]);
+        }
+        solver.add_clause(differs, constraint_tag);
+    }
+    Ok(())
+}
+
+struct CandidateWarmStart {
+    coordinate_variables: Vec<DomainId>,
+    coordinate_values: Vec<i32>,
+    orientation_variables: Vec<Literal>,
+    orientation_values: Vec<i32>,
+}
+
+#[allow(clippy::too_many_arguments)]
+fn candidate_warm_start(
     instances: &[ModelInstance],
     max_width: i32,
     max_height: i32,
     minimum_clearance: i32,
     hints: &BTreeMap<String, FacilityPlacement>,
-) -> Option<(Vec<DomainId>, Vec<i32>)> {
-    let shelf = shelf_warm_start(instances, max_width, max_height, minimum_clearance);
-    let mut values_by_instance = shelf.map(|(_, values)| {
-        instances
-            .iter()
-            .zip(values.chunks_exact(2))
-            .map(|(instance, coordinates)| {
+    fixed_facility_ids: &BTreeSet<String>,
+    policy: PlacementPolicy,
+    yield_index: usize,
+) -> Option<CandidateWarmStart> {
+    let (_, shelf_values) = shelf_warm_start(instances, max_width, max_height, minimum_clearance)?;
+    let mut assignments = instances
+        .iter()
+        .zip(shelf_values.chunks_exact(2))
+        .map(|(instance, coordinates)| {
+            (
+                instance.spec.instance.as_str(),
                 (
-                    instance.spec.instance.as_str(),
-                    (coordinates[0], coordinates[1]),
-                )
-            })
-            .collect::<BTreeMap<_, _>>()
-    });
-
-    for (instance, hint) in hints {
-        let x = i32::try_from(hint.x).ok()?;
-        let y = i32::try_from(hint.y).ok()?;
-        values_by_instance
-            .get_or_insert_with(BTreeMap::new)
-            .insert(instance, (x, y));
+                    coordinates[0],
+                    coordinates[1],
+                    instance.orientations[0].rotation,
+                ),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+    let mirror = policy == PlacementPolicy::AlternatingShelf || yield_index % 2 == 1;
+    if mirror {
+        for instance in instances {
+            let assignment = assignments.get_mut(instance.spec.instance.as_str())?;
+            let orientation = instance
+                .orientations
+                .iter()
+                .find(|orientation| orientation.rotation == assignment.2)?;
+            assignment.0 = max_width - assignment.0 - orientation.width;
+        }
     }
-    let values_by_instance = values_by_instance?;
-    let mut variables = Vec::with_capacity(values_by_instance.len() * 2);
-    let mut values = Vec::with_capacity(values_by_instance.len() * 2);
+    if policy == PlacementPolicy::PriorHint {
+        for (instance, hint) in hints {
+            assignments.insert(
+                instance,
+                (
+                    i32::try_from(hint.x).ok()?,
+                    i32::try_from(hint.y).ok()?,
+                    hint.rotation,
+                ),
+            );
+        }
+    } else {
+        for instance in fixed_facility_ids {
+            let hint = hints.get(instance)?;
+            assignments.insert(
+                instance,
+                (
+                    i32::try_from(hint.x).ok()?,
+                    i32::try_from(hint.y).ok()?,
+                    hint.rotation,
+                ),
+            );
+        }
+    }
+    let mut warm_start = CandidateWarmStart {
+        coordinate_variables: Vec::with_capacity(instances.len() * 2),
+        coordinate_values: Vec::with_capacity(instances.len() * 2),
+        orientation_variables: Vec::with_capacity(instances.len()),
+        orientation_values: Vec::with_capacity(instances.len()),
+    };
     for instance in instances {
-        let Some((x, y)) = values_by_instance.get(instance.spec.instance.as_str()) else {
-            continue;
-        };
-        variables.extend([instance.x, instance.y]);
-        values.extend([*x, *y]);
+        let (x, y, rotation) = assignments[instance.spec.instance.as_str()];
+        let orientation = instance
+            .orientations
+            .iter()
+            .find(|orientation| orientation.rotation == rotation)?;
+        warm_start
+            .coordinate_variables
+            .extend([instance.x, instance.y]);
+        warm_start.coordinate_values.extend([x, y]);
+        warm_start.orientation_variables.push(orientation.literal);
+        warm_start.orientation_values.push(1);
     }
-    Some((variables, values))
+    Some(warm_start)
 }
 
 fn shelf_warm_start(
@@ -1157,91 +1530,179 @@ mod tests {
     }
 
     #[test]
-    fn uses_a_feasible_prior_coordinate_as_a_search_hint() {
-        let validated = catalog(
-            FacilityFootprint {
-                width: 2,
-                height: 2,
-            },
-            vec![0],
-        );
-        let hinted_instance = "assemble-casing:0";
-        let hint = placement_hint(hinted_instance, 5, 5);
+    fn candidate_search_warm_starts_coordinates_and_rotation_then_continues() {
+        let instance = "assemble-casing:0";
+        let wiring = wiring(vec![facility_node(instance)]);
+        let hint = FacilityPlacement {
+            instance: instance.to_string(),
+            recipe: "assemble-casing".to_string(),
+            facility: "assembler".to_string(),
+            x: 4,
+            y: 3,
+            width: 2,
+            height: 3,
+            rotation: 90,
+        };
+        let scope = FacilityPlacementSearchScope {
+            free_facility_ids: BTreeSet::from([instance.to_string()]),
+            fixed_facility_ids: BTreeSet::new(),
+        };
 
-        let report = solve_hinted_facility_placement_with_time_limit(
-            &wiring(vec![
-                facility_node(hinted_instance),
-                facility_node("assemble-casing:1"),
-            ]),
-            &validated,
+        let batch = search_facility_placement_candidates(
+            &wiring,
+            &catalog(
+                FacilityFootprint {
+                    width: 3,
+                    height: 2,
+                },
+                vec![0, 90],
+            ),
             &request_with_bounds(10, 10),
             0,
             &[hint],
-            Duration::from_secs(1),
+            &scope,
+            PlacementPolicy::PriorHint,
+            2,
+            Instant::now() + Duration::from_secs(1),
         );
 
-        assert!(report.success, "{report:?}");
-        let placement = report
-            .placements
-            .iter()
-            .find(|placement| placement.instance == hinted_instance)
-            .expect("hinted instance should be placed");
-        assert_eq!((placement.x, placement.y), (5, 5));
-        assert_eq!(
-            report.diagnostics[0].code,
-            "hinted-facility-placement-feasible"
+        assert_eq!(batch.candidates.len(), 2, "{batch:?}");
+        let first = &batch.candidates[0].report.placements[0];
+        assert_eq!((first.x, first.y, first.rotation), (4, 3, 90));
+        assert_ne!(
+            batch.candidates[0].report.placements,
+            batch.candidates[1].report.placements,
         );
+        assert_eq!(batch.attempted_candidate_count, 2);
+        assert!(!batch.timed_out);
     }
 
     #[test]
-    fn infeasible_prior_coordinates_do_not_constrain_the_solution() {
-        let validated = catalog(
-            FacilityFootprint {
-                width: 2,
-                height: 2,
-            },
-            vec![0],
+    fn fixed_scope_is_temporary_while_free_facilities_can_repair_conflicting_hints() {
+        let fixed = "assemble-casing:0";
+        let free = "assemble-casing:1";
+        let wiring = wiring(vec![facility_node(fixed), facility_node(free)]);
+        let hints = [placement_hint(fixed, 4, 0), placement_hint(free, 4, 0)];
+        let scope = FacilityPlacementSearchScope {
+            free_facility_ids: BTreeSet::from([free.to_string()]),
+            fixed_facility_ids: BTreeSet::from([fixed.to_string()]),
+        };
+
+        let batch = search_facility_placement_candidates(
+            &wiring,
+            &catalog(
+                FacilityFootprint {
+                    width: 2,
+                    height: 2,
+                },
+                vec![0],
+            ),
+            &request_with_bounds(8, 2),
+            0,
+            &hints,
+            &scope,
+            PlacementPolicy::PriorHint,
+            1,
+            Instant::now() + Duration::from_secs(1),
         );
+
+        assert_eq!(batch.candidates.len(), 1, "{batch:?}");
+        let placements = &batch.candidates[0].report.placements;
+        let fixed_placement = placements
+            .iter()
+            .find(|placement| placement.instance == fixed)
+            .expect("fixed facility is present");
+        let free_placement = placements
+            .iter()
+            .find(|placement| placement.instance == free)
+            .expect("free facility is present");
+        assert_eq!((fixed_placement.x, fixed_placement.y), (4, 0));
+        assert_ne!((free_placement.x, free_placement.y), (4, 0));
+    }
+
+    #[test]
+    fn global_scope_keeps_prior_values_as_hints_without_fixing_them() {
         let first = "assemble-casing:0";
         let second = "assemble-casing:1";
-        let report = solve_hinted_facility_placement_with_time_limit(
-            &wiring(vec![facility_node(first), facility_node(second)]),
-            &validated,
+        let wiring = wiring(vec![facility_node(first), facility_node(second)]);
+        let scope = FacilityPlacementSearchScope {
+            free_facility_ids: BTreeSet::from([first.to_string(), second.to_string()]),
+            fixed_facility_ids: BTreeSet::new(),
+        };
+
+        let batch = search_facility_placement_candidates(
+            &wiring,
+            &catalog(
+                FacilityFootprint {
+                    width: 2,
+                    height: 2,
+                },
+                vec![0],
+            ),
             &request_with_bounds(6, 2),
             0,
             &[placement_hint(first, 0, 0), placement_hint(second, 0, 0)],
-            Duration::from_secs(1),
+            &scope,
+            PlacementPolicy::PriorHint,
+            1,
+            Instant::now() + Duration::from_secs(1),
         );
 
-        assert!(report.success, "{report:?}");
+        assert_eq!(batch.candidates.len(), 1, "{batch:?}");
         assert_ne!(
-            (report.placements[0].x, report.placements[0].y),
-            (report.placements[1].x, report.placements[1].y),
+            (
+                batch.candidates[0].report.placements[0].x,
+                batch.candidates[0].report.placements[0].y,
+            ),
+            (
+                batch.candidates[0].report.placements[1].x,
+                batch.candidates[0].report.placements[1].y,
+            ),
         );
     }
 
     #[test]
-    fn rejects_an_unknown_placement_hint() {
-        let validated = catalog(
-            FacilityFootprint {
-                width: 2,
-                height: 2,
-            },
-            vec![0],
-        );
-        let wiring = wiring(vec![facility_node("assemble-casing:0")]);
-        let unknown = placement_hint("assemble-casing:missing", 0, 0);
+    fn candidate_timeout_retains_every_candidate_already_produced() {
+        let instance = "assemble-casing:0";
+        let wiring = wiring(vec![facility_node(instance)]);
+        let scope = FacilityPlacementSearchScope {
+            free_facility_ids: BTreeSet::from([instance.to_string()]),
+            fixed_facility_ids: BTreeSet::new(),
+        };
 
-        let report = solve_hinted_facility_placement_with_time_limit(
+        let batch = search_facility_placement_candidates(
             &wiring,
-            &validated,
-            &request(10),
+            &catalog(
+                FacilityFootprint {
+                    width: 2,
+                    height: 2,
+                },
+                vec![0],
+            ),
+            &request_with_bounds(100, 100),
             0,
-            &[unknown],
-            Duration::from_secs(1),
+            &[],
+            &scope,
+            PlacementPolicy::CompactShelf,
+            10_000,
+            Instant::now() + Duration::from_millis(50),
         );
 
-        assert_eq!(report.diagnostics[0].code, "unknown-placement-hint");
+        assert!(batch.timed_out, "{batch:?}");
+        assert!(!batch.candidates.is_empty(), "{batch:?}");
+        assert_eq!(batch.status, FacilityPlacementStatus::Feasible);
+        assert_eq!(
+            batch.candidates.len(),
+            batch
+                .candidates
+                .iter()
+                .map(|candidate| {
+                    let placement = &candidate.report.placements[0];
+                    (placement.x, placement.y, placement.rotation)
+                })
+                .collect::<BTreeSet<_>>()
+                .len(),
+        );
     }
 
     #[test]
