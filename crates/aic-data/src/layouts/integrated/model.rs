@@ -16,6 +16,7 @@ use super::{IntegratedLayoutDiagnostic, RouteRequirementFingerprint, networks};
 pub(super) struct ModelInput {
     pub(super) width: i32,
     pub(super) height: i32,
+    pub(super) cell_count: i32,
     pub(super) instances: Vec<InstanceInput>,
     pub(super) edges: Vec<EdgeInput>,
     pub(super) networks: Vec<networks::RoutingNetworkInput>,
@@ -302,11 +303,15 @@ pub(super) fn prepare_model(
     let width = i32::try_from(request.max_width).map_err(|_| solver_domain_error("max_width"))?;
     let height =
         i32::try_from(request.max_height).map_err(|_| solver_domain_error("max_height"))?;
+    let cell_count = width
+        .checked_mul(height)
+        .ok_or_else(grid_area_domain_error)?;
     let networks = networks::normalize(&edges)?;
 
     Ok(ModelInput {
         width,
         height,
+        cell_count,
         instances,
         edges,
         networks,
@@ -457,5 +462,14 @@ fn solver_domain_error(field: &str) -> IntegratedLayoutDiagnostic {
         format!("/{field}"),
         None,
         format!("layout {field} does not fit the solver's 32-bit integer domain"),
+    )
+}
+
+fn grid_area_domain_error() -> IntegratedLayoutDiagnostic {
+    IntegratedLayoutDiagnostic::error(
+        "solver-grid-area-out-of-range",
+        "/",
+        None,
+        "max_width multiplied by max_height does not fit the solver's 32-bit integer domain",
     )
 }

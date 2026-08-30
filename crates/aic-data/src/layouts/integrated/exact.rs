@@ -23,7 +23,7 @@ mod formulation;
 use extract::extract_report;
 use formulation::{
     external_endpoint_options, generate_candidates, grid_arcs, model_facility_endpoint_options,
-    post_at_most_one, post_equals_one,
+    post_acyclic_route_ordering, post_at_most_one, post_equals_one,
 };
 
 struct Candidate {
@@ -65,7 +65,7 @@ struct ModelRoute {
 pub(super) fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> IntegratedLayoutReport {
     let mut solver = Solver::default();
     let tag = solver.new_constraint_tag();
-    let cell_count = (input.width as usize) * (input.height as usize);
+    let cell_count = input.cell_count as usize;
     let mut occupancy = vec![Vec::<DomainId>::new(); cell_count];
     let mut model_instances = Vec::with_capacity(input.instances.len());
 
@@ -156,6 +156,7 @@ pub(super) fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> Inte
 
         let (arcs, incoming, outgoing) =
             grid_arcs(&mut solver, edge_index, input.width, input.height);
+        post_acyclic_route_ordering(&mut solver, edge_index, &arcs, input.cell_count, tag);
         let mut source_by_cell = vec![Vec::<DomainId>::new(); cell_count];
         let mut target_by_cell = vec![Vec::<DomainId>::new(); cell_count];
         for option in &source_options {

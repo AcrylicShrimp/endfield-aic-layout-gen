@@ -181,6 +181,37 @@ pub(in crate::layouts::integrated) fn grid_arcs(
     (arcs, incoming, outgoing)
 }
 
+pub(in crate::layouts::integrated) fn post_acyclic_route_ordering(
+    solver: &mut Solver,
+    edge_index: usize,
+    arcs: &[Arc],
+    cell_count: i32,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) {
+    let order = (0..cell_count)
+        .map(|cell| {
+            solver.new_named_bounded_integer(
+                0,
+                cell_count - 1,
+                format!("route-{edge_index}-order-{cell}"),
+            )
+        })
+        .collect::<Vec<_>>();
+    for arc in arcs {
+        solver
+            .add_constraint(pumpkin_solver::greater_than_or_equals(
+                [
+                    order[arc.to].scaled(1),
+                    order[arc.from].scaled(-1),
+                    arc.selected.scaled(-cell_count),
+                ],
+                1 - cell_count,
+                tag,
+            ))
+            .post();
+    }
+}
+
 pub(in crate::layouts::integrated) fn post_equals_one(
     solver: &mut Solver,
     variables: impl Iterator<Item = DomainId>,
@@ -209,5 +240,50 @@ pub(in crate::layouts::integrated) fn post_at_most_one(
         solver
             .add_constraint(pumpkin_solver::less_than_or_equals(terms, 1, tag))
             .post();
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use pumpkin_solver::Solver;
+    use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
+    use pumpkin_solver::core::predicates::PredicateConstructor;
+    use pumpkin_solver::core::results::SatisfactionResult;
+    use pumpkin_solver::core::termination::Indefinite;
+
+    use super::{Arc, post_acyclic_route_ordering};
+
+    #[test]
+    fn route_ordering_rejects_a_disconnected_directed_cycle() {
+        let mut solver = Solver::default();
+        let tag = solver.new_constraint_tag();
+        let forward = solver.new_named_bounded_integer(0, 1, "cycle-0-1");
+        let backward = solver.new_named_bounded_integer(0, 1, "cycle-1-0");
+        solver.add_clause([forward.equality_predicate(1)], tag);
+        solver.add_clause([backward.equality_predicate(1)], tag);
+        post_acyclic_route_ordering(
+            &mut solver,
+            0,
+            &[
+                Arc {
+                    from: 0,
+                    to: 1,
+                    selected: forward,
+                },
+                Arc {
+                    from: 1,
+                    to: 0,
+                    selected: backward,
+                },
+            ],
+            2,
+            tag,
+        );
+
+        let mut brancher = solver.default_brancher();
+        let mut resolver = ResolutionResolver::default();
+        let result = solver.satisfy(&mut brancher, &mut Indefinite, &mut resolver);
+
+        assert!(matches!(result, SatisfactionResult::Unsatisfiable(_, _, _)));
     }
 }
