@@ -1,0 +1,9 @@
+{
+  "schema_version": 2,
+  "target": {
+    "item": "item-plant-moss-3",
+    "quantity": 1,
+    "duration_ms": 4000
+  },
+  "external_inputs": []
+}

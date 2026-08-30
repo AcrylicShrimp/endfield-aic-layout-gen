@@ -20,6 +20,7 @@ use aic_data::recipes::{
 };
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
+use serde::Serialize;
 
 #[derive(Debug, Parser)]
 #[command(
@@ -204,6 +205,13 @@ fn main() -> ExitCode {
 enum CommandStatus {
     Success,
     Failure,
+}
+
+#[derive(Serialize)]
+struct LayoutSolveReport<'a> {
+    success: bool,
+    bootstrap_item_options: &'a [String],
+    layout: &'a IntegratedLayoutReport,
 }
 
 fn run() -> Result<CommandStatus> {
@@ -558,7 +566,7 @@ fn solve_layout(
                 None,
                 error.to_string(),
             ));
-            write_integrated_layout_report(&report)?;
+            write_layout_solve_report(&throughput_report.bootstrap_item_options, &report)?;
             return Ok(CommandStatus::Failure);
         }
     };
@@ -571,7 +579,7 @@ fn solve_layout(
         Duration::from_secs(time_limit_seconds.get()),
     );
     let success = report.success;
-    write_integrated_layout_report(&report)?;
+    write_layout_solve_report(&throughput_report.bootstrap_item_options, &report)?;
 
     if success {
         Ok(CommandStatus::Success)
@@ -677,10 +685,44 @@ fn write_facility_placement_report(report: &FacilityPlacementReport) -> Result<(
     Ok(())
 }
 
-fn write_integrated_layout_report(report: &IntegratedLayoutReport) -> Result<()> {
-    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
-        .context("failed to write integrated layout report")?;
+fn write_layout_solve_report(
+    bootstrap_item_options: &[String],
+    layout: &IntegratedLayoutReport,
+) -> Result<()> {
+    let report = LayoutSolveReport {
+        success: layout.success,
+        bootstrap_item_options,
+        layout,
+    };
+    serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+        .context("failed to write layout solve report")?;
     println!();
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn layout_solve_report_preserves_bootstrap_options() {
+        let bootstrap_item_options = vec!["seed".to_string()];
+        let layout = IntegratedLayoutReport::invalid(IntegratedLayoutDiagnostic::error(
+            "test-diagnostic",
+            "/",
+            None,
+            "test diagnostic",
+        ));
+        let value = serde_json::to_value(LayoutSolveReport {
+            success: layout.success,
+            bootstrap_item_options: &bootstrap_item_options,
+            layout: &layout,
+        })
+        .expect("layout solve report should serialize");
+
+        assert_eq!(value["success"], false);
+        assert_eq!(value["bootstrap_item_options"][0], "seed");
+        assert_eq!(value["layout"]["status"], "invalid-input");
+    }
 }

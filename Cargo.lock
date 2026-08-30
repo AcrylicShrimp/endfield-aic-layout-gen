@@ -24,6 +24,7 @@ dependencies = [
  "aic-data",
  "anyhow",
  "clap",
+ "serde",
  "serde_json",
 ]
 
