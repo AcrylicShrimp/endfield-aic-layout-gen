@@ -228,6 +228,7 @@ pub(super) fn calculate_cyclic_throughput(
         item_demand_rates: item_rates_from_map(&item_demands),
         surplus_rates,
         bootstrap_item_options,
+        producer_selection_groups: Vec::new(),
         diagnostics: vec![ThroughputDiagnostic::info(
             "cyclic-throughput-calculated",
             "/",

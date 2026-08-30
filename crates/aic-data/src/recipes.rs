@@ -5,6 +5,7 @@ mod index;
 mod instances;
 mod load;
 mod model;
+mod selection;
 mod throughput;
 mod validate;
 mod validated;
@@ -22,10 +23,14 @@ pub use instances::{
 };
 pub use load::{LoadRecipeBookError, load_recipe_book};
 pub use model::{ItemAmount, Recipe, RecipeBook, RecipeGraph};
+pub use selection::{
+    RecipeSelectionCheckReport, RecipeSelectionCheckStatus, RecipeSelectionDiagnostic,
+    check_recipe_selections,
+};
 pub use throughput::{
-    ItemRate, Rate, RecipeRunRate, RecipeThroughputReport, RecipeThroughputRequest,
-    SUPPORTED_THROUGHPUT_REQUEST_SCHEMA_VERSION, ThroughputDiagnostic, ThroughputTarget,
-    validate_throughput_request,
+    ItemRate, Rate, RecipeProducerSelection, RecipeProducerSelectionGroup, RecipeRunRate,
+    RecipeThroughputReport, RecipeThroughputRequest, SUPPORTED_THROUGHPUT_REQUEST_SCHEMA_VERSION,
+    ThroughputDiagnostic, ThroughputTarget, validate_throughput_request,
 };
 pub use validate::{
     SUPPORTED_SCHEMA_VERSION, ValidationDiagnostic, ValidationReport, validate_recipe_book,

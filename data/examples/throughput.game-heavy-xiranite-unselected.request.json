@@ -1,9 +1,9 @@
 {
   "schema_version": 3,
   "target": {
-    "item": "item-plant-moss-3",
+    "item": "item-xiranite-enr-powder",
     "quantity": 1,
-    "duration_ms": 4000
+    "duration_ms": 10000
   },
   "external_inputs": [],
   "producer_selections": []

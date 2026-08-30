@@ -1,9 +1,10 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "target": {
     "item": "originium-casing",
     "quantity": 1,
     "duration_ms": 10000
   },
-  "external_inputs": ["originium-ingot"]
+  "external_inputs": ["originium-ingot"],
+  "producer_selections": []
 }

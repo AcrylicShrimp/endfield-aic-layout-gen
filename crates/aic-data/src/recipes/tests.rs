@@ -235,6 +235,7 @@ fn throughput_request(item: &str, quantity: i64, duration_ms: i64) -> RecipeThro
             duration_ms,
         },
         external_inputs: Vec::new(),
+        producer_selections: Vec::new(),
     }
 }
 
@@ -312,6 +313,135 @@ fn defers_ambiguous_output_producers_until_graph_resolution() {
             if item == "originium-powder"
                 && recipes == vec!["alternate-originium-powder", "grind-originium-powder"]
     ));
+}
+
+fn two_frontier_choice_book() -> RecipeBook {
+    RecipeBook {
+        schema_version: 1,
+        external_items: vec!["raw-a".to_string(), "raw-b".to_string()],
+        recipes: vec![
+            Recipe {
+                id: "make-a-fast".to_string(),
+                facility: "fast-maker".to_string(),
+                inputs: vec![ItemAmount {
+                    item: "raw-a".to_string(),
+                    quantity: 1,
+                }],
+                outputs: vec![ItemAmount {
+                    item: "item-a".to_string(),
+                    quantity: 1,
+                }],
+                duration_ms: 1000,
+            },
+            Recipe {
+                id: "make-a-slow".to_string(),
+                facility: "slow-maker".to_string(),
+                inputs: vec![ItemAmount {
+                    item: "raw-a".to_string(),
+                    quantity: 1,
+                }],
+                outputs: vec![ItemAmount {
+                    item: "item-a".to_string(),
+                    quantity: 2,
+                }],
+                duration_ms: 2000,
+            },
+            Recipe {
+                id: "make-b-fast".to_string(),
+                facility: "fast-maker".to_string(),
+                inputs: vec![ItemAmount {
+                    item: "raw-b".to_string(),
+                    quantity: 1,
+                }],
+                outputs: vec![ItemAmount {
+                    item: "item-b".to_string(),
+                    quantity: 1,
+                }],
+                duration_ms: 1000,
+            },
+            Recipe {
+                id: "make-b-slow".to_string(),
+                facility: "slow-maker".to_string(),
+                inputs: vec![ItemAmount {
+                    item: "raw-b".to_string(),
+                    quantity: 1,
+                }],
+                outputs: vec![ItemAmount {
+                    item: "item-b".to_string(),
+                    quantity: 2,
+                }],
+                duration_ms: 2000,
+            },
+            Recipe {
+                id: "assemble-target".to_string(),
+                facility: "assembler".to_string(),
+                inputs: vec![
+                    ItemAmount {
+                        item: "item-a".to_string(),
+                        quantity: 1,
+                    },
+                    ItemAmount {
+                        item: "item-b".to_string(),
+                        quantity: 1,
+                    },
+                ],
+                outputs: vec![ItemAmount {
+                    item: "target-item".to_string(),
+                    quantity: 1,
+                }],
+                duration_ms: 1000,
+            },
+        ],
+    }
+}
+
+#[test]
+fn checks_all_reachable_recipe_choice_groups_before_graph_resolution() {
+    let book = ValidatedRecipeBook::try_from_recipe_book(two_frontier_choice_book())
+        .expect("choice book should validate");
+    let request = throughput_request("target-item", 1, 1000);
+
+    let report = check_recipe_selections(&book, &request);
+
+    assert!(!report.ready);
+    assert_eq!(report.status, RecipeSelectionCheckStatus::SelectionRequired);
+    assert_eq!(report.producer_selection_groups.len(), 2);
+    assert_eq!(report.producer_selection_groups[0].item, "item-a");
+    assert_eq!(report.producer_selection_groups[0].options.len(), 2);
+    assert_eq!(report.producer_selection_groups[1].item, "item-b");
+    assert_eq!(report.producer_selection_groups[1].options.len(), 2);
+}
+
+#[test]
+fn explicit_recipe_selections_make_the_check_and_throughput_ready() {
+    let book = ValidatedRecipeBook::try_from_recipe_book(two_frontier_choice_book())
+        .expect("choice book should validate");
+    let mut request = throughput_request("target-item", 1, 1000);
+    request.producer_selections = vec![
+        RecipeProducerSelection {
+            item: "item-a".to_string(),
+            recipe: "make-a-fast".to_string(),
+        },
+        RecipeProducerSelection {
+            item: "item-b".to_string(),
+            recipe: "make-b-slow".to_string(),
+        },
+    ];
+
+    let check = check_recipe_selections(&book, &request);
+    let throughput = book.calculate_throughput(&request);
+
+    assert!(check.ready, "{:#?}", check.diagnostics);
+    assert_eq!(check.status, RecipeSelectionCheckStatus::Ready);
+    assert!(throughput.success, "{:#?}", throughput.diagnostics);
+    assert_eq!(
+        throughput
+            .recipe_rates
+            .iter()
+            .map(|rate| rate.recipe.as_str())
+            .collect::<Vec<_>>(),
+        vec!["make-a-fast", "make-b-slow", "assemble-target"]
+    );
 }
 
 #[test]
@@ -677,17 +807,67 @@ fn rejects_invalid_duplicate_and_unknown_request_external_inputs() {
 }
 
 #[test]
+fn rejects_invalid_duplicate_and_external_producer_selections() {
+    let mut request = throughput_request("originium-powder", 1, 1000);
+    request.external_inputs = vec!["originium-ore".to_string()];
+    request.producer_selections = vec![
+        RecipeProducerSelection {
+            item: "Bad_Item".to_string(),
+            recipe: "Bad_Recipe".to_string(),
+        },
+        RecipeProducerSelection {
+            item: "originium-ore".to_string(),
+            recipe: "grind-originium-powder".to_string(),
+        },
+        RecipeProducerSelection {
+            item: "originium-ore".to_string(),
+            recipe: "grind-originium-powder".to_string(),
+        },
+    ];
+
+    let diagnostics = validate_throughput_request(&request);
+
+    assert_diagnostic_codes(
+        &diagnostics,
+        &[
+            "invalid-producer-selection-item-id",
+            "invalid-producer-selection-recipe-id",
+            "external-input-producer-selection-conflict",
+            "duplicate-producer-selection",
+            "external-input-producer-selection-conflict",
+        ],
+    );
+}
+
+#[test]
+fn rejects_semantically_invalid_recipe_selection_before_resolution() {
+    let book =
+        ValidatedRecipeBook::try_from_recipe_book(valid_book()).expect("valid book should promote");
+    let mut request = throughput_request("originium-powder", 1, 1000);
+    request.producer_selections = vec![RecipeProducerSelection {
+        item: "originium-powder".to_string(),
+        recipe: "missing-recipe".to_string(),
+    }];
+
+    let check = check_recipe_selections(&book, &request);
+
+    assert_eq!(check.status, RecipeSelectionCheckStatus::InvalidInput);
+    assert_eq!(check.diagnostics[0].code, "unknown-selected-recipe");
+}
+
+#[test]
 fn rejects_unknown_throughput_request_fields_on_parse() {
     let error = serde_json::from_str::<RecipeThroughputRequest>(
         r#"{
-          "schema_version": 2,
+          "schema_version": 3,
           "target": {
             "item": "originium-powder",
             "quantity": 1,
             "duration_ms": 1000,
             "extra": true
           },
-          "external_inputs": []
+          "external_inputs": [],
+          "producer_selections": []
         }"#,
     )
     .expect_err("unknown throughput request fields should be rejected");

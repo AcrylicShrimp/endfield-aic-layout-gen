@@ -3,7 +3,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 
 use crate::recipes::{
-    ItemAmount, Recipe, RecipeGraphError, ValidatedRecipeBook,
+    ItemAmount, Recipe, RecipeGraphError, RecipeSelectionCheckStatus, ValidatedRecipeBook,
+    check_recipe_selections,
     id::{STABLE_ID_PATTERN, is_stable_id},
 };
 
@@ -11,7 +12,7 @@ mod cyclic;
 
 const STAGE: &str = "recipe-throughput";
 
-pub const SUPPORTED_THROUGHPUT_REQUEST_SCHEMA_VERSION: u32 = 2;
+pub const SUPPORTED_THROUGHPUT_REQUEST_SCHEMA_VERSION: u32 = 3;
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -19,6 +20,14 @@ pub struct RecipeThroughputRequest {
     pub schema_version: u32,
     pub target: ThroughputTarget,
     pub external_inputs: Vec<String>,
+    pub producer_selections: Vec<RecipeProducerSelection>,
+}
+
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct RecipeProducerSelection {
+    pub item: String,
+    pub recipe: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
@@ -216,6 +225,12 @@ pub struct RecipeRunRate {
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct RecipeProducerSelectionGroup {
+    pub item: String,
+    pub options: Vec<Recipe>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct RecipeThroughputReport {
     pub success: bool,
     pub target: Option<ItemRate>,
@@ -224,6 +239,7 @@ pub struct RecipeThroughputReport {
     pub item_demand_rates: Vec<ItemRate>,
     pub surplus_rates: Vec<ItemRate>,
     pub bootstrap_item_options: Vec<String>,
+    pub producer_selection_groups: Vec<RecipeProducerSelectionGroup>,
     pub diagnostics: Vec<ThroughputDiagnostic>,
 }
 
@@ -241,8 +257,27 @@ impl RecipeThroughputReport {
             item_demand_rates: Vec::new(),
             surplus_rates: Vec::new(),
             bootstrap_item_options: Vec::new(),
+            producer_selection_groups: Vec::new(),
             diagnostics,
         }
+    }
+
+    fn failure_with_producer_selection_group(
+        diagnostic: ThroughputDiagnostic,
+        group: RecipeProducerSelectionGroup,
+    ) -> Self {
+        let mut report = Self::failure(diagnostic);
+        report.producer_selection_groups.push(group);
+        report
+    }
+
+    fn failure_with_producer_selection_groups(
+        diagnostics: Vec<ThroughputDiagnostic>,
+        groups: Vec<RecipeProducerSelectionGroup>,
+    ) -> Self {
+        let mut report = Self::failure_many(diagnostics);
+        report.producer_selection_groups = groups;
+        report
     }
 }
 
@@ -337,6 +372,54 @@ pub fn validate_throughput_request(request: &RecipeThroughputRequest) -> Vec<Thr
         }
     }
 
+    let mut seen_selection_items = BTreeSet::new();
+    for (index, selection) in request.producer_selections.iter().enumerate() {
+        if !is_stable_id(&selection.item) {
+            diagnostics.push(ThroughputDiagnostic::error(
+                "invalid-producer-selection-item-id",
+                format!("/producer_selections/{index}/item"),
+                Some(selection.item.clone()),
+                format!(
+                    "producer selection item '{}' must match {STABLE_ID_PATTERN}",
+                    selection.item
+                ),
+            ));
+        }
+        if !is_stable_id(&selection.recipe) {
+            diagnostics.push(ThroughputDiagnostic::error(
+                "invalid-producer-selection-recipe-id",
+                format!("/producer_selections/{index}/recipe"),
+                Some(selection.recipe.clone()),
+                format!(
+                    "selected recipe '{}' must match {STABLE_ID_PATTERN}",
+                    selection.recipe
+                ),
+            ));
+        }
+        if !seen_selection_items.insert(selection.item.as_str()) {
+            diagnostics.push(ThroughputDiagnostic::error(
+                "duplicate-producer-selection",
+                format!("/producer_selections/{index}/item"),
+                Some(selection.item.clone()),
+                format!(
+                    "producer selection for item '{}' appears more than once",
+                    selection.item
+                ),
+            ));
+        }
+        if seen_external_inputs.contains(selection.item.as_str()) {
+            diagnostics.push(ThroughputDiagnostic::error(
+                "external-input-producer-selection-conflict",
+                format!("/producer_selections/{index}/item"),
+                Some(selection.item.clone()),
+                format!(
+                    "item '{}' cannot be both an external input and have a selected producer",
+                    selection.item
+                ),
+            ));
+        }
+    }
+
     if request.target.quantity <= 0 {
         diagnostics.push(ThroughputDiagnostic::error(
             "non-positive-target-quantity",
@@ -374,11 +457,45 @@ impl ValidatedRecipeBook {
             return RecipeThroughputReport::failure_many(request_diagnostics);
         }
 
-        let graph = match self
-            .resolve_graph_with_external_inputs(&request.target.item, &request.external_inputs)
-        {
+        let selection_check = check_recipe_selections(self, request);
+        if selection_check.status != RecipeSelectionCheckStatus::Ready {
+            return RecipeThroughputReport::failure_with_producer_selection_groups(
+                selection_check
+                    .diagnostics
+                    .into_iter()
+                    .map(|diagnostic| ThroughputDiagnostic {
+                        stage: diagnostic.stage,
+                        severity: diagnostic.severity,
+                        code: diagnostic.code,
+                        path: diagnostic.path,
+                        entity: diagnostic.entity,
+                        message: diagnostic.message,
+                    })
+                    .collect(),
+                selection_check.producer_selection_groups,
+            );
+        }
+
+        let producer_selections = request
+            .producer_selections
+            .iter()
+            .map(|selection| (selection.item.clone(), selection.recipe.clone()))
+            .collect::<BTreeMap<_, _>>();
+        let graph = match self.resolve_graph_with_options(
+            &request.target.item,
+            &request.external_inputs,
+            &producer_selections,
+        ) {
             Ok(graph) => graph,
-            Err(error) => return RecipeThroughputReport::failure(map_graph_error(error)),
+            Err(error) => {
+                let diagnostic = map_graph_error(&error);
+                if let Some(group) = producer_selection_group(self, &error) {
+                    return RecipeThroughputReport::failure_with_producer_selection_group(
+                        diagnostic, group,
+                    );
+                }
+                return RecipeThroughputReport::failure(diagnostic);
+            }
         };
 
         let target_rate = match Rate::from_quantity_per_duration_ms(
@@ -476,6 +593,7 @@ impl ValidatedRecipeBook {
                 .map(|(item, rate)| ItemRate { item, rate })
                 .collect(),
             bootstrap_item_options: Vec::new(),
+            producer_selection_groups: Vec::new(),
             diagnostics: build_success_diagnostics(&request.target.item),
         }
     }
@@ -575,7 +693,28 @@ fn item_rates_from_map(rates_by_item: &BTreeMap<String, Rate>) -> Vec<ItemRate> 
         .collect()
 }
 
-fn map_graph_error(error: RecipeGraphError) -> ThroughputDiagnostic {
+fn producer_selection_group(
+    book: &ValidatedRecipeBook,
+    error: &RecipeGraphError,
+) -> Option<RecipeProducerSelectionGroup> {
+    let RecipeGraphError::AmbiguousProducer { item, recipes } = error else {
+        return None;
+    };
+    Some(RecipeProducerSelectionGroup {
+        item: item.clone(),
+        options: recipes
+            .iter()
+            .map(|recipe| {
+                book.index()
+                    .recipe(recipe)
+                    .expect("ambiguous producer IDs come from the validated recipe index")
+                    .clone()
+            })
+            .collect(),
+    })
+}
+
+fn map_graph_error(error: &RecipeGraphError) -> ThroughputDiagnostic {
     match error {
         RecipeGraphError::InvalidTargetId { target_item } => ThroughputDiagnostic::error(
             "invalid-target-id",
@@ -595,6 +734,26 @@ fn map_graph_error(error: RecipeGraphError) -> ThroughputDiagnostic {
             Some(item.clone()),
             format!("external input item '{item}' is neither external nor recipe-produced"),
         ),
+        RecipeGraphError::UnknownProducerSelectionItem { item } => ThroughputDiagnostic::error(
+            "unknown-producer-selection-item",
+            "/producer_selections",
+            Some(item.clone()),
+            format!("producer selection item '{item}' is not produced by any recipe"),
+        ),
+        RecipeGraphError::UnknownSelectedRecipe { item, recipe } => ThroughputDiagnostic::error(
+            "unknown-selected-recipe",
+            "/producer_selections",
+            Some(recipe.clone()),
+            format!("producer selection for item '{item}' references unknown recipe '{recipe}'"),
+        ),
+        RecipeGraphError::SelectedRecipeDoesNotProduceItem { item, recipe } => {
+            ThroughputDiagnostic::error(
+                "selected-recipe-output-mismatch",
+                "/producer_selections",
+                Some(recipe.clone()),
+                format!("selected recipe '{recipe}' does not produce item '{item}'"),
+            )
+        }
         RecipeGraphError::AmbiguousProducer { item, recipes } => ThroughputDiagnostic::error(
             "ambiguous-recipe-producer",
             "/recipes",
