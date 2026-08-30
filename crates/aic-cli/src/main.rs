@@ -14,7 +14,7 @@ use aic_data::layouts::{
     IntegratedLayoutDiagnostic, IntegratedLayoutReport,
     construct_coordinate_integrated_layout_with_time_limit,
     construct_iterative_scc_layout_with_time_limit, construct_sparse_integrated_layout,
-    render_integrated_layout_html, solve_facility_placement,
+    render_integrated_layout_html_with_localization, solve_facility_placement,
     solve_integrated_layout_with_time_limit,
 };
 use aic_data::localization::{
@@ -187,6 +187,10 @@ enum LayoutsCommand {
         /// Standalone HTML wireframe file to write for a successful layout.
         #[arg(long, value_name = "FILE")]
         visualization_output: Option<PathBuf>,
+
+        /// Optional localization catalog used for visualization labels.
+        #[arg(long, value_name = "FILE", requires = "visualization_output")]
+        localization_catalog: Option<PathBuf>,
     },
     /// Resolve contextual sources and solve placement, ports, and routing.
     SolveContextual {
@@ -229,6 +233,10 @@ enum LayoutsCommand {
         /// Standalone HTML wireframe file to write for a successful layout.
         #[arg(long, value_name = "FILE")]
         visualization_output: Option<PathBuf>,
+
+        /// Optional localization catalog used for visualization labels.
+        #[arg(long, value_name = "FILE", requires = "visualization_output")]
+        localization_catalog: Option<PathBuf>,
     },
 }
 
@@ -455,6 +463,7 @@ fn run() -> Result<CommandStatus> {
                 time_limit_seconds,
                 strategy,
                 visualization_output,
+                localization_catalog,
             } => solve_layout(
                 recipes,
                 throughput_request,
@@ -466,6 +475,7 @@ fn run() -> Result<CommandStatus> {
                 time_limit_seconds,
                 strategy,
                 visualization_output,
+                localization_catalog,
             ),
             LayoutsCommand::SolveContextual {
                 recipes,
@@ -478,6 +488,7 @@ fn run() -> Result<CommandStatus> {
                 time_limit_seconds,
                 strategy,
                 visualization_output,
+                localization_catalog,
             } => solve_contextual_layout(
                 recipes,
                 source_plan,
@@ -489,6 +500,7 @@ fn run() -> Result<CommandStatus> {
                 time_limit_seconds,
                 strategy,
                 visualization_output,
+                localization_catalog,
             ),
         },
         Command::Localization { command } => match command {
@@ -1063,7 +1075,9 @@ fn solve_layout(
     time_limit_seconds: NonZeroU64,
     strategy: IntegratedLayoutStrategy,
     visualization_output: Option<PathBuf>,
+    localization_catalog: Option<PathBuf>,
 ) -> Result<CommandStatus> {
+    let localization = load_visualization_localization(localization_catalog.as_deref())?;
     let throughput_report = calculate_throughput_report(recipes, throughput_request)?;
     if !throughput_report.success {
         write_throughput_report(&throughput_report)?;
@@ -1182,7 +1196,11 @@ fn solve_layout(
         ),
     };
     let success = report.success;
-    write_layout_visualization(visualization_output.as_deref(), &report)?;
+    write_layout_visualization(
+        visualization_output.as_deref(),
+        &report,
+        localization.as_ref(),
+    )?;
     write_layout_solve_report(&throughput_report.bootstrap_item_options, &report)?;
 
     if success {
@@ -1204,7 +1222,9 @@ fn solve_contextual_layout(
     time_limit_seconds: NonZeroU64,
     strategy: IntegratedLayoutStrategy,
     visualization_output: Option<PathBuf>,
+    localization_catalog: Option<PathBuf>,
 ) -> Result<CommandStatus> {
+    let localization = load_visualization_localization(localization_catalog.as_deref())?;
     let (book, source_plan) = match load_contextual_recipe_request(&recipes, &source_plan)? {
         Ok(inputs) => inputs,
         Err(report) => {
@@ -1327,7 +1347,11 @@ fn solve_contextual_layout(
         ),
     };
     let success = layout.success;
-    write_layout_visualization(visualization_output.as_deref(), &layout)?;
+    write_layout_visualization(
+        visualization_output.as_deref(),
+        &layout,
+        localization.as_ref(),
+    )?;
     write_contextual_layout_solve_report(&throughput, &facility_requirements, &wiring, &layout)?;
 
     if success {
@@ -1513,6 +1537,7 @@ fn write_facility_placement_report(report: &FacilityPlacementReport) -> Result<(
 fn write_layout_visualization(
     output: Option<&Path>,
     layout: &IntegratedLayoutReport,
+    localization: Option<&ValidatedLocalizationCatalog>,
 ) -> Result<()> {
     let Some(output) = output else {
         return Ok(());
@@ -1520,19 +1545,47 @@ fn write_layout_visualization(
     if !layout.success {
         return Ok(());
     }
-    let html = render_integrated_layout_html(layout).map_err(|diagnostic| {
-        anyhow::anyhow!(
-            "layout visualization failed with {}: {}",
-            diagnostic.code,
-            diagnostic.message
-        )
-    })?;
+    let html = render_integrated_layout_html_with_localization(layout, localization).map_err(
+        |diagnostic| {
+            anyhow::anyhow!(
+                "layout visualization failed with {}: {}",
+                diagnostic.code,
+                diagnostic.message
+            )
+        },
+    )?;
     std::fs::write(output, html).with_context(|| {
         format!(
             "failed to write layout visualization file '{}'",
             output.display()
         )
     })
+}
+
+fn load_visualization_localization(
+    path: Option<&Path>,
+) -> Result<Option<ValidatedLocalizationCatalog>> {
+    let Some(path) = path else {
+        return Ok(None);
+    };
+    let catalog = load_localization_catalog(path).with_context(|| {
+        format!(
+            "failed to load visualization localization catalog '{}'",
+            path.display()
+        )
+    })?;
+    ValidatedLocalizationCatalog::try_from_catalog(catalog)
+        .map(Some)
+        .map_err(|report| {
+            let detail = report.diagnostics.first().map_or_else(
+                || "validation failed without a diagnostic".to_string(),
+                |diagnostic| format!("{}: {}", diagnostic.code, diagnostic.message),
+            );
+            anyhow::anyhow!(
+                "visualization localization catalog '{}' is invalid: {detail}",
+                path.display()
+            )
+        })
 }
 
 fn write_layout_solve_report(
@@ -1618,6 +1671,8 @@ mod tests {
             "placement.json",
             "--visualization-output",
             "layout.html",
+            "--localization-catalog",
+            "localization.json",
         ])
         .expect("contextual visualization CLI should parse");
 
@@ -1625,6 +1680,7 @@ mod tests {
             command:
                 LayoutsCommand::SolveContextual {
                     visualization_output,
+                    localization_catalog,
                     ..
                 },
         } = cli.command
@@ -1632,5 +1688,9 @@ mod tests {
             panic!("expected contextual layout command")
         };
         assert_eq!(visualization_output, Some(PathBuf::from("layout.html")));
+        assert_eq!(
+            localization_catalog,
+            Some(PathBuf::from("localization.json"))
+        );
     }
 }

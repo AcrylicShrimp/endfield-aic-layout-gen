@@ -1,6 +1,7 @@
 use std::collections::BTreeSet;
 use std::fmt::Write;
 
+use crate::localization::ValidatedLocalizationCatalog;
 use crate::logistics::{LogisticsComponentKind, TransportKind};
 
 use super::{
@@ -19,6 +20,13 @@ struct RenderPage<'a> {
 
 pub fn render_integrated_layout_html(
     report: &IntegratedLayoutReport,
+) -> Result<String, IntegratedLayoutDiagnostic> {
+    render_integrated_layout_html_with_localization(report, None)
+}
+
+pub fn render_integrated_layout_html_with_localization(
+    report: &IntegratedLayoutReport,
+    localization: Option<&ValidatedLocalizationCatalog>,
 ) -> Result<String, IntegratedLayoutDiagnostic> {
     if !report.success {
         return Err(IntegratedLayoutDiagnostic::error(
@@ -72,6 +80,8 @@ pub fn render_integrated_layout_html(
   .route-cell-belt {{ fill: #f1b84b; fill-opacity: .58; stroke: #ffd77c; stroke-width: .05; }}
   .route-cell-pipe {{ fill: #59c7f2; fill-opacity: .62; stroke: #b3ebff; stroke-width: .06; }}
   .route-group:hover .route-cell {{ fill-opacity: .95; stroke: #ffffff; stroke-width: .12; }}
+  [data-inspect] {{ cursor: pointer; }}
+  [data-inspect].selected .route-cell, [data-inspect].selected {{ filter: brightness(1.45); }}
   .endpoint {{ vector-effect: non-scaling-stroke; stroke-width: 1px; }}
   .endpoint-belt {{ fill: #f1b84b; stroke: #251a07; }}
   .endpoint-pipe {{ fill: #59c7f2; stroke: #071c26; }}
@@ -90,6 +100,10 @@ pub fn render_integrated_layout_html(
   .hidden-layer {{ display: none; }}
   .hidden-phase {{ display: none; }}
   .help {{ position: absolute; right: 10px; bottom: 8px; color: #6f8b9e; font-size: 11px; pointer-events: none; }}
+  .inspect-panel {{ position: absolute; top: 12px; right: 12px; width: min(420px, calc(100% - 24px)); max-height: calc(100% - 48px); overflow: auto; border: 1px solid #5f8198; background: rgba(7, 16, 25, .96); box-shadow: 0 12px 36px rgba(0, 0, 0, .45); padding: 12px; z-index: 3; }}
+  .inspect-panel[hidden] {{ display: none; }}
+  .inspect-header {{ display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; color: #f2f8ff; }}
+  .inspect-content {{ margin: 0; color: #bfe6fb; font: inherit; font-size: 12px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }}
 </style>
 </head>
 <body>
@@ -123,12 +137,13 @@ pub fn render_integrated_layout_html(
     .expect("writing to String cannot fail");
 
     for (index, page) in pages.iter().enumerate() {
-        render_page(&mut html, page, index, pages.len());
+        render_page(&mut html, page, index, pages.len(), localization);
     }
 
     html.push_str(
         r#"    </svg>
-    <div class="help">wheel: zoom · drag: pan · hover: inspect</div>
+    <aside class="inspect-panel" data-inspector hidden><div class="inspect-header"><strong>Layout details</strong><button type="button" data-inspector-close>Close</button></div><pre class="inspect-content" data-inspector-content></pre></aside>
+    <div class="help">wheel: zoom · drag: pan · hover: preview · click: pin details</div>
   </div>
 </div>
 <script>
@@ -140,6 +155,21 @@ pub fn render_integrated_layout_html(
   let base = pages[pageIndex].dataset.baseView.split(' ').map(Number);
   let view = base.slice();
   let drag = null;
+  let pinned = null;
+  const inspector = root.querySelector('[data-inspector]');
+  const inspectorContent = root.querySelector('[data-inspector-content]');
+  const inspectTarget = (target) => target instanceof Element ? target.closest('[data-inspect]') : null;
+  const showDetails = (target) => {
+    if (!target) { inspector.hidden = true; inspectorContent.textContent = ''; return; }
+    inspector.hidden = false;
+    inspectorContent.textContent = target.dataset.inspect.split(' | ').join('\n');
+  };
+  const selectDetails = (target) => {
+    if (pinned) pinned.classList.remove('selected');
+    pinned = target;
+    if (pinned) pinned.classList.add('selected');
+    showDetails(pinned);
+  };
   const applyView = () => svg.setAttribute('viewBox', view.join(' '));
   const showPage = (nextIndex) => {
     pageIndex = Math.max(0, Math.min(pages.length - 1, nextIndex));
@@ -165,6 +195,10 @@ pub fn render_integrated_layout_html(
     });
   });
   root.querySelector('[data-reset]').addEventListener('click', () => { view = base.slice(); applyView(); });
+  root.querySelector('[data-inspector-close]').addEventListener('click', () => selectDetails(null));
+  svg.addEventListener('pointerover', (event) => { if (!pinned) showDetails(inspectTarget(event.target)); });
+  svg.addEventListener('pointerout', (event) => { if (!pinned && !inspectTarget(event.relatedTarget)) showDetails(null); });
+  svg.addEventListener('click', (event) => selectDetails(inspectTarget(event.target)));
   svg.addEventListener('wheel', (event) => {
     event.preventDefault();
     const rect = svg.getBoundingClientRect();
@@ -258,7 +292,13 @@ fn collect_pages(
     Ok(pages)
 }
 
-fn render_page(html: &mut String, page: &RenderPage<'_>, index: usize, page_count: usize) {
+fn render_page(
+    html: &mut String,
+    page: &RenderPage<'_>,
+    index: usize,
+    page_count: usize,
+    localization: Option<&ValidatedLocalizationCatalog>,
+) {
     let width = page.bounds.width.max(1);
     let height = page.bounds.height.max(1);
     let hidden = if index + 1 == page_count {
@@ -287,10 +327,27 @@ fn render_page(html: &mut String, page: &RenderPage<'_>, index: usize, page_coun
         page.bounds.width, page.bounds.height,
     )
     .expect("writing to String cannot fail");
-    render_routes(html, page.routes, TransportKind::Belt, "route-cell-belt");
-    render_routes(html, page.routes, TransportKind::Pipe, "route-cell-pipe");
+    render_routes(
+        html,
+        page.routes,
+        TransportKind::Belt,
+        "route-cell-belt",
+        localization,
+    );
+    render_routes(
+        html,
+        page.routes,
+        TransportKind::Pipe,
+        "route-cell-pipe",
+        localization,
+    );
     render_components(html, page.logistics_components);
-    render_facilities(html, page.placements, &page.introduced_facilities);
+    render_facilities(
+        html,
+        page.placements,
+        &page.introduced_facilities,
+        localization,
+    );
     html.push_str("      </g>\n");
 }
 
@@ -345,6 +402,7 @@ fn render_routes(
     routes: &[IntegratedRoute],
     transport: TransportKind,
     route_class: &str,
+    localization: Option<&ValidatedLocalizationCatalog>,
 ) {
     let layer_class = match transport {
         TransportKind::Belt => "belt-layer",
@@ -355,10 +413,11 @@ fn render_routes(
         if route.transport != transport || route.cells.is_empty() {
             continue;
         }
+        let item_name = localized_item_name(localization, &route.item);
         let title = xml_escape(&format!(
             "{:?} line {index} | item {} | rate {} | {} -> {} | {} occupied tiles",
             route.transport,
-            route.item,
+            item_name,
             rate_label(route.rate),
             endpoint_name(&route.source),
             endpoint_name(&route.target),
@@ -366,7 +425,7 @@ fn render_routes(
         ));
         writeln!(
             html,
-            "          <g class=\"route-group\"><title>{title}</title>"
+            "          <g class=\"route-group\" data-inspect=\"{title}\" tabindex=\"0\">"
         )
         .expect("writing to String cannot fail");
         for cell in &route.cells {
@@ -406,7 +465,7 @@ fn render_routes(
             let role = endpoint_role(endpoint, is_source);
             let tooltip = xml_escape(&format!(
                 "{role} | item {} | rate {} | {} | peer {}",
-                route.item,
+                item_name,
                 rate_label(route.rate),
                 endpoint_name(endpoint),
                 endpoint_name(peer),
@@ -414,21 +473,21 @@ fn render_routes(
             match endpoint {
                 IntegratedRouteEndpoint::Facility { .. } if is_source => writeln!(
                     html,
-                    "          <polygon class=\"endpoint port-output {endpoint_class}\" points=\"{center_x:.2},{:.2} {:.2},{center_y:.2} {center_x:.2},{:.2} {:.2},{center_y:.2}\"><title>{tooltip}</title></polygon>",
-                    center_y - 0.34,
-                    center_x + 0.34,
-                    center_y + 0.34,
-                    center_x - 0.34,
+                    "          <polygon class=\"endpoint port-output {endpoint_class}\" data-inspect=\"{tooltip}\" tabindex=\"0\" points=\"{center_x:.2},{:.2} {:.2},{center_y:.2} {center_x:.2},{:.2} {:.2},{center_y:.2}\"/>",
+                    center_y - 0.46,
+                    center_x + 0.46,
+                    center_y + 0.46,
+                    center_x - 0.46,
                 ),
                 IntegratedRouteEndpoint::Facility { .. } => writeln!(
                     html,
-                    "          <circle class=\"endpoint port-input {endpoint_class}\" cx=\"{center_x:.2}\" cy=\"{center_y:.2}\" r=\".3\"><title>{tooltip}</title></circle>",
+                    "          <circle class=\"endpoint port-input {endpoint_class}\" data-inspect=\"{tooltip}\" tabindex=\"0\" cx=\"{center_x:.2}\" cy=\"{center_y:.2}\" r=\".42\"/>",
                 ),
                 IntegratedRouteEndpoint::Boundary { .. } => writeln!(
                     html,
-                    "          <rect class=\"endpoint {endpoint_class}{boundary_class}\" x=\"{:.2}\" y=\"{:.2}\" width=\".64\" height=\".64\"><title>{tooltip}</title></rect>",
-                    center_x - 0.32,
-                    center_y - 0.32,
+                    "          <rect class=\"endpoint {endpoint_class}{boundary_class}\" data-inspect=\"{tooltip}\" tabindex=\"0\" x=\"{:.2}\" y=\"{:.2}\" width=\".84\" height=\".84\"/>",
+                    center_x - 0.42,
+                    center_y - 0.42,
                 ),
             }
             .expect("writing to String cannot fail");
@@ -469,13 +528,13 @@ fn render_components(html: &mut String, components: &[PlacedLogisticsComponent])
         };
         writeln!(
             html,
-            "        <circle class=\"component {class}\" cx=\"{:.1}\" cy=\"{:.1}\" r=\".34\"><title>{}</title></circle>",
-            component.position.x as f64 + 0.5,
-            component.position.y as f64 + 0.5,
+            "        <circle class=\"component {class}\" data-inspect=\"{}\" tabindex=\"0\" cx=\"{:.1}\" cy=\"{:.1}\" r=\".34\"/>",
             xml_escape(&format!(
-                "{} | {} | {:?}",
+                "logistics component | {} | {} | {:?}",
                 component.id, component.component, component.transport
             )),
+            component.position.x as f64 + 0.5,
+            component.position.y as f64 + 0.5,
         )
         .expect("writing to String cannot fail");
     }
@@ -486,12 +545,20 @@ fn render_facilities(
     html: &mut String,
     placements: &[FacilityPlacement],
     introduced_facilities: &BTreeSet<&str>,
+    localization: Option<&ValidatedLocalizationCatalog>,
 ) {
     html.push_str("      <g class=\"facility-layer\">\n");
     for (index, placement) in placements.iter().enumerate() {
+        let localized = localization.and_then(|catalog| catalog.facility(&placement.facility));
+        let facility_name = localized.map_or(placement.facility.as_str(), |entry| {
+            entry.facility_name.as_str()
+        });
+        let mode_name = localized.map_or("unknown mode", |entry| entry.mode_name.as_str());
         let title = xml_escape(&format!(
-            "F{index:02} | {} | {} | {} | ({}, {}) {}x{} r{}",
+            "F{index:02} | {} | {} | mode {} | recipe {} | {} | ({}, {}) {}x{} r{}",
+            facility_name,
             placement.facility,
+            mode_name,
             placement.recipe,
             placement.instance,
             placement.x,
@@ -507,13 +574,18 @@ fn render_facilities(
         };
         writeln!(
             html,
-            "        <rect class=\"facility{introduced}\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"><title>{title}</title></rect>",
+            "        <rect class=\"facility{introduced}\" data-inspect=\"{title}\" tabindex=\"0\" x=\"{}\" y=\"{}\" width=\"{}\" height=\"{}\"/>",
             placement.x, placement.y, placement.width, placement.height,
         )
         .expect("writing to String cannot fail");
     }
     html.push_str("      </g>\n      <g class=\"label-layer\">\n");
     for (index, placement) in placements.iter().enumerate() {
+        let facility_name = localization
+            .and_then(|catalog| catalog.facility(&placement.facility))
+            .map_or(placement.facility.as_str(), |entry| {
+                entry.facility_name.as_str()
+            });
         let center_x = placement.x as f64 + placement.width as f64 / 2.0;
         let center_y = placement.y as f64 + placement.height as f64 / 2.0;
         let text_length = (placement.width as f64 - 0.6).max(0.5);
@@ -521,11 +593,20 @@ fn render_facilities(
             html,
             "        <text class=\"facility-label\" x=\"{center_x:.2}\" y=\"{:.2}\"><tspan x=\"{center_x:.2}\" textLength=\"{text_length:.2}\" lengthAdjust=\"spacingAndGlyphs\">{}</tspan><tspan class=\"facility-index\" x=\"{center_x:.2}\" dy=\"1\">F{index:02}</tspan></text>",
             center_y - 0.45,
-            xml_escape(&placement.facility),
+            xml_escape(facility_name),
         )
         .expect("writing to String cannot fail");
     }
     html.push_str("      </g>\n");
+}
+
+fn localized_item_name(localization: Option<&ValidatedLocalizationCatalog>, item: &str) -> String {
+    localization
+        .and_then(|catalog| catalog.item(item))
+        .map_or_else(
+            || item.to_string(),
+            |entry| format!("{} ({item})", entry.display_name),
+        )
 }
 
 fn endpoint_name(endpoint: &IntegratedRouteEndpoint) -> String {
@@ -555,10 +636,14 @@ mod tests {
         IntegratedLayoutPhase, IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRoute,
         IntegratedRouteEndpoint, WorldGridPosition,
     };
+    use crate::localization::{
+        LocalizationCatalog, LocalizationTextSource, LocalizedFacility, LocalizedName,
+        ValidatedLocalizationCatalog,
+    };
     use crate::logistics::TransportKind;
     use crate::recipes::Rate;
 
-    use super::render_integrated_layout_html;
+    use super::{render_integrated_layout_html, render_integrated_layout_html_with_localization};
 
     #[test]
     fn renders_a_self_contained_wireframe_with_transport_layers() {
@@ -619,8 +704,30 @@ mod tests {
             attempts: Vec::new(),
         };
         report.phases = vec![phase(0), phase(1)];
+        let localization = ValidatedLocalizationCatalog::try_from_catalog(LocalizationCatalog {
+            schema_version: 1,
+            locale: "ko-KR".to_string(),
+            items: Vec::new(),
+            facilities: vec![LocalizedFacility {
+                id: "assembler".to_string(),
+                base_facility: "assembler".to_string(),
+                facility_name: "분쇄기".to_string(),
+                facility_name_source: LocalizationTextSource::Official,
+                mode: "normal".to_string(),
+                mode_name: "기본 모드".to_string(),
+                mode_name_source: LocalizationTextSource::Official,
+            }],
+            modes: vec![LocalizedName {
+                id: "normal".to_string(),
+                display_name: "기본 모드".to_string(),
+                display_name_source: LocalizationTextSource::Official,
+            }],
+            recipe_descriptions: Vec::new(),
+        })
+        .expect("test localization should validate");
 
-        let html = render_integrated_layout_html(&report).expect("wireframe should render");
+        let html = render_integrated_layout_html_with_localization(&report, Some(&localization))
+            .expect("wireframe should render");
 
         assert!(html.starts_with("<!doctype html>"));
         assert!(html.contains("class=\"belt-layer\""));
@@ -631,12 +738,14 @@ mod tests {
         assert!(html.contains("factory input boundary"));
         assert!(html.contains("facility input port"));
         assert!(html.contains("port-input endpoint-belt"));
+        assert!(html.contains("data-inspector-content"));
+        assert!(html.contains("data-inspect=\"factory input boundary"));
         assert!(html.contains("Belt (<span data-belt-summary>2 tiles</span>)"));
         assert_eq!(html.matches("class=\"phase-page").count(), 2);
         assert!(html.contains("data-previous"));
         assert!(html.contains("Phase 2/2"));
         assert!(html.contains("class=\"facility introduced\""));
-        assert!(html.contains("assembler</tspan>"));
+        assert!(html.contains("분쇄기</tspan>"));
         assert!(html.contains("facility:&lt;one&gt;"));
         assert!(html.contains("recipe&amp;one"));
         assert!(!html.contains("https://"));

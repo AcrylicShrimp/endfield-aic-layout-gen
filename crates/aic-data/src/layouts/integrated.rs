@@ -38,7 +38,7 @@ mod networks;
 mod sparse;
 mod witness;
 
-pub use html::render_integrated_layout_html;
+pub use html::{render_integrated_layout_html, render_integrated_layout_html_with_localization};
 pub use iterative::construct_iterative_scc_layout_with_time_limit;
 
 const STAGE: &str = "integrated-layout";
