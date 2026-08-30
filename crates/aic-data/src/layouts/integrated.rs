@@ -20,12 +20,18 @@ use crate::layouts::{
     FacilityPlacement, FacilityPlacementBounds, FacilityPlacementRequest,
     validate_facility_placement_request,
 };
-use crate::logistics::{TransportKind, ValidatedItemCatalog, ValidatedTransportCatalog};
+use crate::logistics::{
+    LogisticsComponentKind, TransportKind, ValidatedItemCatalog,
+    ValidatedLogisticsComponentCatalog, ValidatedTransportCatalog,
+};
 use crate::recipes::{
     FacilityInstanceWiringEdge, FacilityInstanceWiringNode, FacilityInstanceWiringReport, Rate,
 };
 
 use super::WorldGridPosition;
+
+mod sparse;
+mod witness;
 
 const STAGE: &str = "integrated-layout";
 
@@ -45,8 +51,19 @@ pub struct IntegratedLayoutReport {
     pub status: IntegratedLayoutStatus,
     pub bounds: Option<FacilityPlacementBounds>,
     pub placements: Vec<FacilityPlacement>,
+    pub logistics_components: Vec<PlacedLogisticsComponent>,
     pub routes: Vec<IntegratedRoute>,
     pub diagnostics: Vec<IntegratedLayoutDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct PlacedLogisticsComponent {
+    pub id: String,
+    pub component: String,
+    pub kind: LogisticsComponentKind,
+    pub transport: TransportKind,
+    pub position: WorldGridPosition,
+    pub rotation: i64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -125,6 +142,7 @@ impl IntegratedLayoutReport {
             status,
             bounds: None,
             placements: Vec::new(),
+            logistics_components: Vec::new(),
             routes: Vec::new(),
             diagnostics: vec![diagnostic],
         }
@@ -164,6 +182,44 @@ pub fn solve_integrated_layout_with_time_limit(
         request,
         Some(time_limit),
     )
+}
+
+pub fn construct_sparse_integrated_layout(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+) -> IntegratedLayoutReport {
+    match prepare_model(instance_wiring, facilities, items, transports, request) {
+        Ok(input) => match required_facility_area(&input) {
+            Ok(required_area) => {
+                let available_area = i64::from(input.width) * i64::from(input.height);
+                if required_area > available_area {
+                    IntegratedLayoutReport::failure(
+                        IntegratedLayoutStatus::Infeasible,
+                        IntegratedLayoutDiagnostic::error(
+                            "facility-area-exceeds-layout-bounds",
+                            "/",
+                            None,
+                            format!(
+                                "facility footprints require at least {required_area} cells but hard layout bounds provide {available_area} cells"
+                            ),
+                        ),
+                    )
+                } else {
+                    sparse::construct(input, logistics_components)
+                }
+            }
+            Err(diagnostic) => {
+                IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
+            }
+        },
+        Err(diagnostic) => {
+            IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
+        }
+    }
 }
 
 fn solve_integrated_layout_with_optional_time_limit(
@@ -1192,6 +1248,7 @@ fn extract_report(
             height: used_height,
         }),
         placements,
+        logistics_components: Vec::new(),
         routes,
         diagnostics: vec![IntegratedLayoutDiagnostic::info(
             if status == IntegratedLayoutStatus::Optimal {

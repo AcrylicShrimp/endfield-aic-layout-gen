@@ -4,7 +4,8 @@ mod ports;
 
 pub use integrated::{
     BoundarySide, IntegratedLayoutDiagnostic, IntegratedLayoutReport, IntegratedLayoutStatus,
-    IntegratedRoute, IntegratedRouteEndpoint, solve_integrated_layout,
+    IntegratedRoute, IntegratedRouteEndpoint, PlacedLogisticsComponent,
+    construct_sparse_integrated_layout, solve_integrated_layout,
     solve_integrated_layout_with_time_limit,
 };
 

@@ -6,17 +6,18 @@ use aic_data::facilities::{
 };
 use aic_data::layouts::{
     FacilityPlacementDiagnostic, FacilityPlacementReport, FacilityPlacementRequest,
-    IntegratedLayoutDiagnostic, IntegratedLayoutReport, solve_facility_placement,
-    solve_integrated_layout_with_time_limit,
+    IntegratedLayoutDiagnostic, IntegratedLayoutReport, construct_sparse_integrated_layout,
+    solve_facility_placement, solve_integrated_layout_with_time_limit,
 };
 use aic_data::localization::{
     LocalizationCatalogValidationReport, ValidatedLocalizationCatalog, load_localization_catalog,
     validate_localization_coverage,
 };
 use aic_data::logistics::{
-    ItemCatalogValidationReport, TransportCatalogValidationReport, ValidatedItemCatalog,
-    ValidatedTransportCatalog, load_item_catalog, load_transport_catalog, validate_item_catalog,
-    validate_transport_catalog,
+    ItemCatalogValidationReport, LogisticsComponentCatalogValidationReport,
+    TransportCatalogValidationReport, ValidatedItemCatalog, ValidatedLogisticsComponentCatalog,
+    ValidatedTransportCatalog, load_item_catalog, load_logistics_component_catalog,
+    load_transport_catalog, validate_item_catalog, validate_transport_catalog,
 };
 use aic_data::recipes::{
     ContextualFacilityRequirementReport, ContextualProductionGraphReport,
@@ -33,7 +34,7 @@ use aic_data::recipes::{
     validate_throughput_request,
 };
 use anyhow::{Context, Result, bail, ensure};
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use serde::Serialize;
 
 #[derive(Debug, Parser)]
@@ -159,6 +160,10 @@ enum LayoutsCommand {
         #[arg(long, value_name = "FILE")]
         transport_catalog: PathBuf,
 
+        /// Splitter, converger, and bridge catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        logistics_component_catalog: PathBuf,
+
         /// Hard maximum layout bounds JSON file to load.
         #[arg(long, value_name = "FILE")]
         placement_request: PathBuf,
@@ -166,6 +171,10 @@ enum LayoutsCommand {
         /// Maximum solver search time before returning the best known status.
         #[arg(long, value_name = "SECONDS", default_value = "10")]
         time_limit_seconds: NonZeroU64,
+
+        /// Integrated solving strategy.
+        #[arg(long, value_enum, default_value = "dense")]
+        strategy: IntegratedLayoutStrategy,
     },
     /// Resolve contextual sources and solve placement, ports, and routing.
     SolveContextual {
@@ -189,6 +198,10 @@ enum LayoutsCommand {
         #[arg(long, value_name = "FILE")]
         transport_catalog: PathBuf,
 
+        /// Splitter, converger, and bridge catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        logistics_component_catalog: PathBuf,
+
         /// Hard maximum layout bounds JSON file to load.
         #[arg(long, value_name = "FILE")]
         placement_request: PathBuf,
@@ -196,7 +209,17 @@ enum LayoutsCommand {
         /// Maximum solver search time before returning the best known status.
         #[arg(long, value_name = "SECONDS", default_value = "10")]
         time_limit_seconds: NonZeroU64,
+
+        /// Integrated solving strategy.
+        #[arg(long, value_enum, default_value = "dense")]
+        strategy: IntegratedLayoutStrategy,
     },
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum IntegratedLayoutStrategy {
+    Dense,
+    SparseFeasibility,
 }
 
 #[derive(Debug, Subcommand)]
@@ -409,16 +432,20 @@ fn run() -> Result<CommandStatus> {
                 facility_catalog,
                 item_catalog,
                 transport_catalog,
+                logistics_component_catalog,
                 placement_request,
                 time_limit_seconds,
+                strategy,
             } => solve_layout(
                 recipes,
                 throughput_request,
                 facility_catalog,
                 item_catalog,
                 transport_catalog,
+                logistics_component_catalog,
                 placement_request,
                 time_limit_seconds,
+                strategy,
             ),
             LayoutsCommand::SolveContextual {
                 recipes,
@@ -426,16 +453,20 @@ fn run() -> Result<CommandStatus> {
                 facility_catalog,
                 item_catalog,
                 transport_catalog,
+                logistics_component_catalog,
                 placement_request,
                 time_limit_seconds,
+                strategy,
             } => solve_contextual_layout(
                 recipes,
                 source_plan,
                 facility_catalog,
                 item_catalog,
                 transport_catalog,
+                logistics_component_catalog,
                 placement_request,
                 time_limit_seconds,
+                strategy,
             ),
         },
         Command::Localization { command } => match command {
@@ -998,14 +1029,17 @@ fn place_facilities(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn solve_layout(
     recipes: PathBuf,
     throughput_request: PathBuf,
     facility_catalog: PathBuf,
     item_catalog: PathBuf,
     transport_catalog: PathBuf,
+    logistics_component_catalog: PathBuf,
     placement_request: PathBuf,
     time_limit_seconds: NonZeroU64,
+    strategy: IntegratedLayoutStrategy,
 ) -> Result<CommandStatus> {
     let throughput_report = calculate_throughput_report(recipes, throughput_request)?;
     if !throughput_report.success {
@@ -1056,6 +1090,15 @@ fn solve_layout(
             return Ok(CommandStatus::Failure);
         }
     };
+    let raw_components = load_logistics_component_catalog(&logistics_component_catalog)?;
+    let logistics_components =
+        match ValidatedLogisticsComponentCatalog::try_from_catalog(raw_components) {
+            Ok(catalog) => catalog,
+            Err(report) => {
+                write_logistics_component_catalog_validation_report(&report)?;
+                return Ok(CommandStatus::Failure);
+            }
+        };
 
     let request_json = std::fs::read_to_string(&placement_request).with_context(|| {
         format!(
@@ -1077,14 +1120,24 @@ fn solve_layout(
         }
     };
 
-    let report = solve_integrated_layout_with_time_limit(
-        &instance_wiring_report,
-        &facilities,
-        &items,
-        &transports,
-        &request,
-        Duration::from_secs(time_limit_seconds.get()),
-    );
+    let report = match strategy {
+        IntegratedLayoutStrategy::Dense => solve_integrated_layout_with_time_limit(
+            &instance_wiring_report,
+            &facilities,
+            &items,
+            &transports,
+            &request,
+            Duration::from_secs(time_limit_seconds.get()),
+        ),
+        IntegratedLayoutStrategy::SparseFeasibility => construct_sparse_integrated_layout(
+            &instance_wiring_report,
+            &facilities,
+            &items,
+            &transports,
+            &logistics_components,
+            &request,
+        ),
+    };
     let success = report.success;
     write_layout_solve_report(&throughput_report.bootstrap_item_options, &report)?;
 
@@ -1095,14 +1148,17 @@ fn solve_layout(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn solve_contextual_layout(
     recipes: PathBuf,
     source_plan: PathBuf,
     facility_catalog: PathBuf,
     item_catalog: PathBuf,
     transport_catalog: PathBuf,
+    logistics_component_catalog: PathBuf,
     placement_request: PathBuf,
     time_limit_seconds: NonZeroU64,
+    strategy: IntegratedLayoutStrategy,
 ) -> Result<CommandStatus> {
     let (book, source_plan) = match load_contextual_recipe_request(&recipes, &source_plan)? {
         Ok(inputs) => inputs,
@@ -1153,6 +1209,15 @@ fn solve_contextual_layout(
             return Ok(CommandStatus::Failure);
         }
     };
+    let raw_components = load_logistics_component_catalog(&logistics_component_catalog)?;
+    let logistics_components =
+        match ValidatedLogisticsComponentCatalog::try_from_catalog(raw_components) {
+            Ok(catalog) => catalog,
+            Err(report) => {
+                write_logistics_component_catalog_validation_report(&report)?;
+                return Ok(CommandStatus::Failure);
+            }
+        };
     let request_json = std::fs::read_to_string(&placement_request).with_context(|| {
         format!(
             "failed to read facility placement request file '{}'",
@@ -1178,14 +1243,24 @@ fn solve_contextual_layout(
         }
     };
 
-    let layout = solve_integrated_layout_with_time_limit(
-        &wiring,
-        &facilities,
-        &items,
-        &transports,
-        &request,
-        Duration::from_secs(time_limit_seconds.get()),
-    );
+    let layout = match strategy {
+        IntegratedLayoutStrategy::Dense => solve_integrated_layout_with_time_limit(
+            &wiring,
+            &facilities,
+            &items,
+            &transports,
+            &request,
+            Duration::from_secs(time_limit_seconds.get()),
+        ),
+        IntegratedLayoutStrategy::SparseFeasibility => construct_sparse_integrated_layout(
+            &wiring,
+            &facilities,
+            &items,
+            &transports,
+            &logistics_components,
+            &request,
+        ),
+    };
     let success = layout.success;
     write_contextual_layout_solve_report(&throughput, &facility_requirements, &wiring, &layout)?;
 
@@ -1336,6 +1411,16 @@ fn write_transport_catalog_validation_report(
 ) -> Result<()> {
     serde_json::to_writer_pretty(std::io::stdout().lock(), report)
         .context("failed to write transport catalog validation report")?;
+    println!();
+
+    Ok(())
+}
+
+fn write_logistics_component_catalog_validation_report(
+    report: &LogisticsComponentCatalogValidationReport,
+) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write logistics component catalog validation report")?;
     println!();
 
     Ok(())
