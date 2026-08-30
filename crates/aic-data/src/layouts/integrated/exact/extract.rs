@@ -218,7 +218,7 @@ fn endpoint_node(endpoint: &TransportNetworkEndpoint) -> &str {
     }
 }
 
-fn rate_from_flow_units(flow_units: i32, flow_scale: i64) -> Rate {
+pub(super) fn rate_from_flow_units(flow_units: i32, flow_scale: i64) -> Rate {
     let divisor = gcd(i64::from(flow_units), flow_scale);
     Rate {
         numerator: i64::from(flow_units) / divisor,

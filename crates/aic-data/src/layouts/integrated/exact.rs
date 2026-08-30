@@ -20,6 +20,7 @@ mod hint;
 mod metrics;
 mod objective;
 mod recorder;
+pub(super) mod shared_layer;
 
 use extract::extract_report;
 use fixation::post_research_fixation;

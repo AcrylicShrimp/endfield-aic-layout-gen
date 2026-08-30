@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 
 use pumpkin_solver::Solver;
 use pumpkin_solver::core::proof::ConstraintTag;
-use pumpkin_solver::core::variables::{AffineView, DomainId};
+use pumpkin_solver::core::variables::{AffineView, DomainId, Literal, TransformableVariable};
 
 use crate::research::{
     ConstraintFamilyMetrics, ConstraintRelation, ConstraintSummaryMetrics, CouplingMetrics,
@@ -20,6 +20,7 @@ pub(super) enum VariableFamily {
     Flow,
     TerminalPresence,
     RouteArm,
+    ArmItem,
     BranchComponent,
     Bridge,
     BridgeRotation,
@@ -37,6 +38,7 @@ impl VariableFamily {
             Self::Flow => "flow",
             Self::TerminalPresence => "terminal-presence",
             Self::RouteArm => "route-arm",
+            Self::ArmItem => "arm-item",
             Self::BranchComponent => "branch-component",
             Self::Bridge => "bridge",
             Self::BridgeRotation => "bridge-rotation",
@@ -57,6 +59,7 @@ impl VariableFamily {
                 | Self::Flow
                 | Self::TerminalPresence
                 | Self::RouteArm
+                | Self::ArmItem
                 | Self::BranchComponent
                 | Self::Bridge
                 | Self::BridgeRotation
@@ -75,6 +78,7 @@ pub(super) enum ConstraintFamily {
     FlowConservation,
     TerminalPresence,
     RouteArm,
+    ItemAssignment,
     OpposingArms,
     LineCapacity,
     BranchTopology,
@@ -102,6 +106,7 @@ impl ConstraintFamily {
             Self::FlowConservation => "flow-conservation",
             Self::TerminalPresence => "terminal-presence",
             Self::RouteArm => "route-arm",
+            Self::ItemAssignment => "item-assignment",
             Self::OpposingArms => "opposing-arms",
             Self::LineCapacity => "line-capacity",
             Self::BranchTopology => "branch-topology",
@@ -276,6 +281,72 @@ impl RecordedModel {
         self.solver
             .add_constraint(pumpkin_solver::greater_than_or_equals(terms, rhs, tag))
             .post();
+    }
+
+    pub(super) fn post_implied_less_than_or_equals(
+        &mut self,
+        family: ConstraintFamily,
+        terms: Vec<AffineView<DomainId>>,
+        rhs: i32,
+        maximum_absolute_coefficient: u64,
+        condition: Literal,
+        condition_parent: DomainId,
+        tag: ConstraintTag,
+    ) {
+        let mut recorded_terms = terms.clone();
+        recorded_terms.push(condition_parent.scaled(1));
+        self.record_constraint(
+            family,
+            ConstraintRelation::LessThanOrEqual,
+            &recorded_terms,
+            maximum_absolute_coefficient,
+        );
+        self.solver
+            .add_constraint(pumpkin_solver::less_than_or_equals(terms, rhs, tag))
+            .implied_by(condition);
+    }
+
+    pub(super) fn post_implied_equals(
+        &mut self,
+        family: ConstraintFamily,
+        terms: Vec<AffineView<DomainId>>,
+        rhs: i32,
+        maximum_absolute_coefficient: u64,
+        condition: Literal,
+        condition_parent: DomainId,
+        tag: ConstraintTag,
+    ) {
+        let mut recorded_terms = terms.clone();
+        recorded_terms.push(condition_parent.scaled(1));
+        self.record_constraint(
+            family,
+            ConstraintRelation::Equality,
+            &recorded_terms,
+            maximum_absolute_coefficient,
+        );
+        self.solver
+            .add_constraint(pumpkin_solver::equals(terms, rhs, tag))
+            .implied_by(condition);
+    }
+
+    pub(super) fn post_implied_binary_equals(
+        &mut self,
+        family: ConstraintFamily,
+        left: DomainId,
+        right: DomainId,
+        condition: Literal,
+        condition_parent: DomainId,
+        tag: ConstraintTag,
+    ) {
+        self.record_constraint(
+            family,
+            ConstraintRelation::Equality,
+            &[left.scaled(1), right.scaled(-1), condition_parent.scaled(1)],
+            1,
+        );
+        self.solver
+            .add_constraint(pumpkin_solver::binary_equals(left, right, tag))
+            .implied_by(condition);
     }
 
     pub(super) fn post_maximum(

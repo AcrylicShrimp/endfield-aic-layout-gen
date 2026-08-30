@@ -94,10 +94,16 @@ fn catalogs() -> (
     .expect("facility fixture should validate");
     let items = ValidatedItemCatalog::try_from_catalog(ItemCatalog {
         schema_version: SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
-        items: vec![ItemDefinition {
-            id: "part".to_string(),
-            transport: TransportKind::Belt,
-        }],
+        items: vec![
+            ItemDefinition {
+                id: "part".to_string(),
+                transport: TransportKind::Belt,
+            },
+            ItemDefinition {
+                id: "part-b".to_string(),
+                transport: TransportKind::Belt,
+            },
+        ],
     })
     .expect("item fixture should validate");
     let transports = ValidatedTransportCatalog::try_from_catalog(TransportCatalog {
@@ -371,6 +377,103 @@ fn enlarged_chain_wiring() -> FacilityInstanceWiringReport {
         ],
         diagnostics: Vec::new(),
     }
+}
+
+fn two_item_wiring() -> FacilityInstanceWiringReport {
+    let node = |id: &str, recipe: &str, facility: &str| FacilityInstanceWiringNode::Facility {
+        id: id.to_string(),
+        recipe: recipe.to_string(),
+        facility: facility.to_string(),
+        index: 0,
+        runs_per_second: Rate {
+            numerator: 1,
+            denominator: 1,
+        },
+        work_seconds_per_second: Rate {
+            numerator: 1,
+            denominator: 1,
+        },
+        unused_capacity: Rate::zero(),
+    };
+    FacilityInstanceWiringReport {
+        schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
+        success: true,
+        nodes: vec![
+            node("source-a", "source-recipe", "source-machine"),
+            node("target-a", "target-recipe", "target-machine"),
+            node("source-b", "source-recipe", "source-machine"),
+            node("target-b", "target-recipe", "target-machine"),
+        ],
+        edges: vec![
+            FacilityInstanceWiringEdge::original(
+                "source-a",
+                "target-a",
+                "first-item",
+                "part",
+                Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            ),
+            FacilityInstanceWiringEdge::original(
+                "source-b",
+                "target-b",
+                "second-item",
+                "part-b",
+                Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            ),
+        ],
+        diagnostics: Vec::new(),
+    }
+}
+
+#[test]
+fn shared_layer_matches_dense_objective_for_two_belt_items() {
+    let (facilities, items, transports, components) = catalogs();
+    let request = FacilityPlacementRequest {
+        schema_version: 2,
+        max_width: 6,
+        max_height: 2,
+    };
+    let input = super::prepare_model(
+        &two_item_wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &request,
+    )
+    .expect("two-item fixture should prepare");
+    let dense = super::exact::solve_with_prior_solution(input.clone(), &components, None, None);
+    let shared = super::exact::shared_layer::solve(input, &components, None);
+
+    assert!(dense.success, "dense diagnostics: {:#?}", dense.diagnostics);
+    assert!(
+        shared.success,
+        "shared-layer diagnostics: {:#?}",
+        shared.diagnostics
+    );
+    assert_eq!(
+        dense.exact.as_ref().and_then(|exact| exact.objective),
+        shared.exact.as_ref().and_then(|exact| exact.objective)
+    );
+    assert!(
+        shared
+            .exact
+            .as_ref()
+            .expect("shared solve has exact metrics")
+            .model
+            .route_arc_variables
+            < dense
+                .exact
+                .as_ref()
+                .expect("dense solve has exact metrics")
+                .model
+                .route_arc_variables
+    );
 }
 
 #[test]

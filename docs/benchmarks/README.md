@@ -30,6 +30,15 @@ phase-zero networks and pairs. It separates placement-port coupling from multipl
 state and records the newly observed mismatch between circulation-permitted solving and witness
 validation.
 
+The seventh checkpoint, `heavy-xiranite-minimum-rate.seventh-route-state-cliff-report.md`, rebuilds
+clean network subsets, locates the first cliff at two simultaneously free route-state spaces, and
+records the exact cancellation dominance rule for co-located terminals.
+
+The eighth checkpoint, `heavy-xiranite-minimum-rate.eighth-shared-transport-layer-report.md`,
+compares the dense per-network routing grid with an exact shared belt/pipe layer formulation. The
+shared formulation reduces the recorded 12 by 12 phase-zero model substantially but does not find
+a first incumbent within five or fifteen seconds.
+
 Regenerate it from a release binary with:
 
 ```bash

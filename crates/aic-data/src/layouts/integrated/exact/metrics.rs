@@ -8,7 +8,34 @@ use super::super::{
 use crate::research::ModelComplexityMetrics;
 
 pub(super) fn finish_report(
+    report: IntegratedLayoutReport,
+    model: ExactModelMetrics,
+    model_complexity: ModelComplexityMetrics,
+    construction_ms: u64,
+    search_ms: u64,
+    first_incumbent_ms: Option<u64>,
+    observed_incumbents: usize,
+    validation: ExactValidationStatus,
+    objective_stages: Vec<ExactObjectiveStageReport>,
+) -> IntegratedLayoutReport {
+    finish_report_with_formulation(
+        report,
+        "joint-lexicographic-layout-v5",
+        model,
+        model_complexity,
+        construction_ms,
+        search_ms,
+        first_incumbent_ms,
+        observed_incumbents,
+        validation,
+        objective_stages,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn finish_report_with_formulation(
     mut report: IntegratedLayoutReport,
+    formulation: &'static str,
     model: ExactModelMetrics,
     model_complexity: ModelComplexityMetrics,
     construction_ms: u64,
@@ -42,7 +69,7 @@ pub(super) fn finish_report(
         logistics_component_count: score.logistics_component_count,
     });
     report.exact = Some(ExactSolveReport {
-        formulation: "joint-lexicographic-layout-v5",
+        formulation,
         model,
         model_complexity,
         construction_ms,

@@ -1798,4 +1798,41 @@ mod tests {
         assert_eq!(reference_time_limit_ms, 15_000);
         assert_eq!(output_dir, PathBuf::from("pair-cliff"));
     }
+
+    #[test]
+    fn parses_first_phase_shared_layer_comparison() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "compare-first-phase-shared-layer",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--time-limit-ms",
+            "5000",
+            "--output-dir",
+            "shared-layer",
+        ])
+        .expect("first-phase shared-layer comparison CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::CompareFirstPhaseSharedLayer {
+                    workload,
+                    workspace_root,
+                    placement_request,
+                    time_limit_ms,
+                    output_dir,
+                },
+        } = cli.command
+        else {
+            panic!("expected first-phase shared-layer comparison command")
+        };
+        assert_eq!(workload, PathBuf::from("workload.json"));
+        assert_eq!(workspace_root, PathBuf::from("."));
+        assert_eq!(placement_request, PathBuf::from("bounds.json"));
+        assert_eq!(time_limit_ms, 5_000);
+        assert_eq!(output_dir, PathBuf::from("shared-layer"));
+    }
 }

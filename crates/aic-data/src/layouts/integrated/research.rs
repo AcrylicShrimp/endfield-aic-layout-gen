@@ -12,6 +12,49 @@ use crate::recipes::FacilityInstanceWiringReport;
 use super::{IntegratedLayoutReport, exact, harness, prepare_exact_model};
 
 pub const EXACT_ABLATION_MATRIX_SCHEMA_VERSION: u32 = 1;
+pub const SHARED_LAYER_COMPARISON_SCHEMA_VERSION: u32 = 1;
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct SharedLayerComparisonReport {
+    pub schema_version: u32,
+    pub search_budget_ms_per_formulation: u64,
+    pub dense: IntegratedLayoutReport,
+    pub shared_layer: IntegratedLayoutReport,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn compare_first_integrated_layout_phase_shared_layer(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    search_budget: Duration,
+) -> Result<SharedLayerComparisonReport, IntegratedLayoutReport> {
+    let first_phase_wiring = harness::first_iterative_scc_wiring(instance_wiring)?;
+    let input = prepare_exact_model(
+        &first_phase_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+    )?;
+    let dense = exact::solve_with_prior_solution(
+        input.clone(),
+        logistics_components,
+        Some(search_budget),
+        None,
+    );
+    let shared_layer = exact::shared_layer::solve(input, logistics_components, Some(search_budget));
+    Ok(SharedLayerComparisonReport {
+        schema_version: SHARED_LAYER_COMPARISON_SCHEMA_VERSION,
+        search_budget_ms_per_formulation: millis(search_budget),
+        dense,
+        shared_layer,
+    })
+}
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "kebab-case")]

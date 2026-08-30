@@ -394,7 +394,7 @@ pub(super) fn build_objectives(
     })
 }
 
-fn require_canonical_origin(
+pub(super) fn require_canonical_origin(
     solver: &mut RecordedModel,
     input: &ModelInput,
     used_cells: &[DomainId],
@@ -444,7 +444,7 @@ fn require_canonical_origin(
     );
 }
 
-fn post_sum_variable(
+pub(super) fn post_sum_variable(
     solver: &mut RecordedModel,
     name: &str,
     variables: &[DomainId],
@@ -551,7 +551,7 @@ fn post_network_turn(
     )
 }
 
-fn post_count(
+pub(super) fn post_count(
     solver: &mut RecordedModel,
     name: String,
     variables: impl Iterator<Item = DomainId>,
@@ -573,7 +573,7 @@ fn post_count(
     count
 }
 
-fn post_exactly_one_indicator(
+pub(super) fn post_exactly_one_indicator(
     solver: &mut RecordedModel,
     name: String,
     count: DomainId,
@@ -598,7 +598,7 @@ fn post_exactly_one_indicator(
     indicator
 }
 
-fn post_and(
+pub(super) fn post_and(
     solver: &mut RecordedModel,
     name: String,
     left: DomainId,
