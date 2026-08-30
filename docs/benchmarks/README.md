@@ -21,6 +21,6 @@ The baseline fixture contract is split across:
 - `tools/tests/test_capture_iterative_scc_baseline.py` for metric normalization;
 - the normalized JSON artifact for the release Heavy Xiranite observation.
 
-The one-facility fixture intentionally demonstrates the obsolete perimeter-terminal behavior. The external-terminal cutover must replace that assertion with the new minimal dangling-connection contract rather than keep it as a compatibility test.
+The one-facility fixture now prevents regression to the captured behavior: every external route is one cell, the canonical witness is identical under 50 by 50 and 500 by 500 search bounds, and reported bounds describe used geometry only.
 
 The first captured phase contains one facility but uses 53 logical route cells: 40 belt cells and 13 pipe cells. The final phase uses 10,338 logical route cells and 523 bridge components. These values are comparison evidence for later slices, not MVP acceptance targets.

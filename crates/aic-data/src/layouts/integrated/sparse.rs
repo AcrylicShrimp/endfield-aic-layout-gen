@@ -2,16 +2,17 @@ use std::cmp::Reverse;
 use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
 use std::time::Instant;
 
-use crate::layouts::{FacilityPlacement, FacilityPlacementBounds};
+use crate::facilities::FacilityPortEdge;
+use crate::layouts::FacilityPlacement;
 use crate::logistics::{LogisticsComponentKind, TransportKind, ValidatedLogisticsComponentCatalog};
 
 use super::{
-    BoundarySide, EndpointInput, IntegratedLayoutDiagnostic, IntegratedLayoutReport,
-    IntegratedLayoutStatus, IntegratedRoute, IntegratedRouteEndpoint, ModelInput,
-    PlacedLogisticsComponent, candidate_port_connections, grid_index, world_position,
+    EndpointInput, IntegratedLayoutDiagnostic, IntegratedLayoutReport, IntegratedLayoutStatus,
+    IntegratedRoute, IntegratedRouteEndpoint, ModelInput, PlacedLogisticsComponent,
+    candidate_port_connections, grid_index, world_position,
 };
 
-const PLACEMENT_GAPS: [i32; 5] = [20, 14, 10, 6, 2];
+const PLACEMENT_GAPS: [i32; 5] = [12, 8, 4, 2, 1];
 const ACTIVE_ROUTING_MARGIN: i32 = 10;
 
 struct SparsePlacement {
@@ -23,19 +24,14 @@ struct SparsePlacement {
 struct FixedEndpoint {
     endpoint: IntegratedRouteEndpoint,
     cell: usize,
-}
-
-#[derive(Clone)]
-enum AssignedEndpoint {
-    Fixed(FixedEndpoint),
-    Boundary { node: String },
+    external_side: FacilityPortEdge,
 }
 
 #[derive(Clone)]
 struct AssignedRoute {
     edge_index: usize,
-    source: AssignedEndpoint,
-    target: AssignedEndpoint,
+    source: FixedEndpoint,
+    target: FixedEndpoint,
 }
 
 pub(super) fn construct(
@@ -274,21 +270,14 @@ fn index_placements(
                 "coordinate placement y does not fit the routing grid domain",
             )
         })?;
-        let Some(port_connections) = candidate_port_connections(
+        let port_connections = candidate_port_connections(
             &instance.definition,
             placement.rotation,
             x,
             y,
             input.width,
             input.height,
-        ) else {
-            return Err(IntegratedLayoutDiagnostic::error(
-                "coordinate-placement-port-projection-failed",
-                "/placements",
-                Some(placement.instance.clone()),
-                "coordinate placement has a port connection outside the routing grid",
-            ));
-        };
+        );
         indexed.insert(
             placement.instance.clone(),
             SparsePlacement {
@@ -382,7 +371,7 @@ fn place_on_shelves(input: &ModelInput, gap: i32) -> Option<BTreeMap<String, Spa
             y,
             input.width,
             input.height,
-        )?;
+        );
         placements.insert(
             instance.id.clone(),
             SparsePlacement {
@@ -418,7 +407,7 @@ fn route_orders(input: &ModelInput) -> Vec<Vec<usize>> {
     let mut terminal_first_networks = input.networks.iter().collect::<Vec<_>>();
     terminal_first_networks.sort_by_key(|network| {
         (
-            std::cmp::Reverse(network.boundary_terminal_count()),
+            std::cmp::Reverse(network.external_terminal_count()),
             std::cmp::Reverse(network.terminal_count()),
             network.id(),
         )
@@ -430,19 +419,19 @@ fn route_orders(input: &ModelInput) -> Vec<Vec<usize>> {
     let mut facility_first = original.clone();
     facility_first.sort_by_key(|index| {
         let edge = &input.edges[*index];
-        let boundaries = usize::from(matches!(edge.source, EndpointInput::Boundary { .. }))
-            + usize::from(matches!(edge.target, EndpointInput::Boundary { .. }));
+        let boundaries = usize::from(matches!(edge.source, EndpointInput::External { .. }))
+            + usize::from(matches!(edge.target, EndpointInput::External { .. }));
         (boundaries, *index)
     });
-    let mut boundary_first = facility_first.clone();
-    boundary_first.reverse();
+    let mut external_first = facility_first.clone();
+    external_first.reverse();
     let mut orders = vec![
         original,
         reversed,
         network_first,
         terminal_first,
         facility_first,
-        boundary_first,
+        external_first,
     ];
     for seed in 1_u64..=96 {
         let mut shuffled = (0..input.edges.len()).collect::<Vec<_>>();
@@ -470,20 +459,53 @@ fn assign_facility_ports(
     for edge_index in order {
         let edge = &input.edges[*edge_index];
         let layer = layer_index(edge.transport);
-        let source = assign_endpoint(
-            *edge_index,
-            "source",
-            &edge.source,
-            placements,
-            &mut reserved[layer],
-        )?;
-        let target = assign_endpoint(
-            *edge_index,
-            "target",
-            &edge.target,
-            placements,
-            &mut reserved[layer],
-        )?;
+        let (source, target) = match (&edge.source, &edge.target) {
+            (EndpointInput::Facility { .. }, EndpointInput::Facility { .. }) => {
+                let source = assign_facility_endpoint(
+                    *edge_index,
+                    "source",
+                    &edge.source,
+                    placements,
+                    &mut reserved[layer],
+                    None,
+                )?;
+                let target = assign_facility_endpoint(
+                    *edge_index,
+                    "target",
+                    &edge.target,
+                    placements,
+                    &mut reserved[layer],
+                    Some(source.cell),
+                )?;
+                (source, target)
+            }
+            (EndpointInput::External { node }, EndpointInput::Facility { .. }) => {
+                let target = assign_facility_endpoint(
+                    *edge_index,
+                    "target",
+                    &edge.target,
+                    placements,
+                    &mut reserved[layer],
+                    None,
+                )?;
+                (external_endpoint(node, &target), target)
+            }
+            (EndpointInput::Facility { .. }, EndpointInput::External { node }) => {
+                let source = assign_facility_endpoint(
+                    *edge_index,
+                    "source",
+                    &edge.source,
+                    placements,
+                    &mut reserved[layer],
+                    None,
+                )?;
+                let target = external_endpoint(node, &source);
+                (source, target)
+            }
+            (EndpointInput::External { .. }, EndpointInput::External { .. }) => unreachable!(
+                "external-to-external requirements are rejected during model preparation"
+            ),
+        };
         assigned.push(AssignedRoute {
             edge_index: *edge_index,
             source,
@@ -494,13 +516,14 @@ fn assign_facility_ports(
     Ok(assigned)
 }
 
-fn assign_endpoint(
+fn assign_facility_endpoint(
     edge_index: usize,
     endpoint_kind: &'static str,
     endpoint: &EndpointInput,
     placements: &BTreeMap<String, SparsePlacement>,
     reserved: &mut BTreeSet<usize>,
-) -> Result<AssignedEndpoint, PortAssignmentFailure> {
+    allowed_reserved: Option<usize>,
+) -> Result<FixedEndpoint, PortAssignmentFailure> {
     match endpoint {
         EndpointInput::Facility { instance, ports } => {
             let placement = placements
@@ -514,22 +537,34 @@ fn assign_endpoint(
                         .get(&port.id)
                         .map(|cell| (port, *cell))
                 })
-                .find(|(_, cell)| !reserved.contains(cell))
+                .find(|(_, cell)| !reserved.contains(cell) || allowed_reserved == Some(*cell))
                 .ok_or_else(|| PortAssignmentFailure {
                     edge_index,
                     endpoint_kind,
                     instance: instance.clone(),
                 })?;
             reserved.insert(cell);
-            Ok(AssignedEndpoint::Fixed(FixedEndpoint {
+            Ok(FixedEndpoint {
                 endpoint: IntegratedRouteEndpoint::Facility {
                     instance: instance.clone(),
                     port: port.id.clone(),
                 },
                 cell,
-            }))
+                external_side: port.edge.rotated_clockwise(placement.placement.rotation),
+            })
         }
-        EndpointInput::Boundary { node } => Ok(AssignedEndpoint::Boundary { node: node.clone() }),
+        EndpointInput::External { .. } => unreachable!("expected a facility endpoint"),
+    }
+}
+
+fn external_endpoint(node: &str, facility: &FixedEndpoint) -> FixedEndpoint {
+    FixedEndpoint {
+        endpoint: IntegratedRouteEndpoint::External {
+            node: node.to_string(),
+            side: facility.external_side,
+        },
+        cell: facility.cell,
+        external_side: facility.external_side,
     }
 }
 
@@ -558,24 +593,8 @@ fn route_all(
         }
         let edge = &input.edges[route.edge_index];
         let layer = layer_index(edge.transport);
-        let source_options = endpoint_options(
-            &route.source,
-            input.width,
-            routing_height,
-            input.height,
-            &facility_cells,
-            &used[layer],
-            &reserved[layer],
-        );
-        let target_options = endpoint_options(
-            &route.target,
-            input.width,
-            routing_height,
-            input.height,
-            &facility_cells,
-            &used[layer],
-            &reserved[layer],
-        );
+        let source_options = vec![route.source.clone()];
+        let target_options = vec![route.target.clone()];
         let Some((source, target, cells)) = find_path(
             input.width,
             routing_height,
@@ -675,67 +694,10 @@ fn reserved_cells(input: &ModelInput, assigned: &[AssignedRoute]) -> [BTreeSet<u
     for route in assigned {
         let layer = layer_index(input.edges[route.edge_index].transport);
         for endpoint in [&route.source, &route.target] {
-            if let AssignedEndpoint::Fixed(endpoint) = endpoint {
-                reserved[layer].insert(endpoint.cell);
-            }
+            reserved[layer].insert(endpoint.cell);
         }
     }
     reserved
-}
-
-fn endpoint_options(
-    endpoint: &AssignedEndpoint,
-    width: i32,
-    routing_height: i32,
-    hard_height: i32,
-    facility_cells: &[bool],
-    used: &[Option<RouteCellShape>],
-    reserved: &BTreeSet<usize>,
-) -> Vec<FixedEndpoint> {
-    match endpoint {
-        AssignedEndpoint::Fixed(endpoint) => vec![endpoint.clone()],
-        AssignedEndpoint::Boundary { node } => boundary_cells(width, routing_height, hard_height)
-            .into_iter()
-            .filter(|(_, cell)| {
-                !facility_cells[*cell] && used[*cell].is_none() && !reserved.contains(cell)
-            })
-            .map(|(side, cell)| FixedEndpoint {
-                endpoint: IntegratedRouteEndpoint::Boundary {
-                    node: node.clone(),
-                    side,
-                },
-                cell,
-            })
-            .collect(),
-    }
-}
-
-fn boundary_cells(width: i32, routing_height: i32, hard_height: i32) -> Vec<(BoundarySide, usize)> {
-    let mut cells = Vec::new();
-    cells.extend((0..width).map(|x| (BoundarySide::North, grid_index(x, 0, width))));
-    cells
-        .extend((1..routing_height).map(|y| (BoundarySide::East, grid_index(width - 1, y, width))));
-    if routing_height == hard_height && hard_height > 1 {
-        cells.extend(
-            (0..(width - 1))
-                .rev()
-                .map(|x| (BoundarySide::South, grid_index(x, hard_height - 1, width))),
-        );
-        if width > 1 {
-            cells.extend(
-                (1..(hard_height - 1))
-                    .rev()
-                    .map(|y| (BoundarySide::West, grid_index(0, y, width))),
-            );
-        }
-    } else if width > 1 {
-        cells.extend(
-            (1..routing_height)
-                .rev()
-                .map(|y| (BoundarySide::West, grid_index(0, y, width))),
-        );
-    }
-    cells
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -749,6 +711,14 @@ fn find_path(
     reserved: &BTreeSet<usize>,
 ) -> Option<(FixedEndpoint, FixedEndpoint, Vec<usize>)> {
     let cell_count = facility_cells.len();
+    for source in sources {
+        if let Some(target) = targets.iter().find(|target| target.cell == source.cell)
+            && !facility_cells[source.cell]
+            && used[source.cell].is_none()
+        {
+            return Some((source.clone(), target.clone(), vec![source.cell]));
+        }
+    }
     let state_count = cell_count * 5;
     let mut parent = vec![usize::MAX; state_count];
     let mut root = vec![usize::MAX; state_count];
@@ -894,37 +864,11 @@ fn success_report(
             }
         })
         .collect::<Vec<_>>();
-    let used_width = placements
-        .iter()
-        .map(|placement| placement.x + placement.width)
-        .chain(
-            routes
-                .iter()
-                .flat_map(|route| route.cells.iter().map(|cell| cell.x + 1)),
-        )
-        .max()
-        .unwrap_or(0);
-    let used_height = placements
-        .iter()
-        .map(|placement| placement.y + placement.height)
-        .chain(
-            routes
-                .iter()
-                .flat_map(|route| route.cells.iter().map(|cell| cell.y + 1)),
-        )
-        .max()
-        .unwrap_or(0);
-    debug_assert!(used_width <= i64::from(input.width));
-    debug_assert!(used_height <= i64::from(input.height));
-
-    IntegratedLayoutReport {
+    let mut report = IntegratedLayoutReport {
         schema_version: super::INTEGRATED_LAYOUT_SCHEMA_VERSION,
         success: true,
         status: IntegratedLayoutStatus::Feasible,
-        bounds: Some(FacilityPlacementBounds {
-            width: used_width,
-            height: used_height,
-        }),
+        bounds: None,
         placements,
         logistics_components,
         routes,
@@ -933,7 +877,9 @@ fn success_report(
             diagnostic_code,
             diagnostic_message,
         )],
-    }
+    };
+    super::canonicalize_report_geometry(&mut report);
+    report
 }
 
 fn route_cell_shape(path: &[usize], index: usize, width: i32) -> RouteCellShape {
@@ -1001,35 +947,6 @@ mod tests {
     }
 
     #[test]
-    fn enumerates_each_boundary_cell_once() {
-        let cells = boundary_cells(5, 4, 4)
-            .into_iter()
-            .map(|(_, cell)| cell)
-            .collect::<Vec<_>>();
-        assert_eq!(cells.len(), 14);
-        assert_eq!(cells.iter().copied().collect::<BTreeSet<_>>().len(), 14);
-    }
-
-    #[test]
-    fn active_boundary_omits_the_unsearched_south_side() {
-        let cells = boundary_cells(5, 2, 4);
-        assert_eq!(cells.len(), 7);
-        assert!(
-            cells
-                .iter()
-                .all(|(side, _)| !matches!(side, BoundarySide::South))
-        );
-        assert_eq!(
-            cells
-                .iter()
-                .map(|(_, cell)| *cell)
-                .collect::<BTreeSet<_>>()
-                .len(),
-            7
-        );
-    }
-
-    #[test]
     fn deterministic_route_order_keys_change_with_seed() {
         let first = (0..16)
             .map(|index| deterministic_order_key(index, 1))
@@ -1049,18 +966,20 @@ mod tests {
         let width = 3;
         let height = 3;
         let source = FixedEndpoint {
-            endpoint: IntegratedRouteEndpoint::Boundary {
+            endpoint: IntegratedRouteEndpoint::External {
                 node: "source".to_string(),
-                side: BoundarySide::North,
+                side: FacilityPortEdge::North,
             },
             cell: grid_index(0, 0, width),
+            external_side: FacilityPortEdge::North,
         };
         let target = FixedEndpoint {
-            endpoint: IntegratedRouteEndpoint::Boundary {
+            endpoint: IntegratedRouteEndpoint::External {
                 node: "target".to_string(),
-                side: BoundarySide::South,
+                side: FacilityPortEdge::South,
             },
             cell: grid_index(2, 2, width),
+            external_side: FacilityPortEdge::South,
         };
         let facility_cells = vec![false; (width * height) as usize];
         let used = vec![None; (width * height) as usize];

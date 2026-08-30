@@ -72,10 +72,10 @@ impl RoutingNetworkInput {
         self.terminals.len()
     }
 
-    pub(super) fn boundary_terminal_count(&self) -> usize {
+    pub(super) fn external_terminal_count(&self) -> usize {
         self.terminals
             .iter()
-            .filter(|terminal| matches!(terminal.endpoint, EndpointInput::Boundary { .. }))
+            .filter(|terminal| matches!(terminal.endpoint, EndpointInput::External { .. }))
             .count()
     }
 
@@ -382,10 +382,10 @@ mod tests {
                 projection: edge.projection.clone(),
             },
             edge,
-            source: EndpointInput::Boundary {
+            source: EndpointInput::External {
                 node: source.to_string(),
             },
-            target: EndpointInput::Boundary {
+            target: EndpointInput::External {
                 node: target.to_string(),
             },
             transport,

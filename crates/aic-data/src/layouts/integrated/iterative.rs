@@ -19,9 +19,9 @@ use crate::recipes::{
 };
 
 use super::{
-    COORDINATE_ROUTING_CLEARANCE, IntegratedLayoutDiagnostic, IntegratedLayoutPhase,
-    IntegratedLayoutPhaseAttempt, IntegratedLayoutReport, IntegratedLayoutStatus, prepare_model,
-    route_turn_count, sparse,
+    IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutPhaseAttempt,
+    IntegratedLayoutReport, IntegratedLayoutStatus, PRODUCTION_FACILITY_GAP,
+    frame_placements_for_routing, prepare_model, route_turn_count, sparse,
 };
 
 const ANCHOR_RADII: [i64; 3] = [0, 4, 12];
@@ -116,7 +116,7 @@ pub fn construct_iterative_scc_layout_with_time_limit(
                     &partial_wiring,
                     facilities,
                     request,
-                    COORDINATE_ROUTING_CLEARANCE,
+                    PRODUCTION_FACILITY_GAP,
                     &anchors,
                     radius,
                     time_limit,
@@ -125,7 +125,7 @@ pub fn construct_iterative_scc_layout_with_time_limit(
                     &partial_wiring,
                     facilities,
                     request,
-                    COORDINATE_ROUTING_CLEARANCE,
+                    PRODUCTION_FACILITY_GAP,
                     time_limit,
                 ),
             };
@@ -153,12 +153,39 @@ pub fn construct_iterative_scc_layout_with_time_limit(
                     return report;
                 }
             };
-            let routed = sparse::construct_from_placements(
+            let Some(framed_placements) = frame_placements_for_routing(
+                placement.placements,
+                request.max_width,
+                request.max_height,
+            ) else {
+                attempt_reports.push(IntegratedLayoutPhaseAttempt {
+                    movement_radius,
+                    status: IntegratedLayoutStatus::Unknown,
+                    diagnostic_code: Some("iterative-routing-frame-does-not-fit".to_string()),
+                });
+                continue;
+            };
+            let mut routed = sparse::construct_from_placements(
                 input,
                 logistics_components,
-                placement.placements,
+                framed_placements,
                 routing_deadline(time_limit),
             );
+            if !routed.success && movement_radius.is_none() {
+                let fallback_input =
+                    match prepare_model(&partial_wiring, facilities, items, transports, request) {
+                        Ok(input) => input,
+                        Err(diagnostic) => {
+                            let mut report = IntegratedLayoutReport::failure(
+                                IntegratedLayoutStatus::InvalidInput,
+                                diagnostic,
+                            );
+                            report.phases = snapshots;
+                            return report;
+                        }
+                    };
+                routed = sparse::construct(fallback_input, logistics_components);
+            }
             attempt_reports.push(IntegratedLayoutPhaseAttempt {
                 movement_radius,
                 status: routed.status,
@@ -174,6 +201,18 @@ pub fn construct_iterative_scc_layout_with_time_limit(
         }
 
         let Some((selected_movement_radius, mut phase_report)) = selected else {
+            let attempt_summary = attempt_reports
+                .iter()
+                .map(|attempt| {
+                    format!(
+                        "radius={:?}, status={:?}, diagnostic={}",
+                        attempt.movement_radius,
+                        attempt.status,
+                        attempt.diagnostic_code.as_deref().unwrap_or("none"),
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join("; ");
             let mut report = IntegratedLayoutReport::failure(
                 IntegratedLayoutStatus::Unknown,
                 IntegratedLayoutDiagnostic::error(
@@ -181,7 +220,7 @@ pub fn construct_iterative_scc_layout_with_time_limit(
                     format!("/phases/{}", phase.index),
                     Some(format!("phase:{}", phase.index)),
                     format!(
-                        "could not place and route SCC growth phase {} after {} bounded and fallback attempts",
+                        "could not place and route SCC growth phase {} after {} bounded and fallback attempts: {attempt_summary}",
                         phase.index,
                         attempt_reports.len(),
                     ),
@@ -317,14 +356,14 @@ fn project_cumulative_wiring(
         ) {
             (true, true, true, true) => projected_edges.push(edge.clone()),
             (true, true, false, true) => {
-                let boundary_id = format!("iterative-external:{}", edge.id);
+                let frontier_id = format!("iterative-external:{}", edge.id);
                 synthetic_nodes.push(FacilityInstanceWiringNode::External {
-                    id: boundary_id.clone(),
+                    id: frontier_id.clone(),
                     item: edge.item.clone(),
                 });
                 projected_edges.push(FacilityInstanceWiringEdge {
                     id: edge.id.clone(),
-                    source: boundary_id,
+                    source: frontier_id,
                     target: edge.target.clone(),
                     kind: edge.kind.clone(),
                     item: edge.item.clone(),
@@ -390,14 +429,14 @@ mod tests {
     use super::project_cumulative_wiring;
 
     #[test]
-    fn replaces_missing_upstream_facilities_with_phase_boundaries() {
+    fn replaces_missing_upstream_facilities_with_frontier_external_connections() {
         let wiring = chain_wiring();
         let original = wiring
             .edges
             .iter()
             .find(|edge| edge.source == "facility:a")
             .expect("fixture has the upstream edge");
-        let boundary_id = format!("iterative-external:{}", original.id);
+        let frontier_id = format!("iterative-external:{}", original.id);
         let projected =
             project_cumulative_wiring(&wiring, &BTreeSet::from(["facility:b".to_string()]), 2)
                 .expect("output phase should project");
@@ -406,12 +445,12 @@ mod tests {
         assert!(projected.nodes.iter().any(|node| matches!(
             node,
             FacilityInstanceWiringNode::External { id, item }
-                if id == &boundary_id && item == "middle"
+                if id == &frontier_id && item == "middle"
         )));
         let projected_edge = projected
             .edges
             .iter()
-            .find(|edge| edge.source == boundary_id)
+            .find(|edge| edge.source == frontier_id)
             .expect("projected wiring has the frontier edge");
         assert_eq!(projected_edge.id, original.id);
         assert_eq!(projected_edge.target, "facility:b");

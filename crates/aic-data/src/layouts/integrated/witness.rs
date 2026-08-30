@@ -4,7 +4,7 @@ use crate::layouts::FacilityPlacement;
 use crate::logistics::{LogisticsComponentKind, TransportKind, ValidatedLogisticsComponentCatalog};
 
 use super::{
-    BoundarySide, EndpointInput, INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic,
+    EndpointInput, INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic,
     IntegratedLayoutReport, IntegratedRouteEndpoint, ModelInput, candidate_port_connections,
     grid_index,
 };
@@ -43,19 +43,6 @@ pub(super) fn validate(
     let cell_count = input.width as usize * input.height as usize;
     let placements = validate_placements(input, report, cell_count)?;
     let mut layer_cells = [vec![Vec::new(); cell_count], vec![Vec::new(); cell_count]];
-    let mut used_width = report
-        .placements
-        .iter()
-        .map(|placement| placement.x + placement.width)
-        .max()
-        .unwrap_or(0);
-    let mut used_height = report
-        .placements
-        .iter()
-        .map(|placement| placement.y + placement.height)
-        .max()
-        .unwrap_or(0);
-
     let mut expected_by_id = BTreeMap::new();
     for expected in &input.edges {
         if expected_by_id
@@ -127,8 +114,6 @@ pub(super) fn validate(
                         "route cell is outside the hard layout bounds",
                     ));
                 }
-                used_width = used_width.max(cell.x + 1);
-                used_height = used_height.max(cell.y + 1);
                 Ok(grid_index(cell.x as i32, cell.y as i32, input.width))
             })
             .collect::<Result<Vec<_>, _>>()?;
@@ -151,10 +136,17 @@ pub(super) fn validate(
             route_index,
             "target",
         )?;
+        validate_external_side(
+            input,
+            &placements,
+            &route.source,
+            &route.target,
+            route_index,
+        )?;
         if cells[0] != source_cell || *cells.last().expect("non-empty route") != target_cell {
             return Err(invalid(
                 format!("/routes/{route_index}/cells"),
-                "route endpoints do not match the selected facility ports or boundary terminals",
+                "route endpoints do not match the selected facility ports or external connections",
             ));
         }
         if cells.iter().copied().collect::<BTreeSet<_>>().len() != cells.len() {
@@ -197,6 +189,15 @@ pub(super) fn validate(
     }
 
     validate_crossings(input, components, report, &placements, &layer_cells)?;
+    let (minimum_x, minimum_y, used_width, used_height) = used_geometry_bounds(report);
+    if minimum_x != 0 || minimum_y != 0 {
+        return Err(invalid(
+            "/bounds",
+            format!(
+                "used geometry must be canonicalized to origin (0, 0), found ({minimum_x}, {minimum_y})"
+            ),
+        ));
+    }
     let bounds = report.bounds.as_ref().ok_or_else(|| {
         invalid(
             "/bounds",
@@ -329,19 +330,20 @@ fn endpoint_cell(
                 placement.y as i32,
                 input.width,
                 input.height,
-            )
-            .expect("validated placement keeps port connections in bounds");
-            Ok(connections[port])
+            );
+            connections.get(port).copied().ok_or_else(|| {
+                invalid(
+                    format!("/routes/{route_index}/{endpoint_kind}"),
+                    "selected facility port connection is outside the hard search domain",
+                )
+            })
         }
         (
-            EndpointInput::Boundary { node },
-            IntegratedRouteEndpoint::Boundary {
-                node: actual_node,
-                side,
+            EndpointInput::External { node },
+            IntegratedRouteEndpoint::External {
+                node: actual_node, ..
             },
-        ) if node == actual_node => {
-            boundary_cell(input, *side, terminal_cell, route_index, endpoint_kind)
-        }
+        ) if node == actual_node => Ok(terminal_cell),
         _ => Err(invalid(
             format!("/routes/{route_index}/{endpoint_kind}"),
             "route endpoint does not match the prepared endpoint and compatible port set",
@@ -349,28 +351,93 @@ fn endpoint_cell(
     }
 }
 
-fn boundary_cell(
+fn validate_external_side(
     input: &ModelInput,
-    side: BoundarySide,
-    terminal_cell: usize,
+    placements: &ValidatedPlacements<'_>,
+    source: &IntegratedRouteEndpoint,
+    target: &IntegratedRouteEndpoint,
     route_index: usize,
-    endpoint_kind: &str,
-) -> Result<usize, IntegratedLayoutDiagnostic> {
-    let x = terminal_cell % input.width as usize;
-    let y = terminal_cell / input.width as usize;
-    let on_side = match side {
-        BoundarySide::North => y == 0,
-        BoundarySide::East => x == input.width as usize - 1,
-        BoundarySide::South => y == input.height as usize - 1,
-        BoundarySide::West => x == 0,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let pair = match (source, target) {
+        (
+            IntegratedRouteEndpoint::External { side, .. },
+            facility @ IntegratedRouteEndpoint::Facility { .. },
+        )
+        | (
+            facility @ IntegratedRouteEndpoint::Facility { .. },
+            IntegratedRouteEndpoint::External { side, .. },
+        ) => Some((*side, facility)),
+        _ => None,
     };
-    if on_side {
-        Ok(terminal_cell)
+    let Some((external_side, facility)) = pair else {
+        return Ok(());
+    };
+    let IntegratedRouteEndpoint::Facility { instance, port } = facility else {
+        unreachable!()
+    };
+    let placement = placements.by_instance[instance.as_str()];
+    let definition = &input
+        .instances
+        .iter()
+        .find(|candidate| candidate.id == *instance)
+        .expect("prepared endpoint instance exists")
+        .definition;
+    let facility_side = definition
+        .ports
+        .iter()
+        .find(|candidate| candidate.id == *port)
+        .map(|candidate| candidate.edge.rotated_clockwise(placement.rotation))
+        .ok_or_else(|| {
+            invalid(
+                format!("/routes/{route_index}"),
+                "selected facility port is missing",
+            )
+        })?;
+    if external_side != facility_side {
+        return Err(invalid(
+            format!("/routes/{route_index}"),
+            "external connection side does not match the selected facility port side",
+        ));
+    }
+    Ok(())
+}
+
+fn used_geometry_bounds(report: &IntegratedLayoutReport) -> (i64, i64, i64, i64) {
+    let mut minimum_x = i64::MAX;
+    let mut minimum_y = i64::MAX;
+    let mut maximum_x = i64::MIN;
+    let mut maximum_y = i64::MIN;
+    for placement in &report.placements {
+        minimum_x = minimum_x.min(placement.x);
+        minimum_y = minimum_y.min(placement.y);
+        maximum_x = maximum_x.max(placement.x + placement.width - 1);
+        maximum_y = maximum_y.max(placement.y + placement.height - 1);
+    }
+    for position in report
+        .routes
+        .iter()
+        .flat_map(|route| route.cells.iter())
+        .chain(
+            report
+                .logistics_components
+                .iter()
+                .map(|component| &component.position),
+        )
+    {
+        minimum_x = minimum_x.min(position.x);
+        minimum_y = minimum_y.min(position.y);
+        maximum_x = maximum_x.max(position.x);
+        maximum_y = maximum_y.max(position.y);
+    }
+    if minimum_x == i64::MAX {
+        (0, 0, 0, 0)
     } else {
-        Err(invalid(
-            format!("/routes/{route_index}/{endpoint_kind}"),
-            "boundary endpoint side does not match its terminal route cell",
-        ))
+        (
+            minimum_x,
+            minimum_y,
+            maximum_x - minimum_x + 1,
+            maximum_y - minimum_y + 1,
+        )
     }
 }
 

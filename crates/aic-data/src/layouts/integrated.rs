@@ -44,7 +44,8 @@ pub use html::{render_integrated_layout_html, render_integrated_layout_html_with
 pub use iterative::construct_iterative_scc_layout_with_time_limit;
 
 const STAGE: &str = "integrated-layout";
-const COORDINATE_ROUTING_CLEARANCE: i64 = 10;
+const PRODUCTION_FACILITY_GAP: i64 = 1;
+const COORDINATE_ROUTING_FRAME: i64 = 1;
 pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -129,17 +130,14 @@ pub struct RouteRequirementFingerprint {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum IntegratedRouteEndpoint {
-    Facility { instance: String, port: String },
-    Boundary { node: String, side: BoundarySide },
-}
-
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
-#[serde(rename_all = "kebab-case")]
-pub enum BoundarySide {
-    North,
-    East,
-    South,
-    West,
+    Facility {
+        instance: String,
+        port: String,
+    },
+    External {
+        node: String,
+        side: FacilityPortEdge,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -491,7 +489,7 @@ fn solve_coordinate_candidate(
         instance_wiring,
         facilities,
         &placement_request,
-        COORDINATE_ROUTING_CLEARANCE,
+        PRODUCTION_FACILITY_GAP,
         time_limit,
     );
     if !placement.success {
@@ -527,6 +525,25 @@ fn solve_coordinate_candidate(
         };
     }
 
+    let Some(framed_placements) = frame_placements_for_routing(
+        placement.placements,
+        hard_request.max_width,
+        hard_request.max_height,
+    ) else {
+        return CoordinateCandidate {
+            placement_width,
+            report: IntegratedLayoutReport::failure(
+                IntegratedLayoutStatus::Unknown,
+                IntegratedLayoutDiagnostic::error(
+                    "coordinate-routing-frame-does-not-fit",
+                    "/",
+                    None,
+                    "coordinate placement heuristic could not translate the facilities into a one-cell routing frame inside the hard search domain",
+                ),
+            ),
+        };
+    };
+
     let report = match prepare_model(instance_wiring, facilities, items, transports, hard_request) {
         Ok(input) => {
             let topology = match networks::plan_topology(
@@ -548,7 +565,7 @@ fn solve_coordinate_candidate(
             let mut report = sparse::construct_from_placements(
                 input,
                 logistics_components,
-                placement.placements,
+                framed_placements,
                 Instant::now()
                     .checked_add(time_limit.max(Duration::from_secs(5)))
                     .unwrap_or_else(Instant::now),
@@ -663,7 +680,7 @@ enum EndpointInput {
         instance: String,
         ports: Vec<FacilityPortDefinition>,
     },
-    Boundary {
+    External {
         node: String,
     },
 }
@@ -857,6 +874,20 @@ fn prepare_model(
             item.transport,
             &edge.item,
         )?;
+        if matches!(
+            (&source, &target),
+            (
+                EndpointInput::External { .. },
+                EndpointInput::External { .. }
+            )
+        ) {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "unsupported-external-to-external-route",
+                format!("/edges/{edge_index}"),
+                Some(edge.id.clone()),
+                "integrated routing requires at least one facility endpoint",
+            ));
+        }
         let mut remaining_rate = edge.rate;
         let mut lane_index = 0_usize;
         while !remaining_rate.is_zero() {
@@ -950,7 +981,7 @@ fn prepare_endpoint(
             id,
             item: node_item,
         } if endpoint_kind == "source" => {
-            prepare_boundary_endpoint(edge_index, endpoint_kind, id, node_item, item)
+            prepare_external_endpoint(edge_index, endpoint_kind, id, node_item, item)
         }
         FacilityInstanceWiringNode::Target {
             id,
@@ -960,7 +991,7 @@ fn prepare_endpoint(
             id,
             item: node_item,
         } if endpoint_kind == "target" => {
-            prepare_boundary_endpoint(edge_index, endpoint_kind, id, node_item, item)
+            prepare_external_endpoint(edge_index, endpoint_kind, id, node_item, item)
         }
         _ => Err(IntegratedLayoutDiagnostic::error(
             "invalid-route-endpoint-kind",
@@ -974,7 +1005,7 @@ fn prepare_endpoint(
     }
 }
 
-fn prepare_boundary_endpoint(
+fn prepare_external_endpoint(
     edge_index: usize,
     endpoint_kind: &str,
     node: &str,
@@ -983,15 +1014,15 @@ fn prepare_boundary_endpoint(
 ) -> Result<EndpointInput, IntegratedLayoutDiagnostic> {
     if node_item != edge_item {
         return Err(IntegratedLayoutDiagnostic::error(
-            "boundary-item-mismatch",
+            "external-item-mismatch",
             format!("/edges/{edge_index}/item"),
             Some(node.to_string()),
             format!(
-                "boundary {endpoint_kind} node '{node}' carries item '{node_item}' but the route carries '{edge_item}'"
+                "external {endpoint_kind} node '{node}' carries item '{node_item}' but the route carries '{edge_item}'"
             ),
         ));
     }
-    Ok(EndpointInput::Boundary {
+    Ok(EndpointInput::External {
         node: node.to_string(),
     })
 }
@@ -1065,6 +1096,7 @@ struct EndpointOption {
     endpoint: IntegratedRouteEndpoint,
     cell: usize,
     selected: DomainId,
+    external_side: Option<FacilityPortEdge>,
 }
 
 #[derive(Clone, Copy)]
@@ -1125,26 +1157,52 @@ fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> IntegratedLayou
     let mut pipe_route_cells_by_grid = vec![Vec::<DomainId>::new(); cell_count];
     let mut route_arc_variables = Vec::new();
     for (edge_index, edge) in input.edges.iter().enumerate() {
-        let source_options = model_endpoint_options(
-            &mut solver,
-            edge_index,
-            "source",
-            &edge.source,
-            &model_instances,
-            input.width,
-            input.height,
-            tag,
-        );
-        let target_options = model_endpoint_options(
-            &mut solver,
-            edge_index,
-            "target",
-            &edge.target,
-            &model_instances,
-            input.width,
-            input.height,
-            tag,
-        );
+        let (source_options, target_options) = match (&edge.source, &edge.target) {
+            (EndpointInput::Facility { .. }, EndpointInput::Facility { .. }) => (
+                model_facility_endpoint_options(
+                    &mut solver,
+                    edge_index,
+                    "source",
+                    &edge.source,
+                    &model_instances,
+                    tag,
+                ),
+                model_facility_endpoint_options(
+                    &mut solver,
+                    edge_index,
+                    "target",
+                    &edge.target,
+                    &model_instances,
+                    tag,
+                ),
+            ),
+            (EndpointInput::External { node }, EndpointInput::Facility { .. }) => {
+                let target = model_facility_endpoint_options(
+                    &mut solver,
+                    edge_index,
+                    "target",
+                    &edge.target,
+                    &model_instances,
+                    tag,
+                );
+                (external_endpoint_options(node, &target), target)
+            }
+            (EndpointInput::Facility { .. }, EndpointInput::External { node }) => {
+                let source = model_facility_endpoint_options(
+                    &mut solver,
+                    edge_index,
+                    "source",
+                    &edge.source,
+                    &model_instances,
+                    tag,
+                );
+                let target = external_endpoint_options(node, &source);
+                (source, target)
+            }
+            (EndpointInput::External { .. }, EndpointInput::External { .. }) => unreachable!(
+                "external-to-external requirements are rejected during model preparation"
+            ),
+        };
 
         let (arcs, incoming, outgoing) =
             grid_arcs(&mut solver, edge_index, input.width, input.height);
@@ -1184,15 +1242,6 @@ fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> IntegratedLayou
 
             post_at_most_one(&mut solver, incoming[cell].iter().copied(), tag);
             post_at_most_one(&mut solver, outgoing[cell].iter().copied(), tag);
-
-            post_at_most_one(
-                &mut solver,
-                source_by_cell[cell]
-                    .iter()
-                    .chain(target_by_cell[cell].iter())
-                    .copied(),
-                tag,
-            );
 
             let mut route_definition = vec![route_cell.scaled(1)];
             route_definition.extend(outgoing[cell].iter().map(|variable| variable.scaled(-1)));
@@ -1316,16 +1365,14 @@ fn generate_candidates(
         }
         for y in 0..=(max_height - height) {
             for x in 0..=(max_width - width) {
-                let Some(port_connections) = candidate_port_connections(
+                let port_connections = candidate_port_connections(
                     &instance.definition,
                     *rotation,
                     x,
                     y,
                     max_width,
                     max_height,
-                ) else {
-                    continue;
-                };
+                );
                 let occupied_cells = (y..(y + height))
                     .flat_map(|occupied_y| {
                         (x..(x + width))
@@ -1359,7 +1406,7 @@ fn candidate_port_connections(
     origin_y: i32,
     max_width: i32,
     max_height: i32,
-) -> Option<BTreeMap<String, usize>> {
+) -> BTreeMap<String, usize> {
     let mut connections = BTreeMap::new();
     for port in &definition.ports {
         let (position, edge) = rotate_port(
@@ -1382,14 +1429,14 @@ fn candidate_port_connections(
             || connection_x >= max_width
             || connection_y >= max_height
         {
-            return None;
+            continue;
         }
         connections.insert(
             port.id.clone(),
             grid_index(connection_x, connection_y, max_width),
         );
     }
-    Some(connections)
+    connections
 }
 
 fn rotate_port(
@@ -1430,6 +1477,9 @@ fn endpoint_options(
     for (candidate_index, candidate) in instance.candidates.iter().enumerate() {
         let mut candidate_options = Vec::new();
         for port in ports {
+            let Some(cell) = candidate.port_connections.get(&port.id).copied() else {
+                continue;
+            };
             let selected = solver.new_named_bounded_integer(
                 0,
                 1,
@@ -1444,8 +1494,9 @@ fn endpoint_options(
                     instance: instance.input.id.clone(),
                     port: port.id.clone(),
                 },
-                cell: candidate.port_connections[&port.id],
+                cell,
                 selected,
+                external_side: Some(port.edge.rotated_clockwise(candidate.rotation)),
             });
         }
         let mut definition = candidate_options
@@ -1462,14 +1513,12 @@ fn endpoint_options(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn model_endpoint_options(
+fn model_facility_endpoint_options(
     solver: &mut Solver,
     edge_index: usize,
     endpoint_kind: &str,
     endpoint: &EndpointInput,
     instances: &[ModelInstance],
-    width: i32,
-    height: i32,
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) -> Vec<EndpointOption> {
     match endpoint {
@@ -1480,46 +1529,28 @@ fn model_endpoint_options(
                 .expect("prepared endpoint instance exists");
             endpoint_options(solver, edge_index, endpoint_kind, instance, ports, tag)
         }
-        EndpointInput::Boundary { node } => {
-            boundary_endpoint_options(solver, edge_index, endpoint_kind, node, width, height, tag)
-        }
+        EndpointInput::External { .. } => unreachable!("expected a facility endpoint"),
     }
 }
 
-#[allow(clippy::too_many_arguments)]
-fn boundary_endpoint_options(
-    solver: &mut Solver,
-    edge_index: usize,
-    endpoint_kind: &str,
+fn external_endpoint_options(
     node: &str,
-    width: i32,
-    height: i32,
-    tag: pumpkin_solver::core::proof::ConstraintTag,
+    facility_options: &[EndpointOption],
 ) -> Vec<EndpointOption> {
-    let mut positions = Vec::new();
-    positions.extend((0..width).map(|x| (BoundarySide::North, x, 0)));
-    positions.extend((0..height).map(|y| (BoundarySide::East, width - 1, y)));
-    positions.extend((0..width).map(|x| (BoundarySide::South, x, height - 1)));
-    positions.extend((0..height).map(|y| (BoundarySide::West, 0, y)));
-
-    let options = positions
-        .into_iter()
-        .enumerate()
-        .map(|(option_index, (side, x, y))| EndpointOption {
-            endpoint: IntegratedRouteEndpoint::Boundary {
+    facility_options
+        .iter()
+        .map(|option| EndpointOption {
+            endpoint: IntegratedRouteEndpoint::External {
                 node: node.to_string(),
-                side,
+                side: option
+                    .external_side
+                    .expect("facility endpoint option records its outward side"),
             },
-            cell: grid_index(x, y, width),
-            selected: solver.new_named_bounded_integer(
-                0,
-                1,
-                format!("edge-{edge_index}-{endpoint_kind}-boundary-{option_index}"),
-            ),
+            cell: option.cell,
+            selected: option.selected,
+            external_side: option.external_side,
         })
-        .collect::<Vec<_>>();
-    post_equals_one(solver, options.iter().map(|option| option.selected), tag);
-    options
+        .collect()
 }
 
 fn grid_arcs(
@@ -1612,16 +1643,6 @@ fn extract_report(
     }
     placements.sort_by(|left, right| left.instance.cmp(&right.instance));
 
-    let mut used_width = placements
-        .iter()
-        .map(|placement| placement.x + placement.width)
-        .max()
-        .unwrap_or(0);
-    let mut used_height = placements
-        .iter()
-        .map(|placement| placement.y + placement.height)
-        .max()
-        .unwrap_or(0);
     let routes = input
         .edges
         .iter()
@@ -1636,10 +1657,6 @@ fn extract_report(
                 &model_route.arcs,
                 input.width,
             );
-            for cell in &cells {
-                used_width = used_width.max(cell.x + 1);
-                used_height = used_height.max(cell.y + 1);
-            }
             IntegratedRoute {
                 requirement_id: edge.requirement_id.clone(),
                 requirement_fingerprint: edge.requirement_fingerprint.clone(),
@@ -1653,14 +1670,11 @@ fn extract_report(
         })
         .collect();
 
-    IntegratedLayoutReport {
+    let mut report = IntegratedLayoutReport {
         schema_version: INTEGRATED_LAYOUT_SCHEMA_VERSION,
         success: true,
         status,
-        bounds: Some(FacilityPlacementBounds {
-            width: used_width,
-            height: used_height,
-        }),
+        bounds: None,
         placements,
         logistics_components: Vec::new(),
         routes,
@@ -1677,7 +1691,126 @@ fn extract_report(
                 "facility placement, port selection, and routing are feasible but not proven optimal"
             },
         )],
+    };
+    canonicalize_report_geometry(&mut report);
+    report
+}
+
+pub(super) fn canonicalize_report_geometry(report: &mut IntegratedLayoutReport) {
+    let mut minimum_x = i64::MAX;
+    let mut minimum_y = i64::MAX;
+    for placement in &report.placements {
+        minimum_x = minimum_x.min(placement.x);
+        minimum_y = minimum_y.min(placement.y);
     }
+    for position in report
+        .routes
+        .iter()
+        .flat_map(|route| route.cells.iter())
+        .chain(
+            report
+                .logistics_components
+                .iter()
+                .map(|component| &component.position),
+        )
+    {
+        minimum_x = minimum_x.min(position.x);
+        minimum_y = minimum_y.min(position.y);
+    }
+    if minimum_x == i64::MAX {
+        report.bounds = Some(FacilityPlacementBounds {
+            width: 0,
+            height: 0,
+        });
+        return;
+    }
+    for placement in &mut report.placements {
+        placement.x -= minimum_x;
+        placement.y -= minimum_y;
+    }
+    for position in report
+        .routes
+        .iter_mut()
+        .flat_map(|route| route.cells.iter_mut())
+        .chain(
+            report
+                .logistics_components
+                .iter_mut()
+                .map(|component| &mut component.position),
+        )
+    {
+        position.x -= minimum_x;
+        position.y -= minimum_y;
+    }
+    let width = report
+        .placements
+        .iter()
+        .map(|placement| placement.x + placement.width)
+        .chain(
+            report
+                .routes
+                .iter()
+                .flat_map(|route| route.cells.iter().map(|cell| cell.x + 1)),
+        )
+        .chain(
+            report
+                .logistics_components
+                .iter()
+                .map(|component| component.position.x + 1),
+        )
+        .max()
+        .unwrap_or(0);
+    let height = report
+        .placements
+        .iter()
+        .map(|placement| placement.y + placement.height)
+        .chain(
+            report
+                .routes
+                .iter()
+                .flat_map(|route| route.cells.iter().map(|cell| cell.y + 1)),
+        )
+        .chain(
+            report
+                .logistics_components
+                .iter()
+                .map(|component| component.position.y + 1),
+        )
+        .max()
+        .unwrap_or(0);
+    report.bounds = Some(FacilityPlacementBounds { width, height });
+}
+
+pub(super) fn frame_placements_for_routing(
+    mut placements: Vec<FacilityPlacement>,
+    hard_width: i64,
+    hard_height: i64,
+) -> Option<Vec<FacilityPlacement>> {
+    if placements.is_empty() {
+        return Some(placements);
+    }
+    let minimum_x = placements.iter().map(|placement| placement.x).min()?;
+    let minimum_y = placements.iter().map(|placement| placement.y).min()?;
+    let maximum_x = placements
+        .iter()
+        .map(|placement| placement.x + placement.width)
+        .max()?;
+    let maximum_y = placements
+        .iter()
+        .map(|placement| placement.y + placement.height)
+        .max()?;
+    let delta_x = COORDINATE_ROUTING_FRAME - minimum_x;
+    let delta_y = COORDINATE_ROUTING_FRAME - minimum_y;
+    if maximum_x + delta_x + COORDINATE_ROUTING_FRAME > hard_width
+        || maximum_y + delta_y + COORDINATE_ROUTING_FRAME > hard_height
+    {
+        return None;
+    }
+    for placement in &mut placements {
+        placement.x += delta_x;
+        placement.y += delta_y;
+    }
+    Some(placements)
 }
 
 fn selected_endpoint<'a>(
@@ -2031,7 +2164,7 @@ mod tests {
             &report.routes[0].target,
             IntegratedRouteEndpoint::Facility { port, .. } if port == "input"
         ));
-        assert_eq!(report.routes[0].cells.len(), 2);
+        assert_eq!(report.routes[0].cells.len(), 1);
         assert_eq!(report.placements.len(), 2);
     }
 
@@ -2347,14 +2480,14 @@ mod tests {
                 .iter()
                 .map(|route| route.cells.len())
                 .sum::<usize>(),
-            4
+            2
         );
         let route_cells = report
             .routes
             .iter()
             .flat_map(|route| route.cells.iter().map(|cell| (cell.x, cell.y)))
             .collect::<BTreeSet<_>>();
-        assert_eq!(route_cells.len(), 4);
+        assert_eq!(route_cells.len(), 2);
     }
 
     #[test]
@@ -2656,7 +2789,7 @@ mod tests {
     }
 
     #[test]
-    fn routes_external_input_and_target_to_boundary_terminals() {
+    fn routes_external_input_and_output_as_minimal_dangling_connections() {
         let facilities = ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
             schema_version: 3,
             facilities: vec![facility_with_ports(
@@ -2757,9 +2890,18 @@ mod tests {
 
         assert!(report.success, "{:#?}", report.diagnostics);
         assert_eq!(report.routes.len(), 2);
+        assert!(report.routes.iter().all(|route| route.cells.len() == 1));
+        assert_eq!(
+            report.bounds,
+            Some(FacilityPlacementBounds {
+                width: 3,
+                height: 1,
+            })
+        );
         assert!(matches!(
             &report.routes[0].source,
-            IntegratedRouteEndpoint::Boundary { node, .. } if node == "external:ore"
+            IntegratedRouteEndpoint::External { node, side: FacilityPortEdge::West }
+                if node == "external:ore"
         ));
         assert!(matches!(
             &report.routes[0].target,
@@ -2773,7 +2915,8 @@ mod tests {
         ));
         assert!(matches!(
             &report.routes[1].target,
-            IntegratedRouteEndpoint::Boundary { node, .. } if node == "target:product"
+            IntegratedRouteEndpoint::External { node, side: FacilityPortEdge::East }
+                if node == "target:product"
         ));
 
         let FacilityInstanceWiringNode::External { item, .. } = &mut wiring.nodes[0] else {
@@ -2792,7 +2935,7 @@ mod tests {
             },
         );
         assert!(!mismatch.success);
-        assert_eq!(mismatch.diagnostics[0].code, "boundary-item-mismatch");
+        assert_eq!(mismatch.diagnostics[0].code, "external-item-mismatch");
     }
 
     #[test]

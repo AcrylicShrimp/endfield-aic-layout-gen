@@ -43,7 +43,7 @@ fn baseline_graph_fixtures_have_deterministic_output_first_ids() {
 }
 
 #[test]
-fn one_facility_baseline_exposes_known_bad_perimeter_routing() {
+fn one_facility_external_routes_are_minimal_and_search_domain_independent() {
     let root = repository_root();
     let facilities = ValidatedFacilityCatalog::try_from_catalog(
         load_facility_catalog(root.join("data/game/normalized/facilities.json"))
@@ -73,7 +73,7 @@ fn one_facility_baseline_exposes_known_bad_perimeter_routing() {
     )
     .expect("factory placement request should parse");
 
-    let report = construct_iterative_scc_layout_with_time_limit(
+    let large_report = construct_iterative_scc_layout_with_time_limit(
         &one_facility_wiring_fixture(),
         &facilities,
         &items,
@@ -82,31 +82,45 @@ fn one_facility_baseline_exposes_known_bad_perimeter_routing() {
         &request,
         Duration::from_secs(2),
     );
-
-    assert!(report.success, "{:#?}", report.diagnostics);
-    assert_eq!(report.phases.len(), 1);
-    let phase = &report.phases[0];
-    assert_eq!(phase.cumulative_facility_count, 1);
-    assert_eq!(phase.routes.len(), 3);
-    assert!(
-        phase.route_cells > phase.routes.len(),
-        "known-bad boundary terminals should force routes longer than one cell"
+    let small_request = FacilityPlacementRequest {
+        schema_version: request.schema_version,
+        max_width: 50,
+        max_height: 50,
+    };
+    let small_report = construct_iterative_scc_layout_with_time_limit(
+        &one_facility_wiring_fixture(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &small_request,
+        Duration::from_secs(2),
     );
-    for route in &phase.routes {
-        let boundary = match (&route.source, &route.target) {
-            (IntegratedRouteEndpoint::Boundary { .. }, _) => route.cells.first(),
-            (_, IntegratedRouteEndpoint::Boundary { .. }) => route.cells.last(),
-            _ => panic!("fixture route should have exactly one boundary endpoint"),
+
+    for report in [&large_report, &small_report] {
+        assert!(report.success, "{:#?}", report.diagnostics);
+        assert_eq!(report.phases.len(), 1);
+        let phase = &report.phases[0];
+        assert_eq!(phase.cumulative_facility_count, 1);
+        assert_eq!(phase.routes.len(), 3);
+        assert_eq!(phase.route_cells, phase.routes.len());
+        for route in &phase.routes {
+            assert_eq!(route.cells.len(), 1);
+            assert!(matches!(
+                (&route.source, &route.target),
+                (
+                    IntegratedRouteEndpoint::External { .. },
+                    IntegratedRouteEndpoint::Facility { .. }
+                ) | (
+                    IntegratedRouteEndpoint::Facility { .. },
+                    IntegratedRouteEndpoint::External { .. }
+                )
+            ));
         }
-        .expect("fixture route should contain a boundary cell");
-        assert!(
-            boundary.x == 0
-                || boundary.y == 0
-                || boundary.x == phase.bounds.width - 1
-                || boundary.y == phase.bounds.height - 1,
-            "boundary endpoint must lie on the reported prefix perimeter"
-        );
     }
+    assert_eq!(large_report.bounds, small_report.bounds);
+    assert_eq!(large_report.placements, small_report.placements);
+    assert_eq!(large_report.routes, small_report.routes);
 }
 
 fn repository_root() -> PathBuf {

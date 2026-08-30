@@ -88,7 +88,7 @@ pub fn render_integrated_layout_html_with_localization(
   .endpoint-pipe {{ fill: #59c7f2; stroke: #071c26; }}
   .port-input {{ stroke: #6ff2bd; stroke-width: 1.6px; stroke-linejoin: round; }}
   .port-output {{ stroke: #ff6b9c; stroke-width: 1.6px; stroke-linejoin: round; }}
-  .boundary {{ fill: #071019; stroke: #ffec99; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }}
+  .external {{ fill: #071019; stroke: #ffec99; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }}
   .facility {{ fill: #10293a; fill-opacity: .92; stroke: #d7efff; stroke-width: 1.25px; vector-effect: non-scaling-stroke; }}
   .facility.introduced {{ fill: #163c34; stroke: #6ff2bd; stroke-width: 2px; }}
   .facility:hover {{ fill: #19415a; stroke: #ffffff; stroke-width: 2.5px; }}
@@ -473,8 +473,8 @@ fn render_routes(
             (true, &route.source, &route.target, first, second),
             (false, &route.target, &route.source, last, last),
         ] {
-            let boundary_class = if matches!(endpoint, IntegratedRouteEndpoint::Boundary { .. }) {
-                " boundary"
+            let external_class = if matches!(endpoint, IntegratedRouteEndpoint::External { .. }) {
+                " external"
             } else {
                 ""
             };
@@ -495,7 +495,9 @@ fn render_routes(
                 direction_target,
                 placements,
             );
-            let points = arrow_points_in_direction(cell, dx, dy, 0.48, 0.36);
+            let marker_cell =
+                facility_port_cell(endpoint, cell, placements).unwrap_or_else(|| cell.clone());
+            let points = arrow_points_in_direction(&marker_cell, dx, dy, 0.48, 0.36);
             let role_class = if is_source {
                 "port-output"
             } else {
@@ -503,12 +505,54 @@ fn render_routes(
             };
             writeln!(
                 html,
-                "          <polygon class=\"endpoint {role_class} {endpoint_class}{boundary_class}\" data-inspect=\"{tooltip}\" points=\"{points}\"/>"
+                "          <polygon class=\"endpoint {role_class} {endpoint_class}{external_class}\" data-inspect=\"{tooltip}\" points=\"{points}\"/>"
             )
             .expect("writing to String cannot fail");
         }
     }
     html.push_str("        </g>\n");
+}
+
+fn facility_port_cell(
+    endpoint: &IntegratedRouteEndpoint,
+    connection: &super::WorldGridPosition,
+    placements: &[FacilityPlacement],
+) -> Option<super::WorldGridPosition> {
+    let IntegratedRouteEndpoint::Facility { instance, .. } = endpoint else {
+        return None;
+    };
+    let placement = placements
+        .iter()
+        .find(|placement| placement.instance == instance.as_str())?;
+    let inside_horizontal = placement.x..(placement.x + placement.width);
+    let inside_vertical = placement.y..(placement.y + placement.height);
+    if connection.x == placement.x - 1 && inside_vertical.contains(&connection.y) {
+        Some(super::WorldGridPosition {
+            x: placement.x,
+            y: connection.y,
+        })
+    } else if connection.x == placement.x + placement.width
+        && inside_vertical.contains(&connection.y)
+    {
+        Some(super::WorldGridPosition {
+            x: placement.x + placement.width - 1,
+            y: connection.y,
+        })
+    } else if connection.y == placement.y - 1 && inside_horizontal.contains(&connection.x) {
+        Some(super::WorldGridPosition {
+            x: connection.x,
+            y: placement.y,
+        })
+    } else if connection.y == placement.y + placement.height
+        && inside_horizontal.contains(&connection.x)
+    {
+        Some(super::WorldGridPosition {
+            x: connection.x,
+            y: placement.y + placement.height - 1,
+        })
+    } else {
+        None
+    }
 }
 
 fn flow_arrow_points(
@@ -560,6 +604,15 @@ fn endpoint_arrow_direction(
     route_to: &super::WorldGridPosition,
     placements: &[FacilityPlacement],
 ) -> (f64, f64) {
+    if let IntegratedRouteEndpoint::External { side, .. } = endpoint {
+        let (dx, dy) = match side {
+            crate::facilities::FacilityPortEdge::North => (0.0, -1.0),
+            crate::facilities::FacilityPortEdge::East => (1.0, 0.0),
+            crate::facilities::FacilityPortEdge::South => (0.0, 1.0),
+            crate::facilities::FacilityPortEdge::West => (-1.0, 0.0),
+        };
+        return if is_source { (-dx, -dy) } else { (dx, dy) };
+    }
     if let IntegratedRouteEndpoint::Facility { instance, .. } = endpoint
         && let Some(placement) = placements
             .iter()
@@ -594,8 +647,8 @@ fn endpoint_role(endpoint: &IntegratedRouteEndpoint, is_source: bool) -> &'stati
     match (endpoint, is_source) {
         (IntegratedRouteEndpoint::Facility { .. }, true) => "facility output port",
         (IntegratedRouteEndpoint::Facility { .. }, false) => "facility input port",
-        (IntegratedRouteEndpoint::Boundary { .. }, true) => "factory input boundary",
-        (IntegratedRouteEndpoint::Boundary { .. }, false) => "factory output boundary",
+        (IntegratedRouteEndpoint::External { .. }, true) => "factory external input",
+        (IntegratedRouteEndpoint::External { .. }, false) => "factory external output",
     }
 }
 
@@ -720,8 +773,8 @@ fn endpoint_name(endpoint: &IntegratedRouteEndpoint) -> String {
         IntegratedRouteEndpoint::Facility { instance, port } => {
             format!("facility {instance} port {port}")
         }
-        IntegratedRouteEndpoint::Boundary { node, side } => {
-            format!("boundary {node} {side:?}")
+        IntegratedRouteEndpoint::External { node, side } => {
+            format!("external {node} beside {side:?} facility port")
         }
     }
 }
@@ -737,8 +790,9 @@ fn xml_escape(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    use crate::facilities::FacilityPortEdge;
     use crate::layouts::{
-        BoundarySide, FacilityPlacement, FacilityPlacementBounds, INTEGRATED_LAYOUT_SCHEMA_VERSION,
+        FacilityPlacement, FacilityPlacementBounds, INTEGRATED_LAYOUT_SCHEMA_VERSION,
         IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutReport,
         IntegratedLayoutStatus, IntegratedRoute, IntegratedRouteEndpoint,
         RouteRequirementFingerprint, WorldGridPosition,
@@ -751,8 +805,8 @@ mod tests {
     use crate::recipes::{FacilityInstanceWiringProjection, Rate};
 
     use super::{
-        endpoint_arrow_direction, estimated_label_width, render_integrated_layout_html,
-        render_integrated_layout_html_with_localization,
+        endpoint_arrow_direction, estimated_label_width, facility_port_cell,
+        render_integrated_layout_html, render_integrated_layout_html_with_localization,
     };
 
     #[test]
@@ -789,9 +843,9 @@ mod tests {
                     transport: TransportKind::Belt,
                     projection: FacilityInstanceWiringProjection::Original,
                 },
-                source: IntegratedRouteEndpoint::Boundary {
+                source: IntegratedRouteEndpoint::External {
                     node: "external".to_string(),
-                    side: BoundarySide::West,
+                    side: FacilityPortEdge::West,
                 },
                 target: IntegratedRouteEndpoint::Facility {
                     instance: "facility:<one>".to_string(),
@@ -858,12 +912,12 @@ mod tests {
         assert!(html.contains("class=\"route-cell route-cell-belt\""));
         assert!(html.contains("width=\"1\" height=\"1\""));
         assert!(html.contains("item item&amp;one | rate 1/s"));
-        assert!(html.contains("factory input boundary"));
+        assert!(html.contains("factory external input"));
         assert!(html.contains("facility input port"));
         assert!(html.contains("port-input endpoint-belt"));
         assert!(html.contains("color:#6ff2bd\">➤ IN"));
         assert!(html.contains("data-inspector-content"));
-        assert!(html.contains("data-inspect=\"factory input boundary"));
+        assert!(html.contains("data-inspect=\"factory external input"));
         assert!(html.contains("click: inspect"));
         assert!(!html.contains("pointerover"));
         assert!(!html.contains("tabindex=\"0\""));
@@ -917,6 +971,16 @@ mod tests {
         };
         let unrelated_route_from = WorldGridPosition { x: 15, y: 11 };
         let unrelated_route_to = WorldGridPosition { x: 15, y: 12 };
+
+        assert_eq!(
+            facility_port_cell(
+                &endpoint,
+                &WorldGridPosition { x: 15, y: 10 },
+                std::slice::from_ref(&placement),
+            ),
+            Some(WorldGridPosition { x: 14, y: 10 }),
+            "a corner port keeps its east-facing edge instead of being reinterpreted as north-facing",
+        );
 
         assert_eq!(
             endpoint_arrow_direction(
