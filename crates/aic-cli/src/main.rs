@@ -9,6 +9,9 @@ use aic_data::layouts::{
     IntegratedLayoutDiagnostic, IntegratedLayoutReport, solve_facility_placement,
     solve_integrated_layout_with_time_limit,
 };
+use aic_data::localization::{
+    LocalizationCatalogValidationReport, load_localization_catalog, validate_localization_coverage,
+};
 use aic_data::logistics::{
     ItemCatalogValidationReport, TransportCatalogValidationReport, ValidatedItemCatalog,
     ValidatedTransportCatalog, load_item_catalog, load_transport_catalog, validate_item_catalog,
@@ -69,6 +72,11 @@ enum Command {
     Layouts {
         #[command(subcommand)]
         command: LayoutsCommand,
+    },
+    /// Work with localized game-data display names.
+    Localization {
+        #[command(subcommand)]
+        command: LocalizationCommand,
     },
     /// Work with recipe data.
     Recipes {
@@ -186,6 +194,28 @@ enum LayoutsCommand {
         /// Maximum solver search time before returning the best known status.
         #[arg(long, value_name = "SECONDS", default_value = "10")]
         time_limit_seconds: NonZeroU64,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+enum LocalizationCommand {
+    /// Validate localization structure and complete domain-catalog coverage.
+    Validate {
+        /// Localization catalog JSON file to validate.
+        #[arg(long, short, value_name = "FILE")]
+        file: PathBuf,
+
+        /// Item transport catalog whose IDs must be covered exactly.
+        #[arg(long, value_name = "FILE")]
+        item_catalog: PathBuf,
+
+        /// Facility catalog whose IDs must be covered exactly.
+        #[arg(long, value_name = "FILE")]
+        facility_catalog: PathBuf,
+
+        /// Recipe catalog whose IDs must be covered exactly.
+        #[arg(long, value_name = "FILE")]
+        recipes: PathBuf,
     },
 }
 
@@ -402,6 +432,14 @@ fn run() -> Result<CommandStatus> {
                 time_limit_seconds,
             ),
         },
+        Command::Localization { command } => match command {
+            LocalizationCommand::Validate {
+                file,
+                item_catalog,
+                facility_catalog,
+                recipes,
+            } => validate_localization(file, item_catalog, facility_catalog, recipes),
+        },
         Command::Recipes { command } => match command {
             RecipesCommand::Validate { file } => {
                 validate_recipes(file).map(|()| CommandStatus::Success)
@@ -434,6 +472,27 @@ fn run() -> Result<CommandStatus> {
                 instance_wiring_recipes(file, request)
             }
         },
+    }
+}
+
+fn validate_localization(
+    file: PathBuf,
+    item_catalog: PathBuf,
+    facility_catalog: PathBuf,
+    recipes: PathBuf,
+) -> Result<CommandStatus> {
+    let localization = load_localization_catalog(&file)?;
+    let items = load_item_catalog(&item_catalog)?;
+    let facilities = load_facility_catalog(&facility_catalog)?;
+    let recipes = load_recipe_book(&recipes)?;
+    let report = validate_localization_coverage(&localization, &items, &facilities, &recipes);
+    let valid = report.valid;
+    write_localization_catalog_validation_report(&report)?;
+
+    if valid {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
     }
 }
 
@@ -1253,6 +1312,16 @@ fn write_transport_catalog_validation_report(
 ) -> Result<()> {
     serde_json::to_writer_pretty(std::io::stdout().lock(), report)
         .context("failed to write transport catalog validation report")?;
+    println!();
+
+    Ok(())
+}
+
+fn write_localization_catalog_validation_report(
+    report: &LocalizationCatalogValidationReport,
+) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write localization catalog validation report")?;
     println!();
 
     Ok(())
