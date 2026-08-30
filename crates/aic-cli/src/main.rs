@@ -1800,6 +1800,64 @@ mod tests {
     }
 
     #[test]
+    fn parses_first_phase_external_port_domain() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "solve-first-phase-external-port-domain",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--case-id",
+            "mixed-two",
+            "--classification",
+            "diagnostic-only",
+            "--route-index",
+            "1",
+            "--port-id",
+            "input-belt-2",
+            "--port-id",
+            "input-belt-4",
+            "--time-limit-ms",
+            "5000",
+            "--output",
+            "case.json",
+            "--visualization-output",
+            "case.html",
+        ])
+        .expect("external connector port-domain CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::SolveFirstPhaseExternalPortDomain {
+                    workload,
+                    workspace_root,
+                    placement_request,
+                    case_id,
+                    classification: _,
+                    route_index,
+                    port_ids,
+                    time_limit_ms,
+                    output,
+                    visualization_output,
+                },
+        } = cli.command
+        else {
+            panic!("expected external connector port-domain research command")
+        };
+        assert_eq!(workload, PathBuf::from("workload.json"));
+        assert_eq!(workspace_root, PathBuf::from("."));
+        assert_eq!(placement_request, PathBuf::from("bounds.json"));
+        assert_eq!(case_id, "mixed-two");
+        assert_eq!(route_index, 1);
+        assert_eq!(port_ids, vec!["input-belt-2", "input-belt-4"]);
+        assert_eq!(time_limit_ms, 5_000);
+        assert_eq!(output, PathBuf::from("case.json"));
+        assert_eq!(visualization_output, PathBuf::from("case.html"));
+    }
+
+    #[test]
     fn parses_first_phase_pair_cliff_decomposition() {
         let cli = Cli::try_parse_from([
             "aic-cli",

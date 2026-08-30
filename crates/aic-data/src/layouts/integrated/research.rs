@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{collections::BTreeSet, time::Duration};
 
 use serde::Serialize;
 
@@ -17,6 +17,7 @@ pub const FACTORED_ENDPOINT_COMPARISON_SCHEMA_VERSION: u32 = 1;
 pub const FACTORED_NETWORK_DECOMPOSITION_SCHEMA_VERSION: u32 = 1;
 pub const FACTORED_REQUIREMENT_DECOMPOSITION_SCHEMA_VERSION: u32 = 1;
 pub const EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION: u32 = 1;
+pub const EXTERNAL_CONNECTOR_PORT_DOMAIN_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct ExternalConnectorRequirementDescriptor {
@@ -37,6 +38,25 @@ pub struct ExternalConnectorSubsetReport {
     pub layout: IntegratedLayoutReport,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ExternalConnectorPortDomainClassification {
+    FaithfulBaseline,
+    DiagnosticOnly,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct ExternalConnectorPortDomainReport {
+    pub schema_version: u32,
+    pub case_id: String,
+    pub classification: ExternalConnectorPortDomainClassification,
+    pub selected_requirement: ExternalConnectorRequirementDescriptor,
+    pub requested_port_ids: Vec<String>,
+    pub retained_port_ids: Vec<String>,
+    pub search_budget_ms: u64,
+    pub layout: IntegratedLayoutReport,
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn solve_first_integrated_layout_phase_external_connector_subset(
     instance_wiring: &FacilityInstanceWiringReport,
@@ -48,6 +68,107 @@ pub fn solve_first_integrated_layout_phase_external_connector_subset(
     route_indices: &[usize],
     search_budget: Duration,
 ) -> Result<ExternalConnectorSubsetReport, IntegratedLayoutReport> {
+    let (route_indices, descriptors, input) = prepare_external_connector_subset(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+        route_indices,
+    )?;
+    let layout = exact::shared_layer::solve_factored_endpoints(
+        input,
+        logistics_components,
+        Some(search_budget),
+    );
+    Ok(ExternalConnectorSubsetReport {
+        schema_version: EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION,
+        route_indices,
+        selected_requirements: descriptors,
+        search_budget_ms: millis(search_budget),
+        layout,
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn solve_first_integrated_layout_phase_external_connector_port_domain(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    case_id: &str,
+    classification: ExternalConnectorPortDomainClassification,
+    route_index: usize,
+    requested_port_ids: &[String],
+    search_budget: Duration,
+) -> Result<ExternalConnectorPortDomainReport, IntegratedLayoutReport> {
+    let (route_indices, mut descriptors, mut input) = prepare_external_connector_subset(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+        &[route_index],
+    )?;
+    let (retained_port_ids, retains_full_domain) =
+        restrict_external_port_domain(&mut input, requested_port_ids)
+            .map_err(IntegratedLayoutReport::invalid)?;
+    if matches!(
+        classification,
+        ExternalConnectorPortDomainClassification::FaithfulBaseline
+    ) != retains_full_domain
+    {
+        return Err(IntegratedLayoutReport::invalid(
+            super::IntegratedLayoutDiagnostic::error(
+                "research-port-domain-classification-mismatch",
+                "/classification",
+                Some(format!("{classification:?}")),
+                "faithful-baseline must retain the complete compatible port domain and every restricted domain must be diagnostic-only",
+            ),
+        ));
+    }
+    let selected_requirement = descriptors
+        .pop()
+        .expect("one selected route has one requirement descriptor");
+    debug_assert_eq!(route_indices, vec![route_index]);
+    let layout = exact::shared_layer::solve_factored_endpoints(
+        input,
+        logistics_components,
+        Some(search_budget),
+    );
+    Ok(ExternalConnectorPortDomainReport {
+        schema_version: EXTERNAL_CONNECTOR_PORT_DOMAIN_SCHEMA_VERSION,
+        case_id: case_id.to_string(),
+        classification,
+        selected_requirement,
+        requested_port_ids: requested_port_ids.to_vec(),
+        retained_port_ids,
+        search_budget_ms: millis(search_budget),
+        layout,
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+fn prepare_external_connector_subset(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    route_indices: &[usize],
+) -> Result<
+    (
+        Vec<usize>,
+        Vec<ExternalConnectorRequirementDescriptor>,
+        super::ModelInput,
+    ),
+    IntegratedLayoutReport,
+> {
     let mut route_indices = route_indices.to_vec();
     route_indices.sort_unstable();
     let first_phase_wiring = harness::first_iterative_scc_wiring(instance_wiring)?;
@@ -120,18 +241,63 @@ pub fn solve_first_integrated_layout_phase_external_connector_subset(
             ),
         ));
     }
-    let layout = exact::shared_layer::solve_factored_endpoints(
-        input,
-        logistics_components,
-        Some(search_budget),
-    );
-    Ok(ExternalConnectorSubsetReport {
-        schema_version: EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION,
-        route_indices,
-        selected_requirements: descriptors,
-        search_budget_ms: millis(search_budget),
-        layout,
-    })
+    Ok((route_indices, descriptors, input))
+}
+
+fn restrict_external_port_domain(
+    input: &mut super::ModelInput,
+    requested_port_ids: &[String],
+) -> Result<(Vec<String>, bool), super::IntegratedLayoutDiagnostic> {
+    if requested_port_ids.is_empty() {
+        return Err(super::IntegratedLayoutDiagnostic::error(
+            "empty-research-port-domain",
+            "/port_ids",
+            None,
+            "diagnostic port domain must retain at least one compatible port",
+        ));
+    }
+    let requested = requested_port_ids.iter().cloned().collect::<BTreeSet<_>>();
+    if requested.len() != requested_port_ids.len() {
+        return Err(super::IntegratedLayoutDiagnostic::error(
+            "duplicate-research-port-id",
+            "/port_ids",
+            None,
+            "diagnostic port domain contains a duplicate port ID",
+        ));
+    }
+    let edge = input
+        .edges
+        .first_mut()
+        .expect("one selected route produces one edge");
+    let ports = match (&mut edge.source, &mut edge.target) {
+        (super::EndpointInput::External { .. }, super::EndpointInput::Facility { ports, .. })
+        | (super::EndpointInput::Facility { ports, .. }, super::EndpointInput::External { .. }) => {
+            ports
+        }
+        _ => unreachable!("external subset preparation accepted exactly one external endpoint"),
+    };
+    let available = ports
+        .iter()
+        .map(|port| port.id.clone())
+        .collect::<BTreeSet<_>>();
+    let unknown = requested
+        .difference(&available)
+        .cloned()
+        .collect::<Vec<_>>();
+    if !unknown.is_empty() {
+        return Err(super::IntegratedLayoutDiagnostic::error(
+            "unknown-research-port-id",
+            "/port_ids",
+            Some(unknown.join(",")),
+            "diagnostic port domain names a port outside the selected requirement's compatible domain",
+        ));
+    }
+    let retains_full_domain = requested == available;
+    ports.retain(|port| requested.contains(&port.id));
+    Ok((
+        ports.iter().map(|port| port.id.clone()).collect(),
+        retains_full_domain,
+    ))
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]

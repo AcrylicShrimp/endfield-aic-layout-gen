@@ -20,7 +20,7 @@ use aic_data::research::{
     validate_benchmark_workload_manifest,
 };
 use anyhow::{Context, Result, ensure};
-use clap::Subcommand;
+use clap::{Subcommand, ValueEnum};
 use sha2::{Digest, Sha256};
 
 mod external_connectors;
@@ -29,6 +29,12 @@ mod first_phase;
 mod pair_cliff;
 mod requirement_cliff;
 mod shared_layer;
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub(super) enum PortDomainClassificationArg {
+    FaithfulBaseline,
+    DiagnosticOnly,
+}
 
 #[derive(Debug, Subcommand)]
 pub(crate) enum ResearchCommand {
@@ -99,6 +105,48 @@ pub(crate) enum ResearchCommand {
         /// Zero-based phase-zero route indices. Repeat for every selected requirement.
         #[arg(long = "route-index", value_name = "INDEX", required = true)]
         route_indices: Vec<usize>,
+
+        /// Exact solver wall-clock budget in milliseconds.
+        #[arg(long, value_name = "MILLISECONDS")]
+        time_limit_ms: u64,
+
+        /// JSON artifact path.
+        #[arg(long, value_name = "FILE")]
+        output: PathBuf,
+
+        /// Standalone HTML result, including structured failure evidence.
+        #[arg(long, value_name = "FILE")]
+        visualization_output: PathBuf,
+    },
+    /// Solve one diagnostic external connector port domain in isolation.
+    SolveFirstPhaseExternalPortDomain {
+        /// Benchmark workload manifest JSON file to solve.
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+
+        /// Root used to resolve portable input paths in the workload manifest.
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Stable label for this isolated matrix case.
+        #[arg(long, value_name = "ID")]
+        case_id: String,
+
+        /// Whether this case retains the full legal port domain.
+        #[arg(long, value_enum)]
+        classification: PortDomainClassificationArg,
+
+        /// Zero-based phase-zero route index containing one external requirement.
+        #[arg(long, value_name = "INDEX")]
+        route_index: usize,
+
+        /// Compatible port ID retained by this case. Repeat for every retained port.
+        #[arg(long = "port-id", value_name = "PORT", required = true)]
+        port_ids: Vec<String>,
 
         /// Exact solver wall-clock budget in milliseconds.
         #[arg(long, value_name = "MILLISECONDS")]
@@ -273,6 +321,29 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             workspace_root,
             placement_request,
             route_indices,
+            time_limit_ms,
+            output,
+            visualization_output,
+        ),
+        ResearchCommand::SolveFirstPhaseExternalPortDomain {
+            workload,
+            workspace_root,
+            placement_request,
+            case_id,
+            classification,
+            route_index,
+            port_ids,
+            time_limit_ms,
+            output,
+            visualization_output,
+        } => external_connectors::solve_port_domain(
+            workload,
+            workspace_root,
+            placement_request,
+            case_id,
+            classification,
+            route_index,
+            port_ids,
             time_limit_ms,
             output,
             visualization_output,
