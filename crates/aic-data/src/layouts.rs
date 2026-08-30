@@ -1,6 +1,12 @@
+mod growth;
 mod integrated;
 mod placement;
 mod ports;
+
+pub use growth::{
+    FacilityGrowthComponent, FacilityGrowthDiagnostic, FacilityGrowthPhase,
+    FacilityGrowthPlanReport, plan_facility_growth,
+};
 
 pub use integrated::{
     BoundarySide, IntegratedLayoutDiagnostic, IntegratedLayoutReport, IntegratedLayoutStatus,
