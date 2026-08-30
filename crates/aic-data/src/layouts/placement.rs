@@ -1,6 +1,15 @@
-use std::cmp::Reverse;
 use std::collections::BTreeSet;
+use std::ops::ControlFlow;
 
+use pumpkin_solver::Solver;
+use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
+use pumpkin_solver::core::DefaultBrancher;
+use pumpkin_solver::core::constraints::NegatableConstraint;
+use pumpkin_solver::core::optimisation::OptimisationDirection;
+use pumpkin_solver::core::optimisation::linear_sat_unsat::LinearSatUnsat;
+use pumpkin_solver::core::results::{OptimisationResult, ProblemSolution, SolutionReference};
+use pumpkin_solver::core::termination::Indefinite;
+use pumpkin_solver::core::variables::{DomainId, Literal, TransformableVariable};
 use serde::{Deserialize, Serialize};
 
 use crate::facilities::{FacilityFootprint, ValidatedFacilityCatalog};
@@ -8,13 +17,14 @@ use crate::recipes::{FacilityInstanceWiringNode, FacilityInstanceWiringReport};
 
 const STAGE: &str = "facility-placement";
 
-pub const SUPPORTED_FACILITY_PLACEMENT_SCHEMA_VERSION: u32 = 1;
+pub const SUPPORTED_FACILITY_PLACEMENT_SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct FacilityPlacementRequest {
     pub schema_version: u32,
     pub max_width: i64,
+    pub max_height: i64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -55,18 +65,19 @@ pub struct FacilityPlacementReport {
 }
 
 impl FacilityPlacementReport {
-    fn feasible(bounds: FacilityPlacementBounds, placements: Vec<FacilityPlacement>) -> Self {
+    fn solved(
+        status: FacilityPlacementStatus,
+        bounds: FacilityPlacementBounds,
+        placements: Vec<FacilityPlacement>,
+        code: &'static str,
+        message: &'static str,
+    ) -> Self {
         Self {
             success: true,
-            status: FacilityPlacementStatus::Feasible,
+            status,
             bounds: Some(bounds),
             placements,
-            diagnostics: vec![FacilityPlacementDiagnostic::info(
-                "facility-placement-feasible",
-                "/",
-                None,
-                "facility placement is feasible but not proven optimal",
-            )],
+            diagnostics: vec![FacilityPlacementDiagnostic::info(code, "/", None, message)],
         }
     }
 
@@ -80,6 +91,10 @@ impl FacilityPlacementReport {
 
     fn infeasible(diagnostic: FacilityPlacementDiagnostic) -> Self {
         Self::failure(FacilityPlacementStatus::Infeasible, vec![diagnostic])
+    }
+
+    fn unknown(diagnostic: FacilityPlacementDiagnostic) -> Self {
+        Self::failure(FacilityPlacementStatus::Unknown, vec![diagnostic])
     }
 
     fn failure(
@@ -169,6 +184,18 @@ pub fn validate_facility_placement_request(
         ));
     }
 
+    if request.max_height <= 0 {
+        diagnostics.push(FacilityPlacementDiagnostic::error(
+            "non-positive-layout-max-height",
+            "/max_height",
+            None,
+            format!(
+                "facility placement max_height must be positive, found {}",
+                request.max_height
+            ),
+        ));
+    }
+
     diagnostics
 }
 
@@ -196,8 +223,8 @@ pub fn solve_facility_placement(
         Err(diagnostic) => return FacilityPlacementReport::invalid(diagnostic),
     };
 
-    match solve_with_shelves(instances, request.max_width) {
-        Ok((bounds, placements)) => FacilityPlacementReport::feasible(bounds, placements),
+    match solve_optimally(instances, request.max_width, request.max_height) {
+        Ok(report) => report,
         Err(PlacementFailure::Invalid(diagnostic)) => FacilityPlacementReport::invalid(diagnostic),
         Err(PlacementFailure::Infeasible(diagnostic)) => {
             FacilityPlacementReport::infeasible(diagnostic)
@@ -264,165 +291,341 @@ fn collect_instances(
     Ok(instances)
 }
 
-#[derive(Debug, Clone, Copy)]
-struct Orientation {
-    rotation: i64,
-    width: i64,
-    height: i64,
-}
-
-#[derive(Debug)]
-struct Shelf {
-    y: i64,
-    height: i64,
-    used_width: i64,
-}
-
-fn solve_with_shelves(
+fn solve_optimally(
     mut instances: Vec<InstanceSpec>,
     max_width: i64,
-) -> Result<(FacilityPlacementBounds, Vec<FacilityPlacement>), PlacementFailure> {
-    instances.sort_by_key(|instance| {
-        (
-            Reverse(instance.footprint.width.max(instance.footprint.height)),
-            Reverse(i128::from(instance.footprint.width) * i128::from(instance.footprint.height)),
-            instance.instance.clone(),
-        )
-    });
+    max_height: i64,
+) -> Result<FacilityPlacementReport, PlacementFailure> {
+    if instances.is_empty() {
+        return Ok(FacilityPlacementReport::solved(
+            FacilityPlacementStatus::Optimal,
+            FacilityPlacementBounds {
+                width: 0,
+                height: 0,
+            },
+            Vec::new(),
+            "facility-placement-optimal",
+            "facility placement is proven to have minimum height",
+        ));
+    }
 
-    let mut shelves = Vec::<Shelf>::new();
+    instances.sort_by(|left, right| left.instance.cmp(&right.instance));
+    let max_width = solver_i32(max_width, None, "layout max_width")?;
+    let max_height = solver_i32(max_height, None, "layout max_height")?;
+
+    let mut solver = Solver::default();
+    let constraint_tag = solver.new_constraint_tag();
+    let used_height = solver.new_named_bounded_integer(0, max_height, "used-height");
+    let mut model_instances = Vec::with_capacity(instances.len());
+
+    for instance in instances {
+        let x = solver.new_named_bounded_integer(0, max_width, format!("{}-x", instance.instance));
+        let y = solver.new_named_bounded_integer(0, max_height, format!("{}-y", instance.instance));
+        let orientations = solver_orientations(&mut solver, &instance, max_width)?;
+        post_exactly_one_orientation(&mut solver, &orientations, constraint_tag);
+
+        for orientation in &orientations {
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    vec![x.scaled(1)],
+                    max_width - orientation.width,
+                    constraint_tag,
+                ))
+                .implied_by(orientation.literal);
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    vec![y.scaled(1), used_height.scaled(-1)],
+                    -orientation.height,
+                    constraint_tag,
+                ))
+                .implied_by(orientation.literal);
+        }
+
+        model_instances.push(ModelInstance {
+            spec: instance,
+            x,
+            y,
+            orientations,
+        });
+    }
+
+    post_pairwise_non_overlap(&mut solver, &model_instances, constraint_tag);
+
+    let mut brancher = solver.default_brancher();
+    let mut resolver = ResolutionResolver::default();
+    let callback = |_: &Solver,
+                    _: SolutionReference,
+                    _: &DefaultBrancher,
+                    _: &ResolutionResolver|
+     -> ControlFlow<()> { ControlFlow::Continue(()) };
+    let result = solver.optimise(
+        &mut brancher,
+        &mut Indefinite,
+        &mut resolver,
+        LinearSatUnsat::new(OptimisationDirection::Minimise, used_height, callback),
+    );
+
+    match result {
+        OptimisationResult::Optimal(solution) => solved_report(
+            &solution,
+            &model_instances,
+            used_height,
+            FacilityPlacementStatus::Optimal,
+            "facility-placement-optimal",
+            "facility placement is proven to have minimum height",
+        ),
+        OptimisationResult::Satisfiable(solution) | OptimisationResult::Stopped(solution, ()) => {
+            solved_report(
+                &solution,
+                &model_instances,
+                used_height,
+                FacilityPlacementStatus::Feasible,
+                "facility-placement-feasible",
+                "facility placement is feasible but not proven optimal",
+            )
+        }
+        OptimisationResult::Unsatisfiable => Ok(FacilityPlacementReport::infeasible(
+            FacilityPlacementDiagnostic::error(
+                "facility-placement-infeasible",
+                "/",
+                None,
+                "facility placement constraints are infeasible",
+            ),
+        )),
+        OptimisationResult::Unknown => Ok(FacilityPlacementReport::unknown(
+            FacilityPlacementDiagnostic::error(
+                "facility-placement-unknown",
+                "/",
+                None,
+                "facility placement solver terminated without a solution or proof",
+            ),
+        )),
+    }
+}
+
+struct ModelInstance {
+    spec: InstanceSpec,
+    x: DomainId,
+    y: DomainId,
+    orientations: Vec<ModelOrientation>,
+}
+
+#[derive(Clone, Copy)]
+struct ModelOrientation {
+    rotation: i64,
+    width: i32,
+    height: i32,
+    literal: Literal,
+}
+
+fn solver_orientations(
+    solver: &mut Solver,
+    instance: &InstanceSpec,
+    max_width: i32,
+) -> Result<Vec<ModelOrientation>, PlacementFailure> {
+    let width = solver_i32(
+        instance.footprint.width,
+        Some(&instance.instance),
+        "facility width",
+    )?;
+    let height = solver_i32(
+        instance.footprint.height,
+        Some(&instance.instance),
+        "facility height",
+    )?;
+    let mut rotations = instance.allowed_rotations.clone();
+    rotations.sort_unstable();
+    let mut seen_geometry = BTreeSet::new();
+
+    let orientations = rotations
+        .into_iter()
+        .filter_map(|rotation| {
+            let (oriented_width, oriented_height) = match rotation {
+                90 | 270 => (height, width),
+                _ => (width, height),
+            };
+            (oriented_width <= max_width && seen_geometry.insert((oriented_width, oriented_height)))
+                .then(|| ModelOrientation {
+                    rotation,
+                    width: oriented_width,
+                    height: oriented_height,
+                    literal: solver.new_literal(),
+                })
+        })
+        .collect::<Vec<_>>();
+
+    if orientations.is_empty() {
+        return Err(PlacementFailure::Infeasible(
+            FacilityPlacementDiagnostic::error(
+                "facility-does-not-fit-layout-width",
+                "/max_width",
+                Some(instance.instance.clone()),
+                format!(
+                    "facility instance '{}' has no allowed rotation that fits max_width {max_width}",
+                    instance.instance
+                ),
+            ),
+        ));
+    }
+
+    Ok(orientations)
+}
+
+fn post_exactly_one_orientation(
+    solver: &mut Solver,
+    orientations: &[ModelOrientation],
+    constraint_tag: pumpkin_solver::core::proof::ConstraintTag,
+) {
+    solver.add_clause(
+        orientations
+            .iter()
+            .map(|orientation| orientation.literal.get_true_predicate()),
+        constraint_tag,
+    );
+
+    for left_index in 0..orientations.len() {
+        for right_index in (left_index + 1)..orientations.len() {
+            solver.add_clause(
+                [
+                    orientations[left_index].literal.get_false_predicate(),
+                    orientations[right_index].literal.get_false_predicate(),
+                ],
+                constraint_tag,
+            );
+        }
+    }
+}
+
+fn post_pairwise_non_overlap(
+    solver: &mut Solver,
+    instances: &[ModelInstance],
+    constraint_tag: pumpkin_solver::core::proof::ConstraintTag,
+) {
+    for left_index in 0..instances.len() {
+        for right_index in (left_index + 1)..instances.len() {
+            let left = &instances[left_index];
+            let right = &instances[right_index];
+
+            for left_orientation in &left.orientations {
+                for right_orientation in &right.orientations {
+                    let left_of = reify_less_or_equal(
+                        solver,
+                        vec![left.x.scaled(1), right.x.scaled(-1)],
+                        -left_orientation.width,
+                        constraint_tag,
+                    );
+                    let right_of = reify_less_or_equal(
+                        solver,
+                        vec![right.x.scaled(1), left.x.scaled(-1)],
+                        -right_orientation.width,
+                        constraint_tag,
+                    );
+                    let below = reify_less_or_equal(
+                        solver,
+                        vec![left.y.scaled(1), right.y.scaled(-1)],
+                        -left_orientation.height,
+                        constraint_tag,
+                    );
+                    let above = reify_less_or_equal(
+                        solver,
+                        vec![right.y.scaled(1), left.y.scaled(-1)],
+                        -right_orientation.height,
+                        constraint_tag,
+                    );
+
+                    solver.add_clause(
+                        [
+                            left_orientation.literal.get_false_predicate(),
+                            right_orientation.literal.get_false_predicate(),
+                            left_of.get_true_predicate(),
+                            right_of.get_true_predicate(),
+                            below.get_true_predicate(),
+                            above.get_true_predicate(),
+                        ],
+                        constraint_tag,
+                    );
+                }
+            }
+        }
+    }
+}
+
+fn reify_less_or_equal(
+    solver: &mut Solver,
+    terms: Vec<pumpkin_solver::core::variables::AffineView<DomainId>>,
+    rhs: i32,
+    constraint_tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> Literal {
+    let literal = solver.new_literal();
+    pumpkin_solver::less_than_or_equals(terms, rhs, constraint_tag).reify(solver, literal);
+    literal
+}
+
+fn solved_report(
+    solution: &impl ProblemSolution,
+    instances: &[ModelInstance],
+    used_height: DomainId,
+    status: FacilityPlacementStatus,
+    code: &'static str,
+    message: &'static str,
+) -> Result<FacilityPlacementReport, PlacementFailure> {
     let mut placements = Vec::with_capacity(instances.len());
-    let mut next_shelf_y = 0_i64;
     let mut used_width = 0_i64;
 
     for instance in instances {
-        let orientations = orientations(&instance);
-        let mut selected = None;
-
-        for (shelf_index, shelf) in shelves.iter().enumerate() {
-            let orientation = orientations
-                .iter()
-                .copied()
-                .filter(|orientation| orientation.height <= shelf.height)
-                .filter_map(|orientation| {
-                    let right = shelf.used_width.checked_add(orientation.width)?;
-                    (right <= max_width).then_some((max_width - right, orientation))
-                })
-                .min_by_key(|(remaining_width, orientation)| {
-                    (*remaining_width, orientation.height, orientation.rotation)
-                });
-
-            if let Some((_, orientation)) = orientation {
-                selected = Some((shelf_index, orientation));
-                break;
-            }
-        }
-
-        let (shelf_index, orientation) = match selected {
-            Some(selected) => selected,
-            None => {
-                let Some(orientation) = orientations
-                    .iter()
-                    .copied()
-                    .filter(|orientation| orientation.width <= max_width)
-                    .min_by_key(|orientation| {
-                        (orientation.height, orientation.width, orientation.rotation)
-                    })
-                else {
-                    return Err(PlacementFailure::Infeasible(
-                        FacilityPlacementDiagnostic::error(
-                            "facility-does-not-fit-layout-width",
-                            "/max_width",
-                            Some(instance.instance.clone()),
-                            format!(
-                                "facility instance '{}' has no allowed rotation that fits max_width {max_width}",
-                                instance.instance
-                            ),
-                        ),
-                    ));
-                };
-
-                let shelf_index = shelves.len();
-                shelves.push(Shelf {
-                    y: next_shelf_y,
-                    height: orientation.height,
-                    used_width: 0,
-                });
-                next_shelf_y = next_shelf_y
-                    .checked_add(orientation.height)
-                    .ok_or_else(|| {
-                        PlacementFailure::Invalid(placement_overflow(
-                            &instance.instance,
-                            "layout height overflowed",
-                        ))
-                    })?;
-                (shelf_index, orientation)
-            }
-        };
-
-        let shelf = &mut shelves[shelf_index];
-        let x = shelf.used_width;
-        shelf.used_width = shelf
-            .used_width
-            .checked_add(orientation.width)
+        let orientation = instance
+            .orientations
+            .iter()
+            .find(|orientation| solution.get_literal_value(orientation.literal))
             .ok_or_else(|| {
-                PlacementFailure::Invalid(placement_overflow(
-                    &instance.instance,
-                    "layout width overflowed",
+                PlacementFailure::Invalid(FacilityPlacementDiagnostic::error(
+                    "solver-model-error",
+                    "/placements",
+                    Some(instance.spec.instance.clone()),
+                    "solver solution has no selected facility rotation",
                 ))
             })?;
-        used_width = used_width.max(shelf.used_width);
+        let x = i64::from(solution.get_integer_value(instance.x));
+        let y = i64::from(solution.get_integer_value(instance.y));
+        let width = i64::from(orientation.width);
+        let height = i64::from(orientation.height);
+        used_width = used_width.max(x + width);
 
         placements.push(FacilityPlacement {
-            instance: instance.instance,
-            recipe: instance.recipe,
-            facility: instance.facility,
+            instance: instance.spec.instance.clone(),
+            recipe: instance.spec.recipe.clone(),
+            facility: instance.spec.facility.clone(),
             x,
-            y: shelf.y,
-            width: orientation.width,
-            height: orientation.height,
+            y,
+            width,
+            height,
             rotation: orientation.rotation,
         });
     }
 
     placements.sort_by(|left, right| left.instance.cmp(&right.instance));
 
-    Ok((
+    Ok(FacilityPlacementReport::solved(
+        status,
         FacilityPlacementBounds {
             width: used_width,
-            height: next_shelf_y,
+            height: i64::from(solution.get_integer_value(used_height)),
         },
         placements,
+        code,
+        message,
     ))
 }
 
-fn orientations(instance: &InstanceSpec) -> Vec<Orientation> {
-    let mut rotations = instance.allowed_rotations.clone();
-    rotations.sort_unstable();
-
-    rotations
-        .into_iter()
-        .map(|rotation| {
-            let (width, height) = match rotation {
-                90 | 270 => (instance.footprint.height, instance.footprint.width),
-                _ => (instance.footprint.width, instance.footprint.height),
-            };
-            Orientation {
-                rotation,
-                width,
-                height,
-            }
-        })
-        .collect()
-}
-
-fn placement_overflow(entity: &str, message: &str) -> FacilityPlacementDiagnostic {
-    FacilityPlacementDiagnostic::error(
-        "placement-arithmetic-overflow",
-        "/placements",
-        Some(entity.to_string()),
-        message,
-    )
+fn solver_i32(value: i64, entity: Option<&str>, field: &str) -> Result<i32, PlacementFailure> {
+    i32::try_from(value).map_err(|_| {
+        PlacementFailure::Invalid(FacilityPlacementDiagnostic::error(
+            "solver-domain-out-of-range",
+            "/",
+            entity.map(str::to_string),
+            format!("{field} value {value} does not fit the solver's 32-bit integer domain"),
+        ))
+    })
 }
 
 enum PlacementFailure {
@@ -437,9 +640,14 @@ mod tests {
     use crate::recipes::{FacilityInstanceWiringNode, Rate};
 
     fn request(max_width: i64) -> FacilityPlacementRequest {
+        request_with_bounds(max_width, 100)
+    }
+
+    fn request_with_bounds(max_width: i64, max_height: i64) -> FacilityPlacementRequest {
         FacilityPlacementRequest {
             schema_version: SUPPORTED_FACILITY_PLACEMENT_SCHEMA_VERSION,
             max_width,
+            max_height,
         }
     }
 
@@ -503,7 +711,7 @@ mod tests {
         );
 
         assert!(report.success);
-        assert_eq!(report.status, FacilityPlacementStatus::Feasible);
+        assert_eq!(report.status, FacilityPlacementStatus::Optimal);
         assert_eq!(
             report.bounds,
             Some(FacilityPlacementBounds {
@@ -543,8 +751,13 @@ mod tests {
                 height: 4
             })
         );
-        assert_eq!(report.placements[0].y, 0);
-        assert_eq!(report.placements[1].y, 2);
+        let mut y_coordinates = report
+            .placements
+            .iter()
+            .map(|placement| placement.y)
+            .collect::<Vec<_>>();
+        y_coordinates.sort_unstable();
+        assert_eq!(y_coordinates, vec![0, 2]);
         assert_eq!(report.placements[0].instance, "assemble-casing:0");
         assert_eq!(report.placements[1].instance, "assemble-casing:1");
     }
@@ -633,6 +846,7 @@ mod tests {
         let invalid_request = FacilityPlacementRequest {
             schema_version: 99,
             max_width: 0,
+            max_height: 0,
         };
         let invalid_report = solve_facility_placement(
             &wiring(vec![facility_node("assemble-casing:0")]),
@@ -641,7 +855,7 @@ mod tests {
         );
 
         assert!(!invalid_report.success);
-        assert_eq!(invalid_report.diagnostics.len(), 2);
+        assert_eq!(invalid_report.diagnostics.len(), 3);
 
         let duplicate_report = solve_facility_placement(
             &wiring(vec![
@@ -680,9 +894,111 @@ mod tests {
     }
 
     #[test]
+    fn proves_layout_infeasible_when_height_bound_is_too_small() {
+        let report = solve_facility_placement(
+            &wiring(vec![
+                facility_node("assemble-casing:0"),
+                facility_node("assemble-casing:1"),
+            ]),
+            &catalog(
+                FacilityFootprint {
+                    width: 3,
+                    height: 2,
+                },
+                vec![0],
+            ),
+            &request_with_bounds(3, 3),
+        );
+
+        assert!(!report.success);
+        assert_eq!(report.status, FacilityPlacementStatus::Infeasible);
+        assert_eq!(report.diagnostics[0].code, "facility-placement-infeasible");
+    }
+
+    #[test]
+    fn rejects_bounds_outside_solver_integer_domain() {
+        let report = solve_facility_placement(
+            &wiring(vec![facility_node("assemble-casing:0")]),
+            &catalog(
+                FacilityFootprint {
+                    width: 3,
+                    height: 2,
+                },
+                vec![0],
+            ),
+            &request_with_bounds(i64::MAX, 10),
+        );
+
+        assert!(!report.success);
+        assert_eq!(report.status, FacilityPlacementStatus::InvalidInput);
+        assert_eq!(report.diagnostics[0].code, "solver-domain-out-of-range");
+    }
+
+    #[test]
+    fn proves_height_lower_than_previous_shelf_solution() {
+        let validated = ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
+            schema_version: 2,
+            facilities: vec![
+                FacilityDefinition {
+                    id: "wide-tall".to_string(),
+                    footprint: FacilityFootprint {
+                        width: 6,
+                        height: 4,
+                    },
+                    allowed_rotations: vec![0],
+                },
+                FacilityDefinition {
+                    id: "wide-short".to_string(),
+                    footprint: FacilityFootprint {
+                        width: 6,
+                        height: 2,
+                    },
+                    allowed_rotations: vec![0],
+                },
+                FacilityDefinition {
+                    id: "narrow".to_string(),
+                    footprint: FacilityFootprint {
+                        width: 4,
+                        height: 3,
+                    },
+                    allowed_rotations: vec![0],
+                },
+            ],
+        })
+        .expect("test catalog should validate");
+        let nodes = [
+            ("facility-instance:a:0", "wide-tall"),
+            ("facility-instance:b:0", "wide-short"),
+            ("facility-instance:c:0", "narrow"),
+            ("facility-instance:c:1", "narrow"),
+        ]
+        .into_iter()
+        .map(|(id, facility)| {
+            let mut node = facility_node(id);
+            let FacilityInstanceWiringNode::Facility {
+                facility: node_facility,
+                ..
+            } = &mut node
+            else {
+                unreachable!()
+            };
+            *node_facility = facility.to_string();
+            node
+        })
+        .collect();
+
+        let report =
+            solve_facility_placement(&wiring(nodes), &validated, &request_with_bounds(10, 20));
+
+        assert!(report.success);
+        assert_eq!(report.status, FacilityPlacementStatus::Optimal);
+        assert_eq!(report.bounds.expect("bounds should exist").height, 6);
+    }
+
+    #[test]
     fn rejects_unknown_request_fields() {
         let error = serde_json::from_str::<FacilityPlacementRequest>(
-            r#"{ "schema_version": 1, "max_width": 12, "extra": true }"#,
+            r#"{ "schema_version": 2, "max_width": 12, "max_height": 8, "extra": true }"#,
         )
         .expect_err("unknown placement request fields should be rejected");
 

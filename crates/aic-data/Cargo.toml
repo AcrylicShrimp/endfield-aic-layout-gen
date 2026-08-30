@@ -7,6 +7,7 @@ rust-version.workspace = true
 publish = false
 
 [dependencies]
+pumpkin-solver.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 
