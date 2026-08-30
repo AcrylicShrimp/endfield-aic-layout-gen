@@ -13,6 +13,11 @@ The Heavy Xiranite research checkpoints are documented in
 phase under seven square request ceilings. These bounds are diagnostic request ceilings only, not
 project defaults or canonical game limits.
 
+The fourth checkpoint, `heavy-xiranite-minimum-rate.fourth-first-incumbent-ablation-report.md`,
+uses a temporary release-only ablation build to identify the smallest tested model feature that
+crosses the five-second first-solution budget. None of its relaxed variants are production solver
+paths.
+
 Regenerate it from a release binary with:
 
 ```bash

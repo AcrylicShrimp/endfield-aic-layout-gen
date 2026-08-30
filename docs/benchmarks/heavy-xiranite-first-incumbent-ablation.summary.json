@@ -1,0 +1,166 @@
+{
+  "schema_version": 1,
+  "workload_id": "heavy-xiranite-minimum-rate",
+  "phase_index": 0,
+  "request_bounds": {
+    "max_width": 12,
+    "max_height": 12
+  },
+  "build_profile": "release",
+  "search_budget_ms": 5000,
+  "production_solver_changed": false,
+  "cases": [
+    {
+      "id": "placement",
+      "networks": 0,
+      "acyclicity": false,
+      "branch_topology": false,
+      "bridge_collision": false,
+      "variables": 256,
+      "constraints": 145,
+      "incidences": 6656,
+      "outcome": "satisfiable",
+      "search_ms": 0
+    },
+    {
+      "id": "endpoint",
+      "networks": 0,
+      "acyclicity": false,
+      "branch_topology": false,
+      "bridge_collision": false,
+      "variables": 3840,
+      "constraints": 1173,
+      "incidences": 14848,
+      "outcome": "satisfiable",
+      "search_ms": 1
+    },
+    {
+      "id": "one-network-full-core",
+      "networks": 1,
+      "acyclicity": true,
+      "branch_topology": true,
+      "bridge_collision": true,
+      "variables": 10368,
+      "constraints": 25293,
+      "incidences": 104624,
+      "outcome": "unknown",
+      "search_ms": 5000
+    },
+    {
+      "id": "one-network-no-acyclicity",
+      "networks": 1,
+      "acyclicity": false,
+      "branch_topology": true,
+      "bridge_collision": true,
+      "variables": 10224,
+      "constraints": 24765,
+      "incidences": 103040,
+      "outcome": "satisfiable",
+      "repeated_search_ms": [2719, 3044, 2695, 2742]
+    },
+    {
+      "id": "one-network-no-branch",
+      "networks": 1,
+      "acyclicity": true,
+      "branch_topology": false,
+      "bridge_collision": true,
+      "variables": 9216,
+      "constraints": 17373,
+      "incidences": 70704,
+      "outcome": "unknown",
+      "search_ms": 5000
+    },
+    {
+      "id": "one-network-no-bridge",
+      "networks": 1,
+      "acyclicity": true,
+      "branch_topology": true,
+      "bridge_collision": false,
+      "variables": 8640,
+      "constraints": 19597,
+      "incidences": 77456,
+      "outcome": "unknown",
+      "search_ms": 5000
+    },
+    {
+      "id": "one-network-minimal-with-acyclicity",
+      "networks": 1,
+      "acyclicity": true,
+      "branch_topology": false,
+      "bridge_collision": false,
+      "variables": 7488,
+      "constraints": 12829,
+      "incidences": 45840,
+      "outcome": "unknown",
+      "repeated_search_ms": [5000, 5000, 5000]
+    },
+    {
+      "id": "one-network-minimal-no-acyclicity",
+      "networks": 1,
+      "acyclicity": false,
+      "branch_topology": false,
+      "bridge_collision": false,
+      "variables": 7344,
+      "constraints": 12301,
+      "incidences": 44256,
+      "outcome": "satisfiable",
+      "repeated_search_ms": [289, 299, 307]
+    },
+    {
+      "id": "two-network-minimal-no-acyclicity",
+      "networks": 2,
+      "acyclicity": false,
+      "branch_topology": false,
+      "bridge_collision": false,
+      "variables": 10848,
+      "constraints": 27905,
+      "incidences": 89344,
+      "outcome": "unknown",
+      "search_ms": 5001
+    },
+    {
+      "id": "three-network-full-core",
+      "networks": 3,
+      "acyclicity": true,
+      "branch_topology": true,
+      "bridge_collision": true,
+      "variables": 20544,
+      "constraints": 72553,
+      "incidences": 259792,
+      "outcome": "unknown",
+      "search_ms": 5001
+    },
+    {
+      "id": "three-network-minimal-no-acyclicity",
+      "networks": 3,
+      "acyclicity": false,
+      "branch_topology": false,
+      "bridge_collision": false,
+      "variables": 14352,
+      "constraints": 35433,
+      "incidences": 106208,
+      "outcome": "unknown",
+      "search_ms": 5000
+    },
+    {
+      "id": "complete-model",
+      "networks": 3,
+      "acyclicity": true,
+      "branch_topology": true,
+      "bridge_collision": true,
+      "objective_auxiliaries": true,
+      "variables": 26913,
+      "constraints": 96652,
+      "incidences": 328135,
+      "outcome": "unknown",
+      "search_ms": 5001
+    }
+  ],
+  "smallest_tested_trigger": {
+    "feature": "per-cell topological-order acyclicity encoding",
+    "added_variables": 144,
+    "added_constraints": 528,
+    "added_incidences": 1584,
+    "scope": "one 12 by 12 commodity network in the tested phase-zero diagnostic decomposition"
+  }
+}
