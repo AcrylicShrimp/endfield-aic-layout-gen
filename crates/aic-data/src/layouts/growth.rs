@@ -26,6 +26,10 @@ pub struct FacilityGrowthPhase {
     pub index: usize,
     pub components: Vec<String>,
     pub facilities: Vec<String>,
+    pub ready_component_count: usize,
+    pub selected_component_count: usize,
+    pub deferred_component_count: usize,
+    pub oversized_component_count: usize,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -67,7 +71,18 @@ impl FacilityGrowthDiagnostic {
     }
 }
 
-pub fn plan_facility_growth(wiring: &FacilityInstanceWiringReport) -> FacilityGrowthPlanReport {
+pub fn plan_facility_growth(
+    wiring: &FacilityInstanceWiringReport,
+    max_new_facilities_per_phase: usize,
+) -> FacilityGrowthPlanReport {
+    if max_new_facilities_per_phase == 0 {
+        return FacilityGrowthPlanReport::failure(FacilityGrowthDiagnostic::error(
+            "max-new-facilities-per-phase-must-be-positive",
+            "/max_new_facilities_per_phase",
+            None,
+            "maximum new facilities per phase must be positive",
+        ));
+    }
     let graph = match FacilityGraph::from_wiring(wiring) {
         Ok(graph) => graph,
         Err(diagnostic) => return FacilityGrowthPlanReport::failure(diagnostic),
@@ -141,28 +156,13 @@ pub fn plan_facility_growth(wiring: &FacilityInstanceWiringReport) -> FacilityGr
         })
         .collect::<Vec<_>>();
 
-    let mut phase_components = BTreeMap::<usize, Vec<usize>>::new();
-    for (component, depth) in depths.into_iter().enumerate() {
-        phase_components.entry(depth).or_default().push(component);
-    }
-    let phases = phase_components
-        .into_iter()
-        .map(|(index, component_indexes)| {
-            let components = component_indexes
-                .iter()
-                .map(|component| component_ids[*component].clone())
-                .collect();
-            let facilities = component_indexes
-                .iter()
-                .flat_map(|component| component_members[*component].iter().cloned())
-                .collect();
-            FacilityGrowthPhase {
-                index,
-                components,
-                facilities,
-            }
-        })
-        .collect::<Vec<_>>();
+    let phases = bounded_ready_frontier_phases(
+        &component_members,
+        &component_ids,
+        &downstream,
+        &depths,
+        max_new_facilities_per_phase,
+    );
     let phase_count = phases.len();
     let cyclic_components = component_members
         .iter()
@@ -196,6 +196,81 @@ impl FacilityGrowthPlanReport {
             diagnostics: vec![diagnostic],
         }
     }
+}
+
+fn bounded_ready_frontier_phases(
+    component_members: &[Vec<String>],
+    component_ids: &[String],
+    downstream: &[BTreeSet<usize>],
+    reverse_depths: &[usize],
+    max_new_facilities_per_phase: usize,
+) -> Vec<FacilityGrowthPhase> {
+    let mut included = BTreeSet::new();
+    let mut phases = Vec::new();
+    while included.len() < component_members.len() {
+        let mut ready = (0..component_members.len())
+            .filter(|component| {
+                !included.contains(component)
+                    && downstream[*component]
+                        .iter()
+                        .all(|target| included.contains(target))
+            })
+            .collect::<Vec<_>>();
+        ready.sort_by(|left, right| {
+            (reverse_depths[*left], component_ids[*left].as_str())
+                .cmp(&(reverse_depths[*right], component_ids[*right].as_str()))
+        });
+        assert!(
+            !ready.is_empty(),
+            "condensed SCC graph must always expose a ready component"
+        );
+        let ready_component_count = ready.len();
+        let mut selected = Vec::new();
+        let mut selected_facilities = 0_usize;
+        for component in ready {
+            let component_facilities = component_members[component].len();
+            if selected.is_empty() {
+                selected.push(component);
+                selected_facilities = component_facilities;
+                if component_facilities > max_new_facilities_per_phase {
+                    break;
+                }
+                continue;
+            }
+            let Some(next_total) = selected_facilities.checked_add(component_facilities) else {
+                break;
+            };
+            if next_total > max_new_facilities_per_phase {
+                break;
+            }
+            selected.push(component);
+            selected_facilities = next_total;
+        }
+        let selected_component_count = selected.len();
+        let oversized_component_count = selected
+            .iter()
+            .filter(|component| component_members[**component].len() > max_new_facilities_per_phase)
+            .count();
+        let components = selected
+            .iter()
+            .map(|component| component_ids[*component].clone())
+            .collect();
+        let facilities = selected
+            .iter()
+            .flat_map(|component| component_members[*component].iter().cloned())
+            .collect();
+        included.extend(selected);
+        phases.push(FacilityGrowthPhase {
+            index: phases.len(),
+            components,
+            facilities,
+            ready_component_count,
+            selected_component_count,
+            deferred_component_count: ready_component_count - selected_component_count,
+            oversized_component_count,
+        });
+    }
+    phases
 }
 
 struct FacilityGraph {
@@ -372,10 +447,10 @@ mod tests {
 
     #[test]
     fn grows_a_chain_from_output_toward_inputs() {
-        let report = plan_facility_growth(&wiring(
-            &["a", "b", "c"],
-            &[("a", "b"), ("b", "c"), ("c", "target")],
-        ));
+        let report = plan_facility_growth(
+            &wiring(&["a", "b", "c"], &[("a", "b"), ("b", "c"), ("c", "target")]),
+            8,
+        );
 
         assert!(report.success);
         assert_eq!(
@@ -386,10 +461,13 @@ mod tests {
 
     #[test]
     fn keeps_a_cycle_in_one_atomic_component() {
-        let report = plan_facility_growth(&wiring(
-            &["a", "b", "c"],
-            &[("a", "b"), ("b", "a"), ("b", "c"), ("c", "target")],
-        ));
+        let report = plan_facility_growth(
+            &wiring(
+                &["a", "b", "c"],
+                &[("a", "b"), ("b", "a"), ("b", "c"), ("c", "target")],
+            ),
+            8,
+        );
 
         assert!(report.success);
         assert_eq!(phase_facilities(&report), vec![vec!["c"], vec!["a", "b"]]);
@@ -398,16 +476,19 @@ mod tests {
 
     #[test]
     fn assigns_branches_by_longest_distance_to_an_output() {
-        let report = plan_facility_growth(&wiring(
-            &["a", "b", "c", "d"],
-            &[
-                ("a", "c"),
-                ("b", "c"),
-                ("b", "d"),
-                ("c", "target"),
-                ("d", "target"),
-            ],
-        ));
+        let report = plan_facility_growth(
+            &wiring(
+                &["a", "b", "c", "d"],
+                &[
+                    ("a", "c"),
+                    ("b", "c"),
+                    ("b", "d"),
+                    ("c", "target"),
+                    ("d", "target"),
+                ],
+            ),
+            8,
+        );
 
         assert!(report.success);
         assert_eq!(
@@ -418,11 +499,98 @@ mod tests {
 
     #[test]
     fn rejects_an_edge_with_an_unknown_endpoint() {
-        let report = plan_facility_growth(&wiring(&["a"], &[("missing", "a")]));
+        let report = plan_facility_growth(&wiring(&["a"], &[("missing", "a")]), 8);
 
         assert!(!report.success);
         assert_eq!(report.diagnostics[0].code, "missing-wiring-edge-endpoint");
         assert_eq!(report.diagnostics[0].path, "/edges/0/source");
+    }
+
+    #[test]
+    fn divides_a_wide_ready_frontier_into_bounded_deterministic_phases() {
+        let graph = wiring(
+            &["a", "b", "c", "d"],
+            &[
+                ("a", "target"),
+                ("b", "target"),
+                ("c", "target"),
+                ("d", "target"),
+            ],
+        );
+        let first = plan_facility_growth(&graph, 2);
+        let second = plan_facility_growth(&graph, 2);
+
+        assert_eq!(first, second);
+        assert_eq!(
+            phase_facilities(&first),
+            vec![vec!["a", "b"], vec!["c", "d"]]
+        );
+        assert_eq!(first.phases[0].ready_component_count, 4);
+        assert_eq!(first.phases[0].selected_component_count, 2);
+        assert_eq!(first.phases[0].deferred_component_count, 2);
+        assert_eq!(first.phases[0].oversized_component_count, 0);
+        assert_eq!(first.phases[1].ready_component_count, 2);
+        assert_eq!(first.phases[1].deferred_component_count, 0);
+    }
+
+    #[test]
+    fn schedules_an_oversized_cycle_atomically_and_alone() {
+        let report = plan_facility_growth(
+            &wiring(
+                &["a", "b", "c", "d"],
+                &[
+                    ("a", "b"),
+                    ("b", "c"),
+                    ("c", "a"),
+                    ("c", "target"),
+                    ("d", "target"),
+                ],
+            ),
+            2,
+        );
+
+        assert_eq!(
+            phase_facilities(&report),
+            vec![vec!["a", "b", "c"], vec!["d"]]
+        );
+        assert_eq!(report.phases[0].selected_component_count, 1);
+        assert_eq!(report.phases[0].oversized_component_count, 1);
+        assert_eq!(report.phases[0].deferred_component_count, 1);
+    }
+
+    #[test]
+    fn every_condensation_edge_points_from_a_later_phase_to_an_earlier_phase() {
+        let report = plan_facility_growth(
+            &wiring(
+                &["a", "b", "c", "d"],
+                &[("a", "c"), ("b", "d"), ("c", "target"), ("d", "target")],
+            ),
+            1,
+        );
+        let phase_by_facility = report
+            .phases
+            .iter()
+            .flat_map(|phase| {
+                phase
+                    .facilities
+                    .iter()
+                    .map(move |facility| (facility.as_str(), phase.index))
+            })
+            .collect::<std::collections::BTreeMap<_, _>>();
+
+        assert!(phase_by_facility["a"] > phase_by_facility["c"]);
+        assert!(phase_by_facility["b"] > phase_by_facility["d"]);
+    }
+
+    #[test]
+    fn rejects_a_zero_phase_facility_limit() {
+        let report = plan_facility_growth(&wiring(&["a"], &[("a", "target")]), 0);
+
+        assert!(!report.success);
+        assert_eq!(
+            report.diagnostics[0].code,
+            "max-new-facilities-per-phase-must-be-positive"
+        );
     }
 
     fn phase_facilities(report: &super::FacilityGrowthPlanReport) -> Vec<Vec<&str>> {

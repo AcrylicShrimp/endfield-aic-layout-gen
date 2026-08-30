@@ -64,7 +64,7 @@ pub fn construct_iterative_scc_layout(
     let strategy_deadline = Instant::now()
         .checked_add(time_limit)
         .unwrap_or_else(Instant::now);
-    let growth = plan_facility_growth(instance_wiring);
+    let growth = plan_facility_growth(instance_wiring, config.max_new_facilities_per_phase);
     if !growth.success {
         let diagnostic = growth.diagnostics.into_iter().next().map_or_else(
             || {
@@ -403,6 +403,10 @@ pub fn construct_iterative_scc_layout(
             index: phase.index,
             introduced_components: phase.components.clone(),
             introduced_facilities: phase.facilities.clone(),
+            ready_component_count: phase.ready_component_count,
+            selected_component_count: phase.selected_component_count,
+            deferred_component_count: phase.deferred_component_count,
+            oversized_component_count: phase.oversized_component_count,
             cumulative_facility_count: cumulative_facilities.len(),
             cumulative_route_requirement_count: phase_report.routes.len(),
             prior_placement_hint_count: prior_reference.len(),

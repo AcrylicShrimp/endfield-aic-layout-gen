@@ -72,7 +72,7 @@ pub use score::{CandidateRank, DeterministicCandidateKey, LayoutScore, Refinemen
 const STAGE: &str = "integrated-layout";
 const PRODUCTION_FACILITY_GAP: i64 = 1;
 const COORDINATE_ROUTING_FRAME: i64 = 1;
-pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 3;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 4;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -102,6 +102,10 @@ pub struct IntegratedLayoutPhase {
     pub index: usize,
     pub introduced_components: Vec<String>,
     pub introduced_facilities: Vec<String>,
+    pub ready_component_count: usize,
+    pub selected_component_count: usize,
+    pub deferred_component_count: usize,
+    pub oversized_component_count: usize,
     pub cumulative_facility_count: usize,
     pub cumulative_route_requirement_count: usize,
     pub prior_placement_hint_count: usize,

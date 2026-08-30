@@ -103,6 +103,10 @@ fn one_facility_external_routes_are_minimal_and_search_domain_independent() {
         assert!(report.success, "{:#?}", report.diagnostics);
         assert_eq!(report.phases.len(), 1);
         let phase = &report.phases[0];
+        assert_eq!(phase.ready_component_count, 1);
+        assert_eq!(phase.selected_component_count, 1);
+        assert_eq!(phase.deferred_component_count, 0);
+        assert_eq!(phase.oversized_component_count, 0);
         assert_eq!(phase.cumulative_facility_count, 1);
         assert_eq!(phase.cumulative_route_requirement_count, 3);
         assert_eq!(phase.routes.len(), 3);
@@ -169,13 +173,16 @@ fn graph_fixture(
             .iter()
             .map(|source| wiring_edge(source, "target", "item", "target")),
     );
-    plan_facility_growth(&FacilityInstanceWiringReport {
-        schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
-        success: true,
-        nodes,
-        edges,
-        diagnostics: Vec::new(),
-    })
+    plan_facility_growth(
+        &FacilityInstanceWiringReport {
+            schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
+            success: true,
+            nodes,
+            edges,
+            diagnostics: Vec::new(),
+        },
+        8,
+    )
 }
 
 fn one_facility_wiring_fixture() -> FacilityInstanceWiringReport {
