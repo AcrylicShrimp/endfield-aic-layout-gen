@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "source_upstream_commit": "83be4dcdeab69f93799febff674af6f19b8972be",
+  "generator": "tools/normalize_game_data.py",
+  "counts": {
+    "items": 538,
+    "facilities": 28,
+    "recipes": 305,
+    "external_items": 10
+  },
+  "files": [
+    {
+      "path": "facilities.json",
+      "sha256": "db398048ac401024f7bae80c05ae59d4a9fb9a037f6836f33d26c5d08f0bcf96"
+    },
+    {
+      "path": "items.json",
+      "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+    },
+    {
+      "path": "recipes.json",
+      "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+    }
+  ]
+}

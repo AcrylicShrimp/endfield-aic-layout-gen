@@ -1,0 +1,2925 @@
+{
+  "schema_version": 3,
+  "facilities": [
+    {
+      "id": "component-mc-1-mode-normal",
+      "footprint": {
+        "width": 3,
+        "height": 3
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 2
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 2
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 2
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "dismantler-1-mode-gasliquid",
+      "footprint": {
+        "width": 6,
+        "height": 4
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-4",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-5",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 3
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-3",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-4",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-5",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-pipe-6",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 5,
+            "y": 2
+          },
+          "edge": "east"
+        }
+      ]
+    },
+    {
+      "id": "dismantler-1-mode-liquid",
+      "footprint": {
+        "width": 6,
+        "height": 4
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-4",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-5",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 3
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-3",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-4",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-5",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-pipe-6",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 5,
+            "y": 2
+          },
+          "edge": "east"
+        }
+      ]
+    },
+    {
+      "id": "filling-powder-mc-1-mode-gasliquid",
+      "footprint": {
+        "width": 6,
+        "height": 4
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-4",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-5",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 3
+          },
+          "edge": "east"
+        },
+        {
+          "id": "input-pipe-6",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 2
+          },
+          "edge": "west"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-3",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-4",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-5",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "filling-powder-mc-1-mode-liquid",
+      "footprint": {
+        "width": 6,
+        "height": 4
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-4",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-5",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 3
+          },
+          "edge": "east"
+        },
+        {
+          "id": "input-pipe-6",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 2
+          },
+          "edge": "west"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-3",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-4",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-5",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "filling-powder-mc-1-mode-normal",
+      "footprint": {
+        "width": 6,
+        "height": 4
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-4",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-5",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 3
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-3",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-4",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-5",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "furnance-1-mode-liquid",
+      "footprint": {
+        "width": 3,
+        "height": 3
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 2
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 2
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 2
+          },
+          "edge": "east"
+        },
+        {
+          "id": "input-pipe-3",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 1
+          },
+          "edge": "west"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-pipe-3",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 2,
+            "y": 1
+          },
+          "edge": "east"
+        }
+      ]
+    },
+    {
+      "id": "furnance-1-mode-normal",
+      "footprint": {
+        "width": 3,
+        "height": 3
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 2
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 2
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 2
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "gas-reactor-1-mode-gas",
+      "footprint": {
+        "width": 5,
+        "height": 5
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-pipe-0",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 1
+          },
+          "edge": "west"
+        },
+        {
+          "id": "input-pipe-1",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "west"
+        },
+        {
+          "id": "output-pipe-0",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 4,
+            "y": 1
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-pipe-1",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 4,
+            "y": 3
+          },
+          "edge": "east"
+        }
+      ]
+    },
+    {
+      "id": "grinder-1-mode-normal",
+      "footprint": {
+        "width": 3,
+        "height": 3
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 2
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 2
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 2
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "liquid-purifier-1-mode-gas",
+      "footprint": {
+        "width": 5,
+        "height": 5
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-pipe-0",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 1
+          },
+          "edge": "west"
+        },
+        {
+          "id": "input-pipe-1",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "west"
+        },
+        {
+          "id": "input-pipe-2",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 2
+          },
+          "edge": "west"
+        },
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-4",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-5",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-6",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-7",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 4
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-pipe-0",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 4,
+            "y": 1
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-pipe-1",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 4,
+            "y": 3
+          },
+          "edge": "east"
+        }
+      ]
+    },
+    {
+      "id": "liquid-purifier-1-mode-liquid",
+      "footprint": {
+        "width": 5,
+        "height": 5
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-pipe-0",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 1
+          },
+          "edge": "west"
+        },
+        {
+          "id": "input-pipe-1",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "west"
+        },
+        {
+          "id": "input-pipe-2",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 2
+          },
+          "edge": "west"
+        },
+        {
+          "id": "output-pipe-0",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 4,
+            "y": 1
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-pipe-1",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 4,
+            "y": 3
+          },
+          "edge": "east"
+        }
+      ]
+    },
+    {
+      "id": "mix-pool-1-mode-liquid",
+      "footprint": {
+        "width": 5,
+        "height": 5
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-pipe-2",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 1
+          },
+          "edge": "west"
+        },
+        {
+          "id": "input-pipe-3",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "west"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-pipe-2",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 4,
+            "y": 1
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-pipe-3",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 4,
+            "y": 3
+          },
+          "edge": "east"
+        }
+      ]
+    },
+    {
+      "id": "mix-pool-2-mode-liquid",
+      "footprint": {
+        "width": 6,
+        "height": 5
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-pipe-4",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 1
+          },
+          "edge": "west"
+        },
+        {
+          "id": "input-pipe-5",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "west"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-3",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-pipe-4",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 5,
+            "y": 1
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-pipe-5",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 5,
+            "y": 3
+          },
+          "edge": "east"
+        }
+      ]
+    },
+    {
+      "id": "planter-1-mode-liquid",
+      "footprint": {
+        "width": 5,
+        "height": 5
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-4",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 4
+          },
+          "edge": "east"
+        },
+        {
+          "id": "input-pipe-5",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 2
+          },
+          "edge": "west"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-3",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-4",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "planter-1-mode-normal",
+      "footprint": {
+        "width": 5,
+        "height": 5
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-4",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 4
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-3",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-4",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "seedcollector-1-mode-normal",
+      "footprint": {
+        "width": 5,
+        "height": 5
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-4",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 4
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-3",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-4",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "shaper-1-mode-gas",
+      "footprint": {
+        "width": 3,
+        "height": 3
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 2
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 2
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 2
+          },
+          "edge": "east"
+        },
+        {
+          "id": "input-pipe-3",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 1
+          },
+          "edge": "west"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "shaper-1-mode-normal",
+      "footprint": {
+        "width": 3,
+        "height": 3
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 2
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 2
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 2
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "thickener-1-mode-normal",
+      "footprint": {
+        "width": 6,
+        "height": 4
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-4",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-5",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 3
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-3",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-4",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-5",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "tools-assebling-mc-1-mode-normal",
+      "footprint": {
+        "width": 6,
+        "height": 4
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-4",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-5",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 3
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-3",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-4",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-5",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "transmuter-1-mode-gastrans",
+      "footprint": {
+        "width": 5,
+        "height": 5
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-pipe-0",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 1
+          },
+          "edge": "west"
+        },
+        {
+          "id": "input-pipe-1",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "west"
+        },
+        {
+          "id": "input-pipe-2",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 2,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "output-pipe-0",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 4,
+            "y": 1
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-pipe-1",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 4,
+            "y": 3
+          },
+          "edge": "east"
+        }
+      ]
+    },
+    {
+      "id": "transmuter-1-mode-liquidtrans",
+      "footprint": {
+        "width": 5,
+        "height": 5
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-pipe-0",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 1
+          },
+          "edge": "west"
+        },
+        {
+          "id": "input-pipe-1",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "west"
+        },
+        {
+          "id": "input-pipe-2",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 2,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "output-pipe-0",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 4,
+            "y": 1
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-pipe-1",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 4,
+            "y": 3
+          },
+          "edge": "east"
+        }
+      ]
+    },
+    {
+      "id": "transmuter-2-mode-gastrans",
+      "footprint": {
+        "width": 5,
+        "height": 5
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-4",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "output-pipe-0",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 4,
+            "y": 1
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-pipe-1",
+          "direction": "output",
+          "transport": "pipe",
+          "position": {
+            "x": 4,
+            "y": 3
+          },
+          "edge": "east"
+        }
+      ]
+    },
+    {
+      "id": "transmuter-2-mode-solidtrans",
+      "footprint": {
+        "width": 5,
+        "height": 5
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-pipe-0",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 1
+          },
+          "edge": "west"
+        },
+        {
+          "id": "input-pipe-1",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "west"
+        },
+        {
+          "id": "input-pipe-2",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 2,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-3",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "winder-1-mode-normal",
+      "footprint": {
+        "width": 6,
+        "height": 4
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-4",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 3
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-5",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 3
+          },
+          "edge": "east"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-3",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-4",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-5",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 5,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "xiranite-oven-1-mode-gasliquid",
+      "footprint": {
+        "width": 5,
+        "height": 5
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-4",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 4
+          },
+          "edge": "east"
+        },
+        {
+          "id": "input-pipe-5",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 2
+          },
+          "edge": "west"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-3",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-4",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    },
+    {
+      "id": "xiranite-oven-1-mode-liquid",
+      "footprint": {
+        "width": 5,
+        "height": 5
+      },
+      "allowed_rotations": [
+        0,
+        90,
+        180,
+        270
+      ],
+      "ports": [
+        {
+          "id": "input-belt-0",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-1",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-2",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-3",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 4
+          },
+          "edge": "south"
+        },
+        {
+          "id": "input-belt-4",
+          "direction": "input",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 4
+          },
+          "edge": "east"
+        },
+        {
+          "id": "input-pipe-5",
+          "direction": "input",
+          "transport": "pipe",
+          "position": {
+            "x": 0,
+            "y": 2
+          },
+          "edge": "west"
+        },
+        {
+          "id": "output-belt-0",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 0,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-1",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 1,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-2",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 2,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-3",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 3,
+            "y": 0
+          },
+          "edge": "north"
+        },
+        {
+          "id": "output-belt-4",
+          "direction": "output",
+          "transport": "belt",
+          "position": {
+            "x": 4,
+            "y": 0
+          },
+          "edge": "north"
+        }
+      ]
+    }
+  ]
+}

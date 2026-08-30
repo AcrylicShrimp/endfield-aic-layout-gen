@@ -1,0 +1,2157 @@
+{
+  "schema_version": 1,
+  "items": [
+    {
+      "id": "item-activity-xiranite-bottle",
+      "transport": "belt"
+    },
+    {
+      "id": "item-activity-xiranite-cmpt",
+      "transport": "belt"
+    },
+    {
+      "id": "item-activity-xiranite-enr-bottle",
+      "transport": "belt"
+    },
+    {
+      "id": "item-activity-xiranite-enr-cmpt",
+      "transport": "belt"
+    },
+    {
+      "id": "item-activity-xiranite-enr-hulu",
+      "transport": "belt"
+    },
+    {
+      "id": "item-activity-xiranite-enr-tool",
+      "transport": "belt"
+    },
+    {
+      "id": "item-activity-xiranite-hulu",
+      "transport": "belt"
+    },
+    {
+      "id": "item-agfly-1-agmelee-1-moss-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-agmelee-1-moss-1-lbmob-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-agmelee-1-sp-2-slimeml-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-agrange-1-erhound-1-sp-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-agrange-1-lbshamman-bottled-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-agrange-1-moss-2-lbmob-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-flower1spc-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-flower1spc-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-flower1spc-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-flower2spc-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-flower2spc-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-flower2spc-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-food-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-food-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-food-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-food-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-food-5",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-grass1spc-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-grass1spc-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-grass2spc-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-grass2spc-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-insec1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-insec1-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-insec2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-insec2-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-moss-1-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-moss-2-animal-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-rec-hp-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-rec-hp-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-rec-hp-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-rec-hp-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-bottled-rec-hp-5",
+      "transport": "belt"
+    },
+    {
+      "id": "item-carbon-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-carbon-enr-powder",
+      "transport": "belt"
+    },
+    {
+      "id": "item-carbon-mtl",
+      "transport": "belt"
+    },
+    {
+      "id": "item-carbon-powder",
+      "transport": "belt"
+    },
+    {
+      "id": "item-copper-bottle",
+      "transport": "belt"
+    },
+    {
+      "id": "item-copper-cmpt",
+      "transport": "belt"
+    },
+    {
+      "id": "item-copper-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-copper-enr2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-copper-enr2-cmpt",
+      "transport": "belt"
+    },
+    {
+      "id": "item-copper-enr-bottle",
+      "transport": "belt"
+    },
+    {
+      "id": "item-copper-enr-cmpt",
+      "transport": "belt"
+    },
+    {
+      "id": "item-copper-jar",
+      "transport": "belt"
+    },
+    {
+      "id": "item-copper-nugget",
+      "transport": "belt"
+    },
+    {
+      "id": "item-copper-ore",
+      "transport": "belt"
+    },
+    {
+      "id": "item-copper-powder",
+      "transport": "belt"
+    },
+    {
+      "id": "item-corp1-animal-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-corp2-animal-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-corp3-animal-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-corp3-grass1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-corp4-animal-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-corp4-grass2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-corp4-spc",
+      "transport": "belt"
+    },
+    {
+      "id": "item-crystal-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-crystal-enr-powder",
+      "transport": "belt"
+    },
+    {
+      "id": "item-crystal-powder",
+      "transport": "belt"
+    },
+    {
+      "id": "item-crystal-shell",
+      "transport": "belt"
+    },
+    {
+      "id": "item-device-balloon-recycle-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-device-balloon-recycle-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-device-balloon-recycle-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-device-xiranite-nexus-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-device-xiranite-nexus-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-device-xiranite-nexus-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-device-xiranite-radar-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-dog-1-slimeml-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-dog-hsmob-corp-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-agdisk-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-agfly-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-agmelee-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-agrange-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-agshield-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-dog-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-enemycommon-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-erhound-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-ethillu-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-firebat-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-hsbear-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-hscrane-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-hsfly-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-hshog-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-hsmino-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-hsmob-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-hstiger-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-hvybow-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-jzmonk-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-jzogre-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-klbuds-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-klcaps-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-klcreatures-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-lbmob-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-lbroshan-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-lbshamman-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-lbshield-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-lbtough-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-mimicw-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-sandb-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-slimeml-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-wgabyss-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-wgshoal-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-wgslime-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-drop-wgthorns-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-equip-script-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-equip-script-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-equip-script-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-equip-script-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-equip-script-4-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-equip-script-4-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-equip-script-4-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-erhound-1-agmelee-1-moss-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-ethillu-1-wgslime-1-wgthorns-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copper-acid",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copper-copper",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copper-copper-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copper-grass-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copper-grass-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copper-sewage",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copper-water",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copper-xiranite",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copper-xiranite-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copper-xiranite-lowpoly",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copper-xiranite-poly",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copperenr-acid",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copperenr-copper",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copperenr-copper-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copperenr-grass-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copperenr-grass-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copperenr-sewage",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copperenr-water",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copperenr-xiranite",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copperenr-xiranite-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copperenr-xiranite-lowpoly",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-copperenr-xiranite-poly",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glass-acid",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glass-copper",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glass-copper-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glass-grass-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glass-grass-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glass-sewage",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glass-water",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glass-xiranite",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glass-xiranite-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glass-xiranite-lowpoly",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glass-xiranite-poly",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glassenr-acid",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glassenr-copper",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glassenr-copper-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glassenr-grass-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glassenr-grass-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glassenr-sewage",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glassenr-water",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glassenr-xiranite",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glassenr-xiranite-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glassenr-xiranite-lowpoly",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-glassenr-xiranite-poly",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-iron-acid",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-iron-copper",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-iron-copper-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-iron-grass-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-iron-grass-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-iron-sewage",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-iron-water",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-iron-xiranite",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-iron-xiranite-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-iron-xiranite-lowpoly",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-iron-xiranite-poly",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-ironenr-acid",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-ironenr-copper",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-ironenr-copper-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-ironenr-grass-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-ironenr-grass-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-ironenr-sewage",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-ironenr-water",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-ironenr-xiranite",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-ironenr-xiranite-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-ironenr-xiranite-lowpoly",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-ironenr-xiranite-poly",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fbottle-xiranenr-grass-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fertilize-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-fertilize-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-filter-core",
+      "transport": "belt"
+    },
+    {
+      "id": "item-firebat-1-agrange-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-gas-acid",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-gas-copper",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-gas-copper-enr",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-gas-copper-enr2",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-gas-inert",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-gas-water",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-gas-xiranite",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-gas-xiranite-enr",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-gasjar-copper-gas-acid",
+      "transport": "belt"
+    },
+    {
+      "id": "item-gasjar-copper-gas-copper",
+      "transport": "belt"
+    },
+    {
+      "id": "item-gasjar-copper-gas-copper-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-gasjar-copper-gas-copper-enr2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-gasjar-copper-gas-inert",
+      "transport": "belt"
+    },
+    {
+      "id": "item-gasjar-copper-gas-water",
+      "transport": "belt"
+    },
+    {
+      "id": "item-gasjar-copper-gas-xiranite",
+      "transport": "belt"
+    },
+    {
+      "id": "item-gasjar-copper-gas-xiranite-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-glass-bottle",
+      "transport": "belt"
+    },
+    {
+      "id": "item-glass-cmpt",
+      "transport": "belt"
+    },
+    {
+      "id": "item-glass-enr-bottle",
+      "transport": "belt"
+    },
+    {
+      "id": "item-glass-enr-cmpt",
+      "transport": "belt"
+    },
+    {
+      "id": "item-hscrane-1-hsmob-1-grass-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-hsfly-1-slimeml-1-hsmob-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-hshog-1-hsmob-1-slimeml-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-hsmob-1-dog-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-hsmob-1-grass-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-iron-bottle",
+      "transport": "belt"
+    },
+    {
+      "id": "item-iron-cmpt",
+      "transport": "belt"
+    },
+    {
+      "id": "item-iron-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-iron-enr-bottle",
+      "transport": "belt"
+    },
+    {
+      "id": "item-iron-enr-cmpt",
+      "transport": "belt"
+    },
+    {
+      "id": "item-iron-enr-powder",
+      "transport": "belt"
+    },
+    {
+      "id": "item-iron-nugget",
+      "transport": "belt"
+    },
+    {
+      "id": "item-iron-ore",
+      "transport": "belt"
+    },
+    {
+      "id": "item-iron-powder",
+      "transport": "belt"
+    },
+    {
+      "id": "item-jzmonk-1-hsmob-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-klbuds-1-hsfly-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-klcreatures-1-wgthorns-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-lbmob-1-dog-1-moss-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-lbmob-1-lbshamman-1-sp-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-lbmob-1-moss-2-bottled-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-lbshamman-1-agmelee-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-lbshield-1-slimeml-1-dog-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-liquid-acid",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-liquid-copper",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-liquid-copper-enr",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-liquid-plant-grass-1",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-liquid-plant-grass-2",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-liquid-sewage",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-liquid-water",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-liquid-xiranite",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-liquid-xiranite-enr",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-liquid-xiranite-lowpoly",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-liquid-xiranite-poly",
+      "transport": "pipe"
+    },
+    {
+      "id": "item-mimicw-1-moss-1-moss-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-muck-feces-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-muck-xiranite-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-originium-enr-powder",
+      "transport": "belt"
+    },
+    {
+      "id": "item-originium-ore",
+      "transport": "belt"
+    },
+    {
+      "id": "item-originium-powder",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-bbflower-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-bbflower-powder-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-bbflower-seed-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-crylplant-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-crylplant-1-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-crylplant-1-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-crylplant-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-crylplant-2-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-crylplant-2-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-crylplant-seed-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-crylplant-seed-1-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-crylplant-seed-1-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-crylplant-seed-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-crylplant-seed-2-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-crylplant-seed-2-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-grass-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-grass-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-grass-powder-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-grass-powder-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-grass-seed-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-grass-seed-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-grass-spc-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-grass-spc-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-grass-spc-powder-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-grass-spc-powder-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-moss-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-moss-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-moss-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-moss-enr-powder-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-moss-enr-powder-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-moss-powder-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-moss-powder-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-moss-powder-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-moss-seed-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-moss-seed-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-moss-seed-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-moss-spc-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-moss-spc-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-moss-spc-powder-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-moss-spc-powder-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-mushroom-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-mushroom-1-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-mushroom-1-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-mushroom-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-mushroom-2-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-mushroom-2-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-mushroom-seed-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-mushroom-seed-1-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-mushroom-seed-1-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-mushroom-seed-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-mushroom-seed-2-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-mushroom-seed-2-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-mushroom-spc-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-sp-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-sp-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-sp-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-sp-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-sp-seed-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-sp-seed-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-sp-seed-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-sp-seed-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-spcstone-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-spcstone-1-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-spcstone-1-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-spcstone-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-spcstone-2-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-spcstone-2-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-spcstone-seed-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-spcstone-seed-1-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-spcstone-seed-1-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-spcstone-seed-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-spcstone-seed-2-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-spcstone-seed-2-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-tundra-impts",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-tundra-insect-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-tundra-insect-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-tundra-insect-powder-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-tundra-insect-powder-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-plant-tundra-wood",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-air-dancer-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-cannon-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-cannon-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-debuff-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-fog-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-frost-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-jet-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-laser-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-laser-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-lightning-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-lightning-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-medic-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-rocket-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-shockwave-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-sniper-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-trap-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-turret-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-turret-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-battle-turret-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-carrier-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-cat-tree-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-chubby-lung-balloon-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-chubby-lung-stone-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-cmpt-mc-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-dismantler-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-display-stand-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-doll-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-dumper-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-dumper-nop-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-filling-pd-mc-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-furnance-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-furnance-nop-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-gas-pump-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-gas-reactor-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-gas-storager-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-grinder-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-jail-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-liquid-cleaner-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-liquid-purifier-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-liquid-storager-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-liquid-storager-nop-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-loader-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-log-hongs-bus",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-log-hongs-bus-source",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-marker-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-microphone-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-miner-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-miner-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-miner-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-miner-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-mix-pool-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-mix-pool-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-pear-blossom-bonsai-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-phase-trans-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-phase-trans-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-photo-frame-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-planter-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-power-diffuser-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-power-diffuser-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-power-pole-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-power-pole-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-power-port-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-power-sta-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-power-terminal-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-pump-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-pump-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-seedcol-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-shaper-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-signboard-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-bbflower-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-grass-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-grass-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-grass-fast-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-grass-fast-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-moss-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-moss-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-moss-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-sp-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-sp-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-sp-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-sp-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-sp-fast-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-soil-sp-fast-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-sp-hub-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-sp-sub-hub-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-squirter-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-squirter-nop-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-storager-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-storager-nop-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-thickener-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-tools-asm-mc-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-travel-pole-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-travel-pole-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-travel-pole-nop-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-udpipe-loader-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-udpipe-loader-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-udpipe-unloader-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-udpipe-unloader-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-unloader-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-vaporizer-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-winder-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-port-xiranite-oven-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-proc-battery-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-proc-battery-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-proc-battery-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-proc-battery-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-proc-battery-5",
+      "transport": "belt"
+    },
+    {
+      "id": "item-proc-bomb-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-quartz-enr",
+      "transport": "belt"
+    },
+    {
+      "id": "item-quartz-enr-powder",
+      "transport": "belt"
+    },
+    {
+      "id": "item-quartz-glass",
+      "transport": "belt"
+    },
+    {
+      "id": "item-quartz-powder",
+      "transport": "belt"
+    },
+    {
+      "id": "item-quartz-sand",
+      "transport": "belt"
+    },
+    {
+      "id": "item-quest-e1m5-inhibit",
+      "transport": "belt"
+    },
+    {
+      "id": "item-slimeml-1-agrange-1-moss-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-slimeml-1-erhound-1-agfly-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-sp-1-moss-1-agmelee-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-sp-2-moss-2-agrange-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-spaceship-cmpt-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-spaceship-cmpt-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-1-10",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-1-11",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-1-12",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-1-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-1-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-1-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-1-5",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-1-6",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-1-7",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-1-8",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-1-9",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-2-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-2-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-2-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-2-5",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-2-6",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-3-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-3-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-3-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-3-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-3-5",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-3-6",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-4-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-4-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-4-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-4-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-4-5",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-4-6",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-5-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-5-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-5-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-5-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-5-5",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-5-6",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-6-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-6-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-6-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-6-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-6-5",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-collection-6-6",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-10",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-11",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-5",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-6",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-7",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-8",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-enemy-drop-9",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-key-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-key-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-key-5",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-key-6",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-key-7",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-key-8",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-key-9",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-1-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-1-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-1-4",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-1-5",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-1-6",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-2-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-2-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-3-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-3-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-3-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-4-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-4-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-4-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-5-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-5-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-5-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-6-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-6-2",
+      "transport": "belt"
+    },
+    {
+      "id": "item-weekraid-ore-6-3",
+      "transport": "belt"
+    },
+    {
+      "id": "item-wgshoal-1-grass-1-grass-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-wgslime-1-hsmob-1-grass-2-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-wgslime-1-wgthorns-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-wgthorns-1-hshog-1-hsmob-1-1",
+      "transport": "belt"
+    },
+    {
+      "id": "item-xiranite-enr-powder",
+      "transport": "belt"
+    },
+    {
+      "id": "item-xiranite-lowpoly",
+      "transport": "belt"
+    },
+    {
+      "id": "item-xiranite-poly",
+      "transport": "belt"
+    },
+    {
+      "id": "item-xiranite-powder",
+      "transport": "belt"
+    }
+  ]
+}
