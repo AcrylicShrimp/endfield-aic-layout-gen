@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIC Layout Wireframe</title>
+<style>
+  :root { color-scheme: dark; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #071019; color: #dbeeff; overflow: hidden; }
+  #aic-layout-viewer { height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+  .toolbar { display: flex; align-items: center; gap: 14px; min-height: 48px; padding: 8px 12px; border-bottom: 1px solid #294153; background: #0b1722; flex-wrap: wrap; }
+  .title { color: #f2f8ff; font-weight: 700; letter-spacing: .04em; }
+  .run-status { border: 1px solid currentColor; padding: 3px 6px; font-size: 11px; }
+  .run-status.success { color: #6ff2bd; }
+  .run-status.failure { color: #ff6b9c; }
+  .metrics { color: #8ba8bd; font-size: 12px; margin-right: auto; }
+  .phase-nav { display: inline-flex; align-items: center; gap: 7px; }
+  .phase-label { min-width: 92px; color: #cbe7f8; font-size: 12px; text-align: center; }
+  button { appearance: none; border: 1px solid #35536a; background: transparent; color: #b9cee0; padding: 5px 8px; font: inherit; font-size: 12px; cursor: pointer; }
+  button[aria-pressed="false"] { color: #567083; border-color: #253c4d; text-decoration: line-through; }
+  button:hover, button:focus-visible { border-color: #8ecbff; color: #eaf6ff; outline: none; }
+  .swatch { display: inline-block; width: 16px; height: 0; margin-right: 5px; vertical-align: middle; border-top: 2px solid currentColor; }
+  .belt-swatch { color: #f1b84b; }
+  .pipe-swatch { color: #59c7f2; border-top-style: dashed; }
+  .stage { min-height: 0; position: relative; }
+  svg { display: block; width: 100%; height: 100%; background: #071019; touch-action: none; cursor: grab; }
+  svg.dragging { cursor: grabbing; }
+  .grid-minor { stroke: #122432; stroke-width: .06; }
+  .grid-major { stroke: #1d3547; stroke-width: .12; }
+  .route-cell { shape-rendering: crispEdges; }
+  .route-cell-belt { fill: #f1b84b; fill-opacity: .58; stroke: #ffd77c; stroke-width: .05; }
+  .route-cell-pipe { fill: #59c7f2; fill-opacity: .62; stroke: #b3ebff; stroke-width: .06; }
+  .route-direction { fill: #071019; stroke: #ffffff; stroke-width: .7px; vector-effect: non-scaling-stroke; pointer-events: none; }
+  [data-inspect] { cursor: pointer; }
+  .route-group.selected .route-cell { fill-opacity: .95; stroke: #ffffff; stroke-width: .12; }
+  .endpoint.selected, .facility.selected, .component.selected { stroke: #ffffff; stroke-width: 2px; }
+  .endpoint { vector-effect: non-scaling-stroke; stroke-width: 1px; }
+  .endpoint-belt { fill: #f1b84b; stroke: #251a07; }
+  .endpoint-pipe { fill: #59c7f2; stroke: #071c26; }
+  .port-input { stroke: #6ff2bd; stroke-width: 1.6px; stroke-linejoin: round; }
+  .port-output { stroke: #ff6b9c; stroke-width: 1.6px; stroke-linejoin: round; }
+  .external { fill: #071019; stroke: #ffec99; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+  .facility { fill: #10293a; fill-opacity: .92; stroke: #d7efff; stroke-width: 1.25px; vector-effect: non-scaling-stroke; }
+  .facility.introduced { fill: #163c34; stroke: #6ff2bd; stroke-width: 2px; }
+  .facility:hover { fill: #19415a; stroke: #ffffff; stroke-width: 2.5px; }
+  .facility-label { fill: #dff3ff; font-size: .72px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .facility-index { fill: #7ea6bb; font-size: .62px; }
+  .component { fill: #071019; vector-effect: non-scaling-stroke; }
+  .bridge { stroke: #ff6b85; stroke-width: 1.5px; }
+  .splitter { stroke: #c4f06f; stroke-width: 1.5px; }
+  .converger { stroke: #d99cff; stroke-width: 1.5px; }
+  .hidden-layer { display: none; }
+  .hidden-phase { display: none; }
+  .help { position: absolute; right: 10px; bottom: 8px; color: #6f8b9e; font-size: 11px; pointer-events: none; }
+  .inspect-panel { position: absolute; top: 12px; right: 12px; width: min(420px, calc(100% - 24px)); max-height: calc(100% - 48px); overflow: auto; border: 1px solid #5f8198; background: rgba(7, 16, 25, .96); box-shadow: 0 12px 36px rgba(0, 0, 0, .45); padding: 12px; z-index: 3; }
+  .inspect-panel[hidden] { display: none; }
+  .inspect-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; color: #f2f8ff; }
+  .inspect-content { margin: 0; color: #bfe6fb; font: inherit; font-size: 12px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<div id="aic-layout-viewer">
+  <div class="toolbar">
+    <span class="title">AIC LAYOUT WIREFRAME</span>
+    <span class="run-status success">OPTIMAL</span>
+    <span class="phase-nav"><button type="button" data-previous>Previous</button><span class="phase-label" data-phase-label></span><button type="button" data-next>Next</button></span>
+    <span class="metrics" data-metrics>7×5 · 1 facilities · 3 occupied transport tiles (belt 3 / pipe 0) · 0 bridges</span>
+    <button type="button" data-toggle="belt-layer" aria-pressed="true"><span class="swatch belt-swatch"></span>Belt (<span data-belt-summary>3 tiles</span>)</button>
+    <button type="button" data-toggle="pipe-layer" aria-pressed="true"><span class="swatch pipe-swatch"></span>Pipe (<span data-pipe-summary>0 tiles</span>)</button>
+    <span title="Arrows follow material flow"><span style="color:#6ff2bd">➤ IN</span> · <span style="color:#ff6b9c">➤ OUT</span></span>
+    <button type="button" data-toggle="component-layer" aria-pressed="true">Components</button>
+    <button type="button" data-toggle="label-layer" aria-pressed="true">Labels</button>
+    <button type="button" data-reset>Reset view</button>
+  </div>
+  <div class="stage">
+    <svg role="img" aria-label="AIC facility and logistics layout" viewBox="-2 -2 11 9" data-base-view="-2 -2 11 9">
+      <defs>
+        <pattern id="minor-grid" width="1" height="1" patternUnits="userSpaceOnUse"><path class="grid-minor" d="M 1 0 L 0 0 0 1" fill="none"/></pattern>
+        <pattern id="major-grid" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="url(#minor-grid)"/><path class="grid-major" d="M 10 0 L 0 0 0 10" fill="none"/></pattern>
+      </defs>
+      <g class="phase-page" data-base-view="-2 -2 11 9" data-phase-label="Final layout" data-metrics="7×5 · 1 facilities · 3 occupied transport tiles (belt 3 / pipe 0) · 0 bridges" data-belt-summary="3 tiles" data-pipe-summary="0 tiles">
+        <rect x="0" y="0" width="7" height="5" fill="url(#major-grid)" stroke="#4a6a80" stroke-width=".2"/>
+        <g class="belt-layer">
+        </g>
+        <g class="belt-layer">
+          <g class="route-group" data-inspect="external Input | iterative-external:wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6 | item 식양 (item-xiranite-powder) | rate 1/2 per second (0.500/s) | Forward template | facility facility-instance:recipe-occurrence:/target:0 port input-belt-3 | 1 occupied tiles">
+            <rect class="route-cell route-cell-belt" x="0" y="3" width="1" height="1"/>
+            <polygon class="endpoint port-input external" data-inspect="external Input | iterative-external:wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6 | item 식양 (item-xiranite-powder) | rate 1/2 per second (0.500/s) | Forward template | facility facility-instance:recipe-occurrence:/target:0 port input-belt-3 | 1 occupied tiles" points="0.98,3.50 0.16,3.86 0.16,3.14"/>
+          </g>
+          <g class="route-group" data-inspect="external Input | iterative-external:wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e | item 식양 (item-xiranite-powder) | rate 1/2 per second (0.500/s) | Forward template | facility facility-instance:recipe-occurrence:/target:0 port input-belt-1 | 1 occupied tiles">
+            <rect class="route-cell route-cell-belt" x="0" y="1" width="1" height="1"/>
+            <polygon class="endpoint port-input external" data-inspect="external Input | iterative-external:wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e | item 식양 (item-xiranite-powder) | rate 1/2 per second (0.500/s) | Forward template | facility facility-instance:recipe-occurrence:/target:0 port input-belt-1 | 1 occupied tiles" points="0.98,1.50 0.16,1.86 0.16,1.14"/>
+          </g>
+          <g class="route-group" data-inspect="external Output | target:/target-output | item 중식양 (item-xiranite-enr-powder) | rate 1/10 per second (0.100/s) | Forward template | facility facility-instance:recipe-occurrence:/target:0 port output-belt-3 | 1 occupied tiles">
+            <rect class="route-cell route-cell-belt" x="6" y="3" width="1" height="1"/>
+            <polygon class="endpoint port-output external" data-inspect="external Output | target:/target-output | item 중식양 (item-xiranite-enr-powder) | rate 1/10 per second (0.100/s) | Forward template | facility facility-instance:recipe-occurrence:/target:0 port output-belt-3 | 1 occupied tiles" points="6.98,3.50 6.16,3.86 6.16,3.14"/>
+          </g>
+        </g>
+        <g class="pipe-layer">
+        </g>
+        <g class="pipe-layer">
+        </g>
+      <g class="component-layer">
+      </g>
+      <g class="facility-layer">
+        <rect class="facility" data-inspect="F00 | 천화로 | xiranite-oven-1-mode-liquid | mode 액체 모드 | recipe xiranite-oven-xiranite-enr-powder-1 | facility-instance:recipe-occurrence:/target:0 | (1, 0) 5x5 r90" x="1" y="0" width="5" height="5"/>
+      </g>
+      <g class="label-layer">
+        <text class="facility-label" x="3.50" y="2.05"><tspan x="3.50" style="font-size:0.720px">천화로</tspan><tspan class="facility-index" x="3.50" dy="1">F00</tspan></text>
+      </g>
+      </g>
+    </svg>
+    <aside class="inspect-panel" data-inspector hidden><div class="inspect-header"><strong>Layout details</strong><button type="button" data-inspector-close>Close</button></div><pre class="inspect-content" data-inspector-content></pre></aside>
+    <div class="help">wheel: zoom · drag: pan · click: inspect</div>
+  </div>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('aic-layout-viewer');
+  const svg = root.querySelector('svg');
+  const pages = Array.from(root.querySelectorAll('.phase-page'));
+  let pageIndex = pages.length - 1;
+  let base = pages[pageIndex].dataset.baseView.split(' ').map(Number);
+  let view = base.slice();
+  let drag = null;
+  let pinned = null;
+  const inspector = root.querySelector('[data-inspector]');
+  const inspectorContent = root.querySelector('[data-inspector-content]');
+  const inspectTarget = (target) => target instanceof Element ? target.closest('[data-inspect]') : null;
+  const showDetails = (target) => {
+    if (!target) { inspector.hidden = true; inspectorContent.textContent = ''; return; }
+    inspector.hidden = false;
+    inspectorContent.textContent = target.dataset.inspect.split(' | ').join('\n');
+  };
+  const selectDetails = (target) => {
+    if (pinned) pinned.classList.remove('selected');
+    pinned = target;
+    if (pinned) pinned.classList.add('selected');
+    showDetails(pinned);
+  };
+  const applyView = () => svg.setAttribute('viewBox', view.join(' '));
+  const showPage = (nextIndex) => {
+    pageIndex = Math.max(0, Math.min(pages.length - 1, nextIndex));
+    pages.forEach((page, index) => page.classList.toggle('hidden-phase', index !== pageIndex));
+    const page = pages[pageIndex];
+    base = page.dataset.baseView.split(' ').map(Number);
+    view = base.slice();
+    applyView();
+    root.querySelector('[data-phase-label]').textContent = page.dataset.phaseLabel;
+    root.querySelector('[data-metrics]').textContent = page.dataset.metrics;
+    root.querySelector('[data-belt-summary]').textContent = page.dataset.beltSummary;
+    root.querySelector('[data-pipe-summary]').textContent = page.dataset.pipeSummary;
+    root.querySelector('[data-previous]').disabled = pageIndex === 0;
+    root.querySelector('[data-next]').disabled = pageIndex + 1 === pages.length;
+  };
+  root.querySelector('[data-previous]').addEventListener('click', () => showPage(pageIndex - 1));
+  root.querySelector('[data-next]').addEventListener('click', () => showPage(pageIndex + 1));
+  root.querySelectorAll('[data-toggle]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const pressed = button.getAttribute('aria-pressed') === 'true';
+      button.setAttribute('aria-pressed', String(!pressed));
+      root.querySelectorAll(`.${button.dataset.toggle}`).forEach((layer) => layer.classList.toggle('hidden-layer', pressed));
+    });
+  });
+  root.querySelector('[data-reset]').addEventListener('click', () => { view = base.slice(); applyView(); });
+  root.querySelector('[data-inspector-close]').addEventListener('click', () => selectDetails(null));
+  svg.addEventListener('wheel', (event) => {
+    event.preventDefault();
+    const rect = svg.getBoundingClientRect();
+    const px = (event.clientX - rect.left) / rect.width;
+    const py = (event.clientY - rect.top) / rect.height;
+    const factor = Math.exp(event.deltaY * 0.001);
+    const nextWidth = Math.min(base[2] * 8, Math.max(base[2] / 80, view[2] * factor));
+    const nextHeight = nextWidth * rect.height / rect.width;
+    view[0] += (view[2] - nextWidth) * px;
+    view[1] += (view[3] - nextHeight) * py;
+    view[2] = nextWidth;
+    view[3] = nextHeight;
+    applyView();
+  }, { passive: false });
+  svg.addEventListener('pointerdown', (event) => {
+    drag = { x: event.clientX, y: event.clientY, view: view.slice(), target: inspectTarget(event.target), moved: false };
+    svg.setPointerCapture(event.pointerId);
+    svg.classList.add('dragging');
+  });
+  svg.addEventListener('pointermove', (event) => {
+    if (!drag) return;
+    if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 5) return;
+    drag.moved = true;
+    const rect = svg.getBoundingClientRect();
+    view[0] = drag.view[0] - (event.clientX - drag.x) * drag.view[2] / rect.width;
+    view[1] = drag.view[1] - (event.clientY - drag.y) * drag.view[3] / rect.height;
+    applyView();
+  });
+  const stopDrag = (cancelled) => {
+    if (drag && !drag.moved && !cancelled) selectDetails(drag.target);
+    drag = null;
+    svg.classList.remove('dragging');
+  };
+  svg.addEventListener('pointerup', () => stopDrag(false));
+  svg.addEventListener('pointercancel', () => stopDrag(true));
+  showPage(pageIndex);
+})();
+</script>
+</body>
+</html>

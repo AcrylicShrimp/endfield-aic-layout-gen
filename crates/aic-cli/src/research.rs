@@ -23,6 +23,7 @@ use anyhow::{Context, Result, ensure};
 use clap::Subcommand;
 use sha2::{Digest, Sha256};
 
+mod external_connectors;
 mod factored_networks;
 mod first_phase;
 mod pair_cliff;
@@ -80,6 +81,36 @@ pub(crate) enum ResearchCommand {
         /// Optional standalone HTML result, including structured failure evidence.
         #[arg(long, value_name = "FILE")]
         visualization_output: Option<PathBuf>,
+    },
+    /// Solve one clean subset of phase-zero external connector requirements.
+    SolveFirstPhaseExternalSubset {
+        /// Benchmark workload manifest JSON file to solve.
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+
+        /// Root used to resolve portable input paths in the workload manifest.
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Zero-based phase-zero route indices. Repeat for every selected requirement.
+        #[arg(long = "route-index", value_name = "INDEX", required = true)]
+        route_indices: Vec<usize>,
+
+        /// Exact solver wall-clock budget in milliseconds.
+        #[arg(long, value_name = "MILLISECONDS")]
+        time_limit_ms: u64,
+
+        /// JSON artifact path.
+        #[arg(long, value_name = "FILE")]
+        output: PathBuf,
+
+        /// Standalone HTML result, including structured failure evidence.
+        #[arg(long, value_name = "FILE")]
+        visualization_output: PathBuf,
     },
     /// Decompose the first-phase cliff for one exact two-network model.
     DecomposeFirstPhasePair {
@@ -225,6 +256,23 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             workload,
             workspace_root,
             placement_request,
+            time_limit_ms,
+            output,
+            visualization_output,
+        ),
+        ResearchCommand::SolveFirstPhaseExternalSubset {
+            workload,
+            workspace_root,
+            placement_request,
+            route_indices,
+            time_limit_ms,
+            output,
+            visualization_output,
+        } => external_connectors::solve(
+            workload,
+            workspace_root,
+            placement_request,
+            route_indices,
             time_limit_ms,
             output,
             visualization_output,

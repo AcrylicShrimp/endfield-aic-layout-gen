@@ -9,11 +9,12 @@ pub use growth::{
 };
 
 pub use integrated::{
-    EXACT_ABLATION_MATRIX_SCHEMA_VERSION, ExactAblationCaseReport, ExactAblationFixation,
-    ExactAblationMatrixReport, ExactModelMetrics, ExactObjectiveKind, ExactObjectiveStageReport,
-    ExactObjectiveValue, ExactProofStatus, ExactSolveReport, ExactTerminationReason,
-    ExactValidationStatus, FACTORED_ENDPOINT_COMPARISON_SCHEMA_VERSION,
-    FACTORED_NETWORK_DECOMPOSITION_SCHEMA_VERSION,
+    EXACT_ABLATION_MATRIX_SCHEMA_VERSION, EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION,
+    ExactAblationCaseReport, ExactAblationFixation, ExactAblationMatrixReport, ExactModelMetrics,
+    ExactObjectiveKind, ExactObjectiveStageReport, ExactObjectiveValue, ExactProofStatus,
+    ExactSolveReport, ExactTerminationReason, ExactValidationStatus,
+    ExternalConnectorRequirementDescriptor, ExternalConnectorSubsetReport,
+    FACTORED_ENDPOINT_COMPARISON_SCHEMA_VERSION, FACTORED_NETWORK_DECOMPOSITION_SCHEMA_VERSION,
     FACTORED_REQUIREMENT_DECOMPOSITION_SCHEMA_VERSION, FactoredEndpointComparisonReport,
     FactoredNetworkDecompositionReport, FactoredNetworkSubsetCaseReport,
     FactoredRequirementDecompositionReport, FactoredRequirementSubsetCaseReport,
@@ -28,6 +29,7 @@ pub use integrated::{
     decompose_first_integrated_layout_phase_factored_requirements,
     decompose_first_integrated_layout_phase_pair, render_integrated_layout_html,
     render_integrated_layout_html_with_localization,
+    solve_first_integrated_layout_phase_external_connector_subset,
     solve_first_integrated_layout_phase_with_time_limit, solve_integrated_layout,
     solve_integrated_layout_with_time_limit,
 };

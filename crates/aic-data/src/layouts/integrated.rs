@@ -39,9 +39,10 @@ pub use report::{
     TransportNetworkSegment, TransportNetworkTerminal,
 };
 pub use research::{
-    EXACT_ABLATION_MATRIX_SCHEMA_VERSION, ExactAblationCaseReport, ExactAblationFixation,
-    ExactAblationMatrixReport, FACTORED_ENDPOINT_COMPARISON_SCHEMA_VERSION,
-    FACTORED_NETWORK_DECOMPOSITION_SCHEMA_VERSION,
+    EXACT_ABLATION_MATRIX_SCHEMA_VERSION, EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION,
+    ExactAblationCaseReport, ExactAblationFixation, ExactAblationMatrixReport,
+    ExternalConnectorRequirementDescriptor, ExternalConnectorSubsetReport,
+    FACTORED_ENDPOINT_COMPARISON_SCHEMA_VERSION, FACTORED_NETWORK_DECOMPOSITION_SCHEMA_VERSION,
     FACTORED_REQUIREMENT_DECOMPOSITION_SCHEMA_VERSION, FactoredEndpointComparisonReport,
     FactoredNetworkDecompositionReport, FactoredNetworkSubsetCaseReport,
     FactoredRequirementDecompositionReport, FactoredRequirementSubsetCaseReport,
@@ -51,6 +52,7 @@ pub use research::{
     decompose_first_integrated_layout_phase_factored_networks,
     decompose_first_integrated_layout_phase_factored_requirements,
     decompose_first_integrated_layout_phase_pair,
+    solve_first_integrated_layout_phase_external_connector_subset,
 };
 pub use score::LayoutScore;
 

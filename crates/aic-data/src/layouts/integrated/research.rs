@@ -2,12 +2,12 @@ use std::time::Duration;
 
 use serde::Serialize;
 
-use crate::facilities::ValidatedFacilityCatalog;
+use crate::facilities::{FacilityPortDirection, ValidatedFacilityCatalog};
 use crate::layouts::FacilityPlacementRequest;
 use crate::logistics::{
     ValidatedItemCatalog, ValidatedLogisticsComponentCatalog, ValidatedTransportCatalog,
 };
-use crate::recipes::FacilityInstanceWiringReport;
+use crate::recipes::{FacilityInstanceWiringReport, Rate};
 
 use super::{IntegratedLayoutReport, exact, harness, prepare_exact_model};
 
@@ -16,6 +16,123 @@ pub const SHARED_LAYER_COMPARISON_SCHEMA_VERSION: u32 = 1;
 pub const FACTORED_ENDPOINT_COMPARISON_SCHEMA_VERSION: u32 = 1;
 pub const FACTORED_NETWORK_DECOMPOSITION_SCHEMA_VERSION: u32 = 1;
 pub const FACTORED_REQUIREMENT_DECOMPOSITION_SCHEMA_VERSION: u32 = 1;
+pub const EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION: u32 = 1;
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ExternalConnectorRequirementDescriptor {
+    pub route_index: usize,
+    pub requirement_id: String,
+    pub item: String,
+    pub transport: crate::logistics::TransportKind,
+    pub direction: FacilityPortDirection,
+    pub rate: Rate,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct ExternalConnectorSubsetReport {
+    pub schema_version: u32,
+    pub route_indices: Vec<usize>,
+    pub selected_requirements: Vec<ExternalConnectorRequirementDescriptor>,
+    pub search_budget_ms: u64,
+    pub layout: IntegratedLayoutReport,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn solve_first_integrated_layout_phase_external_connector_subset(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    route_indices: &[usize],
+    search_budget: Duration,
+) -> Result<ExternalConnectorSubsetReport, IntegratedLayoutReport> {
+    let mut route_indices = route_indices.to_vec();
+    route_indices.sort_unstable();
+    let first_phase_wiring = harness::first_iterative_scc_wiring(instance_wiring)?;
+    let input = prepare_exact_model(
+        &first_phase_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+    )?;
+    let mut descriptors = Vec::with_capacity(route_indices.len());
+    for index in &route_indices {
+        let Some(edge) = input.edges.get(*index) else {
+            return Err(IntegratedLayoutReport::invalid(
+                super::IntegratedLayoutDiagnostic::error(
+                    "research-route-index-out-of-range",
+                    "/route_indices",
+                    Some(index.to_string()),
+                    format!(
+                        "research route index {index} is outside the available range 0..{}",
+                        input.edges.len()
+                    ),
+                ),
+            ));
+        };
+        let direction = match (&edge.source, &edge.target) {
+            (super::EndpointInput::External { .. }, super::EndpointInput::Facility { .. }) => {
+                FacilityPortDirection::Input
+            }
+            (super::EndpointInput::Facility { .. }, super::EndpointInput::External { .. }) => {
+                FacilityPortDirection::Output
+            }
+            _ => {
+                return Err(IntegratedLayoutReport::invalid(
+                    super::IntegratedLayoutDiagnostic::error(
+                        "research-route-is-not-external",
+                        "/route_indices",
+                        Some(index.to_string()),
+                        format!(
+                            "research route index {index} does not describe exactly one external endpoint"
+                        ),
+                    ),
+                ));
+            }
+        };
+        descriptors.push(ExternalConnectorRequirementDescriptor {
+            route_index: *index,
+            requirement_id: edge.requirement_id.clone(),
+            item: edge.edge.item.clone(),
+            transport: edge.transport,
+            direction,
+            rate: edge.edge.rate,
+        });
+    }
+    let (input, selected_requirements) = input
+        .select_route_indices(&route_indices)
+        .map_err(IntegratedLayoutReport::invalid)?;
+    if descriptors
+        .iter()
+        .map(|descriptor| descriptor.requirement_id.as_str())
+        .ne(selected_requirements.iter().map(String::as_str))
+    {
+        return Err(IntegratedLayoutReport::invalid(
+            super::IntegratedLayoutDiagnostic::error(
+                "research-requirement-selection-order-mismatch",
+                "/route_indices",
+                None,
+                "selected external requirements did not preserve canonical route-index order",
+            ),
+        ));
+    }
+    let layout = exact::shared_layer::solve_factored_endpoints(
+        input,
+        logistics_components,
+        Some(search_budget),
+    );
+    Ok(ExternalConnectorSubsetReport {
+        schema_version: EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION,
+        route_indices,
+        selected_requirements: descriptors,
+        search_budget_ms: millis(search_budget),
+        layout,
+    })
+}
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct FactoredRequirementSubsetCaseReport {

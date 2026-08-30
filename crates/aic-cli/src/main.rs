@@ -1753,6 +1753,53 @@ mod tests {
     }
 
     #[test]
+    fn parses_first_phase_external_connector_subset() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "solve-first-phase-external-subset",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--route-index",
+            "3",
+            "--route-index",
+            "1",
+            "--time-limit-ms",
+            "5000",
+            "--output",
+            "case.json",
+            "--visualization-output",
+            "case.html",
+        ])
+        .expect("external connector subset CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::SolveFirstPhaseExternalSubset {
+                    workload,
+                    workspace_root,
+                    placement_request,
+                    route_indices,
+                    time_limit_ms,
+                    output,
+                    visualization_output,
+                },
+        } = cli.command
+        else {
+            panic!("expected external connector subset research command")
+        };
+        assert_eq!(workload, PathBuf::from("workload.json"));
+        assert_eq!(workspace_root, PathBuf::from("."));
+        assert_eq!(placement_request, PathBuf::from("bounds.json"));
+        assert_eq!(route_indices, vec![3, 1]);
+        assert_eq!(time_limit_ms, 5_000);
+        assert_eq!(output, PathBuf::from("case.json"));
+        assert_eq!(visualization_output, PathBuf::from("case.html"));
+    }
+
+    #[test]
     fn parses_first_phase_pair_cliff_decomposition() {
         let cli = Cli::try_parse_from([
             "aic-cli",
