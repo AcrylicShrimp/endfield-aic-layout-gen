@@ -86,6 +86,28 @@ pub enum FacilityPortEdge {
     West,
 }
 
+impl FacilityPortEdge {
+    pub(crate) fn rotated_clockwise(self, rotation: i64) -> Self {
+        let quarter_turns = match rotation {
+            0 => 0,
+            90 => 1,
+            180 => 2,
+            270 => 3,
+            _ => unreachable!("facility rotation is validated before rotating port edges"),
+        };
+        let mut edge = self;
+        for _ in 0..quarter_turns {
+            edge = match edge {
+                Self::North => Self::East,
+                Self::East => Self::South,
+                Self::South => Self::West,
+                Self::West => Self::North,
+            };
+        }
+        edge
+    }
+}
+
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct FacilityCatalogValidationReport {
     pub valid: bool,

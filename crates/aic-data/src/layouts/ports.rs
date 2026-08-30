@@ -286,32 +286,23 @@ fn rotate_port(
                 x: height - 1 - position.y,
                 y: position.x,
             },
-            rotate_edge_clockwise(edge),
+            edge.rotated_clockwise(rotation),
         ),
         180 => (
             FacilityPortPosition {
                 x: width - 1 - position.x,
                 y: height - 1 - position.y,
             },
-            rotate_edge_clockwise(rotate_edge_clockwise(edge)),
+            edge.rotated_clockwise(rotation),
         ),
         270 => (
             FacilityPortPosition {
                 x: position.y,
                 y: width - 1 - position.x,
             },
-            rotate_edge_clockwise(rotate_edge_clockwise(rotate_edge_clockwise(edge))),
+            edge.rotated_clockwise(rotation),
         ),
         _ => unreachable!("rotation is checked before rotating ports"),
-    }
-}
-
-fn rotate_edge_clockwise(edge: FacilityPortEdge) -> FacilityPortEdge {
-    match edge {
-        FacilityPortEdge::North => FacilityPortEdge::East,
-        FacilityPortEdge::East => FacilityPortEdge::South,
-        FacilityPortEdge::South => FacilityPortEdge::West,
-        FacilityPortEdge::West => FacilityPortEdge::North,
     }
 }
 

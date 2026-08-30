@@ -12,7 +12,9 @@ use pumpkin_solver::core::termination::Indefinite;
 use pumpkin_solver::core::variables::{DomainId, Literal, TransformableVariable};
 use serde::{Deserialize, Serialize};
 
-use crate::facilities::{FacilityFootprint, ValidatedFacilityCatalog};
+use crate::facilities::{
+    FacilityFootprint, FacilityPortDefinition, FacilityPortEdge, ValidatedFacilityCatalog,
+};
 use crate::recipes::{FacilityInstanceWiringNode, FacilityInstanceWiringReport};
 
 const STAGE: &str = "facility-placement";
@@ -239,6 +241,7 @@ struct InstanceSpec {
     facility: String,
     footprint: FacilityFootprint,
     allowed_rotations: Vec<i64>,
+    ports: Vec<FacilityPortDefinition>,
 }
 
 fn collect_instances(
@@ -285,6 +288,7 @@ fn collect_instances(
             facility: facility.clone(),
             footprint: definition.footprint.clone(),
             allowed_rotations: definition.allowed_rotations.clone(),
+            ports: definition.ports.clone(),
         });
     }
 
@@ -327,8 +331,29 @@ fn solve_optimally(
         for orientation in &orientations {
             solver
                 .add_constraint(pumpkin_solver::less_than_or_equals(
+                    vec![x.scaled(-1)],
+                    -orientation.left_clearance,
+                    constraint_tag,
+                ))
+                .implied_by(orientation.literal);
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
                     vec![x.scaled(1)],
-                    max_width - orientation.width,
+                    max_width - orientation.width - orientation.right_clearance,
+                    constraint_tag,
+                ))
+                .implied_by(orientation.literal);
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    vec![y.scaled(-1)],
+                    -orientation.top_clearance,
+                    constraint_tag,
+                ))
+                .implied_by(orientation.literal);
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    vec![y.scaled(1)],
+                    max_height - orientation.height - orientation.bottom_clearance,
                     constraint_tag,
                 ))
                 .implied_by(orientation.literal);
@@ -415,6 +440,10 @@ struct ModelOrientation {
     rotation: i64,
     width: i32,
     height: i32,
+    top_clearance: i32,
+    right_clearance: i32,
+    bottom_clearance: i32,
+    left_clearance: i32,
     literal: Literal,
 }
 
@@ -435,7 +464,6 @@ fn solver_orientations(
     )?;
     let mut rotations = instance.allowed_rotations.clone();
     rotations.sort_unstable();
-    let mut seen_geometry = BTreeSet::new();
 
     let orientations = rotations
         .into_iter()
@@ -444,13 +472,20 @@ fn solver_orientations(
                 90 | 270 => (height, width),
                 _ => (width, height),
             };
-            (oriented_width <= max_width && seen_geometry.insert((oriented_width, oriented_height)))
-                .then(|| ModelOrientation {
-                    rotation,
-                    width: oriented_width,
-                    height: oriented_height,
-                    literal: solver.new_literal(),
-                })
+            let (top_clearance, right_clearance, bottom_clearance, left_clearance) =
+                orientation_clearance(&instance.ports, rotation);
+            (i64::from(oriented_width) + i64::from(left_clearance) + i64::from(right_clearance)
+                <= i64::from(max_width))
+            .then(|| ModelOrientation {
+                rotation,
+                width: oriented_width,
+                height: oriented_height,
+                top_clearance,
+                right_clearance,
+                bottom_clearance,
+                left_clearance,
+                literal: solver.new_literal(),
+            })
         })
         .collect::<Vec<_>>();
 
@@ -469,6 +504,24 @@ fn solver_orientations(
     }
 
     Ok(orientations)
+}
+
+fn orientation_clearance(ports: &[FacilityPortDefinition], rotation: i64) -> (i32, i32, i32, i32) {
+    let mut top = 0;
+    let mut right = 0;
+    let mut bottom = 0;
+    let mut left = 0;
+
+    for port in ports {
+        match port.edge.rotated_clockwise(rotation) {
+            FacilityPortEdge::North => top = 1,
+            FacilityPortEdge::East => right = 1,
+            FacilityPortEdge::South => bottom = 1,
+            FacilityPortEdge::West => left = 1,
+        }
+    }
+
+    (top, right, bottom, left)
 }
 
 fn post_exactly_one_orientation(
@@ -636,7 +689,10 @@ enum PlacementFailure {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::facilities::{FacilityCatalog, FacilityDefinition};
+    use crate::facilities::{
+        FacilityCatalog, FacilityDefinition, FacilityPortDefinition, FacilityPortDirection,
+        FacilityPortEdge, FacilityPortPosition, FacilityPortTransport,
+    };
     use crate::recipes::{FacilityInstanceWiringNode, Rate};
 
     fn request(max_width: i64) -> FacilityPlacementRequest {
@@ -724,6 +780,46 @@ mod tests {
         assert_eq!(
             (report.placements[0].width, report.placements[0].height),
             (2, 4)
+        );
+    }
+
+    #[test]
+    fn preserves_square_rotations_to_keep_port_connections_inside_bounds() {
+        let validated = ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
+            schema_version: 3,
+            facilities: vec![FacilityDefinition {
+                id: "assembler".to_string(),
+                footprint: FacilityFootprint {
+                    width: 2,
+                    height: 2,
+                },
+                allowed_rotations: vec![0, 180],
+                ports: vec![FacilityPortDefinition {
+                    id: "output".to_string(),
+                    direction: FacilityPortDirection::Output,
+                    transport: FacilityPortTransport::Belt,
+                    position: FacilityPortPosition { x: 1, y: 0 },
+                    edge: FacilityPortEdge::North,
+                }],
+            }],
+        })
+        .expect("test catalog should validate");
+        let request = request_with_bounds(2, 3);
+
+        let report = solve_facility_placement(
+            &wiring(vec![facility_node("assemble-casing:0")]),
+            &validated,
+            &request,
+        );
+
+        assert!(report.success, "{report:?}");
+        assert_eq!(report.placements[0].rotation, 180);
+        assert_eq!(report.placements[0].y, 0);
+        let projected = super::super::project_facility_ports(&report, &validated, &request);
+        assert!(projected.success, "{projected:?}");
+        assert_eq!(
+            projected.ports[0].connection,
+            super::super::WorldGridPosition { x: 0, y: 2 }
         );
     }
 
