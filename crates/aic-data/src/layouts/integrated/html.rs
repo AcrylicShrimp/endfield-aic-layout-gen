@@ -789,9 +789,12 @@ fn xml_escape(value: &str) -> String {
 mod tests {
     use crate::facilities::FacilityPortEdge;
     use crate::layouts::{
-        FacilityPlacement, FacilityPlacementBounds, INTEGRATED_LAYOUT_SCHEMA_VERSION,
-        IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutReport,
-        IntegratedLayoutStatus, IntegratedRoute, IntegratedRouteEndpoint,
+        CandidateCounts, DeterministicCandidateKey, FacilityChangeCounts, FacilityPlacement,
+        FacilityPlacementBounds, INTEGRATED_LAYOUT_SCHEMA_VERSION, IncumbentProvenance,
+        IntegratedLayoutDiagnostic, IntegratedLayoutIncumbentSummary, IntegratedLayoutPhase,
+        IntegratedLayoutPhaseOptimization, IntegratedLayoutReport, IntegratedLayoutStatus,
+        IntegratedRoute, IntegratedRouteEndpoint, LayoutScore, OptimizationProofStatus,
+        OptimizationTerminationReason, PhaseElapsedMilliseconds, RefinementKind, RouteChangeCounts,
         RouteRequirementFingerprint, WorldGridPosition,
     };
     use crate::localization::{
@@ -867,6 +870,7 @@ mod tests {
             introduced_components: vec![format!("component:{index:04}")],
             introduced_facilities: vec!["facility:<one>".to_string()],
             cumulative_facility_count: 1,
+            cumulative_route_requirement_count: 1,
             prior_placement_hint_count: usize::from(index > 0),
             bounds: report.bounds.clone().expect("test report has bounds"),
             placements: report.placements.clone(),
@@ -876,6 +880,57 @@ mod tests {
             route_cells: 2,
             bridge_count: 0,
             attempts: Vec::new(),
+            optimization: IntegratedLayoutPhaseOptimization {
+                search_bounds: FacilityPlacementBounds {
+                    width: 8,
+                    height: 6,
+                },
+                canonical_used_bounds: report.bounds.clone().expect("test report has bounds"),
+                initial_incumbent: None,
+                final_incumbent: IntegratedLayoutIncumbentSummary {
+                    score: LayoutScore {
+                        total_route_cells: 2,
+                        total_route_turns: 0,
+                        used_bounding_box_area: 48,
+                        maximum_used_side: 8,
+                        physical_transport_tiles: 2,
+                        logistics_component_count: 0,
+                        moved_prior_facility_count: 0,
+                        total_prior_facility_manhattan_displacement: 0,
+                        rotation_change_count: 0,
+                    },
+                    candidate_key: DeterministicCandidateKey {
+                        phase_index: index,
+                        refinement_kind: RefinementKind::GrowthNeighborhood,
+                        neighborhood_rank: 3,
+                        restart_index: 0,
+                        policy_index: 0,
+                        attempt_index: 0,
+                        yield_index: 0,
+                    },
+                    provenance: IncumbentProvenance::NeighborhoodCandidate {
+                        neighborhood_rank: 3,
+                        attempt_index: 0,
+                    },
+                },
+                score_delta: None,
+                candidate_counts: CandidateCounts {
+                    generated: 1,
+                    routed: 1,
+                    validated: 1,
+                    improved: 1,
+                    rejected: 0,
+                    timed_out: 0,
+                },
+                facility_changes: FacilityChangeCounts::default(),
+                route_changes: RouteChangeCounts {
+                    new: 1,
+                    ..RouteChangeCounts::default()
+                },
+                elapsed_ms: PhaseElapsedMilliseconds::default(),
+                termination_reason: OptimizationTerminationReason::NeighborhoodScheduleExhausted,
+                optimality: OptimizationProofStatus::NotAttempted,
+            },
         };
         report.phases = vec![phase(0), phase(1)];
         let localization = ValidatedLocalizationCatalog::try_from_catalog(LocalizationCatalog {

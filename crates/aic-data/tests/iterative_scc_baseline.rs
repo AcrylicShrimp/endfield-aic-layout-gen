@@ -99,13 +99,23 @@ fn one_facility_external_routes_are_minimal_and_search_domain_independent() {
         &config,
     );
 
-    for report in [&large_report, &small_report] {
+    for (report, expected_search_width) in [(&large_report, 500), (&small_report, 50)] {
         assert!(report.success, "{:#?}", report.diagnostics);
         assert_eq!(report.phases.len(), 1);
         let phase = &report.phases[0];
         assert_eq!(phase.cumulative_facility_count, 1);
+        assert_eq!(phase.cumulative_route_requirement_count, 3);
         assert_eq!(phase.routes.len(), 3);
         assert_eq!(phase.route_cells, phase.routes.len());
+        assert_eq!(
+            phase.optimization.final_incumbent.score.total_route_cells,
+            phase.route_cells
+        );
+        assert_eq!(phase.optimization.candidate_counts.validated, 1);
+        assert_eq!(
+            phase.optimization.search_bounds.width,
+            expected_search_width
+        );
         for route in &phase.routes {
             assert_eq!(route.cells.len(), 1);
             assert!(matches!(

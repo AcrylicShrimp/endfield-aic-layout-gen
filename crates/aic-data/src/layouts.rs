@@ -9,13 +9,16 @@ pub use growth::{
 };
 
 pub use integrated::{
-    CANDIDATE_POLICY_TABLE_SCHEMA_VERSION, CandidatePolicy, CandidatePolicyTable, CandidateRank,
-    DeterministicCandidateKey, INTEGRATED_LAYOUT_SCHEMA_VERSION,
-    ITERATIVE_OPTIMIZATION_CONFIG_SCHEMA_VERSION, IntegratedLayoutDiagnostic,
-    IntegratedLayoutPhase, IntegratedLayoutPhaseAttempt, IntegratedLayoutReport,
-    IntegratedLayoutStatus, IntegratedRoute, IntegratedRouteEndpoint, IterativeOptimizationConfig,
-    LayoutScore, OptimizationConfigDiagnostic, PlacedLogisticsComponent, PlacementPolicy,
-    RefinementKind, RouteRequirementFingerprint, RoutingOrderPolicy,
+    CANDIDATE_POLICY_TABLE_SCHEMA_VERSION, CandidateCounts, CandidatePolicy, CandidatePolicyTable,
+    CandidateRank, DeterministicCandidateKey, FacilityChangeCounts,
+    INTEGRATED_LAYOUT_SCHEMA_VERSION, ITERATIVE_OPTIMIZATION_CONFIG_SCHEMA_VERSION,
+    IncumbentProvenance, IntegratedLayoutDiagnostic, IntegratedLayoutIncumbentSummary,
+    IntegratedLayoutPhase, IntegratedLayoutPhaseAttempt, IntegratedLayoutPhaseOptimization,
+    IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRoute, IntegratedRouteEndpoint,
+    IterativeOptimizationConfig, LayoutScore, LayoutScoreDelta, OptimizationConfigDiagnostic,
+    OptimizationProofStatus, OptimizationTerminationReason, PhaseElapsedMilliseconds,
+    PlacedLogisticsComponent, PlacementPolicy, RefinementKind, RouteChangeCounts,
+    RouteRequirementFingerprint, RoutingOrderPolicy,
     construct_coordinate_integrated_layout_with_time_limit, construct_iterative_scc_layout,
     construct_sparse_integrated_layout, render_integrated_layout_html,
     render_integrated_layout_html_with_localization, solve_integrated_layout,

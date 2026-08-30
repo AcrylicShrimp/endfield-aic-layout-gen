@@ -19,10 +19,13 @@ use crate::recipes::{
 };
 
 use super::{
-    IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutPhaseAttempt,
-    IntegratedLayoutReport, IntegratedLayoutStatus, IterativeOptimizationConfig,
-    PRODUCTION_FACILITY_GAP, frame_placements_for_routing, prepare_model, route_turn_count, sparse,
-    validate_iterative_optimization_config,
+    CandidateCounts, DeterministicCandidateKey, FacilityChangeCounts, IncumbentProvenance,
+    IntegratedLayoutDiagnostic, IntegratedLayoutIncumbentSummary, IntegratedLayoutPhase,
+    IntegratedLayoutPhaseAttempt, IntegratedLayoutPhaseOptimization, IntegratedLayoutReport,
+    IntegratedLayoutStatus, IterativeOptimizationConfig, LayoutScore, OptimizationProofStatus,
+    OptimizationTerminationReason, PRODUCTION_FACILITY_GAP, PhaseElapsedMilliseconds,
+    RefinementKind, RouteChangeCounts, frame_placements_for_routing, prepare_model,
+    route_turn_count, sparse, validate_iterative_optimization_config,
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -106,6 +109,7 @@ pub fn construct_iterative_scc_layout(
     let mut latest_success = None;
 
     for phase in &growth.phases {
+        let phase_started = Instant::now();
         if Instant::now() >= strategy_deadline {
             let mut report = IntegratedLayoutReport::failure(
                 IntegratedLayoutStatus::Unknown,
@@ -120,6 +124,7 @@ pub fn construct_iterative_scc_layout(
             return report;
         }
         cumulative_facilities.extend(phase.facilities.iter().cloned());
+        let graph_started = Instant::now();
         let partial_wiring = match project_cumulative_wiring(
             instance_wiring,
             &cumulative_facilities,
@@ -135,6 +140,7 @@ pub fn construct_iterative_scc_layout(
                 return report;
             }
         };
+        let graph_construction_ms = elapsed_milliseconds(graph_started);
         let phase_time_limit = strategy_deadline.saturating_duration_since(Instant::now());
         if phase_time_limit.is_zero() {
             let mut report = IntegratedLayoutReport::failure(
@@ -150,6 +156,8 @@ pub fn construct_iterative_scc_layout(
             return report;
         }
 
+        let prior_reference = anchors.clone();
+        let placement_started = Instant::now();
         let placement = if anchors.is_empty() {
             solve_facility_placement_feasibly_with_time_limit(
                 &partial_wiring,
@@ -168,10 +176,15 @@ pub fn construct_iterative_scc_layout(
                 phase_time_limit,
             )
         };
+        let placement_ms = elapsed_milliseconds(placement_started);
         let mut attempt_reports = Vec::with_capacity(2);
         let mut selected = None;
+        let mut candidate_counts = CandidateCounts::default();
+        let mut routing_ms = 0;
         if !placement.success {
             attempt_reports.push(IntegratedLayoutPhaseAttempt {
+                candidate_key: None,
+                policy_id: None,
                 placement_hint_count: anchors.len(),
                 status: placement_status(placement.status),
                 diagnostic_code: placement
@@ -180,6 +193,7 @@ pub fn construct_iterative_scc_layout(
                     .map(|diagnostic| diagnostic.code.to_string()),
             });
         } else {
+            candidate_counts.generated += 1;
             let input = match prepare_model(&partial_wiring, facilities, items, transports, request)
             {
                 Ok(input) => input,
@@ -198,6 +212,8 @@ pub fn construct_iterative_scc_layout(
                 request.max_height,
             );
             if let Some(framed_placements) = framed_placements {
+                let routing_started = Instant::now();
+                candidate_counts.routed += 1;
                 let mut routed = sparse::construct_from_placements(
                     input,
                     logistics_components,
@@ -205,6 +221,7 @@ pub fn construct_iterative_scc_layout(
                     strategy_deadline,
                 );
                 if !routed.success {
+                    candidate_counts.rejected += 1;
                     let fallback_input = match prepare_model(
                         &partial_wiring,
                         facilities,
@@ -222,13 +239,26 @@ pub fn construct_iterative_scc_layout(
                             return report;
                         }
                     };
+                    candidate_counts.generated += 1;
+                    candidate_counts.routed += 1;
                     routed = sparse::construct_until(
                         fallback_input,
                         logistics_components,
                         strategy_deadline,
                     );
                 }
+                routing_ms = elapsed_milliseconds(routing_started);
                 attempt_reports.push(IntegratedLayoutPhaseAttempt {
+                    candidate_key: Some(DeterministicCandidateKey {
+                        phase_index: phase.index,
+                        refinement_kind: RefinementKind::GrowthNeighborhood,
+                        neighborhood_rank: 3,
+                        restart_index: 0,
+                        policy_index: 0,
+                        attempt_index: candidate_counts.routed.saturating_sub(1),
+                        yield_index: 0,
+                    }),
+                    policy_id: None,
                     placement_hint_count: anchors.len(),
                     status: routed.status,
                     diagnostic_code: routed
@@ -237,10 +267,16 @@ pub fn construct_iterative_scc_layout(
                         .map(|diagnostic| diagnostic.code.to_string()),
                 });
                 if routed.success {
+                    candidate_counts.validated += 1;
+                    candidate_counts.improved += 1;
                     selected = Some(routed);
+                } else if candidate_counts.rejected < candidate_counts.routed {
+                    candidate_counts.rejected += 1;
                 }
             } else {
                 attempt_reports.push(IntegratedLayoutPhaseAttempt {
+                    candidate_key: None,
+                    policy_id: None,
                     placement_hint_count: anchors.len(),
                     status: IntegratedLayoutStatus::Unknown,
                     diagnostic_code: Some("iterative-routing-frame-does-not-fit".to_string()),
@@ -293,13 +329,83 @@ pub fn construct_iterative_scc_layout(
             .iter()
             .filter(|component| component.kind == LogisticsComponentKind::Bridge)
             .count();
+        let final_score = LayoutScore::from_report(&phase_report, &prior_reference)
+            .expect("successful iterative phase must have a score");
+        let candidate_key = DeterministicCandidateKey {
+            phase_index: phase.index,
+            refinement_kind: RefinementKind::GrowthNeighborhood,
+            neighborhood_rank: 3,
+            restart_index: 0,
+            policy_index: 0,
+            attempt_index: candidate_counts.routed.saturating_sub(1),
+            yield_index: 0,
+        };
+        let unchanged_prior = prior_reference
+            .iter()
+            .filter(|prior| {
+                phase_report.placements.iter().any(|placement| {
+                    placement.instance == prior.instance
+                        && placement.x == prior.x
+                        && placement.y == prior.y
+                        && placement.rotation == prior.rotation
+                })
+            })
+            .count();
+        let newly_placed = phase_report
+            .placements
+            .iter()
+            .filter(|placement| {
+                !prior_reference
+                    .iter()
+                    .any(|prior| prior.instance == placement.instance)
+            })
+            .count();
+        let optimization = IntegratedLayoutPhaseOptimization {
+            search_bounds: crate::layouts::FacilityPlacementBounds {
+                width: request.max_width,
+                height: request.max_height,
+            },
+            canonical_used_bounds: bounds.clone(),
+            initial_incumbent: None,
+            final_incumbent: IntegratedLayoutIncumbentSummary {
+                score: final_score,
+                candidate_key,
+                provenance: IncumbentProvenance::NeighborhoodCandidate {
+                    neighborhood_rank: 3,
+                    attempt_index: candidate_key.attempt_index,
+                },
+            },
+            score_delta: None,
+            candidate_counts,
+            facility_changes: FacilityChangeCounts {
+                unchanged_prior,
+                moved_prior: final_score.moved_prior_facility_count,
+                newly_placed,
+                rotation_changed: final_score.rotation_change_count,
+            },
+            route_changes: RouteChangeCounts {
+                new: phase_report.routes.len(),
+                ..RouteChangeCounts::default()
+            },
+            elapsed_ms: PhaseElapsedMilliseconds {
+                graph_construction: graph_construction_ms,
+                incumbent_extension: 0,
+                placement: placement_ms,
+                routing: routing_ms,
+                validation: None,
+                total: elapsed_milliseconds(phase_started),
+            },
+            termination_reason: OptimizationTerminationReason::NeighborhoodScheduleExhausted,
+            optimality: OptimizationProofStatus::NotAttempted,
+        };
         anchors = phase_report.placements.clone();
         snapshots.push(IntegratedLayoutPhase {
             index: phase.index,
             introduced_components: phase.components.clone(),
             introduced_facilities: phase.facilities.clone(),
             cumulative_facility_count: cumulative_facilities.len(),
-            prior_placement_hint_count: anchors.len(),
+            cumulative_route_requirement_count: phase_report.routes.len(),
+            prior_placement_hint_count: prior_reference.len(),
             bounds,
             placements: phase_report.placements.clone(),
             logistics_components: phase_report.logistics_components.clone(),
@@ -308,6 +414,7 @@ pub fn construct_iterative_scc_layout(
             route_cells,
             bridge_count,
             attempts: attempt_reports,
+            optimization,
         });
         phase_report.diagnostics.push(IntegratedLayoutDiagnostic::info_for(
             "iterative-scc-phase-solved",
@@ -332,6 +439,10 @@ pub fn construct_iterative_scc_layout(
         ),
     ));
     report
+}
+
+fn elapsed_milliseconds(started: Instant) -> u64 {
+    u64::try_from(started.elapsed().as_millis()).unwrap_or(u64::MAX)
 }
 
 fn placement_status(status: FacilityPlacementStatus) -> IntegratedLayoutStatus {

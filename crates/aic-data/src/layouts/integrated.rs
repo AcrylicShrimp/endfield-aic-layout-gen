@@ -38,6 +38,7 @@ mod html;
 mod iterative;
 mod networks;
 mod optimization;
+mod report;
 mod score;
 mod sparse;
 mod witness;
@@ -50,12 +51,17 @@ pub use optimization::{
     OptimizationConfigDiagnostic, PlacementPolicy, RoutingOrderPolicy,
     validate_candidate_policy_table, validate_iterative_optimization_config,
 };
+pub use report::{
+    CandidateCounts, FacilityChangeCounts, IncumbentProvenance, IntegratedLayoutIncumbentSummary,
+    IntegratedLayoutPhaseOptimization, LayoutScoreDelta, OptimizationProofStatus,
+    OptimizationTerminationReason, PhaseElapsedMilliseconds, RouteChangeCounts,
+};
 pub use score::{CandidateRank, DeterministicCandidateKey, LayoutScore, RefinementKind};
 
 const STAGE: &str = "integrated-layout";
 const PRODUCTION_FACILITY_GAP: i64 = 1;
 const COORDINATE_ROUTING_FRAME: i64 = 1;
-pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 1;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -86,6 +92,7 @@ pub struct IntegratedLayoutPhase {
     pub introduced_components: Vec<String>,
     pub introduced_facilities: Vec<String>,
     pub cumulative_facility_count: usize,
+    pub cumulative_route_requirement_count: usize,
     pub prior_placement_hint_count: usize,
     pub bounds: FacilityPlacementBounds,
     pub placements: Vec<FacilityPlacement>,
@@ -95,10 +102,13 @@ pub struct IntegratedLayoutPhase {
     pub route_cells: usize,
     pub bridge_count: usize,
     pub attempts: Vec<IntegratedLayoutPhaseAttempt>,
+    pub optimization: IntegratedLayoutPhaseOptimization,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct IntegratedLayoutPhaseAttempt {
+    pub candidate_key: Option<DeterministicCandidateKey>,
+    pub policy_id: Option<String>,
     pub placement_hint_count: usize,
     pub status: IntegratedLayoutStatus,
     pub diagnostic_code: Option<String>,
