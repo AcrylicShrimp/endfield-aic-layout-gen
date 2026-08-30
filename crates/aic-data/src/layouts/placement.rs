@@ -656,11 +656,12 @@ mod tests {
         allowed_rotations: Vec<i64>,
     ) -> ValidatedFacilityCatalog {
         ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
-            schema_version: 2,
+            schema_version: 3,
             facilities: vec![FacilityDefinition {
                 id: "assembler".to_string(),
                 footprint,
                 allowed_rotations,
+                ports: Vec::new(),
             }],
         })
         .expect("test catalog should validate")
@@ -790,7 +791,7 @@ mod tests {
     #[test]
     fn rejects_missing_facility_definition() {
         let validated = ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
-            schema_version: 2,
+            schema_version: 3,
             facilities: Vec::new(),
         })
         .expect("empty catalog should validate");
@@ -937,7 +938,7 @@ mod tests {
     #[test]
     fn proves_height_lower_than_previous_shelf_solution() {
         let validated = ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
-            schema_version: 2,
+            schema_version: 3,
             facilities: vec![
                 FacilityDefinition {
                     id: "wide-tall".to_string(),
@@ -946,6 +947,7 @@ mod tests {
                         height: 4,
                     },
                     allowed_rotations: vec![0],
+                    ports: Vec::new(),
                 },
                 FacilityDefinition {
                     id: "wide-short".to_string(),
@@ -954,6 +956,7 @@ mod tests {
                         height: 2,
                     },
                     allowed_rotations: vec![0],
+                    ports: Vec::new(),
                 },
                 FacilityDefinition {
                     id: "narrow".to_string(),
@@ -962,6 +965,7 @@ mod tests {
                         height: 3,
                     },
                     allowed_rotations: vec![0],
+                    ports: Vec::new(),
                 },
             ],
         })

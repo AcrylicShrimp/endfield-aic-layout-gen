@@ -15,7 +15,7 @@ pub use validated::ValidatedFacilityCatalog;
 
 const STAGE: &str = "facility-catalog-validation";
 
-pub const SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION: u32 = 2;
+pub const SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION: u32 = 3;
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -36,6 +36,7 @@ pub struct FacilityDefinition {
     pub id: String,
     pub footprint: FacilityFootprint,
     pub allowed_rotations: Vec<i64>,
+    pub ports: Vec<FacilityPortDefinition>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
@@ -43,6 +44,46 @@ pub struct FacilityDefinition {
 pub struct FacilityFootprint {
     pub width: i64,
     pub height: i64,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct FacilityPortDefinition {
+    pub id: String,
+    pub direction: FacilityPortDirection,
+    pub transport: FacilityPortTransport,
+    pub position: FacilityPortPosition,
+    pub edge: FacilityPortEdge,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum FacilityPortDirection {
+    Input,
+    Output,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum FacilityPortTransport {
+    Belt,
+    Pipe,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct FacilityPortPosition {
+    pub x: i64,
+    pub y: i64,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum FacilityPortEdge {
+    North,
+    East,
+    South,
+    West,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -218,6 +259,7 @@ fn validate_facilities(
         }
 
         validate_allowed_rotations(facility, index, diagnostics);
+        validate_ports(facility, index, diagnostics);
     }
 }
 
@@ -270,6 +312,82 @@ fn validate_allowed_rotations(
     }
 }
 
+fn validate_ports(
+    facility: &FacilityDefinition,
+    facility_index: usize,
+    diagnostics: &mut Vec<FacilityCatalogDiagnostic>,
+) {
+    let mut seen_ids = BTreeSet::new();
+
+    for (port_index, port) in facility.ports.iter().enumerate() {
+        let port_path = format!("/facilities/{facility_index}/ports/{port_index}");
+
+        if !is_stable_id(&port.id) {
+            diagnostics.push(FacilityCatalogDiagnostic::error(
+                "invalid-facility-port-id",
+                format!("{port_path}/id"),
+                Some(facility.id.clone()),
+                format!(
+                    "facility '{}' port id '{}' must match {STABLE_ID_PATTERN}",
+                    facility.id, port.id
+                ),
+            ));
+        }
+
+        if !seen_ids.insert(port.id.as_str()) {
+            diagnostics.push(FacilityCatalogDiagnostic::error(
+                "duplicate-facility-port-id",
+                format!("{port_path}/id"),
+                Some(facility.id.clone()),
+                format!(
+                    "facility '{}' port id '{}' appears more than once",
+                    facility.id, port.id
+                ),
+            ));
+        }
+
+        let position_inside = port.position.x >= 0
+            && port.position.y >= 0
+            && port.position.x < facility.footprint.width
+            && port.position.y < facility.footprint.height;
+        if !position_inside {
+            diagnostics.push(FacilityCatalogDiagnostic::error(
+                "facility-port-position-out-of-bounds",
+                format!("{port_path}/position"),
+                Some(facility.id.clone()),
+                format!(
+                    "facility '{}' port '{}' position ({}, {}) must be inside its {}x{} footprint",
+                    facility.id,
+                    port.id,
+                    port.position.x,
+                    port.position.y,
+                    facility.footprint.width,
+                    facility.footprint.height
+                ),
+            ));
+            continue;
+        }
+
+        let edge_matches_position = match port.edge {
+            FacilityPortEdge::North => port.position.y == 0,
+            FacilityPortEdge::East => port.position.x == facility.footprint.width - 1,
+            FacilityPortEdge::South => port.position.y == facility.footprint.height - 1,
+            FacilityPortEdge::West => port.position.x == 0,
+        };
+        if !edge_matches_position {
+            diagnostics.push(FacilityCatalogDiagnostic::error(
+                "facility-port-edge-mismatch",
+                format!("{port_path}/edge"),
+                Some(facility.id.clone()),
+                format!(
+                    "facility '{}' port '{}' edge {:?} does not touch its footprint at position ({}, {})",
+                    facility.id, port.id, port.edge, port.position.x, port.position.y
+                ),
+            ));
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -284,6 +402,22 @@ mod tests {
                     height: 2,
                 },
                 allowed_rotations: vec![0, 90, 180, 270],
+                ports: vec![
+                    FacilityPortDefinition {
+                        id: "solid-input".to_string(),
+                        direction: FacilityPortDirection::Input,
+                        transport: FacilityPortTransport::Belt,
+                        position: FacilityPortPosition { x: 1, y: 1 },
+                        edge: FacilityPortEdge::South,
+                    },
+                    FacilityPortDefinition {
+                        id: "solid-output".to_string(),
+                        direction: FacilityPortDirection::Output,
+                        transport: FacilityPortTransport::Belt,
+                        position: FacilityPortPosition { x: 1, y: 0 },
+                        edge: FacilityPortEdge::North,
+                    },
+                ],
             }],
         }
     }
@@ -312,7 +446,7 @@ mod tests {
     fn rejects_unknown_facility_catalog_fields_on_parse() {
         let error = serde_json::from_str::<FacilityCatalog>(
             r#"{
-              "schema_version": 2,
+              "schema_version": 3,
               "facilities": [],
               "extra": true
             }"#,
@@ -326,12 +460,13 @@ mod tests {
     fn rejects_unknown_facility_definition_fields_on_parse() {
         let error = serde_json::from_str::<FacilityCatalog>(
             r#"{
-              "schema_version": 2,
+              "schema_version": 3,
               "facilities": [
                 {
                   "id": "grinding-unit",
                   "footprint": { "width": 3, "height": 2 },
                   "allowed_rotations": [0, 90, 180, 270],
+                  "ports": [],
                   "extra": true
                 }
               ]
@@ -346,12 +481,13 @@ mod tests {
     fn rejects_unknown_facility_footprint_fields_on_parse() {
         let error = serde_json::from_str::<FacilityCatalog>(
             r#"{
-              "schema_version": 2,
+              "schema_version": 3,
               "facilities": [
                 {
                   "id": "grinding-unit",
                   "footprint": { "width": 3, "height": 2, "extra": true },
-                  "allowed_rotations": [0, 90, 180, 270]
+                  "allowed_rotations": [0, 90, 180, 270],
+                  "ports": []
                 }
               ]
             }"#,
@@ -390,6 +526,7 @@ mod tests {
                         height: 2,
                     },
                     allowed_rotations: vec![0],
+                    ports: Vec::new(),
                 },
                 FacilityDefinition {
                     id: "grinding-unit".to_string(),
@@ -398,6 +535,7 @@ mod tests {
                         height: 2,
                     },
                     allowed_rotations: vec![0],
+                    ports: Vec::new(),
                 },
                 FacilityDefinition {
                     id: "grinding-unit".to_string(),
@@ -406,6 +544,7 @@ mod tests {
                         height: 2,
                     },
                     allowed_rotations: vec![0],
+                    ports: Vec::new(),
                 },
             ],
         };
@@ -433,6 +572,7 @@ mod tests {
                     height: -1,
                 },
                 allowed_rotations: vec![0],
+                ports: Vec::new(),
             }],
         };
 
@@ -466,6 +606,7 @@ mod tests {
                         height: 3,
                     },
                     allowed_rotations: Vec::new(),
+                    ports: Vec::new(),
                 },
                 FacilityDefinition {
                     id: "invalid-unit".to_string(),
@@ -474,6 +615,7 @@ mod tests {
                         height: 3,
                     },
                     allowed_rotations: vec![0, 45, 90, 90],
+                    ports: Vec::new(),
                 },
             ],
         };
@@ -496,6 +638,109 @@ mod tests {
                     "duplicate-facility-rotation",
                     "/facilities/1/allowed_rotations/3",
                 ),
+            ],
+        );
+    }
+
+    #[test]
+    fn rejects_unknown_facility_port_fields_on_parse() {
+        let error = serde_json::from_str::<FacilityCatalog>(
+            r#"{
+              "schema_version": 3,
+              "facilities": [
+                {
+                  "id": "grinding-unit",
+                  "footprint": { "width": 3, "height": 2 },
+                  "allowed_rotations": [0, 90, 180, 270],
+                  "ports": [
+                    {
+                      "id": "solid-input",
+                      "direction": "input",
+                      "transport": "belt",
+                      "position": { "x": 1, "y": 1 },
+                      "edge": "south",
+                      "extra": true
+                    }
+                  ]
+                }
+              ]
+            }"#,
+        )
+        .expect_err("unknown facility port fields should be rejected");
+
+        assert!(error.to_string().contains("unknown field"));
+    }
+
+    #[test]
+    fn rejects_invalid_and_duplicate_port_ids() {
+        let mut catalog = valid_catalog();
+        catalog.facilities[0].ports = vec![
+            FacilityPortDefinition {
+                id: "Invalid Port".to_string(),
+                direction: FacilityPortDirection::Input,
+                transport: FacilityPortTransport::Belt,
+                position: FacilityPortPosition { x: 1, y: 1 },
+                edge: FacilityPortEdge::South,
+            },
+            FacilityPortDefinition {
+                id: "shared-port".to_string(),
+                direction: FacilityPortDirection::Input,
+                transport: FacilityPortTransport::Belt,
+                position: FacilityPortPosition { x: 0, y: 1 },
+                edge: FacilityPortEdge::West,
+            },
+            FacilityPortDefinition {
+                id: "shared-port".to_string(),
+                direction: FacilityPortDirection::Output,
+                transport: FacilityPortTransport::Pipe,
+                position: FacilityPortPosition { x: 2, y: 0 },
+                edge: FacilityPortEdge::East,
+            },
+        ];
+
+        let report = catalog.validate();
+
+        assert!(!report.valid);
+        assert_facility_catalog_diagnostics(
+            &report.diagnostics,
+            &[
+                ("invalid-facility-port-id", "/facilities/0/ports/0/id"),
+                ("duplicate-facility-port-id", "/facilities/0/ports/2/id"),
+            ],
+        );
+    }
+
+    #[test]
+    fn rejects_out_of_bounds_and_non_edge_ports() {
+        let mut catalog = valid_catalog();
+        catalog.facilities[0].ports = vec![
+            FacilityPortDefinition {
+                id: "outside".to_string(),
+                direction: FacilityPortDirection::Input,
+                transport: FacilityPortTransport::Belt,
+                position: FacilityPortPosition { x: 3, y: 1 },
+                edge: FacilityPortEdge::East,
+            },
+            FacilityPortDefinition {
+                id: "inside".to_string(),
+                direction: FacilityPortDirection::Output,
+                transport: FacilityPortTransport::Pipe,
+                position: FacilityPortPosition { x: 1, y: 1 },
+                edge: FacilityPortEdge::North,
+            },
+        ];
+
+        let report = catalog.validate();
+
+        assert!(!report.valid);
+        assert_facility_catalog_diagnostics(
+            &report.diagnostics,
+            &[
+                (
+                    "facility-port-position-out-of-bounds",
+                    "/facilities/0/ports/0/position",
+                ),
+                ("facility-port-edge-mismatch", "/facilities/0/ports/1/edge"),
             ],
         );
     }

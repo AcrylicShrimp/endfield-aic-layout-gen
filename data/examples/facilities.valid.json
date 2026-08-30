@@ -1,5 +1,5 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "facilities": [
     {
       "id": "grinding-unit",
@@ -7,7 +7,23 @@
         "width": 3,
         "height": 2
       },
-      "allowed_rotations": [0, 90, 180, 270]
+      "allowed_rotations": [0, 90, 180, 270],
+      "ports": [
+        {
+          "id": "solid-input",
+          "direction": "input",
+          "transport": "belt",
+          "position": { "x": 1, "y": 1 },
+          "edge": "south"
+        },
+        {
+          "id": "solid-output",
+          "direction": "output",
+          "transport": "belt",
+          "position": { "x": 1, "y": 0 },
+          "edge": "north"
+        }
+      ]
     },
     {
       "id": "smelter",
@@ -15,7 +31,30 @@
         "width": 4,
         "height": 3
       },
-      "allowed_rotations": [0, 90, 180, 270]
+      "allowed_rotations": [0, 90, 180, 270],
+      "ports": [
+        {
+          "id": "solid-input",
+          "direction": "input",
+          "transport": "belt",
+          "position": { "x": 1, "y": 2 },
+          "edge": "south"
+        },
+        {
+          "id": "fluid-input",
+          "direction": "input",
+          "transport": "pipe",
+          "position": { "x": 0, "y": 1 },
+          "edge": "west"
+        },
+        {
+          "id": "solid-output",
+          "direction": "output",
+          "transport": "belt",
+          "position": { "x": 1, "y": 0 },
+          "edge": "north"
+        }
+      ]
     },
     {
       "id": "assembler",
@@ -23,7 +62,23 @@
         "width": 5,
         "height": 4
       },
-      "allowed_rotations": [0, 90, 180, 270]
+      "allowed_rotations": [0, 90, 180, 270],
+      "ports": [
+        {
+          "id": "solid-input",
+          "direction": "input",
+          "transport": "belt",
+          "position": { "x": 2, "y": 3 },
+          "edge": "south"
+        },
+        {
+          "id": "solid-output",
+          "direction": "output",
+          "transport": "belt",
+          "position": { "x": 2, "y": 0 },
+          "edge": "north"
+        }
+      ]
     }
   ]
 }

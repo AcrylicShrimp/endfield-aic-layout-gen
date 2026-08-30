@@ -9,5 +9,5 @@ Current example files:
 - `examples/recipes.valid.json`: minimal valid recipe book.
 - `examples/recipes.graph.json`: recipe graph and throughput example data.
 - `examples/throughput.request.json`: throughput request example.
-- `examples/facilities.valid.json`: footprint and allowed-rotation facility catalog example.
+- `examples/facilities.valid.json`: footprint, allowed-rotation, and directional-port facility catalog example.
 - `examples/placement.request.json`: facility placement system-bound constraints example.
