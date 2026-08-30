@@ -1,8 +1,191 @@
 use serde::Serialize;
 
-use crate::layouts::FacilityPlacementBounds;
+use crate::facilities::FacilityPortEdge;
+use crate::layouts::{FacilityPlacement, FacilityPlacementBounds};
+use crate::logistics::{LogisticsComponentKind, TransportKind};
+use crate::recipes::{FacilityInstanceWiringProjection, Rate};
 
-use super::{DeterministicCandidateKey, LayoutScore};
+use super::{DeterministicCandidateKey, LayoutScore, WorldGridPosition};
+
+const STAGE: &str = "integrated-layout";
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 5;
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum IntegratedLayoutStatus {
+    Optimal,
+    Feasible,
+    Infeasible,
+    InvalidInput,
+    Unknown,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct IntegratedLayoutReport {
+    pub schema_version: u32,
+    pub success: bool,
+    pub status: IntegratedLayoutStatus,
+    pub bounds: Option<FacilityPlacementBounds>,
+    pub placements: Vec<FacilityPlacement>,
+    pub logistics_components: Vec<PlacedLogisticsComponent>,
+    pub routes: Vec<IntegratedRoute>,
+    pub phases: Vec<IntegratedLayoutPhase>,
+    pub diagnostics: Vec<IntegratedLayoutDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct IntegratedLayoutPhase {
+    pub index: usize,
+    pub introduced_components: Vec<String>,
+    pub introduced_facilities: Vec<String>,
+    pub ready_component_count: usize,
+    pub selected_component_count: usize,
+    pub deferred_component_count: usize,
+    pub oversized_component_count: usize,
+    pub cumulative_facility_count: usize,
+    pub cumulative_route_requirement_count: usize,
+    pub prior_placement_hint_count: usize,
+    pub bounds: FacilityPlacementBounds,
+    pub placements: Vec<FacilityPlacement>,
+    pub logistics_components: Vec<PlacedLogisticsComponent>,
+    pub routes: Vec<IntegratedRoute>,
+    pub route_turns: usize,
+    pub route_cells: usize,
+    pub bridge_count: usize,
+    pub attempts: Vec<IntegratedLayoutPhaseAttempt>,
+    pub optimization: IntegratedLayoutPhaseOptimization,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct IntegratedLayoutPhaseAttempt {
+    pub candidate_key: Option<DeterministicCandidateKey>,
+    pub policy_id: Option<String>,
+    pub placement_hint_count: usize,
+    pub status: IntegratedLayoutStatus,
+    pub diagnostic_code: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct PlacedLogisticsComponent {
+    pub id: String,
+    pub component: String,
+    pub kind: LogisticsComponentKind,
+    pub transport: TransportKind,
+    pub position: WorldGridPosition,
+    pub rotation: i64,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct IntegratedRoute {
+    pub requirement_id: String,
+    pub requirement_fingerprint: RouteRequirementFingerprint,
+    pub source: IntegratedRouteEndpoint,
+    pub target: IntegratedRouteEndpoint,
+    pub item: String,
+    pub rate: Rate,
+    pub transport: TransportKind,
+    pub cells: Vec<WorldGridPosition>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct RouteRequirementFingerprint {
+    pub source: String,
+    pub target: String,
+    pub item: String,
+    pub rate: Rate,
+    pub transport: TransportKind,
+    pub projection: FacilityInstanceWiringProjection,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum IntegratedRouteEndpoint {
+    Facility {
+        instance: String,
+        port: String,
+    },
+    External {
+        node: String,
+        side: FacilityPortEdge,
+    },
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct IntegratedLayoutDiagnostic {
+    pub stage: &'static str,
+    pub severity: &'static str,
+    pub code: &'static str,
+    pub path: String,
+    pub entity: Option<String>,
+    pub message: String,
+}
+
+impl IntegratedLayoutDiagnostic {
+    pub fn error(
+        code: &'static str,
+        path: impl Into<String>,
+        entity: Option<String>,
+        message: impl Into<String>,
+    ) -> Self {
+        Self {
+            stage: STAGE,
+            severity: "error",
+            code,
+            path: path.into(),
+            entity,
+            message: message.into(),
+        }
+    }
+
+    pub(super) fn info(code: &'static str, message: impl Into<String>) -> Self {
+        Self {
+            stage: STAGE,
+            severity: "info",
+            code,
+            path: "/".to_string(),
+            entity: None,
+            message: message.into(),
+        }
+    }
+
+    pub(super) fn info_for(
+        code: &'static str,
+        entity: impl Into<String>,
+        message: impl Into<String>,
+    ) -> Self {
+        Self {
+            stage: STAGE,
+            severity: "info",
+            code,
+            path: "/".to_string(),
+            entity: Some(entity.into()),
+            message: message.into(),
+        }
+    }
+}
+
+impl IntegratedLayoutReport {
+    pub fn invalid(diagnostic: IntegratedLayoutDiagnostic) -> Self {
+        Self::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
+    }
+
+    pub(super) fn failure(
+        status: IntegratedLayoutStatus,
+        diagnostic: IntegratedLayoutDiagnostic,
+    ) -> Self {
+        Self {
+            schema_version: INTEGRATED_LAYOUT_SCHEMA_VERSION,
+            success: false,
+            status,
+            bounds: None,
+            placements: Vec::new(),
+            logistics_components: Vec::new(),
+            routes: Vec::new(),
+            phases: Vec::new(),
+            diagnostics: vec![diagnostic],
+        }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct IntegratedLayoutIncumbentSummary {
