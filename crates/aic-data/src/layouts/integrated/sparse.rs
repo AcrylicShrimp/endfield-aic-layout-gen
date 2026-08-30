@@ -375,6 +375,23 @@ fn route_orders(input: &ModelInput) -> Vec<Vec<usize>> {
     let original = (0..input.edges.len()).collect::<Vec<_>>();
     let mut reversed = original.clone();
     reversed.reverse();
+    let network_first = input
+        .networks
+        .iter()
+        .flat_map(|network| network.route_indices().iter().copied())
+        .collect::<Vec<_>>();
+    let mut terminal_first_networks = input.networks.iter().collect::<Vec<_>>();
+    terminal_first_networks.sort_by_key(|network| {
+        (
+            std::cmp::Reverse(network.boundary_terminal_count()),
+            std::cmp::Reverse(network.terminal_count()),
+            network.id(),
+        )
+    });
+    let terminal_first = terminal_first_networks
+        .into_iter()
+        .flat_map(|network| network.route_indices().iter().copied())
+        .collect::<Vec<_>>();
     let mut facility_first = original.clone();
     facility_first.sort_by_key(|index| {
         let edge = &input.edges[*index];
@@ -384,7 +401,14 @@ fn route_orders(input: &ModelInput) -> Vec<Vec<usize>> {
     });
     let mut boundary_first = facility_first.clone();
     boundary_first.reverse();
-    let mut orders = vec![original, reversed, facility_first, boundary_first];
+    let mut orders = vec![
+        original,
+        reversed,
+        network_first,
+        terminal_first,
+        facility_first,
+        boundary_first,
+    ];
     for seed in 1_u64..=96 {
         let mut shuffled = (0..input.edges.len()).collect::<Vec<_>>();
         shuffled.sort_by_key(|index| deterministic_order_key(*index as u64, seed));

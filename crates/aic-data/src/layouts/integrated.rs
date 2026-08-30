@@ -31,6 +31,7 @@ use crate::recipes::{
 use super::WorldGridPosition;
 use super::placement::solve_facility_placement_feasibly_with_time_limit;
 
+mod networks;
 mod sparse;
 mod witness;
 
@@ -346,6 +347,7 @@ struct ModelInput {
     height: i32,
     instances: Vec<InstanceInput>,
     edges: Vec<EdgeInput>,
+    networks: Vec<networks::RoutingNetworkInput>,
 }
 
 struct EdgeInput {
@@ -545,12 +547,14 @@ fn prepare_model(
     let width = i32::try_from(request.max_width).map_err(|_| solver_domain_error("max_width"))?;
     let height =
         i32::try_from(request.max_height).map_err(|_| solver_domain_error("max_height"))?;
+    let networks = networks::normalize(&edges)?;
 
     Ok(ModelInput {
         width,
         height,
         instances,
         edges,
+        networks,
     })
 }
 
