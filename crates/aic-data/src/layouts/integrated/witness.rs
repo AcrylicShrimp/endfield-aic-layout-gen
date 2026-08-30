@@ -1,8 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
-use crate::facilities::FacilityPortDirection;
+use crate::facilities::{FacilityPortDirection, FacilityPortEdge};
 use crate::layouts::FacilityPlacement;
-use crate::logistics::{LogisticsComponentKind, TransportKind, ValidatedLogisticsComponentCatalog};
+use crate::logistics::{
+    CardinalDirection, LogisticsComponentKind, TransportKind, ValidatedLogisticsComponentCatalog,
+};
 use crate::recipes::Rate;
 
 use super::{
@@ -98,6 +100,8 @@ pub(super) fn validate(
             network,
             expected,
             &placements,
+            components,
+            report,
             &mut layer_cells,
         )?;
     }
@@ -146,6 +150,8 @@ fn validate_network(
     network: &TransportNetwork,
     expected: &super::networks::RoutingNetworkInput,
     placements: &ValidatedPlacements<'_>,
+    components: &ValidatedLogisticsComponentCatalog,
+    report: &IntegratedLayoutReport,
     layer_cells: &mut [Vec<Vec<SegmentShape>>; 2],
 ) -> Result<(), IntegratedLayoutDiagnostic> {
     if network.cells.is_empty() {
@@ -180,6 +186,10 @@ fn validate_network(
     let mut forward = BTreeMap::<usize, BTreeSet<usize>>::new();
     let mut reverse = BTreeMap::<usize, BTreeSet<usize>>::new();
     let mut incident_neighbors = BTreeMap::<usize, BTreeSet<usize>>::new();
+    let mut incoming_directions = BTreeMap::<usize, BTreeSet<CardinalDirection>>::new();
+    let mut outgoing_directions = BTreeMap::<usize, BTreeSet<CardinalDirection>>::new();
+    let mut incoming_direction_rates = BTreeMap::<usize, BTreeMap<CardinalDirection, Rate>>::new();
+    let mut outgoing_direction_rates = BTreeMap::<usize, BTreeMap<CardinalDirection, Rate>>::new();
     for (segment_index, segment) in network.segments.iter().enumerate() {
         if segment.rate.numerator <= 0 || segment.rate.denominator <= 0 {
             return Err(invalid(
@@ -225,6 +235,30 @@ fn validate_network(
         reverse.entry(to).or_default().insert(from);
         incident_neighbors.entry(from).or_default().insert(to);
         incident_neighbors.entry(to).or_default().insert(from);
+        let outgoing_direction = direction_between(from, to, input.width);
+        let incoming_direction = direction_between(to, from, input.width);
+        outgoing_directions
+            .entry(from)
+            .or_default()
+            .insert(outgoing_direction);
+        incoming_directions
+            .entry(to)
+            .or_default()
+            .insert(incoming_direction);
+        add_direction_rate(
+            &mut outgoing_direction_rates,
+            from,
+            outgoing_direction,
+            segment.rate,
+            network_index,
+        )?;
+        add_direction_rate(
+            &mut incoming_direction_rates,
+            to,
+            incoming_direction,
+            segment.rate,
+            network_index,
+        )?;
     }
 
     let expected_terminals = expected_terminals(input, expected.route_indices(), network_index)?;
@@ -283,8 +317,32 @@ fn validate_network(
         )?;
         if terminal.direction == FacilityPortDirection::Output {
             add_rate(&mut supply, cell, terminal.rate, network_index)?;
+            let direction = terminal_arm_direction(input, placements, &terminal.endpoint)?;
+            incoming_directions
+                .entry(cell)
+                .or_default()
+                .insert(direction);
+            add_direction_rate(
+                &mut incoming_direction_rates,
+                cell,
+                direction,
+                terminal.rate,
+                network_index,
+            )?;
         } else {
             add_rate(&mut demand, cell, terminal.rate, network_index)?;
+            let direction = terminal_arm_direction(input, placements, &terminal.endpoint)?;
+            outgoing_directions
+                .entry(cell)
+                .or_default()
+                .insert(direction);
+            add_direction_rate(
+                &mut outgoing_direction_rates,
+                cell,
+                direction,
+                terminal.rate,
+                network_index,
+            )?;
         }
     }
     let expected_rates = expected_terminals
@@ -327,18 +385,19 @@ fn validate_network(
                 format!("transport cell {cell} has no terminal or active segment"),
             ));
         }
-        let incoming_arms =
-            reverse.get(cell).map_or(0, BTreeSet::len) + usize::from(supply.contains_key(cell));
-        let outgoing_arms =
-            forward.get(cell).map_or(0, BTreeSet::len) + usize::from(demand.contains_key(cell));
-        if incoming_arms > 1 || outgoing_arms > 1 {
-            return Err(invalid(
-                format!("/transport_networks/{network_index}/cells"),
-                format!(
-                    "plain transport cell {cell} splits or converges without a modeled logistics component"
-                ),
-            ));
-        }
+        validate_branch_topology(
+            input,
+            components,
+            report,
+            network_index,
+            network,
+            *cell,
+            incoming_directions.get(cell),
+            outgoing_directions.get(cell),
+            incoming_direction_rates.get(cell),
+            outgoing_direction_rates.get(cell),
+            left,
+        )?;
     }
     validate_reachability(network_index, &cells, &supply, &demand, &forward, &reverse)?;
 
@@ -349,6 +408,251 @@ fn validate_network(
         }
     }
     Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn validate_branch_topology(
+    input: &ModelInput,
+    components: &ValidatedLogisticsComponentCatalog,
+    report: &IntegratedLayoutReport,
+    network_index: usize,
+    network: &TransportNetwork,
+    cell: usize,
+    incoming: Option<&BTreeSet<CardinalDirection>>,
+    outgoing: Option<&BTreeSet<CardinalDirection>>,
+    incoming_rates: Option<&BTreeMap<CardinalDirection, Rate>>,
+    outgoing_rates: Option<&BTreeMap<CardinalDirection, Rate>>,
+    flow: Rate,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let incoming = incoming.cloned().unwrap_or_default();
+    let outgoing = outgoing.cloned().unwrap_or_default();
+    let incoming_rates = incoming_rates.cloned().unwrap_or_default();
+    let outgoing_rates = outgoing_rates.cloned().unwrap_or_default();
+    let bridge = report.logistics_components.iter().find(|component| {
+        network.component_ids.contains(&component.id)
+            && component.kind == LogisticsComponentKind::Bridge
+            && component.position.x >= 0
+            && component.position.y >= 0
+            && component.position.x < i64::from(input.width)
+            && component.position.y < i64::from(input.height)
+            && grid_index(
+                component.position.x as i32,
+                component.position.y as i32,
+                input.width,
+            ) == cell
+    });
+    if let Some(bridge) = bridge {
+        if incoming.is_empty()
+            || incoming.len() > 2
+            || outgoing.len() != incoming.len()
+            || incoming.iter().any(|direction| {
+                let opposite = opposite(*direction);
+                !outgoing.contains(&opposite)
+                    || incoming_rates.get(direction) != outgoing_rates.get(&opposite)
+            })
+            || (incoming.len() == 2
+                && (incoming.iter().all(|direction| {
+                    matches!(direction, CardinalDirection::East | CardinalDirection::West)
+                }) || incoming.iter().all(|direction| {
+                    matches!(
+                        direction,
+                        CardinalDirection::North | CardinalDirection::South
+                    )
+                })))
+        {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/component_ids"),
+                format!("bridge at cell {cell} does not preserve independent straight channels"),
+            ));
+        }
+        let definition = components
+            .component(&bridge.component)
+            .expect("validated component");
+        let capacity = Rate::from_quantity_per_duration_ms(
+            definition.capacity.quantity,
+            definition.capacity.duration_ms,
+        )
+        .map_err(|error| arithmetic_invalid(network_index, error.message))?;
+        if incoming_rates.values().any(|rate| *rate > capacity) {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/component_ids"),
+                format!("bridge channel at cell {cell} exceeds catalog capacity"),
+            ));
+        }
+        return Ok(());
+    }
+    let branch_components = report
+        .logistics_components
+        .iter()
+        .filter(|component| {
+            network.component_ids.contains(&component.id)
+                && component.position.x >= 0
+                && component.position.y >= 0
+                && matches!(
+                    component.kind,
+                    LogisticsComponentKind::Splitter | LogisticsComponentKind::Converger
+                )
+                && component.position.x < i64::from(input.width)
+                && component.position.y < i64::from(input.height)
+                && grid_index(
+                    component.position.x as i32,
+                    component.position.y as i32,
+                    input.width,
+                ) == cell
+        })
+        .collect::<Vec<_>>();
+
+    let expected_kind = match (incoming.len(), outgoing.len()) {
+        (0 | 1, 0 | 1) => None,
+        (1, 2 | 3) => Some(LogisticsComponentKind::Splitter),
+        (2 | 3, 1) => Some(LogisticsComponentKind::Converger),
+        _ => {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/cells"),
+                format!(
+                    "transport cell {cell} has unsupported {}-input/{}-output topology",
+                    incoming.len(),
+                    outgoing.len()
+                ),
+            ));
+        }
+    };
+    let Some(expected_kind) = expected_kind else {
+        if !branch_components.is_empty() {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/component_ids"),
+                format!("plain transport cell {cell} has an unnecessary branch component"),
+            ));
+        }
+        return Ok(());
+    };
+    if branch_components.len() != 1 || branch_components[0].kind != expected_kind {
+        return Err(invalid(
+            format!("/transport_networks/{network_index}/component_ids"),
+            format!("transport cell {cell} requires exactly one {expected_kind:?} component"),
+        ));
+    }
+    let placed = branch_components[0];
+    if placed.transport != network.transport {
+        return Err(invalid(
+            format!("/transport_networks/{network_index}/component_ids"),
+            "branch component transport does not match its network",
+        ));
+    }
+    let definition = components.component(&placed.component).ok_or_else(|| {
+        invalid(
+            "/logistics_components",
+            "unknown branch component definition",
+        )
+    })?;
+    let allowed_inputs = definition
+        .input_directions
+        .iter()
+        .map(|direction| rotate_direction(*direction, placed.rotation))
+        .collect::<BTreeSet<_>>();
+    let allowed_outputs = definition
+        .output_directions
+        .iter()
+        .map(|direction| rotate_direction(*direction, placed.rotation))
+        .collect::<BTreeSet<_>>();
+    if !incoming.is_subset(&allowed_inputs) || !outgoing.is_subset(&allowed_outputs) {
+        return Err(invalid(
+            format!("/transport_networks/{network_index}/component_ids"),
+            format!("branch component at cell {cell} does not match channel directions"),
+        ));
+    }
+    let capacity = Rate::from_quantity_per_duration_ms(
+        definition.capacity.quantity,
+        definition.capacity.duration_ms,
+    )
+    .map_err(|error| arithmetic_invalid(network_index, error.message))?;
+    if flow > capacity {
+        return Err(invalid(
+            format!("/transport_networks/{network_index}/component_ids"),
+            format!("branch component at cell {cell} exceeds catalog capacity"),
+        ));
+    }
+    Ok(())
+}
+
+fn terminal_arm_direction(
+    input: &ModelInput,
+    placements: &ValidatedPlacements<'_>,
+    endpoint: &TransportNetworkEndpoint,
+) -> Result<CardinalDirection, IntegratedLayoutDiagnostic> {
+    match endpoint {
+        TransportNetworkEndpoint::External { side, .. } => Ok(edge_direction(*side)),
+        TransportNetworkEndpoint::Facility { instance, port } => {
+            let placement = placements
+                .by_instance
+                .get(instance.as_str())
+                .ok_or_else(|| {
+                    invalid(
+                        "/transport_networks",
+                        "terminal references an unplaced facility",
+                    )
+                })?;
+            let definition = &input
+                .instances
+                .iter()
+                .find(|candidate| candidate.id == *instance)
+                .expect("validated placement instance exists")
+                .definition;
+            let port = definition
+                .ports
+                .iter()
+                .find(|candidate| candidate.id == *port)
+                .expect("validated terminal port exists");
+            Ok(opposite(edge_direction(
+                port.edge.rotated_clockwise(placement.rotation),
+            )))
+        }
+    }
+}
+
+fn direction_between(cell: usize, neighbor: usize, width: i32) -> CardinalDirection {
+    if neighbor + width as usize == cell {
+        CardinalDirection::North
+    } else if neighbor == cell + 1 {
+        CardinalDirection::East
+    } else if neighbor == cell + width as usize {
+        CardinalDirection::South
+    } else if neighbor + 1 == cell {
+        CardinalDirection::West
+    } else {
+        panic!("validated segment cells are orthogonal neighbors")
+    }
+}
+
+fn edge_direction(edge: FacilityPortEdge) -> CardinalDirection {
+    match edge {
+        FacilityPortEdge::North => CardinalDirection::North,
+        FacilityPortEdge::East => CardinalDirection::East,
+        FacilityPortEdge::South => CardinalDirection::South,
+        FacilityPortEdge::West => CardinalDirection::West,
+    }
+}
+
+fn opposite(direction: CardinalDirection) -> CardinalDirection {
+    match direction {
+        CardinalDirection::North => CardinalDirection::South,
+        CardinalDirection::East => CardinalDirection::West,
+        CardinalDirection::South => CardinalDirection::North,
+        CardinalDirection::West => CardinalDirection::East,
+    }
+}
+
+fn rotate_direction(direction: CardinalDirection, rotation: i64) -> CardinalDirection {
+    let mut direction = direction;
+    for _ in 0..(rotation / 90) {
+        direction = match direction {
+            CardinalDirection::North => CardinalDirection::East,
+            CardinalDirection::East => CardinalDirection::South,
+            CardinalDirection::South => CardinalDirection::West,
+            CardinalDirection::West => CardinalDirection::North,
+        };
+    }
+    direction
 }
 
 fn expected_terminals(
@@ -648,16 +952,11 @@ fn validate_crossings(
     }
 
     let mut actual_bridges = BTreeSet::new();
+    let mut occupied_components = BTreeSet::new();
     for (index, component) in report.logistics_components.iter().enumerate() {
-        if component.kind != LogisticsComponentKind::Bridge {
-            return Err(invalid(
-                format!("/logistics_components/{index}/kind"),
-                "exact baseline witness currently emits only bridge logistics components",
-            ));
-        }
         let definition = components
             .component_by_kind(component.transport, component.kind)
-            .expect("validated catalog has every bridge capability");
+            .expect("validated catalog has every logistics component capability");
         if component.component != definition.id
             || !definition.allowed_rotations.contains(&component.rotation)
             || component.position.x < 0
@@ -667,7 +966,7 @@ fn validate_crossings(
         {
             return Err(invalid(
                 format!("/logistics_components/{index}"),
-                "placed logistics bridge does not match its catalog definition or hard bounds",
+                "placed logistics component does not match its catalog definition or hard bounds",
             ));
         }
         let cell = grid_index(
@@ -675,11 +974,46 @@ fn validate_crossings(
             component.position.y as i32,
             input.width,
         );
-        if placements.occupied[cell] || !actual_bridges.insert((component.transport, cell)) {
+        if placements.occupied[cell] || !occupied_components.insert((component.transport, cell)) {
             return Err(invalid(
                 format!("/logistics_components/{index}"),
-                "placed logistics bridge overlaps a facility or duplicates another bridge",
+                "placed logistics component overlaps a facility or another same-layer component",
             ));
+        }
+        let owners = report
+            .transport_networks
+            .iter()
+            .filter(|network| network.component_ids.contains(&component.id))
+            .collect::<Vec<_>>();
+        if owners.is_empty()
+            || owners.iter().any(|network| {
+                network.transport != component.transport
+                    || !network.cells.contains(&component.position)
+            })
+        {
+            return Err(invalid(
+                format!("/logistics_components/{index}"),
+                "placed logistics component is not owned by a matching network at its cell",
+            ));
+        }
+        match component.kind {
+            LogisticsComponentKind::Bridge => {
+                if !(1..=2).contains(&owners.len()) {
+                    return Err(invalid(
+                        format!("/logistics_components/{index}"),
+                        "bridge must carry two perpendicular channels owned by one or two transport networks",
+                    ));
+                }
+                actual_bridges.insert((component.transport, cell));
+            }
+            LogisticsComponentKind::Splitter | LogisticsComponentKind::Converger => {
+                if owners.len() != 1 {
+                    return Err(invalid(
+                        format!("/logistics_components/{index}"),
+                        "splitter or converger must belong to exactly one transport network",
+                    ));
+                }
+            }
         }
     }
     if actual_bridges != expected_bridges {
@@ -759,6 +1093,24 @@ fn add_rate(
     network_index: usize,
 ) -> Result<(), IntegratedLayoutDiagnostic> {
     let total = rates.entry(cell).or_insert(Rate::zero());
+    *total = total
+        .checked_add(rate)
+        .map_err(|error| arithmetic_invalid(network_index, error.message))?;
+    Ok(())
+}
+
+fn add_direction_rate(
+    rates: &mut BTreeMap<usize, BTreeMap<CardinalDirection, Rate>>,
+    cell: usize,
+    direction: CardinalDirection,
+    rate: Rate,
+    network_index: usize,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let total = rates
+        .entry(cell)
+        .or_default()
+        .entry(direction)
+        .or_insert(Rate::zero());
     *total = total
         .checked_add(rate)
         .map_err(|error| arithmetic_invalid(network_index, error.message))?;

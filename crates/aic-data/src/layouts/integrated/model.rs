@@ -4,7 +4,10 @@ use crate::facilities::{
     FacilityDefinition, FacilityPortDefinition, FacilityPortDirection, ValidatedFacilityCatalog,
 };
 use crate::layouts::{FacilityPlacementRequest, validate_facility_placement_request};
-use crate::logistics::{TransportKind, ValidatedItemCatalog, ValidatedTransportCatalog};
+use crate::logistics::{
+    LogisticsComponentKind, TransportKind, ValidatedItemCatalog,
+    ValidatedLogisticsComponentCatalog, ValidatedTransportCatalog,
+};
 use crate::recipes::{
     FACILITY_INSTANCE_WIRING_SCHEMA_VERSION, FacilityInstanceWiringEdge,
     FacilityInstanceWiringNode, FacilityInstanceWiringProjection, FacilityInstanceWiringReport,
@@ -29,6 +32,20 @@ pub(super) struct EdgeInput {
     pub(super) target: EndpointInput,
     pub(super) transport: TransportKind,
     pub(super) capacity_rate: Rate,
+    pub(super) component_capacity_rates: ComponentCapacityRates,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub(super) struct ComponentCapacityRates {
+    pub(super) splitter: Rate,
+    pub(super) converger: Rate,
+    pub(super) bridge: Rate,
+}
+
+impl ComponentCapacityRates {
+    pub(super) fn values(self) -> [Rate; 3] {
+        [self.splitter, self.converger, self.bridge]
+    }
 }
 
 #[derive(Clone)]
@@ -71,6 +88,7 @@ pub(super) fn prepare_model(
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
     transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
     request: &FacilityPlacementRequest,
 ) -> Result<ModelInput, IntegratedLayoutDiagnostic> {
     if !instance_wiring.success {
@@ -232,6 +250,26 @@ pub(super) fn prepare_model(
                     )
                 },
             )?;
+        let component_capacity_rates = ComponentCapacityRates {
+            splitter: component_capacity_rate(
+                logistics_components,
+                item.transport,
+                LogisticsComponentKind::Splitter,
+                edge_index,
+            )?,
+            converger: component_capacity_rate(
+                logistics_components,
+                item.transport,
+                LogisticsComponentKind::Converger,
+                edge_index,
+            )?,
+            bridge: component_capacity_rate(
+                logistics_components,
+                item.transport,
+                LogisticsComponentKind::Bridge,
+                edge_index,
+            )?,
+        };
         let source = prepare_endpoint(
             edge_index,
             "source",
@@ -276,6 +314,7 @@ pub(super) fn prepare_model(
                 target: target.clone(),
                 transport: item.transport,
                 capacity_rate,
+                component_capacity_rates,
                 edge: FacilityInstanceWiringEdge {
                     rate: route_rate,
                     ..edge.clone()
@@ -308,6 +347,26 @@ pub(super) fn prepare_model(
         instances,
         edges,
         networks,
+    })
+}
+
+fn component_capacity_rate(
+    components: &ValidatedLogisticsComponentCatalog,
+    transport: TransportKind,
+    kind: LogisticsComponentKind,
+    edge_index: usize,
+) -> Result<Rate, IntegratedLayoutDiagnostic> {
+    let capacity = &components
+        .component_by_kind(transport, kind)
+        .expect("validated catalog contains every logistics component capability")
+        .capacity;
+    Rate::from_quantity_per_duration_ms(capacity.quantity, capacity.duration_ms).map_err(|_| {
+        IntegratedLayoutDiagnostic::error(
+            "logistics-component-capacity-out-of-range",
+            format!("/edges/{edge_index}/rate"),
+            Some(format!("{transport:?}-{kind:?}").to_lowercase()),
+            "logistics component capacity cannot be represented in the exact rate domain",
+        )
     })
 }
 

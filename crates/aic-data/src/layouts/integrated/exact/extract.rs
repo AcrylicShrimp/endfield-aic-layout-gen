@@ -8,7 +8,7 @@ use super::super::{
     TransportNetwork, TransportNetworkEndpoint, TransportNetworkSegment, TransportNetworkTerminal,
     canonicalize_report_geometry, world_position,
 };
-use super::{EndpointOption, ModelBridge, ModelInstance, ModelNetwork};
+use super::{EndpointOption, ModelBranchComponent, ModelBridge, ModelInstance, ModelNetwork};
 use crate::logistics::LogisticsComponentKind;
 use crate::recipes::Rate;
 
@@ -18,6 +18,7 @@ pub(in crate::layouts::integrated) fn extract_report(
     input: &ModelInput,
     instances: &[ModelInstance],
     model_networks: &[ModelNetwork],
+    model_branch_components: &[ModelBranchComponent],
     model_bridges: &[ModelBridge],
 ) -> IntegratedLayoutReport {
     let mut placements = Vec::new();
@@ -97,40 +98,64 @@ pub(in crate::layouts::integrated) fn extract_report(
         })
         .collect::<Vec<_>>();
 
-    let logistics_components = model_bridges
+    let mut logistics_components = model_branch_components
         .iter()
-        .filter(|bridge| solution.get_integer_value(bridge.selected) == 1)
-        .map(|bridge| {
-            let position = world_position(bridge.cell, input.width);
-            let owners = transport_networks
-                .iter()
-                .filter(|network| {
-                    network.transport == bridge.transport && network.cells.contains(&position)
-                })
-                .map(|network| network.id.clone())
-                .collect::<BTreeSet<_>>();
-            let rotation = bridge
-                .rotations
-                .iter()
-                .find(|(_, selected)| solution.get_integer_value(*selected) == 1)
-                .map(|(rotation, _)| *rotation)
-                .expect("selected bridge has exactly one selected rotation");
+        .filter(|component| solution.get_integer_value(component.selected) == 1)
+        .map(|component| {
+            let position = world_position(component.cell, input.width);
+            let network_id = input.networks[component.network_index].id().to_string();
             PlacedLogisticsComponent {
                 id: super::super::identity::logistics_component_id(
-                    LogisticsComponentKind::Bridge,
-                    bridge.transport,
+                    component.kind,
+                    component.transport,
                     position.x,
                     position.y,
-                    &owners,
+                    &BTreeSet::from([network_id]),
                 ),
-                component: bridge.component.clone(),
-                kind: LogisticsComponentKind::Bridge,
-                transport: bridge.transport,
+                component: component.component.clone(),
+                kind: component.kind,
+                transport: component.transport,
                 position,
-                rotation,
+                rotation: component.rotation,
             }
         })
         .collect::<Vec<_>>();
+    logistics_components.extend(
+        model_bridges
+            .iter()
+            .filter(|bridge| solution.get_integer_value(bridge.selected) == 1)
+            .map(|bridge| {
+                let position = world_position(bridge.cell, input.width);
+                let owners = transport_networks
+                    .iter()
+                    .filter(|network| {
+                        network.transport == bridge.transport && network.cells.contains(&position)
+                    })
+                    .map(|network| network.id.clone())
+                    .collect::<BTreeSet<_>>();
+                let rotation = bridge
+                    .rotations
+                    .iter()
+                    .find(|(_, selected)| solution.get_integer_value(*selected) == 1)
+                    .map(|(rotation, _)| *rotation)
+                    .expect("selected bridge has exactly one selected rotation");
+                PlacedLogisticsComponent {
+                    id: super::super::identity::logistics_component_id(
+                        LogisticsComponentKind::Bridge,
+                        bridge.transport,
+                        position.x,
+                        position.y,
+                        &owners,
+                    ),
+                    component: bridge.component.clone(),
+                    kind: LogisticsComponentKind::Bridge,
+                    transport: bridge.transport,
+                    position,
+                    rotation,
+                }
+            })
+            .collect::<Vec<_>>(),
+    );
 
     for network in &mut transport_networks {
         network.component_ids = logistics_components
@@ -167,8 +192,8 @@ pub(in crate::layouts::integrated) fn extract_report(
                 },
             ),
             IntegratedLayoutDiagnostic::info(
-                "commodity-flow-without-branch-components",
-                "same-item flow is allocated without fixed source-to-target pairing; plain cells cannot split or converge until the joint splitter/converger cutover is complete",
+                "solver-selected-logistics-components",
+                "same-item flow, splitter positions, converger positions, component rotations, and bridge crossings are selected inside the joint solver model",
             ),
         ],
     };

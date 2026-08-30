@@ -1,10 +1,10 @@
 use std::collections::BTreeMap;
 
 use crate::facilities::FacilityPortDirection;
-use crate::logistics::TransportKind;
+use crate::logistics::{LogisticsComponentKind, TransportKind};
 use crate::recipes::Rate;
 
-use super::{EdgeInput, EndpointInput, IntegratedLayoutDiagnostic};
+use super::{ComponentCapacityRates, EdgeInput, EndpointInput, IntegratedLayoutDiagnostic};
 
 pub(super) struct RoutingNetworkInput {
     id: String,
@@ -13,6 +13,7 @@ pub(super) struct RoutingNetworkInput {
     line_capacity_rate: Rate,
     flow_scale: i64,
     line_capacity_units: i32,
+    component_capacity_units: ComponentCapacityUnits,
     terminals: Vec<RoutingTerminalInput>,
     route_indices: Vec<usize>,
 }
@@ -44,6 +45,10 @@ impl RoutingNetworkInput {
 
     pub(super) fn line_capacity_rate(&self) -> Rate {
         self.line_capacity_rate
+    }
+
+    pub(super) fn component_capacity_units(&self, kind: LogisticsComponentKind) -> i32 {
+        self.component_capacity_units.get(kind)
     }
 
     pub(super) fn terminals(&self) -> &[RoutingTerminalInput] {
@@ -105,8 +110,26 @@ struct NetworkBuilder {
     item: String,
     transport: TransportKind,
     capacity_rate: Rate,
+    component_capacity_rates: ComponentCapacityRates,
     terminals: Vec<RoutingTerminalInput>,
     route_indices: Vec<usize>,
+}
+
+#[derive(Clone, Copy)]
+struct ComponentCapacityUnits {
+    splitter: i32,
+    converger: i32,
+    bridge: i32,
+}
+
+impl ComponentCapacityUnits {
+    fn get(self, kind: LogisticsComponentKind) -> i32 {
+        match kind {
+            LogisticsComponentKind::Splitter => self.splitter,
+            LogisticsComponentKind::Converger => self.converger,
+            LogisticsComponentKind::Bridge => self.bridge,
+        }
+    }
 }
 
 pub(super) fn normalize(
@@ -123,6 +146,7 @@ pub(super) fn normalize(
                 item: edge.edge.item.clone(),
                 transport: edge.transport,
                 capacity_rate: edge.capacity_rate,
+                component_capacity_rates: edge.component_capacity_rates,
                 terminals: Vec::new(),
                 route_indices: Vec::new(),
             });
@@ -133,6 +157,17 @@ pub(super) fn normalize(
                 Some(builder.id.clone()),
                 format!(
                     "routing network '{}' contains inconsistent transport capacities",
+                    builder.id
+                ),
+            ));
+        }
+        if builder.component_capacity_rates != edge.component_capacity_rates {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "routing-network-component-capacity-mismatch",
+                "/edges",
+                Some(builder.id.clone()),
+                format!(
+                    "routing network '{}' contains inconsistent logistics component capacities",
                     builder.id
                 ),
             ));
@@ -166,6 +201,37 @@ pub(super) fn normalize(
                 builder.capacity_rate,
                 flow_scale,
             )?;
+            if line_capacity_units > i32::MAX / 4 {
+                return Err(IntegratedLayoutDiagnostic::error(
+                    "routing-network-component-bound-out-of-range",
+                    "/edges",
+                    Some(builder.id.clone()),
+                    format!(
+                        "routing network '{}' line capacity is too large for exact component constraints",
+                        builder.id
+                    ),
+                ));
+            }
+            let component_capacity_units = ComponentCapacityUnits {
+                splitter: rate_to_flow_units(
+                    &builder.id,
+                    "splitter capacity",
+                    builder.component_capacity_rates.splitter,
+                    flow_scale,
+                )?,
+                converger: rate_to_flow_units(
+                    &builder.id,
+                    "converger capacity",
+                    builder.component_capacity_rates.converger,
+                    flow_scale,
+                )?,
+                bridge: rate_to_flow_units(
+                    &builder.id,
+                    "bridge capacity",
+                    builder.component_capacity_rates.bridge,
+                    flow_scale,
+                )?,
+            };
             let terminals = builder
                 .terminals
                 .into_iter()
@@ -221,6 +287,7 @@ pub(super) fn normalize(
                 line_capacity_rate: builder.capacity_rate,
                 flow_scale,
                 line_capacity_units,
+                component_capacity_units,
                 terminals,
                 route_indices: builder.route_indices,
             })
@@ -261,6 +328,7 @@ fn add_terminal(
 
 fn checked_flow_scale(builder: &NetworkBuilder) -> Result<i64, IntegratedLayoutDiagnostic> {
     std::iter::once(builder.capacity_rate)
+        .chain(builder.component_capacity_rates.values())
         .chain(builder.terminals.iter().map(|terminal| terminal.rate))
         .try_fold(1_i64, |scale, rate| {
             checked_lcm(scale, rate.denominator).ok_or_else(|| {
@@ -385,6 +453,11 @@ mod tests {
             },
             transport,
             capacity_rate,
+            component_capacity_rates: ComponentCapacityRates {
+                splitter: capacity_rate,
+                converger: capacity_rate,
+                bridge: capacity_rate,
+            },
         }
     }
 

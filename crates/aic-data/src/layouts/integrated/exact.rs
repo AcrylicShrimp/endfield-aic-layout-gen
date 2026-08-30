@@ -19,6 +19,7 @@ use super::{
     TransportNetworkEndpoint, ValidatedLogisticsComponentCatalog, witness,
 };
 use crate::facilities::FacilityPortDirection;
+use crate::logistics::CardinalDirection;
 use crate::logistics::LogisticsComponentKind;
 
 mod extract;
@@ -27,8 +28,9 @@ mod metrics;
 
 use extract::extract_report;
 use formulation::{
-    external_endpoint_options, generate_candidates, grid_arcs, incident_arcs_by_axis,
-    model_facility_endpoint_options, post_acyclic_network_ordering, post_at_most_one,
+    DIRECTIONS, FlowTerms, direction_between, direction_index, external_endpoint_options,
+    generate_candidates, grid_arcs, incident_arcs_by_axis, model_facility_endpoint_options,
+    post_acyclic_network_ordering, post_at_most_one, post_branch_component_topology,
     post_bridge_crossing, post_equals_one,
 };
 use metrics::{elapsed_millis, finish_report};
@@ -55,6 +57,7 @@ struct EndpointOption {
     cell: usize,
     selected: DomainId,
     external_side: Option<FacilityPortEdge>,
+    arm_direction: CardinalDirection,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -75,6 +78,8 @@ struct ModelTerminal {
 
 struct ModelNetwork {
     input_index: usize,
+    line_capacity_units: i32,
+    bridge_capacity_units: i32,
     terminals: Vec<ModelTerminal>,
     arcs: Vec<Arc>,
     route_cells: Vec<DomainId>,
@@ -93,6 +98,16 @@ struct ModelBridge {
     component: String,
     selected: DomainId,
     rotations: Vec<(i64, DomainId)>,
+}
+
+struct ModelBranchComponent {
+    network_index: usize,
+    transport: TransportKind,
+    cell: usize,
+    component: String,
+    kind: LogisticsComponentKind,
+    rotation: i64,
+    selected: DomainId,
 }
 
 fn post_presence(
@@ -118,6 +133,22 @@ fn post_presence(
         .add_constraint(pumpkin_solver::less_than_or_equals(definition, 0, tag))
         .post();
     presence
+}
+
+fn post_arm(
+    solver: &mut Solver,
+    name: String,
+    terminal_presence: DomainId,
+    grid_arcs: &[DomainId],
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> DomainId {
+    let arm = solver.new_named_bounded_integer(0, 1, name);
+    let mut definition = vec![arm.scaled(1), terminal_presence.scaled(-1)];
+    definition.extend(grid_arcs.iter().map(|arc| arc.scaled(-1)));
+    solver
+        .add_constraint(pumpkin_solver::equals(definition, 0, tag))
+        .post();
+    arm
 }
 
 fn undirected_arc_pairs(arcs: &[Arc]) -> Vec<[Arc; 2]> {
@@ -305,6 +336,7 @@ pub(super) fn solve(
     }
 
     let mut model_networks = Vec::with_capacity(input.networks.len());
+    let mut model_branch_components = Vec::new();
     let mut route_arc_variables = Vec::new();
     for (network_index, network) in input.networks.iter().enumerate() {
         let terminals = network
@@ -342,8 +374,12 @@ pub(super) fn solve(
         model_metrics.route_order_variables += cell_count;
         model_metrics.acyclicity_constraints += arcs.len();
         post_acyclic_network_ordering(&mut solver, network_index, &arcs, input.cell_count, tag);
-        let mut supply_by_cell = vec![Vec::<(DomainId, i32)>::new(); cell_count];
-        let mut demand_by_cell = vec![Vec::<(DomainId, i32)>::new(); cell_count];
+        let mut supply_by_cell: Vec<[FlowTerms; 4]> = (0..cell_count)
+            .map(|_| std::array::from_fn(|_| FlowTerms::new()))
+            .collect::<Vec<_>>();
+        let mut demand_by_cell: Vec<[FlowTerms; 4]> = (0..cell_count)
+            .map(|_| std::array::from_fn(|_| FlowTerms::new()))
+            .collect::<Vec<_>>();
         for terminal in &terminals {
             let destination = if terminal.direction == FacilityPortDirection::Output {
                 &mut supply_by_cell
@@ -351,7 +387,8 @@ pub(super) fn solve(
                 &mut demand_by_cell
             };
             for option in &terminal.options {
-                destination[option.cell].push((option.selected, terminal.flow_units));
+                destination[option.cell][direction_index(option.arm_direction)]
+                    .push((option.selected, terminal.flow_units));
             }
         }
 
@@ -370,70 +407,156 @@ pub(super) fn solve(
             conservation.extend(
                 supply_by_cell[cell]
                     .iter()
+                    .flatten()
                     .map(|(variable, units)| variable.scaled(-*units)),
             );
             conservation.extend(
                 demand_by_cell[cell]
                     .iter()
+                    .flatten()
                     .map(|(variable, units)| variable.scaled(*units)),
             );
             solver
                 .add_constraint(pumpkin_solver::equals(conservation, 0, tag))
                 .post();
 
-            let supply_present = post_presence(
+            let mut incoming_flow: [FlowTerms; 4] =
+                std::array::from_fn(|direction| supply_by_cell[cell][direction].clone());
+            let mut outgoing_flow: [FlowTerms; 4] =
+                std::array::from_fn(|direction| demand_by_cell[cell][direction].clone());
+            for arc in &incoming[cell] {
+                incoming_flow[direction_index(direction_between(cell, arc.from, input.width))]
+                    .push((arc.flow, 1));
+            }
+            for arc in &outgoing[cell] {
+                outgoing_flow[direction_index(direction_between(cell, arc.to, input.width))]
+                    .push((arc.flow, 1));
+            }
+
+            let incoming_arms: [DomainId; 4] = std::array::from_fn(|direction| {
+                let terminal_presence = post_presence(
+                    &mut solver,
+                    format!(
+                        "network-{network_index}-cell-{cell}-{:?}-supply",
+                        DIRECTIONS[direction]
+                    )
+                    .to_lowercase(),
+                    supply_by_cell[cell][direction]
+                        .iter()
+                        .map(|(variable, _)| *variable),
+                    tag,
+                );
+                let grid_arcs = incoming[cell]
+                    .iter()
+                    .filter(|arc| {
+                        direction_index(direction_between(cell, arc.from, input.width)) == direction
+                    })
+                    .map(|arc| arc.selected)
+                    .collect::<Vec<_>>();
+                post_arm(
+                    &mut solver,
+                    format!(
+                        "network-{network_index}-cell-{cell}-{:?}-incoming",
+                        DIRECTIONS[direction]
+                    )
+                    .to_lowercase(),
+                    terminal_presence,
+                    &grid_arcs,
+                    tag,
+                )
+            });
+            let outgoing_arms: [DomainId; 4] = std::array::from_fn(|direction| {
+                let terminal_presence = post_presence(
+                    &mut solver,
+                    format!(
+                        "network-{network_index}-cell-{cell}-{:?}-demand",
+                        DIRECTIONS[direction]
+                    )
+                    .to_lowercase(),
+                    demand_by_cell[cell][direction]
+                        .iter()
+                        .map(|(variable, _)| *variable),
+                    tag,
+                );
+                let grid_arcs = outgoing[cell]
+                    .iter()
+                    .filter(|arc| {
+                        direction_index(direction_between(cell, arc.to, input.width)) == direction
+                    })
+                    .map(|arc| arc.selected)
+                    .collect::<Vec<_>>();
+                post_arm(
+                    &mut solver,
+                    format!(
+                        "network-{network_index}-cell-{cell}-{:?}-outgoing",
+                        DIRECTIONS[direction]
+                    )
+                    .to_lowercase(),
+                    terminal_presence,
+                    &grid_arcs,
+                    tag,
+                )
+            });
+            for direction in 0..4 {
+                solver
+                    .add_constraint(pumpkin_solver::less_than_or_equals(
+                        [
+                            incoming_arms[direction].scaled(1),
+                            outgoing_arms[direction].scaled(1),
+                        ],
+                        1,
+                        tag,
+                    ))
+                    .post();
+                for flow in [&incoming_flow[direction], &outgoing_flow[direction]] {
+                    if flow.is_empty() {
+                        continue;
+                    }
+                    solver
+                        .add_constraint(pumpkin_solver::less_than_or_equals(
+                            flow.iter()
+                                .map(|(variable, coefficient)| variable.scaled(*coefficient))
+                                .collect::<Vec<_>>(),
+                            network.line_capacity_units(),
+                            tag,
+                        ))
+                        .post();
+                }
+            }
+
+            let branch_components = post_branch_component_topology(
                 &mut solver,
-                format!("network-{network_index}-cell-{cell}-supply"),
-                supply_by_cell[cell].iter().map(|(variable, _)| *variable),
+                network_index,
+                cell,
+                network.transport(),
+                &incoming_arms,
+                &outgoing_arms,
+                &incoming_flow,
+                network.line_capacity_units(),
+                network.component_capacity_units(LogisticsComponentKind::Splitter),
+                network.component_capacity_units(LogisticsComponentKind::Converger),
+                logistics_components,
                 tag,
             );
-            let demand_present = post_presence(
-                &mut solver,
-                format!("network-{network_index}-cell-{cell}-demand"),
-                demand_by_cell[cell].iter().map(|(variable, _)| *variable),
-                tag,
-            );
-
-            let mut incoming_arms = incoming[cell]
-                .iter()
-                .map(|arc| arc.selected.scaled(1))
-                .collect::<Vec<_>>();
-            incoming_arms.push(supply_present.scaled(1));
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(incoming_arms, 1, tag))
-                .post();
-            let mut outgoing_arms = outgoing[cell]
-                .iter()
-                .map(|arc| arc.selected.scaled(1))
-                .collect::<Vec<_>>();
-            outgoing_arms.push(demand_present.scaled(1));
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(outgoing_arms, 1, tag))
-                .post();
-
-            let mut supply_capacity = supply_by_cell[cell]
-                .iter()
-                .map(|(variable, units)| variable.scaled(*units))
-                .collect::<Vec<_>>();
-            supply_capacity.push(supply_present.scaled(-network.line_capacity_units()));
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(supply_capacity, 0, tag))
-                .post();
-            let mut demand_capacity = demand_by_cell[cell]
-                .iter()
-                .map(|(variable, units)| variable.scaled(*units))
-                .collect::<Vec<_>>();
-            demand_capacity.push(demand_present.scaled(-network.line_capacity_units()));
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(demand_capacity, 0, tag))
-                .post();
+            model_metrics.branch_component_variables += branch_components.len();
+            model_branch_components.extend(branch_components);
 
             let active_variables = incoming[cell]
                 .iter()
                 .chain(&outgoing[cell])
                 .map(|arc| arc.selected)
-                .chain(supply_by_cell[cell].iter().map(|(variable, _)| *variable))
-                .chain(demand_by_cell[cell].iter().map(|(variable, _)| *variable))
+                .chain(
+                    supply_by_cell[cell]
+                        .iter()
+                        .flatten()
+                        .map(|(variable, _)| *variable),
+                )
+                .chain(
+                    demand_by_cell[cell]
+                        .iter()
+                        .flatten()
+                        .map(|(variable, _)| *variable),
+                )
                 .collect::<Vec<_>>();
             for active in &active_variables {
                 solver
@@ -461,6 +584,8 @@ pub(super) fn solve(
         route_arc_variables.extend(arcs.iter().map(|arc| arc.selected));
         model_networks.push(ModelNetwork {
             input_index: network_index,
+            line_capacity_units: network.line_capacity_units(),
+            bridge_capacity_units: network.component_capacity_units(LogisticsComponentKind::Bridge),
             terminals,
             arcs,
             route_cells,
@@ -513,6 +638,11 @@ pub(super) fn solve(
                 selected,
                 &occupancy[cell],
                 &networks,
+                &model_branch_components
+                    .iter()
+                    .filter(|component| component.transport == transport && component.cell == cell)
+                    .map(|component| component.selected)
+                    .collect::<Vec<_>>(),
                 tag,
             );
             model_metrics.bridge_variables += 1;
@@ -570,6 +700,7 @@ pub(super) fn solve(
             &input,
             &model_instances,
             &model_networks,
+            &model_branch_components,
             &model_bridges,
         ),
         OptimisationResult::Satisfiable(solution) | OptimisationResult::Stopped(solution, ()) => {
@@ -579,6 +710,7 @@ pub(super) fn solve(
                 &input,
                 &model_instances,
                 &model_networks,
+                &model_branch_components,
                 &model_bridges,
             )
         }

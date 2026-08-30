@@ -1,11 +1,24 @@
 use crate::facilities::FacilityPortDefinition;
+use crate::facilities::FacilityPortEdge;
+use crate::logistics::{
+    CardinalDirection, LogisticsComponentKind, TransportKind, ValidatedLogisticsComponentCatalog,
+};
 use pumpkin_solver::Solver;
 use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
 use super::super::{
     EndpointInput, InstanceInput, TransportNetworkEndpoint, candidate_port_connections, grid_index,
 };
-use super::{Arc, Candidate, EndpointOption, ModelInstance, ModelNetwork};
+use super::{Arc, Candidate, EndpointOption, ModelBranchComponent, ModelInstance, ModelNetwork};
+
+pub(in crate::layouts::integrated) type FlowTerms = Vec<(DomainId, i32)>;
+
+pub(in crate::layouts::integrated) const DIRECTIONS: [CardinalDirection; 4] = [
+    CardinalDirection::North,
+    CardinalDirection::East,
+    CardinalDirection::South,
+    CardinalDirection::West,
+];
 
 pub(in crate::layouts::integrated) fn generate_candidates(
     solver: &mut Solver,
@@ -93,6 +106,9 @@ fn endpoint_options(
                 cell,
                 selected,
                 external_side: Some(port.edge.rotated_clockwise(candidate.rotation)),
+                arm_direction: opposite(edge_direction(
+                    port.edge.rotated_clockwise(candidate.rotation),
+                )),
             });
         }
         let mut definition = candidate_options
@@ -145,8 +161,31 @@ pub(in crate::layouts::integrated) fn external_endpoint_options(
             cell: option.cell,
             selected: option.selected,
             external_side: option.external_side,
+            arm_direction: edge_direction(
+                option
+                    .external_side
+                    .expect("facility endpoint option records its outward side"),
+            ),
         })
         .collect()
+}
+
+fn edge_direction(edge: FacilityPortEdge) -> CardinalDirection {
+    match edge {
+        FacilityPortEdge::North => CardinalDirection::North,
+        FacilityPortEdge::East => CardinalDirection::East,
+        FacilityPortEdge::South => CardinalDirection::South,
+        FacilityPortEdge::West => CardinalDirection::West,
+    }
+}
+
+fn opposite(direction: CardinalDirection) -> CardinalDirection {
+    match direction {
+        CardinalDirection::North => CardinalDirection::South,
+        CardinalDirection::East => CardinalDirection::West,
+        CardinalDirection::South => CardinalDirection::North,
+        CardinalDirection::West => CardinalDirection::East,
+    }
 }
 
 pub(in crate::layouts::integrated) fn grid_arcs(
@@ -228,6 +267,234 @@ pub(in crate::layouts::integrated) fn incident_arcs_by_axis(
 }
 
 #[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn post_branch_component_topology(
+    solver: &mut Solver,
+    network_index: usize,
+    cell: usize,
+    transport: TransportKind,
+    incoming_arms: &[DomainId; 4],
+    outgoing_arms: &[DomainId; 4],
+    incoming_flow: &[FlowTerms; 4],
+    line_capacity: i32,
+    splitter_capacity: i32,
+    converger_capacity: i32,
+    components: &ValidatedLogisticsComponentCatalog,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> Vec<ModelBranchComponent> {
+    let mut modeled = Vec::new();
+    for kind in [
+        LogisticsComponentKind::Splitter,
+        LogisticsComponentKind::Converger,
+    ] {
+        let definition = components
+            .component_by_kind(transport, kind)
+            .expect("validated catalog contains every branch component capability");
+        for rotation in &definition.allowed_rotations {
+            let selected = solver.new_named_bounded_integer(
+                0,
+                1,
+                format!(
+                    "network-{network_index}-cell-{cell}-{:?}-rotation-{rotation}",
+                    kind
+                )
+                .to_lowercase(),
+            );
+            let allowed_inputs = definition
+                .input_directions
+                .iter()
+                .map(|direction| rotate_direction(*direction, *rotation))
+                .collect::<Vec<_>>();
+            let allowed_outputs = definition
+                .output_directions
+                .iter()
+                .map(|direction| rotate_direction(*direction, *rotation))
+                .collect::<Vec<_>>();
+            for (direction_index, direction) in DIRECTIONS.iter().enumerate() {
+                if !allowed_inputs.contains(direction) {
+                    solver
+                        .add_constraint(pumpkin_solver::less_than_or_equals(
+                            [incoming_arms[direction_index].scaled(1), selected.scaled(1)],
+                            1,
+                            tag,
+                        ))
+                        .post();
+                }
+                if !allowed_outputs.contains(direction) {
+                    solver
+                        .add_constraint(pumpkin_solver::less_than_or_equals(
+                            [outgoing_arms[direction_index].scaled(1), selected.scaled(1)],
+                            1,
+                            tag,
+                        ))
+                        .post();
+                }
+            }
+
+            let capacity = match kind {
+                LogisticsComponentKind::Splitter => splitter_capacity,
+                LogisticsComponentKind::Converger => converger_capacity,
+                LogisticsComponentKind::Bridge => unreachable!(),
+            };
+            let maximum_flow = line_capacity
+                .checked_mul(4)
+                .expect("validated solver flow domain fits component big-M bound");
+            let mut capacity_constraint = incoming_flow
+                .iter()
+                .flatten()
+                .map(|(variable, coefficient)| variable.scaled(*coefficient))
+                .collect::<Vec<_>>();
+            capacity_constraint.push(selected.scaled(maximum_flow));
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    capacity_constraint,
+                    capacity + maximum_flow,
+                    tag,
+                ))
+                .post();
+
+            modeled.push(ModelBranchComponent {
+                network_index,
+                transport,
+                cell,
+                component: definition.id.clone(),
+                kind,
+                rotation: *rotation,
+                selected,
+            });
+        }
+    }
+
+    post_at_most_one(
+        solver,
+        modeled.iter().map(|component| component.selected),
+        tag,
+    );
+    let splitters = modeled
+        .iter()
+        .filter(|component| component.kind == LogisticsComponentKind::Splitter)
+        .map(|component| component.selected)
+        .collect::<Vec<_>>();
+    let convergers = modeled
+        .iter()
+        .filter(|component| component.kind == LogisticsComponentKind::Converger)
+        .map(|component| component.selected)
+        .collect::<Vec<_>>();
+    let incoming_count = incoming_arms
+        .iter()
+        .map(|arm| arm.scaled(1))
+        .collect::<Vec<_>>();
+    let outgoing_count = outgoing_arms
+        .iter()
+        .map(|arm| arm.scaled(1))
+        .collect::<Vec<_>>();
+
+    let mut incoming_maximum = incoming_count.clone();
+    incoming_maximum.extend(convergers.iter().map(|selected| selected.scaled(-2)));
+    solver
+        .add_constraint(pumpkin_solver::less_than_or_equals(
+            incoming_maximum,
+            1,
+            tag,
+        ))
+        .post();
+    let mut outgoing_maximum = outgoing_count.clone();
+    outgoing_maximum.extend(splitters.iter().map(|selected| selected.scaled(-2)));
+    solver
+        .add_constraint(pumpkin_solver::less_than_or_equals(
+            outgoing_maximum,
+            1,
+            tag,
+        ))
+        .post();
+
+    let mut splitter_minimum_outputs = outgoing_count;
+    splitter_minimum_outputs.extend(splitters.iter().map(|selected| selected.scaled(-2)));
+    solver
+        .add_constraint(pumpkin_solver::greater_than_or_equals(
+            splitter_minimum_outputs,
+            0,
+            tag,
+        ))
+        .post();
+    let mut splitter_input = incoming_count.clone();
+    splitter_input.extend(splitters.iter().map(|selected| selected.scaled(-1)));
+    solver
+        .add_constraint(pumpkin_solver::greater_than_or_equals(
+            splitter_input,
+            0,
+            tag,
+        ))
+        .post();
+
+    let mut converger_minimum_inputs = incoming_count;
+    converger_minimum_inputs.extend(convergers.iter().map(|selected| selected.scaled(-2)));
+    solver
+        .add_constraint(pumpkin_solver::greater_than_or_equals(
+            converger_minimum_inputs,
+            0,
+            tag,
+        ))
+        .post();
+    let mut converger_output = outgoing_arms
+        .iter()
+        .map(|arm| arm.scaled(1))
+        .collect::<Vec<_>>();
+    converger_output.extend(convergers.iter().map(|selected| selected.scaled(-1)));
+    solver
+        .add_constraint(pumpkin_solver::greater_than_or_equals(
+            converger_output,
+            0,
+            tag,
+        ))
+        .post();
+
+    modeled
+}
+
+pub(in crate::layouts::integrated) fn direction_index(direction: CardinalDirection) -> usize {
+    match direction {
+        CardinalDirection::North => 0,
+        CardinalDirection::East => 1,
+        CardinalDirection::South => 2,
+        CardinalDirection::West => 3,
+    }
+}
+
+pub(in crate::layouts::integrated) fn direction_between(
+    cell: usize,
+    neighbor: usize,
+    width: i32,
+) -> CardinalDirection {
+    if neighbor + width as usize == cell {
+        CardinalDirection::North
+    } else if neighbor == cell + 1 {
+        CardinalDirection::East
+    } else if neighbor == cell + width as usize {
+        CardinalDirection::South
+    } else if neighbor + 1 == cell {
+        CardinalDirection::West
+    } else {
+        panic!("grid cells {cell} and {neighbor} are not orthogonal neighbors")
+    }
+}
+
+pub(in crate::layouts::integrated) fn rotate_direction(
+    direction: CardinalDirection,
+    rotation: i64,
+) -> CardinalDirection {
+    let mut direction = direction;
+    for _ in 0..(rotation / 90) {
+        direction = match direction {
+            CardinalDirection::North => CardinalDirection::East,
+            CardinalDirection::East => CardinalDirection::South,
+            CardinalDirection::South => CardinalDirection::West,
+            CardinalDirection::West => CardinalDirection::North,
+        };
+    }
+    direction
+}
+
+#[allow(clippy::too_many_arguments)]
 pub(in crate::layouts::integrated) fn post_bridge_crossing(
     solver: &mut Solver,
     transport_name: &str,
@@ -235,8 +502,19 @@ pub(in crate::layouts::integrated) fn post_bridge_crossing(
     bridge: DomainId,
     occupancy: &[DomainId],
     networks: &[(usize, &ModelNetwork)],
+    branch_components: &[DomainId],
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) -> (usize, usize) {
+    let mut terminal_constraints = 0_usize;
+    for component in branch_components {
+        solver
+            .add_constraint(pumpkin_solver::less_than_or_equals(
+                [bridge.scaled(1), component.scaled(1)],
+                1,
+                tag,
+            ))
+            .post();
+    }
     let mut horizontal_owners = Vec::with_capacity(networks.len());
     let mut vertical_owners = Vec::with_capacity(networks.len());
     for (network_index, network) in networks {
@@ -274,19 +552,68 @@ pub(in crate::layouts::integrated) fn post_bridge_crossing(
                 tag,
             ))
             .post();
-        solver
-            .add_constraint(pumpkin_solver::less_than_or_equals(
-                [horizontal_owner.scaled(1), vertical_owner.scaled(1)],
-                1,
-                tag,
-            ))
-            .post();
+        for (owner, incident) in [
+            (horizontal_owner, &network.horizontal_incident[cell]),
+            (vertical_owner, &network.vertical_incident[cell]),
+        ] {
+            let incoming_flow = network
+                .arcs
+                .iter()
+                .filter(|arc| arc.to == cell && incident.contains(&arc.selected))
+                .map(|arc| arc.flow)
+                .collect::<Vec<_>>();
+            let outgoing_flow = network
+                .arcs
+                .iter()
+                .filter(|arc| arc.from == cell && incident.contains(&arc.selected))
+                .map(|arc| arc.flow)
+                .collect::<Vec<_>>();
+            let mut capacity = incoming_flow
+                .iter()
+                .map(|flow| flow.scaled(1))
+                .collect::<Vec<_>>();
+            capacity.push(owner.scaled(network.line_capacity_units));
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    capacity,
+                    network.bridge_capacity_units + network.line_capacity_units,
+                    tag,
+                ))
+                .post();
+            let mut forward_balance = incoming_flow
+                .iter()
+                .map(|flow| flow.scaled(1))
+                .chain(outgoing_flow.iter().map(|flow| flow.scaled(-1)))
+                .collect::<Vec<_>>();
+            forward_balance.push(owner.scaled(network.line_capacity_units));
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    forward_balance,
+                    network.line_capacity_units,
+                    tag,
+                ))
+                .post();
+            let mut reverse_balance = outgoing_flow
+                .iter()
+                .map(|flow| flow.scaled(1))
+                .chain(incoming_flow.iter().map(|flow| flow.scaled(-1)))
+                .collect::<Vec<_>>();
+            reverse_balance.push(owner.scaled(network.line_capacity_units));
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    reverse_balance,
+                    network.line_capacity_units,
+                    tag,
+                ))
+                .post();
+        }
         for option in network
             .terminals
             .iter()
             .flat_map(|terminal| terminal.options.iter())
             .filter(|option| option.cell == cell)
         {
+            terminal_constraints += 1;
             solver
                 .add_constraint(pumpkin_solver::less_than_or_equals(
                     [bridge.scaled(1), option.selected.scaled(1)],
@@ -334,7 +661,10 @@ pub(in crate::layouts::integrated) fn post_bridge_crossing(
         ))
         .post();
 
-    (networks.len() * 2, networks.len() * 3 + 3)
+    (
+        networks.len() * 2,
+        networks.len() * 8 + terminal_constraints + branch_components.len() + 3,
+    )
 }
 
 pub(in crate::layouts::integrated) fn post_acyclic_network_ordering(
@@ -424,6 +754,8 @@ mod tests {
         solver.add_clause([second.equality_predicate(1)], tag);
         ModelNetwork {
             input_index: 0,
+            line_capacity_units: 1,
+            bridge_capacity_units: 1,
             terminals: Vec::new(),
             arcs: Vec::new(),
             route_cells: vec![route_cell],
@@ -463,7 +795,43 @@ mod tests {
             ));
         }
         let indexed = networks.iter().enumerate().collect::<Vec<_>>();
-        post_bridge_crossing(&mut solver, "belt", 0, bridge, &[], &indexed, tag);
+        post_bridge_crossing(&mut solver, "belt", 0, bridge, &[], &indexed, &[], tag);
+
+        let mut brancher = solver.default_brancher();
+        let mut resolver = ResolutionResolver::default();
+        matches!(
+            solver.satisfy(&mut brancher, &mut Indefinite, &mut resolver),
+            SatisfactionResult::Satisfiable(_)
+        )
+    }
+
+    fn same_network_crossing_is_satisfiable() -> bool {
+        let mut solver = Solver::default();
+        let tag = solver.new_constraint_tag();
+        let bridge = solver.new_named_bounded_integer(0, 1, "bridge");
+        solver.add_clause([bridge.equality_predicate(1)], tag);
+        let horizontal = fixed_network(&mut solver, tag, "shared-horizontal", true);
+        let vertical = fixed_network(&mut solver, tag, "shared-vertical", false);
+        let network = ModelNetwork {
+            input_index: 0,
+            line_capacity_units: 1,
+            bridge_capacity_units: 1,
+            terminals: Vec::new(),
+            arcs: Vec::new(),
+            route_cells: horizontal.route_cells,
+            horizontal_incident: horizontal.horizontal_incident,
+            vertical_incident: vertical.vertical_incident,
+        };
+        post_bridge_crossing(
+            &mut solver,
+            "belt",
+            0,
+            bridge,
+            &[],
+            &[(0, &network)],
+            &[],
+            tag,
+        );
 
         let mut brancher = solver.default_brancher();
         let mut resolver = ResolutionResolver::default();
@@ -517,5 +885,10 @@ mod tests {
     #[test]
     fn bridge_rejects_two_parallel_routes() {
         assert!(!crossing_is_satisfiable(2, 0));
+    }
+
+    #[test]
+    fn bridge_accepts_two_independent_axes_from_one_network() {
+        assert!(same_network_crossing_is_satisfiable());
     }
 }

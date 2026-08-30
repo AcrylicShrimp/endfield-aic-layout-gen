@@ -198,6 +198,106 @@ fn wiring() -> FacilityInstanceWiringReport {
     }
 }
 
+fn branching_wiring() -> FacilityInstanceWiringReport {
+    let node = |id: &str, recipe: &str, facility: &str| FacilityInstanceWiringNode::Facility {
+        id: id.to_string(),
+        recipe: recipe.to_string(),
+        facility: facility.to_string(),
+        index: 0,
+        runs_per_second: Rate {
+            numerator: 1,
+            denominator: 1,
+        },
+        work_seconds_per_second: Rate {
+            numerator: 1,
+            denominator: 1,
+        },
+        unused_capacity: Rate::zero(),
+    };
+    FacilityInstanceWiringReport {
+        schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
+        success: true,
+        nodes: vec![
+            node("source", "source-recipe", "source-machine"),
+            node("target-a", "target-recipe", "target-machine"),
+            node("target-b", "target-recipe", "target-machine"),
+        ],
+        edges: vec![
+            FacilityInstanceWiringEdge::original(
+                "source",
+                "target-a",
+                "intermediate",
+                "part",
+                Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            ),
+            FacilityInstanceWiringEdge::original(
+                "source",
+                "target-b",
+                "intermediate",
+                "part",
+                Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            ),
+        ],
+        diagnostics: Vec::new(),
+    }
+}
+
+fn converging_wiring() -> FacilityInstanceWiringReport {
+    let node = |id: &str, recipe: &str, facility: &str| FacilityInstanceWiringNode::Facility {
+        id: id.to_string(),
+        recipe: recipe.to_string(),
+        facility: facility.to_string(),
+        index: 0,
+        runs_per_second: Rate {
+            numerator: 1,
+            denominator: 1,
+        },
+        work_seconds_per_second: Rate {
+            numerator: 1,
+            denominator: 1,
+        },
+        unused_capacity: Rate::zero(),
+    };
+    FacilityInstanceWiringReport {
+        schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
+        success: true,
+        nodes: vec![
+            node("source-a", "source-recipe", "source-machine"),
+            node("source-b", "source-recipe", "source-machine"),
+            node("target", "target-recipe", "target-machine"),
+        ],
+        edges: vec![
+            FacilityInstanceWiringEdge::original(
+                "source-a",
+                "target",
+                "intermediate",
+                "part",
+                Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            ),
+            FacilityInstanceWiringEdge::original(
+                "source-b",
+                "target",
+                "intermediate",
+                "part",
+                Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            ),
+        ],
+        diagnostics: Vec::new(),
+    }
+}
+
 #[test]
 fn exact_solver_jointly_places_selects_ports_routes_and_validates() {
     let (facilities, items, transports, components) = catalogs();
@@ -224,7 +324,7 @@ fn exact_solver_jointly_places_selects_ports_routes_and_validates() {
         report
             .diagnostics
             .iter()
-            .any(|diagnostic| diagnostic.code == "commodity-flow-without-branch-components")
+            .any(|diagnostic| diagnostic.code == "solver-selected-logistics-components")
     );
     let serialized = serde_json::to_value(&report).expect("report should serialize");
     assert!(serialized.get("transport_networks").is_some());
@@ -243,6 +343,72 @@ fn exact_solver_jointly_places_selects_ports_routes_and_validates() {
 }
 
 #[test]
+fn exact_solver_selects_and_validates_a_splitter_for_shared_flow() {
+    let (facilities, items, transports, components) = catalogs();
+    let report = solve_integrated_layout(
+        &branching_wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 6,
+            max_height: 4,
+        },
+    );
+
+    assert!(report.success, "{:#?}", report.diagnostics);
+    assert!(
+        report
+            .logistics_components
+            .iter()
+            .any(|component| { component.kind == LogisticsComponentKind::Splitter })
+    );
+    assert_eq!(
+        report
+            .logistics_components
+            .iter()
+            .filter(|component| component.kind == LogisticsComponentKind::Converger)
+            .count(),
+        0
+    );
+    assert_eq!(
+        report.exact.expect("exact metrics").validation,
+        ExactValidationStatus::Passed
+    );
+}
+
+#[test]
+fn exact_solver_selects_and_validates_a_converger_for_shared_flow() {
+    let (facilities, items, transports, components) = catalogs();
+    let report = solve_integrated_layout(
+        &converging_wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 6,
+            max_height: 4,
+        },
+    );
+
+    assert!(report.success, "{:#?}", report.diagnostics);
+    assert!(
+        report
+            .logistics_components
+            .iter()
+            .any(|component| { component.kind == LogisticsComponentKind::Converger })
+    );
+    assert_eq!(
+        report.exact.expect("exact metrics").validation,
+        ExactValidationStatus::Passed
+    );
+}
+
+#[test]
 fn network_witness_rejects_terminal_flow_that_does_not_match_the_logical_graph() {
     let (facilities, items, transports, components) = catalogs();
     let request = FacilityPlacementRequest {
@@ -250,8 +416,15 @@ fn network_witness_rejects_terminal_flow_that_does_not_match_the_logical_graph()
         max_width: 4,
         max_height: 1,
     };
-    let input = super::prepare_model(&wiring(), &facilities, &items, &transports, &request)
-        .expect("fixture should prepare");
+    let input = super::prepare_model(
+        &wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &request,
+    )
+    .expect("fixture should prepare");
     let mut report = solve_integrated_layout(
         &wiring(),
         &facilities,

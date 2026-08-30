@@ -37,7 +37,7 @@ pub(super) fn finish_report(
             .sum()
     });
     report.exact = Some(ExactSolveReport {
-        formulation: "joint-commodity-flow-v2",
+        formulation: "joint-commodity-components-v3",
         model,
         construction_ms,
         search_ms,

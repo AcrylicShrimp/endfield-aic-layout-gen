@@ -24,7 +24,8 @@ use exact::solve;
 use geometry::{candidate_port_connections, grid_index, world_position};
 pub use html::{render_integrated_layout_html, render_integrated_layout_html_with_localization};
 use model::{
-    EdgeInput, EndpointInput, InstanceInput, ModelInput, prepare_model, required_facility_area,
+    ComponentCapacityRates, EdgeInput, EndpointInput, InstanceInput, ModelInput, prepare_model,
+    required_facility_area,
 };
 pub use report::{
     ExactModelMetrics, ExactProofStatus, ExactSolveReport, ExactTerminationReason,
@@ -83,7 +84,14 @@ fn solve_integrated_layout_with_optional_time_limit(
     request: &FacilityPlacementRequest,
     time_limit: Option<Duration>,
 ) -> IntegratedLayoutReport {
-    match prepare_model(instance_wiring, facilities, items, transports, request) {
+    match prepare_model(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+    ) {
         Ok(input) => match required_facility_area(&input) {
             Ok(required_area) => {
                 let available_area = i64::from(input.width) * i64::from(input.height);
