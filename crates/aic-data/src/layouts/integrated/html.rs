@@ -197,7 +197,6 @@ pub fn render_integrated_layout_html_with_localization(
   });
   root.querySelector('[data-reset]').addEventListener('click', () => { view = base.slice(); applyView(); });
   root.querySelector('[data-inspector-close]').addEventListener('click', () => selectDetails(null));
-  svg.addEventListener('click', (event) => selectDetails(inspectTarget(event.target)));
   svg.addEventListener('wheel', (event) => {
     event.preventDefault();
     const rect = svg.getBoundingClientRect();
@@ -213,20 +212,26 @@ pub fn render_integrated_layout_html_with_localization(
     applyView();
   }, { passive: false });
   svg.addEventListener('pointerdown', (event) => {
-    drag = { x: event.clientX, y: event.clientY, view: view.slice() };
+    drag = { x: event.clientX, y: event.clientY, view: view.slice(), target: inspectTarget(event.target), moved: false };
     svg.setPointerCapture(event.pointerId);
     svg.classList.add('dragging');
   });
   svg.addEventListener('pointermove', (event) => {
     if (!drag) return;
+    if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 5) return;
+    drag.moved = true;
     const rect = svg.getBoundingClientRect();
     view[0] = drag.view[0] - (event.clientX - drag.x) * drag.view[2] / rect.width;
     view[1] = drag.view[1] - (event.clientY - drag.y) * drag.view[3] / rect.height;
     applyView();
   });
-  const stopDrag = () => { drag = null; svg.classList.remove('dragging'); };
-  svg.addEventListener('pointerup', stopDrag);
-  svg.addEventListener('pointercancel', stopDrag);
+  const stopDrag = (cancelled) => {
+    if (drag && !drag.moved && !cancelled) selectDetails(drag.target);
+    drag = null;
+    svg.classList.remove('dragging');
+  };
+  svg.addEventListener('pointerup', () => stopDrag(false));
+  svg.addEventListener('pointercancel', () => stopDrag(true));
   showPage(pageIndex);
 })();
 </script>
@@ -329,6 +334,7 @@ fn render_page(
     render_routes(
         html,
         page.routes,
+        page.placements,
         TransportKind::Belt,
         "route-cell-belt",
         localization,
@@ -336,6 +342,7 @@ fn render_page(
     render_routes(
         html,
         page.routes,
+        page.placements,
         TransportKind::Pipe,
         "route-cell-pipe",
         localization,
@@ -399,6 +406,7 @@ fn transport_summary(routes: &[IntegratedRoute], transport: TransportKind) -> St
 fn render_routes(
     html: &mut String,
     routes: &[IntegratedRoute],
+    placements: &[FacilityPlacement],
     transport: TransportKind,
     route_class: &str,
     localization: Option<&ValidatedLocalizationCatalog>,
@@ -479,7 +487,15 @@ fn render_routes(
                 endpoint_name(peer),
             ));
             let direction_source = if is_source { cell } else { penultimate };
-            let points = flow_arrow_points(cell, direction_source, direction_target, 0.48, 0.36);
+            let (dx, dy) = endpoint_arrow_direction(
+                endpoint,
+                is_source,
+                cell,
+                direction_source,
+                direction_target,
+                placements,
+            );
+            let points = arrow_points_in_direction(cell, dx, dy, 0.48, 0.36);
             let role_class = if is_source {
                 "port-output"
             } else {
@@ -509,6 +525,16 @@ fn flow_arrow_points(
     } else {
         (dx, dy)
     };
+    arrow_points_in_direction(center, dx, dy, forward, half_width)
+}
+
+fn arrow_points_in_direction(
+    center: &super::WorldGridPosition,
+    dx: f64,
+    dy: f64,
+    forward: f64,
+    half_width: f64,
+) -> String {
     let center_x = center.x as f64 + 0.5;
     let center_y = center.y as f64 + 0.5;
     let tip_x = center_x + dx * forward;
@@ -524,6 +550,44 @@ fn flow_arrow_points(
         base_x - perpendicular_x,
         base_y - perpendicular_y,
     )
+}
+
+fn endpoint_arrow_direction(
+    endpoint: &IntegratedRouteEndpoint,
+    is_source: bool,
+    cell: &super::WorldGridPosition,
+    route_from: &super::WorldGridPosition,
+    route_to: &super::WorldGridPosition,
+    placements: &[FacilityPlacement],
+) -> (f64, f64) {
+    if let IntegratedRouteEndpoint::Facility { instance, .. } = endpoint
+        && let Some(placement) = placements
+            .iter()
+            .find(|placement| placement.instance == instance.as_str())
+    {
+        let outward = if cell.x < placement.x {
+            Some((-1.0, 0.0))
+        } else if cell.x >= placement.x + placement.width {
+            Some((1.0, 0.0))
+        } else if cell.y < placement.y {
+            Some((0.0, -1.0))
+        } else if cell.y >= placement.y + placement.height {
+            Some((0.0, 1.0))
+        } else {
+            None
+        };
+        if let Some((dx, dy)) = outward {
+            return if is_source { (dx, dy) } else { (-dx, -dy) };
+        }
+    }
+
+    let dx = (route_to.x - route_from.x).signum() as f64;
+    let dy = (route_to.y - route_from.y).signum() as f64;
+    if dx == 0.0 && dy == 0.0 {
+        (1.0, 0.0)
+    } else {
+        (dx, dy)
+    }
 }
 
 fn endpoint_role(endpoint: &IntegratedRouteEndpoint, is_source: bool) -> &'static str {
@@ -686,7 +750,7 @@ mod tests {
     use crate::recipes::Rate;
 
     use super::{
-        estimated_label_width, render_integrated_layout_html,
+        endpoint_arrow_direction, estimated_label_width, render_integrated_layout_html,
         render_integrated_layout_html_with_localization,
     };
 
@@ -790,6 +854,8 @@ mod tests {
         assert!(!html.contains("pointerover"));
         assert!(!html.contains("tabindex=\"0\""));
         assert!(!html.contains("filter: brightness"));
+        assert!(html.contains("Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 5"));
+        assert!(html.contains("selectDetails(drag.target)"));
         assert!(html.contains("Belt (<span data-belt-summary>2 tiles</span>)"));
         assert_eq!(html.matches("class=\"phase-page").count(), 2);
         assert!(html.contains("data-previous"));
@@ -817,5 +883,59 @@ mod tests {
     fn preserves_short_korean_facility_label_proportions() {
         assert!(estimated_label_width("천화로") < 4.4);
         assert!(estimated_label_width("xiranite-oven-1-mode-liquid") > 4.4);
+    }
+
+    #[test]
+    fn facility_endpoint_arrows_follow_the_facility_boundary() {
+        let placement = FacilityPlacement {
+            instance: "facility".to_string(),
+            recipe: "recipe".to_string(),
+            facility: "assembler".to_string(),
+            x: 10,
+            y: 10,
+            width: 5,
+            height: 5,
+            rotation: 0,
+        };
+        let endpoint = IntegratedRouteEndpoint::Facility {
+            instance: "facility".to_string(),
+            port: "port".to_string(),
+        };
+        let unrelated_route_from = WorldGridPosition { x: 15, y: 11 };
+        let unrelated_route_to = WorldGridPosition { x: 15, y: 12 };
+
+        assert_eq!(
+            endpoint_arrow_direction(
+                &endpoint,
+                false,
+                &WorldGridPosition { x: 15, y: 12 },
+                &unrelated_route_from,
+                &unrelated_route_to,
+                std::slice::from_ref(&placement),
+            ),
+            (-1.0, 0.0),
+        );
+        assert_eq!(
+            endpoint_arrow_direction(
+                &endpoint,
+                true,
+                &WorldGridPosition { x: 15, y: 12 },
+                &unrelated_route_from,
+                &unrelated_route_to,
+                std::slice::from_ref(&placement),
+            ),
+            (1.0, 0.0),
+        );
+        assert_eq!(
+            endpoint_arrow_direction(
+                &endpoint,
+                false,
+                &WorldGridPosition { x: 12, y: 15 },
+                &unrelated_route_from,
+                &unrelated_route_to,
+                &[placement],
+            ),
+            (0.0, -1.0),
+        );
     }
 }
