@@ -42,6 +42,7 @@ pub(super) enum EndpointInput {
     },
 }
 
+#[derive(Clone)]
 pub(super) struct InstanceInput {
     pub(super) id: String,
     pub(super) recipe: String,

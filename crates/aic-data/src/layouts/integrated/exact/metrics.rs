@@ -11,6 +11,7 @@ pub(super) fn finish_report(
     construction_ms: u64,
     search_ms: u64,
     observed_incumbents: usize,
+    validation: ExactValidationStatus,
 ) -> IntegratedLayoutReport {
     let (termination, proof) = match report.status {
         IntegratedLayoutStatus::Optimal => (
@@ -47,7 +48,7 @@ pub(super) fn finish_report(
             .flatten(),
         termination,
         proof,
-        validation: ExactValidationStatus::NotAttempted,
+        validation,
     });
     report
 }

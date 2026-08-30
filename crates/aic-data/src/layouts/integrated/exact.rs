@@ -16,7 +16,7 @@ use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 use super::{
     EndpointInput, ExactModelMetrics, FacilityPortEdge, InstanceInput, IntegratedLayoutDiagnostic,
     IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRouteEndpoint, ModelInput,
-    TransportKind,
+    TransportKind, ValidatedLogisticsComponentCatalog, witness,
 };
 
 mod extract;
@@ -66,7 +66,11 @@ struct ModelRoute {
     arcs: Vec<Arc>,
 }
 
-pub(super) fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> IntegratedLayoutReport {
+pub(super) fn solve(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+) -> IntegratedLayoutReport {
     let construction_started = Instant::now();
     let mut model_metrics = ExactModelMetrics {
         facility_count: input.instances.len(),
@@ -80,7 +84,7 @@ pub(super) fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> Inte
     let mut occupancy = vec![Vec::<DomainId>::new(); cell_count];
     let mut model_instances = Vec::with_capacity(input.instances.len());
 
-    for instance in std::mem::take(&mut input.instances) {
+    for instance in &input.instances {
         let candidates = generate_candidates(&mut solver, &instance, input.width, input.height);
         model_metrics.placement_variables += candidates.len();
         if candidates.is_empty() {
@@ -89,7 +93,7 @@ pub(super) fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> Inte
                 IntegratedLayoutDiagnostic::error(
                     "facility-has-no-placement-candidate",
                     "/",
-                    Some(instance.id),
+                    Some(instance.id.clone()),
                     "facility has no rotation and origin within the hard layout bounds",
                 ),
             );
@@ -105,7 +109,7 @@ pub(super) fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> Inte
             }
         }
         model_instances.push(ModelInstance {
-            input: instance,
+            input: instance.clone(),
             candidates,
         });
     }
@@ -294,7 +298,7 @@ pub(super) fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> Inte
     );
     let search_ms = elapsed_millis(search_started.elapsed());
 
-    let report = match result {
+    let mut report = match result {
         OptimisationResult::Optimal(solution) => extract_report(
             &solution,
             IntegratedLayoutStatus::Optimal,
@@ -330,6 +334,19 @@ pub(super) fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> Inte
             ),
         ),
     };
+    let validation = if report.success {
+        match witness::validate(&input, logistics_components, &report) {
+            Ok(()) => super::ExactValidationStatus::Passed,
+            Err(diagnostic) => {
+                report.success = false;
+                report.status = IntegratedLayoutStatus::Unknown;
+                report.diagnostics.push(diagnostic);
+                super::ExactValidationStatus::Failed
+            }
+        }
+    } else {
+        super::ExactValidationStatus::NotAttempted
+    };
     let observed_incumbents = incumbent_count.load(Ordering::Relaxed);
     finish_report(
         report,
@@ -337,5 +354,6 @@ pub(super) fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> Inte
         construction_ms,
         search_ms,
         observed_incumbents,
+        validation,
     )
 }

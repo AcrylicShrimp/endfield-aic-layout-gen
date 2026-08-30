@@ -84,6 +84,7 @@ pub fn solve_integrated_layout(
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
     transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
     request: &FacilityPlacementRequest,
 ) -> IntegratedLayoutReport {
     solve_integrated_layout_with_optional_time_limit(
@@ -91,6 +92,7 @@ pub fn solve_integrated_layout(
         facilities,
         items,
         transports,
+        logistics_components,
         request,
         None,
     )
@@ -101,6 +103,7 @@ pub fn solve_integrated_layout_with_time_limit(
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
     transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
     request: &FacilityPlacementRequest,
     time_limit: Duration,
 ) -> IntegratedLayoutReport {
@@ -109,6 +112,7 @@ pub fn solve_integrated_layout_with_time_limit(
         facilities,
         items,
         transports,
+        logistics_components,
         request,
         Some(time_limit),
     )
@@ -510,6 +514,7 @@ fn solve_integrated_layout_with_optional_time_limit(
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
     transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
     request: &FacilityPlacementRequest,
     time_limit: Option<Duration>,
 ) -> IntegratedLayoutReport {
@@ -530,7 +535,7 @@ fn solve_integrated_layout_with_optional_time_limit(
                         ),
                     )
                 } else {
-                    solve(input, time_limit)
+                    solve(input, logistics_components, time_limit)
                 }
             }
             Err(diagnostic) => {
@@ -926,6 +931,7 @@ mod tests {
             &facilities,
             &items,
             &transports,
+            &logistics_component_catalog(),
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 4,
@@ -975,7 +981,7 @@ mod tests {
         assert_eq!(exact.model.acyclicity_constraints, 6);
         assert_eq!(exact.objective_route_cells, Some(1));
         assert_eq!(exact.proof, ExactProofStatus::ProvenOptimal);
-        assert_eq!(exact.validation, ExactValidationStatus::NotAttempted);
+        assert_eq!(exact.validation, ExactValidationStatus::Passed);
     }
 
     #[test]
@@ -990,7 +996,14 @@ mod tests {
         };
         let input = prepare_model(&wiring, &facilities, &items, &transports, &request)
             .expect("fixture model should prepare");
-        let report = solve_integrated_layout(&wiring, &facilities, &items, &transports, &request);
+        let report = solve_integrated_layout(
+            &wiring,
+            &facilities,
+            &items,
+            &transports,
+            &components,
+            &request,
+        );
         assert!(report.success, "{:#?}", report.diagnostics);
 
         let mut duplicate = report.clone();
@@ -1031,7 +1044,14 @@ mod tests {
         };
         let input = prepare_model(&wiring, &facilities, &items, &transports, &request)
             .expect("fixture model should prepare");
-        let report = solve_integrated_layout(&wiring, &facilities, &items, &transports, &request);
+        let report = solve_integrated_layout(
+            &wiring,
+            &facilities,
+            &items,
+            &transports,
+            &components,
+            &request,
+        );
         witness::validate(&input, &components, &report).expect("fixture witness should validate");
 
         let state = retained::RetainedRoutingState::from_validated_report(&input, &report)
@@ -1060,7 +1080,14 @@ mod tests {
             max_width: 4,
             max_height: 1,
         };
-        let report = solve_integrated_layout(&wiring, &facilities, &items, &transports, &request);
+        let report = solve_integrated_layout(
+            &wiring,
+            &facilities,
+            &items,
+            &transports,
+            &components,
+            &request,
+        );
         let result = reroute_integrated_layout_subset(
             &wiring,
             &facilities,
@@ -1241,6 +1268,7 @@ mod tests {
             &facilities,
             &items,
             &transports,
+            &logistics_component_catalog(),
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 1,
@@ -1292,6 +1320,7 @@ mod tests {
             &facilities,
             &items,
             &transport_catalog(),
+            &logistics_component_catalog(),
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 4,
@@ -1400,7 +1429,14 @@ mod tests {
             max_width: 7,
             max_height: 1,
         };
-        let report = solve_integrated_layout(&wiring, &facilities, &items, &transports, &request);
+        let report = solve_integrated_layout(
+            &wiring,
+            &facilities,
+            &items,
+            &transports,
+            &logistics_component_catalog(),
+            &request,
+        );
 
         assert!(report.success, "{:#?}", report.diagnostics);
         assert_eq!(report.status, IntegratedLayoutStatus::Optimal);
@@ -1541,6 +1577,7 @@ mod tests {
             &facilities,
             &items,
             &transport_catalog(),
+            &logistics_component_catalog(),
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 4,
@@ -1618,6 +1655,7 @@ mod tests {
             &facilities,
             &items,
             &transport_catalog(),
+            &logistics_component_catalog(),
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 4,
@@ -1730,6 +1768,7 @@ mod tests {
             &facilities,
             &items,
             &transport_catalog(),
+            &logistics_component_catalog(),
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 6,
@@ -1847,6 +1886,7 @@ mod tests {
             &facilities,
             &items,
             &transport_catalog(),
+            &logistics_component_catalog(),
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 5,
@@ -1894,6 +1934,7 @@ mod tests {
             &facilities,
             &items,
             &transport_catalog(),
+            &logistics_component_catalog(),
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 5,
@@ -1921,6 +1962,7 @@ mod tests {
             &facilities,
             &items,
             &transport_catalog(),
+            &logistics_component_catalog(),
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 4,
