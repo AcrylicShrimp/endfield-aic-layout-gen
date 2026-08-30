@@ -47,6 +47,13 @@
     "code": "invalid-integrated-layout-witness",
     "message": "every active transport cell must lie on a directed supply-to-demand flow path",
     "cause": "the circulation-permitted solver produced active positive-flow circulation outside directed terminal paths",
-    "affected_observations": ["fixed-placement-network-1", "fixed-placement-network-2"]
+    "affected_observations": ["fixed-placement-network-1", "fixed-placement-network-2"],
+    "diagnostic_artifact": {
+      "fixed_facility_origin": [1, 0],
+      "canonical_translation": "used geometry must touch x=0 and y=0",
+      "result": "a disconnected two-by-two circulation supplied the otherwise missing x=0 geometry",
+      "interpretation": "optimum of the artificially constrained diagnostic model, not an unrestricted production-layout optimum",
+      "unrestricted_single_network_runs_passed_validation": true
+    }
   }
 }

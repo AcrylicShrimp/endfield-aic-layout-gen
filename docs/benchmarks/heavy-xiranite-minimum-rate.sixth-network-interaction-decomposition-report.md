@@ -119,11 +119,12 @@ The evidence supports two separate first-incumbent blockers rather than one:
    logical choices are fixed and after all cross-layer collision and objective coupling is absent.
    It eventually solves at 8,171 ms, so this is search cost rather than infeasibility.
 
-Circulation-permitted routing magnifies the second blocker. Every selected arc must carry positive
-flow, but conservation permits closed positive-flow circulations that contribute no terminal
-delivery. A single network has many such assignments; independent network routing spaces multiply
-those alternatives. The default brancher can enter those spaces instead of quickly choosing the
-all-unused state for irrelevant arcs.
+Circulation-permitted routing enlarges the theoretical assignment space. Every selected arc must
+carry positive flow, but conservation permits closed positive-flow circulations that contribute no
+terminal delivery. Independent network routing spaces therefore include products of those
+alternatives. The measurements in this report do not establish that such circulation is the cause
+of the pair timeout, however: the only extracted circulations came from the fixed-placement probe
+described below, and that probe interacted pathologically with canonical translation.
 
 This explanation is consistent with all measured facts:
 
@@ -134,9 +135,8 @@ This explanation is consistent with all measured facts:
 - the fixed belt-pipe pair becomes feasible with more time;
 - reversing network order does not cross the five-second boundary.
 
-## Newly Observed Correctness Conflict
+## Fixed-Placement Probe Artifact
 
-The diagnostic also reached the revisit condition established when circulation was approved.
 With a fixed placement, the single input-belt and input-pipe optimizations found and proved objective
 assignments, but independent witness validation rejected both with:
 
@@ -145,20 +145,30 @@ invalid-integrated-layout-witness:
 every active transport cell must lie on a directed supply-to-demand flow path
 ```
 
-Under the v5 solver semantics, a closed positive-flow circulation is legal. Under the current
-witness semantics, the same circulation is illegal. The production model and independent validator
-therefore no longer recognize the same solution set. This is not merely visualization noise: a
-solver result can be proven optimal and then reported as `unknown` because validation rejects a
-circulation that the model deliberately permits.
+The fixed-placement probe forced the facility origin to `(1, 0)`. The exact model also requires used
+geometry to touch `x = 0` and `y = 0` as a translation-symmetry breaker. Because the fixed facility
+and its useful terminal geometry did not touch `x = 0`, the model had to activate transport there.
+An isolated open path cannot satisfy flow conservation, while the smallest isolated directed loop
+can. The solver therefore selected a disconnected two-by-two circulation at the left edge. This is
+an optimum of the artificially constrained diagnostic model, not a valid or useful production
+layout optimum.
+
+The validator correctly rejected that witness. The observation still proves that the model admits
+positive-flow circulation when another hard constraint rewards it, but it does not show that an
+unrestricted production optimum naturally contains circulation. The unrestricted single-network
+runs in the complete-subset matrix passed validation.
 
 ## Decision Gate
 
-Two decisions are required before the next implementation or diagnostic slice:
+The next diagnostic slice should account for this artifact before drawing conclusions about routing
+state:
 
-1. **Validation semantics:** either update the validator to accept conserved net-zero circulation,
-   matching the approved v5 model, or reintroduce a model/objective rule that makes such circulation
-   illegal or strictly dominated.
-2. **Next causal probe:** explicitly approve a diagnostic that fixes irrelevant route arcs to zero
+1. Keep the independent validator strict; there is no evidence here that disconnected circulation
+   should be accepted as a valid blueprint.
+2. When placement is fixed for a diagnostic, either choose a canonically translated placement or
+   disable the redundant canonical-translation constraint for that probe. Do not combine an
+   off-origin fixed placement with a hard origin-touch constraint.
+3. **Next causal probe:** explicitly approve a diagnostic that fixes irrelevant route arcs to zero
    for these frontier-dangling phase-zero connections. This would not be a production heuristic; it
    would test whether circulation/route-state freedom is the remaining cause. Because it fixes
    routing decisions and excludes legal v5 assignments, it requires explicit approval under the

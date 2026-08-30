@@ -28,7 +28,11 @@ pub fn render_integrated_layout_html_with_localization(
     report: &IntegratedLayoutReport,
     localization: Option<&ValidatedLocalizationCatalog>,
 ) -> Result<String, IntegratedLayoutDiagnostic> {
-    if !report.success && report.phases.is_empty() {
+    let has_direct_geometry = report.bounds.is_some()
+        && (!report.placements.is_empty()
+            || !report.transport_networks.is_empty()
+            || !report.logistics_components.is_empty());
+    if !report.success && report.phases.is_empty() && !has_direct_geometry {
         return Ok(render_failure_summary(report));
     }
     let pages = collect_pages(report)?;
@@ -41,10 +45,10 @@ pub fn render_integrated_layout_html_with_localization(
         .map(|network| network.cells.len())
         .sum::<usize>();
     let final_metrics = page_metrics(final_page);
-    let run_status = if report.success {
-        "<span class=\"run-status success\">FEASIBLE</span>"
-    } else {
-        "<span class=\"run-status failure\">FAILED · PARTIAL HISTORY</span>"
+    let run_status = match (report.success, report.phases.is_empty()) {
+        (true, _) => "<span class=\"run-status success\">FEASIBLE</span>",
+        (false, true) => "<span class=\"run-status failure\">REJECTED · INVALID INCUMBENT</span>",
+        (false, false) => "<span class=\"run-status failure\">FAILED · PARTIAL HISTORY</span>",
     };
     let mut html = String::with_capacity(total_route_cells.saturating_mul(10).max(32_768));
     write!(
@@ -379,7 +383,11 @@ fn render_page(
         },
     );
     if partial_final {
-        phase_label.push_str(" · last valid");
+        phase_label.push_str(if page.phase.is_some() {
+            " · last valid"
+        } else {
+            " · rejected incumbent"
+        });
     }
     writeln!(
         html,
@@ -511,7 +519,10 @@ fn render_transport_networks(
             )
             .expect("writing to String cannot fail");
         }
-        for segment in network.segments.iter().skip(4).step_by(8) {
+        for (segment_index, segment) in network.segments.iter().enumerate() {
+            if network.segments.len() > 8 && segment_index % 8 != 4 {
+                continue;
+            }
             let points = flow_arrow_points(&segment.from, &segment.from, &segment.to, 0.34, 0.22);
             writeln!(
                 html,
@@ -1048,6 +1059,22 @@ mod tests {
         assert!(html.contains("facility:&lt;one&gt;"));
         assert!(html.contains("recipe&amp;one"));
         assert!(!html.contains("https://"));
+
+        let mut rejected = report.clone();
+        rejected.success = false;
+        rejected.status = IntegratedLayoutStatus::Unknown;
+        rejected.phases.clear();
+        rejected.diagnostics.push(IntegratedLayoutDiagnostic::error(
+            "invalid-integrated-layout-witness",
+            "/transport_networks/0/cells",
+            None,
+            "the extracted incumbent failed independent validation",
+        ));
+        let rejected_html = render_integrated_layout_html(&rejected)
+            .expect("rejected incumbent geometry should remain inspectable");
+        assert!(rejected_html.contains("REJECTED · INVALID INCUMBENT"));
+        assert!(rejected_html.contains("Final layout · rejected incumbent"));
+        assert!(rejected_html.contains("class=\"route-cell route-cell-belt\""));
 
         report.success = false;
         report.status = IntegratedLayoutStatus::Unknown;
