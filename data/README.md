@@ -13,3 +13,8 @@ Current example files:
 - `examples/facilities.valid.json`: footprint, allowed-rotation, and directional-port facility catalog example.
 - `examples/items.valid.json`: fixed belt-or-pipe transport kind for every item.
 - `examples/placement.request.json`: facility placement system-bound constraints example.
+
+Repository-managed game data:
+
+- `game/source/`: versioned extracted source-table snapshot with provenance and hashes.
+- `game/normalized/`: generated runtime catalogs consumed by the CLI and solver.

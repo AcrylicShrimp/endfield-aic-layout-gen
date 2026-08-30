@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "game_data_repository": "https://github.com/rmxlinux/EndfieldData",
+  "upstream_commit": "83be4dcdeab69f93799febff674af6f19b8972be",
+  "upstream_timestamp": "2026-08-26T23:08:22+08:00",
+  "snapshot_date": "2026-08-30",
+  "files": [
+    {
+      "path": "table-cfg/FactoryBuildingRendererTemplateTable.json",
+      "sha256": "77897c2bd5431e54bc3b7d8a3a4289930d5a6c0c7d1d02c4899733b71dfdd62a"
+    },
+    {
+      "path": "table-cfg/FactoryBuildingTable.json",
+      "sha256": "9f366968411c90a5d7920d84b451f9c15651f59f7aa72d8f9e45ffd1a2594b73"
+    },
+    {
+      "path": "table-cfg/FactoryGridBeltTable.json",
+      "sha256": "55500d9bcf3146ca971f9e846ba8be8f5fec069bd8e6f1db4b4aaa828fe4ae0e"
+    },
+    {
+      "path": "table-cfg/FactoryItemTable.json",
+      "sha256": "5399f349cfe92b3d98f34c5518d7152e381fcefe92d4cec79e74d75d79076858"
+    },
+    {
+      "path": "table-cfg/FactoryLiquidPipeTable.json",
+      "sha256": "b22ac8f2eef4f9fbcdaed1bc7bbea8b625f2690493eec066e3ef0a66c63d13be"
+    },
+    {
+      "path": "table-cfg/FactoryMachineCraftModeCoverTable.json",
+      "sha256": "d548b6b4ca4ddb2a7559aa63241669c56b80e32b17c4189d879e44ff7d6c7dc5"
+    },
+    {
+      "path": "table-cfg/FactoryMachineCraftModeTable.json",
+      "sha256": "6ee0f1a6b15b799073b9b2ce5884f1c7dfcb99a0cdd4328d4b55aa257ff7b0ef"
+    },
+    {
+      "path": "table-cfg/FactoryMachineCraftTable.json",
+      "sha256": "4d96e6ff0c0029bc3aa91ee4c9b47d1d468a2002c70a8d44a767c44bf88a1f67"
+    },
+    {
+      "path": "table-cfg/FactoryMachineCrafterTable.json",
+      "sha256": "086c8c6394d9a7697ae16fa24af2cd78bdbdf5ce61bfcf434708721446ba4346"
+    }
+  ]
+}
