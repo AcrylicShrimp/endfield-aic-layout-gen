@@ -9,9 +9,10 @@ pub use growth::{
 };
 
 pub use integrated::{
-    INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic, IntegratedLayoutPhase,
-    IntegratedLayoutPhaseAttempt, IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRoute,
-    IntegratedRouteEndpoint, PlacedLogisticsComponent, RouteRequirementFingerprint,
+    CandidateRank, DeterministicCandidateKey, INTEGRATED_LAYOUT_SCHEMA_VERSION,
+    IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutPhaseAttempt,
+    IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRoute, IntegratedRouteEndpoint,
+    LayoutScore, PlacedLogisticsComponent, RefinementKind, RouteRequirementFingerprint,
     construct_coordinate_integrated_layout_with_time_limit,
     construct_iterative_scc_layout_with_time_limit, construct_sparse_integrated_layout,
     render_integrated_layout_html, render_integrated_layout_html_with_localization,

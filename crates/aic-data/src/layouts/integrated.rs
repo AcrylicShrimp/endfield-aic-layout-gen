@@ -37,11 +37,13 @@ use super::placement::solve_facility_placement_feasibly_with_time_limit;
 mod html;
 mod iterative;
 mod networks;
+mod score;
 mod sparse;
 mod witness;
 
 pub use html::{render_integrated_layout_html, render_integrated_layout_html_with_localization};
 pub use iterative::construct_iterative_scc_layout_with_time_limit;
+pub use score::{CandidateRank, DeterministicCandidateKey, LayoutScore, RefinementKind};
 
 const STAGE: &str = "integrated-layout";
 const PRODUCTION_FACILITY_GAP: i64 = 1;
@@ -336,11 +338,11 @@ pub fn construct_coordinate_integrated_layout_with_time_limit(
                 |score| {
                     format!(
                         "portfolio worker produced a validated witness with route_cells={}, route_turns={}, area={}, max_side={}, logistics_components={}",
-                        score.route_cells,
-                        score.route_turns,
-                        score.area,
-                        score.max_side,
-                        score.logistics_components,
+                        score.total_route_cells,
+                        score.total_route_turns,
+                        score.used_bounding_box_area,
+                        score.maximum_used_side,
+                        score.logistics_component_count,
                     )
                 },
             );
@@ -354,8 +356,26 @@ pub fn construct_coordinate_integrated_layout_with_time_limit(
     let best_index = candidates
         .iter()
         .enumerate()
-        .filter_map(|(index, candidate)| candidate.score().map(|score| (index, score)))
-        .min_by_key(|(_, score)| *score)
+        .filter_map(|(index, candidate)| {
+            candidate.score().map(|score| {
+                (
+                    index,
+                    CandidateRank {
+                        score,
+                        deterministic_candidate_key: DeterministicCandidateKey {
+                            phase_index: 0,
+                            refinement_kind: RefinementKind::FinalGlobal,
+                            neighborhood_rank: 3,
+                            restart_index: 0,
+                            policy_index: 0,
+                            attempt_index: index,
+                            yield_index: 0,
+                        },
+                    },
+                )
+            })
+        })
+        .min_by_key(|(_, rank)| *rank)
         .map(|(index, _)| index);
 
     let Some(best_index) = best_index else {
@@ -388,11 +408,11 @@ pub fn construct_coordinate_integrated_layout_with_time_limit(
                 selected.placement_width,
                 successful_candidates,
                 placement_widths.len(),
-                score.route_cells,
-                score.route_turns,
-                score.area,
-                score.max_side,
-                score.logistics_components,
+                score.total_route_cells,
+                score.total_route_turns,
+                score.used_bounding_box_area,
+                score.maximum_used_side,
+                score.logistics_component_count,
             ),
         ));
     selected.report
@@ -414,32 +434,9 @@ struct CoordinateCandidate {
 }
 
 impl CoordinateCandidate {
-    fn score(&self) -> Option<CoordinateCandidateScore> {
-        let bounds = self.report.bounds.as_ref()?;
-        self.report.success.then(|| CoordinateCandidateScore {
-            area: i128::from(bounds.width) * i128::from(bounds.height),
-            max_side: bounds.width.max(bounds.height),
-            route_turns: self.report.routes.iter().map(route_turn_count).sum(),
-            route_cells: self
-                .report
-                .routes
-                .iter()
-                .map(|route| route.cells.len())
-                .sum(),
-            logistics_components: self.report.logistics_components.len(),
-            placement_width: self.placement_width,
-        })
+    fn score(&self) -> Option<LayoutScore> {
+        LayoutScore::from_report(&self.report, &[])
     }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-struct CoordinateCandidateScore {
-    route_cells: usize,
-    route_turns: usize,
-    area: i128,
-    max_side: i64,
-    logistics_components: usize,
-    placement_width: i64,
 }
 
 fn route_turn_count(route: &IntegratedRoute) -> usize {
@@ -2255,21 +2252,27 @@ mod tests {
 
     #[test]
     fn portfolio_prefers_shorter_routes_before_compactness() {
-        let compact = CoordinateCandidateScore {
-            area: 20_176,
-            max_side: 388,
-            route_turns: 800,
-            route_cells: 12_046,
-            logistics_components: 793,
-            placement_width: 400,
+        let compact = LayoutScore {
+            total_route_cells: 12_046,
+            total_route_turns: 800,
+            used_bounding_box_area: 20_176,
+            maximum_used_side: 388,
+            physical_transport_tiles: 12_000,
+            logistics_component_count: 793,
+            moved_prior_facility_count: 0,
+            total_prior_facility_manhattan_displacement: 0,
+            rotation_change_count: 0,
         };
-        let wide = CoordinateCandidateScore {
-            area: 21_252,
-            max_side: 483,
-            route_turns: 600,
-            route_cells: 10_198,
-            logistics_components: 618,
-            placement_width: 500,
+        let wide = LayoutScore {
+            total_route_cells: 10_198,
+            total_route_turns: 600,
+            used_bounding_box_area: 21_252,
+            maximum_used_side: 483,
+            physical_transport_tiles: 10_000,
+            logistics_component_count: 618,
+            moved_prior_facility_count: 0,
+            total_prior_facility_manhattan_displacement: 0,
+            rotation_change_count: 0,
         };
 
         assert!(wide < compact);
@@ -2277,21 +2280,27 @@ mod tests {
 
     #[test]
     fn portfolio_prefers_fewer_turns_at_equal_route_length() {
-        let straighter = CoordinateCandidateScore {
-            area: 20_000,
-            max_side: 400,
-            route_turns: 40,
-            route_cells: 10_000,
-            logistics_components: 80,
-            placement_width: 400,
+        let straighter = LayoutScore {
+            total_route_cells: 10_000,
+            total_route_turns: 40,
+            used_bounding_box_area: 20_000,
+            maximum_used_side: 400,
+            physical_transport_tiles: 9_900,
+            logistics_component_count: 80,
+            moved_prior_facility_count: 0,
+            total_prior_facility_manhattan_displacement: 0,
+            rotation_change_count: 0,
         };
-        let shorter = CoordinateCandidateScore {
-            area: 20_000,
-            max_side: 400,
-            route_turns: 50,
-            route_cells: 10_000,
-            logistics_components: 70,
-            placement_width: 400,
+        let shorter = LayoutScore {
+            total_route_cells: 10_000,
+            total_route_turns: 50,
+            used_bounding_box_area: 20_000,
+            maximum_used_side: 400,
+            physical_transport_tiles: 9_800,
+            logistics_component_count: 70,
+            moved_prior_facility_count: 0,
+            total_prior_facility_manhattan_displacement: 0,
+            rotation_change_count: 0,
         };
 
         assert!(straighter < shorter);
