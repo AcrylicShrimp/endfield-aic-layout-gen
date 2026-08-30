@@ -43,7 +43,7 @@ mod sparse;
 mod witness;
 
 pub use html::{render_integrated_layout_html, render_integrated_layout_html_with_localization};
-pub use iterative::construct_iterative_scc_layout_with_time_limit;
+pub use iterative::construct_iterative_scc_layout;
 pub use optimization::{
     CANDIDATE_POLICY_TABLE_SCHEMA_VERSION, CandidatePolicy, CandidatePolicyTable,
     ITERATIVE_OPTIMIZATION_CONFIG_SCHEMA_VERSION, IterativeOptimizationConfig,

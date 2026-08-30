@@ -35,8 +35,8 @@ SOLVE_COMMAND = [
     "data/game/normalized/logistics-components.json",
     "--placement-request",
     "data/examples/placement.factory-500.request.json",
-    "--time-limit-seconds",
-    "10",
+    "--optimization-config",
+    "data/examples/layout.iterative-optimization.config.json",
     "--strategy",
     "iterative-scc",
 ]
@@ -48,6 +48,7 @@ INPUT_PATHS = [
     "data/game/normalized/transports.json",
     "data/game/normalized/logistics-components.json",
     "data/examples/placement.factory-500.request.json",
+    "data/examples/layout.iterative-optimization.config.json",
 ]
 
 

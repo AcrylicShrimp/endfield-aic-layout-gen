@@ -1,5 +1,4 @@
 use std::{
-    num::NonZeroU64,
     path::{Path, PathBuf},
     process::ExitCode,
     time::Duration,
@@ -11,11 +10,11 @@ use aic_data::facilities::{
 };
 use aic_data::layouts::{
     FacilityPlacementDiagnostic, FacilityPlacementReport, FacilityPlacementRequest,
-    IntegratedLayoutDiagnostic, IntegratedLayoutReport,
-    construct_coordinate_integrated_layout_with_time_limit,
-    construct_iterative_scc_layout_with_time_limit, construct_sparse_integrated_layout,
+    IntegratedLayoutDiagnostic, IntegratedLayoutReport, IterativeOptimizationConfig,
+    OptimizationConfigDiagnostic, construct_coordinate_integrated_layout_with_time_limit,
+    construct_iterative_scc_layout, construct_sparse_integrated_layout,
     render_integrated_layout_html_with_localization, solve_facility_placement,
-    solve_integrated_layout_with_time_limit,
+    solve_integrated_layout_with_time_limit, validate_iterative_optimization_config,
 };
 use aic_data::localization::{
     LocalizationCatalogValidationReport, ValidatedLocalizationCatalog, load_localization_catalog,
@@ -176,9 +175,9 @@ enum LayoutsCommand {
         #[arg(long, value_name = "FILE")]
         placement_request: PathBuf,
 
-        /// Maximum CP search time per portfolio worker before returning the best known status.
-        #[arg(long, value_name = "SECONDS", default_value = "10")]
-        time_limit_seconds: NonZeroU64,
+        /// Versioned optimization configuration shared with service callers.
+        #[arg(long, value_name = "FILE")]
+        optimization_config: PathBuf,
 
         /// Integrated solving strategy.
         #[arg(long, value_enum, default_value = "coordinate-feasibility")]
@@ -222,9 +221,9 @@ enum LayoutsCommand {
         #[arg(long, value_name = "FILE")]
         placement_request: PathBuf,
 
-        /// Maximum CP search time per portfolio worker before returning the best known status.
-        #[arg(long, value_name = "SECONDS", default_value = "10")]
-        time_limit_seconds: NonZeroU64,
+        /// Versioned optimization configuration shared with service callers.
+        #[arg(long, value_name = "FILE")]
+        optimization_config: PathBuf,
 
         /// Integrated solving strategy.
         #[arg(long, value_enum, default_value = "coordinate-feasibility")]
@@ -426,6 +425,13 @@ struct ContextualLayoutSolveReport<'a> {
     layout: &'a IntegratedLayoutReport,
 }
 
+#[derive(Serialize)]
+struct OptimizationConfigReport<'a> {
+    success: bool,
+    path: &'a Path,
+    diagnostics: &'a [OptimizationConfigDiagnostic],
+}
+
 fn run() -> Result<CommandStatus> {
     let cli = Cli::parse();
 
@@ -460,7 +466,7 @@ fn run() -> Result<CommandStatus> {
                 transport_catalog,
                 logistics_component_catalog,
                 placement_request,
-                time_limit_seconds,
+                optimization_config,
                 strategy,
                 visualization_output,
                 localization_catalog,
@@ -472,7 +478,7 @@ fn run() -> Result<CommandStatus> {
                 transport_catalog,
                 logistics_component_catalog,
                 placement_request,
-                time_limit_seconds,
+                optimization_config,
                 strategy,
                 visualization_output,
                 localization_catalog,
@@ -485,7 +491,7 @@ fn run() -> Result<CommandStatus> {
                 transport_catalog,
                 logistics_component_catalog,
                 placement_request,
-                time_limit_seconds,
+                optimization_config,
                 strategy,
                 visualization_output,
                 localization_catalog,
@@ -497,7 +503,7 @@ fn run() -> Result<CommandStatus> {
                 transport_catalog,
                 logistics_component_catalog,
                 placement_request,
-                time_limit_seconds,
+                optimization_config,
                 strategy,
                 visualization_output,
                 localization_catalog,
@@ -1072,11 +1078,19 @@ fn solve_layout(
     transport_catalog: PathBuf,
     logistics_component_catalog: PathBuf,
     placement_request: PathBuf,
-    time_limit_seconds: NonZeroU64,
+    optimization_config: PathBuf,
     strategy: IntegratedLayoutStrategy,
     visualization_output: Option<PathBuf>,
     localization_catalog: Option<PathBuf>,
 ) -> Result<CommandStatus> {
+    let optimization_config = match load_iterative_optimization_config(&optimization_config)? {
+        Ok(config) => config,
+        Err(diagnostics) => {
+            write_optimization_config_report(&optimization_config, &diagnostics)?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
+    let time_limit = Duration::from_millis(optimization_config.total_time_limit_ms);
     let localization = load_visualization_localization(localization_catalog.as_deref())?;
     let throughput_report = calculate_throughput_report(recipes, throughput_request)?;
     if !throughput_report.success {
@@ -1166,17 +1180,17 @@ fn solve_layout(
                 &transports,
                 &logistics_components,
                 &request,
-                Duration::from_secs(time_limit_seconds.get()),
+                time_limit,
             )
         }
-        IntegratedLayoutStrategy::IterativeScc => construct_iterative_scc_layout_with_time_limit(
+        IntegratedLayoutStrategy::IterativeScc => construct_iterative_scc_layout(
             &instance_wiring_report,
             &facilities,
             &items,
             &transports,
             &logistics_components,
             &request,
-            Duration::from_secs(time_limit_seconds.get()),
+            &optimization_config,
         ),
         IntegratedLayoutStrategy::Dense => solve_integrated_layout_with_time_limit(
             &instance_wiring_report,
@@ -1184,7 +1198,7 @@ fn solve_layout(
             &items,
             &transports,
             &request,
-            Duration::from_secs(time_limit_seconds.get()),
+            time_limit,
         ),
         IntegratedLayoutStrategy::SparseFeasibility => construct_sparse_integrated_layout(
             &instance_wiring_report,
@@ -1219,11 +1233,19 @@ fn solve_contextual_layout(
     transport_catalog: PathBuf,
     logistics_component_catalog: PathBuf,
     placement_request: PathBuf,
-    time_limit_seconds: NonZeroU64,
+    optimization_config: PathBuf,
     strategy: IntegratedLayoutStrategy,
     visualization_output: Option<PathBuf>,
     localization_catalog: Option<PathBuf>,
 ) -> Result<CommandStatus> {
+    let optimization_config = match load_iterative_optimization_config(&optimization_config)? {
+        Ok(config) => config,
+        Err(diagnostics) => {
+            write_optimization_config_report(&optimization_config, &diagnostics)?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
+    let time_limit = Duration::from_millis(optimization_config.total_time_limit_ms);
     let localization = load_visualization_localization(localization_catalog.as_deref())?;
     let (book, source_plan) = match load_contextual_recipe_request(&recipes, &source_plan)? {
         Ok(inputs) => inputs,
@@ -1317,17 +1339,17 @@ fn solve_contextual_layout(
                 &transports,
                 &logistics_components,
                 &request,
-                Duration::from_secs(time_limit_seconds.get()),
+                time_limit,
             )
         }
-        IntegratedLayoutStrategy::IterativeScc => construct_iterative_scc_layout_with_time_limit(
+        IntegratedLayoutStrategy::IterativeScc => construct_iterative_scc_layout(
             &wiring,
             &facilities,
             &items,
             &transports,
             &logistics_components,
             &request,
-            Duration::from_secs(time_limit_seconds.get()),
+            &optimization_config,
         ),
         IntegratedLayoutStrategy::Dense => solve_integrated_layout_with_time_limit(
             &wiring,
@@ -1335,7 +1357,7 @@ fn solve_contextual_layout(
             &items,
             &transports,
             &request,
-            Duration::from_secs(time_limit_seconds.get()),
+            time_limit,
         ),
         IntegratedLayoutStrategy::SparseFeasibility => construct_sparse_integrated_layout(
             &wiring,
@@ -1588,6 +1610,50 @@ fn load_visualization_localization(
         })
 }
 
+fn load_iterative_optimization_config(
+    path: &Path,
+) -> Result<Result<IterativeOptimizationConfig, Vec<OptimizationConfigDiagnostic>>> {
+    let json = std::fs::read_to_string(path).with_context(|| {
+        format!(
+            "failed to read iterative optimization configuration file '{}'",
+            path.display()
+        )
+    })?;
+    let config = match serde_json::from_str::<IterativeOptimizationConfig>(&json) {
+        Ok(config) => config,
+        Err(error) => {
+            return Ok(Err(vec![OptimizationConfigDiagnostic {
+                stage: "iterative-optimization-config",
+                severity: "error",
+                code: "invalid-iterative-optimization-config-json",
+                path: "/".to_string(),
+                message: format!("{}: {error}", path.display()),
+            }]));
+        }
+    };
+    match validate_iterative_optimization_config(&config) {
+        Ok(()) => Ok(Ok(config)),
+        Err(diagnostics) => Ok(Err(diagnostics)),
+    }
+}
+
+fn write_optimization_config_report(
+    path: &Path,
+    diagnostics: &[OptimizationConfigDiagnostic],
+) -> Result<()> {
+    serde_json::to_writer_pretty(
+        std::io::stdout().lock(),
+        &OptimizationConfigReport {
+            success: false,
+            path,
+            diagnostics,
+        },
+    )
+    .context("failed to write iterative optimization configuration report")?;
+    println!();
+    Ok(())
+}
+
 fn write_layout_solve_report(
     bootstrap_item_options: &[String],
     layout: &IntegratedLayoutReport,
@@ -1669,6 +1735,8 @@ mod tests {
             "components.json",
             "--placement-request",
             "placement.json",
+            "--optimization-config",
+            "optimization.json",
             "--visualization-output",
             "layout.html",
             "--localization-catalog",

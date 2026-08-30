@@ -1,10 +1,7 @@
-use std::path::PathBuf;
-use std::time::Duration;
-
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    FacilityPlacementRequest, IntegratedRouteEndpoint,
-    construct_iterative_scc_layout_with_time_limit, plan_facility_growth,
+    FacilityPlacementRequest, IntegratedRouteEndpoint, IterativeOptimizationConfig,
+    construct_iterative_scc_layout, plan_facility_growth,
 };
 use aic_data::logistics::{
     ValidatedItemCatalog, ValidatedLogisticsComponentCatalog, ValidatedTransportCatalog,
@@ -14,6 +11,7 @@ use aic_data::recipes::{
     FACILITY_INSTANCE_WIRING_SCHEMA_VERSION, FacilityInstanceWiringEdge,
     FacilityInstanceWiringNode, FacilityInstanceWiringReport, Rate,
 };
+use std::path::PathBuf;
 
 #[test]
 fn baseline_graph_fixtures_have_deterministic_output_first_ids() {
@@ -73,28 +71,32 @@ fn one_facility_external_routes_are_minimal_and_search_domain_independent() {
     )
     .expect("factory placement request should parse");
 
-    let large_report = construct_iterative_scc_layout_with_time_limit(
+    let config = IterativeOptimizationConfig {
+        total_time_limit_ms: 2_000,
+        ..IterativeOptimizationConfig::default()
+    };
+    let large_report = construct_iterative_scc_layout(
         &one_facility_wiring_fixture(),
         &facilities,
         &items,
         &transports,
         &components,
         &request,
-        Duration::from_secs(2),
+        &config,
     );
     let small_request = FacilityPlacementRequest {
         schema_version: request.schema_version,
         max_width: 50,
         max_height: 50,
     };
-    let small_report = construct_iterative_scc_layout_with_time_limit(
+    let small_report = construct_iterative_scc_layout(
         &one_facility_wiring_fixture(),
         &facilities,
         &items,
         &transports,
         &components,
         &small_request,
-        Duration::from_secs(2),
+        &config,
     );
 
     for report in [&large_report, &small_report] {

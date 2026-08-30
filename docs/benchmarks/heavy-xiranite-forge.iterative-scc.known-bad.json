@@ -38,8 +38,8 @@
     "data/game/normalized/logistics-components.json",
     "--placement-request",
     "data/examples/placement.factory-500.request.json",
-    "--time-limit-seconds",
-    "10",
+    "--optimization-config",
+    "data/examples/layout.iterative-optimization.config.json",
     "--strategy",
     "iterative-scc"
   ],
@@ -71,6 +71,10 @@
     {
       "path": "data/examples/placement.factory-500.request.json",
       "sha256": "2f68e1e88cb98084ebf7e79274cddc58b3ec685c9deeb6057a5922c4e2720eec"
+    },
+    {
+      "path": "data/examples/layout.iterative-optimization.config.json",
+      "sha256": "2fb515b68f587c617b30a1309b798f991f41403c808bd4373385d290fd3fff23"
     }
   ],
   "search_domain": {

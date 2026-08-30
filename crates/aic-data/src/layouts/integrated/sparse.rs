@@ -38,14 +38,33 @@ pub(super) fn construct(
     input: ModelInput,
     components: &ValidatedLogisticsComponentCatalog,
 ) -> IntegratedLayoutReport {
+    construct_with_deadline(input, components, None)
+}
+
+pub(super) fn construct_until(
+    input: ModelInput,
+    components: &ValidatedLogisticsComponentCatalog,
+    deadline: Instant,
+) -> IntegratedLayoutReport {
+    construct_with_deadline(input, components, Some(deadline))
+}
+
+fn construct_with_deadline(
+    input: ModelInput,
+    components: &ValidatedLogisticsComponentCatalog,
+    deadline: Option<Instant>,
+) -> IntegratedLayoutReport {
     let mut port_failure = None;
     let mut best_routing_failure = None;
-    for gap in PLACEMENT_GAPS {
+    'search: for gap in PLACEMENT_GAPS {
         let Some(placements) = place_on_shelves(&input, gap) else {
             continue;
         };
         for routing_height in active_routing_heights(&input, &placements) {
             for order in route_orders(&input) {
+                if deadline.is_some_and(|deadline| Instant::now() >= deadline) {
+                    break 'search;
+                }
                 let assigned = match assign_facility_ports(&input, &placements, &order) {
                     Ok(assigned) => assigned,
                     Err(failure) => {
@@ -53,7 +72,7 @@ pub(super) fn construct(
                         continue;
                     }
                 };
-                match route_all(&input, &placements, &assigned, routing_height, None) {
+                match route_all(&input, &placements, &assigned, routing_height, deadline) {
                     Ok((routes, bridges)) => {
                         let report = success_report(
                             &input,
@@ -85,7 +104,20 @@ pub(super) fn construct(
         }
     }
 
-    let diagnostic = if let Some(failure) = best_routing_failure {
+    let diagnostic = if deadline.is_some_and(|deadline| Instant::now() >= deadline) {
+        IntegratedLayoutDiagnostic::error(
+            "sparse-construction-time-limit",
+            "/routes",
+            None,
+            format!(
+                "sparse construction exhausted its absolute deadline after routing at most {} of {} capacity-split routes; this is not proof of infeasibility",
+                best_routing_failure
+                    .as_ref()
+                    .map_or(0, |failure: &RoutingFailure| failure.routed),
+                input.edges.len(),
+            ),
+        )
+    } else if let Some(failure) = best_routing_failure {
         let edge = &input.edges[failure.edge_index].edge;
         IntegratedLayoutDiagnostic::error(
             "sparse-routing-construction-failed",

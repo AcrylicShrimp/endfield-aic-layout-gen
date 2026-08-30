@@ -20,20 +20,47 @@ use crate::recipes::{
 
 use super::{
     IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutPhaseAttempt,
-    IntegratedLayoutReport, IntegratedLayoutStatus, PRODUCTION_FACILITY_GAP,
-    frame_placements_for_routing, prepare_model, route_turn_count, sparse,
+    IntegratedLayoutReport, IntegratedLayoutStatus, IterativeOptimizationConfig,
+    PRODUCTION_FACILITY_GAP, frame_placements_for_routing, prepare_model, route_turn_count, sparse,
+    validate_iterative_optimization_config,
 };
 
 #[allow(clippy::too_many_arguments)]
-pub fn construct_iterative_scc_layout_with_time_limit(
+pub fn construct_iterative_scc_layout(
     instance_wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
     transports: &ValidatedTransportCatalog,
     logistics_components: &ValidatedLogisticsComponentCatalog,
     request: &FacilityPlacementRequest,
-    time_limit: Duration,
+    config: &IterativeOptimizationConfig,
 ) -> IntegratedLayoutReport {
+    if let Err(diagnostics) = validate_iterative_optimization_config(config) {
+        let mut report = IntegratedLayoutReport::failure(
+            IntegratedLayoutStatus::InvalidInput,
+            IntegratedLayoutDiagnostic::error(
+                "invalid-iterative-optimization-config",
+                "/optimization_config",
+                None,
+                "iterative optimization configuration is invalid",
+            ),
+        );
+        report
+            .diagnostics
+            .extend(diagnostics.into_iter().map(|diagnostic| {
+                IntegratedLayoutDiagnostic::error(
+                    diagnostic.code,
+                    diagnostic.path,
+                    None,
+                    diagnostic.message,
+                )
+            }));
+        return report;
+    }
+    let time_limit = Duration::from_millis(config.total_time_limit_ms);
+    let strategy_deadline = Instant::now()
+        .checked_add(time_limit)
+        .unwrap_or_else(Instant::now);
     let growth = plan_facility_growth(instance_wiring);
     if !growth.success {
         let diagnostic = growth.diagnostics.into_iter().next().map_or_else(
@@ -64,7 +91,7 @@ pub fn construct_iterative_scc_layout_with_time_limit(
             transports,
             logistics_components,
             request,
-            time_limit,
+            strategy_deadline.saturating_duration_since(Instant::now()),
         );
     }
 
@@ -79,6 +106,19 @@ pub fn construct_iterative_scc_layout_with_time_limit(
     let mut latest_success = None;
 
     for phase in &growth.phases {
+        if Instant::now() >= strategy_deadline {
+            let mut report = IntegratedLayoutReport::failure(
+                IntegratedLayoutStatus::Unknown,
+                IntegratedLayoutDiagnostic::error(
+                    "iterative-scc-strategy-time-limit",
+                    format!("/phases/{}", phase.index),
+                    Some(format!("phase:{}", phase.index)),
+                    "iterative SCC construction exhausted the total strategy deadline",
+                ),
+            );
+            report.phases = snapshots;
+            return report;
+        }
         cumulative_facilities.extend(phase.facilities.iter().cloned());
         let partial_wiring = match project_cumulative_wiring(
             instance_wiring,
@@ -95,6 +135,20 @@ pub fn construct_iterative_scc_layout_with_time_limit(
                 return report;
             }
         };
+        let phase_time_limit = strategy_deadline.saturating_duration_since(Instant::now());
+        if phase_time_limit.is_zero() {
+            let mut report = IntegratedLayoutReport::failure(
+                IntegratedLayoutStatus::Unknown,
+                IntegratedLayoutDiagnostic::error(
+                    "iterative-scc-strategy-time-limit",
+                    format!("/phases/{}", phase.index),
+                    Some(format!("phase:{}", phase.index)),
+                    "iterative SCC graph construction exhausted the total strategy deadline",
+                ),
+            );
+            report.phases = snapshots;
+            return report;
+        }
 
         let placement = if anchors.is_empty() {
             solve_facility_placement_feasibly_with_time_limit(
@@ -102,7 +156,7 @@ pub fn construct_iterative_scc_layout_with_time_limit(
                 facilities,
                 request,
                 PRODUCTION_FACILITY_GAP,
-                time_limit,
+                phase_time_limit,
             )
         } else {
             solve_hinted_facility_placement_with_time_limit(
@@ -111,7 +165,7 @@ pub fn construct_iterative_scc_layout_with_time_limit(
                 request,
                 PRODUCTION_FACILITY_GAP,
                 &anchors,
-                time_limit,
+                phase_time_limit,
             )
         };
         let mut attempt_reports = Vec::with_capacity(2);
@@ -148,7 +202,7 @@ pub fn construct_iterative_scc_layout_with_time_limit(
                     input,
                     logistics_components,
                     framed_placements,
-                    routing_deadline(time_limit),
+                    strategy_deadline,
                 );
                 if !routed.success {
                     let fallback_input = match prepare_model(
@@ -168,7 +222,11 @@ pub fn construct_iterative_scc_layout_with_time_limit(
                             return report;
                         }
                     };
-                    routed = sparse::construct(fallback_input, logistics_components);
+                    routed = sparse::construct_until(
+                        fallback_input,
+                        logistics_components,
+                        strategy_deadline,
+                    );
                 }
                 attempt_reports.push(IntegratedLayoutPhaseAttempt {
                     placement_hint_count: anchors.len(),
@@ -274,12 +332,6 @@ pub fn construct_iterative_scc_layout_with_time_limit(
         ),
     ));
     report
-}
-
-fn routing_deadline(time_limit: Duration) -> Instant {
-    Instant::now()
-        .checked_add(time_limit.max(Duration::from_secs(5)))
-        .unwrap_or_else(Instant::now)
 }
 
 fn placement_status(status: FacilityPlacementStatus) -> IntegratedLayoutStatus {
