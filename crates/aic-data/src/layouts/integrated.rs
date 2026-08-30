@@ -608,7 +608,8 @@ fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> IntegratedLayou
     }
 
     let mut model_routes = Vec::with_capacity(input.edges.len());
-    let mut route_cells_by_grid = vec![Vec::<DomainId>::new(); cell_count];
+    let mut belt_route_cells_by_grid = vec![Vec::<DomainId>::new(); cell_count];
+    let mut pipe_route_cells_by_grid = vec![Vec::<DomainId>::new(); cell_count];
     let mut route_arc_variables = Vec::new();
     for (edge_index, edge) in input.edges.iter().enumerate() {
         let source_options = model_endpoint_options(
@@ -646,7 +647,10 @@ fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> IntegratedLayou
         for cell in 0..cell_count {
             let route_cell =
                 solver.new_named_bounded_integer(0, 1, format!("route-{edge_index}-cell-{cell}"));
-            route_cells_by_grid[cell].push(route_cell);
+            match edge.transport {
+                TransportKind::Belt => belt_route_cells_by_grid[cell].push(route_cell),
+                TransportKind::Pipe => pipe_route_cells_by_grid[cell].push(route_cell),
+            }
 
             let mut conservation = Vec::new();
             conservation.extend(outgoing[cell].iter().map(|variable| variable.scaled(1)));
@@ -698,19 +702,20 @@ fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> IntegratedLayou
     }
 
     for cell in 0..cell_count {
-        let mut exclusion = occupancy[cell]
-            .iter()
-            .chain(route_cells_by_grid[cell].iter())
-            .map(|variable| variable.scaled(1))
-            .collect::<Vec<_>>();
-        if exclusion.len() > 1 {
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(
-                    std::mem::take(&mut exclusion),
-                    1,
-                    tag,
-                ))
-                .post();
+        for layer in [
+            &belt_route_cells_by_grid[cell],
+            &pipe_route_cells_by_grid[cell],
+        ] {
+            let exclusion = occupancy[cell]
+                .iter()
+                .chain(layer.iter())
+                .map(|variable| variable.scaled(1))
+                .collect::<Vec<_>>();
+            if exclusion.len() > 1 {
+                solver
+                    .add_constraint(pumpkin_solver::less_than_or_equals(exclusion, 1, tag))
+                    .post();
+            }
         }
     }
 
@@ -1263,6 +1268,32 @@ mod tests {
         }
     }
 
+    fn facility_with_typed_ports(
+        id: &str,
+        ports: &[(&str, FacilityPortDirection, TransportKind, FacilityPortEdge)],
+    ) -> FacilityDefinition {
+        FacilityDefinition {
+            id: id.to_string(),
+            footprint: FacilityFootprint {
+                width: 1,
+                height: 1,
+            },
+            allowed_rotations: vec![0],
+            ports: ports
+                .iter()
+                .map(
+                    |(port_id, direction, transport, edge)| FacilityPortDefinition {
+                        id: (*port_id).to_string(),
+                        direction: *direction,
+                        transport: *transport,
+                        position: FacilityPortPosition { x: 0, y: 0 },
+                        edge: *edge,
+                    },
+                )
+                .collect(),
+        }
+    }
+
     fn wiring() -> FacilityInstanceWiringReport {
         FacilityInstanceWiringReport {
             success: true,
@@ -1566,6 +1597,179 @@ mod tests {
             .flat_map(|route| route.cells.iter().map(|cell| (cell.x, cell.y)))
             .collect::<BTreeSet<_>>();
         assert_eq!(route_cells.len(), 4);
+    }
+
+    #[test]
+    fn allows_belt_and_pipe_routes_to_share_a_horizontal_cell() {
+        let facilities = ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
+            schema_version: 3,
+            facilities: vec![
+                facility_with_typed_ports(
+                    "source-machine",
+                    &[
+                        (
+                            "belt-output",
+                            FacilityPortDirection::Output,
+                            TransportKind::Belt,
+                            FacilityPortEdge::East,
+                        ),
+                        (
+                            "pipe-output",
+                            FacilityPortDirection::Output,
+                            TransportKind::Pipe,
+                            FacilityPortEdge::East,
+                        ),
+                    ],
+                ),
+                facility_with_typed_ports(
+                    "target-machine",
+                    &[
+                        (
+                            "belt-input",
+                            FacilityPortDirection::Input,
+                            TransportKind::Belt,
+                            FacilityPortEdge::West,
+                        ),
+                        (
+                            "pipe-input",
+                            FacilityPortDirection::Input,
+                            TransportKind::Pipe,
+                            FacilityPortEdge::West,
+                        ),
+                    ],
+                ),
+            ],
+        })
+        .expect("facility catalog should validate");
+        let items = ValidatedItemCatalog::try_from_catalog(ItemCatalog {
+            schema_version: SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+            items: vec![
+                ItemDefinition {
+                    id: "solid".to_string(),
+                    transport: TransportKind::Belt,
+                },
+                ItemDefinition {
+                    id: "liquid".to_string(),
+                    transport: TransportKind::Pipe,
+                },
+            ],
+        })
+        .expect("item catalog should validate");
+        let mut wiring = wiring();
+        wiring.edges = vec![
+            FacilityInstanceWiringEdge {
+                source: "recipe:source#1".to_string(),
+                target: "recipe:target#1".to_string(),
+                kind: "intermediate".to_string(),
+                item: "solid".to_string(),
+                rate: Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            },
+            FacilityInstanceWiringEdge {
+                source: "recipe:source#1".to_string(),
+                target: "recipe:target#1".to_string(),
+                kind: "intermediate".to_string(),
+                item: "liquid".to_string(),
+                rate: Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            },
+        ];
+
+        let report = solve_integrated_layout(
+            &wiring,
+            &facilities,
+            &items,
+            &transport_catalog(),
+            &FacilityPlacementRequest {
+                schema_version: 2,
+                max_width: 4,
+                max_height: 1,
+            },
+        );
+
+        assert!(report.success, "{:#?}", report.diagnostics);
+        assert_eq!(report.status, IntegratedLayoutStatus::Optimal);
+        assert_eq!(report.routes.len(), 2);
+        assert_ne!(report.routes[0].transport, report.routes[1].transport);
+        assert_eq!(report.routes[0].cells, report.routes[1].cells);
+    }
+
+    #[test]
+    fn rejects_two_plain_routes_sharing_the_same_transport_layer() {
+        let facilities = ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
+            schema_version: 3,
+            facilities: vec![
+                facility(
+                    "source-machine",
+                    "output",
+                    FacilityPortDirection::Output,
+                    FacilityPortEdge::East,
+                ),
+                facility(
+                    "target-machine",
+                    "input",
+                    FacilityPortDirection::Input,
+                    FacilityPortEdge::West,
+                ),
+            ],
+        })
+        .expect("facility catalog should validate");
+        let items = ValidatedItemCatalog::try_from_catalog(ItemCatalog {
+            schema_version: SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+            items: vec![
+                ItemDefinition {
+                    id: "solid-a".to_string(),
+                    transport: TransportKind::Belt,
+                },
+                ItemDefinition {
+                    id: "solid-b".to_string(),
+                    transport: TransportKind::Belt,
+                },
+            ],
+        })
+        .expect("item catalog should validate");
+        let mut wiring = wiring();
+        wiring.edges = vec![
+            FacilityInstanceWiringEdge {
+                source: "recipe:source#1".to_string(),
+                target: "recipe:target#1".to_string(),
+                kind: "intermediate".to_string(),
+                item: "solid-a".to_string(),
+                rate: Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            },
+            FacilityInstanceWiringEdge {
+                source: "recipe:source#1".to_string(),
+                target: "recipe:target#1".to_string(),
+                kind: "intermediate".to_string(),
+                item: "solid-b".to_string(),
+                rate: Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            },
+        ];
+
+        let report = solve_integrated_layout(
+            &wiring,
+            &facilities,
+            &items,
+            &transport_catalog(),
+            &FacilityPlacementRequest {
+                schema_version: 2,
+                max_width: 4,
+                max_height: 1,
+            },
+        );
+
+        assert!(!report.success);
+        assert_eq!(report.status, IntegratedLayoutStatus::Infeasible);
     }
 
     #[test]
