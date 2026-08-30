@@ -9,7 +9,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::stable_id::{STABLE_ID_PATTERN, is_stable_id};
 
+mod components;
 mod transport;
+
+pub use components::{
+    CardinalDirection, LoadLogisticsComponentCatalogError, LogisticsComponentCatalog,
+    LogisticsComponentCatalogDiagnostic, LogisticsComponentCatalogValidationReport,
+    LogisticsComponentDefinition, LogisticsComponentKind,
+    SUPPORTED_LOGISTICS_COMPONENT_CATALOG_SCHEMA_VERSION, ValidatedLogisticsComponentCatalog,
+    load_logistics_component_catalog, validate_logistics_component_catalog,
+};
 
 pub use transport::{
     LoadTransportCatalogError, SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION, TransportCapacity,
