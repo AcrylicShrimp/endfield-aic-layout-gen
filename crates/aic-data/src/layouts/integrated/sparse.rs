@@ -1,4 +1,5 @@
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::cmp::Reverse;
+use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
 use std::time::Instant;
 
 use crate::layouts::{FacilityPlacement, FacilityPlacementBounds};
@@ -749,6 +750,7 @@ fn find_path(
     let state_count = cell_count * 5;
     let mut parent = vec![usize::MAX; state_count];
     let mut root = vec![usize::MAX; state_count];
+    let mut distance = vec![(usize::MAX, usize::MAX); state_count];
     let mut target_by_cell = BTreeMap::new();
     for (index, target) in targets.iter().enumerate() {
         target_by_cell.entry(target.cell).or_insert(index);
@@ -761,7 +763,7 @@ fn find_path(
         .iter()
         .map(|source| source.cell)
         .collect::<BTreeSet<_>>();
-    let mut queue = VecDeque::new();
+    let mut queue = BinaryHeap::new();
     for (index, source) in sources.iter().enumerate() {
         if facility_cells[source.cell]
             || used[source.cell].is_some()
@@ -773,11 +775,15 @@ fn find_path(
         if parent[state] == usize::MAX {
             parent[state] = state;
             root[state] = index;
-            queue.push_back(state);
+            distance[state] = (0, 0);
+            queue.push(Reverse((0, 0, state)));
         }
     }
 
-    while let Some(state) = queue.pop_front() {
+    while let Some(Reverse((steps, turns, state))) = queue.pop() {
+        if distance[state] != (steps, turns) {
+            continue;
+        }
         let cell = state / 5;
         let incoming = match state % 5 {
             0 => Some(StepDirection::North),
@@ -787,6 +793,26 @@ fn find_path(
             4 => None,
             _ => unreachable!(),
         };
+        if let Some(target_index) = target_by_cell.get(&cell).copied()
+            && incoming.is_some()
+            && !source_cells.contains(&cell)
+            && used[cell].is_none()
+        {
+            let mut path = vec![cell];
+            let mut current = state;
+            while parent[current] != current {
+                current = parent[current];
+                path.push(current / 5);
+            }
+            path.reverse();
+            if path.iter().copied().collect::<BTreeSet<_>>().len() == path.len() {
+                return Some((
+                    sources[root[state]].clone(),
+                    targets[target_index].clone(),
+                    path,
+                ));
+            }
+        }
         let x = (cell % width as usize) as i32;
         let y = (cell / width as usize) as i32;
         for (direction, next_x, next_y) in [
@@ -809,35 +835,22 @@ fn find_path(
             }
             let next = grid_index(next_x, next_y, width);
             let next_state = next * 5 + direction.index();
-            if parent[next_state] != usize::MAX || facility_cells[next] {
+            if facility_cells[next] {
                 continue;
             }
             if reserved.contains(&next) && !target_cells.contains(&next) {
                 continue;
             }
-            parent[next_state] = state;
-            root[next_state] = root[state];
-            if let Some(target_index) = target_by_cell.get(&next).copied()
-                && !source_cells.contains(&next)
-                && used[next].is_none()
-            {
-                let mut path = vec![next];
-                let mut current = next_state;
-                while parent[current] != current {
-                    current = parent[current];
-                    path.push(current / 5);
-                }
-                path.reverse();
-                if path.iter().copied().collect::<BTreeSet<_>>().len() != path.len() {
-                    continue;
-                }
-                return Some((
-                    sources[root[next_state]].clone(),
-                    targets[target_index].clone(),
-                    path,
-                ));
+            let next_distance = (
+                steps + 1,
+                turns + usize::from(incoming.is_some_and(|incoming| incoming != direction)),
+            );
+            if next_distance < distance[next_state] {
+                distance[next_state] = next_distance;
+                parent[next_state] = state;
+                root[next_state] = root[state];
+                queue.push(Reverse((next_distance.0, next_distance.1, next_state)));
             }
-            queue.push_back(next_state);
         }
     }
     None
@@ -1025,5 +1038,51 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(first, repeated);
         assert_ne!(first, second);
+    }
+
+    #[test]
+    fn shortest_path_breaks_distance_ties_with_fewer_turns() {
+        let width = 3;
+        let height = 3;
+        let source = FixedEndpoint {
+            endpoint: IntegratedRouteEndpoint::Boundary {
+                node: "source".to_string(),
+                side: BoundarySide::North,
+            },
+            cell: grid_index(0, 0, width),
+        };
+        let target = FixedEndpoint {
+            endpoint: IntegratedRouteEndpoint::Boundary {
+                node: "target".to_string(),
+                side: BoundarySide::South,
+            },
+            cell: grid_index(2, 2, width),
+        };
+        let facility_cells = vec![false; (width * height) as usize];
+        let used = vec![None; (width * height) as usize];
+
+        let (_, _, path) = find_path(
+            width,
+            height,
+            &[source],
+            &[target],
+            &facility_cells,
+            &used,
+            &BTreeSet::new(),
+        )
+        .expect("empty grid should have a route");
+
+        assert_eq!(path.len(), 5);
+        assert_eq!(grid_path_turns(&path, width), 1);
+    }
+
+    fn grid_path_turns(path: &[usize], width: i32) -> usize {
+        path.windows(3)
+            .filter(|cells| {
+                let first_horizontal = cells[0] / width as usize == cells[1] / width as usize;
+                let second_horizontal = cells[1] / width as usize == cells[2] / width as usize;
+                first_horizontal != second_horizontal
+            })
+            .count()
     }
 }

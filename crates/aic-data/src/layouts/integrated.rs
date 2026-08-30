@@ -292,9 +292,10 @@ pub fn construct_coordinate_integrated_layout_with_time_limit(
                 },
                 |score| {
                     format!(
-                        "portfolio worker produced a validated witness with area={}, max_side={}, route_cells={}, logistics_components={}",
+                        "portfolio worker produced a validated witness with area={}, max_side={}, route_turns={}, route_cells={}, logistics_components={}",
                         score.area,
                         score.max_side,
+                        score.route_turns,
                         score.route_cells,
                         score.logistics_components,
                     )
@@ -340,12 +341,13 @@ pub fn construct_coordinate_integrated_layout_with_time_limit(
         .push(IntegratedLayoutDiagnostic::info(
             "parallel-portfolio-selected",
             format!(
-                "selected placement width cap {} from {} validated witnesses across {} independent workers with score area={}, max_side={}, route_cells={}, logistics_components={}",
+                "selected placement width cap {} from {} validated witnesses across {} independent workers with score area={}, max_side={}, route_turns={}, route_cells={}, logistics_components={}",
                 selected.placement_width,
                 successful_candidates,
                 placement_widths.len(),
                 score.area,
                 score.max_side,
+                score.route_turns,
                 score.route_cells,
                 score.logistics_components,
             ),
@@ -374,6 +376,7 @@ impl CoordinateCandidate {
         self.report.success.then(|| CoordinateCandidateScore {
             area: i128::from(bounds.width) * i128::from(bounds.height),
             max_side: bounds.width.max(bounds.height),
+            route_turns: self.report.routes.iter().map(route_turn_count).sum(),
             route_cells: self
                 .report
                 .routes
@@ -390,9 +393,22 @@ impl CoordinateCandidate {
 struct CoordinateCandidateScore {
     area: i128,
     max_side: i64,
+    route_turns: usize,
     route_cells: usize,
     logistics_components: usize,
     placement_width: i64,
+}
+
+fn route_turn_count(route: &IntegratedRoute) -> usize {
+    route
+        .cells
+        .windows(3)
+        .filter(|cells| {
+            let first_horizontal = cells[0].y == cells[1].y;
+            let second_horizontal = cells[1].y == cells[2].y;
+            first_horizontal != second_horizontal
+        })
+        .count()
 }
 
 fn portfolio_widths(max_width: i64, worker_limit: usize) -> Vec<i64> {
@@ -1949,6 +1965,7 @@ mod tests {
         let compact = CoordinateCandidateScore {
             area: 20_176,
             max_side: 388,
+            route_turns: 800,
             route_cells: 12_046,
             logistics_components: 793,
             placement_width: 400,
@@ -1956,12 +1973,35 @@ mod tests {
         let wide = CoordinateCandidateScore {
             area: 21_252,
             max_side: 483,
+            route_turns: 600,
             route_cells: 10_198,
             logistics_components: 618,
             placement_width: 500,
         };
 
         assert!(compact < wide);
+    }
+
+    #[test]
+    fn portfolio_prefers_fewer_turns_before_shorter_routes_at_equal_size() {
+        let straighter = CoordinateCandidateScore {
+            area: 20_000,
+            max_side: 400,
+            route_turns: 40,
+            route_cells: 11_000,
+            logistics_components: 80,
+            placement_width: 400,
+        };
+        let shorter = CoordinateCandidateScore {
+            area: 20_000,
+            max_side: 400,
+            route_turns: 50,
+            route_cells: 10_000,
+            logistics_components: 70,
+            placement_width: 400,
+        };
+
+        assert!(straighter < shorter);
     }
 
     #[test]
