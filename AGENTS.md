@@ -86,7 +86,7 @@
 ## Layout Bound Semantics
 
 - Treat `max_width` and `max_height` as caller-supplied hard ceilings for one solve request, not as required blueprint dimensions, target dimensions, canonical game limits, or default model sizes.
-- Do not promote a diagnostic fixture such as 500 by 500 into a project invariant or MVP success criterion. A large test bound may exist only to determine whether an earlier bound was too restrictive.
+- Do not promote any diagnostic or example request bound into a project invariant or MVP success criterion. A test bound may exist only to evaluate that specific request or to determine whether an earlier bound was too restrictive.
 - Actual layout width and height come from the used facility, belt, pipe, and logistics-component geometry selected by the solver. Unused search capacity is not part of the blueprint footprint.
 - Exact solving does not require eagerly materializing every cell inside a loose maximum bound. Symbolic, sparse, or otherwise compact exact formulations are allowed when they preserve every legal solution and the configured objective.
 - Never hardcode an example request bound into solver architecture, runtime data, benchmark acceptance, or documentation claims about system limits.
