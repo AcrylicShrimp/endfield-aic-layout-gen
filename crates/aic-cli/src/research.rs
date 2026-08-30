@@ -26,6 +26,7 @@ use sha2::{Digest, Sha256};
 mod factored_networks;
 mod first_phase;
 mod pair_cliff;
+mod requirement_cliff;
 mod shared_layer;
 
 #[derive(Debug, Subcommand)]
@@ -176,6 +177,32 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
     },
+    /// Rebuild one factored shared-layer network from each logical requirement subset.
+    DecomposeFirstPhaseFactoredRequirements {
+        /// Benchmark workload manifest JSON file to solve.
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+
+        /// Root used to resolve portable input paths in the workload manifest.
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Zero-based phase-zero commodity network index to decompose.
+        #[arg(long, value_name = "INDEX")]
+        network_index: usize,
+
+        /// Wall-clock budget given independently to every requirement-subset case.
+        #[arg(long, value_name = "MILLISECONDS")]
+        case_time_limit_ms: u64,
+
+        /// Directory receiving summary JSON and per-case JSON/HTML artifacts.
+        #[arg(long, value_name = "DIR")]
+        output_dir: PathBuf,
+    },
 }
 
 pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
@@ -257,6 +284,21 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             workload,
             workspace_root,
             placement_request,
+            case_time_limit_ms,
+            output_dir,
+        ),
+        ResearchCommand::DecomposeFirstPhaseFactoredRequirements {
+            workload,
+            workspace_root,
+            placement_request,
+            network_index,
+            case_time_limit_ms,
+            output_dir,
+        } => requirement_cliff::run(
+            workload,
+            workspace_root,
+            placement_request,
+            network_index,
             case_time_limit_ms,
             output_dir,
         ),

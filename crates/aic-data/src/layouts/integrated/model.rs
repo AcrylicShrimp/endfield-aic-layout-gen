@@ -45,6 +45,55 @@ pub(super) struct ComponentCapacityRates {
 }
 
 impl ModelInput {
+    pub(super) fn select_route_indices(
+        mut self,
+        indices: &[usize],
+    ) -> Result<(Self, Vec<String>), IntegratedLayoutDiagnostic> {
+        let mut selected_indices = BTreeSet::new();
+        for index in indices {
+            if *index >= self.edges.len() {
+                return Err(IntegratedLayoutDiagnostic::error(
+                    "research-route-index-out-of-range",
+                    "/route_indices",
+                    Some(index.to_string()),
+                    format!(
+                        "research route index {index} is outside the available range 0..{}",
+                        self.edges.len()
+                    ),
+                ));
+            }
+            if !selected_indices.insert(*index) {
+                return Err(IntegratedLayoutDiagnostic::error(
+                    "duplicate-research-route-index",
+                    "/route_indices",
+                    Some(index.to_string()),
+                    format!("research route index {index} was selected more than once"),
+                ));
+            }
+        }
+        if selected_indices.is_empty() {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "empty-research-route-selection",
+                "/route_indices",
+                None,
+                "research route selection must contain at least one logical requirement",
+            ));
+        }
+
+        let selected_requirements = selected_indices
+            .iter()
+            .map(|index| self.edges[*index].requirement_id.clone())
+            .collect::<Vec<_>>();
+        self.edges = self
+            .edges
+            .into_iter()
+            .enumerate()
+            .filter_map(|(index, edge)| selected_indices.contains(&index).then_some(edge))
+            .collect();
+        self.networks = networks::normalize(&self.edges)?;
+        Ok((self, selected_requirements))
+    }
+
     pub(super) fn select_network_indices(
         mut self,
         indices: &[usize],

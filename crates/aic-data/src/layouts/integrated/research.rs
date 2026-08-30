@@ -15,6 +15,103 @@ pub const EXACT_ABLATION_MATRIX_SCHEMA_VERSION: u32 = 1;
 pub const SHARED_LAYER_COMPARISON_SCHEMA_VERSION: u32 = 1;
 pub const FACTORED_ENDPOINT_COMPARISON_SCHEMA_VERSION: u32 = 1;
 pub const FACTORED_NETWORK_DECOMPOSITION_SCHEMA_VERSION: u32 = 1;
+pub const FACTORED_REQUIREMENT_DECOMPOSITION_SCHEMA_VERSION: u32 = 1;
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct FactoredRequirementSubsetCaseReport {
+    pub id: String,
+    pub route_indices: Vec<usize>,
+    pub selected_requirements: Vec<String>,
+    pub search_budget_ms: u64,
+    pub layout: IntegratedLayoutReport,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct FactoredRequirementDecompositionReport {
+    pub schema_version: u32,
+    pub selected_network_index: usize,
+    pub selected_network: String,
+    pub search_budget_ms_per_case: u64,
+    pub cases: Vec<FactoredRequirementSubsetCaseReport>,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn decompose_first_integrated_layout_phase_factored_requirements(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    network_index: usize,
+    search_budget: Duration,
+) -> Result<FactoredRequirementDecompositionReport, IntegratedLayoutReport> {
+    let first_phase_wiring = harness::first_iterative_scc_wiring(instance_wiring)?;
+    let input = prepare_exact_model(
+        &first_phase_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+    )?;
+    let Some(network) = input.networks.get(network_index) else {
+        return Err(IntegratedLayoutReport::invalid(
+            super::IntegratedLayoutDiagnostic::error(
+                "research-network-index-out-of-range",
+                "/network_index",
+                Some(network_index.to_string()),
+                format!(
+                    "research network index {network_index} is outside the available range 0..{}",
+                    input.networks.len()
+                ),
+            ),
+        ));
+    };
+    let selected_network = network.id().to_string();
+    let route_indices = network.route_indices().to_vec();
+    let mut selections = route_indices
+        .iter()
+        .copied()
+        .map(|index| vec![index])
+        .collect::<Vec<_>>();
+    if route_indices.len() > 1 {
+        selections.push(route_indices);
+    }
+
+    let mut cases = Vec::with_capacity(selections.len());
+    for indices in selections {
+        let (case_input, selected_requirements) = input
+            .clone()
+            .select_route_indices(&indices)
+            .map_err(IntegratedLayoutReport::invalid)?;
+        let id = if indices.len() == 1 {
+            format!("requirement-{}", indices[0])
+        } else {
+            "combined".to_string()
+        };
+        let layout = exact::shared_layer::solve_factored_endpoints(
+            case_input,
+            logistics_components,
+            Some(search_budget),
+        );
+        cases.push(FactoredRequirementSubsetCaseReport {
+            id,
+            route_indices: indices,
+            selected_requirements,
+            search_budget_ms: millis(search_budget),
+            layout,
+        });
+    }
+
+    Ok(FactoredRequirementDecompositionReport {
+        schema_version: FACTORED_REQUIREMENT_DECOMPOSITION_SCHEMA_VERSION,
+        selected_network_index: network_index,
+        selected_network,
+        search_budget_ms_per_case: millis(search_budget),
+        cases,
+    })
+}
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct FactoredNetworkSubsetCaseReport {

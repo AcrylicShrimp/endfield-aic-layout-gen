@@ -50,6 +50,11 @@ formulation. It locates the earliest validated-output boundary inside the two-re
 Powder network and separates that boundary from the later one-layer versus two-layer composition
 growth.
 
+The eleventh checkpoint, `heavy-xiranite-minimum-rate.eleventh-requirement-decomposition-report.md`,
+rebuilds the hard Xiranite Powder network from each logical requirement. It shows that both
+requirements are individually tractable and that the first local cliff is the second terminal
+pair's placement-port-to-grid coupling, not additional routing-grid state.
+
 Regenerate it from a release binary with:
 
 ```bash
