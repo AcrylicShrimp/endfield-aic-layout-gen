@@ -1,14 +1,13 @@
+use std::io::Write;
 use std::num::NonZeroU64;
 use std::path::PathBuf;
 use std::time::Duration;
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    FacilityPlacementRequest, IntegratedLayoutReport,
+    FacilityPlacementRequest, decompose_first_integrated_layout_phase_pair,
     render_integrated_layout_html_with_localization,
-    solve_first_integrated_layout_phase_with_time_limit,
 };
-use aic_data::localization::{ValidatedLocalizationCatalog, load_localization_catalog};
 use aic_data::logistics::{
     ValidatedItemCatalog, ValidatedLogisticsComponentCatalog, ValidatedTransportCatalog,
     load_item_catalog, load_logistics_component_catalog, load_transport_catalog,
@@ -16,35 +15,33 @@ use aic_data::logistics::{
 use aic_data::recipes::{
     build_contextual_facility_instance_wiring, calculate_contextual_facility_requirements,
 };
-use aic_data::research::{
-    BenchmarkRequestBounds, ValidatedBenchmarkWorkloadManifest, load_benchmark_workload_manifest,
-};
+use aic_data::research::{ValidatedBenchmarkWorkloadManifest, load_benchmark_workload_manifest};
 use anyhow::{Context, Result, ensure};
-use serde::Serialize;
 
+use super::first_phase::{load_localization, write_bytes, write_json};
 use super::{load_contextual_recipe_request, resolve_workload_paths};
 
-const FIRST_PHASE_EXPERIMENT_SCHEMA_VERSION: u32 = 1;
-
-#[derive(Serialize)]
-struct FirstPhaseExperimentReport<'a> {
-    schema_version: u32,
-    workload_id: &'a str,
-    request_bounds: BenchmarkRequestBounds,
-    search_budget_ms: u64,
-    layout: &'a IntegratedLayoutReport,
-}
-
-pub(super) fn solve(
+#[allow(clippy::too_many_arguments)]
+pub(super) fn run(
     workload_path: PathBuf,
     workspace_root: PathBuf,
     placement_request_path: PathBuf,
-    time_limit_ms: u64,
-    output: PathBuf,
-    visualization_output: Option<PathBuf>,
+    network_indices: Vec<usize>,
+    case_time_limit_ms: u64,
+    reference_time_limit_ms: u64,
+    output_dir: PathBuf,
 ) -> Result<bool> {
-    let time_limit = NonZeroU64::new(time_limit_ms)
-        .context("research first-phase time_limit_ms must be positive")?;
+    let case_time_limit = NonZeroU64::new(case_time_limit_ms)
+        .context("research pair-cliff case_time_limit_ms must be positive")?;
+    let reference_time_limit = NonZeroU64::new(reference_time_limit_ms)
+        .context("research pair-cliff reference_time_limit_ms must be positive")?;
+    let network_indices: [usize; 2] = network_indices.try_into().map_err(|indices: Vec<_>| {
+        anyhow::anyhow!(
+            "research pair-cliff requires exactly two --network-index values, received {}",
+            indices.len()
+        )
+    })?;
+
     let manifest = load_benchmark_workload_manifest(&workload_path)?;
     let validated = ValidatedBenchmarkWorkloadManifest::try_from_manifest(manifest)
         .map_err(|report| anyhow::anyhow!("benchmark workload validation failed: {report:?}"))?;
@@ -100,78 +97,51 @@ pub(super) fn solve(
         )
     })?;
 
-    let layout = solve_first_integrated_layout_phase_with_time_limit(
+    let report = decompose_first_integrated_layout_phase_pair(
         &wiring,
         &facilities,
         &items,
         &transports,
         &components,
         &placement_request,
-        Duration::from_millis(time_limit.get()),
-    );
-    let report = FirstPhaseExperimentReport {
-        schema_version: FIRST_PHASE_EXPERIMENT_SCHEMA_VERSION,
-        workload_id: &manifest.id,
-        request_bounds: BenchmarkRequestBounds {
-            max_width: u32::try_from(placement_request.max_width)
-                .context("research max_width does not fit report domain")?,
-            max_height: u32::try_from(placement_request.max_height)
-                .context("research max_height does not fit report domain")?,
-        },
-        search_budget_ms: time_limit.get(),
-        layout: &layout,
-    };
-    write_json(&output, &report)?;
-    if let Some(path) = visualization_output {
-        let localization = load_localization(paths.localization_catalog.as_ref())?;
-        let html = render_integrated_layout_html_with_localization(&layout, localization.as_ref())
-            .map_err(|diagnostic| {
-                anyhow::anyhow!(
-                    "layout visualization failed with {}: {}",
-                    diagnostic.code,
-                    diagnostic.message
-                )
-            })?;
-        write_bytes(&path, html.as_bytes(), "visualization")?;
-    }
-    Ok(layout.success)
-}
+        network_indices,
+        Duration::from_millis(case_time_limit.get()),
+        Duration::from_millis(reference_time_limit.get()),
+    )
+    .map_err(|report| anyhow::anyhow!("pair-cliff model preparation failed: {report:?}"))?;
 
-pub(super) fn load_localization(
-    path: Option<&PathBuf>,
-) -> Result<Option<ValidatedLocalizationCatalog>> {
-    let Some(path) = path else {
-        return Ok(None);
-    };
-    let catalog = load_localization_catalog(path).with_context(|| {
+    std::fs::create_dir_all(&output_dir).with_context(|| {
         format!(
-            "failed to load research localization catalog '{}'",
-            path.display()
+            "failed to create pair-cliff output directory '{}'",
+            output_dir.display()
         )
     })?;
-    ValidatedLocalizationCatalog::try_from_catalog(catalog)
-        .map(Some)
-        .map_err(|report| anyhow::anyhow!("localization catalog validation failed: {report:?}"))
-}
-
-pub(super) fn write_json(path: &PathBuf, report: &impl Serialize) -> Result<()> {
-    let encoded = serde_json::to_vec_pretty(report)
-        .context("failed to serialize first-phase experiment report")?;
-    write_bytes(path, &encoded, "first-phase experiment")
-}
-
-pub(super) fn write_bytes(path: &PathBuf, bytes: &[u8], kind: &str) -> Result<()> {
-    if let Some(parent) = path
-        .parent()
-        .filter(|parent| !parent.as_os_str().is_empty())
-    {
-        std::fs::create_dir_all(parent).with_context(|| {
-            format!(
-                "failed to create {kind} output directory '{}'",
-                parent.display()
-            )
-        })?;
+    let localization = load_localization(paths.localization_catalog.as_ref())?;
+    for case in &report.cases {
+        write_json(&output_dir.join(format!("{}.json", case.id)), case)?;
+        let html =
+            render_integrated_layout_html_with_localization(&case.layout, localization.as_ref())
+                .map_err(|diagnostic| {
+                    anyhow::anyhow!(
+                        "pair-cliff visualization failed with {}: {}",
+                        diagnostic.code,
+                        diagnostic.message
+                    )
+                })?;
+        write_bytes(
+            &output_dir.join(format!("{}.html", case.id)),
+            html.as_bytes(),
+            "pair-cliff visualization",
+        )?;
     }
-    std::fs::write(path, bytes)
-        .with_context(|| format!("failed to write {kind} output '{}'", path.display()))
+    let summary_path = output_dir.join("summary.json");
+    write_json(&summary_path, &report)?;
+    let encoded = serde_json::to_vec_pretty(&report)
+        .context("failed to serialize pair-cliff experiment report")?;
+    std::io::stdout()
+        .lock()
+        .write_all(&encoded)
+        .context("failed to write pair-cliff experiment report")?;
+    println!();
+    Ok(true)
 }

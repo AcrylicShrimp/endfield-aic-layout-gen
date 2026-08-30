@@ -107,6 +107,7 @@ fn endpoint_options(
                 },
                 cell,
                 selected,
+                placement: candidate.selected,
                 external_side: Some(port.edge.rotated_clockwise(candidate.rotation)),
                 arm_direction: opposite(edge_direction(
                     port.edge.rotated_clockwise(candidate.rotation),
@@ -165,6 +166,7 @@ pub(in crate::layouts::integrated) fn external_endpoint_options(
             },
             cell: option.cell,
             selected: option.selected,
+            placement: option.placement,
             external_side: option.external_side,
             arm_direction: edge_direction(
                 option

@@ -16,6 +16,7 @@ use crate::recipes::{
 
 use super::{IntegratedLayoutDiagnostic, networks};
 
+#[derive(Clone)]
 pub(super) struct ModelInput {
     pub(super) width: i32,
     pub(super) height: i32,
@@ -25,6 +26,7 @@ pub(super) struct ModelInput {
     pub(super) networks: Vec<networks::RoutingNetworkInput>,
 }
 
+#[derive(Clone)]
 pub(super) struct EdgeInput {
     pub(super) requirement_id: String,
     pub(super) edge: FacilityInstanceWiringEdge,
@@ -40,6 +42,78 @@ pub(super) struct ComponentCapacityRates {
     pub(super) splitter: Rate,
     pub(super) converger: Rate,
     pub(super) bridge: Rate,
+}
+
+impl ModelInput {
+    pub(super) fn select_network_indices(
+        mut self,
+        indices: &[usize],
+    ) -> Result<(Self, Vec<String>), IntegratedLayoutDiagnostic> {
+        let mut selected_indices = BTreeSet::new();
+        for index in indices {
+            if *index >= self.networks.len() {
+                return Err(IntegratedLayoutDiagnostic::error(
+                    "research-network-index-out-of-range",
+                    "/network_indices",
+                    Some(index.to_string()),
+                    format!(
+                        "research network index {index} is outside the available range 0..{}",
+                        self.networks.len()
+                    ),
+                ));
+            }
+            if !selected_indices.insert(*index) {
+                return Err(IntegratedLayoutDiagnostic::error(
+                    "duplicate-research-network-index",
+                    "/network_indices",
+                    Some(index.to_string()),
+                    format!("research network index {index} was selected more than once"),
+                ));
+            }
+        }
+        if selected_indices.is_empty() {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "empty-research-network-selection",
+                "/network_indices",
+                None,
+                "research network selection must contain at least one network",
+            ));
+        }
+
+        let selected_network_ids = selected_indices
+            .iter()
+            .map(|index| self.networks[*index].id().to_string())
+            .collect::<Vec<_>>();
+        let selected_edges = selected_indices
+            .iter()
+            .flat_map(|index| self.networks[*index].route_indices().iter().copied())
+            .collect::<BTreeSet<_>>();
+        self.edges = self
+            .edges
+            .into_iter()
+            .enumerate()
+            .filter_map(|(index, edge)| selected_edges.contains(&index).then_some(edge))
+            .collect();
+        self.networks = networks::normalize(&self.edges)?;
+
+        let rebuilt_ids = self
+            .networks
+            .iter()
+            .map(|network| network.id().to_string())
+            .collect::<BTreeSet<_>>();
+        if selected_network_ids
+            .iter()
+            .any(|network| !rebuilt_ids.contains(network))
+        {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "research-network-selection-rebuild-mismatch",
+                "/network_indices",
+                None,
+                "selected research networks did not survive edge-level model reconstruction",
+            ));
+        }
+        Ok((self, selected_network_ids))
+    }
 }
 
 impl ComponentCapacityRates {

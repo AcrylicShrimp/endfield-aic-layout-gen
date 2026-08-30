@@ -88,6 +88,7 @@ pub(super) enum ConstraintFamily {
     BoundingBox,
     ObjectiveDefinition,
     TurnDefinition,
+    ResearchFixation,
 }
 
 impl ConstraintFamily {
@@ -114,6 +115,7 @@ impl ConstraintFamily {
             Self::BoundingBox => "bounding-box",
             Self::ObjectiveDefinition => "objective-definition",
             Self::TurnDefinition => "turn-definition",
+            Self::ResearchFixation => "research-fixation",
         }
     }
 

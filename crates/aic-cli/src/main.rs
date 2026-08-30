@@ -1751,4 +1751,51 @@ mod tests {
         assert_eq!(output, PathBuf::from("report.json"));
         assert_eq!(visualization_output, Some(PathBuf::from("report.html")));
     }
+
+    #[test]
+    fn parses_first_phase_pair_cliff_decomposition() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "decompose-first-phase-pair",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--network-index",
+            "0",
+            "--network-index",
+            "2",
+            "--case-time-limit-ms",
+            "5000",
+            "--reference-time-limit-ms",
+            "15000",
+            "--output-dir",
+            "pair-cliff",
+        ])
+        .expect("first-phase pair-cliff research CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::DecomposeFirstPhasePair {
+                    workload,
+                    workspace_root,
+                    placement_request,
+                    network_indices,
+                    case_time_limit_ms,
+                    reference_time_limit_ms,
+                    output_dir,
+                },
+        } = cli.command
+        else {
+            panic!("expected first-phase pair-cliff research command")
+        };
+        assert_eq!(workload, PathBuf::from("workload.json"));
+        assert_eq!(workspace_root, PathBuf::from("."));
+        assert_eq!(placement_request, PathBuf::from("bounds.json"));
+        assert_eq!(network_indices, vec![0, 2]);
+        assert_eq!(case_time_limit_ms, 5_000);
+        assert_eq!(reference_time_limit_ms, 15_000);
+        assert_eq!(output_dir, PathBuf::from("pair-cliff"));
+    }
 }

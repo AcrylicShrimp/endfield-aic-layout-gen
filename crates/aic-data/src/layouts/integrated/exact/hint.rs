@@ -77,7 +77,8 @@ pub(super) fn build_solver_hint(
             let mut matched = false;
             for option in &terminal.options {
                 let selected = option.endpoint == prior_terminal.endpoint
-                    && world_position(option.cell, input.width) == prior_terminal.position;
+                    && world_position(option.cell, input.width) == prior_terminal.position
+                    && hint.assignments.get(&option.placement) == Some(&1);
                 hint.push(option.selected, i32::from(selected));
                 matched |= selected;
             }

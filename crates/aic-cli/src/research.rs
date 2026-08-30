@@ -24,6 +24,7 @@ use clap::Subcommand;
 use sha2::{Digest, Sha256};
 
 mod first_phase;
+mod pair_cliff;
 
 #[derive(Debug, Subcommand)]
 pub(crate) enum ResearchCommand {
@@ -77,6 +78,36 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "FILE")]
         visualization_output: Option<PathBuf>,
     },
+    /// Decompose the first-phase cliff for one exact two-network model.
+    DecomposeFirstPhasePair {
+        /// Benchmark workload manifest JSON file to solve.
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+
+        /// Root used to resolve portable input paths in the workload manifest.
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Two zero-based phase-zero network indices. Repeat this flag twice.
+        #[arg(long = "network-index", value_name = "INDEX")]
+        network_indices: Vec<usize>,
+
+        /// Wall-clock budget for each comparable ablation case.
+        #[arg(long, value_name = "MILLISECONDS")]
+        case_time_limit_ms: u64,
+
+        /// Wall-clock budget used only to obtain a validated joint reference.
+        #[arg(long, value_name = "MILLISECONDS")]
+        reference_time_limit_ms: u64,
+
+        /// Directory receiving summary JSON and per-case JSON/HTML artifacts.
+        #[arg(long, value_name = "DIR")]
+        output_dir: PathBuf,
+    },
 }
 
 pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
@@ -102,6 +133,23 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             time_limit_ms,
             output,
             visualization_output,
+        ),
+        ResearchCommand::DecomposeFirstPhasePair {
+            workload,
+            workspace_root,
+            placement_request,
+            network_indices,
+            case_time_limit_ms,
+            reference_time_limit_ms,
+            output_dir,
+        } => pair_cliff::run(
+            workload,
+            workspace_root,
+            placement_request,
+            network_indices,
+            case_time_limit_ms,
+            reference_time_limit_ms,
+            output_dir,
         ),
     }
 }

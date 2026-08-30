@@ -14,6 +14,7 @@ use crate::logistics::CardinalDirection;
 use crate::logistics::LogisticsComponentKind;
 
 mod extract;
+mod fixation;
 mod formulation;
 mod hint;
 mod metrics;
@@ -21,6 +22,7 @@ mod objective;
 mod recorder;
 
 use extract::extract_report;
+use fixation::post_research_fixation;
 use formulation::{
     DIRECTIONS, FlowTerms, direction_between, direction_index, external_endpoint_options,
     generate_candidates, grid_arcs, incident_arcs_by_axis, model_facility_endpoint_options,
@@ -52,6 +54,7 @@ struct EndpointOption {
     endpoint: TransportNetworkEndpoint,
     cell: usize,
     selected: DomainId,
+    placement: DomainId,
     external_side: Option<FacilityPortEdge>,
     arm_direction: CardinalDirection,
 }
@@ -167,6 +170,41 @@ pub(super) fn solve_with_prior_solution(
     logistics_components: &ValidatedLogisticsComponentCatalog,
     time_limit: Option<Duration>,
     prior_solution: Option<&IntegratedLayoutReport>,
+) -> IntegratedLayoutReport {
+    solve_with_configuration(
+        input,
+        logistics_components,
+        time_limit,
+        prior_solution,
+        None,
+        &super::ExactAblationFixation::None,
+    )
+}
+
+pub(super) fn solve_with_research_fixation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    reference: Option<&IntegratedLayoutReport>,
+    fixation: &super::ExactAblationFixation,
+) -> IntegratedLayoutReport {
+    solve_with_configuration(
+        input,
+        logistics_components,
+        time_limit,
+        None,
+        reference,
+        fixation,
+    )
+}
+
+fn solve_with_configuration(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    prior_solution: Option<&IntegratedLayoutReport>,
+    research_reference: Option<&IntegratedLayoutReport>,
+    research_fixation: &super::ExactAblationFixation,
 ) -> IntegratedLayoutReport {
     let construction_started = Instant::now();
     let mut model_metrics = ExactModelMetrics {
@@ -688,6 +726,20 @@ pub(super) fn solve_with_prior_solution(
                 rotations,
             });
         }
+    }
+
+    if let Err(diagnostic) = post_research_fixation(
+        &mut solver,
+        &input,
+        &model_instances,
+        &model_networks,
+        &model_branch_components,
+        &model_bridges,
+        research_reference,
+        research_fixation,
+        tag,
+    ) {
+        return IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic);
     }
 
     let solver_hint = build_solver_hint(

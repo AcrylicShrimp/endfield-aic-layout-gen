@@ -494,6 +494,26 @@ fn prior_solution_warm_start_is_non_binding() {
         .as_ref()
         .and_then(|exact| exact.objective)
         .expect("baseline should have an exact objective");
+    let matching_input = super::prepare_model(
+        &wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &request,
+    )
+    .expect("fixture should prepare");
+    let matching_hint =
+        super::exact::solve_with_prior_solution(matching_input, &components, None, Some(&baseline));
+    assert_eq!(
+        matching_hint
+            .exact
+            .expect("matching hint should report metrics")
+            .model
+            .hinted_terminals,
+        2,
+        "terminal hints should map when both port geometry and owning placement agree"
+    );
     let mut conflicting_hint = baseline.clone();
     for placement in &mut conflicting_hint.placements {
         placement.x = if placement.instance == "source" { 3 } else { 0 };
@@ -523,7 +543,10 @@ fn prior_solution_warm_start_is_non_binding() {
         .model;
     assert!(metrics.hint_variables > 0);
     assert_eq!(metrics.hinted_placements, 2);
-    assert_eq!(metrics.hinted_terminals, 2);
+    assert_eq!(
+        metrics.hinted_terminals, 0,
+        "terminal hints must not map to a different placement candidate with the same port geometry"
+    );
     assert_eq!(metrics.hinted_networks, 1);
 }
 

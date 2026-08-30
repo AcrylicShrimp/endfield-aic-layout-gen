@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "workload": "heavy-xiranite-minimum-rate",
+  "phase": 0,
+  "bounds": { "max_width": 12, "max_height": 12 },
+  "build": "release",
+  "case_budget_ms": 5000,
+  "selected_pair": [
+    "network:belt:item-xiranite-enr-powder",
+    "network:pipe:item-liquid-xiranite-poly"
+  ],
+  "clean_model": {
+    "variables": 17321,
+    "constraints": 59654,
+    "incidences": 200263,
+    "endpoint_variables": 1344,
+    "route_arc_variables": 1056
+  },
+  "cases": [
+    { "id": "pair-free", "status": "unknown", "first_incumbent_ms": null, "search_ms": 5000 },
+    { "id": "single-output-belt-free", "status": "rejected-incumbent", "first_incumbent_ms": 2490, "search_ms": 5002, "diagnostic": "invalid-integrated-layout-witness" },
+    { "id": "single-input-pipe-free", "status": "optimal", "first_incumbent_ms": 1773, "search_ms": 2266, "objective": [30, 1, 0, 6, 0] },
+    { "id": "pair-fixed-placements", "status": "unknown", "first_incumbent_ms": null, "search_ms": 5000 },
+    { "id": "pair-fixed-placements-terminals", "status": "unknown", "first_incumbent_ms": null, "search_ms": 5000 },
+    { "id": "pair-fixed-output-belt-route", "status": "optimal", "first_incumbent_ms": 1072, "search_ms": 1442, "objective": [36, 2, 0, 6, 0] },
+    { "id": "pair-fixed-input-pipe-route", "status": "optimal", "first_incumbent_ms": 1904, "search_ms": 2210, "objective": [36, 2, 0, 6, 0] },
+    { "id": "pair-zero-input-pipe-arcs", "status": "optimal", "first_incumbent_ms": 1088, "search_ms": 1802, "objective": [36, 2, 0, 6, 0] },
+    { "id": "pair-zero-output-belt-arcs", "status": "unknown", "first_incumbent_ms": null, "search_ms": 5000 },
+    { "id": "pair-zero-both-network-arcs", "status": "optimal", "first_incumbent_ms": 73, "search_ms": 113, "objective": [36, 2, 0, 6, 0] }
+  ],
+  "located_cliff": "two-simultaneously-free-route-state-spaces",
+  "production_semantics_changed": false,
+  "proposed_exact_reduction": "fix grid arcs and grid-arc flows to zero only when all terminal contributions cancel symbolically at each selected cell"
+}

@@ -31,40 +31,9 @@ pub(in crate::layouts::integrated) fn solve_first_iterative_scc_phase(
     request: &FacilityPlacementRequest,
     time_limit: Duration,
 ) -> IntegratedLayoutReport {
-    let growth = plan_facility_growth(instance_wiring, MAX_NEW_FACILITIES_PER_PHASE);
-    if !growth.success {
-        return growth_failure_report(growth.diagnostics);
-    }
-    let Some(first_phase) = growth.phases.first() else {
-        return solve_exact_model(
-            instance_wiring,
-            facilities,
-            items,
-            transports,
-            logistics_components,
-            request,
-            Some(time_limit),
-            None,
-        );
-    };
-    let total_facilities = growth
-        .components
-        .iter()
-        .map(|component| component.facilities.len())
-        .sum();
-    let cumulative_facilities = first_phase.facilities.iter().cloned().collect();
-    let partial_wiring = match project_cumulative_wiring(
-        instance_wiring,
-        &cumulative_facilities,
-        total_facilities,
-    ) {
+    let partial_wiring = match first_iterative_scc_wiring(instance_wiring) {
         Ok(wiring) => wiring,
-        Err(diagnostic) => {
-            return IntegratedLayoutReport::failure(
-                IntegratedLayoutStatus::InvalidInput,
-                diagnostic,
-            );
-        }
+        Err(report) => return report,
     };
     let mut report = solve_exact_model(
         &partial_wiring,
@@ -81,6 +50,29 @@ pub(in crate::layouts::integrated) fn solve_first_iterative_scc_phase(
         "solved only cumulative SCC phase 0 as a complete joint placement-and-routing model for an explicit research experiment",
     ));
     report
+}
+
+pub(in crate::layouts::integrated) fn first_iterative_scc_wiring(
+    instance_wiring: &FacilityInstanceWiringReport,
+) -> Result<FacilityInstanceWiringReport, IntegratedLayoutReport> {
+    let growth = plan_facility_growth(instance_wiring, MAX_NEW_FACILITIES_PER_PHASE);
+    if !growth.success {
+        return Err(growth_failure_report(growth.diagnostics));
+    }
+    let Some(first_phase) = growth.phases.first() else {
+        return Ok(instance_wiring.clone());
+    };
+    let total_facilities = growth
+        .components
+        .iter()
+        .map(|component| component.facilities.len())
+        .sum();
+    let cumulative_facilities = first_phase.facilities.iter().cloned().collect();
+    project_cumulative_wiring(instance_wiring, &cumulative_facilities, total_facilities).map_err(
+        |diagnostic| {
+            IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
+        },
+    )
 }
 
 #[allow(clippy::too_many_arguments)]

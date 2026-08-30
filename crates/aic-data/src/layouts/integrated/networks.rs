@@ -6,6 +6,7 @@ use crate::recipes::Rate;
 
 use super::{ComponentCapacityRates, EdgeInput, EndpointInput, IntegratedLayoutDiagnostic};
 
+#[derive(Clone)]
 pub(super) struct RoutingNetworkInput {
     id: String,
     item: String,
@@ -78,6 +79,7 @@ impl RoutingNetworkInput {
     }
 }
 
+#[derive(Clone)]
 pub(super) struct RoutingTerminalInput {
     id: String,
     route_index: usize,
