@@ -1,0 +1,510 @@
+{
+  "schema_version": 1,
+  "benchmark_id": "heavy-xiranite-forge-minimum-rate",
+  "strategy": "iterative-scc",
+  "baseline_status": "known-bad-diagnostic-only",
+  "source_commit": "face856dbd92eca4cd824c76771ed729a5b8f592",
+  "host": {
+    "system": "Darwin",
+    "release": "25.6.0",
+    "machine": "arm64",
+    "rustc": "rustc 1.95.0 (59807616e 2026-04-14) (Homebrew)"
+  },
+  "build_command": [
+    "cargo",
+    "build",
+    "--release",
+    "--quiet",
+    "-p",
+    "aic-cli"
+  ],
+  "solve_command": [
+    "target/release/aic-cli",
+    "--data-dir",
+    "data/game/normalized",
+    "layouts",
+    "solve-contextual",
+    "--recipes",
+    "data/game/normalized/recipes.json",
+    "--source-plan",
+    "data/examples/source-plan.game-heavy-xiranite-forge.request.json",
+    "--facility-catalog",
+    "data/game/normalized/facilities.json",
+    "--item-catalog",
+    "data/game/normalized/items.json",
+    "--transport-catalog",
+    "data/game/normalized/transports.json",
+    "--logistics-component-catalog",
+    "data/game/normalized/logistics-components.json",
+    "--placement-request",
+    "data/examples/placement.factory-500.request.json",
+    "--time-limit-seconds",
+    "10",
+    "--strategy",
+    "iterative-scc"
+  ],
+  "input_files": [
+    {
+      "path": "data/game/normalized/recipes.json",
+      "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+    },
+    {
+      "path": "data/examples/source-plan.game-heavy-xiranite-forge.request.json",
+      "sha256": "5302d96a5177ed2f3fde55fe13539187f7601b6667b0f0588980dca01ccd320c"
+    },
+    {
+      "path": "data/game/normalized/facilities.json",
+      "sha256": "db398048ac401024f7bae80c05ae59d4a9fb9a037f6836f33d26c5d08f0bcf96"
+    },
+    {
+      "path": "data/game/normalized/items.json",
+      "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+    },
+    {
+      "path": "data/game/normalized/transports.json",
+      "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+    },
+    {
+      "path": "data/game/normalized/logistics-components.json",
+      "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+    },
+    {
+      "path": "data/examples/placement.factory-500.request.json",
+      "sha256": "2f68e1e88cb98084ebf7e79274cddc58b3ec685c9deeb6057a5922c4e2720eec"
+    }
+  ],
+  "search_domain": {
+    "max_width": 500,
+    "max_height": 500
+  },
+  "solve_time_seconds": 11.384142,
+  "layout_status": "feasible",
+  "phase_count": 9,
+  "phases": [
+    {
+      "phase_index": 0,
+      "introduced_scc_ids": [
+        "component:0040"
+      ],
+      "introduced_facility_count": 1,
+      "cumulative_facility_count": 1,
+      "reported_bounds": {
+        "width": 17,
+        "height": 16,
+        "area": 272
+      },
+      "independently_measured_used_geometry": {
+        "min_x": 0,
+        "min_y": 0,
+        "max_x": 16,
+        "max_y": 15,
+        "width": 17,
+        "height": 16,
+        "area": 272
+      },
+      "route_count": 4,
+      "total_logical_route_cells": 53,
+      "total_route_edges": 49,
+      "total_route_turns": 1,
+      "belt": {
+        "route_count": 3,
+        "logical_route_cells": 40,
+        "route_edges": 37,
+        "unique_route_tiles": 40
+      },
+      "pipe": {
+        "route_count": 1,
+        "logical_route_cells": 13,
+        "route_edges": 12,
+        "unique_route_tiles": 13
+      },
+      "boundary_endpoint_count": 4,
+      "active_zero_flow_route_count": 0,
+      "logistics_component_count": 0,
+      "bridge_count": 0,
+      "selected_movement_radius": null
+    },
+    {
+      "phase_index": 1,
+      "introduced_scc_ids": [
+        "component:0014",
+        "component:0038",
+        "component:0039"
+      ],
+      "introduced_facility_count": 3,
+      "cumulative_facility_count": 4,
+      "reported_bounds": {
+        "width": 116,
+        "height": 16,
+        "area": 1856
+      },
+      "independently_measured_used_geometry": {
+        "min_x": 9,
+        "min_y": 0,
+        "max_x": 115,
+        "max_y": 15,
+        "width": 107,
+        "height": 16,
+        "area": 1712
+      },
+      "route_count": 13,
+      "total_logical_route_cells": 307,
+      "total_route_edges": 294,
+      "total_route_turns": 11,
+      "belt": {
+        "route_count": 7,
+        "logical_route_cells": 129,
+        "route_edges": 122,
+        "unique_route_tiles": 128
+      },
+      "pipe": {
+        "route_count": 6,
+        "logical_route_cells": 178,
+        "route_edges": 172,
+        "unique_route_tiles": 176
+      },
+      "boundary_endpoint_count": 10,
+      "active_zero_flow_route_count": 0,
+      "logistics_component_count": 3,
+      "bridge_count": 3,
+      "selected_movement_radius": 0
+    },
+    {
+      "phase_index": 2,
+      "introduced_scc_ids": [
+        "component:0013",
+        "component:0034",
+        "component:0035",
+        "component:0036",
+        "component:0037"
+      ],
+      "introduced_facility_count": 5,
+      "cumulative_facility_count": 9,
+      "reported_bounds": {
+        "width": 188,
+        "height": 17,
+        "area": 3196
+      },
+      "independently_measured_used_geometry": {
+        "min_x": 8,
+        "min_y": 0,
+        "max_x": 187,
+        "max_y": 16,
+        "width": 180,
+        "height": 17,
+        "area": 3060
+      },
+      "route_count": 19,
+      "total_logical_route_cells": 740,
+      "total_route_edges": 721,
+      "total_route_turns": 20,
+      "belt": {
+        "route_count": 12,
+        "logical_route_cells": 508,
+        "route_edges": 496,
+        "unique_route_tiles": 494
+      },
+      "pipe": {
+        "route_count": 7,
+        "logical_route_cells": 232,
+        "route_edges": 225,
+        "unique_route_tiles": 229
+      },
+      "boundary_endpoint_count": 11,
+      "active_zero_flow_route_count": 0,
+      "logistics_component_count": 17,
+      "bridge_count": 17,
+      "selected_movement_radius": 0
+    },
+    {
+      "phase_index": 3,
+      "introduced_scc_ids": [
+        "component:0012",
+        "component:0030",
+        "component:0031",
+        "component:0032",
+        "component:0033"
+      ],
+      "introduced_facility_count": 5,
+      "cumulative_facility_count": 14,
+      "reported_bounds": {
+        "width": 377,
+        "height": 17,
+        "area": 6409
+      },
+      "independently_measured_used_geometry": {
+        "min_x": 0,
+        "min_y": 0,
+        "max_x": 376,
+        "max_y": 16,
+        "width": 377,
+        "height": 17,
+        "area": 6409
+      },
+      "route_count": 26,
+      "total_logical_route_cells": 1396,
+      "total_route_edges": 1370,
+      "total_route_turns": 31,
+      "belt": {
+        "route_count": 18,
+        "logical_route_cells": 1122,
+        "route_edges": 1104,
+        "unique_route_tiles": 1108
+      },
+      "pipe": {
+        "route_count": 8,
+        "logical_route_cells": 274,
+        "route_edges": 266,
+        "unique_route_tiles": 267
+      },
+      "boundary_endpoint_count": 13,
+      "active_zero_flow_route_count": 0,
+      "logistics_component_count": 21,
+      "bridge_count": 21,
+      "selected_movement_radius": 0
+    },
+    {
+      "phase_index": 4,
+      "introduced_scc_ids": [
+        "component:0010",
+        "component:0011",
+        "component:0026",
+        "component:0027",
+        "component:0028",
+        "component:0029"
+      ],
+      "introduced_facility_count": 6,
+      "cumulative_facility_count": 20,
+      "reported_bounds": {
+        "width": 377,
+        "height": 19,
+        "area": 7163
+      },
+      "independently_measured_used_geometry": {
+        "min_x": 7,
+        "min_y": 0,
+        "max_x": 376,
+        "max_y": 18,
+        "width": 370,
+        "height": 19,
+        "area": 7030
+      },
+      "route_count": 40,
+      "total_logical_route_cells": 2293,
+      "total_route_edges": 2253,
+      "total_route_turns": 44,
+      "belt": {
+        "route_count": 32,
+        "logical_route_cells": 2047,
+        "route_edges": 2015,
+        "unique_route_tiles": 1967
+      },
+      "pipe": {
+        "route_count": 8,
+        "logical_route_cells": 246,
+        "route_edges": 238,
+        "unique_route_tiles": 243
+      },
+      "boundary_endpoint_count": 21,
+      "active_zero_flow_route_count": 0,
+      "logistics_component_count": 83,
+      "bridge_count": 83,
+      "selected_movement_radius": 0
+    },
+    {
+      "phase_index": 5,
+      "introduced_scc_ids": [
+        "component:0008",
+        "component:0009",
+        "component:0019",
+        "component:0020",
+        "component:0021",
+        "component:0022",
+        "component:0024",
+        "component:0025"
+      ],
+      "introduced_facility_count": 8,
+      "cumulative_facility_count": 28,
+      "reported_bounds": {
+        "width": 500,
+        "height": 23,
+        "area": 11500
+      },
+      "independently_measured_used_geometry": {
+        "min_x": 0,
+        "min_y": 0,
+        "max_x": 499,
+        "max_y": 22,
+        "width": 500,
+        "height": 23,
+        "area": 11500
+      },
+      "route_count": 54,
+      "total_logical_route_cells": 4479,
+      "total_route_edges": 4425,
+      "total_route_turns": 88,
+      "belt": {
+        "route_count": 46,
+        "logical_route_cells": 4224,
+        "route_edges": 4178,
+        "unique_route_tiles": 4078
+      },
+      "pipe": {
+        "route_count": 8,
+        "logical_route_cells": 255,
+        "route_edges": 247,
+        "unique_route_tiles": 254
+      },
+      "boundary_endpoint_count": 21,
+      "active_zero_flow_route_count": 0,
+      "logistics_component_count": 147,
+      "bridge_count": 147,
+      "selected_movement_radius": 0
+    },
+    {
+      "phase_index": 6,
+      "introduced_scc_ids": [
+        "component:0006",
+        "component:0007",
+        "component:0015",
+        "component:0016",
+        "component:0017",
+        "component:0018",
+        "component:0023"
+      ],
+      "introduced_facility_count": 19,
+      "cumulative_facility_count": 47,
+      "reported_bounds": {
+        "width": 489,
+        "height": 45,
+        "area": 22005
+      },
+      "independently_measured_used_geometry": {
+        "min_x": 0,
+        "min_y": 0,
+        "max_x": 488,
+        "max_y": 44,
+        "width": 489,
+        "height": 45,
+        "area": 22005
+      },
+      "route_count": 84,
+      "total_logical_route_cells": 9212,
+      "total_route_edges": 9128,
+      "total_route_turns": 223,
+      "belt": {
+        "route_count": 76,
+        "logical_route_cells": 8956,
+        "route_edges": 8880,
+        "unique_route_tiles": 8462
+      },
+      "pipe": {
+        "route_count": 8,
+        "logical_route_cells": 256,
+        "route_edges": 248,
+        "unique_route_tiles": 253
+      },
+      "boundary_endpoint_count": 13,
+      "active_zero_flow_route_count": 0,
+      "logistics_component_count": 497,
+      "bridge_count": 497,
+      "selected_movement_radius": 0
+    },
+    {
+      "phase_index": 7,
+      "introduced_scc_ids": [
+        "component:0002",
+        "component:0003",
+        "component:0005"
+      ],
+      "introduced_facility_count": 3,
+      "cumulative_facility_count": 50,
+      "reported_bounds": {
+        "width": 488,
+        "height": 48,
+        "area": 23424
+      },
+      "independently_measured_used_geometry": {
+        "min_x": 0,
+        "min_y": 0,
+        "max_x": 487,
+        "max_y": 47,
+        "width": 488,
+        "height": 48,
+        "area": 23424
+      },
+      "route_count": 90,
+      "total_logical_route_cells": 9237,
+      "total_route_edges": 9147,
+      "total_route_turns": 218,
+      "belt": {
+        "route_count": 82,
+        "logical_route_cells": 8991,
+        "route_edges": 8909,
+        "unique_route_tiles": 8533
+      },
+      "pipe": {
+        "route_count": 8,
+        "logical_route_cells": 246,
+        "route_edges": 238,
+        "unique_route_tiles": 243
+      },
+      "boundary_endpoint_count": 13,
+      "active_zero_flow_route_count": 0,
+      "logistics_component_count": 461,
+      "bridge_count": 461,
+      "selected_movement_radius": 0
+    },
+    {
+      "phase_index": 8,
+      "introduced_scc_ids": [
+        "component:0000",
+        "component:0001",
+        "component:0004"
+      ],
+      "introduced_facility_count": 9,
+      "cumulative_facility_count": 59,
+      "reported_bounds": {
+        "width": 491,
+        "height": 70,
+        "area": 34370
+      },
+      "independently_measured_used_geometry": {
+        "min_x": 8,
+        "min_y": 0,
+        "max_x": 490,
+        "max_y": 69,
+        "width": 483,
+        "height": 70,
+        "area": 33810
+      },
+      "route_count": 102,
+      "total_logical_route_cells": 10338,
+      "total_route_edges": 10236,
+      "total_route_turns": 273,
+      "belt": {
+        "route_count": 94,
+        "logical_route_cells": 10092,
+        "route_edges": 9998,
+        "unique_route_tiles": 9572
+      },
+      "pipe": {
+        "route_count": 8,
+        "logical_route_cells": 246,
+        "route_edges": 238,
+        "unique_route_tiles": 243
+      },
+      "boundary_endpoint_count": 7,
+      "active_zero_flow_route_count": 0,
+      "logistics_component_count": 523,
+      "bridge_count": 523,
+      "selected_movement_radius": 0
+    }
+  ],
+  "final_phase_index": 8,
+  "known_bad_observations": [
+    "Phase zero routes every external connection to a fixed perimeter cell.",
+    "The current result is a first-feasible diagnostic baseline, not an expected layout.",
+    "Later slices must replace this artifact rather than preserve its coordinates or scores."
+  ]
+}
