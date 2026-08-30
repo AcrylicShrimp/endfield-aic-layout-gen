@@ -157,6 +157,36 @@ enum LayoutsCommand {
         #[arg(long, value_name = "SECONDS", default_value = "10")]
         time_limit_seconds: NonZeroU64,
     },
+    /// Resolve contextual sources and solve placement, ports, and routing.
+    SolveContextual {
+        /// Recipe JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        recipes: PathBuf,
+
+        /// Hierarchical recipe source-plan request JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        source_plan: PathBuf,
+
+        /// Facility catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        facility_catalog: PathBuf,
+
+        /// Item transport catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        item_catalog: PathBuf,
+
+        /// Belt and pipe capacity catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        transport_catalog: PathBuf,
+
+        /// Hard maximum layout bounds JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Maximum solver search time before returning the best known status.
+        #[arg(long, value_name = "SECONDS", default_value = "10")]
+        time_limit_seconds: NonZeroU64,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -302,6 +332,15 @@ struct LayoutSolveReport<'a> {
     layout: &'a IntegratedLayoutReport,
 }
 
+#[derive(Serialize)]
+struct ContextualLayoutSolveReport<'a> {
+    success: bool,
+    throughput: &'a ContextualThroughputReport,
+    facilities: &'a ContextualFacilityRequirementReport,
+    wiring: &'a FacilityInstanceWiringReport,
+    layout: &'a IntegratedLayoutReport,
+}
+
 fn run() -> Result<CommandStatus> {
     let cli = Cli::parse();
 
@@ -339,6 +378,23 @@ fn run() -> Result<CommandStatus> {
             } => solve_layout(
                 recipes,
                 throughput_request,
+                facility_catalog,
+                item_catalog,
+                transport_catalog,
+                placement_request,
+                time_limit_seconds,
+            ),
+            LayoutsCommand::SolveContextual {
+                recipes,
+                source_plan,
+                facility_catalog,
+                item_catalog,
+                transport_catalog,
+                placement_request,
+                time_limit_seconds,
+            } => solve_contextual_layout(
+                recipes,
+                source_plan,
                 facility_catalog,
                 item_catalog,
                 transport_catalog,
@@ -958,6 +1014,107 @@ fn solve_layout(
     }
 }
 
+fn solve_contextual_layout(
+    recipes: PathBuf,
+    source_plan: PathBuf,
+    facility_catalog: PathBuf,
+    item_catalog: PathBuf,
+    transport_catalog: PathBuf,
+    placement_request: PathBuf,
+    time_limit_seconds: NonZeroU64,
+) -> Result<CommandStatus> {
+    let (book, source_plan) = match load_contextual_recipe_request(&recipes, &source_plan)? {
+        Ok(inputs) => inputs,
+        Err(report) => {
+            serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+                .context("failed to write validation report")?;
+            println!();
+            return Ok(CommandStatus::Failure);
+        }
+    };
+    let throughput = book.calculate_contextual_throughput(&source_plan);
+    if !throughput.success {
+        write_contextual_throughput_report(&throughput)?;
+        return Ok(CommandStatus::Failure);
+    }
+    let facility_requirements = calculate_contextual_facility_requirements(&throughput);
+    if !facility_requirements.success {
+        write_contextual_facility_requirement_report(&facility_requirements)?;
+        return Ok(CommandStatus::Failure);
+    }
+    let wiring = build_contextual_facility_instance_wiring(&throughput, &facility_requirements);
+    if !wiring.success {
+        write_facility_instance_wiring_report(&wiring)?;
+        return Ok(CommandStatus::Failure);
+    }
+
+    let raw_facilities = load_facility_catalog(&facility_catalog)?;
+    let facilities = match ValidatedFacilityCatalog::try_from_catalog(raw_facilities) {
+        Ok(catalog) => catalog,
+        Err(report) => {
+            write_facility_catalog_validation_report(&report)?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
+    let raw_items = load_item_catalog(&item_catalog)?;
+    let items = match ValidatedItemCatalog::try_from_catalog(raw_items) {
+        Ok(catalog) => catalog,
+        Err(report) => {
+            write_item_catalog_validation_report(&report)?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
+    let raw_transports = load_transport_catalog(&transport_catalog)?;
+    let transports = match ValidatedTransportCatalog::try_from_catalog(raw_transports) {
+        Ok(catalog) => catalog,
+        Err(report) => {
+            write_transport_catalog_validation_report(&report)?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
+    let request_json = std::fs::read_to_string(&placement_request).with_context(|| {
+        format!(
+            "failed to read facility placement request file '{}'",
+            placement_request.display()
+        )
+    })?;
+    let request = match serde_json::from_str::<FacilityPlacementRequest>(&request_json) {
+        Ok(request) => request,
+        Err(error) => {
+            let layout = IntegratedLayoutReport::invalid(IntegratedLayoutDiagnostic::error(
+                "invalid-facility-placement-request-json",
+                "/",
+                None,
+                error.to_string(),
+            ));
+            write_contextual_layout_solve_report(
+                &throughput,
+                &facility_requirements,
+                &wiring,
+                &layout,
+            )?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
+
+    let layout = solve_integrated_layout_with_time_limit(
+        &wiring,
+        &facilities,
+        &items,
+        &transports,
+        &request,
+        Duration::from_secs(time_limit_seconds.get()),
+    );
+    let success = layout.success;
+    write_contextual_layout_solve_report(&throughput, &facility_requirements, &wiring, &layout)?;
+
+    if success {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
+    }
+}
+
 fn calculate_throughput_report(file: PathBuf, request: PathBuf) -> Result<RecipeThroughputReport> {
     let recipe_book = load_recipe_book(&file)?;
     let request_json = std::fs::read_to_string(&request).with_context(|| {
@@ -1120,6 +1277,26 @@ fn write_layout_solve_report(
     };
     serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
         .context("failed to write layout solve report")?;
+    println!();
+
+    Ok(())
+}
+
+fn write_contextual_layout_solve_report(
+    throughput: &ContextualThroughputReport,
+    facilities: &ContextualFacilityRequirementReport,
+    wiring: &FacilityInstanceWiringReport,
+    layout: &IntegratedLayoutReport,
+) -> Result<()> {
+    let report = ContextualLayoutSolveReport {
+        success: layout.success,
+        throughput,
+        facilities,
+        wiring,
+        layout,
+    };
+    serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+        .context("failed to write contextual layout solve report")?;
     println!();
 
     Ok(())
