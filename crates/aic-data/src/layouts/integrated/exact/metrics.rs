@@ -29,9 +29,13 @@ pub(super) fn finish_report(
             (ExactTerminationReason::Unknown, ExactProofStatus::Unproven)
         }
     };
-    let objective_route_cells = report
-        .success
-        .then(|| report.routes.iter().map(|route| route.cells.len()).sum());
+    let objective_route_cells = report.success.then(|| {
+        report
+            .transport_networks
+            .iter()
+            .map(|network| network.cells.len())
+            .sum()
+    });
     report.exact = Some(ExactSolveReport {
         formulation: "joint-placement-routing-v1",
         model,

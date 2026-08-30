@@ -217,8 +217,19 @@ fn exact_solver_jointly_places_selects_ports_routes_and_validates() {
     assert!(report.success, "{:#?}", report.diagnostics);
     assert_eq!(report.status, IntegratedLayoutStatus::Optimal);
     assert_eq!(report.placements.len(), 2);
-    assert_eq!(report.routes.len(), 1);
-    assert_eq!(report.routes[0].cells.len(), 1);
+    assert_eq!(report.transport_networks.len(), 1);
+    assert_eq!(report.transport_networks[0].cells.len(), 1);
+    assert_eq!(report.transport_networks[0].terminals.len(), 2);
+    assert!(
+        report
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code
+                == "transport-networks-projected-from-route-baseline")
+    );
+    let serialized = serde_json::to_value(&report).expect("report should serialize");
+    assert!(serialized.get("transport_networks").is_some());
+    assert!(serialized.get("routes").is_none());
     let exact = report.exact.expect("exact metrics should be present");
     assert_eq!(exact.model.commodity_network_count, 1);
     assert_eq!(exact.model.commodity_item_count, 1);
@@ -229,6 +240,36 @@ fn exact_solver_jointly_places_selects_ports_routes_and_validates() {
     assert_eq!(exact.model.external_terminal_count, 0);
     assert_eq!(exact.proof, ExactProofStatus::ProvenOptimal);
     assert_eq!(exact.validation, ExactValidationStatus::Passed);
+}
+
+#[test]
+fn network_witness_rejects_terminal_flow_that_does_not_match_the_logical_graph() {
+    let (facilities, items, transports, components) = catalogs();
+    let request = FacilityPlacementRequest {
+        schema_version: 2,
+        max_width: 4,
+        max_height: 1,
+    };
+    let input = super::prepare_model(&wiring(), &facilities, &items, &transports, &request)
+        .expect("fixture should prepare");
+    let mut report = solve_integrated_layout(
+        &wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &request,
+    );
+    report.transport_networks[0].terminals[0].rate = Rate {
+        numerator: 2,
+        denominator: 1,
+    };
+
+    let diagnostic = super::witness::validate(&input, &components, &report)
+        .expect_err("changed terminal flow must invalidate the witness");
+
+    assert_eq!(diagnostic.code, "invalid-integrated-layout-witness");
+    assert!(diagnostic.message.contains("terminal rates"));
 }
 
 #[test]

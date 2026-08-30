@@ -15,6 +15,10 @@ pub(super) struct RoutingNetworkInput {
 }
 
 impl RoutingNetworkInput {
+    pub(super) fn id(&self) -> &str {
+        &self.id
+    }
+
     pub(super) fn route_indices(&self) -> &[usize] {
         &self.route_indices
     }
@@ -202,14 +206,6 @@ mod tests {
         let edge = FacilityInstanceWiringEdge::original(source, target, "intermediate", item, rate);
         EdgeInput {
             requirement_id: format!("{}:lane:0000", edge.id),
-            requirement_fingerprint: super::super::RouteRequirementFingerprint {
-                source: source.to_string(),
-                target: target.to_string(),
-                item: item.to_string(),
-                rate,
-                transport,
-                projection: edge.projection.clone(),
-            },
             edge,
             source: EndpointInput::External {
                 node: source.to_string(),

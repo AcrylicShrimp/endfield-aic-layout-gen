@@ -47,19 +47,27 @@ impl LayoutScore {
             rotation_change_count += usize::from(placement.rotation != prior.rotation);
         }
         let physical_transport_tiles = report
-            .routes
+            .transport_networks
             .iter()
-            .flat_map(|route| {
-                route
+            .flat_map(|network| {
+                network
                     .cells
                     .iter()
-                    .map(move |cell| (route.transport, cell.x, cell.y))
+                    .map(move |cell| (network.transport, cell.x, cell.y))
             })
             .collect::<BTreeSet<_>>()
             .len();
         Some(Self {
-            total_route_cells: report.routes.iter().map(|route| route.cells.len()).sum(),
-            total_route_turns: report.routes.iter().map(super::route_turn_count).sum(),
+            total_route_cells: report
+                .transport_networks
+                .iter()
+                .map(|network| network.cells.len())
+                .sum(),
+            total_route_turns: report
+                .transport_networks
+                .iter()
+                .map(network_turn_count)
+                .sum(),
             used_bounding_box_area: u64::try_from(bounds.width)
                 .ok()?
                 .checked_mul(u64::try_from(bounds.height).ok()?)?,
@@ -71,6 +79,31 @@ impl LayoutScore {
             rotation_change_count,
         })
     }
+}
+
+fn network_turn_count(network: &super::TransportNetwork) -> usize {
+    network
+        .cells
+        .iter()
+        .filter(|cell| {
+            let incoming = network
+                .segments
+                .iter()
+                .filter(|segment| segment.to == **cell)
+                .collect::<Vec<_>>();
+            let outgoing = network
+                .segments
+                .iter()
+                .filter(|segment| segment.from == **cell)
+                .collect::<Vec<_>>();
+            if incoming.len() != 1 || outgoing.len() != 1 {
+                return false;
+            }
+            let incoming_direction = (cell.x - incoming[0].from.x, cell.y - incoming[0].from.y);
+            let outgoing_direction = (outgoing[0].to.x - cell.x, outgoing[0].to.y - cell.y);
+            incoming_direction != outgoing_direction
+        })
+        .count()
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -102,11 +135,11 @@ pub struct CandidateRank {
 #[cfg(test)]
 mod tests {
     use crate::layouts::{
-        FacilityPlacementBounds, IntegratedLayoutStatus, IntegratedRoute, IntegratedRouteEndpoint,
-        RouteRequirementFingerprint, WorldGridPosition,
+        FacilityPlacementBounds, IntegratedLayoutStatus, TransportNetwork, TransportNetworkSegment,
+        WorldGridPosition,
     };
     use crate::logistics::TransportKind;
-    use crate::recipes::{FacilityInstanceWiringProjection, Rate};
+    use crate::recipes::Rate;
 
     use super::*;
 
@@ -172,12 +205,12 @@ mod tests {
             }),
             placements: vec![placement("facility", 4, 4, 90), placement("new", 0, 0, 0)],
             logistics_components: Vec::new(),
-            routes: vec![route(TransportKind::Belt), route(TransportKind::Belt)],
+            transport_networks: vec![network(TransportKind::Belt), network(TransportKind::Belt)],
             phases: Vec::new(),
             exact: None,
             diagnostics: Vec::new(),
         };
-        report.routes.push(route(TransportKind::Pipe));
+        report.transport_networks.push(network(TransportKind::Pipe));
 
         let score = LayoutScore::from_report(&report, &[prior]).expect("report is scoreable");
 
@@ -213,38 +246,26 @@ mod tests {
         }
     }
 
-    fn route(transport: TransportKind) -> IntegratedRoute {
-        IntegratedRoute {
-            requirement_id: format!("route:{transport:?}"),
-            requirement_fingerprint: RouteRequirementFingerprint {
-                source: "source".to_string(),
-                target: "target".to_string(),
-                item: "item".to_string(),
-                rate: Rate {
-                    numerator: 1,
-                    denominator: 1,
-                },
-                transport,
-                projection: FacilityInstanceWiringProjection::Original,
-            },
-            source: IntegratedRouteEndpoint::External {
-                node: "source".to_string(),
-                side: crate::facilities::FacilityPortEdge::East,
-            },
-            target: IntegratedRouteEndpoint::External {
-                node: "target".to_string(),
-                side: crate::facilities::FacilityPortEdge::West,
-            },
+    fn network(transport: TransportKind) -> TransportNetwork {
+        TransportNetwork {
+            id: format!("network:{transport:?}:item"),
+            requirement_ids: vec![format!("requirement:{transport:?}")],
             item: "item".to_string(),
-            rate: Rate {
-                numerator: 1,
-                denominator: 1,
-            },
             transport,
             cells: vec![
                 WorldGridPosition { x: 0, y: 0 },
                 WorldGridPosition { x: 1, y: 0 },
             ],
+            segments: vec![TransportNetworkSegment {
+                from: WorldGridPosition { x: 0, y: 0 },
+                to: WorldGridPosition { x: 1, y: 0 },
+                rate: Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            }],
+            terminals: Vec::new(),
+            component_ids: Vec::new(),
         }
     }
 }

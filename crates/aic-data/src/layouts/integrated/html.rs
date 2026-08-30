@@ -6,14 +6,14 @@ use crate::logistics::{LogisticsComponentKind, TransportKind};
 
 use super::{
     FacilityPlacement, FacilityPlacementBounds, IntegratedLayoutDiagnostic, IntegratedLayoutPhase,
-    IntegratedLayoutReport, IntegratedRoute, IntegratedRouteEndpoint, PlacedLogisticsComponent,
+    IntegratedLayoutReport, PlacedLogisticsComponent, TransportNetwork, TransportNetworkEndpoint,
 };
 
 struct RenderPage<'a> {
     bounds: &'a FacilityPlacementBounds,
     placements: &'a [FacilityPlacement],
     logistics_components: &'a [PlacedLogisticsComponent],
-    routes: &'a [IntegratedRoute],
+    transport_networks: &'a [TransportNetwork],
     introduced_facilities: BTreeSet<&'a str>,
     phase: Option<&'a IntegratedLayoutPhase>,
 }
@@ -29,12 +29,7 @@ pub fn render_integrated_layout_html_with_localization(
     localization: Option<&ValidatedLocalizationCatalog>,
 ) -> Result<String, IntegratedLayoutDiagnostic> {
     if !report.success && report.phases.is_empty() {
-        return Err(IntegratedLayoutDiagnostic::error(
-            "layout-visualization-has-no-snapshots",
-            "/phases",
-            None,
-            "failed layout visualization requires at least one completed phase snapshot",
-        ));
+        return Ok(render_failure_summary(report));
     }
     let pages = collect_pages(report)?;
     let final_page = pages.last().expect("successful layout has a render page");
@@ -42,8 +37,8 @@ pub fn render_integrated_layout_html_with_localization(
     let height = final_page.bounds.height.max(1);
     let total_route_cells = pages
         .iter()
-        .flat_map(|page| page.routes)
-        .map(|route| route.cells.len())
+        .flat_map(|page| page.transport_networks)
+        .map(|network| network.cells.len())
         .sum::<usize>();
     let final_metrics = page_metrics(final_page);
     let run_status = if report.success {
@@ -138,8 +133,8 @@ pub fn render_integrated_layout_html_with_localization(
 "##,
         run_status,
         final_metrics,
-        transport_summary(final_page.routes, TransportKind::Belt),
-        transport_summary(final_page.routes, TransportKind::Pipe),
+        transport_summary(final_page.transport_networks, TransportKind::Belt),
+        transport_summary(final_page.transport_networks, TransportKind::Pipe),
         width + 4,
         height + 4,
         width + 4,
@@ -259,6 +254,46 @@ pub fn render_integrated_layout_html_with_localization(
     Ok(html)
 }
 
+fn render_failure_summary(report: &IntegratedLayoutReport) -> String {
+    let exact = report.exact.as_ref().map_or_else(
+        || "No solver metrics were produced.".to_string(),
+        |exact| {
+            format!(
+                "Formulation: {}\nFacilities: {}\nLogical requirements: {}\nTransport networks: {}\nNetwork terminals: {}\nGrid cells: {}\nConstruction: {} ms\nSearch: {} ms\nIncumbents: {}\nTermination: {:?}\nProof: {:?}\nValidation: {:?}",
+                exact.formulation,
+                exact.model.facility_count,
+                exact.model.route_requirement_count,
+                exact.model.commodity_network_count,
+                exact.model.network_terminal_count,
+                exact.model.grid_cell_count,
+                exact.construction_ms,
+                exact.search_ms,
+                exact.incumbent_count,
+                exact.termination,
+                exact.proof,
+                exact.validation,
+            )
+        },
+    );
+    let diagnostics = report
+        .diagnostics
+        .iter()
+        .map(|diagnostic| {
+            format!(
+                "<li><code>{}</code><p>{}</p></li>",
+                xml_escape(diagnostic.code),
+                xml_escape(&diagnostic.message),
+            )
+        })
+        .collect::<String>();
+    format!(
+        "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>AIC Layout Solve Result</title><style>:root{{color-scheme:dark;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}}body{{margin:0;background:#071019;color:#dbeeff}}main{{max-width:900px;margin:8vh auto;padding:24px}}h1{{color:#ff6b9c}}section{{border:1px solid #35536a;background:#0b1722;padding:18px;margin:16px 0}}pre,p{{color:#bfe6fb;white-space:pre-wrap;line-height:1.55}}code{{color:#ff9bbc}}li{{margin:12px 0}}</style></head><body><main><h1>LAYOUT SOLVE DID NOT PRODUCE GEOMETRY</h1><p>Status: {:?}</p><section><h2>Solver evidence</h2><pre>{}</pre></section><section><h2>Diagnostics</h2><ul>{}</ul></section></main></body></html>",
+        report.status,
+        xml_escape(&exact),
+        diagnostics,
+    )
+}
+
 fn collect_pages(
     report: &IntegratedLayoutReport,
 ) -> Result<Vec<RenderPage<'_>>, IntegratedLayoutDiagnostic> {
@@ -275,7 +310,7 @@ fn collect_pages(
             bounds,
             placements: &report.placements,
             logistics_components: &report.logistics_components,
-            routes: &report.routes,
+            transport_networks: &report.transport_networks,
             introduced_facilities: BTreeSet::new(),
             phase: None,
         }]
@@ -287,7 +322,7 @@ fn collect_pages(
                 bounds: &phase.bounds,
                 placements: &phase.placements,
                 logistics_components: &phase.logistics_components,
-                routes: &phase.routes,
+                transport_networks: &phase.transport_networks,
                 introduced_facilities: phase
                     .introduced_facilities
                     .iter()
@@ -348,8 +383,8 @@ fn render_page(
         height + 4,
         xml_escape(&phase_label),
         xml_escape(&page_metrics(page)),
-        transport_summary(page.routes, TransportKind::Belt),
-        transport_summary(page.routes, TransportKind::Pipe),
+        transport_summary(page.transport_networks, TransportKind::Belt),
+        transport_summary(page.transport_networks, TransportKind::Pipe),
     )
     .expect("writing to String cannot fail");
     writeln!(
@@ -358,17 +393,17 @@ fn render_page(
         page.bounds.width, page.bounds.height,
     )
     .expect("writing to String cannot fail");
-    render_routes(
+    render_transport_networks(
         html,
-        page.routes,
+        page.transport_networks,
         page.placements,
         TransportKind::Belt,
         "route-cell-belt",
         localization,
     );
-    render_routes(
+    render_transport_networks(
         html,
-        page.routes,
+        page.transport_networks,
         page.placements,
         TransportKind::Pipe,
         "route-cell-pipe",
@@ -385,9 +420,9 @@ fn render_page(
 }
 
 fn page_metrics(page: &RenderPage<'_>) -> String {
-    let route_cells = transport_cell_count(page.routes, None);
-    let belt_cells = transport_cell_count(page.routes, Some(TransportKind::Belt));
-    let pipe_cells = transport_cell_count(page.routes, Some(TransportKind::Pipe));
+    let route_cells = transport_cell_count(page.transport_networks, None);
+    let belt_cells = transport_cell_count(page.transport_networks, Some(TransportKind::Belt));
+    let pipe_cells = transport_cell_count(page.transport_networks, Some(TransportKind::Pipe));
     let bridge_count = page
         .logistics_components
         .iter()
@@ -422,22 +457,22 @@ fn page_metrics(page: &RenderPage<'_>) -> String {
     )
 }
 
-fn transport_cell_count(routes: &[IntegratedRoute], transport: Option<TransportKind>) -> usize {
-    routes
+fn transport_cell_count(networks: &[TransportNetwork], transport: Option<TransportKind>) -> usize {
+    networks
         .iter()
-        .filter(|route| transport.is_none_or(|transport| route.transport == transport))
-        .map(|route| route.cells.len())
+        .filter(|network| transport.is_none_or(|transport| network.transport == transport))
+        .map(|network| network.cells.len())
         .sum()
 }
 
-fn transport_summary(routes: &[IntegratedRoute], transport: TransportKind) -> String {
-    let tiles = transport_cell_count(routes, Some(transport));
+fn transport_summary(networks: &[TransportNetwork], transport: TransportKind) -> String {
+    let tiles = transport_cell_count(networks, Some(transport));
     format!("{tiles} tiles")
 }
 
-fn render_routes(
+fn render_transport_networks(
     html: &mut String,
-    routes: &[IntegratedRoute],
+    networks: &[TransportNetwork],
     placements: &[FacilityPlacement],
     transport: TransportKind,
     route_class: &str,
@@ -448,26 +483,26 @@ fn render_routes(
         TransportKind::Pipe => "pipe-layer",
     };
     writeln!(html, "        <g class=\"{layer_class}\">").expect("writing to String cannot fail");
-    for (index, route) in routes.iter().enumerate() {
-        if route.transport != transport || route.cells.is_empty() {
+    for network in networks {
+        if network.transport != transport || network.cells.is_empty() {
             continue;
         }
-        let item_name = localized_item_name(localization, &route.item);
+        let item_name = localized_item_name(localization, &network.item);
         let title = xml_escape(&format!(
-            "{:?} line {index} | item {} | rate {} | {} -> {} | {} occupied tiles",
-            route.transport,
+            "{:?} transport network | {} | item {} | {} terminals | {} occupied tiles | {} logical requirements",
+            network.transport,
+            network.id,
             item_name,
-            rate_label(route.rate),
-            endpoint_name(&route.source),
-            endpoint_name(&route.target),
-            route.cells.len(),
+            network.terminals.len(),
+            network.cells.len(),
+            network.requirement_ids.len(),
         ));
         writeln!(
             html,
             "          <g class=\"route-group\" data-inspect=\"{title}\">"
         )
         .expect("writing to String cannot fail");
-        for cell in &route.cells {
+        for cell in &network.cells {
             writeln!(
                 html,
                 "            <rect class=\"route-cell {route_class}\" x=\"{}\" y=\"{}\" width=\"1\" height=\"1\"/>",
@@ -475,14 +510,8 @@ fn render_routes(
             )
             .expect("writing to String cannot fail");
         }
-        for index in (4..route.cells.len().saturating_sub(1)).step_by(8) {
-            let points = flow_arrow_points(
-                &route.cells[index],
-                &route.cells[index],
-                &route.cells[index + 1],
-                0.34,
-                0.22,
-            );
+        for segment in network.segments.iter().skip(4).step_by(8) {
+            let points = flow_arrow_points(&segment.from, &segment.from, &segment.to, 0.34, 0.22);
             writeln!(
                 html,
                 "            <polygon class=\"route-direction\" points=\"{points}\"/>"
@@ -494,37 +523,43 @@ fn render_routes(
             TransportKind::Belt => "endpoint-belt",
             TransportKind::Pipe => "endpoint-pipe",
         };
-        let first = route.cells.first().expect("route is non-empty");
-        let last = route.cells.last().expect("route is non-empty");
-        let second = route.cells.get(1).unwrap_or(first);
-        let penultimate = route
-            .cells
-            .get(route.cells.len().saturating_sub(2))
-            .unwrap_or(last);
-        for (is_source, endpoint, peer, cell, direction_target) in [
-            (true, &route.source, &route.target, first, second),
-            (false, &route.target, &route.source, last, last),
-        ] {
-            let external_class = if matches!(endpoint, IntegratedRouteEndpoint::External { .. }) {
+        for terminal in &network.terminals {
+            let is_source = terminal.direction == crate::facilities::FacilityPortDirection::Output;
+            let endpoint = &terminal.endpoint;
+            let cell = &terminal.position;
+            let external_class = if matches!(endpoint, TransportNetworkEndpoint::External { .. }) {
                 " external"
             } else {
                 ""
             };
             let role = endpoint_role(endpoint, is_source);
             let tooltip = xml_escape(&format!(
-                "{role} | item {} | rate {} | {} | peer {}",
+                "{role} | item {} | rate {} | {} | network {}",
                 item_name,
-                rate_label(route.rate),
+                rate_label(terminal.rate),
                 endpoint_name(endpoint),
-                endpoint_name(peer),
+                network.id,
             ));
-            let direction_source = if is_source { cell } else { penultimate };
+            let neighboring = if is_source {
+                network
+                    .segments
+                    .iter()
+                    .find(|segment| segment.from == *cell)
+                    .map(|segment| &segment.to)
+            } else {
+                network
+                    .segments
+                    .iter()
+                    .find(|segment| segment.to == *cell)
+                    .map(|segment| &segment.from)
+            }
+            .unwrap_or(cell);
             let (dx, dy) = endpoint_arrow_direction(
                 endpoint,
                 is_source,
                 cell,
-                direction_source,
-                direction_target,
+                if is_source { cell } else { neighboring },
+                if is_source { neighboring } else { cell },
                 placements,
             );
             let marker_cell =
@@ -546,11 +581,11 @@ fn render_routes(
 }
 
 fn facility_port_cell(
-    endpoint: &IntegratedRouteEndpoint,
+    endpoint: &TransportNetworkEndpoint,
     connection: &super::WorldGridPosition,
     placements: &[FacilityPlacement],
 ) -> Option<super::WorldGridPosition> {
-    let IntegratedRouteEndpoint::Facility { instance, .. } = endpoint else {
+    let TransportNetworkEndpoint::Facility { instance, .. } = endpoint else {
         return None;
     };
     let placement = placements
@@ -629,14 +664,14 @@ fn arrow_points_in_direction(
 }
 
 fn endpoint_arrow_direction(
-    endpoint: &IntegratedRouteEndpoint,
+    endpoint: &TransportNetworkEndpoint,
     is_source: bool,
     cell: &super::WorldGridPosition,
     route_from: &super::WorldGridPosition,
     route_to: &super::WorldGridPosition,
     placements: &[FacilityPlacement],
 ) -> (f64, f64) {
-    if let IntegratedRouteEndpoint::External { side, .. } = endpoint {
+    if let TransportNetworkEndpoint::External { side, .. } = endpoint {
         let (dx, dy) = match side {
             crate::facilities::FacilityPortEdge::North => (0.0, -1.0),
             crate::facilities::FacilityPortEdge::East => (1.0, 0.0),
@@ -645,7 +680,7 @@ fn endpoint_arrow_direction(
         };
         return if is_source { (-dx, -dy) } else { (dx, dy) };
     }
-    if let IntegratedRouteEndpoint::Facility { instance, .. } = endpoint
+    if let TransportNetworkEndpoint::Facility { instance, .. } = endpoint
         && let Some(placement) = placements
             .iter()
             .find(|placement| placement.instance == instance.as_str())
@@ -675,12 +710,12 @@ fn endpoint_arrow_direction(
     }
 }
 
-fn endpoint_role(endpoint: &IntegratedRouteEndpoint, is_source: bool) -> &'static str {
+fn endpoint_role(endpoint: &TransportNetworkEndpoint, is_source: bool) -> &'static str {
     match (endpoint, is_source) {
-        (IntegratedRouteEndpoint::Facility { .. }, true) => "facility output port",
-        (IntegratedRouteEndpoint::Facility { .. }, false) => "facility input port",
-        (IntegratedRouteEndpoint::External { .. }, true) => "factory external input",
-        (IntegratedRouteEndpoint::External { .. }, false) => "factory external output",
+        (TransportNetworkEndpoint::Facility { .. }, true) => "facility output port",
+        (TransportNetworkEndpoint::Facility { .. }, false) => "facility input port",
+        (TransportNetworkEndpoint::External { .. }, true) => "factory external input",
+        (TransportNetworkEndpoint::External { .. }, false) => "factory external output",
     }
 }
 
@@ -800,12 +835,12 @@ fn localized_item_name(localization: Option<&ValidatedLocalizationCatalog>, item
         )
 }
 
-fn endpoint_name(endpoint: &IntegratedRouteEndpoint) -> String {
+fn endpoint_name(endpoint: &TransportNetworkEndpoint) -> String {
     match endpoint {
-        IntegratedRouteEndpoint::Facility { instance, port } => {
+        TransportNetworkEndpoint::Facility { instance, port } => {
             format!("facility {instance} port {port}")
         }
-        IntegratedRouteEndpoint::External { node, side } => {
+        TransportNetworkEndpoint::External { node, side } => {
             format!("external {node} beside {side:?} facility port")
         }
     }
@@ -822,19 +857,19 @@ fn xml_escape(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::facilities::FacilityPortEdge;
+    use crate::facilities::{FacilityPortDirection, FacilityPortEdge};
     use crate::layouts::{
         FacilityPlacement, FacilityPlacementBounds, INTEGRATED_LAYOUT_SCHEMA_VERSION,
         IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutPhaseOptimization,
-        IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRoute, IntegratedRouteEndpoint,
-        RouteRequirementFingerprint, WorldGridPosition,
+        IntegratedLayoutReport, IntegratedLayoutStatus, TransportNetwork, TransportNetworkEndpoint,
+        TransportNetworkSegment, TransportNetworkTerminal, WorldGridPosition,
     };
     use crate::localization::{
         LocalizationCatalog, LocalizationTextSource, LocalizedFacility, LocalizedName,
         ValidatedLocalizationCatalog,
     };
     use crate::logistics::TransportKind;
-    use crate::recipes::{FacilityInstanceWiringProjection, Rate};
+    use crate::recipes::Rate;
 
     use super::super::report::{
         CandidateCounts, FacilityChangeCounts, IncumbentProvenance,
@@ -868,37 +903,54 @@ mod tests {
                 rotation: 0,
             }],
             logistics_components: Vec::new(),
-            routes: vec![IntegratedRoute {
-                requirement_id: "wiring-edge:test:lane:0000".to_string(),
-                requirement_fingerprint: RouteRequirementFingerprint {
-                    source: "external".to_string(),
-                    target: "facility:<one>".to_string(),
-                    item: "item&one".to_string(),
-                    rate: Rate {
-                        numerator: 1,
-                        denominator: 1,
-                    },
-                    transport: TransportKind::Belt,
-                    projection: FacilityInstanceWiringProjection::Original,
-                },
-                source: IntegratedRouteEndpoint::External {
-                    node: "external".to_string(),
-                    side: FacilityPortEdge::West,
-                },
-                target: IntegratedRouteEndpoint::Facility {
-                    instance: "facility:<one>".to_string(),
-                    port: "input".to_string(),
-                },
+            transport_networks: vec![TransportNetwork {
+                id: "network:belt:item&one".to_string(),
+                requirement_ids: vec!["wiring-edge:test:lane:0000".to_string()],
                 item: "item&one".to_string(),
-                rate: Rate {
-                    numerator: 1,
-                    denominator: 1,
-                },
                 transport: TransportKind::Belt,
                 cells: vec![
                     WorldGridPosition { x: 0, y: 3 },
                     WorldGridPosition { x: 1, y: 3 },
                 ],
+                segments: vec![TransportNetworkSegment {
+                    from: WorldGridPosition { x: 0, y: 3 },
+                    to: WorldGridPosition { x: 1, y: 3 },
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 1,
+                    },
+                }],
+                terminals: vec![
+                    TransportNetworkTerminal {
+                        id: "network:belt:item&one:terminal:0000".to_string(),
+                        node: "external".to_string(),
+                        direction: FacilityPortDirection::Output,
+                        endpoint: TransportNetworkEndpoint::External {
+                            node: "external".to_string(),
+                            side: FacilityPortEdge::West,
+                        },
+                        position: WorldGridPosition { x: 0, y: 3 },
+                        rate: Rate {
+                            numerator: 1,
+                            denominator: 1,
+                        },
+                    },
+                    TransportNetworkTerminal {
+                        id: "network:belt:item&one:terminal:0001".to_string(),
+                        node: "facility:<one>".to_string(),
+                        direction: FacilityPortDirection::Input,
+                        endpoint: TransportNetworkEndpoint::Facility {
+                            instance: "facility:<one>".to_string(),
+                            port: "input".to_string(),
+                        },
+                        position: WorldGridPosition { x: 1, y: 3 },
+                        rate: Rate {
+                            numerator: 1,
+                            denominator: 1,
+                        },
+                    },
+                ],
+                component_ids: Vec::new(),
             }],
             phases: Vec::new(),
             exact: None,
@@ -918,7 +970,7 @@ mod tests {
             bounds: report.bounds.clone().expect("test report has bounds"),
             placements: report.placements.clone(),
             logistics_components: report.logistics_components.clone(),
-            routes: report.routes.clone(),
+            transport_networks: report.transport_networks.clone(),
             route_turns: 0,
             route_cells: 2,
             bridge_count: 0,
@@ -1046,15 +1098,16 @@ mod tests {
     }
 
     #[test]
-    fn rejects_a_failed_layout_without_completed_snapshots() {
+    fn renders_solver_evidence_when_failure_has_no_geometry() {
         let report = IntegratedLayoutReport::invalid(IntegratedLayoutDiagnostic::error(
             "test", "/", None, "test",
         ));
 
-        let diagnostic = render_integrated_layout_html(&report)
-            .expect_err("failed layout without history has no geometry to render");
+        let html = render_integrated_layout_html(&report)
+            .expect("failed layout without geometry should still render solver evidence");
 
-        assert_eq!(diagnostic.code, "layout-visualization-has-no-snapshots");
+        assert!(html.contains("LAYOUT SOLVE DID NOT PRODUCE GEOMETRY"));
+        assert!(html.contains("<code>test</code>"));
     }
 
     #[test]
@@ -1075,7 +1128,7 @@ mod tests {
             height: 5,
             rotation: 0,
         };
-        let endpoint = IntegratedRouteEndpoint::Facility {
+        let endpoint = TransportNetworkEndpoint::Facility {
             instance: "facility".to_string(),
             port: "port".to_string(),
         };

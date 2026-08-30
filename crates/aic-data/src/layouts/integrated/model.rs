@@ -11,7 +11,7 @@ use crate::recipes::{
     Rate, facility_instance_wiring_edge_id,
 };
 
-use super::{IntegratedLayoutDiagnostic, RouteRequirementFingerprint, networks};
+use super::{IntegratedLayoutDiagnostic, networks};
 
 pub(super) struct ModelInput {
     pub(super) width: i32,
@@ -24,7 +24,6 @@ pub(super) struct ModelInput {
 
 pub(super) struct EdgeInput {
     pub(super) requirement_id: String,
-    pub(super) requirement_fingerprint: RouteRequirementFingerprint,
     pub(super) edge: FacilityInstanceWiringEdge,
     pub(super) source: EndpointInput,
     pub(super) target: EndpointInput,
@@ -270,17 +269,8 @@ pub(super) fn prepare_model(
         while !remaining_rate.is_zero() {
             let route_rate = remaining_rate.min(capacity_rate);
             let requirement_id = format!("{}:lane:{lane_index:04}", edge.id);
-            let requirement_fingerprint = RouteRequirementFingerprint {
-                source: edge.source.clone(),
-                target: edge.target.clone(),
-                item: edge.item.clone(),
-                rate: route_rate,
-                transport: item.transport,
-                projection: edge.projection.clone(),
-            };
             edges.push(EdgeInput {
                 requirement_id,
-                requirement_fingerprint,
                 source: source.clone(),
                 target: target.clone(),
                 transport: item.transport,

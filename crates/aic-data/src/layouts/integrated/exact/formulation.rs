@@ -3,7 +3,7 @@ use pumpkin_solver::Solver;
 use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
 use super::super::{
-    EndpointInput, InstanceInput, IntegratedRouteEndpoint, candidate_port_connections, grid_index,
+    EndpointInput, InstanceInput, TransportNetworkEndpoint, candidate_port_connections, grid_index,
 };
 use super::{Arc, Candidate, EndpointOption, ModelInstance, ModelRoute};
 
@@ -86,7 +86,7 @@ fn endpoint_options(
             );
             candidate_options.push(selected);
             options.push(EndpointOption {
-                endpoint: IntegratedRouteEndpoint::Facility {
+                endpoint: TransportNetworkEndpoint::Facility {
                     instance: instance.input.id.clone(),
                     port: port.id.clone(),
                 },
@@ -136,7 +136,7 @@ pub(in crate::layouts::integrated) fn external_endpoint_options(
     facility_options
         .iter()
         .map(|option| EndpointOption {
-            endpoint: IntegratedRouteEndpoint::External {
+            endpoint: TransportNetworkEndpoint::External {
                 node: node.to_string(),
                 side: option
                     .external_side

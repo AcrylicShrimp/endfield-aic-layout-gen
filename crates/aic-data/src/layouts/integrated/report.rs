@@ -1,14 +1,14 @@
 use serde::Serialize;
 
-use crate::facilities::FacilityPortEdge;
+use crate::facilities::{FacilityPortDirection, FacilityPortEdge};
 use crate::layouts::{FacilityPlacement, FacilityPlacementBounds};
 use crate::logistics::{LogisticsComponentKind, TransportKind};
-use crate::recipes::{FacilityInstanceWiringProjection, Rate};
+use crate::recipes::Rate;
 
 use super::{DeterministicCandidateKey, LayoutScore, WorldGridPosition};
 
 const STAGE: &str = "integrated-layout";
-pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 8;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 9;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -28,7 +28,7 @@ pub struct IntegratedLayoutReport {
     pub bounds: Option<FacilityPlacementBounds>,
     pub placements: Vec<FacilityPlacement>,
     pub logistics_components: Vec<PlacedLogisticsComponent>,
-    pub routes: Vec<IntegratedRoute>,
+    pub transport_networks: Vec<TransportNetwork>,
     pub phases: Vec<IntegratedLayoutPhase>,
     pub exact: Option<ExactSolveReport>,
     pub diagnostics: Vec<IntegratedLayoutDiagnostic>,
@@ -112,7 +112,7 @@ pub struct IntegratedLayoutPhase {
     pub bounds: FacilityPlacementBounds,
     pub placements: Vec<FacilityPlacement>,
     pub logistics_components: Vec<PlacedLogisticsComponent>,
-    pub routes: Vec<IntegratedRoute>,
+    pub transport_networks: Vec<TransportNetwork>,
     pub route_turns: usize,
     pub route_cells: usize,
     pub bridge_count: usize,
@@ -140,30 +140,37 @@ pub struct PlacedLogisticsComponent {
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct IntegratedRoute {
-    pub requirement_id: String,
-    pub requirement_fingerprint: RouteRequirementFingerprint,
-    pub source: IntegratedRouteEndpoint,
-    pub target: IntegratedRouteEndpoint,
+pub struct TransportNetwork {
+    pub id: String,
+    pub requirement_ids: Vec<String>,
     pub item: String,
-    pub rate: Rate,
     pub transport: TransportKind,
     pub cells: Vec<WorldGridPosition>,
+    pub segments: Vec<TransportNetworkSegment>,
+    pub terminals: Vec<TransportNetworkTerminal>,
+    pub component_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct RouteRequirementFingerprint {
-    pub source: String,
-    pub target: String,
-    pub item: String,
+pub struct TransportNetworkSegment {
+    pub from: WorldGridPosition,
+    pub to: WorldGridPosition,
     pub rate: Rate,
-    pub transport: TransportKind,
-    pub projection: FacilityInstanceWiringProjection,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct TransportNetworkTerminal {
+    pub id: String,
+    pub node: String,
+    pub direction: FacilityPortDirection,
+    pub endpoint: TransportNetworkEndpoint,
+    pub position: WorldGridPosition,
+    pub rate: Rate,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
-pub enum IntegratedRouteEndpoint {
+pub enum TransportNetworkEndpoint {
     Facility {
         instance: String,
         port: String,
@@ -229,7 +236,7 @@ impl IntegratedLayoutReport {
             bounds: None,
             placements: Vec::new(),
             logistics_components: Vec::new(),
-            routes: Vec::new(),
+            transport_networks: Vec::new(),
             phases: Vec::new(),
             exact: None,
             diagnostics: vec![diagnostic],

@@ -1,12 +1,14 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
+use crate::facilities::FacilityPortDirection;
 use crate::layouts::FacilityPlacement;
 use crate::logistics::{LogisticsComponentKind, TransportKind, ValidatedLogisticsComponentCatalog};
+use crate::recipes::Rate;
 
 use super::{
     EndpointInput, INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic,
-    IntegratedLayoutReport, IntegratedRouteEndpoint, ModelInput, candidate_port_connections,
-    grid_index,
+    IntegratedLayoutReport, ModelInput, TransportNetwork, TransportNetworkEndpoint,
+    WorldGridPosition, candidate_port_connections, grid_index,
 };
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -43,148 +45,69 @@ pub(super) fn validate(
     let cell_count = input.width as usize * input.height as usize;
     let placements = validate_placements(input, report, cell_count)?;
     let mut layer_cells = [vec![Vec::new(); cell_count], vec![Vec::new(); cell_count]];
-    let mut expected_by_id = BTreeMap::new();
-    for expected in &input.edges {
-        if expected_by_id
-            .insert(expected.requirement_id.as_str(), expected)
-            .is_some()
-        {
-            return Err(invalid(
-                "/routes",
-                format!(
-                    "prepared route requirement ID '{}' appears more than once",
-                    expected.requirement_id
-                ),
-            ));
-        }
-    }
+    let expected_networks = input
+        .networks
+        .iter()
+        .map(|network| (network.id(), network))
+        .collect::<BTreeMap<_, _>>();
     let mut actual_ids = BTreeSet::new();
-    for (route_index, route) in report.routes.iter().enumerate() {
-        if !actual_ids.insert(route.requirement_id.as_str()) {
+
+    for (network_index, network) in report.transport_networks.iter().enumerate() {
+        if !actual_ids.insert(network.id.as_str()) {
             return Err(invalid(
-                format!("/routes/{route_index}/requirement_id"),
+                format!("/transport_networks/{network_index}/id"),
                 format!(
-                    "route requirement ID '{}' appears more than once",
-                    route.requirement_id
+                    "transport network ID '{}' appears more than once",
+                    network.id
                 ),
             ));
         }
-        let Some(expected) = expected_by_id.get(route.requirement_id.as_str()).copied() else {
+        let expected = expected_networks.get(network.id.as_str()).ok_or_else(|| {
+            invalid(
+                format!("/transport_networks/{network_index}/id"),
+                format!("transport network ID '{}' is not expected", network.id),
+            )
+        })?;
+        if network.item != expected.item() || network.transport != expected.transport() {
             return Err(invalid(
-                format!("/routes/{route_index}/requirement_id"),
-                format!(
-                    "route requirement ID '{}' is not expected by the prepared model",
-                    route.requirement_id
-                ),
-            ));
-        };
-        if route.requirement_fingerprint != expected.requirement_fingerprint {
-            return Err(invalid(
-                format!("/routes/{route_index}/requirement_fingerprint"),
-                "route requirement fingerprint does not match the prepared capacity-split flow",
+                format!("/transport_networks/{network_index}"),
+                "transport network item or transport kind does not match the prepared model",
             ));
         }
-        if route.item != expected.edge.item
-            || route.rate != expected.edge.rate
-            || route.transport != expected.transport
+        let expected_requirements = expected
+            .route_indices()
+            .iter()
+            .map(|index| input.edges[*index].requirement_id.as_str())
+            .collect::<BTreeSet<_>>();
+        let actual_requirements = network
+            .requirement_ids
+            .iter()
+            .map(String::as_str)
+            .collect::<BTreeSet<_>>();
+        if expected_requirements != actual_requirements
+            || actual_requirements.len() != network.requirement_ids.len()
         {
             return Err(invalid(
-                format!("/routes/{route_index}"),
-                "route material, rate, or transport does not match the prepared capacity-split flow",
+                format!("/transport_networks/{network_index}/requirement_ids"),
+                "transport network requirement references do not exactly match the prepared logical flow",
             ));
         }
-        if route.cells.is_empty() {
-            return Err(invalid(
-                format!("/routes/{route_index}/cells"),
-                "route must contain at least one cell",
-            ));
-        }
-        let cells = route
-            .cells
-            .iter()
-            .enumerate()
-            .map(|(cell_index, cell)| {
-                if cell.x < 0
-                    || cell.y < 0
-                    || cell.x >= i64::from(input.width)
-                    || cell.y >= i64::from(input.height)
-                {
-                    return Err(invalid(
-                        format!("/routes/{route_index}/cells/{cell_index}"),
-                        "route cell is outside the hard layout bounds",
-                    ));
-                }
-                Ok(grid_index(cell.x as i32, cell.y as i32, input.width))
-            })
-            .collect::<Result<Vec<_>, _>>()?;
-        let source_cell = endpoint_cell(
+        validate_network(
             input,
+            network_index,
+            network,
+            expected.route_indices(),
             &placements,
-            &expected.source,
-            &route.source,
-            cells[0],
-            route_index,
-            "source",
+            &mut layer_cells,
         )?;
-        let target_terminal = *cells.last().expect("non-empty route");
-        let target_cell = endpoint_cell(
-            input,
-            &placements,
-            &expected.target,
-            &route.target,
-            target_terminal,
-            route_index,
-            "target",
-        )?;
-        validate_external_side(
-            input,
-            &placements,
-            &route.source,
-            &route.target,
-            route_index,
-        )?;
-        if cells[0] != source_cell || *cells.last().expect("non-empty route") != target_cell {
-            return Err(invalid(
-                format!("/routes/{route_index}/cells"),
-                "route endpoints do not match the selected facility ports or external connections",
-            ));
-        }
-        if cells.iter().copied().collect::<BTreeSet<_>>().len() != cells.len() {
-            return Err(invalid(
-                format!("/routes/{route_index}/cells"),
-                "route contains a repeated cell",
-            ));
-        }
-        for pair in cells.windows(2) {
-            let left_x = pair[0] % input.width as usize;
-            let left_y = pair[0] / input.width as usize;
-            let right_x = pair[1] % input.width as usize;
-            let right_y = pair[1] / input.width as usize;
-            if left_x.abs_diff(right_x) + left_y.abs_diff(right_y) != 1 {
-                return Err(invalid(
-                    format!("/routes/{route_index}/cells"),
-                    "consecutive route cells must be orthogonally adjacent",
-                ));
-            }
-        }
-        let layer = layer_index(route.transport);
-        for (path_index, cell) in cells.iter().enumerate() {
-            if placements.occupied[*cell] {
-                return Err(invalid(
-                    format!("/routes/{route_index}/cells/{path_index}"),
-                    "route occupies a production-facility footprint cell",
-                ));
-            }
-            layer_cells[layer][*cell].push(segment_shape(&cells, path_index, input.width));
-        }
     }
-    if let Some(missing) = expected_by_id
+    if let Some(missing) = expected_networks
         .keys()
-        .find(|requirement_id| !actual_ids.contains(**requirement_id))
+        .find(|network_id| !actual_ids.contains(**network_id))
     {
         return Err(invalid(
-            "/routes",
-            format!("required route '{missing}' is missing from the witness"),
+            "/transport_networks",
+            format!("required transport network '{missing}' is missing from the witness"),
         ));
     }
 
@@ -214,6 +137,353 @@ pub(super) fn validate(
         ));
     }
     Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn validate_network(
+    input: &ModelInput,
+    network_index: usize,
+    network: &TransportNetwork,
+    route_indices: &[usize],
+    placements: &ValidatedPlacements<'_>,
+    layer_cells: &mut [Vec<Vec<SegmentShape>>; 2],
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    if network.cells.is_empty() {
+        return Err(invalid(
+            format!("/transport_networks/{network_index}/cells"),
+            "transport network must occupy at least one cell",
+        ));
+    }
+    let mut cells = BTreeSet::new();
+    for (cell_index, position) in network.cells.iter().enumerate() {
+        let cell = checked_cell(
+            input,
+            position,
+            &format!("/transport_networks/{network_index}/cells/{cell_index}"),
+        )?;
+        if !cells.insert(cell) {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/cells/{cell_index}"),
+                "transport network contains a duplicate occupied cell",
+            ));
+        }
+        if placements.occupied[cell] {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/cells/{cell_index}"),
+                "transport network occupies a production-facility footprint cell",
+            ));
+        }
+    }
+
+    let mut incoming = BTreeMap::<usize, Rate>::new();
+    let mut outgoing = BTreeMap::<usize, Rate>::new();
+    let mut forward = BTreeMap::<usize, BTreeSet<usize>>::new();
+    let mut reverse = BTreeMap::<usize, BTreeSet<usize>>::new();
+    let mut incident_neighbors = BTreeMap::<usize, BTreeSet<usize>>::new();
+    for (segment_index, segment) in network.segments.iter().enumerate() {
+        if segment.rate.numerator <= 0 || segment.rate.denominator <= 0 {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/segments/{segment_index}/rate"),
+                "active transport segment must carry a positive rate",
+            ));
+        }
+        let from = checked_cell(
+            input,
+            &segment.from,
+            &format!("/transport_networks/{network_index}/segments/{segment_index}/from"),
+        )?;
+        let to = checked_cell(
+            input,
+            &segment.to,
+            &format!("/transport_networks/{network_index}/segments/{segment_index}/to"),
+        )?;
+        if !cells.contains(&from) || !cells.contains(&to) {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/segments/{segment_index}"),
+                "transport segment endpoints must both be occupied network cells",
+            ));
+        }
+        let from_x = from % input.width as usize;
+        let from_y = from / input.width as usize;
+        let to_x = to % input.width as usize;
+        let to_y = to / input.width as usize;
+        if from_x.abs_diff(to_x) + from_y.abs_diff(to_y) != 1 {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/segments/{segment_index}"),
+                "transport segment endpoints must be orthogonally adjacent",
+            ));
+        }
+        add_rate(&mut outgoing, from, segment.rate, network_index)?;
+        add_rate(&mut incoming, to, segment.rate, network_index)?;
+        forward.entry(from).or_default().insert(to);
+        reverse.entry(to).or_default().insert(from);
+        incident_neighbors.entry(from).or_default().insert(to);
+        incident_neighbors.entry(to).or_default().insert(from);
+    }
+
+    let expected_terminals = expected_terminals(input, route_indices, network_index)?;
+    let mut actual_terminal_rates = BTreeMap::<(String, bool), Rate>::new();
+    let mut supply = BTreeMap::<usize, Rate>::new();
+    let mut demand = BTreeMap::<usize, Rate>::new();
+    let mut terminal_ids = BTreeSet::new();
+    for (terminal_index, terminal) in network.terminals.iter().enumerate() {
+        if !terminal_ids.insert(terminal.id.as_str()) {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/terminals/{terminal_index}/id"),
+                "transport terminal ID appears more than once in its network",
+            ));
+        }
+        if terminal.rate.numerator <= 0 || terminal.rate.denominator <= 0 {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/terminals/{terminal_index}/rate"),
+                "transport terminal must carry a positive rate",
+            ));
+        }
+        let key = (
+            terminal.node.clone(),
+            terminal.direction == FacilityPortDirection::Output,
+        );
+        let (expected_endpoint, _) = expected_terminals.get(&key).ok_or_else(|| {
+            invalid(
+                format!("/transport_networks/{network_index}/terminals/{terminal_index}"),
+                "transport terminal does not match a prepared supply or demand",
+            )
+        })?;
+        let cell = checked_cell(
+            input,
+            &terminal.position,
+            &format!("/transport_networks/{network_index}/terminals/{terminal_index}/position"),
+        )?;
+        if !cells.contains(&cell) {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/terminals/{terminal_index}/position"),
+                "transport terminal must occupy a network cell",
+            ));
+        }
+        validate_terminal_endpoint(
+            input,
+            placements,
+            expected_endpoint,
+            &terminal.endpoint,
+            cell,
+            network_index,
+            terminal_index,
+        )?;
+        add_named_rate(
+            &mut actual_terminal_rates,
+            key,
+            terminal.rate,
+            network_index,
+        )?;
+        if terminal.direction == FacilityPortDirection::Output {
+            add_rate(&mut supply, cell, terminal.rate, network_index)?;
+        } else {
+            add_rate(&mut demand, cell, terminal.rate, network_index)?;
+        }
+    }
+    let expected_rates = expected_terminals
+        .iter()
+        .map(|(key, (_, rate))| (key.clone(), *rate))
+        .collect::<BTreeMap<_, _>>();
+    if actual_terminal_rates != expected_rates {
+        return Err(invalid(
+            format!("/transport_networks/{network_index}/terminals"),
+            "transport terminal rates do not exactly match prepared supply and demand",
+        ));
+    }
+
+    for cell in &cells {
+        let left = rate_at(&incoming, *cell)
+            .checked_add(rate_at(&supply, *cell))
+            .map_err(|error| arithmetic_invalid(network_index, error.message))?;
+        let right = rate_at(&outgoing, *cell)
+            .checked_add(rate_at(&demand, *cell))
+            .map_err(|error| arithmetic_invalid(network_index, error.message))?;
+        if left != right {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/cells"),
+                format!("transport flow is not conserved at grid cell {cell}"),
+            ));
+        }
+        let has_terminal = supply.contains_key(cell) || demand.contains_key(cell);
+        if !has_terminal && !incident_neighbors.contains_key(cell) {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/cells"),
+                format!("transport cell {cell} has no terminal or active segment"),
+            ));
+        }
+    }
+    validate_reachability(network_index, &cells, &supply, &demand, &forward, &reverse)?;
+
+    let layer = layer_index(network.transport);
+    for cell in &cells {
+        for shape in network_cell_shapes(*cell, &incident_neighbors, input.width) {
+            layer_cells[layer][*cell].push(shape);
+        }
+    }
+    Ok(())
+}
+
+fn expected_terminals(
+    input: &ModelInput,
+    route_indices: &[usize],
+    network_index: usize,
+) -> Result<BTreeMap<(String, bool), (EndpointInput, Rate)>, IntegratedLayoutDiagnostic> {
+    let mut terminals = BTreeMap::new();
+    for route_index in route_indices {
+        let edge = &input.edges[*route_index];
+        merge_expected_terminal(
+            &mut terminals,
+            endpoint_node(&edge.source),
+            true,
+            &edge.source,
+            edge.edge.rate,
+            network_index,
+        )?;
+        merge_expected_terminal(
+            &mut terminals,
+            endpoint_node(&edge.target),
+            false,
+            &edge.target,
+            edge.edge.rate,
+            network_index,
+        )?;
+    }
+    Ok(terminals)
+}
+
+fn merge_expected_terminal(
+    terminals: &mut BTreeMap<(String, bool), (EndpointInput, Rate)>,
+    node: &str,
+    is_output: bool,
+    endpoint: &EndpointInput,
+    rate: Rate,
+    network_index: usize,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let (_, total) = terminals
+        .entry((node.to_string(), is_output))
+        .or_insert_with(|| (endpoint.clone(), Rate::zero()));
+    *total = total
+        .checked_add(rate)
+        .map_err(|error| arithmetic_invalid(network_index, error.message))?;
+    Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn validate_terminal_endpoint(
+    input: &ModelInput,
+    placements: &ValidatedPlacements<'_>,
+    expected: &EndpointInput,
+    actual: &TransportNetworkEndpoint,
+    terminal_cell: usize,
+    network_index: usize,
+    terminal_index: usize,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    match (expected, actual) {
+        (
+            EndpointInput::Facility { instance, ports },
+            TransportNetworkEndpoint::Facility {
+                instance: actual_instance,
+                port,
+            },
+        ) if instance == actual_instance && ports.iter().any(|candidate| candidate.id == *port) => {
+            let placement = placements.by_instance[instance.as_str()];
+            let definition = &input
+                .instances
+                .iter()
+                .find(|candidate| candidate.id == *instance)
+                .expect("prepared endpoint instance exists")
+                .definition;
+            let connections = candidate_port_connections(
+                definition,
+                placement.rotation,
+                placement.x as i32,
+                placement.y as i32,
+                input.width,
+                input.height,
+            );
+            if connections.get(port).copied() != Some(terminal_cell) {
+                return Err(invalid(
+                    format!("/transport_networks/{network_index}/terminals/{terminal_index}"),
+                    "selected facility port does not connect to the terminal position",
+                ));
+            }
+            Ok(())
+        }
+        (
+            EndpointInput::External { node },
+            TransportNetworkEndpoint::External {
+                node: actual_node, ..
+            },
+        ) if node == actual_node => Ok(()),
+        _ => Err(invalid(
+            format!("/transport_networks/{network_index}/terminals/{terminal_index}/endpoint"),
+            "transport terminal endpoint does not match the prepared endpoint",
+        )),
+    }
+}
+
+fn validate_reachability(
+    network_index: usize,
+    cells: &BTreeSet<usize>,
+    supply: &BTreeMap<usize, Rate>,
+    demand: &BTreeMap<usize, Rate>,
+    forward: &BTreeMap<usize, BTreeSet<usize>>,
+    reverse: &BTreeMap<usize, BTreeSet<usize>>,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let from_supply = reachable(supply.keys().copied(), forward);
+    let to_demand = reachable(demand.keys().copied(), reverse);
+    if !cells.is_subset(&from_supply) || !cells.is_subset(&to_demand) {
+        return Err(invalid(
+            format!("/transport_networks/{network_index}/cells"),
+            "every active transport cell must lie on a directed supply-to-demand flow path",
+        ));
+    }
+    Ok(())
+}
+
+fn reachable(
+    starts: impl IntoIterator<Item = usize>,
+    adjacency: &BTreeMap<usize, BTreeSet<usize>>,
+) -> BTreeSet<usize> {
+    let mut reached = BTreeSet::new();
+    let mut queue = VecDeque::new();
+    for start in starts {
+        if reached.insert(start) {
+            queue.push_back(start);
+        }
+    }
+    while let Some(cell) = queue.pop_front() {
+        for next in adjacency.get(&cell).into_iter().flatten() {
+            if reached.insert(*next) {
+                queue.push_back(*next);
+            }
+        }
+    }
+    reached
+}
+
+fn network_cell_shapes(
+    cell: usize,
+    neighbors: &BTreeMap<usize, BTreeSet<usize>>,
+    width: i32,
+) -> Vec<SegmentShape> {
+    let Some(neighbors) = neighbors.get(&cell) else {
+        return vec![SegmentShape::Other];
+    };
+    let x = cell % width as usize;
+    let has_horizontal = neighbors
+        .iter()
+        .any(|neighbor| neighbor % width as usize != x);
+    let has_vertical = neighbors
+        .iter()
+        .any(|neighbor| neighbor % width as usize == x);
+    match (has_horizontal, has_vertical, neighbors.len()) {
+        (true, false, _) => vec![SegmentShape::Horizontal],
+        (false, true, _) => vec![SegmentShape::Vertical],
+        (true, true, 4) => vec![SegmentShape::Horizontal, SegmentShape::Vertical],
+        _ => vec![SegmentShape::Other],
+    }
 }
 
 struct ValidatedPlacements<'a> {
@@ -298,149 +568,6 @@ fn validate_placements<'a>(
     })
 }
 
-#[allow(clippy::too_many_arguments)]
-fn endpoint_cell(
-    input: &ModelInput,
-    placements: &ValidatedPlacements<'_>,
-    expected: &EndpointInput,
-    actual: &IntegratedRouteEndpoint,
-    terminal_cell: usize,
-    route_index: usize,
-    endpoint_kind: &str,
-) -> Result<usize, IntegratedLayoutDiagnostic> {
-    match (expected, actual) {
-        (
-            EndpointInput::Facility { instance, ports },
-            IntegratedRouteEndpoint::Facility {
-                instance: actual_instance,
-                port,
-            },
-        ) if instance == actual_instance && ports.iter().any(|candidate| candidate.id == *port) => {
-            let placement = placements.by_instance[instance.as_str()];
-            let definition = &input
-                .instances
-                .iter()
-                .find(|candidate| candidate.id == *instance)
-                .expect("prepared endpoint instance exists")
-                .definition;
-            let connections = candidate_port_connections(
-                definition,
-                placement.rotation,
-                placement.x as i32,
-                placement.y as i32,
-                input.width,
-                input.height,
-            );
-            connections.get(port).copied().ok_or_else(|| {
-                invalid(
-                    format!("/routes/{route_index}/{endpoint_kind}"),
-                    "selected facility port connection is outside the hard search domain",
-                )
-            })
-        }
-        (
-            EndpointInput::External { node },
-            IntegratedRouteEndpoint::External {
-                node: actual_node, ..
-            },
-        ) if node == actual_node => Ok(terminal_cell),
-        _ => Err(invalid(
-            format!("/routes/{route_index}/{endpoint_kind}"),
-            "route endpoint does not match the prepared endpoint and compatible port set",
-        )),
-    }
-}
-
-fn validate_external_side(
-    input: &ModelInput,
-    placements: &ValidatedPlacements<'_>,
-    source: &IntegratedRouteEndpoint,
-    target: &IntegratedRouteEndpoint,
-    route_index: usize,
-) -> Result<(), IntegratedLayoutDiagnostic> {
-    let pair = match (source, target) {
-        (
-            IntegratedRouteEndpoint::External { side, .. },
-            facility @ IntegratedRouteEndpoint::Facility { .. },
-        )
-        | (
-            facility @ IntegratedRouteEndpoint::Facility { .. },
-            IntegratedRouteEndpoint::External { side, .. },
-        ) => Some((*side, facility)),
-        _ => None,
-    };
-    let Some((external_side, facility)) = pair else {
-        return Ok(());
-    };
-    let IntegratedRouteEndpoint::Facility { instance, port } = facility else {
-        unreachable!()
-    };
-    let placement = placements.by_instance[instance.as_str()];
-    let definition = &input
-        .instances
-        .iter()
-        .find(|candidate| candidate.id == *instance)
-        .expect("prepared endpoint instance exists")
-        .definition;
-    let facility_side = definition
-        .ports
-        .iter()
-        .find(|candidate| candidate.id == *port)
-        .map(|candidate| candidate.edge.rotated_clockwise(placement.rotation))
-        .ok_or_else(|| {
-            invalid(
-                format!("/routes/{route_index}"),
-                "selected facility port is missing",
-            )
-        })?;
-    if external_side != facility_side {
-        return Err(invalid(
-            format!("/routes/{route_index}"),
-            "external connection side does not match the selected facility port side",
-        ));
-    }
-    Ok(())
-}
-
-fn used_geometry_bounds(report: &IntegratedLayoutReport) -> (i64, i64, i64, i64) {
-    let mut minimum_x = i64::MAX;
-    let mut minimum_y = i64::MAX;
-    let mut maximum_x = i64::MIN;
-    let mut maximum_y = i64::MIN;
-    for placement in &report.placements {
-        minimum_x = minimum_x.min(placement.x);
-        minimum_y = minimum_y.min(placement.y);
-        maximum_x = maximum_x.max(placement.x + placement.width - 1);
-        maximum_y = maximum_y.max(placement.y + placement.height - 1);
-    }
-    for position in report
-        .routes
-        .iter()
-        .flat_map(|route| route.cells.iter())
-        .chain(
-            report
-                .logistics_components
-                .iter()
-                .map(|component| &component.position),
-        )
-    {
-        minimum_x = minimum_x.min(position.x);
-        minimum_y = minimum_y.min(position.y);
-        maximum_x = maximum_x.max(position.x);
-        maximum_y = maximum_y.max(position.y);
-    }
-    if minimum_x == i64::MAX {
-        (0, 0, 0, 0)
-    } else {
-        (
-            minimum_x,
-            minimum_y,
-            maximum_x - minimum_x + 1,
-            maximum_y - minimum_y + 1,
-        )
-    }
-}
-
 fn validate_crossings(
     input: &ModelInput,
     components: &ValidatedLogisticsComponentCatalog,
@@ -464,7 +591,7 @@ fn validate_crossings(
                 }
                 _ => {
                     return Err(invalid(
-                        "/routes",
+                        "/transport_networks",
                         format!(
                             "same-layer cell {cell} has {} channels without a valid perpendicular bridge crossing",
                             shapes.len()
@@ -475,12 +602,30 @@ fn validate_crossings(
         }
     }
 
+    let known_component_ids = report
+        .logistics_components
+        .iter()
+        .map(|component| component.id.as_str())
+        .collect::<BTreeSet<_>>();
+    for (network_index, network) in report.transport_networks.iter().enumerate() {
+        if network
+            .component_ids
+            .iter()
+            .any(|id| !known_component_ids.contains(id.as_str()))
+        {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/component_ids"),
+                "transport network references an unknown logistics component",
+            ));
+        }
+    }
+
     let mut actual_bridges = BTreeSet::new();
     for (index, component) in report.logistics_components.iter().enumerate() {
         if component.kind != LogisticsComponentKind::Bridge {
             return Err(invalid(
                 format!("/logistics_components/{index}/kind"),
-                "sparse witness currently emits only bridge logistics components",
+                "exact baseline witness currently emits only bridge logistics components",
             ));
         }
         let definition = components
@@ -519,24 +664,109 @@ fn validate_crossings(
     Ok(())
 }
 
-fn segment_shape(path: &[usize], index: usize, width: i32) -> SegmentShape {
-    if index == 0 || index + 1 == path.len() {
-        return SegmentShape::Other;
+fn used_geometry_bounds(report: &IntegratedLayoutReport) -> (i64, i64, i64, i64) {
+    let mut minimum_x = i64::MAX;
+    let mut minimum_y = i64::MAX;
+    let mut maximum_x = i64::MIN;
+    let mut maximum_y = i64::MIN;
+    for placement in &report.placements {
+        minimum_x = minimum_x.min(placement.x);
+        minimum_y = minimum_y.min(placement.y);
+        maximum_x = maximum_x.max(placement.x + placement.width - 1);
+        maximum_y = maximum_y.max(placement.y + placement.height - 1);
     }
-    let previous = path[index - 1];
-    let current = path[index];
-    let next = path[index + 1];
-    if previous % width as usize == current % width as usize
-        && current % width as usize == next % width as usize
+    for position in report
+        .transport_networks
+        .iter()
+        .flat_map(|network| network.cells.iter())
+        .chain(
+            report
+                .logistics_components
+                .iter()
+                .map(|component| &component.position),
+        )
     {
-        SegmentShape::Vertical
-    } else if previous / width as usize == current / width as usize
-        && current / width as usize == next / width as usize
-    {
-        SegmentShape::Horizontal
+        minimum_x = minimum_x.min(position.x);
+        minimum_y = minimum_y.min(position.y);
+        maximum_x = maximum_x.max(position.x);
+        maximum_y = maximum_y.max(position.y);
+    }
+    if minimum_x == i64::MAX {
+        (0, 0, 0, 0)
     } else {
-        SegmentShape::Other
+        (
+            minimum_x,
+            minimum_y,
+            maximum_x - minimum_x + 1,
+            maximum_y - minimum_y + 1,
+        )
     }
+}
+
+fn checked_cell(
+    input: &ModelInput,
+    position: &WorldGridPosition,
+    path: &str,
+) -> Result<usize, IntegratedLayoutDiagnostic> {
+    if position.x < 0
+        || position.y < 0
+        || position.x >= i64::from(input.width)
+        || position.y >= i64::from(input.height)
+    {
+        return Err(invalid(
+            path,
+            "transport geometry is outside the hard layout bounds",
+        ));
+    }
+    Ok(grid_index(
+        position.x as i32,
+        position.y as i32,
+        input.width,
+    ))
+}
+
+fn add_rate(
+    rates: &mut BTreeMap<usize, Rate>,
+    cell: usize,
+    rate: Rate,
+    network_index: usize,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let total = rates.entry(cell).or_insert(Rate::zero());
+    *total = total
+        .checked_add(rate)
+        .map_err(|error| arithmetic_invalid(network_index, error.message))?;
+    Ok(())
+}
+
+fn add_named_rate(
+    rates: &mut BTreeMap<(String, bool), Rate>,
+    key: (String, bool),
+    rate: Rate,
+    network_index: usize,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let total = rates.entry(key).or_insert(Rate::zero());
+    *total = total
+        .checked_add(rate)
+        .map_err(|error| arithmetic_invalid(network_index, error.message))?;
+    Ok(())
+}
+
+fn rate_at(rates: &BTreeMap<usize, Rate>, cell: usize) -> Rate {
+    rates.get(&cell).copied().unwrap_or_else(Rate::zero)
+}
+
+fn endpoint_node(endpoint: &EndpointInput) -> &str {
+    match endpoint {
+        EndpointInput::Facility { instance, .. } => instance,
+        EndpointInput::External { node } => node,
+    }
+}
+
+fn arithmetic_invalid(network_index: usize, message: String) -> IntegratedLayoutDiagnostic {
+    invalid(
+        format!("/transport_networks/{network_index}"),
+        format!("transport network rate arithmetic failed: {message}"),
+    )
 }
 
 fn layer_index(transport: TransportKind) -> usize {
@@ -547,5 +777,5 @@ fn layer_index(transport: TransportKind) -> usize {
 }
 
 fn invalid(path: impl Into<String>, message: impl Into<String>) -> IntegratedLayoutDiagnostic {
-    IntegratedLayoutDiagnostic::error("constructed-layout-witness-invalid", path, None, message)
+    IntegratedLayoutDiagnostic::error("invalid-integrated-layout-witness", path, None, message)
 }

@@ -15,8 +15,8 @@ use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
 use super::{
     EndpointInput, ExactModelMetrics, FacilityPortEdge, InstanceInput, IntegratedLayoutDiagnostic,
-    IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRouteEndpoint, ModelInput,
-    TransportKind, ValidatedLogisticsComponentCatalog, witness,
+    IntegratedLayoutReport, IntegratedLayoutStatus, ModelInput, TransportKind,
+    TransportNetworkEndpoint, ValidatedLogisticsComponentCatalog, witness,
 };
 use crate::logistics::LogisticsComponentKind;
 
@@ -49,7 +49,7 @@ struct ModelInstance {
 }
 
 struct EndpointOption {
-    endpoint: IntegratedRouteEndpoint,
+    endpoint: TransportNetworkEndpoint,
     cell: usize,
     selected: DomainId,
     external_side: Option<FacilityPortEdge>,

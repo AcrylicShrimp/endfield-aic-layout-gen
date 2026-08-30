@@ -30,8 +30,8 @@ pub use report::{
     ExactModelMetrics, ExactProofStatus, ExactSolveReport, ExactTerminationReason,
     ExactValidationStatus, INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic,
     IntegratedLayoutPhase, IntegratedLayoutPhaseAttempt, IntegratedLayoutPhaseOptimization,
-    IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRoute, IntegratedRouteEndpoint,
-    PlacedLogisticsComponent, RouteRequirementFingerprint,
+    IntegratedLayoutReport, IntegratedLayoutStatus, PlacedLogisticsComponent, TransportNetwork,
+    TransportNetworkEndpoint, TransportNetworkSegment, TransportNetworkTerminal,
 };
 pub use score::{DeterministicCandidateKey, LayoutScore};
 
@@ -121,9 +121,9 @@ pub(super) fn canonicalize_report_geometry(report: &mut IntegratedLayoutReport) 
         minimum_y = minimum_y.min(placement.y);
     }
     for position in report
-        .routes
+        .transport_networks
         .iter()
-        .flat_map(|route| route.cells.iter())
+        .flat_map(|network| network.cells.iter())
         .chain(
             report
                 .logistics_components
@@ -146,9 +146,9 @@ pub(super) fn canonicalize_report_geometry(report: &mut IntegratedLayoutReport) 
         placement.y -= minimum_y;
     }
     for position in report
-        .routes
+        .transport_networks
         .iter_mut()
-        .flat_map(|route| route.cells.iter_mut())
+        .flat_map(|network| network.cells.iter_mut())
         .chain(
             report
                 .logistics_components
@@ -159,15 +159,27 @@ pub(super) fn canonicalize_report_geometry(report: &mut IntegratedLayoutReport) 
         position.x -= minimum_x;
         position.y -= minimum_y;
     }
+    for network in &mut report.transport_networks {
+        for segment in &mut network.segments {
+            segment.from.x -= minimum_x;
+            segment.from.y -= minimum_y;
+            segment.to.x -= minimum_x;
+            segment.to.y -= minimum_y;
+        }
+        for terminal in &mut network.terminals {
+            terminal.position.x -= minimum_x;
+            terminal.position.y -= minimum_y;
+        }
+    }
     let width = report
         .placements
         .iter()
         .map(|placement| placement.x + placement.width)
         .chain(
             report
-                .routes
+                .transport_networks
                 .iter()
-                .flat_map(|route| route.cells.iter().map(|cell| cell.x + 1)),
+                .flat_map(|network| network.cells.iter().map(|cell| cell.x + 1)),
         )
         .chain(
             report
@@ -183,9 +195,9 @@ pub(super) fn canonicalize_report_geometry(report: &mut IntegratedLayoutReport) 
         .map(|placement| placement.y + placement.height)
         .chain(
             report
-                .routes
+                .transport_networks
                 .iter()
-                .flat_map(|route| route.cells.iter().map(|cell| cell.y + 1)),
+                .flat_map(|network| network.cells.iter().map(|cell| cell.y + 1)),
         )
         .chain(
             report
@@ -196,20 +208,6 @@ pub(super) fn canonicalize_report_geometry(report: &mut IntegratedLayoutReport) 
         .max()
         .unwrap_or(0);
     report.bounds = Some(FacilityPlacementBounds { width, height });
-}
-
-fn route_turn_count(route: &IntegratedRoute) -> usize {
-    route
-        .cells
-        .windows(3)
-        .filter(|cells| {
-            let first_dx = cells[1].x - cells[0].x;
-            let first_dy = cells[1].y - cells[0].y;
-            let second_dx = cells[2].x - cells[1].x;
-            let second_dy = cells[2].y - cells[1].y;
-            (first_dx, first_dy) != (second_dx, second_dy)
-        })
-        .count()
 }
 
 #[cfg(test)]
