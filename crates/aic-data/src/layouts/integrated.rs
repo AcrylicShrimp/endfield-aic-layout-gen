@@ -33,11 +33,13 @@ use super::WorldGridPosition;
 use super::placement::solve_facility_placement_feasibly_with_time_limit;
 
 mod html;
+mod iterative;
 mod networks;
 mod sparse;
 mod witness;
 
 pub use html::render_integrated_layout_html;
+pub use iterative::construct_iterative_scc_layout_with_time_limit;
 
 const STAGE: &str = "integrated-layout";
 const COORDINATE_ROUTING_CLEARANCE: i64 = 10;
@@ -60,7 +62,32 @@ pub struct IntegratedLayoutReport {
     pub placements: Vec<FacilityPlacement>,
     pub logistics_components: Vec<PlacedLogisticsComponent>,
     pub routes: Vec<IntegratedRoute>,
+    pub phases: Vec<IntegratedLayoutPhase>,
     pub diagnostics: Vec<IntegratedLayoutDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct IntegratedLayoutPhase {
+    pub index: usize,
+    pub introduced_components: Vec<String>,
+    pub introduced_facilities: Vec<String>,
+    pub cumulative_facility_count: usize,
+    pub selected_movement_radius: Option<i64>,
+    pub bounds: FacilityPlacementBounds,
+    pub placements: Vec<FacilityPlacement>,
+    pub logistics_components: Vec<PlacedLogisticsComponent>,
+    pub routes: Vec<IntegratedRoute>,
+    pub route_turns: usize,
+    pub route_cells: usize,
+    pub bridge_count: usize,
+    pub attempts: Vec<IntegratedLayoutPhaseAttempt>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct IntegratedLayoutPhaseAttempt {
+    pub movement_radius: Option<i64>,
+    pub status: IntegratedLayoutStatus,
+    pub diagnostic_code: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -162,6 +189,7 @@ impl IntegratedLayoutReport {
             placements: Vec::new(),
             logistics_components: Vec::new(),
             routes: Vec::new(),
+            phases: Vec::new(),
             diagnostics: vec![diagnostic],
         }
     }
@@ -1565,6 +1593,7 @@ fn extract_report(
         placements,
         logistics_components: Vec::new(),
         routes,
+        phases: Vec::new(),
         diagnostics: vec![IntegratedLayoutDiagnostic::info(
             if status == IntegratedLayoutStatus::Optimal {
                 "integrated-layout-optimal"

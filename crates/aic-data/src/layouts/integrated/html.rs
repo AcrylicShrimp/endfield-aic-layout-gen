@@ -407,6 +407,7 @@ mod tests {
                     WorldGridPosition { x: 1, y: 3 },
                 ],
             }],
+            phases: Vec::new(),
             diagnostics: Vec::new(),
         };
 

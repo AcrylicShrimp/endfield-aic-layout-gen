@@ -12,7 +12,8 @@ use aic_data::facilities::{
 use aic_data::layouts::{
     FacilityPlacementDiagnostic, FacilityPlacementReport, FacilityPlacementRequest,
     IntegratedLayoutDiagnostic, IntegratedLayoutReport,
-    construct_coordinate_integrated_layout_with_time_limit, construct_sparse_integrated_layout,
+    construct_coordinate_integrated_layout_with_time_limit,
+    construct_iterative_scc_layout_with_time_limit, construct_sparse_integrated_layout,
     render_integrated_layout_html, solve_facility_placement,
     solve_integrated_layout_with_time_limit,
 };
@@ -234,6 +235,7 @@ enum LayoutsCommand {
 #[derive(Debug, Clone, Copy, ValueEnum)]
 enum IntegratedLayoutStrategy {
     CoordinateFeasibility,
+    IterativeScc,
     Dense,
     SparseFeasibility,
 }
@@ -1153,6 +1155,15 @@ fn solve_layout(
                 Duration::from_secs(time_limit_seconds.get()),
             )
         }
+        IntegratedLayoutStrategy::IterativeScc => construct_iterative_scc_layout_with_time_limit(
+            &instance_wiring_report,
+            &facilities,
+            &items,
+            &transports,
+            &logistics_components,
+            &request,
+            Duration::from_secs(time_limit_seconds.get()),
+        ),
         IntegratedLayoutStrategy::Dense => solve_integrated_layout_with_time_limit(
             &instance_wiring_report,
             &facilities,
@@ -1289,6 +1300,15 @@ fn solve_contextual_layout(
                 Duration::from_secs(time_limit_seconds.get()),
             )
         }
+        IntegratedLayoutStrategy::IterativeScc => construct_iterative_scc_layout_with_time_limit(
+            &wiring,
+            &facilities,
+            &items,
+            &transports,
+            &logistics_components,
+            &request,
+            Duration::from_secs(time_limit_seconds.get()),
+        ),
         IntegratedLayoutStrategy::Dense => solve_integrated_layout_with_time_limit(
             &wiring,
             &facilities,
