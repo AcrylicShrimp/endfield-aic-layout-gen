@@ -175,11 +175,56 @@ fn solve_integrated_layout_with_optional_time_limit(
     time_limit: Option<Duration>,
 ) -> IntegratedLayoutReport {
     match prepare_model(instance_wiring, facilities, items, transports, request) {
-        Ok(input) => solve(input, time_limit),
+        Ok(input) => match required_facility_area(&input) {
+            Ok(required_area) => {
+                let available_area = i64::from(input.width) * i64::from(input.height);
+                if required_area > available_area {
+                    IntegratedLayoutReport::failure(
+                        IntegratedLayoutStatus::Infeasible,
+                        IntegratedLayoutDiagnostic::error(
+                            "facility-area-exceeds-layout-bounds",
+                            "/",
+                            None,
+                            format!(
+                                "facility footprints require at least {required_area} cells but hard layout bounds provide {available_area} cells"
+                            ),
+                        ),
+                    )
+                } else {
+                    solve(input, time_limit)
+                }
+            }
+            Err(diagnostic) => {
+                IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
+            }
+        },
         Err(diagnostic) => {
             IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
         }
     }
+}
+
+fn required_facility_area(input: &ModelInput) -> Result<i64, IntegratedLayoutDiagnostic> {
+    input.instances.iter().try_fold(0_i64, |total, instance| {
+        let area = instance
+            .definition
+            .footprint
+            .width
+            .checked_mul(instance.definition.footprint.height)
+            .ok_or_else(|| facility_area_overflow(&instance.id))?;
+        total
+            .checked_add(area)
+            .ok_or_else(|| facility_area_overflow(&instance.id))
+    })
+}
+
+fn facility_area_overflow(instance: &str) -> IntegratedLayoutDiagnostic {
+    IntegratedLayoutDiagnostic::error(
+        "facility-area-arithmetic-overflow",
+        "/",
+        Some(instance.to_string()),
+        "required facility area exceeds the exact layout area domain",
+    )
 }
 
 struct ModelInput {
@@ -1430,6 +1475,31 @@ mod tests {
         ));
         assert_eq!(report.routes[0].cells.len(), 2);
         assert_eq!(report.placements.len(), 2);
+    }
+
+    #[test]
+    fn rejects_facility_area_above_hard_layout_bounds_before_search() {
+        let (facilities, items, transports) = catalogs();
+        let report = solve_integrated_layout(
+            &wiring(),
+            &facilities,
+            &items,
+            &transports,
+            &FacilityPlacementRequest {
+                schema_version: 2,
+                max_width: 1,
+                max_height: 1,
+            },
+        );
+
+        assert!(!report.success);
+        assert_eq!(report.status, IntegratedLayoutStatus::Infeasible);
+        assert_eq!(
+            report.diagnostics[0].code,
+            "facility-area-exceeds-layout-bounds"
+        );
+        assert!(report.diagnostics[0].message.contains("2 cells"));
+        assert!(report.diagnostics[0].message.contains("1 cells"));
     }
 
     #[test]
