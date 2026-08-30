@@ -6,6 +6,11 @@ This directory stores normalized diagnostic measurements, not generated layouts 
 
 `heavy-xiranite-forge.iterative-scc.known-bad.json` records the behavior before the incremental optimizer cutover. Its `baseline_status` is `known-bad-diagnostic-only`. Tests and later implementations must not preserve its coordinates, perimeter routes, or score.
 
+The Heavy Xiranite research checkpoints are documented in
+`heavy-xiranite-minimum-rate.first-search-space-report.md` and
+`heavy-xiranite-minimum-rate.second-model-structure-report.md`. Their 50 by 50 bounds are diagnostic
+request ceilings only, not project defaults or canonical game limits.
+
 Regenerate it from a release binary with:
 
 ```bash

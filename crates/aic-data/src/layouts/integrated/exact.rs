@@ -1,7 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::{Duration, Instant};
 
-use pumpkin_solver::Solver;
 use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
 use super::{
@@ -19,6 +18,7 @@ mod formulation;
 mod hint;
 mod metrics;
 mod objective;
+mod recorder;
 
 use extract::extract_report;
 use formulation::{
@@ -30,6 +30,7 @@ use formulation::{
 use hint::build_solver_hint;
 use metrics::{elapsed_millis, finish_report};
 use objective::{build_objectives, optimise_lexicographically};
+use recorder::{ConstraintFamily, RecordedModel, VariableFamily};
 
 struct Candidate {
     rotation: i64,
@@ -107,43 +108,41 @@ struct ModelBranchComponent {
 }
 
 fn post_presence(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
+    variable_family: VariableFamily,
+    constraint_family: ConstraintFamily,
     name: String,
     variables: impl Iterator<Item = DomainId>,
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) -> DomainId {
     let variables = variables.collect::<Vec<_>>();
-    let presence = solver.new_named_bounded_integer(0, 1, name);
+    let presence = solver.new_variable(variable_family, 0, 1, name);
     for variable in &variables {
-        solver
-            .add_constraint(pumpkin_solver::less_than_or_equals(
-                [variable.scaled(1), presence.scaled(-1)],
-                0,
-                tag,
-            ))
-            .post();
+        solver.post_less_than_or_equals(
+            constraint_family,
+            vec![variable.scaled(1), presence.scaled(-1)],
+            0,
+            1,
+            tag,
+        );
     }
     let mut definition = vec![presence.scaled(1)];
     definition.extend(variables.iter().map(|variable| variable.scaled(-1)));
-    solver
-        .add_constraint(pumpkin_solver::less_than_or_equals(definition, 0, tag))
-        .post();
+    solver.post_less_than_or_equals(constraint_family, definition, 0, 1, tag);
     presence
 }
 
 fn post_arm(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
     name: String,
     terminal_presence: DomainId,
     grid_arcs: &[DomainId],
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) -> DomainId {
-    let arm = solver.new_named_bounded_integer(0, 1, name);
+    let arm = solver.new_variable(VariableFamily::RouteArm, 0, 1, name);
     let mut definition = vec![arm.scaled(1), terminal_presence.scaled(-1)];
     definition.extend(grid_arcs.iter().map(|arc| arc.scaled(-1)));
-    solver
-        .add_constraint(pumpkin_solver::equals(definition, 0, tag))
-        .post();
+    solver.post_equals(ConstraintFamily::RouteArm, definition, 0, 1, tag);
     arm
 }
 
@@ -226,7 +225,7 @@ pub(super) fn solve_with_prior_solution(
         grid_cell_count: input.cell_count as usize,
         ..ExactModelMetrics::default()
     };
-    let mut solver = Solver::default();
+    let mut solver = RecordedModel::default();
     let tag = solver.new_constraint_tag();
     let cell_count = input.cell_count as usize;
     let mut occupancy = vec![Vec::<DomainId>::new(); cell_count];
@@ -248,6 +247,7 @@ pub(super) fn solve_with_prior_solution(
         }
         post_equals_one(
             &mut solver,
+            ConstraintFamily::PlacementChoice,
             candidates.iter().map(|candidate| candidate.selected),
             tag,
         );
@@ -263,7 +263,12 @@ pub(super) fn solve_with_prior_solution(
     }
 
     for cell_candidates in &occupancy {
-        post_at_most_one(&mut solver, cell_candidates.iter().copied(), tag);
+        post_at_most_one(
+            &mut solver,
+            ConstraintFamily::FacilityNonOverlap,
+            cell_candidates.iter().copied(),
+            tag,
+        );
     }
 
     let mut edge_endpoint_options = Vec::with_capacity(input.edges.len());
@@ -390,7 +395,8 @@ pub(super) fn solve_with_prior_solution(
 
         let mut route_cells = Vec::with_capacity(cell_count);
         for cell in 0..cell_count {
-            let route_cell = solver.new_named_bounded_integer(
+            let route_cell = solver.new_variable(
+                VariableFamily::RouteCell,
                 0,
                 1,
                 format!("network-{network_index}-cell-{cell}"),
@@ -412,9 +418,20 @@ pub(super) fn solve_with_prior_solution(
                     .flatten()
                     .map(|(variable, units)| variable.scaled(*units)),
             );
-            solver
-                .add_constraint(pumpkin_solver::equals(conservation, 0, tag))
-                .post();
+            let maximum_flow_coefficient = supply_by_cell[cell]
+                .iter()
+                .chain(&demand_by_cell[cell])
+                .flatten()
+                .map(|(_, units)| units.unsigned_abs() as u64)
+                .max()
+                .unwrap_or(1);
+            solver.post_equals(
+                ConstraintFamily::FlowConservation,
+                conservation,
+                0,
+                maximum_flow_coefficient,
+                tag,
+            );
 
             let mut incoming_flow: [FlowTerms; 4] =
                 std::array::from_fn(|direction| supply_by_cell[cell][direction].clone());
@@ -432,6 +449,8 @@ pub(super) fn solve_with_prior_solution(
             let incoming_arms: [DomainId; 4] = std::array::from_fn(|direction| {
                 let terminal_presence = post_presence(
                     &mut solver,
+                    VariableFamily::TerminalPresence,
+                    ConstraintFamily::TerminalPresence,
                     format!(
                         "network-{network_index}-cell-{cell}-{:?}-supply",
                         DIRECTIONS[direction]
@@ -464,6 +483,8 @@ pub(super) fn solve_with_prior_solution(
             let outgoing_arms: [DomainId; 4] = std::array::from_fn(|direction| {
                 let terminal_presence = post_presence(
                     &mut solver,
+                    VariableFamily::TerminalPresence,
+                    ConstraintFamily::TerminalPresence,
                     format!(
                         "network-{network_index}-cell-{cell}-{:?}-demand",
                         DIRECTIONS[direction]
@@ -494,29 +515,34 @@ pub(super) fn solve_with_prior_solution(
                 )
             });
             for direction in 0..4 {
-                solver
-                    .add_constraint(pumpkin_solver::less_than_or_equals(
-                        [
-                            incoming_arms[direction].scaled(1),
-                            outgoing_arms[direction].scaled(1),
-                        ],
-                        1,
-                        tag,
-                    ))
-                    .post();
+                solver.post_less_than_or_equals(
+                    ConstraintFamily::OpposingArms,
+                    vec![
+                        incoming_arms[direction].scaled(1),
+                        outgoing_arms[direction].scaled(1),
+                    ],
+                    1,
+                    1,
+                    tag,
+                );
                 for flow in [&incoming_flow[direction], &outgoing_flow[direction]] {
                     if flow.is_empty() {
                         continue;
                     }
-                    solver
-                        .add_constraint(pumpkin_solver::less_than_or_equals(
-                            flow.iter()
-                                .map(|(variable, coefficient)| variable.scaled(*coefficient))
-                                .collect::<Vec<_>>(),
-                            network.line_capacity_units(),
-                            tag,
-                        ))
-                        .post();
+                    let maximum_coefficient = flow
+                        .iter()
+                        .map(|(_, coefficient)| coefficient.unsigned_abs() as u64)
+                        .max()
+                        .unwrap_or(1);
+                    solver.post_less_than_or_equals(
+                        ConstraintFamily::LineCapacity,
+                        flow.iter()
+                            .map(|(variable, coefficient)| variable.scaled(*coefficient))
+                            .collect(),
+                        network.line_capacity_units(),
+                        maximum_coefficient,
+                        tag,
+                    );
                 }
             }
 
@@ -555,27 +581,32 @@ pub(super) fn solve_with_prior_solution(
                 )
                 .collect::<Vec<_>>();
             for active in &active_variables {
-                solver
-                    .add_constraint(pumpkin_solver::less_than_or_equals(
-                        [active.scaled(1), route_cell.scaled(-1)],
-                        0,
-                        tag,
-                    ))
-                    .post();
+                solver.post_less_than_or_equals(
+                    ConstraintFamily::RouteCellActivation,
+                    vec![active.scaled(1), route_cell.scaled(-1)],
+                    0,
+                    1,
+                    tag,
+                );
             }
             let mut route_definition = vec![route_cell.scaled(1)];
             route_definition.extend(active_variables.iter().map(|variable| variable.scaled(-1)));
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(
-                    route_definition,
-                    0,
-                    tag,
-                ))
-                .post();
+            solver.post_less_than_or_equals(
+                ConstraintFamily::RouteCellActivation,
+                route_definition,
+                0,
+                1,
+                tag,
+            );
         }
 
         for pair in undirected_arc_pairs(&arcs) {
-            post_at_most_one(&mut solver, pair.into_iter().map(|arc| arc.selected), tag);
+            post_at_most_one(
+                &mut solver,
+                ConstraintFamily::DirectedArcExclusion,
+                pair.into_iter().map(|arc| arc.selected),
+                tag,
+            );
         }
         model_networks.push(ModelNetwork {
             input_index: network_index,
@@ -602,15 +633,20 @@ pub(super) fn solve_with_prior_solution(
             .filter(|(_, network)| input.networks[network.input_index].transport() == transport)
             .collect::<Vec<_>>();
         for cell in 0..cell_count {
-            let selected =
-                solver.new_named_bounded_integer(0, 1, format!("{transport_name}-bridge-{cell}"));
+            let selected = solver.new_variable(
+                VariableFamily::Bridge,
+                0,
+                1,
+                format!("{transport_name}-bridge-{cell}"),
+            );
             let rotations = definition
                 .allowed_rotations
                 .iter()
                 .map(|rotation| {
                     (
                         *rotation,
-                        solver.new_named_bounded_integer(
+                        solver.new_variable(
+                            VariableFamily::BridgeRotation,
                             0,
                             1,
                             format!("{transport_name}-bridge-{cell}-rotation-{rotation}"),
@@ -623,9 +659,13 @@ pub(super) fn solve_with_prior_solution(
                 .map(|(_, variable)| variable.scaled(1))
                 .collect::<Vec<_>>();
             rotation_definition.push(selected.scaled(-1));
-            solver
-                .add_constraint(pumpkin_solver::equals(rotation_definition, 0, tag))
-                .post();
+            solver.post_equals(
+                ConstraintFamily::BridgeRotation,
+                rotation_definition,
+                0,
+                1,
+                tag,
+            );
             let (owner_variables, crossing_constraints) = post_bridge_crossing(
                 &mut solver,
                 transport_name,
@@ -682,9 +722,14 @@ pub(super) fn solve_with_prior_solution(
         }
     };
 
+    let (facility_network_incidences, shared_network_facility_pairs) =
+        logical_coupling_metrics(&input);
+    solver.set_logical_coupling(facility_network_incidences, shared_network_facility_pairs);
+    let model_complexity = solver.metrics();
+
     let construction_ms = elapsed_millis(construction_started.elapsed());
     let search = optimise_lexicographically(
-        &mut solver,
+        solver.solver_mut(),
         objectives,
         &solver_hint,
         time_limit,
@@ -730,6 +775,7 @@ pub(super) fn solve_with_prior_solution(
     finish_report(
         report,
         model_metrics,
+        model_complexity,
         construction_ms,
         search_ms,
         first_incumbent_ms,
@@ -737,6 +783,29 @@ pub(super) fn solve_with_prior_solution(
         validation,
         objective_stages,
     )
+}
+
+fn logical_coupling_metrics(input: &ModelInput) -> (u64, u64) {
+    let mut incidences = 0_u64;
+    let mut shared_pairs = 0_u64;
+    for network in &input.networks {
+        let facilities = network
+            .route_indices()
+            .iter()
+            .flat_map(|route_index| {
+                let edge = &input.edges[*route_index];
+                [&edge.source, &edge.target]
+            })
+            .filter_map(|endpoint| match endpoint {
+                EndpointInput::Facility { instance, .. } => Some(instance.as_str()),
+                EndpointInput::External { .. } => None,
+            })
+            .collect::<BTreeSet<_>>();
+        incidences += facilities.len() as u64;
+        let count = facilities.len() as u64;
+        shared_pairs += count.saturating_mul(count.saturating_sub(1)) / 2;
+    }
+    (incidences, shared_pairs)
 }
 
 fn validate_objective_witness(

@@ -5,10 +5,12 @@ use super::super::{
     ExactSolveReport, ExactTerminationReason, ExactValidationStatus, IntegratedLayoutReport,
     IntegratedLayoutStatus, LayoutScore,
 };
+use crate::research::ModelComplexityMetrics;
 
 pub(super) fn finish_report(
     mut report: IntegratedLayoutReport,
     model: ExactModelMetrics,
+    model_complexity: ModelComplexityMetrics,
     construction_ms: u64,
     search_ms: u64,
     first_incumbent_ms: Option<u64>,
@@ -42,6 +44,7 @@ pub(super) fn finish_report(
     report.exact = Some(ExactSolveReport {
         formulation: "joint-lexicographic-layout-v4",
         model,
+        model_complexity,
         construction_ms,
         search_ms,
         first_incumbent_ms,

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const SEARCH_SPACE_ANALYSIS_SCHEMA_VERSION: u32 = 1;
+pub const SEARCH_SPACE_ANALYSIS_SCHEMA_VERSION: u32 = 2;
 pub const EXPERIMENT_RUN_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -176,6 +176,26 @@ pub struct ModelComplexityMetrics {
     pub estimated_bytes: Option<u64>,
 }
 
+impl ModelComplexityMetrics {
+    pub fn unavailable() -> Self {
+        Self {
+            variables: VariableDomainMetrics {
+                coverage: MetricCoverage::Unavailable,
+                total_variables: 0,
+                boolean_variables: 0,
+                integer_variables: 0,
+                log2_domain_volume: 0.0,
+                by_family: Vec::new(),
+            },
+            constraints: None,
+            factor_graph: None,
+            coupling: None,
+            symmetry: None,
+            estimated_bytes: None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct VariableDomainMetrics {
@@ -238,7 +258,7 @@ pub struct ConstraintFamilyMetrics {
     pub maximum_absolute_coefficient: u64,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "kebab-case")]
 pub enum ConstraintRelation {
     Equality,
@@ -267,6 +287,15 @@ pub struct FactorGraphMetrics {
     pub connected_components: Option<u64>,
     pub articulation_points: Option<u64>,
     pub retained_full_graph: bool,
+    pub family_incidences: Vec<FamilyIncidenceMetrics>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct FamilyIncidenceMetrics {
+    pub variable_family: String,
+    pub constraint_family: String,
+    pub incidences: u64,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]

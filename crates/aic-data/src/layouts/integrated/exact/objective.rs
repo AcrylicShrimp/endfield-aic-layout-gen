@@ -18,6 +18,7 @@ use pumpkin_solver::core::termination::TimeBudget;
 use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
 use super::hint::SolverHint;
+use super::recorder::{ConstraintFamily, RecordedModel, VariableFamily};
 use super::{Arc, ModelBranchComponent, ModelBridge, ModelNetwork, post_presence};
 use crate::layouts::integrated::{
     ExactModelMetrics, ExactObjectiveKind, ExactObjectiveStageReport, ExactProofStatus,
@@ -226,7 +227,7 @@ pub(super) fn optimise_lexicographically(
 }
 
 pub(super) fn build_objectives(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
     input: &ModelInput,
     facility_occupancy: &[Vec<DomainId>],
     networks: &[ModelNetwork],
@@ -242,53 +243,85 @@ pub(super) fn build_objectives(
                 .iter()
                 .copied()
                 .chain(networks.iter().map(|network| network.route_cells[cell]));
-            post_presence(solver, format!("used-geometry-cell-{cell}"), variables, tag)
+            post_presence(
+                solver,
+                VariableFamily::Objective,
+                ConstraintFamily::UsedGeometry,
+                format!("used-geometry-cell-{cell}"),
+                variables,
+                tag,
+            )
         })
         .collect::<Vec<_>>();
     metrics.objective_variables += used_cells.len() + 2;
 
     require_canonical_origin(solver, input, &used_cells, tag);
-    let used_width = solver.new_named_bounded_integer(1, input.width, "used-bounding-box-width");
-    let used_height = solver.new_named_bounded_integer(1, input.height, "used-bounding-box-height");
-    solver
-        .add_constraint(pumpkin_solver::maximum(
-            used_cells.iter().enumerate().map(|(cell, used)| {
+    let used_width = solver.new_variable(
+        VariableFamily::Objective,
+        1,
+        input.width,
+        "used-bounding-box-width",
+    );
+    let used_height = solver.new_variable(
+        VariableFamily::Objective,
+        1,
+        input.height,
+        "used-bounding-box-height",
+    );
+    solver.post_maximum(
+        ConstraintFamily::BoundingBox,
+        used_cells
+            .iter()
+            .enumerate()
+            .map(|(cell, used)| {
                 let x = i32::try_from(cell).expect("grid index fits i32") % input.width;
                 used.scaled(x + 1)
-            }),
-            used_width,
-            tag,
-        ))
-        .post();
-    solver
-        .add_constraint(pumpkin_solver::maximum(
-            used_cells.iter().enumerate().map(|(cell, used)| {
+            })
+            .collect(),
+        used_width,
+        input.width as u64,
+        tag,
+    );
+    solver.post_maximum(
+        ConstraintFamily::BoundingBox,
+        used_cells
+            .iter()
+            .enumerate()
+            .map(|(cell, used)| {
                 let y = i32::try_from(cell).expect("grid index fits i32") / input.width;
                 used.scaled(y + 1)
-            }),
-            used_height,
-            tag,
-        ))
-        .post();
-    let used_bounding_box_area =
-        solver.new_named_bounded_integer(1, input.cell_count, "used-bounding-box-area");
-    solver
-        .add_constraint(pumpkin_solver::times(
-            used_width,
-            used_height,
-            used_bounding_box_area,
-            tag,
-        ))
-        .post();
-    let maximum_used_side =
-        solver.new_named_bounded_integer(1, input.width.max(input.height), "maximum-used-side");
-    solver
-        .add_constraint(pumpkin_solver::maximum(
-            [used_width, used_height],
-            maximum_used_side,
-            tag,
-        ))
-        .post();
+            })
+            .collect(),
+        used_height,
+        input.height as u64,
+        tag,
+    );
+    let used_bounding_box_area = solver.new_variable(
+        VariableFamily::Objective,
+        1,
+        input.cell_count,
+        "used-bounding-box-area",
+    );
+    solver.post_times(
+        ConstraintFamily::BoundingBox,
+        used_width,
+        used_height,
+        used_bounding_box_area,
+        tag,
+    );
+    let maximum_used_side = solver.new_variable(
+        VariableFamily::Objective,
+        1,
+        input.width.max(input.height),
+        "maximum-used-side",
+    );
+    solver.post_maximum(
+        ConstraintFamily::BoundingBox,
+        vec![used_width.scaled(1), used_height.scaled(1)],
+        maximum_used_side,
+        1,
+        tag,
+    );
     metrics.objective_variables += 4;
 
     let mut physical_tile_variables = Vec::new();
@@ -303,6 +336,8 @@ pub(super) fn build_objectives(
         for cell in 0..cell_count {
             physical_tile_variables.push(post_presence(
                 solver,
+                VariableFamily::Objective,
+                ConstraintFamily::UsedGeometry,
                 format!("{:?}-physical-tile-{cell}", transport).to_lowercase(),
                 transport_networks
                     .iter()
@@ -360,13 +395,15 @@ pub(super) fn build_objectives(
 }
 
 fn require_canonical_origin(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
     input: &ModelInput,
     used_cells: &[DomainId],
     tag: ConstraintTag,
 ) {
     let left_edge = post_presence(
         solver,
+        VariableFamily::Objective,
+        ConstraintFamily::UsedGeometry,
         "used-geometry-touches-left-edge".to_string(),
         used_cells
             .iter()
@@ -379,6 +416,8 @@ fn require_canonical_origin(
     );
     let top_edge = post_presence(
         solver,
+        VariableFamily::Objective,
+        ConstraintFamily::UsedGeometry,
         "used-geometry-touches-top-edge".to_string(),
         used_cells
             .iter()
@@ -389,16 +428,24 @@ fn require_canonical_origin(
             .map(|(_, used)| *used),
         tag,
     );
-    solver
-        .add_constraint(pumpkin_solver::equals([left_edge.scaled(1)], 1, tag))
-        .post();
-    solver
-        .add_constraint(pumpkin_solver::equals([top_edge.scaled(1)], 1, tag))
-        .post();
+    solver.post_equals(
+        ConstraintFamily::CanonicalTranslation,
+        vec![left_edge.scaled(1)],
+        1,
+        1,
+        tag,
+    );
+    solver.post_equals(
+        ConstraintFamily::CanonicalTranslation,
+        vec![top_edge.scaled(1)],
+        1,
+        1,
+        tag,
+    );
 }
 
 fn post_sum_variable(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
     name: &str,
     variables: &[DomainId],
     tag: ConstraintTag,
@@ -411,20 +458,18 @@ fn post_sum_variable(
             format!("objective {name} has more terms than the solver integer domain supports"),
         )
     })?;
-    let total = solver.new_named_bounded_integer(0, upper_bound, name);
+    let total = solver.new_variable(VariableFamily::Objective, 0, upper_bound, name);
     let mut definition = variables
         .iter()
         .map(|variable| variable.scaled(1))
         .collect::<Vec<_>>();
     definition.push(total.scaled(-1));
-    solver
-        .add_constraint(pumpkin_solver::equals(definition, 0, tag))
-        .post();
+    solver.post_equals(ConstraintFamily::ObjectiveDefinition, definition, 0, 1, tag);
     Ok(total)
 }
 
 fn post_network_turn(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
     network_index: usize,
     cell: usize,
     width: i32,
@@ -483,6 +528,8 @@ fn post_network_turn(
     }
     let has_orthogonal_pair = post_presence(
         solver,
+        VariableFamily::Objective,
+        ConstraintFamily::TurnDefinition,
         format!("network-{network_index}-cell-{cell}-has-orthogonal-pair"),
         orthogonal_pairs.iter().copied(),
         tag,
@@ -505,13 +552,14 @@ fn post_network_turn(
 }
 
 fn post_count(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
     name: String,
     variables: impl Iterator<Item = DomainId>,
     tag: ConstraintTag,
 ) -> DomainId {
     let variables = variables.collect::<Vec<_>>();
-    let count = solver.new_named_bounded_integer(
+    let count = solver.new_variable(
+        VariableFamily::Objective,
         0,
         i32::try_from(variables.len()).expect("a grid cell has at most four neighbors"),
         name,
@@ -521,20 +569,18 @@ fn post_count(
         .map(|variable| variable.scaled(1))
         .collect::<Vec<_>>();
     definition.push(count.scaled(-1));
-    solver
-        .add_constraint(pumpkin_solver::equals(definition, 0, tag))
-        .post();
+    solver.post_equals(ConstraintFamily::TurnDefinition, definition, 0, 1, tag);
     count
 }
 
 fn post_exactly_one_indicator(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
     name: String,
     count: DomainId,
     count_upper_bound: usize,
     tag: ConstraintTag,
 ) -> DomainId {
-    let indicator = solver.new_named_bounded_integer(0, 1, name);
+    let indicator = solver.new_variable(VariableFamily::Objective, 0, 1, name);
     let rows = (0..=count_upper_bound)
         .map(|value| {
             vec![
@@ -543,41 +589,44 @@ fn post_exactly_one_indicator(
             ]
         })
         .collect::<Vec<_>>();
-    solver
-        .add_constraint(pumpkin_solver::table([count, indicator], rows, tag))
-        .post();
+    solver.post_table(
+        ConstraintFamily::TurnDefinition,
+        vec![count, indicator],
+        rows,
+        tag,
+    );
     indicator
 }
 
 fn post_and(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
     name: String,
     left: DomainId,
     right: DomainId,
     tag: ConstraintTag,
 ) -> DomainId {
-    let conjunction = solver.new_named_bounded_integer(0, 1, name);
-    solver
-        .add_constraint(pumpkin_solver::less_than_or_equals(
-            [conjunction.scaled(1), left.scaled(-1)],
-            0,
-            tag,
-        ))
-        .post();
-    solver
-        .add_constraint(pumpkin_solver::less_than_or_equals(
-            [conjunction.scaled(1), right.scaled(-1)],
-            0,
-            tag,
-        ))
-        .post();
-    solver
-        .add_constraint(pumpkin_solver::greater_than_or_equals(
-            [conjunction.scaled(1), left.scaled(-1), right.scaled(-1)],
-            -1,
-            tag,
-        ))
-        .post();
+    let conjunction = solver.new_variable(VariableFamily::Objective, 0, 1, name);
+    solver.post_less_than_or_equals(
+        ConstraintFamily::TurnDefinition,
+        vec![conjunction.scaled(1), left.scaled(-1)],
+        0,
+        1,
+        tag,
+    );
+    solver.post_less_than_or_equals(
+        ConstraintFamily::TurnDefinition,
+        vec![conjunction.scaled(1), right.scaled(-1)],
+        0,
+        1,
+        tag,
+    );
+    solver.post_greater_than_or_equals(
+        ConstraintFamily::TurnDefinition,
+        vec![conjunction.scaled(1), left.scaled(-1), right.scaled(-1)],
+        -1,
+        1,
+        tag,
+    );
     conjunction
 }
 

@@ -4,11 +4,12 @@ use crate::facilities::{FacilityPortDirection, FacilityPortEdge};
 use crate::layouts::{FacilityPlacement, FacilityPlacementBounds};
 use crate::logistics::{LogisticsComponentKind, TransportKind};
 use crate::recipes::Rate;
+use crate::research::ModelComplexityMetrics;
 
 use super::WorldGridPosition;
 
 const STAGE: &str = "integrated-layout";
-pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 15;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 16;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -20,7 +21,7 @@ pub enum IntegratedLayoutStatus {
     Unknown,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct IntegratedLayoutReport {
     pub schema_version: u32,
     pub success: bool,
@@ -34,10 +35,11 @@ pub struct IntegratedLayoutReport {
     pub diagnostics: Vec<IntegratedLayoutDiagnostic>,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct ExactSolveReport {
     pub formulation: &'static str,
     pub model: ExactModelMetrics,
+    pub model_complexity: ModelComplexityMetrics,
     pub construction_ms: u64,
     pub search_ms: u64,
     pub first_incumbent_ms: Option<u64>,
@@ -137,7 +139,7 @@ pub enum ExactValidationStatus {
     NotAttempted,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct IntegratedLayoutPhase {
     pub index: usize,
     pub introduced_components: Vec<String>,

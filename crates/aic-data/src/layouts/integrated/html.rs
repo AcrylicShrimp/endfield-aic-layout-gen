@@ -975,6 +975,7 @@ mod tests {
                     hint_variables: usize::from(index > 0),
                     ..ExactModelMetrics::default()
                 },
+                model_complexity: crate::research::ModelComplexityMetrics::unavailable(),
                 construction_ms: 1,
                 search_ms: 2,
                 first_incumbent_ms: Some(1),

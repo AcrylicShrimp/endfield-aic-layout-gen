@@ -3,12 +3,12 @@ use crate::facilities::FacilityPortEdge;
 use crate::logistics::{
     CardinalDirection, LogisticsComponentKind, TransportKind, ValidatedLogisticsComponentCatalog,
 };
-use pumpkin_solver::Solver;
 use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
 use super::super::{
     EndpointInput, InstanceInput, TransportNetworkEndpoint, candidate_port_connections, grid_index,
 };
+use super::recorder::{ConstraintFamily, RecordedModel, VariableFamily};
 use super::{Arc, Candidate, EndpointOption, ModelBranchComponent, ModelInstance, ModelNetwork};
 
 pub(in crate::layouts::integrated) type FlowTerms = Vec<(DomainId, i32)>;
@@ -21,7 +21,7 @@ pub(in crate::layouts::integrated) const DIRECTIONS: [CardinalDirection; 4] = [
 ];
 
 pub(in crate::layouts::integrated) fn generate_candidates(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
     instance: &InstanceInput,
     max_width: i32,
     max_height: i32,
@@ -62,7 +62,8 @@ pub(in crate::layouts::integrated) fn generate_candidates(
                     height,
                     occupied_cells,
                     port_connections,
-                    selected: solver.new_named_bounded_integer(
+                    selected: solver.new_variable(
+                        VariableFamily::Placement,
                         0,
                         1,
                         format!("place-{}-{rotation}-{x}-{y}", instance.id),
@@ -75,7 +76,7 @@ pub(in crate::layouts::integrated) fn generate_candidates(
 }
 
 fn endpoint_options(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
     edge_index: usize,
     endpoint_kind: &str,
     instance: &ModelInstance,
@@ -89,7 +90,8 @@ fn endpoint_options(
             let Some(cell) = candidate.port_connections.get(&port.id).copied() else {
                 continue;
             };
-            let selected = solver.new_named_bounded_integer(
+            let selected = solver.new_variable(
+                VariableFamily::Endpoint,
                 0,
                 1,
                 format!(
@@ -116,17 +118,20 @@ fn endpoint_options(
             .map(|variable| variable.scaled(1))
             .collect::<Vec<_>>();
         definition.push(candidate.selected.scaled(-1));
-        solver
-            .add_constraint(pumpkin_solver::equals(definition, 0, tag))
-            .post();
+        solver.post_equals(ConstraintFamily::EndpointLink, definition, 0, 1, tag);
     }
-    post_equals_one(solver, options.iter().map(|option| option.selected), tag);
+    post_equals_one(
+        solver,
+        ConstraintFamily::EndpointChoice,
+        options.iter().map(|option| option.selected),
+        tag,
+    );
     options
 }
 
 #[allow(clippy::too_many_arguments)]
 pub(in crate::layouts::integrated) fn model_facility_endpoint_options(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
     edge_index: usize,
     endpoint_kind: &str,
     endpoint: &EndpointInput,
@@ -189,7 +194,7 @@ fn opposite(direction: CardinalDirection) -> CardinalDirection {
 }
 
 pub(in crate::layouts::integrated) fn grid_arcs(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
     network_index: usize,
     width: i32,
     height: i32,
@@ -208,30 +213,32 @@ pub(in crate::layouts::integrated) fn grid_arcs(
                     continue;
                 }
                 let to = grid_index(to_x, to_y, width);
-                let selected = solver.new_named_bounded_integer(
+                let selected = solver.new_variable(
+                    VariableFamily::RouteArc,
                     0,
                     1,
                     format!("network-{network_index}-arc-{from}-{to}-used"),
                 );
-                let flow = solver.new_named_bounded_integer(
+                let flow = solver.new_variable(
+                    VariableFamily::Flow,
                     0,
                     line_capacity,
                     format!("network-{network_index}-arc-{from}-{to}-flow"),
                 );
-                solver
-                    .add_constraint(pumpkin_solver::greater_than_or_equals(
-                        [flow.scaled(1), selected.scaled(-1)],
-                        0,
-                        tag,
-                    ))
-                    .post();
-                solver
-                    .add_constraint(pumpkin_solver::less_than_or_equals(
-                        [flow.scaled(1), selected.scaled(-line_capacity)],
-                        0,
-                        tag,
-                    ))
-                    .post();
+                solver.post_greater_than_or_equals(
+                    ConstraintFamily::ArcActivation,
+                    vec![flow.scaled(1), selected.scaled(-1)],
+                    0,
+                    1,
+                    tag,
+                );
+                solver.post_less_than_or_equals(
+                    ConstraintFamily::ArcActivation,
+                    vec![flow.scaled(1), selected.scaled(-line_capacity)],
+                    0,
+                    line_capacity.unsigned_abs() as u64,
+                    tag,
+                );
                 let arc = Arc {
                     from,
                     to,
@@ -268,7 +275,7 @@ pub(in crate::layouts::integrated) fn incident_arcs_by_axis(
 
 #[allow(clippy::too_many_arguments)]
 pub(in crate::layouts::integrated) fn post_branch_component_topology(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
     network_index: usize,
     cell: usize,
     transport: TransportKind,
@@ -290,7 +297,8 @@ pub(in crate::layouts::integrated) fn post_branch_component_topology(
             .component_by_kind(transport, kind)
             .expect("validated catalog contains every branch component capability");
         for rotation in &definition.allowed_rotations {
-            let selected = solver.new_named_bounded_integer(
+            let selected = solver.new_variable(
+                VariableFamily::BranchComponent,
                 0,
                 1,
                 format!(
@@ -311,22 +319,22 @@ pub(in crate::layouts::integrated) fn post_branch_component_topology(
                 .collect::<Vec<_>>();
             for (direction_index, direction) in DIRECTIONS.iter().enumerate() {
                 if !allowed_inputs.contains(direction) {
-                    solver
-                        .add_constraint(pumpkin_solver::less_than_or_equals(
-                            [incoming_arms[direction_index].scaled(1), selected.scaled(1)],
-                            1,
-                            tag,
-                        ))
-                        .post();
+                    solver.post_less_than_or_equals(
+                        ConstraintFamily::BranchTopology,
+                        vec![incoming_arms[direction_index].scaled(1), selected.scaled(1)],
+                        1,
+                        1,
+                        tag,
+                    );
                 }
                 if !allowed_outputs.contains(direction) {
-                    solver
-                        .add_constraint(pumpkin_solver::less_than_or_equals(
-                            [outgoing_arms[direction_index].scaled(1), selected.scaled(1)],
-                            1,
-                            tag,
-                        ))
-                        .post();
+                    solver.post_less_than_or_equals(
+                        ConstraintFamily::BranchTopology,
+                        vec![outgoing_arms[direction_index].scaled(1), selected.scaled(1)],
+                        1,
+                        1,
+                        tag,
+                    );
                 }
             }
 
@@ -344,13 +352,13 @@ pub(in crate::layouts::integrated) fn post_branch_component_topology(
                 .map(|(variable, coefficient)| variable.scaled(*coefficient))
                 .collect::<Vec<_>>();
             capacity_constraint.push(selected.scaled(maximum_flow));
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(
-                    capacity_constraint,
-                    capacity + maximum_flow,
-                    tag,
-                ))
-                .post();
+            solver.post_less_than_or_equals(
+                ConstraintFamily::BranchTopology,
+                capacity_constraint,
+                capacity + maximum_flow,
+                maximum_flow.unsigned_abs() as u64,
+                tag,
+            );
 
             modeled.push(ModelBranchComponent {
                 network_index,
@@ -366,6 +374,7 @@ pub(in crate::layouts::integrated) fn post_branch_component_topology(
 
     post_at_most_one(
         solver,
+        ConstraintFamily::BranchTopology,
         modeled.iter().map(|component| component.selected),
         tag,
     );
@@ -390,63 +399,57 @@ pub(in crate::layouts::integrated) fn post_branch_component_topology(
 
     let mut incoming_maximum = incoming_count.clone();
     incoming_maximum.extend(convergers.iter().map(|selected| selected.scaled(-2)));
-    solver
-        .add_constraint(pumpkin_solver::less_than_or_equals(
-            incoming_maximum,
-            1,
-            tag,
-        ))
-        .post();
+    solver.post_less_than_or_equals(
+        ConstraintFamily::BranchTopology,
+        incoming_maximum,
+        1,
+        2,
+        tag,
+    );
     let mut outgoing_maximum = outgoing_count.clone();
     outgoing_maximum.extend(splitters.iter().map(|selected| selected.scaled(-2)));
-    solver
-        .add_constraint(pumpkin_solver::less_than_or_equals(
-            outgoing_maximum,
-            1,
-            tag,
-        ))
-        .post();
+    solver.post_less_than_or_equals(
+        ConstraintFamily::BranchTopology,
+        outgoing_maximum,
+        1,
+        2,
+        tag,
+    );
 
     let mut splitter_minimum_outputs = outgoing_count;
     splitter_minimum_outputs.extend(splitters.iter().map(|selected| selected.scaled(-2)));
-    solver
-        .add_constraint(pumpkin_solver::greater_than_or_equals(
-            splitter_minimum_outputs,
-            0,
-            tag,
-        ))
-        .post();
+    solver.post_greater_than_or_equals(
+        ConstraintFamily::BranchTopology,
+        splitter_minimum_outputs,
+        0,
+        2,
+        tag,
+    );
     let mut splitter_input = incoming_count.clone();
     splitter_input.extend(splitters.iter().map(|selected| selected.scaled(-1)));
-    solver
-        .add_constraint(pumpkin_solver::greater_than_or_equals(
-            splitter_input,
-            0,
-            tag,
-        ))
-        .post();
+    solver.post_greater_than_or_equals(ConstraintFamily::BranchTopology, splitter_input, 0, 1, tag);
 
     let mut converger_minimum_inputs = incoming_count;
     converger_minimum_inputs.extend(convergers.iter().map(|selected| selected.scaled(-2)));
-    solver
-        .add_constraint(pumpkin_solver::greater_than_or_equals(
-            converger_minimum_inputs,
-            0,
-            tag,
-        ))
-        .post();
+    solver.post_greater_than_or_equals(
+        ConstraintFamily::BranchTopology,
+        converger_minimum_inputs,
+        0,
+        2,
+        tag,
+    );
     let mut converger_output = outgoing_arms
         .iter()
         .map(|arm| arm.scaled(1))
         .collect::<Vec<_>>();
     converger_output.extend(convergers.iter().map(|selected| selected.scaled(-1)));
-    solver
-        .add_constraint(pumpkin_solver::greater_than_or_equals(
-            converger_output,
-            0,
-            tag,
-        ))
-        .post();
+    solver.post_greater_than_or_equals(
+        ConstraintFamily::BranchTopology,
+        converger_output,
+        0,
+        1,
+        tag,
+    );
 
     modeled
 }
@@ -496,7 +499,7 @@ pub(in crate::layouts::integrated) fn rotate_direction(
 
 #[allow(clippy::too_many_arguments)]
 pub(in crate::layouts::integrated) fn post_bridge_crossing(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
     transport_name: &str,
     cell: usize,
     bridge: DomainId,
@@ -507,23 +510,25 @@ pub(in crate::layouts::integrated) fn post_bridge_crossing(
 ) -> (usize, usize) {
     let mut terminal_constraints = 0_usize;
     for component in branch_components {
-        solver
-            .add_constraint(pumpkin_solver::less_than_or_equals(
-                [bridge.scaled(1), component.scaled(1)],
-                1,
-                tag,
-            ))
-            .post();
+        solver.post_less_than_or_equals(
+            ConstraintFamily::BridgeCrossing,
+            vec![bridge.scaled(1), component.scaled(1)],
+            1,
+            1,
+            tag,
+        );
     }
     let mut horizontal_owners = Vec::with_capacity(networks.len());
     let mut vertical_owners = Vec::with_capacity(networks.len());
     for (network_index, network) in networks {
-        let horizontal_owner = solver.new_named_bounded_integer(
+        let horizontal_owner = solver.new_variable(
+            VariableFamily::CrossingOwner,
             0,
             1,
             format!("{transport_name}-bridge-{cell}-horizontal-network-{network_index}"),
         );
-        let vertical_owner = solver.new_named_bounded_integer(
+        let vertical_owner = solver.new_variable(
+            VariableFamily::CrossingOwner,
             0,
             1,
             format!("{transport_name}-bridge-{cell}-vertical-network-{network_index}"),
@@ -533,25 +538,25 @@ pub(in crate::layouts::integrated) fn post_bridge_crossing(
             .map(|variable| variable.scaled(1))
             .collect::<Vec<_>>();
         horizontal_straight.push(horizontal_owner.scaled(-2));
-        solver
-            .add_constraint(pumpkin_solver::greater_than_or_equals(
-                horizontal_straight,
-                0,
-                tag,
-            ))
-            .post();
+        solver.post_greater_than_or_equals(
+            ConstraintFamily::BridgeCrossing,
+            horizontal_straight,
+            0,
+            2,
+            tag,
+        );
         let mut vertical_straight = network.vertical_incident[cell]
             .iter()
             .map(|variable| variable.scaled(1))
             .collect::<Vec<_>>();
         vertical_straight.push(vertical_owner.scaled(-2));
-        solver
-            .add_constraint(pumpkin_solver::greater_than_or_equals(
-                vertical_straight,
-                0,
-                tag,
-            ))
-            .post();
+        solver.post_greater_than_or_equals(
+            ConstraintFamily::BridgeCrossing,
+            vertical_straight,
+            0,
+            2,
+            tag,
+        );
         for (owner, incident) in [
             (horizontal_owner, &network.horizontal_incident[cell]),
             (vertical_owner, &network.vertical_incident[cell]),
@@ -573,39 +578,39 @@ pub(in crate::layouts::integrated) fn post_bridge_crossing(
                 .map(|flow| flow.scaled(1))
                 .collect::<Vec<_>>();
             capacity.push(owner.scaled(network.line_capacity_units));
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(
-                    capacity,
-                    network.bridge_capacity_units + network.line_capacity_units,
-                    tag,
-                ))
-                .post();
+            solver.post_less_than_or_equals(
+                ConstraintFamily::BridgeCrossing,
+                capacity,
+                network.bridge_capacity_units + network.line_capacity_units,
+                network.line_capacity_units.unsigned_abs() as u64,
+                tag,
+            );
             let mut forward_balance = incoming_flow
                 .iter()
                 .map(|flow| flow.scaled(1))
                 .chain(outgoing_flow.iter().map(|flow| flow.scaled(-1)))
                 .collect::<Vec<_>>();
             forward_balance.push(owner.scaled(network.line_capacity_units));
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(
-                    forward_balance,
-                    network.line_capacity_units,
-                    tag,
-                ))
-                .post();
+            solver.post_less_than_or_equals(
+                ConstraintFamily::BridgeCrossing,
+                forward_balance,
+                network.line_capacity_units,
+                network.line_capacity_units.unsigned_abs() as u64,
+                tag,
+            );
             let mut reverse_balance = outgoing_flow
                 .iter()
                 .map(|flow| flow.scaled(1))
                 .chain(incoming_flow.iter().map(|flow| flow.scaled(-1)))
                 .collect::<Vec<_>>();
             reverse_balance.push(owner.scaled(network.line_capacity_units));
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(
-                    reverse_balance,
-                    network.line_capacity_units,
-                    tag,
-                ))
-                .post();
+            solver.post_less_than_or_equals(
+                ConstraintFamily::BridgeCrossing,
+                reverse_balance,
+                network.line_capacity_units,
+                network.line_capacity_units.unsigned_abs() as u64,
+                tag,
+            );
         }
         for option in network
             .terminals
@@ -614,13 +619,13 @@ pub(in crate::layouts::integrated) fn post_bridge_crossing(
             .filter(|option| option.cell == cell)
         {
             terminal_constraints += 1;
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(
-                    [bridge.scaled(1), option.selected.scaled(1)],
-                    1,
-                    tag,
-                ))
-                .post();
+            solver.post_less_than_or_equals(
+                ConstraintFamily::BridgeCrossing,
+                vec![bridge.scaled(1), option.selected.scaled(1)],
+                1,
+                1,
+                tag,
+            );
         }
         horizontal_owners.push(horizontal_owner);
         vertical_owners.push(vertical_owner);
@@ -631,17 +636,25 @@ pub(in crate::layouts::integrated) fn post_bridge_crossing(
         .map(|variable| variable.scaled(1))
         .collect::<Vec<_>>();
     horizontal_definition.push(bridge.scaled(-1));
-    solver
-        .add_constraint(pumpkin_solver::equals(horizontal_definition, 0, tag))
-        .post();
+    solver.post_equals(
+        ConstraintFamily::BridgeCrossing,
+        horizontal_definition,
+        0,
+        1,
+        tag,
+    );
     let mut vertical_definition = vertical_owners
         .iter()
         .map(|variable| variable.scaled(1))
         .collect::<Vec<_>>();
     vertical_definition.push(bridge.scaled(-1));
-    solver
-        .add_constraint(pumpkin_solver::equals(vertical_definition, 0, tag))
-        .post();
+    solver.post_equals(
+        ConstraintFamily::BridgeCrossing,
+        vertical_definition,
+        0,
+        1,
+        tag,
+    );
 
     let route_cells = networks
         .iter()
@@ -653,13 +666,13 @@ pub(in crate::layouts::integrated) fn post_bridge_crossing(
         .map(|variable| variable.scaled(1))
         .collect::<Vec<_>>();
     maximum_occupancy.push(bridge.scaled(-1));
-    solver
-        .add_constraint(pumpkin_solver::less_than_or_equals(
-            maximum_occupancy,
-            1,
-            tag,
-        ))
-        .post();
+    solver.post_less_than_or_equals(
+        ConstraintFamily::TransportCollision,
+        maximum_occupancy,
+        1,
+        1,
+        tag,
+    );
 
     (
         networks.len() * 2,
@@ -668,7 +681,7 @@ pub(in crate::layouts::integrated) fn post_bridge_crossing(
 }
 
 pub(in crate::layouts::integrated) fn post_acyclic_network_ordering(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
     network_index: usize,
     arcs: &[Arc],
     cell_count: i32,
@@ -676,7 +689,8 @@ pub(in crate::layouts::integrated) fn post_acyclic_network_ordering(
 ) {
     let order = (0..cell_count)
         .map(|cell| {
-            solver.new_named_bounded_integer(
+            solver.new_variable(
+                VariableFamily::RouteOrder,
                 0,
                 cell_count - 1,
                 format!("network-{network_index}-order-{cell}"),
@@ -684,38 +698,40 @@ pub(in crate::layouts::integrated) fn post_acyclic_network_ordering(
         })
         .collect::<Vec<_>>();
     for arc in arcs {
-        solver
-            .add_constraint(pumpkin_solver::greater_than_or_equals(
-                [
-                    order[arc.to].scaled(1),
-                    order[arc.from].scaled(-1),
-                    arc.selected.scaled(-cell_count),
-                ],
-                1 - cell_count,
-                tag,
-            ))
-            .post();
+        solver.post_greater_than_or_equals(
+            ConstraintFamily::Acyclicity,
+            vec![
+                order[arc.to].scaled(1),
+                order[arc.from].scaled(-1),
+                arc.selected.scaled(-cell_count),
+            ],
+            1 - cell_count,
+            cell_count.unsigned_abs() as u64,
+            tag,
+        );
     }
 }
 
 pub(in crate::layouts::integrated) fn post_equals_one(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
+    family: ConstraintFamily,
     variables: impl Iterator<Item = DomainId>,
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) {
-    solver
-        .add_constraint(pumpkin_solver::equals(
-            variables
-                .map(|variable| variable.scaled(1))
-                .collect::<Vec<_>>(),
-            1,
-            tag,
-        ))
-        .post();
+    solver.post_equals(
+        family,
+        variables
+            .map(|variable| variable.scaled(1))
+            .collect::<Vec<_>>(),
+        1,
+        1,
+        tag,
+    );
 }
 
 pub(in crate::layouts::integrated) fn post_at_most_one(
-    solver: &mut Solver,
+    solver: &mut RecordedModel,
+    family: ConstraintFamily,
     variables: impl Iterator<Item = DomainId>,
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) {
@@ -723,15 +739,12 @@ pub(in crate::layouts::integrated) fn post_at_most_one(
         .map(|variable| variable.scaled(1))
         .collect::<Vec<_>>();
     if terms.len() > 1 {
-        solver
-            .add_constraint(pumpkin_solver::less_than_or_equals(terms, 1, tag))
-            .post();
+        solver.post_less_than_or_equals(family, terms, 1, 1, tag);
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use pumpkin_solver::Solver;
     use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
     use pumpkin_solver::core::predicates::PredicateConstructor;
     use pumpkin_solver::core::results::SatisfactionResult;
@@ -739,17 +752,19 @@ mod tests {
 
     use super::{Arc, post_acyclic_network_ordering, post_bridge_crossing};
     use crate::layouts::integrated::exact::ModelNetwork;
+    use crate::layouts::integrated::exact::recorder::{RecordedModel, VariableFamily};
 
     fn fixed_network(
-        solver: &mut Solver,
+        solver: &mut RecordedModel,
         tag: pumpkin_solver::core::proof::ConstraintTag,
         name: &str,
         horizontal: bool,
     ) -> ModelNetwork {
-        let route_cell = solver.new_named_bounded_integer(0, 1, format!("{name}-cell"));
+        let route_cell =
+            solver.new_variable(VariableFamily::RouteCell, 0, 1, format!("{name}-cell"));
         solver.add_clause([route_cell.equality_predicate(1)], tag);
-        let first = solver.new_named_bounded_integer(0, 1, format!("{name}-first"));
-        let second = solver.new_named_bounded_integer(0, 1, format!("{name}-second"));
+        let first = solver.new_variable(VariableFamily::RouteArc, 0, 1, format!("{name}-first"));
+        let second = solver.new_variable(VariableFamily::RouteArc, 0, 1, format!("{name}-second"));
         solver.add_clause([first.equality_predicate(1)], tag);
         solver.add_clause([second.equality_predicate(1)], tag);
         ModelNetwork {
@@ -773,9 +788,9 @@ mod tests {
     }
 
     fn crossing_is_satisfiable(horizontal_routes: usize, vertical_routes: usize) -> bool {
-        let mut solver = Solver::default();
+        let mut solver = RecordedModel::default();
         let tag = solver.new_constraint_tag();
-        let bridge = solver.new_named_bounded_integer(0, 1, "bridge");
+        let bridge = solver.new_variable(VariableFamily::Bridge, 0, 1, "bridge");
         solver.add_clause([bridge.equality_predicate(1)], tag);
         let mut networks = Vec::new();
         for index in 0..horizontal_routes {
@@ -806,9 +821,9 @@ mod tests {
     }
 
     fn same_network_crossing_is_satisfiable() -> bool {
-        let mut solver = Solver::default();
+        let mut solver = RecordedModel::default();
         let tag = solver.new_constraint_tag();
-        let bridge = solver.new_named_bounded_integer(0, 1, "bridge");
+        let bridge = solver.new_variable(VariableFamily::Bridge, 0, 1, "bridge");
         solver.add_clause([bridge.equality_predicate(1)], tag);
         let horizontal = fixed_network(&mut solver, tag, "shared-horizontal", true);
         let vertical = fixed_network(&mut solver, tag, "shared-vertical", false);
@@ -843,10 +858,10 @@ mod tests {
 
     #[test]
     fn route_ordering_rejects_a_disconnected_directed_cycle() {
-        let mut solver = Solver::default();
+        let mut solver = RecordedModel::default();
         let tag = solver.new_constraint_tag();
-        let forward = solver.new_named_bounded_integer(0, 1, "cycle-0-1");
-        let backward = solver.new_named_bounded_integer(0, 1, "cycle-1-0");
+        let forward = solver.new_variable(VariableFamily::RouteArc, 0, 1, "cycle-0-1");
+        let backward = solver.new_variable(VariableFamily::RouteArc, 0, 1, "cycle-1-0");
         solver.add_clause([forward.equality_predicate(1)], tag);
         solver.add_clause([backward.equality_predicate(1)], tag);
         post_acyclic_network_ordering(
