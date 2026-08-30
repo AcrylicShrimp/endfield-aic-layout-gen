@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "locale": "ko-KR",
+  "items": [],
+  "facilities": [
+    {
+      "id": "grinding-unit",
+      "base_facility": "grinder-1",
+      "facility_name": "분쇄기",
+      "facility_name_source": "official",
+      "mode": "normal",
+      "mode_name": "기본 모드",
+      "mode_name_source": "official"
+    }
+  ],
+  "modes": [
+    {
+      "id": "normal",
+      "display_name": "기본 모드",
+      "display_name_source": "official"
+    }
+  ],
+  "recipe_descriptions": []
+}

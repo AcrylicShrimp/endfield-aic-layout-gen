@@ -804,14 +804,10 @@ fn render_facilities(
         let center_x = placement.x as f64 + placement.width as f64 / 2.0;
         let center_y = placement.y as f64 + placement.height as f64 / 2.0;
         let available_width = (placement.width as f64 - 0.6).max(0.5);
-        let fit_attributes = if estimated_label_width(facility_name) > available_width {
-            format!(" textLength=\"{available_width:.2}\" lengthAdjust=\"spacingAndGlyphs\"")
-        } else {
-            String::new()
-        };
+        let label_font_size = fitted_label_font_size(facility_name, available_width);
         writeln!(
             html,
-            "        <text class=\"facility-label\" x=\"{center_x:.2}\" y=\"{:.2}\"><tspan x=\"{center_x:.2}\"{fit_attributes}>{}</tspan><tspan class=\"facility-index\" x=\"{center_x:.2}\" dy=\"1\">F{index:02}</tspan></text>",
+            "        <text class=\"facility-label\" x=\"{center_x:.2}\" y=\"{:.2}\"><tspan x=\"{center_x:.2}\" style=\"font-size:{label_font_size:.3}px\">{}</tspan><tspan class=\"facility-index\" x=\"{center_x:.2}\" dy=\"1\">F{index:02}</tspan></text>",
             center_y - 0.45,
             xml_escape(facility_name),
         )
@@ -825,6 +821,16 @@ fn estimated_label_width(value: &str) -> f64 {
         .chars()
         .map(|character| if character.is_ascii() { 0.43 } else { 0.72 })
         .sum()
+}
+
+fn fitted_label_font_size(value: &str, available_width: f64) -> f64 {
+    const BASE_FONT_SIZE: f64 = 0.72;
+    let estimated_width = estimated_label_width(value);
+    if estimated_width <= available_width || estimated_width == 0.0 {
+        BASE_FONT_SIZE
+    } else {
+        BASE_FONT_SIZE * available_width / estimated_width
+    }
 }
 
 fn localized_item_name(localization: Option<&ValidatedLocalizationCatalog>, item: &str) -> String {
@@ -875,7 +881,8 @@ mod tests {
 
     use super::{
         endpoint_arrow_direction, estimated_label_width, facility_port_cell,
-        render_integrated_layout_html, render_integrated_layout_html_with_localization,
+        fitted_label_font_size, render_integrated_layout_html,
+        render_integrated_layout_html_with_localization,
     };
 
     #[test]
@@ -1035,6 +1042,8 @@ mod tests {
         assert!(html.contains("Phase 2/2"));
         assert!(html.contains("class=\"facility introduced\""));
         assert!(html.contains("분쇄기</tspan>"));
+        assert!(!html.contains("lengthAdjust"));
+        assert!(!html.contains("textLength"));
         assert!(html.contains("facility:&lt;one&gt;"));
         assert!(html.contains("recipe&amp;one"));
         assert!(!html.contains("https://"));
@@ -1071,6 +1080,8 @@ mod tests {
     fn preserves_short_korean_facility_label_proportions() {
         assert!(estimated_label_width("천화로") < 4.4);
         assert!(estimated_label_width("xiranite-oven-1-mode-liquid") > 4.4);
+        assert_eq!(fitted_label_font_size("천화로", 4.4), 0.72);
+        assert!(fitted_label_font_size("xiranite-oven-1-mode-liquid", 4.4) < 0.72);
     }
 
     #[test]
