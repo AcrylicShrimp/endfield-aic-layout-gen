@@ -67,9 +67,14 @@ fn extension_reuses_unchanged_route_and_replaces_frontier_projection() {
     assert_eq!(extended.counts.invalidated_routes, 2);
     assert_eq!(extended.counts.rerouted_routes, 1);
     assert_eq!(extended.counts.new_routes, 1);
+    let placement_seed = extended
+        .placement_seed
+        .clone()
+        .expect("successful extension retains its full placement seed");
     let incumbent = extended
         .incumbent
         .expect("extension should yield an incumbent");
+    assert_eq!(placement_seed, incumbent.witness.placements);
     assert_eq!(
         incumbent.provenance,
         IncumbentProvenance::ExtendedPriorPhase
@@ -131,6 +136,7 @@ fn failed_extension_returns_a_conflict_without_a_false_incumbent() {
     );
 
     assert!(failed.incumbent.is_none());
+    assert!(failed.placement_seed.is_none());
     let conflict = failed.conflict.expect("failure should identify a conflict");
     assert_eq!(conflict.code, "incumbent-extension-time-limit");
     assert_eq!(conflict.related_facility_ids, ["facility:a"]);

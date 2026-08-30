@@ -590,6 +590,7 @@ fn optimize_cumulative_phase(
     let mut route_changes = RouteChangeCounts::default();
     let mut attempts = Vec::new();
     let mut conflicts = Vec::<RoutingConflict>::new();
+    let mut extension_placement_seed = None;
     let fallback_retained = match (previous_wiring, prior_witness) {
         (Some(previous_wiring), Some(prior_witness)) => {
             let previous_input =
@@ -658,6 +659,7 @@ fn optimize_cumulative_phase(
             rerouted: extension.counts.rerouted_routes,
             new: extension.counts.new_routes,
         };
+        extension_placement_seed = extension.placement_seed.clone();
         if let Some(conflict) = extension.conflict.clone() {
             conflicts.push(conflict);
         }
@@ -762,6 +764,7 @@ fn optimize_cumulative_phase(
                 let hints = incumbent
                     .as_ref()
                     .map(|incumbent| incumbent.witness.placements.clone())
+                    .or_else(|| extension_placement_seed.clone())
                     .unwrap_or_else(|| prior_reference.to_vec());
                 let producer_started = Instant::now();
                 let producer_deadline = min_instant(

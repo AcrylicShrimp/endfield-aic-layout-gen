@@ -54,6 +54,7 @@ pub struct IncumbentExtensionCounts {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct IncumbentExtensionResult {
     pub incumbent: Option<PhaseIncumbent>,
+    pub placement_seed: Option<Vec<FacilityPlacement>>,
     pub counts: IncumbentExtensionCounts,
     pub conflict: Option<RoutingConflict>,
     pub diagnostics: Vec<IntegratedLayoutDiagnostic>,
@@ -97,6 +98,7 @@ pub fn extend_phase_incumbent(
     let retained_obstacles = retained_route_obstacles(&retained, &invalidated);
     let reused_facilities = prior_witness.placements.len();
     let mut best = None::<(CandidateRank, PhaseIncumbent, IncumbentExtensionCounts)>;
+    let mut placement_seed = None;
     let mut last_failure = None;
     for (policy_index, policy) in EXTENSION_PLACEMENT_POLICIES.into_iter().enumerate() {
         let placements = match extend_placements(
@@ -114,6 +116,7 @@ pub fn extend_phase_incumbent(
             }
         };
         let newly_placed_facilities = placements.len().saturating_sub(reused_facilities);
+        placement_seed.get_or_insert_with(|| placements.clone());
         let candidate_input =
             match prepare_model(current_wiring, facilities, items, transports, request) {
                 Ok(input) => input,
@@ -136,6 +139,7 @@ pub fn extend_phase_incumbent(
         if !routed.report.success {
             last_failure = Some(IncumbentExtensionResult {
                 incumbent: None,
+                placement_seed: placement_seed.clone(),
                 counts,
                 conflict: routed.conflict,
                 diagnostics: routed.report.diagnostics,
@@ -174,6 +178,7 @@ pub fn extend_phase_incumbent(
     }
     if let Some((_, incumbent, counts)) = best {
         return IncumbentExtensionResult {
+            placement_seed: Some(incumbent.witness.placements.clone()),
             incumbent: Some(incumbent),
             counts,
             conflict: None,
@@ -186,7 +191,9 @@ pub fn extend_phase_incumbent(
             "phase",
             "incumbent extension produced no constructive placement candidate",
         );
-        extension_failure(conflict_diagnostic(&conflict), Some(conflict))
+        let mut failure = extension_failure(conflict_diagnostic(&conflict), Some(conflict));
+        failure.placement_seed = placement_seed;
+        failure
     })
 }
 
@@ -579,6 +586,7 @@ fn extension_failure(
 ) -> IncumbentExtensionResult {
     IncumbentExtensionResult {
         incumbent: None,
+        placement_seed: None,
         counts: IncumbentExtensionCounts::default(),
         conflict,
         diagnostics: vec![diagnostic],
