@@ -120,6 +120,23 @@ pub(super) fn solve(
             .iter()
             .map(|network| network.external_terminal_count())
             .sum(),
+        maximum_network_flow_scale: input
+            .networks
+            .iter()
+            .map(|network| network.flow_scale())
+            .max()
+            .unwrap_or(0),
+        maximum_line_capacity_units: input
+            .networks
+            .iter()
+            .map(|network| network.line_capacity_units())
+            .max()
+            .unwrap_or(0),
+        total_terminal_flow_units: input
+            .networks
+            .iter()
+            .map(|network| network.total_terminal_flow_units())
+            .sum(),
         grid_cell_count: input.cell_count as usize,
         ..ExactModelMetrics::default()
     };

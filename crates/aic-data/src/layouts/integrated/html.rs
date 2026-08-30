@@ -259,12 +259,15 @@ fn render_failure_summary(report: &IntegratedLayoutReport) -> String {
         || "No solver metrics were produced.".to_string(),
         |exact| {
             format!(
-                "Formulation: {}\nFacilities: {}\nLogical requirements: {}\nTransport networks: {}\nNetwork terminals: {}\nGrid cells: {}\nConstruction: {} ms\nSearch: {} ms\nIncumbents: {}\nTermination: {:?}\nProof: {:?}\nValidation: {:?}",
+                "Formulation: {}\nFacilities: {}\nLogical requirements: {}\nTransport networks: {}\nNetwork terminals: {}\nMaximum flow scale: {}\nMaximum line capacity units: {}\nTotal terminal flow units: {}\nGrid cells: {}\nConstruction: {} ms\nSearch: {} ms\nIncumbents: {}\nTermination: {:?}\nProof: {:?}\nValidation: {:?}",
                 exact.formulation,
                 exact.model.facility_count,
                 exact.model.route_requirement_count,
                 exact.model.commodity_network_count,
                 exact.model.network_terminal_count,
+                exact.model.maximum_network_flow_scale,
+                exact.model.maximum_line_capacity_units,
+                exact.model.total_terminal_flow_units,
                 exact.model.grid_cell_count,
                 exact.construction_ms,
                 exact.search_ms,

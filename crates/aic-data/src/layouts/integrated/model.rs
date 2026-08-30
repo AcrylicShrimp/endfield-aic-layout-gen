@@ -28,6 +28,7 @@ pub(super) struct EdgeInput {
     pub(super) source: EndpointInput,
     pub(super) target: EndpointInput,
     pub(super) transport: TransportKind,
+    pub(super) capacity_rate: Rate,
 }
 
 #[derive(Clone)]
@@ -274,6 +275,7 @@ pub(super) fn prepare_model(
                 source: source.clone(),
                 target: target.clone(),
                 transport: item.transport,
+                capacity_rate,
                 edge: FacilityInstanceWiringEdge {
                     rate: route_rate,
                     ..edge.clone()
