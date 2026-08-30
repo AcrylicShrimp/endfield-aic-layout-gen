@@ -93,6 +93,7 @@ pub struct DeterministicCandidateKey {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg(test)]
 pub struct CandidateRank {
     pub score: LayoutScore,
     pub deterministic_candidate_key: DeterministicCandidateKey,

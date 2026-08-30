@@ -83,7 +83,7 @@ pub(in crate::layouts::integrated) fn extract_report(
                 .map(|(rotation, _)| *rotation)
                 .expect("selected bridge has exactly one selected rotation");
             PlacedLogisticsComponent {
-                id: super::super::retained::logistics_component_id(
+                id: super::super::identity::logistics_component_id(
                     LogisticsComponentKind::Bridge,
                     bridge.transport,
                     position.x,

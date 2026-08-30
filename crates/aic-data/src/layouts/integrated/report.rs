@@ -8,7 +8,7 @@ use crate::recipes::{FacilityInstanceWiringProjection, Rate};
 use super::{DeterministicCandidateKey, LayoutScore, WorldGridPosition};
 
 const STAGE: &str = "integrated-layout";
-pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 7;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 8;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -52,6 +52,13 @@ pub struct ExactSolveReport {
 pub struct ExactModelMetrics {
     pub facility_count: usize,
     pub route_requirement_count: usize,
+    pub commodity_network_count: usize,
+    pub commodity_item_count: usize,
+    pub belt_network_count: usize,
+    pub pipe_network_count: usize,
+    pub network_requirement_reference_count: usize,
+    pub network_terminal_count: usize,
+    pub external_terminal_count: usize,
     pub grid_cell_count: usize,
     pub placement_variables: usize,
     pub endpoint_variables: usize,
@@ -201,21 +208,6 @@ impl IntegratedLayoutDiagnostic {
             code,
             path: "/".to_string(),
             entity: None,
-            message: message.into(),
-        }
-    }
-
-    pub(super) fn info_for(
-        code: &'static str,
-        entity: impl Into<String>,
-        message: impl Into<String>,
-    ) -> Self {
-        Self {
-            stage: STAGE,
-            severity: "info",
-            code,
-            path: "/".to_string(),
-            entity: Some(entity.into()),
             message: message.into(),
         }
     }

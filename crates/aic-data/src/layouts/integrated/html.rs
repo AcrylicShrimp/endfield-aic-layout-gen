@@ -824,12 +824,9 @@ fn xml_escape(value: &str) -> String {
 mod tests {
     use crate::facilities::FacilityPortEdge;
     use crate::layouts::{
-        CandidateCounts, DeterministicCandidateKey, FacilityChangeCounts, FacilityPlacement,
-        FacilityPlacementBounds, INTEGRATED_LAYOUT_SCHEMA_VERSION, IncumbentProvenance,
-        IntegratedLayoutDiagnostic, IntegratedLayoutIncumbentSummary, IntegratedLayoutPhase,
-        IntegratedLayoutPhaseOptimization, IntegratedLayoutReport, IntegratedLayoutStatus,
-        IntegratedRoute, IntegratedRouteEndpoint, LayoutScore, OptimizationProofStatus,
-        OptimizationTerminationReason, PhaseElapsedMilliseconds, RefinementKind, RouteChangeCounts,
+        FacilityPlacement, FacilityPlacementBounds, INTEGRATED_LAYOUT_SCHEMA_VERSION,
+        IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutPhaseOptimization,
+        IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRoute, IntegratedRouteEndpoint,
         RouteRequirementFingerprint, WorldGridPosition,
     };
     use crate::localization::{
@@ -839,6 +836,12 @@ mod tests {
     use crate::logistics::TransportKind;
     use crate::recipes::{FacilityInstanceWiringProjection, Rate};
 
+    use super::super::report::{
+        CandidateCounts, FacilityChangeCounts, IncumbentProvenance,
+        IntegratedLayoutIncumbentSummary, OptimizationProofStatus, OptimizationTerminationReason,
+        PhaseElapsedMilliseconds, RouteChangeCounts,
+    };
+    use super::super::score::{DeterministicCandidateKey, LayoutScore, RefinementKind};
     use super::{
         endpoint_arrow_direction, estimated_label_width, facility_port_cell,
         render_integrated_layout_html, render_integrated_layout_html_with_localization,

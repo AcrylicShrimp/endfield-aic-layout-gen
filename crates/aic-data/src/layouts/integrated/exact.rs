@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::ops::ControlFlow;
 use std::sync::Arc as Shared;
 use std::sync::atomic::{AtomicUsize, Ordering};
@@ -88,6 +88,38 @@ pub(super) fn solve(
     let mut model_metrics = ExactModelMetrics {
         facility_count: input.instances.len(),
         route_requirement_count: input.edges.len(),
+        commodity_network_count: input.networks.len(),
+        commodity_item_count: input
+            .networks
+            .iter()
+            .map(|network| network.item())
+            .collect::<BTreeSet<_>>()
+            .len(),
+        belt_network_count: input
+            .networks
+            .iter()
+            .filter(|network| network.transport() == TransportKind::Belt)
+            .count(),
+        pipe_network_count: input
+            .networks
+            .iter()
+            .filter(|network| network.transport() == TransportKind::Pipe)
+            .count(),
+        network_requirement_reference_count: input
+            .networks
+            .iter()
+            .map(|network| network.route_indices().len())
+            .sum(),
+        network_terminal_count: input
+            .networks
+            .iter()
+            .map(|network| network.terminal_count())
+            .sum(),
+        external_terminal_count: input
+            .networks
+            .iter()
+            .map(|network| network.external_terminal_count())
+            .sum(),
         grid_cell_count: input.cell_count as usize,
         ..ExactModelMetrics::default()
     };
