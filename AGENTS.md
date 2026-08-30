@@ -71,6 +71,18 @@
 - Existing heuristic optimizer paths must not be extended during the joint-solver cutover. Remove them when the replacement is complete instead of preserving them as compatibility fallbacks.
 - Before committing each solver slice, compare the implementation against this policy and the current accepted design. Treat agreement with a superseded or incorrect plan as a failure, not as evidence that architectural drift is absent.
 
+## Exact Search Research Policy
+
+- Search-space explosion in the faithful joint model is an expected research result, not evidence that placement or routing decisions should be removed from the solver.
+- Establish and measure the faithful exact baseline before attempting to reduce its search space. It is acceptable for the baseline to time out or return `unknown`, including in an early SCC phase.
+- Do not replace, bypass, crop, or pre-decide the difficult part of the model merely to obtain a feasible demonstration. That removes the research subject instead of improving the solver.
+- Push every applicable game rule into the solver formulation so that propagation can eliminate invalid placement, port, and routing combinations as early as possible.
+- Search-space reductions must preserve every legal solution and the configured objective quality. Each reduction must be justified as a sound constraint, exact reformulation, dominance rule, symmetry breaker, or completeness-preserving algorithmic transformation.
+- Measure model construction and search separately. Record variable and constraint counts, construction time, search time, incumbent objective, best bound when available, termination reason, and the phase at which growth becomes intractable.
+- A timeout or exhausted resource budget must return structured evidence and any complete solver incumbent already found. It must not trigger an unapproved heuristic fallback.
+- Research should focus on stronger exact formulations, propagation, redundant valid constraints, symmetry removal, incumbent bounds, and solver-native hints from prior exact solutions.
+- Preserve hard resource limits for operational safety, but never present a resource-limited `unknown` result as infeasibility or as justification for silently changing the problem.
+
 ## Contract And Diagnostic Design
 
 - Before implementing a substantial stage, define the stage contract first.
