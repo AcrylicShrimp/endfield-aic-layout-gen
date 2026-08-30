@@ -10,6 +10,7 @@ python3 tools/normalize_game_data.py \
 
 Current snapshot contents:
 
+- `blueprint-limits.json`: official 50 by 50 blueprint bounds and 160-node limit.
 - `items.json`: 538 items with fixed `belt` or `pipe` transport.
 - `facilities.json`: 28 recipe-capable machine-mode combinations flattened into dedicated facilities.
 - `recipes.json`: 305 machine recipes and 10 raw external input items.
@@ -29,5 +30,6 @@ Current snapshot contents:
 - Recipe duration is `progressRound * 1000` milliseconds.
 - Items consumed but never produced by a machine recipe become recipe-book external items.
 - Official Korean strings are joined by source text ID; a missing string uses the unchanged stable ID and records `id-fallback` instead of deriving a name.
+- Blueprint limits are copied exactly from `FacBlueprintConst` and remain external game data.
 
 The source snapshot remains authoritative. Do not hand-edit generated catalogs; change the normalizer or source snapshot and regenerate them.

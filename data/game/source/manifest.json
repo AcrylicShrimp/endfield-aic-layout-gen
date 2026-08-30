@@ -24,6 +24,10 @@
       "sha256": "0b4ee958bdba80ac01297835a691d895b8a66ea5d2a4d324f1bf218128ceff59"
     },
     {
+      "path": "table-cfg/FacBlueprintConst.json",
+      "sha256": "7e7320e698e96d38381ed2e01bac75e550cc9e406351f8bd5a1b86b85c533538"
+    },
+    {
       "path": "table-cfg/FactoryBuildingRendererTemplateTable.json",
       "sha256": "77897c2bd5431e54bc3b7d8a3a4289930d5a6c0c7d1d02c4899733b71dfdd62a"
     },

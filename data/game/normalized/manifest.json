@@ -3,6 +3,7 @@
   "source_upstream_commit": "83be4dcdeab69f93799febff674af6f19b8972be",
   "generator": "tools/normalize_game_data.py",
   "counts": {
+    "blueprint_limits": 1,
     "items": 538,
     "transports": 2,
     "facilities": 28,
@@ -14,6 +15,10 @@
     "localized_recipe_descriptions": 305
   },
   "files": [
+    {
+      "path": "blueprint-limits.json",
+      "sha256": "29791693b03f43d5e951d529ec61c981d9faadd5a46882c0f1e59c70279b2273"
+    },
     {
       "path": "facilities.json",
       "sha256": "db398048ac401024f7bae80c05ae59d4a9fb9a037f6836f33d26c5d08f0bcf96"

@@ -20,6 +20,7 @@ The `i18n/ko-KR/` dictionaries are table-scoped projections of the extracted off
 
 ## Included Tables
 
+- `FacBlueprintConst.json`: blueprint width, height, and node-count limits.
 - `FactoryBuildingTable.json`: footprint and fixed directional port records.
 - `FactoryBuildingRendererTemplateTable.json`: machine and mode renderer variants.
 - `FactoryGridBeltTable.json`: belt timing and line definitions.

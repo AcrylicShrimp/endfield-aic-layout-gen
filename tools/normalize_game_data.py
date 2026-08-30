@@ -103,6 +103,7 @@ def main() -> None:
     table_source = source / "table-cfg"
     localization_source = source / "i18n" / "ko-KR"
     source_manifest = load_json(source / "manifest.json")
+    blueprint_limits = load_json(table_source / "FacBlueprintConst.json")
     buildings = load_json(table_source / "FactoryBuildingTable.json")
     items = load_json(table_source / "FactoryItemTable.json")
     crafts = load_json(table_source / "FactoryMachineCraftTable.json")
@@ -337,8 +338,18 @@ def main() -> None:
             "recipe_descriptions": localized_recipe_descriptions,
         },
     )
+    write_json(
+        args.output / "blueprint-limits.json",
+        {
+            "schema_version": 1,
+            "max_width": blueprint_limits["BluePrintXLenMax"],
+            "max_height": blueprint_limits["BluePrintZLenMax"],
+            "max_nodes": blueprint_limits["BlueprintNodeCountLimit"],
+        },
+    )
 
     generated_files = [
+        "blueprint-limits.json",
         "facilities.json",
         "items.json",
         "localization.ko-KR.json",
@@ -352,6 +363,7 @@ def main() -> None:
             "source_upstream_commit": source_manifest["upstream_commit"],
             "generator": "tools/normalize_game_data.py",
             "counts": {
+                "blueprint_limits": 1,
                 "items": len(normalized_items),
                 "transports": 2,
                 "facilities": len(normalized_facilities),
