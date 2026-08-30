@@ -60,6 +60,7 @@
 ## Exact Solver And Heuristic Policy
 
 - The currently approved research architecture solves facility placement, facility rotation, directional port selection, and belt/pipe routing in one joint constraint model for each cumulative production graph.
+- Logical wiring edges define material supply and demand, not mandatory physical source-to-target belt or pipe paths. Complete routing experiments must permit same-item flow to form solver-selected commodity networks with shared trunks, splitters, and convergers.
 - Joint placement-routing is an experiment to implement faithfully and measure over a meaningful period, not a permanent project invariant. A measured alternative solver architecture may replace it after the user explicitly approves that architectural change.
 - Routing is the primary optimization concern. Minimize total route cells first and total route turns second before later compactness or stability tie-breakers.
 - A placement-candidate generator followed by a separate heuristic router and post-hoc candidate scoring is not a joint solve and must not be used as the authoritative optimization path.
