@@ -273,7 +273,39 @@ pub fn construct_coordinate_integrated_layout_with_time_limit(
 
     match prepare_model(instance_wiring, facilities, items, transports, request) {
         Ok(input) => {
-            sparse::construct_from_placements(input, logistics_components, placement.placements)
+            let topology = match networks::plan_topology(
+                &input.networks,
+                &input.edges,
+                logistics_components,
+            ) {
+                Ok(topology) => topology,
+                Err(diagnostic) => {
+                    return IntegratedLayoutReport::failure(
+                        IntegratedLayoutStatus::InvalidInput,
+                        diagnostic,
+                    );
+                }
+            };
+            let mut report = sparse::construct_from_placements(
+                input,
+                logistics_components,
+                placement.placements,
+            );
+            if report.success {
+                report.diagnostics.push(IntegratedLayoutDiagnostic::info(
+                    "routing-network-topology-planned",
+                    format!(
+                        "normalized {} routing networks and identified {} capacity-share bundles across {} terminals, requiring {} splitters and {} convergers before spatial component placement; the largest bundle has {} branches",
+                        topology.network_count(),
+                        topology.shared_bundle_count(),
+                        topology.referenced_terminal_count(),
+                        topology.component_count(LogisticsComponentKind::Splitter),
+                        topology.component_count(LogisticsComponentKind::Converger),
+                        topology.max_branch_count(),
+                    ),
+                ));
+            }
+            report
         }
         Err(diagnostic) => {
             IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
@@ -1687,6 +1719,10 @@ mod tests {
         assert_eq!(
             report.diagnostics[0].code,
             "coordinate-integrated-layout-feasible"
+        );
+        assert_eq!(
+            report.diagnostics[1].code,
+            "routing-network-topology-planned"
         );
     }
 
