@@ -10,6 +10,7 @@ use super::{
 };
 
 const PLACEMENT_GAPS: [i32; 5] = [20, 14, 10, 6, 2];
+const ACTIVE_ROUTING_MARGIN: i32 = 10;
 
 struct SparsePlacement {
     placement: FacilityPlacement,
@@ -45,39 +46,41 @@ pub(super) fn construct(
         let Some(placements) = place_on_shelves(&input, gap) else {
             continue;
         };
-        for order in route_orders(&input) {
-            let assigned = match assign_facility_ports(&input, &placements, &order) {
-                Ok(assigned) => assigned,
-                Err(failure) => {
-                    port_failure = Some(failure);
-                    continue;
-                }
-            };
-            match route_all(&input, &placements, &assigned) {
-                Ok((routes, bridges)) => {
-                    let report = success_report(
-                        &input,
-                        components,
-                        placements,
-                        routes,
-                        bridges,
-                        "sparse-integrated-layout-feasible",
-                        "sparse construction produced a feasible placement and routing witness; optimality is not proven",
-                    );
-                    return match super::witness::validate(&input, components, &report) {
-                        Ok(()) => report,
-                        Err(diagnostic) => IntegratedLayoutReport::failure(
-                            IntegratedLayoutStatus::Unknown,
-                            diagnostic,
-                        ),
-                    };
-                }
-                Err(failure) => {
-                    if best_routing_failure
-                        .as_ref()
-                        .is_none_or(|best: &RoutingFailure| failure.routed > best.routed)
-                    {
-                        best_routing_failure = Some(failure);
+        for routing_height in active_routing_heights(&input, &placements) {
+            for order in route_orders(&input) {
+                let assigned = match assign_facility_ports(&input, &placements, &order) {
+                    Ok(assigned) => assigned,
+                    Err(failure) => {
+                        port_failure = Some(failure);
+                        continue;
+                    }
+                };
+                match route_all(&input, &placements, &assigned, routing_height) {
+                    Ok((routes, bridges)) => {
+                        let report = success_report(
+                            &input,
+                            components,
+                            placements,
+                            routes,
+                            bridges,
+                            "sparse-integrated-layout-feasible",
+                            "sparse construction produced a feasible placement and routing witness; optimality is not proven",
+                        );
+                        return match super::witness::validate(&input, components, &report) {
+                            Ok(()) => report,
+                            Err(diagnostic) => IntegratedLayoutReport::failure(
+                                IntegratedLayoutStatus::Unknown,
+                                diagnostic,
+                            ),
+                        };
+                    }
+                    Err(failure) => {
+                        if best_routing_failure
+                            .as_ref()
+                            .is_none_or(|best: &RoutingFailure| failure.routed > best.routed)
+                        {
+                            best_routing_failure = Some(failure);
+                        }
                     }
                 }
             }
@@ -133,38 +136,41 @@ pub(super) fn construct_from_placements(
     let mut port_failure = None;
     let mut best_routing_failure = None;
 
-    for order in route_orders(&input) {
-        let assigned = match assign_facility_ports(&input, &placements, &order) {
-            Ok(assigned) => assigned,
-            Err(failure) => {
-                port_failure = Some(failure);
-                continue;
-            }
-        };
-        match route_all(&input, &placements, &assigned) {
-            Ok((routes, bridges)) => {
-                let report = success_report(
-                    &input,
-                    components,
-                    placements,
-                    routes,
-                    bridges,
-                    "coordinate-integrated-layout-feasible",
-                    "coordinate CP placement and sparse routing produced a validated feasible witness; optimality is not proven",
-                );
-                return match super::witness::validate(&input, components, &report) {
-                    Ok(()) => report,
-                    Err(diagnostic) => {
-                        IntegratedLayoutReport::failure(IntegratedLayoutStatus::Unknown, diagnostic)
+    for routing_height in active_routing_heights(&input, &placements) {
+        for order in route_orders(&input) {
+            let assigned = match assign_facility_ports(&input, &placements, &order) {
+                Ok(assigned) => assigned,
+                Err(failure) => {
+                    port_failure = Some(failure);
+                    continue;
+                }
+            };
+            match route_all(&input, &placements, &assigned, routing_height) {
+                Ok((routes, bridges)) => {
+                    let report = success_report(
+                        &input,
+                        components,
+                        placements,
+                        routes,
+                        bridges,
+                        "coordinate-integrated-layout-feasible",
+                        "coordinate CP placement and sparse routing produced a validated feasible witness; optimality is not proven",
+                    );
+                    return match super::witness::validate(&input, components, &report) {
+                        Ok(()) => report,
+                        Err(diagnostic) => IntegratedLayoutReport::failure(
+                            IntegratedLayoutStatus::Unknown,
+                            diagnostic,
+                        ),
+                    };
+                }
+                Err(failure) => {
+                    if best_routing_failure
+                        .as_ref()
+                        .is_none_or(|best: &RoutingFailure| failure.routed > best.routed)
+                    {
+                        best_routing_failure = Some(failure);
                     }
-                };
-            }
-            Err(failure) => {
-                if best_routing_failure
-                    .as_ref()
-                    .is_none_or(|best: &RoutingFailure| failure.routed > best.routed)
-                {
-                    best_routing_failure = Some(failure);
                 }
             }
         }
@@ -502,9 +508,10 @@ fn route_all(
     input: &ModelInput,
     placements: &BTreeMap<String, SparsePlacement>,
     assigned: &[AssignedRoute],
+    routing_height: i32,
 ) -> Result<RoutedWitness, RoutingFailure> {
     let cell_count = usize::try_from(input.width).expect("validated width is positive")
-        * usize::try_from(input.height).expect("validated height is positive");
+        * usize::try_from(routing_height).expect("routing height is positive");
     let facility_cells = facility_cells(input, placements, cell_count)
         .expect("sparse shelf placements are non-overlapping and in bounds");
     let reserved = reserved_cells(input, assigned);
@@ -518,6 +525,7 @@ fn route_all(
         let source_options = endpoint_options(
             &route.source,
             input.width,
+            routing_height,
             input.height,
             &facility_cells,
             &used[layer],
@@ -526,6 +534,7 @@ fn route_all(
         let target_options = endpoint_options(
             &route.target,
             input.width,
+            routing_height,
             input.height,
             &facility_cells,
             &used[layer],
@@ -533,7 +542,7 @@ fn route_all(
         );
         let Some((source, target, cells)) = find_path(
             input.width,
-            input.height,
+            routing_height,
             &source_options,
             &target_options,
             &facility_cells,
@@ -575,6 +584,33 @@ fn route_all(
     Ok((routes, bridges))
 }
 
+fn active_routing_heights(
+    input: &ModelInput,
+    placements: &BTreeMap<String, SparsePlacement>,
+) -> Vec<i32> {
+    let placement_height = placements
+        .values()
+        .filter_map(|placement| {
+            i32::try_from(placement.placement.y + placement.placement.height).ok()
+        })
+        .max()
+        .unwrap_or(1);
+    let mut heights = [1, 2, 4, 8]
+        .into_iter()
+        .map(|multiplier| {
+            placement_height
+                .saturating_add(ACTIVE_ROUTING_MARGIN.saturating_mul(multiplier))
+                .clamp(1, input.height)
+        })
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+    if heights.last().copied() != Some(input.height) {
+        heights.push(input.height);
+    }
+    heights
+}
+
 fn facility_cells(
     input: &ModelInput,
     placements: &BTreeMap<String, SparsePlacement>,
@@ -612,14 +648,15 @@ fn reserved_cells(input: &ModelInput, assigned: &[AssignedRoute]) -> [BTreeSet<u
 fn endpoint_options(
     endpoint: &AssignedEndpoint,
     width: i32,
-    height: i32,
+    routing_height: i32,
+    hard_height: i32,
     facility_cells: &[bool],
     used: &[Option<RouteCellShape>],
     reserved: &BTreeSet<usize>,
 ) -> Vec<FixedEndpoint> {
     match endpoint {
         AssignedEndpoint::Fixed(endpoint) => vec![endpoint.clone()],
-        AssignedEndpoint::Boundary { node } => boundary_cells(width, height)
+        AssignedEndpoint::Boundary { node } => boundary_cells(width, routing_height, hard_height)
             .into_iter()
             .filter(|(_, cell)| {
                 !facility_cells[*cell] && used[*cell].is_none() && !reserved.contains(cell)
@@ -635,20 +672,27 @@ fn endpoint_options(
     }
 }
 
-fn boundary_cells(width: i32, height: i32) -> Vec<(BoundarySide, usize)> {
+fn boundary_cells(width: i32, routing_height: i32, hard_height: i32) -> Vec<(BoundarySide, usize)> {
     let mut cells = Vec::new();
     cells.extend((0..width).map(|x| (BoundarySide::North, grid_index(x, 0, width))));
-    cells.extend((1..height).map(|y| (BoundarySide::East, grid_index(width - 1, y, width))));
-    if height > 1 {
+    cells
+        .extend((1..routing_height).map(|y| (BoundarySide::East, grid_index(width - 1, y, width))));
+    if routing_height == hard_height && hard_height > 1 {
         cells.extend(
             (0..(width - 1))
                 .rev()
-                .map(|x| (BoundarySide::South, grid_index(x, height - 1, width))),
+                .map(|x| (BoundarySide::South, grid_index(x, hard_height - 1, width))),
         );
-    }
-    if width > 1 {
+        if width > 1 {
+            cells.extend(
+                (1..(hard_height - 1))
+                    .rev()
+                    .map(|y| (BoundarySide::West, grid_index(0, y, width))),
+            );
+        }
+    } else if width > 1 {
         cells.extend(
-            (1..(height - 1))
+            (1..routing_height)
                 .rev()
                 .map(|y| (BoundarySide::West, grid_index(0, y, width))),
         );
@@ -906,12 +950,31 @@ mod tests {
 
     #[test]
     fn enumerates_each_boundary_cell_once() {
-        let cells = boundary_cells(5, 4)
+        let cells = boundary_cells(5, 4, 4)
             .into_iter()
             .map(|(_, cell)| cell)
             .collect::<Vec<_>>();
         assert_eq!(cells.len(), 14);
         assert_eq!(cells.iter().copied().collect::<BTreeSet<_>>().len(), 14);
+    }
+
+    #[test]
+    fn active_boundary_omits_the_unsearched_south_side() {
+        let cells = boundary_cells(5, 2, 4);
+        assert_eq!(cells.len(), 7);
+        assert!(
+            cells
+                .iter()
+                .all(|(side, _)| !matches!(side, BoundarySide::South))
+        );
+        assert_eq!(
+            cells
+                .iter()
+                .map(|(_, cell)| *cell)
+                .collect::<BTreeSet<_>>()
+                .len(),
+            7
+        );
     }
 
     #[test]
