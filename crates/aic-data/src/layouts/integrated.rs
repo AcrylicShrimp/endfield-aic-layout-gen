@@ -196,6 +196,7 @@ struct EdgeInput {
     transport: TransportKind,
 }
 
+#[derive(Clone)]
 enum EndpointInput {
     Facility {
         instance: String,
@@ -301,7 +302,7 @@ fn prepare_model(
     }
     instances.sort_by(|left, right| left.id.cmp(&right.id));
 
-    let mut edges = Vec::with_capacity(instance_wiring.edges.len());
+    let mut edges = Vec::new();
     for (edge_index, edge) in instance_wiring.edges.iter().cloned().enumerate() {
         let source_node = node_by_id
             .get(edge.source.as_str())
@@ -341,21 +342,6 @@ fn prepare_model(
                     )
                 },
             )?;
-        if edge.rate > capacity_rate {
-            return Err(IntegratedLayoutDiagnostic::error(
-                "route-capacity-exceeded",
-                format!("/edges/{edge_index}/rate"),
-                Some(edge.item.clone()),
-                format!(
-                    "route rate {}/{} per second exceeds {:?} capacity of {} per {} ms",
-                    edge.rate.numerator,
-                    edge.rate.denominator,
-                    item.transport,
-                    capacity.quantity,
-                    capacity.duration_ms
-                ),
-            ));
-        }
         let source = prepare_endpoint(
             edge_index,
             "source",
@@ -374,12 +360,27 @@ fn prepare_model(
             item.transport,
             &edge.item,
         )?;
-        edges.push(EdgeInput {
-            source,
-            target,
-            transport: item.transport,
-            edge,
-        });
+        let mut remaining_rate = edge.rate;
+        while !remaining_rate.is_zero() {
+            let route_rate = remaining_rate.min(capacity_rate);
+            edges.push(EdgeInput {
+                source: source.clone(),
+                target: target.clone(),
+                transport: item.transport,
+                edge: FacilityInstanceWiringEdge {
+                    rate: route_rate,
+                    ..edge.clone()
+                },
+            });
+            remaining_rate = remaining_rate.checked_sub(route_rate).map_err(|_| {
+                IntegratedLayoutDiagnostic::error(
+                    "route-rate-arithmetic-overflow",
+                    format!("/edges/{edge_index}/rate"),
+                    Some(edge.item.clone()),
+                    "route capacity splitting exceeded the exact rate domain",
+                )
+            })?;
+        }
     }
 
     let width = i32::try_from(request.max_width).map_err(|_| solver_domain_error("max_width"))?;
@@ -2064,7 +2065,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_route_rate_above_transport_capacity() {
+    fn splits_route_rate_above_transport_capacity() {
         let (facilities, items, _) = catalogs();
         let transports = ValidatedTransportCatalog::try_from_catalog(TransportCatalog {
             schema_version: SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION,
@@ -2087,7 +2088,7 @@ mod tests {
         })
         .expect("transport catalog should validate");
 
-        let report = solve_integrated_layout(
+        let input = prepare_model(
             &wiring(),
             &facilities,
             &items,
@@ -2097,9 +2098,16 @@ mod tests {
                 max_width: 4,
                 max_height: 1,
             },
-        );
+        )
+        .expect("capacity splitting should prepare a valid model");
 
-        assert!(!report.success);
-        assert_eq!(report.diagnostics[0].code, "route-capacity-exceeded");
+        assert_eq!(input.edges.len(), 2);
+        assert!(input.edges.iter().all(|edge| {
+            edge.edge.rate
+                == Rate {
+                    numerator: 1,
+                    denominator: 2,
+                }
+        }));
     }
 }
