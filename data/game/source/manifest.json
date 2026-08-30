@@ -4,7 +4,25 @@
   "upstream_commit": "83be4dcdeab69f93799febff674af6f19b8972be",
   "upstream_timestamp": "2026-08-26T23:08:22+08:00",
   "snapshot_date": "2026-08-30",
+  "localization_data_api": "https://endfield-assets.fffdan.com",
+  "localization_retrieved_date": "2026-08-30",
   "files": [
+    {
+      "path": "i18n/ko-KR/FactoryBuildingTable.json",
+      "sha256": "0ece9cda6f4756020a755efa716f6a3ba6df639d1ebcd24bd41bbf05624641c6"
+    },
+    {
+      "path": "i18n/ko-KR/FactoryMachineCraftModeTable.json",
+      "sha256": "06af2b10136abf7d9ed162f5a835ca7530d60311916a19fe6fe004eb2704c383"
+    },
+    {
+      "path": "i18n/ko-KR/FactoryMachineCraftTable.json",
+      "sha256": "e6f78225feb4209d59d03e38386e3e0fd3901224b2f6e33e466b1c2fdfd26cf8"
+    },
+    {
+      "path": "i18n/ko-KR/ItemTable.json",
+      "sha256": "0b4ee958bdba80ac01297835a691d895b8a66ea5d2a4d324f1bf218128ceff59"
+    },
     {
       "path": "table-cfg/FactoryBuildingRendererTemplateTable.json",
       "sha256": "77897c2bd5431e54bc3b7d8a3a4289930d5a6c0c7d1d02c4899733b71dfdd62a"
@@ -56,6 +74,10 @@
     {
       "path": "table-cfg/FactoryMachineCrafterTable.json",
       "sha256": "086c8c6394d9a7697ae16fa24af2cd78bdbdf5ce61bfcf434708721446ba4346"
+    },
+    {
+      "path": "table-cfg/ItemTable.json",
+      "sha256": "6e4f00dbd13e6ff64c8bb8a8deb5ddbc1be3c5c16a7fa8a5fb20dd9ba4d33b35"
     }
   ]
 }
