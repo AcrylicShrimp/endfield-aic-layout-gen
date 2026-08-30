@@ -37,12 +37,19 @@ use super::placement::solve_facility_placement_feasibly_with_time_limit;
 mod html;
 mod iterative;
 mod networks;
+mod optimization;
 mod score;
 mod sparse;
 mod witness;
 
 pub use html::{render_integrated_layout_html, render_integrated_layout_html_with_localization};
 pub use iterative::construct_iterative_scc_layout_with_time_limit;
+pub use optimization::{
+    CANDIDATE_POLICY_TABLE_SCHEMA_VERSION, CandidatePolicy, CandidatePolicyTable,
+    ITERATIVE_OPTIMIZATION_CONFIG_SCHEMA_VERSION, IterativeOptimizationConfig,
+    OptimizationConfigDiagnostic, PlacementPolicy, RoutingOrderPolicy,
+    validate_candidate_policy_table, validate_iterative_optimization_config,
+};
 pub use score::{CandidateRank, DeterministicCandidateKey, LayoutScore, RefinementKind};
 
 const STAGE: &str = "integrated-layout";
