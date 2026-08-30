@@ -390,7 +390,6 @@ fn model_estimate(
     let route_cell_variables = checked_mul(network_count, grid_cells)?;
     let route_arc_variables = checked_mul(network_count, directed_arcs)?;
     let flow_variables = route_arc_variables;
-    let route_order_variables = route_cell_variables;
     let terminal_presence_and_arm_variables = checked_mul(route_cell_variables, 16)?;
     let mut branch_component_variables = 0_u64;
     let mut flow_domains = Vec::new();
@@ -440,18 +439,13 @@ fn model_estimate(
     ]
     .into_iter()
     .try_fold(0_u64, checked_add)?;
-    let integer_variables = checked_add(flow_variables, route_order_variables)?;
+    let integer_variables = flow_variables;
     let covered_variable_lower_bound = checked_add(boolean_variables, integer_variables)?;
     let flow_log2 = flow_domains
         .iter()
         .map(|domain| (*domain as f64).log2() * directed_arcs as f64)
         .sum::<f64>();
-    let order_log2 = if grid_cells > 0 {
-        route_order_variables as f64 * (grid_cells as f64).log2()
-    } else {
-        0.0
-    };
-    let covered_log2_domain_volume = boolean_variables as f64 + flow_log2 + order_log2;
+    let covered_log2_domain_volume = boolean_variables as f64 + flow_log2;
 
     let formulation = PhaseFormulationEstimate {
         coverage: MetricCoverage::PartialLowerBound,
@@ -461,7 +455,6 @@ fn model_estimate(
         route_cell_variables,
         route_arc_variables,
         flow_variables,
-        route_order_variables,
         terminal_presence_and_arm_variables,
         branch_component_variables,
         bridge_variables,
@@ -479,11 +472,6 @@ fn model_estimate(
             "flow",
             flow_variables,
             weighted_domain_summary(&flow_domains, directed_arcs),
-        ),
-        integer_family(
-            "route-order",
-            route_order_variables,
-            constant_domain_summary(grid_cells, route_order_variables),
         ),
         boolean_family(
             "terminal-presence-and-arm",

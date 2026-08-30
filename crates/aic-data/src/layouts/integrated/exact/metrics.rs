@@ -42,7 +42,7 @@ pub(super) fn finish_report(
         logistics_component_count: score.logistics_component_count,
     });
     report.exact = Some(ExactSolveReport {
-        formulation: "joint-lexicographic-layout-v4",
+        formulation: "joint-lexicographic-layout-v5",
         model,
         model_complexity,
         construction_ms,

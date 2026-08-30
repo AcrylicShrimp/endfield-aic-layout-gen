@@ -9,7 +9,7 @@ use crate::research::ModelComplexityMetrics;
 use super::WorldGridPosition;
 
 const STAGE: &str = "integrated-layout";
-pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 16;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 17;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -106,8 +106,6 @@ pub struct ExactModelMetrics {
     pub hinted_terminals: usize,
     pub hinted_networks: usize,
     pub hinted_components: usize,
-    pub route_order_variables: usize,
-    pub acyclicity_constraints: usize,
     pub bridge_variables: usize,
     pub bridge_rotation_variables: usize,
     pub crossing_owner_variables: usize,

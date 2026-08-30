@@ -414,6 +414,25 @@ fn exact_solver_jointly_places_selects_ports_routes_and_validates() {
     assert!(serialized_phase.get("attempts").is_none());
     assert!(serialized_phase.get("optimization").is_none());
     let exact = report.exact.expect("exact metrics should be present");
+    assert_eq!(exact.formulation, "joint-lexicographic-layout-v5");
+    assert!(
+        exact
+            .model_complexity
+            .variables
+            .by_family
+            .iter()
+            .all(|family| family.family != "route-order")
+    );
+    assert!(
+        exact
+            .model_complexity
+            .constraints
+            .as_ref()
+            .expect("recorded exact model should include constraint metrics")
+            .by_family
+            .iter()
+            .all(|family| family.family != "acyclicity")
+    );
     assert_eq!(exact.model.commodity_network_count, 1);
     assert_eq!(exact.model.commodity_item_count, 1);
     assert_eq!(exact.model.belt_network_count, 1);

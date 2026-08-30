@@ -24,8 +24,7 @@ use extract::extract_report;
 use formulation::{
     DIRECTIONS, FlowTerms, direction_between, direction_index, external_endpoint_options,
     generate_candidates, grid_arcs, incident_arcs_by_axis, model_facility_endpoint_options,
-    post_acyclic_network_ordering, post_at_most_one, post_branch_component_topology,
-    post_bridge_crossing, post_equals_one,
+    post_at_most_one, post_branch_component_topology, post_bridge_crossing, post_equals_one,
 };
 use hint::build_solver_hint;
 use metrics::{elapsed_millis, finish_report};
@@ -372,9 +371,6 @@ pub(super) fn solve_with_prior_solution(
         model_metrics.route_arc_variables += arcs.len();
         model_metrics.network_flow_variables += arcs.len();
         model_metrics.route_cell_variables += cell_count;
-        model_metrics.route_order_variables += cell_count;
-        model_metrics.acyclicity_constraints += arcs.len();
-        post_acyclic_network_ordering(&mut solver, network_index, &arcs, input.cell_count, tag);
         let mut supply_by_cell: Vec<[FlowTerms; 4]> = (0..cell_count)
             .map(|_| std::array::from_fn(|_| FlowTerms::new()))
             .collect::<Vec<_>>();

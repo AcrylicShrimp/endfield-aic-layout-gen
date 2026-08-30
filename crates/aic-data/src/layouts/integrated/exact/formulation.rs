@@ -680,38 +680,6 @@ pub(in crate::layouts::integrated) fn post_bridge_crossing(
     )
 }
 
-pub(in crate::layouts::integrated) fn post_acyclic_network_ordering(
-    solver: &mut RecordedModel,
-    network_index: usize,
-    arcs: &[Arc],
-    cell_count: i32,
-    tag: pumpkin_solver::core::proof::ConstraintTag,
-) {
-    let order = (0..cell_count)
-        .map(|cell| {
-            solver.new_variable(
-                VariableFamily::RouteOrder,
-                0,
-                cell_count - 1,
-                format!("network-{network_index}-order-{cell}"),
-            )
-        })
-        .collect::<Vec<_>>();
-    for arc in arcs {
-        solver.post_greater_than_or_equals(
-            ConstraintFamily::Acyclicity,
-            vec![
-                order[arc.to].scaled(1),
-                order[arc.from].scaled(-1),
-                arc.selected.scaled(-cell_count),
-            ],
-            1 - cell_count,
-            cell_count.unsigned_abs() as u64,
-            tag,
-        );
-    }
-}
-
 pub(in crate::layouts::integrated) fn post_equals_one(
     solver: &mut RecordedModel,
     family: ConstraintFamily,
@@ -750,7 +718,7 @@ mod tests {
     use pumpkin_solver::core::results::SatisfactionResult;
     use pumpkin_solver::core::termination::Indefinite;
 
-    use super::{Arc, post_acyclic_network_ordering, post_bridge_crossing};
+    use super::post_bridge_crossing;
     use crate::layouts::integrated::exact::ModelNetwork;
     use crate::layouts::integrated::exact::recorder::{RecordedModel, VariableFamily};
 
@@ -854,42 +822,6 @@ mod tests {
             solver.satisfy(&mut brancher, &mut Indefinite, &mut resolver),
             SatisfactionResult::Satisfiable(_)
         )
-    }
-
-    #[test]
-    fn route_ordering_rejects_a_disconnected_directed_cycle() {
-        let mut solver = RecordedModel::default();
-        let tag = solver.new_constraint_tag();
-        let forward = solver.new_variable(VariableFamily::RouteArc, 0, 1, "cycle-0-1");
-        let backward = solver.new_variable(VariableFamily::RouteArc, 0, 1, "cycle-1-0");
-        solver.add_clause([forward.equality_predicate(1)], tag);
-        solver.add_clause([backward.equality_predicate(1)], tag);
-        post_acyclic_network_ordering(
-            &mut solver,
-            0,
-            &[
-                Arc {
-                    from: 0,
-                    to: 1,
-                    flow: forward,
-                    selected: forward,
-                },
-                Arc {
-                    from: 1,
-                    to: 0,
-                    flow: backward,
-                    selected: backward,
-                },
-            ],
-            2,
-            tag,
-        );
-
-        let mut brancher = solver.default_brancher();
-        let mut resolver = ResolutionResolver::default();
-        let result = solver.satisfy(&mut brancher, &mut Indefinite, &mut resolver);
-
-        assert!(matches!(result, SatisfactionResult::Unsatisfiable(_, _, _)));
     }
 
     #[test]

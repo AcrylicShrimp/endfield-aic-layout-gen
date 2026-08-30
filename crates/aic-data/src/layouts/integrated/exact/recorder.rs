@@ -18,7 +18,6 @@ pub(super) enum VariableFamily {
     RouteCell,
     RouteArc,
     Flow,
-    RouteOrder,
     TerminalPresence,
     RouteArm,
     BranchComponent,
@@ -36,7 +35,6 @@ impl VariableFamily {
             Self::RouteCell => "route-cell",
             Self::RouteArc => "route-arc",
             Self::Flow => "flow",
-            Self::RouteOrder => "route-order",
             Self::TerminalPresence => "terminal-presence",
             Self::RouteArm => "route-arm",
             Self::BranchComponent => "branch-component",
@@ -57,7 +55,6 @@ impl VariableFamily {
             Self::RouteCell
                 | Self::RouteArc
                 | Self::Flow
-                | Self::RouteOrder
                 | Self::TerminalPresence
                 | Self::RouteArm
                 | Self::BranchComponent
@@ -83,7 +80,6 @@ pub(super) enum ConstraintFamily {
     BranchTopology,
     RouteCellActivation,
     DirectedArcExclusion,
-    Acyclicity,
     BridgeRotation,
     BridgeCrossing,
     TransportCollision,
@@ -110,7 +106,6 @@ impl ConstraintFamily {
             Self::BranchTopology => "branch-topology",
             Self::RouteCellActivation => "route-cell-activation",
             Self::DirectedArcExclusion => "directed-arc-exclusion",
-            Self::Acyclicity => "acyclicity",
             Self::BridgeRotation => "bridge-rotation",
             Self::BridgeCrossing => "bridge-crossing",
             Self::TransportCollision => "transport-collision",

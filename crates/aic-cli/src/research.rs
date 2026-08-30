@@ -222,12 +222,12 @@ fn analyze_workload(
             inputs: input_identities,
         },
         formulation: FormulationIdentity {
-            formulation: "joint-lexicographic-layout-v4".to_string(),
+            formulation: "joint-lexicographic-layout-v5".to_string(),
             solver: "pumpkin".to_string(),
             solver_version: "0.5".to_string(),
             source_revision: None,
             configuration_sha256: text_sha256(
-                "joint-lexicographic-layout-v4:iterative-scc-one-ready",
+                "joint-lexicographic-layout-v5:iterative-scc-one-ready:circulation-permitted",
             ),
         },
         request_bounds: BenchmarkRequestBounds {

@@ -122,3 +122,11 @@ cross the boundary. Removing only the acyclicity block does.
 The next exact research target should be a semantics-preserving replacement or strengthening of
 the acyclicity formulation. Any comparison must retain all legal cycle-free routes, measure first
 incumbent time separately from proof time, and then return to the unresolved two-network barrier.
+
+## Decision After This Checkpoint
+
+The user subsequently approved net-zero circulation as legal routing behavior. The hard
+topological-order acyclicity block is therefore removed rather than reformulated. Flow conservation,
+positive selected-arc flow, line capacity, terminal delivery, collision, and component rules remain
+hard constraints. Circulation will be reconsidered only if it appears as an operationally
+undesirable part of an observed solution.

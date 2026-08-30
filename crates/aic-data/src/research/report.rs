@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-pub const SEARCH_SPACE_ANALYSIS_SCHEMA_VERSION: u32 = 2;
+pub const SEARCH_SPACE_ANALYSIS_SCHEMA_VERSION: u32 = 3;
 pub const EXPERIMENT_RUN_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -155,7 +155,6 @@ pub struct PhaseFormulationEstimate {
     pub route_cell_variables: u64,
     pub route_arc_variables: u64,
     pub flow_variables: u64,
-    pub route_order_variables: u64,
     pub terminal_presence_and_arm_variables: u64,
     pub branch_component_variables: u64,
     pub bridge_variables: u64,
