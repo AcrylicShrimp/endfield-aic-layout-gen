@@ -9,13 +9,14 @@ use crate::recipes::{
 
 const STAGE: &str = "recipe-throughput";
 
-pub const SUPPORTED_THROUGHPUT_REQUEST_SCHEMA_VERSION: u32 = 1;
+pub const SUPPORTED_THROUGHPUT_REQUEST_SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct RecipeThroughputRequest {
     pub schema_version: u32,
     pub target: ThroughputTarget,
+    pub external_inputs: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
@@ -312,6 +313,26 @@ pub fn validate_throughput_request(request: &RecipeThroughputRequest) -> Vec<Thr
         ));
     }
 
+    let mut seen_external_inputs = BTreeSet::new();
+    for (index, item) in request.external_inputs.iter().enumerate() {
+        if !is_stable_id(item) {
+            diagnostics.push(ThroughputDiagnostic::error(
+                "invalid-external-input-id",
+                format!("/external_inputs/{index}"),
+                Some(item.clone()),
+                format!("external input item '{item}' must match {STABLE_ID_PATTERN}"),
+            ));
+        }
+        if !seen_external_inputs.insert(item.as_str()) {
+            diagnostics.push(ThroughputDiagnostic::error(
+                "duplicate-external-input",
+                format!("/external_inputs/{index}"),
+                Some(item.clone()),
+                format!("external input item '{item}' appears more than once"),
+            ));
+        }
+    }
+
     if request.target.quantity <= 0 {
         diagnostics.push(ThroughputDiagnostic::error(
             "non-positive-target-quantity",
@@ -349,7 +370,9 @@ impl ValidatedRecipeBook {
             return RecipeThroughputReport::failure_many(request_diagnostics);
         }
 
-        let graph = match self.resolve_graph(&request.target.item) {
+        let graph = match self
+            .resolve_graph_with_external_inputs(&request.target.item, &request.external_inputs)
+        {
             Ok(graph) => graph,
             Err(error) => return RecipeThroughputReport::failure(map_graph_error(error)),
         };
@@ -551,6 +574,12 @@ fn map_graph_error(error: RecipeGraphError) -> ThroughputDiagnostic {
             "/target/item",
             Some(target_item.clone()),
             format!("target item '{target_item}' is neither external nor recipe-produced"),
+        ),
+        RecipeGraphError::UnknownExternalInput { item } => ThroughputDiagnostic::error(
+            "unknown-external-input",
+            "/external_inputs",
+            Some(item.clone()),
+            format!("external input item '{item}' is neither external nor recipe-produced"),
         ),
     }
 }

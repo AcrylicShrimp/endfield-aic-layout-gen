@@ -226,12 +226,13 @@ fn rate(numerator: i64, denominator: i64) -> Rate {
 
 fn throughput_request(item: &str, quantity: i64, duration_ms: i64) -> RecipeThroughputRequest {
     RecipeThroughputRequest {
-        schema_version: 1,
+        schema_version: SUPPORTED_THROUGHPUT_REQUEST_SCHEMA_VERSION,
         target: ThroughputTarget {
             item: item.to_string(),
             quantity,
             duration_ms,
         },
+        external_inputs: Vec::new(),
     }
 }
 
@@ -517,16 +518,56 @@ fn reports_multi_output_surplus() {
 }
 
 #[test]
+fn treats_request_external_inputs_as_recipe_graph_cutoffs() {
+    let mut request = throughput_request("originium-ingot", 1, 1000);
+    request.external_inputs = vec!["originium-powder".to_string()];
+
+    let report = ValidatedRecipeBook::try_from_recipe_book(multi_step_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&request);
+
+    assert!(report.success);
+    assert_eq!(report.recipe_rates.len(), 1);
+    assert_eq!(report.recipe_rates[0].recipe, "smelt-originium-ingot");
+    assert_eq!(report.external_input_rates.len(), 1);
+    assert_eq!(report.external_input_rates[0].item, "originium-powder");
+}
+
+#[test]
+fn rejects_invalid_duplicate_and_unknown_request_external_inputs() {
+    let mut request = throughput_request("originium-ingot", 1, 1000);
+    request.external_inputs = vec![
+        "Bad_Input".to_string(),
+        "originium-powder".to_string(),
+        "originium-powder".to_string(),
+    ];
+
+    let diagnostics = validate_throughput_request(&request);
+    assert_diagnostic_codes(
+        &diagnostics,
+        &["invalid-external-input-id", "duplicate-external-input"],
+    );
+
+    request.external_inputs = vec!["missing-item".to_string()];
+    let report = ValidatedRecipeBook::try_from_recipe_book(multi_step_book())
+        .expect("valid book should promote")
+        .calculate_throughput(&request);
+    assert!(!report.success);
+    assert_diagnostic_codes(&report.diagnostics, &["unknown-external-input"]);
+}
+
+#[test]
 fn rejects_unknown_throughput_request_fields_on_parse() {
     let error = serde_json::from_str::<RecipeThroughputRequest>(
         r#"{
-          "schema_version": 1,
+          "schema_version": 2,
           "target": {
             "item": "originium-powder",
             "quantity": 1,
             "duration_ms": 1000,
             "extra": true
-          }
+          },
+          "external_inputs": []
         }"#,
     )
     .expect_err("unknown throughput request fields should be rejected");

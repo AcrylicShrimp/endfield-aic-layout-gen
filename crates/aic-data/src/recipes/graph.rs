@@ -10,6 +10,7 @@ use crate::recipes::{
 pub enum RecipeGraphError {
     InvalidTargetId { target_item: String },
     UnknownTargetItem { target_item: String },
+    UnknownExternalInput { item: String },
 }
 
 impl std::fmt::Display for RecipeGraphError {
@@ -27,6 +28,12 @@ impl std::fmt::Display for RecipeGraphError {
                     "target item '{target_item}' is neither external nor recipe-produced"
                 )
             }
+            Self::UnknownExternalInput { item } => {
+                write!(
+                    formatter,
+                    "external input item '{item}' is neither external nor recipe-produced"
+                )
+            }
         }
     }
 }
@@ -35,9 +42,26 @@ impl std::error::Error for RecipeGraphError {}
 
 impl ValidatedRecipeBook {
     pub fn resolve_graph(&self, target_item: &str) -> Result<RecipeGraph, RecipeGraphError> {
+        self.resolve_graph_with_external_inputs(target_item, &[])
+    }
+
+    pub fn resolve_graph_with_external_inputs(
+        &self,
+        target_item: &str,
+        external_inputs: &[String],
+    ) -> Result<RecipeGraph, RecipeGraphError> {
         validate_target_item_id(target_item)?;
 
+        for item in external_inputs {
+            if !self.index().is_external_item(item) && self.index().producer_for(item).is_none() {
+                return Err(RecipeGraphError::UnknownExternalInput { item: item.clone() });
+            }
+        }
+
+        let external_inputs = external_inputs.iter().cloned().collect::<BTreeSet<_>>();
+
         if !self.index().is_external_item(target_item)
+            && !external_inputs.contains(target_item)
             && self.index().producer_for(target_item).is_none()
         {
             return Err(RecipeGraphError::UnknownTargetItem {
@@ -45,7 +69,7 @@ impl ValidatedRecipeBook {
             });
         }
 
-        let mut resolver = GraphResolver::new(target_item, self.index());
+        let mut resolver = GraphResolver::new(target_item, self.index(), external_inputs);
         resolver.resolve_item(target_item);
         Ok(resolver.into_graph())
     }
@@ -57,21 +81,27 @@ struct GraphResolver<'a> {
     seen_external_items: BTreeSet<String>,
     seen_recipe_ids: HashSet<String>,
     recipes: Vec<Recipe>,
+    additional_external_items: BTreeSet<String>,
 }
 
 impl<'a> GraphResolver<'a> {
-    fn new(target_item: &str, index: &'a RecipeIndex) -> Self {
+    fn new(
+        target_item: &str,
+        index: &'a RecipeIndex,
+        additional_external_items: BTreeSet<String>,
+    ) -> Self {
         Self {
             target_item: target_item.to_string(),
             index,
             seen_external_items: BTreeSet::new(),
             seen_recipe_ids: HashSet::new(),
             recipes: Vec::new(),
+            additional_external_items,
         }
     }
 
     fn resolve_item(&mut self, item: &str) {
-        if self.index.is_external_item(item) {
+        if self.index.is_external_item(item) || self.additional_external_items.contains(item) {
             self.seen_external_items.insert(item.to_string());
             return;
         }
