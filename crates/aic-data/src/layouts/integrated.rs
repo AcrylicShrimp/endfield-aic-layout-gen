@@ -20,7 +20,7 @@ use crate::layouts::{
     FacilityPlacement, FacilityPlacementBounds, FacilityPlacementRequest,
     validate_facility_placement_request,
 };
-use crate::logistics::{TransportKind, ValidatedItemCatalog};
+use crate::logistics::{TransportKind, ValidatedItemCatalog, ValidatedTransportCatalog};
 use crate::recipes::{
     FacilityInstanceWiringEdge, FacilityInstanceWiringNode, FacilityInstanceWiringReport, Rate,
 };
@@ -135,12 +135,14 @@ pub fn solve_integrated_layout(
     instance_wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
     request: &FacilityPlacementRequest,
 ) -> IntegratedLayoutReport {
     solve_integrated_layout_with_optional_time_limit(
         instance_wiring,
         facilities,
         items,
+        transports,
         request,
         None,
     )
@@ -150,6 +152,7 @@ pub fn solve_integrated_layout_with_time_limit(
     instance_wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
     request: &FacilityPlacementRequest,
     time_limit: Duration,
 ) -> IntegratedLayoutReport {
@@ -157,6 +160,7 @@ pub fn solve_integrated_layout_with_time_limit(
         instance_wiring,
         facilities,
         items,
+        transports,
         request,
         Some(time_limit),
     )
@@ -166,10 +170,11 @@ fn solve_integrated_layout_with_optional_time_limit(
     instance_wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
     request: &FacilityPlacementRequest,
     time_limit: Option<Duration>,
 ) -> IntegratedLayoutReport {
-    match prepare_model(instance_wiring, facilities, items, request) {
+    match prepare_model(instance_wiring, facilities, items, transports, request) {
         Ok(input) => solve(input, time_limit),
         Err(diagnostic) => {
             IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
@@ -212,6 +217,7 @@ fn prepare_model(
     instance_wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
     request: &FacilityPlacementRequest,
 ) -> Result<ModelInput, IntegratedLayoutDiagnostic> {
     if !instance_wiring.success {
@@ -323,6 +329,33 @@ fn prepare_model(
                 ),
             )
         })?;
+        let capacity = transports.capacity(item.transport);
+        let capacity_rate =
+            Rate::from_quantity_per_duration_ms(capacity.quantity, capacity.duration_ms).map_err(
+                |_| {
+                    IntegratedLayoutDiagnostic::error(
+                        "transport-capacity-out-of-range",
+                        format!("/edges/{edge_index}/rate"),
+                        Some(format!("{:?}", item.transport).to_lowercase()),
+                        "transport capacity cannot be represented in the exact rate domain",
+                    )
+                },
+            )?;
+        if edge.rate > capacity_rate {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "route-capacity-exceeded",
+                format!("/edges/{edge_index}/rate"),
+                Some(edge.item.clone()),
+                format!(
+                    "route rate {}/{} per second exceeds {:?} capacity of {} per {} ms",
+                    edge.rate.numerator,
+                    edge.rate.denominator,
+                    item.transport,
+                    capacity.quantity,
+                    capacity.duration_ms
+                ),
+            ));
+        }
         let source = prepare_endpoint(
             edge_index,
             "source",
@@ -1177,7 +1210,11 @@ fn world_position(index: usize, width: i32) -> WorldGridPosition {
 mod tests {
     use super::*;
     use crate::facilities::{FacilityCatalog, FacilityFootprint};
-    use crate::logistics::{ItemCatalog, ItemDefinition, SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION};
+    use crate::logistics::{
+        ItemCatalog, ItemDefinition, SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+        SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION, TransportCapacity, TransportCatalog,
+        TransportDefinition,
+    };
 
     fn facility(
         id: &str,
@@ -1275,7 +1312,34 @@ mod tests {
         }
     }
 
-    fn catalogs() -> (ValidatedFacilityCatalog, ValidatedItemCatalog) {
+    fn transport_catalog() -> ValidatedTransportCatalog {
+        ValidatedTransportCatalog::try_from_catalog(TransportCatalog {
+            schema_version: SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION,
+            transports: vec![
+                TransportDefinition {
+                    kind: TransportKind::Belt,
+                    capacity: TransportCapacity {
+                        quantity: 2,
+                        duration_ms: 1000,
+                    },
+                },
+                TransportDefinition {
+                    kind: TransportKind::Pipe,
+                    capacity: TransportCapacity {
+                        quantity: 1,
+                        duration_ms: 500,
+                    },
+                },
+            ],
+        })
+        .expect("transport catalog should validate")
+    }
+
+    fn catalogs() -> (
+        ValidatedFacilityCatalog,
+        ValidatedItemCatalog,
+        ValidatedTransportCatalog,
+    ) {
         let facilities = ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
             schema_version: 3,
             facilities: vec![
@@ -1302,16 +1366,17 @@ mod tests {
             }],
         })
         .expect("item catalog should validate");
-        (facilities, items)
+        (facilities, items, transport_catalog())
     }
 
     #[test]
     fn jointly_places_selects_ports_and_routes_one_edge() {
-        let (facilities, items) = catalogs();
+        let (facilities, items, transports) = catalogs();
         let report = solve_integrated_layout(
             &wiring(),
             &facilities,
             &items,
+            &transports,
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 4,
@@ -1368,6 +1433,7 @@ mod tests {
             &wiring(),
             &facilities,
             &items,
+            &transport_catalog(),
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 4,
@@ -1474,6 +1540,7 @@ mod tests {
             &wiring,
             &facilities,
             &items,
+            &transport_catalog(),
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 7,
@@ -1600,6 +1667,7 @@ mod tests {
             &wiring,
             &facilities,
             &items,
+            &transport_catalog(),
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 6,
@@ -1715,6 +1783,7 @@ mod tests {
             &wiring,
             &facilities,
             &items,
+            &transport_catalog(),
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 5,
@@ -1751,6 +1820,7 @@ mod tests {
             &wiring,
             &facilities,
             &items,
+            &transport_catalog(),
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 5,
@@ -1763,7 +1833,7 @@ mod tests {
 
     #[test]
     fn rejects_item_port_transport_mismatch() {
-        let (facilities, _) = catalogs();
+        let (facilities, _, _) = catalogs();
         let items = ValidatedItemCatalog::try_from_catalog(ItemCatalog {
             schema_version: SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
             items: vec![ItemDefinition {
@@ -1777,6 +1847,7 @@ mod tests {
             &wiring(),
             &facilities,
             &items,
+            &transport_catalog(),
             &FacilityPlacementRequest {
                 schema_version: 2,
                 max_width: 4,
@@ -1786,5 +1857,45 @@ mod tests {
 
         assert!(!report.success);
         assert_eq!(report.diagnostics[0].code, "missing-compatible-port");
+    }
+
+    #[test]
+    fn rejects_route_rate_above_transport_capacity() {
+        let (facilities, items, _) = catalogs();
+        let transports = ValidatedTransportCatalog::try_from_catalog(TransportCatalog {
+            schema_version: SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION,
+            transports: vec![
+                TransportDefinition {
+                    kind: TransportKind::Belt,
+                    capacity: TransportCapacity {
+                        quantity: 1,
+                        duration_ms: 2000,
+                    },
+                },
+                TransportDefinition {
+                    kind: TransportKind::Pipe,
+                    capacity: TransportCapacity {
+                        quantity: 1,
+                        duration_ms: 500,
+                    },
+                },
+            ],
+        })
+        .expect("transport catalog should validate");
+
+        let report = solve_integrated_layout(
+            &wiring(),
+            &facilities,
+            &items,
+            &transports,
+            &FacilityPlacementRequest {
+                schema_version: 2,
+                max_width: 4,
+                max_height: 1,
+            },
+        );
+
+        assert!(!report.success);
+        assert_eq!(report.diagnostics[0].code, "route-capacity-exceeded");
     }
 }

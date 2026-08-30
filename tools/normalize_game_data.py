@@ -85,6 +85,13 @@ def main() -> None:
     items = load_json(source / "FactoryItemTable.json")
     crafts = load_json(source / "FactoryMachineCraftTable.json")
     crafters = load_json(source / "FactoryMachineCrafterTable.json")
+    belts = load_json(source / "FactoryGridBeltTable.json")
+    pipes = load_json(source / "FactoryLiquidPipeTable.json")
+
+    if len(belts) != 1 or len(pipes) != 1:
+        raise ValueError("expected exactly one belt and one pipe transport definition")
+    belt = next(iter(belts.values()))["beltData"]
+    pipe = next(iter(pipes.values()))["pipeData"]
 
     transports_by_item = {
         item_id: item_transport(item) for item_id, item in items.items()
@@ -187,6 +194,28 @@ def main() -> None:
     write_json(
         args.output / "items.json",
         {"schema_version": 1, "items": normalized_items},
+    )
+    write_json(
+        args.output / "transports.json",
+        {
+            "schema_version": 1,
+            "transports": [
+                {
+                    "kind": "belt",
+                    "capacity": {
+                        "quantity": 1,
+                        "duration_ms": belt["msPerRound"],
+                    },
+                },
+                {
+                    "kind": "pipe",
+                    "capacity": {
+                        "quantity": pipe["volume"],
+                        "duration_ms": pipe["msPerRound"],
+                    },
+                },
+            ],
+        },
     )
     write_json(
         args.output / "facilities.json",

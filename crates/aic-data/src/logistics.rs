@@ -9,6 +9,15 @@ use serde::{Deserialize, Serialize};
 
 use crate::stable_id::{STABLE_ID_PATTERN, is_stable_id};
 
+mod transport;
+
+pub use transport::{
+    LoadTransportCatalogError, SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION, TransportCapacity,
+    TransportCatalog, TransportCatalogDiagnostic, TransportCatalogValidationReport,
+    TransportDefinition, ValidatedTransportCatalog, load_transport_catalog,
+    validate_transport_catalog,
+};
+
 const STAGE: &str = "item-catalog-validation";
 
 pub const SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION: u32 = 1;

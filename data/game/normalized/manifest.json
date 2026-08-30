@@ -4,6 +4,7 @@
   "generator": "tools/normalize_game_data.py",
   "counts": {
     "items": 538,
+    "transports": 2,
     "facilities": 28,
     "recipes": 305,
     "external_items": 10
@@ -20,6 +21,10 @@
     {
       "path": "recipes.json",
       "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+    },
+    {
+      "path": "transports.json",
+      "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
     }
   ]
 }

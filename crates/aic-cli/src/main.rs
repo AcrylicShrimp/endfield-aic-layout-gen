@@ -10,7 +10,9 @@ use aic_data::layouts::{
     solve_integrated_layout_with_time_limit,
 };
 use aic_data::logistics::{
-    ItemCatalogValidationReport, ValidatedItemCatalog, load_item_catalog, validate_item_catalog,
+    ItemCatalogValidationReport, TransportCatalogValidationReport, ValidatedItemCatalog,
+    ValidatedTransportCatalog, load_item_catalog, load_transport_catalog, validate_item_catalog,
+    validate_transport_catalog,
 };
 use aic_data::recipes::{
     FacilityInstanceWiringReport, FacilityRequirementReport, RecipeThroughputReport,
@@ -51,6 +53,11 @@ enum Command {
         #[command(subcommand)]
         command: ItemsCommand,
     },
+    /// Work with transport capacity data.
+    Transports {
+        #[command(subcommand)]
+        command: TransportsCommand,
+    },
     /// Generate spatial layouts.
     Layouts {
         #[command(subcommand)]
@@ -78,6 +85,16 @@ enum ItemsCommand {
     /// Load and validate an item catalog JSON file.
     Validate {
         /// Item catalog JSON file to validate.
+        #[arg(long, short, value_name = "FILE")]
+        file: PathBuf,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+enum TransportsCommand {
+    /// Load and validate a transport capacity catalog JSON file.
+    Validate {
+        /// Transport capacity catalog JSON file to validate.
         #[arg(long, short, value_name = "FILE")]
         file: PathBuf,
     },
@@ -120,6 +137,10 @@ enum LayoutsCommand {
         /// Item transport catalog JSON file to load.
         #[arg(long, value_name = "FILE")]
         item_catalog: PathBuf,
+
+        /// Belt and pipe capacity catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        transport_catalog: PathBuf,
 
         /// Hard maximum layout bounds JSON file to load.
         #[arg(long, value_name = "FILE")]
@@ -225,6 +246,9 @@ fn run() -> Result<CommandStatus> {
         Command::Items { command } => match command {
             ItemsCommand::Validate { file } => validate_items(file),
         },
+        Command::Transports { command } => match command {
+            TransportsCommand::Validate { file } => validate_transports(file),
+        },
         Command::Layouts { command } => match command {
             LayoutsCommand::PlaceFacilities {
                 recipes,
@@ -242,6 +266,7 @@ fn run() -> Result<CommandStatus> {
                 throughput_request,
                 facility_catalog,
                 item_catalog,
+                transport_catalog,
                 placement_request,
                 time_limit_seconds,
             } => solve_layout(
@@ -249,6 +274,7 @@ fn run() -> Result<CommandStatus> {
                 throughput_request,
                 facility_catalog,
                 item_catalog,
+                transport_catalog,
                 placement_request,
                 time_limit_seconds,
             ),
@@ -306,6 +332,19 @@ fn validate_items(file: PathBuf) -> Result<CommandStatus> {
     let report = validate_item_catalog(&catalog);
     let valid = report.valid;
     write_item_catalog_validation_report(&report)?;
+
+    if valid {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
+    }
+}
+
+fn validate_transports(file: PathBuf) -> Result<CommandStatus> {
+    let catalog = load_transport_catalog(&file)?;
+    let report = validate_transport_catalog(&catalog);
+    let valid = report.valid;
+    write_transport_catalog_validation_report(&report)?;
 
     if valid {
         Ok(CommandStatus::Success)
@@ -506,6 +545,7 @@ fn solve_layout(
     throughput_request: PathBuf,
     facility_catalog: PathBuf,
     item_catalog: PathBuf,
+    transport_catalog: PathBuf,
     placement_request: PathBuf,
     time_limit_seconds: NonZeroU64,
 ) -> Result<CommandStatus> {
@@ -550,6 +590,14 @@ fn solve_layout(
             return Ok(CommandStatus::Failure);
         }
     };
+    let raw_transports = load_transport_catalog(&transport_catalog)?;
+    let transports = match ValidatedTransportCatalog::try_from_catalog(raw_transports) {
+        Ok(catalog) => catalog,
+        Err(report) => {
+            write_transport_catalog_validation_report(&report)?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
 
     let request_json = std::fs::read_to_string(&placement_request).with_context(|| {
         format!(
@@ -575,6 +623,7 @@ fn solve_layout(
         &instance_wiring_report,
         &facilities,
         &items,
+        &transports,
         &request,
         Duration::from_secs(time_limit_seconds.get()),
     );
@@ -672,6 +721,16 @@ fn write_facility_catalog_validation_report(
 fn write_item_catalog_validation_report(report: &ItemCatalogValidationReport) -> Result<()> {
     serde_json::to_writer_pretty(std::io::stdout().lock(), report)
         .context("failed to write item catalog validation report")?;
+    println!();
+
+    Ok(())
+}
+
+fn write_transport_catalog_validation_report(
+    report: &TransportCatalogValidationReport,
+) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write transport catalog validation report")?;
     println!();
 
     Ok(())
