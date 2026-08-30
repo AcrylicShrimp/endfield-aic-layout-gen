@@ -12,13 +12,19 @@ This directory contains a repository-managed snapshot of extracted official game
 
 The upstream repository describes itself as an extracted game-data repository and does not include a license file in this snapshot. These data files are not covered by this project's `MIT OR Apache-2.0` source-code license. Review redistribution requirements before publishing a derived distribution.
 
+Snapshot JSON is content-equivalent to the pinned upstream blobs. Repository text files include a terminal newline; manifest checksums identify the committed local bytes.
+
 ## Included Tables
 
 - `FactoryBuildingTable.json`: footprint and fixed directional port records.
 - `FactoryBuildingRendererTemplateTable.json`: machine and mode renderer variants.
 - `FactoryGridBeltTable.json`: belt timing and line definitions.
+- `FactoryGridConnecterTable.json`: belt connector port directions.
+- `FactoryGridRouterTable.json`: belt splitter and converger geometry and port directions.
 - `FactoryItemTable.json`: factory-item phase metadata.
+- `FactoryLiquidConnectorTable.json`: pipe connector geometry and port directions.
 - `FactoryLiquidPipeTable.json`: pipe timing, volume, and line definitions.
+- `FactoryLiquidRouterTable.json`: pipe splitter and converger geometry and port directions.
 - `FactoryMachineCraftModeCoverTable.json`: mode coverage relationships.
 - `FactoryMachineCraftModeTable.json`: known machine mode types.
 - `FactoryMachineCraftTable.json`: recipe inputs, outputs, machine IDs, and durations.
@@ -29,4 +35,3 @@ The upstream repository describes itself as an extracted game-data repository an
 Do not edit source tables by hand. When game data changes, replace the relevant files from one identified upstream commit, update `manifest.json`, regenerate normalized catalogs, validate them through the CLI, and commit the source and normalized changes together.
 
 Mode-dependent machines are flattened only in normalized data. Source table IDs and structures remain unchanged in this snapshot.
-

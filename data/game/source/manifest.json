@@ -18,12 +18,28 @@
       "sha256": "55500d9bcf3146ca971f9e846ba8be8f5fec069bd8e6f1db4b4aaa828fe4ae0e"
     },
     {
+      "path": "table-cfg/FactoryGridConnecterTable.json",
+      "sha256": "189f287571dd6d37f5d9fea165e91b3c2c0e27dd93215b567cb170a2a95a74d3"
+    },
+    {
+      "path": "table-cfg/FactoryGridRouterTable.json",
+      "sha256": "edf8829cbc0f677c124087cb9a94a778fde1ce825876d3c042796377504f3033"
+    },
+    {
       "path": "table-cfg/FactoryItemTable.json",
       "sha256": "5399f349cfe92b3d98f34c5518d7152e381fcefe92d4cec79e74d75d79076858"
     },
     {
+      "path": "table-cfg/FactoryLiquidConnectorTable.json",
+      "sha256": "e819905539518464618c4f9749e92a7b7a72728ebba2c0c0efebf727550dac70"
+    },
+    {
       "path": "table-cfg/FactoryLiquidPipeTable.json",
       "sha256": "b22ac8f2eef4f9fbcdaed1bc7bbea8b625f2690493eec066e3ef0a66c63d13be"
+    },
+    {
+      "path": "table-cfg/FactoryLiquidRouterTable.json",
+      "sha256": "6149b2f03bfed99531a3919b5842f65246899d1c2d62d86ff328eae010395d1a"
     },
     {
       "path": "table-cfg/FactoryMachineCraftModeCoverTable.json",
