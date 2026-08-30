@@ -1,26 +1,29 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "facilities": [
     {
       "id": "grinding-unit",
       "footprint": {
         "width": 3,
         "height": 2
-      }
+      },
+      "allowed_rotations": [0, 90, 180, 270]
     },
     {
       "id": "smelter",
       "footprint": {
         "width": 4,
         "height": 3
-      }
+      },
+      "allowed_rotations": [0, 90, 180, 270]
     },
     {
       "id": "assembler",
       "footprint": {
         "width": 5,
         "height": 4
-      }
+      },
+      "allowed_rotations": [0, 90, 180, 270]
     }
   ]
 }

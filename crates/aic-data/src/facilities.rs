@@ -15,7 +15,7 @@ pub use validated::ValidatedFacilityCatalog;
 
 const STAGE: &str = "facility-catalog-validation";
 
-pub const SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION: u32 = 1;
+pub const SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -35,6 +35,7 @@ impl FacilityCatalog {
 pub struct FacilityDefinition {
     pub id: String,
     pub footprint: FacilityFootprint,
+    pub allowed_rotations: Vec<i64>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
@@ -215,6 +216,57 @@ fn validate_facilities(
                 ),
             ));
         }
+
+        validate_allowed_rotations(facility, index, diagnostics);
+    }
+}
+
+fn validate_allowed_rotations(
+    facility: &FacilityDefinition,
+    facility_index: usize,
+    diagnostics: &mut Vec<FacilityCatalogDiagnostic>,
+) {
+    if facility.allowed_rotations.is_empty() {
+        diagnostics.push(FacilityCatalogDiagnostic::error(
+            "empty-allowed-facility-rotations",
+            format!("/facilities/{facility_index}/allowed_rotations"),
+            Some(facility.id.clone()),
+            format!(
+                "facility '{}' must allow at least one rotation",
+                facility.id
+            ),
+        ));
+        return;
+    }
+
+    let mut seen_rotations = BTreeSet::new();
+    for (rotation_index, rotation) in facility.allowed_rotations.iter().enumerate() {
+        let path = format!("/facilities/{facility_index}/allowed_rotations/{rotation_index}");
+
+        if !matches!(rotation, 0 | 90 | 180 | 270) {
+            diagnostics.push(FacilityCatalogDiagnostic::error(
+                "unsupported-facility-rotation",
+                path,
+                Some(facility.id.clone()),
+                format!(
+                    "facility '{}' rotation must be one of 0, 90, 180, or 270 degrees, found {rotation}",
+                    facility.id
+                ),
+            ));
+            continue;
+        }
+
+        if !seen_rotations.insert(rotation) {
+            diagnostics.push(FacilityCatalogDiagnostic::error(
+                "duplicate-facility-rotation",
+                path,
+                Some(facility.id.clone()),
+                format!(
+                    "facility '{}' rotation {rotation} appears more than once",
+                    facility.id
+                ),
+            ));
+        }
     }
 }
 
@@ -224,13 +276,14 @@ mod tests {
 
     fn valid_catalog() -> FacilityCatalog {
         FacilityCatalog {
-            schema_version: 1,
+            schema_version: SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION,
             facilities: vec![FacilityDefinition {
                 id: "grinding-unit".to_string(),
                 footprint: FacilityFootprint {
                     width: 3,
                     height: 2,
                 },
+                allowed_rotations: vec![0, 90, 180, 270],
             }],
         }
     }
@@ -246,7 +299,7 @@ mod tests {
     #[test]
     fn accepts_empty_facility_catalog() {
         let report = FacilityCatalog {
-            schema_version: 1,
+            schema_version: SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION,
             facilities: Vec::new(),
         }
         .validate();
@@ -259,7 +312,7 @@ mod tests {
     fn rejects_unknown_facility_catalog_fields_on_parse() {
         let error = serde_json::from_str::<FacilityCatalog>(
             r#"{
-              "schema_version": 1,
+              "schema_version": 2,
               "facilities": [],
               "extra": true
             }"#,
@@ -273,11 +326,12 @@ mod tests {
     fn rejects_unknown_facility_definition_fields_on_parse() {
         let error = serde_json::from_str::<FacilityCatalog>(
             r#"{
-              "schema_version": 1,
+              "schema_version": 2,
               "facilities": [
                 {
                   "id": "grinding-unit",
                   "footprint": { "width": 3, "height": 2 },
+                  "allowed_rotations": [0, 90, 180, 270],
                   "extra": true
                 }
               ]
@@ -292,11 +346,12 @@ mod tests {
     fn rejects_unknown_facility_footprint_fields_on_parse() {
         let error = serde_json::from_str::<FacilityCatalog>(
             r#"{
-              "schema_version": 1,
+              "schema_version": 2,
               "facilities": [
                 {
                   "id": "grinding-unit",
-                  "footprint": { "width": 3, "height": 2, "extra": true }
+                  "footprint": { "width": 3, "height": 2, "extra": true },
+                  "allowed_rotations": [0, 90, 180, 270]
                 }
               ]
             }"#,
@@ -326,7 +381,7 @@ mod tests {
     #[test]
     fn rejects_invalid_and_duplicate_facility_ids() {
         let catalog = FacilityCatalog {
-            schema_version: 1,
+            schema_version: SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION,
             facilities: vec![
                 FacilityDefinition {
                     id: "Grinding Unit".to_string(),
@@ -334,6 +389,7 @@ mod tests {
                         width: 3,
                         height: 2,
                     },
+                    allowed_rotations: vec![0],
                 },
                 FacilityDefinition {
                     id: "grinding-unit".to_string(),
@@ -341,6 +397,7 @@ mod tests {
                         width: 3,
                         height: 2,
                     },
+                    allowed_rotations: vec![0],
                 },
                 FacilityDefinition {
                     id: "grinding-unit".to_string(),
@@ -348,6 +405,7 @@ mod tests {
                         width: 3,
                         height: 2,
                     },
+                    allowed_rotations: vec![0],
                 },
             ],
         };
@@ -367,13 +425,14 @@ mod tests {
     #[test]
     fn rejects_non_positive_footprint_dimensions() {
         let catalog = FacilityCatalog {
-            schema_version: 1,
+            schema_version: SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION,
             facilities: vec![FacilityDefinition {
                 id: "grinding-unit".to_string(),
                 footprint: FacilityFootprint {
                     width: 0,
                     height: -1,
                 },
+                allowed_rotations: vec![0],
             }],
         };
 
@@ -390,6 +449,52 @@ mod tests {
                 (
                     "non-positive-footprint-height",
                     "/facilities/0/footprint/height",
+                ),
+            ],
+        );
+    }
+
+    #[test]
+    fn rejects_empty_unsupported_and_duplicate_rotations() {
+        let catalog = FacilityCatalog {
+            schema_version: SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION,
+            facilities: vec![
+                FacilityDefinition {
+                    id: "fixed-unit".to_string(),
+                    footprint: FacilityFootprint {
+                        width: 2,
+                        height: 3,
+                    },
+                    allowed_rotations: Vec::new(),
+                },
+                FacilityDefinition {
+                    id: "invalid-unit".to_string(),
+                    footprint: FacilityFootprint {
+                        width: 2,
+                        height: 3,
+                    },
+                    allowed_rotations: vec![0, 45, 90, 90],
+                },
+            ],
+        };
+
+        let report = catalog.validate();
+
+        assert!(!report.valid);
+        assert_facility_catalog_diagnostics(
+            &report.diagnostics,
+            &[
+                (
+                    "empty-allowed-facility-rotations",
+                    "/facilities/0/allowed_rotations",
+                ),
+                (
+                    "unsupported-facility-rotation",
+                    "/facilities/1/allowed_rotations/1",
+                ),
+                (
+                    "duplicate-facility-rotation",
+                    "/facilities/1/allowed_rotations/3",
                 ),
             ],
         );

@@ -50,13 +50,14 @@ mod tests {
 
     fn catalog_with_facility(id: &str) -> FacilityCatalog {
         FacilityCatalog {
-            schema_version: 1,
+            schema_version: 2,
             facilities: vec![FacilityDefinition {
                 id: id.to_string(),
                 footprint: FacilityFootprint {
                     width: 3,
                     height: 2,
                 },
+                allowed_rotations: vec![0, 90, 180, 270],
             }],
         }
     }
