@@ -320,11 +320,11 @@ pub fn construct_coordinate_integrated_layout_with_time_limit(
                 },
                 |score| {
                     format!(
-                        "portfolio worker produced a validated witness with area={}, max_side={}, route_turns={}, route_cells={}, logistics_components={}",
+                        "portfolio worker produced a validated witness with route_cells={}, route_turns={}, area={}, max_side={}, logistics_components={}",
+                        score.route_cells,
+                        score.route_turns,
                         score.area,
                         score.max_side,
-                        score.route_turns,
-                        score.route_cells,
                         score.logistics_components,
                     )
                 },
@@ -369,14 +369,14 @@ pub fn construct_coordinate_integrated_layout_with_time_limit(
         .push(IntegratedLayoutDiagnostic::info(
             "parallel-portfolio-selected",
             format!(
-                "selected placement width cap {} from {} validated witnesses across {} independent workers with score area={}, max_side={}, route_turns={}, route_cells={}, logistics_components={}",
+                "selected placement width cap {} from {} validated witnesses across {} independent workers with score route_cells={}, route_turns={}, area={}, max_side={}, logistics_components={}",
                 selected.placement_width,
                 successful_candidates,
                 placement_widths.len(),
+                score.route_cells,
+                score.route_turns,
                 score.area,
                 score.max_side,
-                score.route_turns,
-                score.route_cells,
                 score.logistics_components,
             ),
         ));
@@ -419,10 +419,10 @@ impl CoordinateCandidate {
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 struct CoordinateCandidateScore {
+    route_cells: usize,
+    route_turns: usize,
     area: i128,
     max_side: i64,
-    route_turns: usize,
-    route_cells: usize,
     logistics_components: usize,
     placement_width: i64,
 }
@@ -1990,7 +1990,7 @@ mod tests {
     }
 
     #[test]
-    fn portfolio_prefers_compact_area_before_routing_cost() {
+    fn portfolio_prefers_shorter_routes_before_compactness() {
         let compact = CoordinateCandidateScore {
             area: 20_176,
             max_side: 388,
@@ -2008,16 +2008,16 @@ mod tests {
             placement_width: 500,
         };
 
-        assert!(compact < wide);
+        assert!(wide < compact);
     }
 
     #[test]
-    fn portfolio_prefers_fewer_turns_before_shorter_routes_at_equal_size() {
+    fn portfolio_prefers_fewer_turns_at_equal_route_length() {
         let straighter = CoordinateCandidateScore {
             area: 20_000,
             max_side: 400,
             route_turns: 40,
-            route_cells: 11_000,
+            route_cells: 10_000,
             logistics_components: 80,
             placement_width: 400,
         };
