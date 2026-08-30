@@ -34,6 +34,7 @@ use crate::recipes::{
 use super::WorldGridPosition;
 use super::placement::solve_facility_placement_feasibly_with_time_limit;
 
+mod extension;
 mod html;
 mod iterative;
 mod networks;
@@ -44,6 +45,9 @@ mod score;
 mod sparse;
 mod witness;
 
+pub use extension::{
+    IncumbentExtensionCounts, IncumbentExtensionResult, PhaseIncumbent, extend_phase_incumbent,
+};
 pub use html::{render_integrated_layout_html, render_integrated_layout_html_with_localization};
 pub use iterative::construct_iterative_scc_layout;
 pub use optimization::{

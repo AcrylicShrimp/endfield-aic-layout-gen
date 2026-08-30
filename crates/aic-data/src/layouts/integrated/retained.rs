@@ -222,7 +222,7 @@ impl RetainedRoutingState {
     }
 }
 
-fn graph_key(input: &ModelInput) -> CumulativeGraphKey {
+pub(super) fn graph_key(input: &ModelInput) -> CumulativeGraphKey {
     let mut facilities = input
         .instances
         .iter()
@@ -248,7 +248,7 @@ fn graph_key(input: &ModelInput) -> CumulativeGraphKey {
     }
 }
 
-fn graph_fingerprint(key: &CumulativeGraphKey) -> CumulativeGraphFingerprint {
+pub(super) fn graph_fingerprint(key: &CumulativeGraphKey) -> CumulativeGraphFingerprint {
     let mut digest = Sha256::new();
     digest.update(key.schema_version.to_be_bytes());
     for facility in &key.facilities {
