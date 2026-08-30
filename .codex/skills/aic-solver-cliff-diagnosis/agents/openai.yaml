@@ -1,0 +1,4 @@
+interface:
+  display_name: "AIC Solver Cliff Diagnosis"
+  short_description: "Decompose exact solver cliffs without changing semantics"
+  default_prompt: "Use $aic-solver-cliff-diagnosis to diagnose the next exact solver performance cliff and stop at an evidence-backed decision point."
