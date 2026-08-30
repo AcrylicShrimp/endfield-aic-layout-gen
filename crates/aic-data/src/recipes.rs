@@ -6,6 +6,7 @@ mod instances;
 mod load;
 mod model;
 mod selection;
+mod source_plan;
 mod throughput;
 mod validate;
 mod validated;
@@ -26,6 +27,11 @@ pub use model::{ItemAmount, Recipe, RecipeBook, RecipeGraph};
 pub use selection::{
     RecipeSelectionCheckReport, RecipeSelectionCheckStatus, RecipeSelectionDiagnostic,
     check_recipe_selections,
+};
+pub use source_plan::{
+    RecipeSource, RecipeSourceCheckReport, RecipeSourceCheckStatus, RecipeSourceDiagnostic,
+    RecipeSourceGroup, RecipeSourceNode, RecipeSourcePlanRequest, RecipeSourceResolution,
+    RecipeSourceSelection, SUPPORTED_RECIPE_SOURCE_PLAN_SCHEMA_VERSION, check_recipe_source_plan,
 };
 pub use throughput::{
     ItemRate, Rate, RecipeProducerSelection, RecipeProducerSelectionGroup, RecipeRunRate,

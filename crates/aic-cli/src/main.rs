@@ -16,11 +16,12 @@ use aic_data::logistics::{
 };
 use aic_data::recipes::{
     FacilityInstanceWiringReport, FacilityRequirementReport, RecipeSelectionCheckReport,
-    RecipeSelectionCheckStatus, RecipeSelectionDiagnostic, RecipeThroughputReport,
-    RecipeThroughputRequest, RecipeWiringGraphReport, ThroughputDiagnostic, ValidatedRecipeBook,
-    build_facility_instance_wiring, build_recipe_wiring_graph, calculate_facility_requirements,
-    check_recipe_selections, load_recipe_book, validate_recipe_book, validate_target_item_id,
-    validate_throughput_request,
+    RecipeSelectionCheckStatus, RecipeSelectionDiagnostic, RecipeSourceCheckReport,
+    RecipeSourceCheckStatus, RecipeSourceDiagnostic, RecipeSourcePlanRequest,
+    RecipeThroughputReport, RecipeThroughputRequest, RecipeWiringGraphReport, ThroughputDiagnostic,
+    ValidatedRecipeBook, build_facility_instance_wiring, build_recipe_wiring_graph,
+    calculate_facility_requirements, check_recipe_selections, check_recipe_source_plan,
+    load_recipe_book, validate_recipe_book, validate_target_item_id, validate_throughput_request,
 };
 use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
@@ -182,6 +183,16 @@ enum RecipesCommand {
         #[arg(long, short, value_name = "FILE")]
         request: PathBuf,
     },
+    /// Build and validate the complete context-specific material source hierarchy.
+    CheckSources {
+        /// Recipe JSON file to load.
+        #[arg(long, short, value_name = "FILE")]
+        file: PathBuf,
+
+        /// Hierarchical source-plan request JSON file to check.
+        #[arg(long, short, value_name = "FILE")]
+        request: PathBuf,
+    },
     /// Calculate required recipe and item throughput for a target request.
     Throughput {
         /// Recipe JSON file to load.
@@ -300,6 +311,9 @@ fn run() -> Result<CommandStatus> {
             }
             RecipesCommand::CheckSelections { file, request } => {
                 check_recipe_selections_command(file, request)
+            }
+            RecipesCommand::CheckSources { file, request } => {
+                check_recipe_sources_command(file, request)
             }
             RecipesCommand::Throughput { file, request } => throughput_recipes(file, request),
             RecipesCommand::Facilities { file, request } => facilities_recipes(file, request),
@@ -473,6 +487,46 @@ fn check_recipe_selections_command(file: PathBuf, request: PathBuf) -> Result<Co
         CommandStatus::Success
     };
     write_recipe_selection_check_report(&report)?;
+    Ok(status)
+}
+
+fn check_recipe_sources_command(file: PathBuf, request: PathBuf) -> Result<CommandStatus> {
+    let recipe_book = load_recipe_book(&file)?;
+    let request_json = std::fs::read_to_string(&request).with_context(|| {
+        format!(
+            "failed to read recipe source-plan request file '{}'",
+            request.display()
+        )
+    })?;
+    let request = match serde_json::from_str::<RecipeSourcePlanRequest>(&request_json) {
+        Ok(request) => request,
+        Err(error) => {
+            let report = RecipeSourceCheckReport::invalid(vec![RecipeSourceDiagnostic::error(
+                "invalid-recipe-source-plan-json",
+                "/",
+                None,
+                error.to_string(),
+            )]);
+            write_recipe_source_check_report(&report)?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
+    let validated_recipe_book = match ValidatedRecipeBook::try_from_recipe_book(recipe_book) {
+        Ok(validated_recipe_book) => validated_recipe_book,
+        Err(report) => {
+            serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+                .context("failed to write validation report")?;
+            println!();
+            return Ok(CommandStatus::Failure);
+        }
+    };
+    let report = check_recipe_source_plan(&validated_recipe_book, &request);
+    let status = if report.status == RecipeSourceCheckStatus::InvalidInput {
+        CommandStatus::Failure
+    } else {
+        CommandStatus::Success
+    };
+    write_recipe_source_check_report(&report)?;
     Ok(status)
 }
 
@@ -761,6 +815,14 @@ fn write_throughput_report(report: &RecipeThroughputReport) -> Result<()> {
 fn write_recipe_selection_check_report(report: &RecipeSelectionCheckReport) -> Result<()> {
     serde_json::to_writer_pretty(std::io::stdout().lock(), report)
         .context("failed to write recipe selection check report")?;
+    println!();
+
+    Ok(())
+}
+
+fn write_recipe_source_check_report(report: &RecipeSourceCheckReport) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write recipe source check report")?;
     println!();
 
     Ok(())

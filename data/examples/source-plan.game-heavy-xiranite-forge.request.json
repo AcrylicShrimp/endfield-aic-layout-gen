@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "target": {
+    "item": "item-xiranite-enr-powder",
+    "quantity": 1,
+    "duration_ms": 10000
+  },
+  "source_selections": [
+    {
+      "path": "/target",
+      "source": {
+        "kind": "recipe",
+        "recipe": "xiranite-oven-xiranite-enr-powder-1"
+      }
+    }
+  ]
+}
