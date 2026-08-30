@@ -134,6 +134,10 @@ struct ModelInput {
     width: i32,
     height: i32,
     instances: Vec<InstanceInput>,
+    edges: Vec<EdgeInput>,
+}
+
+struct EdgeInput {
     edge: FacilityInstanceWiringEdge,
     source_instance: String,
     target_instance: String,
@@ -171,18 +175,6 @@ fn prepare_model(
             diagnostic.message.clone(),
         ));
     }
-    if instance_wiring.edges.len() != 1 {
-        return Err(IntegratedLayoutDiagnostic::error(
-            "unsupported-routing-edge-count",
-            "/edges",
-            None,
-            format!(
-                "the first integrated routing slice requires exactly one logical edge, found {}",
-                instance_wiring.edges.len()
-            ),
-        ));
-    }
-
     let mut instances = Vec::new();
     let mut seen = BTreeSet::new();
     for (index, node) in instance_wiring.nodes.iter().enumerate() {
@@ -236,73 +228,81 @@ fn prepare_model(
     }
     instances.sort_by(|left, right| left.id.cmp(&right.id));
 
-    let edge = instance_wiring.edges[0].clone();
-    let source = instances
-        .iter()
-        .find(|instance| instance.id == edge.source)
-        .ok_or_else(|| unsupported_external_endpoint("source", &edge.source))?;
-    let target = instances
-        .iter()
-        .find(|instance| instance.id == edge.target)
-        .ok_or_else(|| unsupported_external_endpoint("target", &edge.target))?;
-    if source.id == target.id {
-        return Err(IntegratedLayoutDiagnostic::error(
-            "unsupported-self-route",
-            "/edges/0",
-            Some(source.id.clone()),
-            "the first integrated routing slice does not support a self-route",
-        ));
-    }
+    let mut edges = Vec::with_capacity(instance_wiring.edges.len());
+    for (edge_index, edge) in instance_wiring.edges.iter().cloned().enumerate() {
+        let source = instances
+            .iter()
+            .find(|instance| instance.id == edge.source)
+            .ok_or_else(|| unsupported_external_endpoint(edge_index, "source", &edge.source))?;
+        let target = instances
+            .iter()
+            .find(|instance| instance.id == edge.target)
+            .ok_or_else(|| unsupported_external_endpoint(edge_index, "target", &edge.target))?;
+        if source.id == target.id {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "unsupported-self-route",
+                format!("/edges/{edge_index}"),
+                Some(source.id.clone()),
+                "integrated routing does not support a route from an instance to itself",
+            ));
+        }
 
-    let item = items.item(&edge.item).ok_or_else(|| {
-        IntegratedLayoutDiagnostic::error(
-            "missing-item-definition",
-            "/edges/0/item",
-            Some(edge.item.clone()),
-            format!(
-                "item '{}' is absent from the validated item catalog",
-                edge.item
-            ),
-        )
-    })?;
-    let source_ports = compatible_ports(
-        &source.definition,
-        FacilityPortDirection::Output,
-        item.transport,
-    );
-    let target_ports = compatible_ports(
-        &target.definition,
-        FacilityPortDirection::Input,
-        item.transport,
-    );
-    if source_ports.is_empty() {
-        return Err(missing_compatible_port(
-            &source.id,
-            "output",
+        let item = items.item(&edge.item).ok_or_else(|| {
+            IntegratedLayoutDiagnostic::error(
+                "missing-item-definition",
+                format!("/edges/{edge_index}/item"),
+                Some(edge.item.clone()),
+                format!(
+                    "item '{}' is absent from the validated item catalog",
+                    edge.item
+                ),
+            )
+        })?;
+        let source_ports = compatible_ports(
+            &source.definition,
+            FacilityPortDirection::Output,
             item.transport,
-        ));
-    }
-    if target_ports.is_empty() {
-        return Err(missing_compatible_port(&target.id, "input", item.transport));
+        );
+        let target_ports = compatible_ports(
+            &target.definition,
+            FacilityPortDirection::Input,
+            item.transport,
+        );
+        if source_ports.is_empty() {
+            return Err(missing_compatible_port(
+                edge_index,
+                &source.id,
+                "output",
+                item.transport,
+            ));
+        }
+        if target_ports.is_empty() {
+            return Err(missing_compatible_port(
+                edge_index,
+                &target.id,
+                "input",
+                item.transport,
+            ));
+        }
+        edges.push(EdgeInput {
+            source_instance: source.id.clone(),
+            target_instance: target.id.clone(),
+            source_ports,
+            target_ports,
+            transport: item.transport,
+            edge,
+        });
     }
 
     let width = i32::try_from(request.max_width).map_err(|_| solver_domain_error("max_width"))?;
     let height =
         i32::try_from(request.max_height).map_err(|_| solver_domain_error("max_height"))?;
 
-    let source_instance = source.id.clone();
-    let target_instance = target.id.clone();
-
     Ok(ModelInput {
         width,
         height,
         instances,
-        edge,
-        source_instance,
-        target_instance,
-        source_ports,
-        target_ports,
-        transport: item.transport,
+        edges,
     })
 }
 
@@ -319,23 +319,28 @@ fn compatible_ports(
         .collect()
 }
 
-fn unsupported_external_endpoint(kind: &str, endpoint: &str) -> IntegratedLayoutDiagnostic {
+fn unsupported_external_endpoint(
+    edge_index: usize,
+    kind: &str,
+    endpoint: &str,
+) -> IntegratedLayoutDiagnostic {
     IntegratedLayoutDiagnostic::error(
         "unsupported-external-route-endpoint",
-        format!("/edges/0/{kind}"),
+        format!("/edges/{edge_index}/{kind}"),
         Some(endpoint.to_string()),
-        format!("the first integrated routing slice requires a facility {kind} endpoint"),
+        format!("integrated routing currently requires a facility {kind} endpoint"),
     )
 }
 
 fn missing_compatible_port(
+    edge_index: usize,
     instance: &str,
     direction: &str,
     transport: TransportKind,
 ) -> IntegratedLayoutDiagnostic {
     IntegratedLayoutDiagnostic::error(
         "missing-compatible-port",
-        "/edges/0",
+        format!("/edges/{edge_index}"),
         Some(instance.to_string()),
         format!("facility instance '{instance}' has no {direction} {transport:?} port"),
     )
@@ -379,6 +384,12 @@ struct Arc {
     selected: DomainId,
 }
 
+struct ModelRoute {
+    source_options: Vec<EndpointOption>,
+    target_options: Vec<EndpointOption>,
+    arcs: Vec<Arc>,
+}
+
 fn solve(mut input: ModelInput) -> IntegratedLayoutReport {
     let mut solver = Solver::default();
     let tag = solver.new_constraint_tag();
@@ -419,106 +430,132 @@ fn solve(mut input: ModelInput) -> IntegratedLayoutReport {
         post_at_most_one(&mut solver, cell_candidates.iter().copied(), tag);
     }
 
-    let source_index = model_instances
-        .iter()
-        .position(|instance| instance.input.id == input.source_instance)
-        .expect("prepared source instance exists");
-    let target_index = model_instances
-        .iter()
-        .position(|instance| instance.input.id == input.target_instance)
-        .expect("prepared target instance exists");
-    let source_options = endpoint_options(
-        &mut solver,
-        &model_instances[source_index],
-        &input.source_ports,
-        tag,
-    );
-    let target_options = endpoint_options(
-        &mut solver,
-        &model_instances[target_index],
-        &input.target_ports,
-        tag,
-    );
+    let mut model_routes = Vec::with_capacity(input.edges.len());
+    let mut route_cells_by_grid = vec![Vec::<DomainId>::new(); cell_count];
+    let mut route_arc_variables = Vec::new();
+    for (edge_index, edge) in input.edges.iter().enumerate() {
+        let source_index = model_instances
+            .iter()
+            .position(|instance| instance.input.id == edge.source_instance)
+            .expect("prepared source instance exists");
+        let target_index = model_instances
+            .iter()
+            .position(|instance| instance.input.id == edge.target_instance)
+            .expect("prepared target instance exists");
+        let source_options = endpoint_options(
+            &mut solver,
+            edge_index,
+            "source",
+            &model_instances[source_index],
+            &edge.source_ports,
+            tag,
+        );
+        let target_options = endpoint_options(
+            &mut solver,
+            edge_index,
+            "target",
+            &model_instances[target_index],
+            &edge.target_ports,
+            tag,
+        );
 
-    let (arcs, incoming, outgoing) = grid_arcs(&mut solver, input.width, input.height);
-    let mut source_by_cell = vec![Vec::<DomainId>::new(); cell_count];
-    let mut target_by_cell = vec![Vec::<DomainId>::new(); cell_count];
-    for option in &source_options {
-        source_by_cell[option.cell].push(option.selected);
-    }
-    for option in &target_options {
-        target_by_cell[option.cell].push(option.selected);
+        let (arcs, incoming, outgoing) =
+            grid_arcs(&mut solver, edge_index, input.width, input.height);
+        let mut source_by_cell = vec![Vec::<DomainId>::new(); cell_count];
+        let mut target_by_cell = vec![Vec::<DomainId>::new(); cell_count];
+        for option in &source_options {
+            source_by_cell[option.cell].push(option.selected);
+        }
+        for option in &target_options {
+            target_by_cell[option.cell].push(option.selected);
+        }
+
+        for cell in 0..cell_count {
+            let route_cell =
+                solver.new_named_bounded_integer(0, 1, format!("route-{edge_index}-cell-{cell}"));
+            route_cells_by_grid[cell].push(route_cell);
+
+            let mut conservation = Vec::new();
+            conservation.extend(outgoing[cell].iter().map(|variable| variable.scaled(1)));
+            conservation.extend(incoming[cell].iter().map(|variable| variable.scaled(-1)));
+            conservation.extend(
+                source_by_cell[cell]
+                    .iter()
+                    .map(|variable| variable.scaled(-1)),
+            );
+            conservation.extend(
+                target_by_cell[cell]
+                    .iter()
+                    .map(|variable| variable.scaled(1)),
+            );
+            solver
+                .add_constraint(pumpkin_solver::equals(conservation, 0, tag))
+                .post();
+
+            post_at_most_one(&mut solver, incoming[cell].iter().copied(), tag);
+            post_at_most_one(&mut solver, outgoing[cell].iter().copied(), tag);
+
+            let mut distinct_endpoints = Vec::new();
+            distinct_endpoints.extend(
+                source_by_cell[cell]
+                    .iter()
+                    .map(|variable| variable.scaled(1)),
+            );
+            distinct_endpoints.extend(
+                target_by_cell[cell]
+                    .iter()
+                    .map(|variable| variable.scaled(1)),
+            );
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    distinct_endpoints,
+                    1,
+                    tag,
+                ))
+                .post();
+
+            let mut route_definition = vec![route_cell.scaled(1)];
+            route_definition.extend(outgoing[cell].iter().map(|variable| variable.scaled(-1)));
+            route_definition.extend(
+                target_by_cell[cell]
+                    .iter()
+                    .map(|variable| variable.scaled(-1)),
+            );
+            solver
+                .add_constraint(pumpkin_solver::equals(route_definition, 0, tag))
+                .post();
+        }
+
+        route_arc_variables.extend(arcs.iter().map(|arc| arc.selected));
+        model_routes.push(ModelRoute {
+            source_options,
+            target_options,
+            arcs,
+        });
     }
 
-    let mut route_cells = Vec::with_capacity(cell_count);
     for cell in 0..cell_count {
-        let route_cell = solver.new_named_bounded_integer(0, 1, format!("route-cell-{cell}"));
-        route_cells.push(route_cell);
-
-        let mut conservation = Vec::new();
-        conservation.extend(outgoing[cell].iter().map(|variable| variable.scaled(1)));
-        conservation.extend(incoming[cell].iter().map(|variable| variable.scaled(-1)));
-        conservation.extend(
-            source_by_cell[cell]
-                .iter()
-                .map(|variable| variable.scaled(-1)),
-        );
-        conservation.extend(
-            target_by_cell[cell]
-                .iter()
-                .map(|variable| variable.scaled(1)),
-        );
-        solver
-            .add_constraint(pumpkin_solver::equals(conservation, 0, tag))
-            .post();
-
-        post_at_most_one(&mut solver, incoming[cell].iter().copied(), tag);
-        post_at_most_one(&mut solver, outgoing[cell].iter().copied(), tag);
-
-        let mut distinct_endpoints = Vec::new();
-        distinct_endpoints.extend(
-            source_by_cell[cell]
-                .iter()
-                .map(|variable| variable.scaled(1)),
-        );
-        distinct_endpoints.extend(
-            target_by_cell[cell]
-                .iter()
-                .map(|variable| variable.scaled(1)),
-        );
-        solver
-            .add_constraint(pumpkin_solver::less_than_or_equals(
-                distinct_endpoints,
-                1,
-                tag,
-            ))
-            .post();
-
-        let mut route_definition = vec![route_cell.scaled(1)];
-        route_definition.extend(outgoing[cell].iter().map(|variable| variable.scaled(-1)));
-        route_definition.extend(
-            target_by_cell[cell]
-                .iter()
-                .map(|variable| variable.scaled(-1)),
-        );
-        solver
-            .add_constraint(pumpkin_solver::equals(route_definition, 0, tag))
-            .post();
-
         let mut exclusion = occupancy[cell]
             .iter()
+            .chain(route_cells_by_grid[cell].iter())
             .map(|variable| variable.scaled(1))
             .collect::<Vec<_>>();
-        exclusion.push(route_cell.scaled(1));
-        solver
-            .add_constraint(pumpkin_solver::less_than_or_equals(exclusion, 1, tag))
-            .post();
+        if exclusion.len() > 1 {
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    std::mem::take(&mut exclusion),
+                    1,
+                    tag,
+                ))
+                .post();
+        }
     }
 
-    let route_length = solver.new_named_bounded_integer(0, arcs.len() as i32, "route-length");
-    let mut route_length_definition = arcs
+    let route_length =
+        solver.new_named_bounded_integer(0, route_arc_variables.len() as i32, "total-route-length");
+    let mut route_length_definition = route_arc_variables
         .iter()
-        .map(|arc| arc.selected.scaled(1))
+        .map(|variable| variable.scaled(1))
         .collect::<Vec<_>>();
     route_length_definition.push(route_length.scaled(-1));
     solver
@@ -545,9 +582,7 @@ fn solve(mut input: ModelInput) -> IntegratedLayoutReport {
             IntegratedLayoutStatus::Optimal,
             &input,
             &model_instances,
-            &source_options,
-            &target_options,
-            &arcs,
+            &model_routes,
         ),
         OptimisationResult::Satisfiable(solution) | OptimisationResult::Stopped(solution, ()) => {
             extract_report(
@@ -555,9 +590,7 @@ fn solve(mut input: ModelInput) -> IntegratedLayoutReport {
                 IntegratedLayoutStatus::Feasible,
                 &input,
                 &model_instances,
-                &source_options,
-                &target_options,
-                &arcs,
+                &model_routes,
             )
         }
         OptimisationResult::Unsatisfiable => IntegratedLayoutReport::failure(
@@ -705,6 +738,8 @@ fn rotate_port(
 
 fn endpoint_options(
     solver: &mut Solver,
+    edge_index: usize,
+    endpoint_kind: &str,
     instance: &ModelInstance,
     ports: &[FacilityPortDefinition],
     tag: pumpkin_solver::core::proof::ConstraintTag,
@@ -717,7 +752,7 @@ fn endpoint_options(
                 0,
                 1,
                 format!(
-                    "endpoint-{}-{}-{candidate_index}",
+                    "edge-{edge_index}-{endpoint_kind}-{}-{}-{candidate_index}",
                     instance.input.id, port.id
                 ),
             );
@@ -743,6 +778,7 @@ fn endpoint_options(
 
 fn grid_arcs(
     solver: &mut Solver,
+    edge_index: usize,
     width: i32,
     height: i32,
 ) -> (Vec<Arc>, Vec<Vec<DomainId>>, Vec<Vec<DomainId>>) {
@@ -758,8 +794,11 @@ fn grid_arcs(
                     continue;
                 }
                 let to = grid_index(to_x, to_y, width);
-                let selected =
-                    solver.new_named_bounded_integer(0, 1, format!("route-arc-{from}-{to}"));
+                let selected = solver.new_named_bounded_integer(
+                    0,
+                    1,
+                    format!("route-{edge_index}-arc-{from}-{to}"),
+                );
                 arcs.push(Arc { from, to, selected });
                 outgoing[from].push(selected);
                 incoming[to].push(selected);
@@ -805,9 +844,7 @@ fn extract_report(
     status: IntegratedLayoutStatus,
     input: &ModelInput,
     instances: &[ModelInstance],
-    source_options: &[EndpointOption],
-    target_options: &[EndpointOption],
-    arcs: &[Arc],
+    model_routes: &[ModelRoute],
 ) -> IntegratedLayoutReport {
     let mut placements = Vec::new();
     for instance in instances {
@@ -829,9 +866,6 @@ fn extract_report(
     }
     placements.sort_by(|left, right| left.instance.cmp(&right.instance));
 
-    let source = selected_endpoint(solution, source_options);
-    let target = selected_endpoint(solution, target_options);
-    let cells = extract_path(solution, source.cell, target.cell, arcs, input.width);
     let mut used_width = placements
         .iter()
         .map(|placement| placement.x + placement.width)
@@ -842,10 +876,40 @@ fn extract_report(
         .map(|placement| placement.y + placement.height)
         .max()
         .unwrap_or(0);
-    for cell in &cells {
-        used_width = used_width.max(cell.x + 1);
-        used_height = used_height.max(cell.y + 1);
-    }
+    let routes = input
+        .edges
+        .iter()
+        .zip(model_routes)
+        .map(|(edge, model_route)| {
+            let source = selected_endpoint(solution, &model_route.source_options);
+            let target = selected_endpoint(solution, &model_route.target_options);
+            let cells = extract_path(
+                solution,
+                source.cell,
+                target.cell,
+                &model_route.arcs,
+                input.width,
+            );
+            for cell in &cells {
+                used_width = used_width.max(cell.x + 1);
+                used_height = used_height.max(cell.y + 1);
+            }
+            IntegratedRoute {
+                source: IntegratedRouteEndpoint {
+                    instance: edge.source_instance.clone(),
+                    port: source.port.clone(),
+                },
+                target: IntegratedRouteEndpoint {
+                    instance: edge.target_instance.clone(),
+                    port: target.port.clone(),
+                },
+                item: edge.edge.item.clone(),
+                rate: edge.edge.rate,
+                transport: edge.transport,
+                cells,
+            }
+        })
+        .collect();
 
     IntegratedLayoutReport {
         success: true,
@@ -855,20 +919,7 @@ fn extract_report(
             height: used_height,
         }),
         placements,
-        routes: vec![IntegratedRoute {
-            source: IntegratedRouteEndpoint {
-                instance: input.source_instance.clone(),
-                port: source.port.clone(),
-            },
-            target: IntegratedRouteEndpoint {
-                instance: input.target_instance.clone(),
-                port: target.port.clone(),
-            },
-            item: input.edge.item.clone(),
-            rate: input.edge.rate,
-            transport: input.transport,
-            cells,
-        }],
+        routes,
         diagnostics: vec![IntegratedLayoutDiagnostic::info(
             if status == IntegratedLayoutStatus::Optimal {
                 "integrated-layout-optimal"
@@ -876,7 +927,7 @@ fn extract_report(
                 "integrated-layout-feasible"
             },
             if status == IntegratedLayoutStatus::Optimal {
-                "facility placement, port selection, and route length are solved with proven minimum route length"
+                "facility placement, port selection, and routes are solved with proven minimum total route length"
             } else {
                 "facility placement, port selection, and routing are feasible but not proven optimal"
             },
@@ -959,6 +1010,30 @@ mod tests {
                 position: FacilityPortPosition { x: 0, y: 0 },
                 edge,
             }],
+        }
+    }
+
+    fn facility_with_ports(
+        id: &str,
+        ports: &[(&str, FacilityPortDirection, FacilityPortEdge)],
+    ) -> FacilityDefinition {
+        FacilityDefinition {
+            id: id.to_string(),
+            footprint: FacilityFootprint {
+                width: 1,
+                height: 1,
+            },
+            allowed_rotations: vec![0],
+            ports: ports
+                .iter()
+                .map(|(port_id, direction, edge)| FacilityPortDefinition {
+                    id: (*port_id).to_string(),
+                    direction: *direction,
+                    transport: TransportKind::Belt,
+                    position: FacilityPortPosition { x: 0, y: 0 },
+                    edge: *edge,
+                })
+                .collect(),
         }
     }
 
@@ -1063,6 +1138,251 @@ mod tests {
         assert_eq!(report.routes[0].target.port, "input");
         assert_eq!(report.routes[0].cells.len(), 2);
         assert_eq!(report.placements.len(), 2);
+    }
+
+    #[test]
+    fn jointly_routes_multiple_edges_without_shared_cells() {
+        let facilities = ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
+            schema_version: 3,
+            facilities: vec![
+                facility(
+                    "source-machine",
+                    "output",
+                    FacilityPortDirection::Output,
+                    FacilityPortEdge::East,
+                ),
+                facility_with_ports(
+                    "middle-machine",
+                    &[
+                        (
+                            "input",
+                            FacilityPortDirection::Input,
+                            FacilityPortEdge::West,
+                        ),
+                        (
+                            "output",
+                            FacilityPortDirection::Output,
+                            FacilityPortEdge::East,
+                        ),
+                    ],
+                ),
+                facility(
+                    "target-machine",
+                    "input",
+                    FacilityPortDirection::Input,
+                    FacilityPortEdge::West,
+                ),
+            ],
+        })
+        .expect("facility catalog should validate");
+        let items = ValidatedItemCatalog::try_from_catalog(ItemCatalog {
+            schema_version: SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+            items: vec![
+                ItemDefinition {
+                    id: "part-a".to_string(),
+                    transport: TransportKind::Belt,
+                },
+                ItemDefinition {
+                    id: "part-b".to_string(),
+                    transport: TransportKind::Belt,
+                },
+            ],
+        })
+        .expect("item catalog should validate");
+        let mut wiring = wiring();
+        wiring.nodes.insert(
+            1,
+            FacilityInstanceWiringNode::Facility {
+                id: "recipe:middle#1".to_string(),
+                recipe: "middle".to_string(),
+                facility: "middle-machine".to_string(),
+                index: 1,
+                runs_per_second: Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+                work_seconds_per_second: Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+                unused_capacity: Rate::zero(),
+            },
+        );
+        wiring.edges = vec![
+            FacilityInstanceWiringEdge {
+                source: "recipe:source#1".to_string(),
+                target: "recipe:middle#1".to_string(),
+                kind: "intermediate".to_string(),
+                item: "part-a".to_string(),
+                rate: Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            },
+            FacilityInstanceWiringEdge {
+                source: "recipe:middle#1".to_string(),
+                target: "recipe:target#1".to_string(),
+                kind: "intermediate".to_string(),
+                item: "part-b".to_string(),
+                rate: Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            },
+        ];
+
+        let report = solve_integrated_layout(
+            &wiring,
+            &facilities,
+            &items,
+            &FacilityPlacementRequest {
+                schema_version: 2,
+                max_width: 7,
+                max_height: 1,
+            },
+        );
+
+        assert!(report.success, "{:#?}", report.diagnostics);
+        assert_eq!(report.status, IntegratedLayoutStatus::Optimal);
+        assert_eq!(report.placements.len(), 3);
+        assert_eq!(report.routes.len(), 2);
+        assert_eq!(
+            report
+                .routes
+                .iter()
+                .map(|route| route.cells.len())
+                .sum::<usize>(),
+            4
+        );
+        let route_cells = report
+            .routes
+            .iter()
+            .flat_map(|route| route.cells.iter().map(|cell| (cell.x, cell.y)))
+            .collect::<BTreeSet<_>>();
+        assert_eq!(route_cells.len(), 4);
+    }
+
+    #[test]
+    fn jointly_routes_a_two_facility_cycle() {
+        let cycle_ports = [
+            (
+                "input",
+                FacilityPortDirection::Input,
+                FacilityPortEdge::West,
+            ),
+            (
+                "output",
+                FacilityPortDirection::Output,
+                FacilityPortEdge::East,
+            ),
+        ];
+        let facilities = ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
+            schema_version: 3,
+            facilities: vec![
+                facility_with_ports("planter", &cycle_ports),
+                facility_with_ports("seed-collector", &cycle_ports),
+            ],
+        })
+        .expect("facility catalog should validate");
+        let items = ValidatedItemCatalog::try_from_catalog(ItemCatalog {
+            schema_version: SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+            items: vec![
+                ItemDefinition {
+                    id: "crop".to_string(),
+                    transport: TransportKind::Belt,
+                },
+                ItemDefinition {
+                    id: "seed".to_string(),
+                    transport: TransportKind::Belt,
+                },
+            ],
+        })
+        .expect("item catalog should validate");
+        let wiring = FacilityInstanceWiringReport {
+            success: true,
+            nodes: vec![
+                FacilityInstanceWiringNode::Facility {
+                    id: "recipe:grow#1".to_string(),
+                    recipe: "grow".to_string(),
+                    facility: "planter".to_string(),
+                    index: 1,
+                    runs_per_second: Rate {
+                        numerator: 1,
+                        denominator: 1,
+                    },
+                    work_seconds_per_second: Rate {
+                        numerator: 1,
+                        denominator: 1,
+                    },
+                    unused_capacity: Rate::zero(),
+                },
+                FacilityInstanceWiringNode::Facility {
+                    id: "recipe:collect#1".to_string(),
+                    recipe: "collect".to_string(),
+                    facility: "seed-collector".to_string(),
+                    index: 1,
+                    runs_per_second: Rate {
+                        numerator: 1,
+                        denominator: 1,
+                    },
+                    work_seconds_per_second: Rate {
+                        numerator: 1,
+                        denominator: 1,
+                    },
+                    unused_capacity: Rate::zero(),
+                },
+            ],
+            edges: vec![
+                FacilityInstanceWiringEdge {
+                    source: "recipe:grow#1".to_string(),
+                    target: "recipe:collect#1".to_string(),
+                    kind: "intermediate".to_string(),
+                    item: "crop".to_string(),
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 1,
+                    },
+                },
+                FacilityInstanceWiringEdge {
+                    source: "recipe:collect#1".to_string(),
+                    target: "recipe:grow#1".to_string(),
+                    kind: "intermediate".to_string(),
+                    item: "seed".to_string(),
+                    rate: Rate {
+                        numerator: 1,
+                        denominator: 1,
+                    },
+                },
+            ],
+            diagnostics: Vec::new(),
+        };
+
+        let report = solve_integrated_layout(
+            &wiring,
+            &facilities,
+            &items,
+            &FacilityPlacementRequest {
+                schema_version: 2,
+                max_width: 6,
+                max_height: 2,
+            },
+        );
+
+        assert!(report.success, "{:#?}", report.diagnostics);
+        assert_eq!(report.routes.len(), 2);
+        let route_cells = report
+            .routes
+            .iter()
+            .flat_map(|route| route.cells.iter().map(|cell| (cell.x, cell.y)))
+            .collect::<BTreeSet<_>>();
+        assert_eq!(
+            route_cells.len(),
+            report
+                .routes
+                .iter()
+                .map(|route| route.cells.len())
+                .sum::<usize>()
+        );
     }
 
     #[test]
