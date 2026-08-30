@@ -1,11 +1,13 @@
 use std::ops::ControlFlow;
 use std::sync::Arc as Shared;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
 use pumpkin_solver::Solver;
 use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
-use pumpkin_solver::core::DefaultBrancher;
+use pumpkin_solver::core::branching::Brancher;
+use pumpkin_solver::core::branching::branchers::dynamic_brancher::DynamicBrancher;
+use pumpkin_solver::core::branching::branchers::warm_start::WarmStart;
 use pumpkin_solver::core::optimisation::OptimisationDirection;
 use pumpkin_solver::core::optimisation::linear_sat_unsat::LinearSatUnsat;
 use pumpkin_solver::core::proof::ConstraintTag;
@@ -15,6 +17,7 @@ use pumpkin_solver::core::results::{
 use pumpkin_solver::core::termination::TimeBudget;
 use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
+use super::hint::SolverHint;
 use super::{Arc, ModelBranchComponent, ModelBridge, ModelNetwork, post_presence};
 use crate::layouts::integrated::{
     ExactModelMetrics, ExactObjectiveKind, ExactObjectiveStageReport, ExactProofStatus,
@@ -35,12 +38,14 @@ pub(super) struct ObjectiveSearchResult {
     pub(super) report: IntegratedLayoutReport,
     pub(super) stages: Vec<ExactObjectiveStageReport>,
     pub(super) search_ms: u64,
+    pub(super) first_incumbent_ms: Option<u64>,
     pub(super) incumbent_count: usize,
 }
 
 pub(super) fn optimise_lexicographically(
     solver: &mut Solver,
     objectives: ExactObjectives,
+    hint: &SolverHint,
     time_limit: Option<Duration>,
     tag: ConstraintTag,
     mut extract: impl FnMut(&Solution, IntegratedLayoutStatus) -> IntegratedLayoutReport,
@@ -68,6 +73,9 @@ pub(super) fn optimise_lexicographically(
         ),
     ];
     let incumbent_count = Shared::new(AtomicUsize::new(0));
+    let first_incumbent_ms = Shared::new(AtomicU64::new(u64::MAX));
+    let hint_variables = hint.assignments.keys().copied().collect::<Vec<_>>();
+    let hint_values = hint.assignments.values().copied().collect::<Vec<_>>();
     let mut termination = time_limit.map(TimeBudget::starting_now);
     let search_started = Instant::now();
     let mut stage_reports = Vec::with_capacity(stages.len());
@@ -75,15 +83,28 @@ pub(super) fn optimise_lexicographically(
     let mut terminal_failure = None;
 
     for (stage_index, (objective_kind, objective_variable)) in stages.iter().copied().enumerate() {
-        let mut brancher = solver.default_brancher();
+        let mut branchers: Vec<Box<dyn Brancher>> = Vec::new();
+        if stage_index == 0 && !hint_variables.is_empty() {
+            branchers.push(Box::new(WarmStart::new(&hint_variables, &hint_values)));
+        }
+        branchers.push(Box::new(solver.default_brancher()));
+        let mut brancher = DynamicBrancher::new(branchers);
         let mut resolver = ResolutionResolver::default();
         let callback_incumbent_count = Shared::clone(&incumbent_count);
+        let callback_first_incumbent_ms = Shared::clone(&first_incumbent_ms);
         let callback = move |_: &Solver,
                              _: SolutionReference,
-                             _: &DefaultBrancher,
+                             _: &DynamicBrancher,
                              _: &ResolutionResolver|
               -> ControlFlow<()> {
             callback_incumbent_count.fetch_add(1, Ordering::Relaxed);
+            let elapsed = super::metrics::elapsed_millis(search_started.elapsed());
+            let _ = callback_first_incumbent_ms.compare_exchange(
+                u64::MAX,
+                elapsed,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            );
             ControlFlow::Continue(())
         };
         let stage_started = Instant::now();
@@ -196,6 +217,10 @@ pub(super) fn optimise_lexicographically(
         }),
         stages: stage_reports,
         search_ms: super::metrics::elapsed_millis(search_started.elapsed()),
+        first_incumbent_ms: match first_incumbent_ms.load(Ordering::Relaxed) {
+            u64::MAX => None,
+            value => Some(value),
+        },
         incumbent_count: incumbent_count.load(Ordering::Relaxed),
     }
 }

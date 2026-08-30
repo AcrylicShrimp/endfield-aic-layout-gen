@@ -11,6 +11,7 @@ pub(super) fn finish_report(
     model: ExactModelMetrics,
     construction_ms: u64,
     search_ms: u64,
+    first_incumbent_ms: Option<u64>,
     observed_incumbents: usize,
     validation: ExactValidationStatus,
     objective_stages: Vec<ExactObjectiveStageReport>,
@@ -43,6 +44,7 @@ pub(super) fn finish_report(
         model,
         construction_ms,
         search_ms,
+        first_incumbent_ms,
         incumbent_count: if report.success {
             observed_incumbents.max(1)
         } else {

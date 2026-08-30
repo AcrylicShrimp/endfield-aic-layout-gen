@@ -16,6 +16,7 @@ use crate::logistics::LogisticsComponentKind;
 
 mod extract;
 mod formulation;
+mod hint;
 mod metrics;
 mod objective;
 
@@ -26,6 +27,7 @@ use formulation::{
     post_acyclic_network_ordering, post_at_most_one, post_branch_component_topology,
     post_bridge_crossing, post_equals_one,
 };
+use hint::build_solver_hint;
 use metrics::{elapsed_millis, finish_report};
 use objective::{build_objectives, optimise_lexicographically};
 
@@ -166,6 +168,15 @@ pub(super) fn solve(
     input: ModelInput,
     logistics_components: &ValidatedLogisticsComponentCatalog,
     time_limit: Option<Duration>,
+) -> IntegratedLayoutReport {
+    solve_with_prior_solution(input, logistics_components, time_limit, None)
+}
+
+pub(super) fn solve_with_prior_solution(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    prior_solution: Option<&IntegratedLayoutReport>,
 ) -> IntegratedLayoutReport {
     let construction_started = Instant::now();
     let mut model_metrics = ExactModelMetrics {
@@ -651,6 +662,15 @@ pub(super) fn solve(
         }
     }
 
+    let solver_hint = build_solver_hint(
+        prior_solution,
+        &input,
+        &model_instances,
+        &model_networks,
+        &model_branch_components,
+        &model_bridges,
+        &mut model_metrics,
+    );
     let objectives = match build_objectives(
         &mut solver,
         &input,
@@ -674,6 +694,7 @@ pub(super) fn solve(
     let search = optimise_lexicographically(
         &mut solver,
         objectives,
+        &solver_hint,
         time_limit,
         tag,
         |solution, status| {
@@ -691,6 +712,7 @@ pub(super) fn solve(
     let mut report = search.report;
     let objective_stages = search.stages;
     let search_ms = search.search_ms;
+    let first_incumbent_ms = search.first_incumbent_ms;
     let observed_incumbents = search.incumbent_count;
     let validation = if report.success {
         match witness::validate(&input, logistics_components, &report) {
@@ -718,6 +740,7 @@ pub(super) fn solve(
         model_metrics,
         construction_ms,
         search_ms,
+        first_incumbent_ms,
         observed_incumbents,
         validation,
         objective_stages,

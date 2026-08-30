@@ -65,6 +65,30 @@ fn catalogs() -> (
                 FacilityPortDirection::Input,
                 FacilityPortEdge::West,
             ),
+            FacilityDefinition {
+                id: "relay-machine".to_string(),
+                footprint: FacilityFootprint {
+                    width: 1,
+                    height: 1,
+                },
+                allowed_rotations: vec![0],
+                ports: vec![
+                    FacilityPortDefinition {
+                        id: "input".to_string(),
+                        direction: FacilityPortDirection::Input,
+                        transport: TransportKind::Belt,
+                        position: FacilityPortPosition { x: 0, y: 0 },
+                        edge: FacilityPortEdge::West,
+                    },
+                    FacilityPortDefinition {
+                        id: "output".to_string(),
+                        direction: FacilityPortDirection::Output,
+                        transport: TransportKind::Belt,
+                        position: FacilityPortPosition { x: 0, y: 0 },
+                        edge: FacilityPortEdge::East,
+                    },
+                ],
+            },
         ],
     })
     .expect("facility fixture should validate");
@@ -220,13 +244,13 @@ fn branching_wiring() -> FacilityInstanceWiringReport {
         success: true,
         nodes: vec![
             node("source", "source-recipe", "source-machine"),
-            node("target-a", "target-recipe", "target-machine"),
+            node("target", "target-recipe", "target-machine"),
             node("target-b", "target-recipe", "target-machine"),
         ],
         edges: vec![
             FacilityInstanceWiringEdge::original(
                 "source",
-                "target-a",
+                "target",
                 "intermediate",
                 "part",
                 Rate {
@@ -286,6 +310,56 @@ fn converging_wiring() -> FacilityInstanceWiringReport {
             ),
             FacilityInstanceWiringEdge::original(
                 "source-b",
+                "target",
+                "intermediate",
+                "part",
+                Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            ),
+        ],
+        diagnostics: Vec::new(),
+    }
+}
+
+fn enlarged_chain_wiring() -> FacilityInstanceWiringReport {
+    let node = |id: &str, recipe: &str, facility: &str| FacilityInstanceWiringNode::Facility {
+        id: id.to_string(),
+        recipe: recipe.to_string(),
+        facility: facility.to_string(),
+        index: 0,
+        runs_per_second: Rate {
+            numerator: 1,
+            denominator: 1,
+        },
+        work_seconds_per_second: Rate {
+            numerator: 1,
+            denominator: 1,
+        },
+        unused_capacity: Rate::zero(),
+    };
+    FacilityInstanceWiringReport {
+        schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
+        success: true,
+        nodes: vec![
+            node("source", "source-recipe", "source-machine"),
+            node("relay", "relay-recipe", "relay-machine"),
+            node("target", "target-recipe", "target-machine"),
+        ],
+        edges: vec![
+            FacilityInstanceWiringEdge::original(
+                "source",
+                "relay",
+                "intermediate",
+                "part",
+                Rate {
+                    numerator: 1,
+                    denominator: 1,
+                },
+            ),
+            FacilityInstanceWiringEdge::original(
+                "relay",
                 "target",
                 "intermediate",
                 "part",
@@ -369,6 +443,117 @@ fn exact_solver_jointly_places_selects_ports_routes_and_validates() {
     }));
     assert_eq!(exact.proof, ExactProofStatus::ProvenOptimal);
     assert_eq!(exact.validation, ExactValidationStatus::Passed);
+}
+
+#[test]
+fn prior_solution_warm_start_is_non_binding() {
+    let (facilities, items, transports, components) = catalogs();
+    let request = FacilityPlacementRequest {
+        schema_version: 2,
+        max_width: 4,
+        max_height: 1,
+    };
+    let baseline = solve_integrated_layout(
+        &wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &request,
+    );
+    let baseline_objective = baseline
+        .exact
+        .as_ref()
+        .and_then(|exact| exact.objective)
+        .expect("baseline should have an exact objective");
+    let mut conflicting_hint = baseline.clone();
+    for placement in &mut conflicting_hint.placements {
+        placement.x = if placement.instance == "source" { 3 } else { 0 };
+    }
+    let input = super::prepare_model(
+        &wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &request,
+    )
+    .expect("fixture should prepare");
+
+    let hinted =
+        super::exact::solve_with_prior_solution(input, &components, None, Some(&conflicting_hint));
+
+    assert!(hinted.success, "{:#?}", hinted.diagnostics);
+    assert_eq!(
+        hinted.exact.as_ref().and_then(|exact| exact.objective),
+        Some(baseline_objective),
+        "a conflicting warm start must not change the exact optimum"
+    );
+    let metrics = hinted
+        .exact
+        .expect("hinted solve should report metrics")
+        .model;
+    assert!(metrics.hint_variables > 0);
+    assert_eq!(metrics.hinted_placements, 2);
+    assert_eq!(metrics.hinted_terminals, 2);
+    assert_eq!(metrics.hinted_networks, 1);
+}
+
+#[test]
+fn prior_solution_warm_start_maps_only_the_common_enlarged_graph() {
+    let (facilities, items, transports, components) = catalogs();
+    let small_request = FacilityPlacementRequest {
+        schema_version: 2,
+        max_width: 4,
+        max_height: 1,
+    };
+    let prior = solve_integrated_layout(
+        &wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &small_request,
+    );
+    let enlarged_request = FacilityPlacementRequest {
+        schema_version: 2,
+        max_width: 5,
+        max_height: 1,
+    };
+    let unhinted = solve_integrated_layout(
+        &enlarged_chain_wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &enlarged_request,
+    );
+    let input = super::prepare_model(
+        &enlarged_chain_wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &enlarged_request,
+    )
+    .expect("enlarged fixture should prepare");
+    let hinted = super::exact::solve_with_prior_solution(input, &components, None, Some(&prior));
+
+    assert!(hinted.success, "{:#?}", hinted.diagnostics);
+    assert_eq!(
+        hinted.exact.as_ref().and_then(|exact| exact.objective),
+        unhinted.exact.as_ref().and_then(|exact| exact.objective),
+        "partial hints for old variables must preserve the enlarged exact optimum"
+    );
+    let metrics = hinted
+        .exact
+        .expect("hinted solve should report metrics")
+        .model;
+    assert!(metrics.hint_variables > 0);
+    assert_eq!(metrics.hinted_placements, 2);
+    assert_eq!(metrics.hinted_terminals, 0);
+    assert_eq!(metrics.hinted_networks, 1);
+    assert_eq!(hinted.placements.len(), 3);
 }
 
 #[test]

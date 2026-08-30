@@ -62,6 +62,10 @@ impl RoutingNetworkInput {
             .sum()
     }
 
+    pub(super) fn flow_units_for_hint(&self, rate: Rate) -> Option<i32> {
+        rate_to_flow_units(&self.id, "prior solution hint", rate, self.flow_scale).ok()
+    }
+
     pub(super) fn terminal_count(&self) -> usize {
         self.terminals.len()
     }

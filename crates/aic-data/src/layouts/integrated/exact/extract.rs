@@ -186,7 +186,7 @@ pub(in crate::layouts::integrated) fn extract_report(
                     "integrated-layout-feasible"
                 },
                 if status == IntegratedLayoutStatus::Optimal {
-                    "facility placement, port selection, and solver-selected commodity flow are solved with proven minimum total route length"
+                    "facility placement, port selection, and solver-selected commodity flow are solved with a proven lexicographic layout optimum"
                 } else {
                     "facility placement, port selection, and solver-selected commodity flow are feasible but not proven optimal"
                 },

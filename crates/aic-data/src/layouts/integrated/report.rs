@@ -8,7 +8,7 @@ use crate::recipes::Rate;
 use super::{DeterministicCandidateKey, LayoutScore, WorldGridPosition};
 
 const STAGE: &str = "integrated-layout";
-pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 13;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 14;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -40,6 +40,7 @@ pub struct ExactSolveReport {
     pub model: ExactModelMetrics,
     pub construction_ms: u64,
     pub search_ms: u64,
+    pub first_incumbent_ms: Option<u64>,
     pub incumbent_count: usize,
     pub objective: Option<ExactObjectiveValue>,
     pub objective_stages: Vec<ExactObjectiveStageReport>,
@@ -98,6 +99,11 @@ pub struct ExactModelMetrics {
     pub network_flow_variables: usize,
     pub branch_component_variables: usize,
     pub objective_variables: usize,
+    pub hint_variables: usize,
+    pub hinted_placements: usize,
+    pub hinted_terminals: usize,
+    pub hinted_networks: usize,
+    pub hinted_components: usize,
     pub route_order_variables: usize,
     pub acyclicity_constraints: usize,
     pub bridge_variables: usize,
