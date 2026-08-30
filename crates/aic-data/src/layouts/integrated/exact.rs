@@ -18,6 +18,7 @@ use super::{
     IntegratedLayoutReport, IntegratedLayoutStatus, ModelInput, TransportKind,
     TransportNetworkEndpoint, ValidatedLogisticsComponentCatalog, witness,
 };
+use crate::facilities::FacilityPortDirection;
 use crate::logistics::LogisticsComponentKind;
 
 mod extract;
@@ -27,7 +28,7 @@ mod metrics;
 use extract::extract_report;
 use formulation::{
     external_endpoint_options, generate_candidates, grid_arcs, incident_arcs_by_axis,
-    model_facility_endpoint_options, post_acyclic_route_ordering, post_at_most_one,
+    model_facility_endpoint_options, post_acyclic_network_ordering, post_at_most_one,
     post_bridge_crossing, post_equals_one,
 };
 use metrics::{elapsed_millis, finish_report};
@@ -48,6 +49,7 @@ struct ModelInstance {
     candidates: Vec<Candidate>,
 }
 
+#[derive(Clone)]
 struct EndpointOption {
     endpoint: TransportNetworkEndpoint,
     cell: usize,
@@ -55,20 +57,34 @@ struct EndpointOption {
     external_side: Option<FacilityPortEdge>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 struct Arc {
     from: usize,
     to: usize,
+    flow: DomainId,
     selected: DomainId,
 }
 
-struct ModelRoute {
-    source_options: Vec<EndpointOption>,
-    target_options: Vec<EndpointOption>,
+struct ModelTerminal {
+    id: String,
+    direction: FacilityPortDirection,
+    rate: crate::recipes::Rate,
+    flow_units: i32,
+    options: Vec<EndpointOption>,
+}
+
+struct ModelNetwork {
+    input_index: usize,
+    terminals: Vec<ModelTerminal>,
     arcs: Vec<Arc>,
     route_cells: Vec<DomainId>,
     horizontal_incident: Vec<Vec<DomainId>>,
     vertical_incident: Vec<Vec<DomainId>>,
+}
+
+struct EdgeEndpointOptions {
+    source: Vec<EndpointOption>,
+    target: Vec<EndpointOption>,
 }
 
 struct ModelBridge {
@@ -77,6 +93,48 @@ struct ModelBridge {
     component: String,
     selected: DomainId,
     rotations: Vec<(i64, DomainId)>,
+}
+
+fn post_presence(
+    solver: &mut Solver,
+    name: String,
+    variables: impl Iterator<Item = DomainId>,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> DomainId {
+    let variables = variables.collect::<Vec<_>>();
+    let presence = solver.new_named_bounded_integer(0, 1, name);
+    for variable in &variables {
+        solver
+            .add_constraint(pumpkin_solver::less_than_or_equals(
+                [variable.scaled(1), presence.scaled(-1)],
+                0,
+                tag,
+            ))
+            .post();
+    }
+    let mut definition = vec![presence.scaled(1)];
+    definition.extend(variables.iter().map(|variable| variable.scaled(-1)));
+    solver
+        .add_constraint(pumpkin_solver::less_than_or_equals(definition, 0, tag))
+        .post();
+    presence
+}
+
+fn undirected_arc_pairs(arcs: &[Arc]) -> Vec<[Arc; 2]> {
+    let mut by_edge = BTreeMap::<(usize, usize), Vec<Arc>>::new();
+    for arc in arcs {
+        by_edge
+            .entry((arc.from.min(arc.to), arc.from.max(arc.to)))
+            .or_default()
+            .push(*arc);
+    }
+    by_edge
+        .into_values()
+        .map(|pair| {
+            pair.try_into()
+                .expect("every orthogonal grid edge has two directed arcs")
+        })
+        .collect()
 }
 
 pub(super) fn solve(
@@ -180,8 +238,7 @@ pub(super) fn solve(
         post_at_most_one(&mut solver, cell_candidates.iter().copied(), tag);
     }
 
-    let mut model_routes = Vec::with_capacity(input.edges.len());
-    let mut route_arc_variables = Vec::new();
+    let mut edge_endpoint_options = Vec::with_capacity(input.edges.len());
     for (edge_index, edge) in input.edges.iter().enumerate() {
         let (source_options, target_options) = match (&edge.source, &edge.target) {
             (EndpointInput::Facility { .. }, EndpointInput::Facility { .. }) => (
@@ -241,67 +298,170 @@ pub(super) fn solve(
             }
             (EndpointInput::External { .. }, EndpointInput::External { .. }) => 0,
         };
+        edge_endpoint_options.push(EdgeEndpointOptions {
+            source: source_options,
+            target: target_options,
+        });
+    }
 
-        let (arcs, incoming, outgoing) =
-            grid_arcs(&mut solver, edge_index, input.width, input.height);
+    let mut model_networks = Vec::with_capacity(input.networks.len());
+    let mut route_arc_variables = Vec::new();
+    for (network_index, network) in input.networks.iter().enumerate() {
+        let terminals = network
+            .terminals()
+            .iter()
+            .map(|terminal| {
+                let edge_options = &edge_endpoint_options[terminal.route_index()];
+                ModelTerminal {
+                    id: terminal.id().to_string(),
+                    direction: terminal.direction(),
+                    rate: terminal.rate(),
+                    flow_units: terminal.flow_units(),
+                    options: if terminal.direction() == FacilityPortDirection::Output {
+                        edge_options.source.clone()
+                    } else {
+                        edge_options.target.clone()
+                    },
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let (arcs, incoming, outgoing) = grid_arcs(
+            &mut solver,
+            network_index,
+            input.width,
+            input.height,
+            network.line_capacity_units(),
+            tag,
+        );
         let (horizontal_incident, vertical_incident) =
             incident_arcs_by_axis(&arcs, cell_count, input.width);
         model_metrics.route_arc_variables += arcs.len();
+        model_metrics.network_flow_variables += arcs.len();
         model_metrics.route_cell_variables += cell_count;
         model_metrics.route_order_variables += cell_count;
         model_metrics.acyclicity_constraints += arcs.len();
-        post_acyclic_route_ordering(&mut solver, edge_index, &arcs, input.cell_count, tag);
-        let mut source_by_cell = vec![Vec::<DomainId>::new(); cell_count];
-        let mut target_by_cell = vec![Vec::<DomainId>::new(); cell_count];
-        for option in &source_options {
-            source_by_cell[option.cell].push(option.selected);
-        }
-        for option in &target_options {
-            target_by_cell[option.cell].push(option.selected);
+        post_acyclic_network_ordering(&mut solver, network_index, &arcs, input.cell_count, tag);
+        let mut supply_by_cell = vec![Vec::<(DomainId, i32)>::new(); cell_count];
+        let mut demand_by_cell = vec![Vec::<(DomainId, i32)>::new(); cell_count];
+        for terminal in &terminals {
+            let destination = if terminal.direction == FacilityPortDirection::Output {
+                &mut supply_by_cell
+            } else {
+                &mut demand_by_cell
+            };
+            for option in &terminal.options {
+                destination[option.cell].push((option.selected, terminal.flow_units));
+            }
         }
 
         let mut route_cells = Vec::with_capacity(cell_count);
         for cell in 0..cell_count {
-            let route_cell =
-                solver.new_named_bounded_integer(0, 1, format!("route-{edge_index}-cell-{cell}"));
+            let route_cell = solver.new_named_bounded_integer(
+                0,
+                1,
+                format!("network-{network_index}-cell-{cell}"),
+            );
             route_cells.push(route_cell);
 
             let mut conservation = Vec::new();
-            conservation.extend(outgoing[cell].iter().map(|variable| variable.scaled(1)));
-            conservation.extend(incoming[cell].iter().map(|variable| variable.scaled(-1)));
+            conservation.extend(outgoing[cell].iter().map(|arc| arc.flow.scaled(1)));
+            conservation.extend(incoming[cell].iter().map(|arc| arc.flow.scaled(-1)));
             conservation.extend(
-                source_by_cell[cell]
+                supply_by_cell[cell]
                     .iter()
-                    .map(|variable| variable.scaled(-1)),
+                    .map(|(variable, units)| variable.scaled(-*units)),
             );
             conservation.extend(
-                target_by_cell[cell]
+                demand_by_cell[cell]
                     .iter()
-                    .map(|variable| variable.scaled(1)),
+                    .map(|(variable, units)| variable.scaled(*units)),
             );
             solver
                 .add_constraint(pumpkin_solver::equals(conservation, 0, tag))
                 .post();
 
-            post_at_most_one(&mut solver, incoming[cell].iter().copied(), tag);
-            post_at_most_one(&mut solver, outgoing[cell].iter().copied(), tag);
-
-            let mut route_definition = vec![route_cell.scaled(1)];
-            route_definition.extend(outgoing[cell].iter().map(|variable| variable.scaled(-1)));
-            route_definition.extend(
-                target_by_cell[cell]
-                    .iter()
-                    .map(|variable| variable.scaled(-1)),
+            let supply_present = post_presence(
+                &mut solver,
+                format!("network-{network_index}-cell-{cell}-supply"),
+                supply_by_cell[cell].iter().map(|(variable, _)| *variable),
+                tag,
             );
+            let demand_present = post_presence(
+                &mut solver,
+                format!("network-{network_index}-cell-{cell}-demand"),
+                demand_by_cell[cell].iter().map(|(variable, _)| *variable),
+                tag,
+            );
+
+            let mut incoming_arms = incoming[cell]
+                .iter()
+                .map(|arc| arc.selected.scaled(1))
+                .collect::<Vec<_>>();
+            incoming_arms.push(supply_present.scaled(1));
             solver
-                .add_constraint(pumpkin_solver::equals(route_definition, 0, tag))
+                .add_constraint(pumpkin_solver::less_than_or_equals(incoming_arms, 1, tag))
+                .post();
+            let mut outgoing_arms = outgoing[cell]
+                .iter()
+                .map(|arc| arc.selected.scaled(1))
+                .collect::<Vec<_>>();
+            outgoing_arms.push(demand_present.scaled(1));
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(outgoing_arms, 1, tag))
+                .post();
+
+            let mut supply_capacity = supply_by_cell[cell]
+                .iter()
+                .map(|(variable, units)| variable.scaled(*units))
+                .collect::<Vec<_>>();
+            supply_capacity.push(supply_present.scaled(-network.line_capacity_units()));
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(supply_capacity, 0, tag))
+                .post();
+            let mut demand_capacity = demand_by_cell[cell]
+                .iter()
+                .map(|(variable, units)| variable.scaled(*units))
+                .collect::<Vec<_>>();
+            demand_capacity.push(demand_present.scaled(-network.line_capacity_units()));
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(demand_capacity, 0, tag))
+                .post();
+
+            let active_variables = incoming[cell]
+                .iter()
+                .chain(&outgoing[cell])
+                .map(|arc| arc.selected)
+                .chain(supply_by_cell[cell].iter().map(|(variable, _)| *variable))
+                .chain(demand_by_cell[cell].iter().map(|(variable, _)| *variable))
+                .collect::<Vec<_>>();
+            for active in &active_variables {
+                solver
+                    .add_constraint(pumpkin_solver::less_than_or_equals(
+                        [active.scaled(1), route_cell.scaled(-1)],
+                        0,
+                        tag,
+                    ))
+                    .post();
+            }
+            let mut route_definition = vec![route_cell.scaled(1)];
+            route_definition.extend(active_variables.iter().map(|variable| variable.scaled(-1)));
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    route_definition,
+                    0,
+                    tag,
+                ))
                 .post();
         }
 
+        for pair in undirected_arc_pairs(&arcs) {
+            post_at_most_one(&mut solver, pair.into_iter().map(|arc| arc.selected), tag);
+        }
         route_arc_variables.extend(arcs.iter().map(|arc| arc.selected));
-        model_routes.push(ModelRoute {
-            source_options,
-            target_options,
+        model_networks.push(ModelNetwork {
+            input_index: network_index,
+            terminals,
             arcs,
             route_cells,
             horizontal_incident,
@@ -316,10 +476,10 @@ pub(super) fn solve(
         let definition = logistics_components
             .component_by_kind(transport, LogisticsComponentKind::Bridge)
             .expect("validated catalog has every bridge capability");
-        let routes = model_routes
+        let networks = model_networks
             .iter()
             .enumerate()
-            .filter(|(index, _)| input.edges[*index].transport == transport)
+            .filter(|(_, network)| input.networks[network.input_index].transport() == transport)
             .collect::<Vec<_>>();
         for cell in 0..cell_count {
             let selected =
@@ -352,7 +512,7 @@ pub(super) fn solve(
                 cell,
                 selected,
                 &occupancy[cell],
-                &routes,
+                &networks,
                 tag,
             );
             model_metrics.bridge_variables += 1;
@@ -409,7 +569,7 @@ pub(super) fn solve(
             IntegratedLayoutStatus::Optimal,
             &input,
             &model_instances,
-            &model_routes,
+            &model_networks,
             &model_bridges,
         ),
         OptimisationResult::Satisfiable(solution) | OptimisationResult::Stopped(solution, ()) => {
@@ -418,7 +578,7 @@ pub(super) fn solve(
                 IntegratedLayoutStatus::Feasible,
                 &input,
                 &model_instances,
-                &model_routes,
+                &model_networks,
                 &model_bridges,
             )
         }

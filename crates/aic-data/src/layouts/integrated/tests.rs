@@ -224,8 +224,7 @@ fn exact_solver_jointly_places_selects_ports_routes_and_validates() {
         report
             .diagnostics
             .iter()
-            .any(|diagnostic| diagnostic.code
-                == "transport-networks-projected-from-route-baseline")
+            .any(|diagnostic| diagnostic.code == "commodity-flow-without-branch-components")
     );
     let serialized = serde_json::to_value(&report).expect("report should serialize");
     assert!(serialized.get("transport_networks").is_some());
@@ -238,6 +237,7 @@ fn exact_solver_jointly_places_selects_ports_routes_and_validates() {
     assert_eq!(exact.model.network_requirement_reference_count, 1);
     assert_eq!(exact.model.network_terminal_count, 2);
     assert_eq!(exact.model.external_terminal_count, 0);
+    assert!(exact.model.network_flow_variables > 0);
     assert_eq!(exact.proof, ExactProofStatus::ProvenOptimal);
     assert_eq!(exact.validation, ExactValidationStatus::Passed);
 }

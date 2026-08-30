@@ -10,6 +10,7 @@ pub(super) struct RoutingNetworkInput {
     id: String,
     item: String,
     transport: TransportKind,
+    line_capacity_rate: Rate,
     flow_scale: i64,
     line_capacity_units: i32,
     terminals: Vec<RoutingTerminalInput>,
@@ -41,6 +42,14 @@ impl RoutingNetworkInput {
         self.line_capacity_units
     }
 
+    pub(super) fn line_capacity_rate(&self) -> Rate {
+        self.line_capacity_rate
+    }
+
+    pub(super) fn terminals(&self) -> &[RoutingTerminalInput] {
+        &self.terminals
+    }
+
     pub(super) fn total_terminal_flow_units(&self) -> i64 {
         self.terminals
             .iter()
@@ -62,10 +71,33 @@ impl RoutingNetworkInput {
 
 pub(super) struct RoutingTerminalInput {
     id: String,
+    route_index: usize,
     direction: FacilityPortDirection,
     endpoint: EndpointInput,
     rate: Rate,
     flow_units: i32,
+}
+
+impl RoutingTerminalInput {
+    pub(super) fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub(super) fn route_index(&self) -> usize {
+        self.route_index
+    }
+
+    pub(super) fn direction(&self) -> FacilityPortDirection {
+        self.direction
+    }
+
+    pub(super) fn rate(&self) -> Rate {
+        self.rate
+    }
+
+    pub(super) fn flow_units(&self) -> i32 {
+        self.flow_units
+    }
 }
 
 struct NetworkBuilder {
@@ -109,6 +141,7 @@ pub(super) fn normalize(
         add_terminal(
             builder,
             &edge.requirement_id,
+            route_index,
             FacilityPortDirection::Output,
             &edge.source,
             edge.edge.rate,
@@ -116,6 +149,7 @@ pub(super) fn normalize(
         add_terminal(
             builder,
             &edge.requirement_id,
+            route_index,
             FacilityPortDirection::Input,
             &edge.target,
             edge.edge.rate,
@@ -184,6 +218,7 @@ pub(super) fn normalize(
                 id: builder.id,
                 item: builder.item,
                 transport: builder.transport,
+                line_capacity_rate: builder.capacity_rate,
                 flow_scale,
                 line_capacity_units,
                 terminals,
@@ -196,6 +231,7 @@ pub(super) fn normalize(
 fn add_terminal(
     builder: &mut NetworkBuilder,
     requirement_id: &str,
+    route_index: usize,
     direction: FacilityPortDirection,
     endpoint: &EndpointInput,
     rate: Rate,
@@ -214,6 +250,7 @@ fn add_terminal(
     };
     builder.terminals.push(RoutingTerminalInput {
         id: format!("{requirement_id}:{role}"),
+        route_index,
         direction,
         endpoint: endpoint.clone(),
         rate,

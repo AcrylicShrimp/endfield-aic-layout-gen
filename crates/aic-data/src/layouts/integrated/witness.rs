@@ -96,7 +96,7 @@ pub(super) fn validate(
             input,
             network_index,
             network,
-            expected.route_indices(),
+            expected,
             &placements,
             &mut layer_cells,
         )?;
@@ -144,7 +144,7 @@ fn validate_network(
     input: &ModelInput,
     network_index: usize,
     network: &TransportNetwork,
-    route_indices: &[usize],
+    expected: &super::networks::RoutingNetworkInput,
     placements: &ValidatedPlacements<'_>,
     layer_cells: &mut [Vec<Vec<SegmentShape>>; 2],
 ) -> Result<(), IntegratedLayoutDiagnostic> {
@@ -187,6 +187,12 @@ fn validate_network(
                 "active transport segment must carry a positive rate",
             ));
         }
+        if segment.rate > expected.line_capacity_rate() {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/segments/{segment_index}/rate"),
+                "transport segment exceeds one line of catalog capacity",
+            ));
+        }
         let from = checked_cell(
             input,
             &segment.from,
@@ -221,7 +227,7 @@ fn validate_network(
         incident_neighbors.entry(to).or_default().insert(from);
     }
 
-    let expected_terminals = expected_terminals(input, route_indices, network_index)?;
+    let expected_terminals = expected_terminals(input, expected.route_indices(), network_index)?;
     let mut actual_terminal_rates = BTreeMap::<(String, bool), Rate>::new();
     let mut supply = BTreeMap::<usize, Rate>::new();
     let mut demand = BTreeMap::<usize, Rate>::new();
@@ -292,6 +298,15 @@ fn validate_network(
         ));
     }
 
+    for (cell, rate) in supply.iter().chain(&demand) {
+        if *rate > expected.line_capacity_rate() {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/cells/{cell}"),
+                "transport terminal flow exceeds one line of catalog capacity",
+            ));
+        }
+    }
+
     for cell in &cells {
         let left = rate_at(&incoming, *cell)
             .checked_add(rate_at(&supply, *cell))
@@ -310,6 +325,18 @@ fn validate_network(
             return Err(invalid(
                 format!("/transport_networks/{network_index}/cells"),
                 format!("transport cell {cell} has no terminal or active segment"),
+            ));
+        }
+        let incoming_arms =
+            reverse.get(cell).map_or(0, BTreeSet::len) + usize::from(supply.contains_key(cell));
+        let outgoing_arms =
+            forward.get(cell).map_or(0, BTreeSet::len) + usize::from(demand.contains_key(cell));
+        if incoming_arms > 1 || outgoing_arms > 1 {
+            return Err(invalid(
+                format!("/transport_networks/{network_index}/cells"),
+                format!(
+                    "plain transport cell {cell} splits or converges without a modeled logistics component"
+                ),
             ));
         }
     }
