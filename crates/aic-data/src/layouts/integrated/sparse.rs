@@ -1583,6 +1583,7 @@ fn success_report(
         logistics_components,
         routes,
         phases: Vec::new(),
+        exact: None,
         diagnostics: vec![IntegratedLayoutDiagnostic::info(
             diagnostic_code,
             diagnostic_message,

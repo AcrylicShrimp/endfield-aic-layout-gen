@@ -11,8 +11,9 @@ pub use growth::{
 pub use integrated::{
     CANDIDATE_POLICY_TABLE_SCHEMA_VERSION, CUMULATIVE_GRAPH_KEY_SCHEMA_VERSION, CandidateCounts,
     CandidatePolicy, CandidatePolicyTable, CandidateRank, CumulativeGraphFingerprint,
-    CumulativeGraphKey, DeterministicCandidateKey, EndpointPortSelection, FacilityChangeCounts,
-    FacilityGraphRecord, GridCellKey, INTEGRATED_LAYOUT_SCHEMA_VERSION,
+    CumulativeGraphKey, DeterministicCandidateKey, EndpointPortSelection, ExactModelMetrics,
+    ExactProofStatus, ExactSolveReport, ExactTerminationReason, ExactValidationStatus,
+    FacilityChangeCounts, FacilityGraphRecord, GridCellKey, INTEGRATED_LAYOUT_SCHEMA_VERSION,
     ITERATIVE_OPTIMIZATION_CONFIG_SCHEMA_VERSION, IncumbentExtensionCounts,
     IncumbentExtensionResult, IncumbentProvenance, IntegratedLayoutDiagnostic,
     IntegratedLayoutIncumbentSummary, IntegratedLayoutNeighborhoodReport, IntegratedLayoutPhase,

@@ -8,7 +8,7 @@ use crate::recipes::{FacilityInstanceWiringProjection, Rate};
 use super::{DeterministicCandidateKey, LayoutScore, WorldGridPosition};
 
 const STAGE: &str = "integrated-layout";
-pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 5;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 6;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -30,7 +30,60 @@ pub struct IntegratedLayoutReport {
     pub logistics_components: Vec<PlacedLogisticsComponent>,
     pub routes: Vec<IntegratedRoute>,
     pub phases: Vec<IntegratedLayoutPhase>,
+    pub exact: Option<ExactSolveReport>,
     pub diagnostics: Vec<IntegratedLayoutDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ExactSolveReport {
+    pub formulation: &'static str,
+    pub model: ExactModelMetrics,
+    pub construction_ms: u64,
+    pub search_ms: u64,
+    pub incumbent_count: usize,
+    pub objective_route_cells: Option<usize>,
+    pub best_bound_route_cells: Option<usize>,
+    pub termination: ExactTerminationReason,
+    pub proof: ExactProofStatus,
+    pub validation: ExactValidationStatus,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, Default)]
+pub struct ExactModelMetrics {
+    pub facility_count: usize,
+    pub route_requirement_count: usize,
+    pub grid_cell_count: usize,
+    pub placement_variables: usize,
+    pub endpoint_variables: usize,
+    pub route_cell_variables: usize,
+    pub route_arc_variables: usize,
+    pub route_order_variables: usize,
+    pub acyclicity_constraints: usize,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ExactTerminationReason {
+    Optimal,
+    Feasible,
+    Infeasible,
+    Unknown,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ExactProofStatus {
+    ProvenOptimal,
+    ProvenInfeasible,
+    Unproven,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ExactValidationStatus {
+    Passed,
+    Failed,
+    NotAttempted,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -182,6 +235,7 @@ impl IntegratedLayoutReport {
             logistics_components: Vec::new(),
             routes: Vec::new(),
             phases: Vec::new(),
+            exact: None,
             diagnostics: vec![diagnostic],
         }
     }

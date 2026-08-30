@@ -59,8 +59,9 @@ pub use optimization::{
     validate_candidate_policy_table, validate_iterative_optimization_config,
 };
 pub use report::{
-    CandidateCounts, FacilityChangeCounts, INTEGRATED_LAYOUT_SCHEMA_VERSION, IncumbentProvenance,
-    IntegratedLayoutDiagnostic, IntegratedLayoutIncumbentSummary,
+    CandidateCounts, ExactModelMetrics, ExactProofStatus, ExactSolveReport, ExactTerminationReason,
+    ExactValidationStatus, FacilityChangeCounts, INTEGRATED_LAYOUT_SCHEMA_VERSION,
+    IncumbentProvenance, IntegratedLayoutDiagnostic, IntegratedLayoutIncumbentSummary,
     IntegratedLayoutNeighborhoodReport, IntegratedLayoutPhase, IntegratedLayoutPhaseAttempt,
     IntegratedLayoutPhaseOptimization, IntegratedLayoutReport, IntegratedLayoutStatus,
     IntegratedRoute, IntegratedRouteEndpoint, LayoutScoreDelta, OptimizationProofStatus,
@@ -963,6 +964,18 @@ mod tests {
         ));
         assert_eq!(report.routes[0].cells.len(), 1);
         assert_eq!(report.placements.len(), 2);
+        let exact = report.exact.expect("exact solve metrics should be present");
+        assert_eq!(exact.formulation, "joint-placement-routing-v1");
+        assert_eq!(exact.model.facility_count, 2);
+        assert_eq!(exact.model.route_requirement_count, 1);
+        assert_eq!(exact.model.grid_cell_count, 4);
+        assert_eq!(exact.model.route_cell_variables, 4);
+        assert_eq!(exact.model.route_arc_variables, 6);
+        assert_eq!(exact.model.route_order_variables, 4);
+        assert_eq!(exact.model.acyclicity_constraints, 6);
+        assert_eq!(exact.objective_route_cells, Some(1));
+        assert_eq!(exact.proof, ExactProofStatus::ProvenOptimal);
+        assert_eq!(exact.validation, ExactValidationStatus::NotAttempted);
     }
 
     #[test]

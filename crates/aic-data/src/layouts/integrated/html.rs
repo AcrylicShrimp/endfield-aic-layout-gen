@@ -898,6 +898,7 @@ mod tests {
                 ],
             }],
             phases: Vec::new(),
+            exact: None,
             diagnostics: Vec::new(),
         };
         let phase = |index| IntegratedLayoutPhase {

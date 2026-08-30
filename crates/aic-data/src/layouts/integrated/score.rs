@@ -173,6 +173,7 @@ mod tests {
             logistics_components: Vec::new(),
             routes: vec![route(TransportKind::Belt), route(TransportKind::Belt)],
             phases: Vec::new(),
+            exact: None,
             diagnostics: Vec::new(),
         };
         report.routes.push(route(TransportKind::Pipe));

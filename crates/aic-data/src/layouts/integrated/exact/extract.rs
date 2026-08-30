@@ -72,6 +72,7 @@ pub(in crate::layouts::integrated) fn extract_report(
         logistics_components: Vec::new(),
         routes,
         phases: Vec::new(),
+        exact: None,
         diagnostics: vec![IntegratedLayoutDiagnostic::info(
             if status == IntegratedLayoutStatus::Optimal {
                 "integrated-layout-optimal"

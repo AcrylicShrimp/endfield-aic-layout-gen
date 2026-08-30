@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 use std::ops::ControlFlow;
-use std::time::Duration;
+use std::sync::Arc as Shared;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::{Duration, Instant};
 
 use pumpkin_solver::Solver;
 use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
@@ -12,19 +14,21 @@ use pumpkin_solver::core::termination::TimeBudget;
 use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
 use super::{
-    EndpointInput, FacilityPortEdge, InstanceInput, IntegratedLayoutDiagnostic,
+    EndpointInput, ExactModelMetrics, FacilityPortEdge, InstanceInput, IntegratedLayoutDiagnostic,
     IntegratedLayoutReport, IntegratedLayoutStatus, IntegratedRouteEndpoint, ModelInput,
     TransportKind,
 };
 
 mod extract;
 mod formulation;
+mod metrics;
 
 use extract::extract_report;
 use formulation::{
     external_endpoint_options, generate_candidates, grid_arcs, model_facility_endpoint_options,
     post_acyclic_route_ordering, post_at_most_one, post_equals_one,
 };
+use metrics::{elapsed_millis, finish_report};
 
 struct Candidate {
     rotation: i64,
@@ -63,6 +67,13 @@ struct ModelRoute {
 }
 
 pub(super) fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> IntegratedLayoutReport {
+    let construction_started = Instant::now();
+    let mut model_metrics = ExactModelMetrics {
+        facility_count: input.instances.len(),
+        route_requirement_count: input.edges.len(),
+        grid_cell_count: input.cell_count as usize,
+        ..ExactModelMetrics::default()
+    };
     let mut solver = Solver::default();
     let tag = solver.new_constraint_tag();
     let cell_count = input.cell_count as usize;
@@ -71,6 +82,7 @@ pub(super) fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> Inte
 
     for instance in std::mem::take(&mut input.instances) {
         let candidates = generate_candidates(&mut solver, &instance, input.width, input.height);
+        model_metrics.placement_variables += candidates.len();
         if candidates.is_empty() {
             return IntegratedLayoutReport::failure(
                 IntegratedLayoutStatus::Infeasible,
@@ -153,9 +165,25 @@ pub(super) fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> Inte
                 "external-to-external requirements are rejected during model preparation"
             ),
         };
+        model_metrics.endpoint_variables += match (&edge.source, &edge.target) {
+            (EndpointInput::Facility { .. }, EndpointInput::Facility { .. }) => {
+                source_options.len() + target_options.len()
+            }
+            (EndpointInput::External { .. }, EndpointInput::Facility { .. }) => {
+                target_options.len()
+            }
+            (EndpointInput::Facility { .. }, EndpointInput::External { .. }) => {
+                source_options.len()
+            }
+            (EndpointInput::External { .. }, EndpointInput::External { .. }) => 0,
+        };
 
         let (arcs, incoming, outgoing) =
             grid_arcs(&mut solver, edge_index, input.width, input.height);
+        model_metrics.route_arc_variables += arcs.len();
+        model_metrics.route_cell_variables += cell_count;
+        model_metrics.route_order_variables += cell_count;
+        model_metrics.acyclicity_constraints += arcs.len();
         post_acyclic_route_ordering(&mut solver, edge_index, &arcs, input.cell_count, tag);
         let mut source_by_cell = vec![Vec::<DomainId>::new(); cell_count];
         let mut target_by_cell = vec![Vec::<DomainId>::new(); cell_count];
@@ -243,22 +271,30 @@ pub(super) fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> Inte
         .add_constraint(pumpkin_solver::equals(route_length_definition, 0, tag))
         .post();
 
+    let construction_ms = elapsed_millis(construction_started.elapsed());
     let mut brancher = solver.default_brancher();
     let mut resolver = ResolutionResolver::default();
-    let callback = |_: &Solver,
-                    _: SolutionReference,
-                    _: &DefaultBrancher,
-                    _: &ResolutionResolver|
-     -> ControlFlow<()> { ControlFlow::Continue(()) };
+    let incumbent_count = Shared::new(AtomicUsize::new(0));
+    let callback_incumbent_count = Shared::clone(&incumbent_count);
+    let callback = move |_: &Solver,
+                         _: SolutionReference,
+                         _: &DefaultBrancher,
+                         _: &ResolutionResolver|
+          -> ControlFlow<()> {
+        callback_incumbent_count.fetch_add(1, Ordering::Relaxed);
+        ControlFlow::Continue(())
+    };
     let mut termination = time_limit.map(TimeBudget::starting_now);
+    let search_started = Instant::now();
     let result = solver.optimise(
         &mut brancher,
         &mut termination,
         &mut resolver,
         LinearSatUnsat::new(OptimisationDirection::Minimise, route_length, callback),
     );
+    let search_ms = elapsed_millis(search_started.elapsed());
 
-    match result {
+    let report = match result {
         OptimisationResult::Optimal(solution) => extract_report(
             &solution,
             IntegratedLayoutStatus::Optimal,
@@ -293,5 +329,13 @@ pub(super) fn solve(mut input: ModelInput, time_limit: Option<Duration>) -> Inte
                 "solver terminated without a solution or proof",
             ),
         ),
-    }
+    };
+    let observed_incumbents = incumbent_count.load(Ordering::Relaxed);
+    finish_report(
+        report,
+        model_metrics,
+        construction_ms,
+        search_ms,
+        observed_incumbents,
+    )
 }
