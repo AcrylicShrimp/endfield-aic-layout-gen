@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "workload_id": "heavy-xiranite-minimum-rate",
+  "phase_index": 0,
+  "request_bounds": {"max_width": 12, "max_height": 12},
+  "build_profile": "release",
+  "search_budget_ms": 5000,
+  "production_solver_changed": false,
+  "networks": [
+    {"index": 0, "id": "network:belt:item-xiranite-enr-powder", "transport": "belt", "terminals": 2, "route_requirements": 1},
+    {"index": 1, "id": "network:belt:item-xiranite-powder", "transport": "belt", "terminals": 4, "route_requirements": 2},
+    {"index": 2, "id": "network:pipe:item-liquid-xiranite-poly", "transport": "pipe", "terminals": 2, "route_requirements": 1}
+  ],
+  "complete_subset_cases": [
+    {"networks": [0], "status": "optimal", "variables": 12497, "constraints": 37232, "incidences": 139255, "construction_ms": 67, "search_ms": 2721, "first_incumbent_ms": 2195, "objective": [30, 1, 0, 6, 0]},
+    {"networks": [1], "status": "optimal", "variables": 12497, "constraints": 43948, "incidences": 168375, "construction_ms": 55, "search_ms": 2237, "first_incumbent_ms": 1909, "objective": [30, 2, 0, 6, 0]},
+    {"networks": [2], "status": "optimal", "variables": 12497, "constraints": 31840, "incidences": 115959, "construction_ms": 42, "search_ms": 3932, "first_incumbent_ms": 3643, "objective": [30, 1, 0, 6, 0]},
+    {"networks": [0, 1], "status": "unknown", "variables": 19417, "constraints": 72132, "incidences": 257383, "construction_ms": 93, "search_ms": 5000, "first_incumbent_ms": null},
+    {"networks": [0, 2], "status": "unknown", "variables": 19561, "constraints": 60168, "incidences": 205255, "construction_ms": 78, "search_ms": 5000, "first_incumbent_ms": null},
+    {"networks": [1, 2], "status": "unknown", "variables": 19561, "constraints": 66884, "incidences": 234375, "construction_ms": 83, "search_ms": 5000, "first_incumbent_ms": null}
+  ],
+  "satisfaction_ablation_cases": [
+    {"variant": "core", "networks": [0, 1], "status": "unknown", "variables": 15168, "constraints": 53921, "incidences": 205248, "search_ms": 5000},
+    {"variant": "core", "networks": [0, 2], "status": "unknown", "variables": 15168, "constraints": 41813, "incidences": 152832, "search_ms": 5000},
+    {"variant": "core", "networks": [1, 2], "status": "unknown", "variables": 15168, "constraints": 48529, "incidences": 181952, "search_ms": 5000},
+    {"variant": "no-branch", "networks": [0, 1], "status": "unknown", "variables": 12864, "constraints": 38081, "incidences": 128448, "search_ms": 5000},
+    {"variant": "no-branch", "networks": [0, 2], "status": "unknown", "variables": 12864, "constraints": 25973, "incidences": 92160, "search_ms": 5000},
+    {"variant": "no-branch", "networks": [1, 2], "status": "unknown", "variables": 12864, "constraints": 32689, "incidences": 112320, "search_ms": 5000},
+    {"variant": "no-bridge-collision", "networks": [0, 1], "status": "unknown", "variables": 13152, "constraints": 41441, "incidences": 161536, "search_ms": 5000},
+    {"variant": "no-bridge-collision", "networks": [0, 2], "status": "unknown", "variables": 13152, "constraints": 33365, "incidences": 117184, "search_ms": 5000},
+    {"variant": "no-bridge-collision", "networks": [1, 2], "status": "unknown", "variables": 13152, "constraints": 37841, "incidences": 141824, "search_ms": 5000},
+    {"variant": "minimal-routing-core", "networks": [0, 1], "status": "unknown", "variables": 10848, "constraints": 27905, "incidences": 89344, "search_ms": 5000},
+    {"variant": "minimal-routing-core", "networks": [0, 2], "status": "unknown", "variables": 10848, "constraints": 19829, "incidences": 61120, "search_ms": 5000},
+    {"variant": "minimal-routing-core", "networks": [1, 2], "status": "feasible", "variables": 10848, "constraints": 24305, "incidences": 76800, "search_ms": 503}
+  ],
+  "minimal_core_fixed_decision_cases": [
+    {"fixed": "placement", "networks": [0, 1], "status": "feasible", "search_ms": 2188},
+    {"fixed": "placement", "networks": [0, 2], "status": "unknown", "search_ms": 5000},
+    {"fixed": "ports", "networks": [0, 1], "status": "feasible", "search_ms": 1451},
+    {"fixed": "ports", "networks": [0, 2], "status": "unknown", "search_ms": 5000},
+    {"fixed": "placement-and-ports", "networks": [0, 1], "status": "feasible", "search_ms": 1928},
+    {"fixed": "placement-and-ports", "networks": [0, 2], "status": "unknown", "search_ms": 5000},
+    {"fixed": "placement-and-ports", "networks": [0, 2], "status": "feasible", "search_budget_ms": 30000, "search_ms": 8171},
+    {"fixed": "placement-and-ports-reversed-network-order", "networks": [0, 2], "status": "unknown", "search_ms": 5001}
+  ],
+  "observed_validator_conflict": {
+    "code": "invalid-integrated-layout-witness",
+    "message": "every active transport cell must lie on a directed supply-to-demand flow path",
+    "cause": "the circulation-permitted solver produced active positive-flow circulation outside directed terminal paths",
+    "affected_observations": ["fixed-placement-network-1", "fixed-placement-network-2"]
+  }
+}

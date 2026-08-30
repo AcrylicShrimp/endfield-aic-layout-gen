@@ -24,6 +24,12 @@ bound series after route acyclicity proof was removed. It includes the current m
 first-incumbent breakdowns and identifies the one-to-two-network transition as the next measured
 research boundary.
 
+The sixth checkpoint,
+`heavy-xiranite-minimum-rate.sixth-network-interaction-decomposition-report.md`, isolates all three
+phase-zero networks and pairs. It separates placement-port coupling from multiplicative routing
+state and records the newly observed mismatch between circulation-permitted solving and witness
+validation.
+
 Regenerate it from a release binary with:
 
 ```bash
