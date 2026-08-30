@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "workload_id": "heavy-xiranite-minimum-rate",
+  "phase_index": 0,
+  "facility_count": 1,
+  "commodity_network_count": 3,
+  "network_terminal_count": 8,
+  "route_requirement_count": 4,
+  "formulation": "joint-lexicographic-layout-v5",
+  "search_budget_ms": 5000,
+  "repetitions_per_case": 1,
+  "cases": [
+    {"side": 12, "status": "unknown", "variables": 26481, "constraints": 95068, "terms": 330551, "incidences": 323383, "construction_ms": 138, "search_ms": 5001, "wall_seconds": 5.68, "peak_rss_bytes": 101974016, "first_incumbent_ms": null},
+    {"side": 16, "status": "unknown", "variables": 49633, "constraints": 186268, "terms": 673183, "incidences": 656287, "construction_ms": 245, "search_ms": 5000, "wall_seconds": 5.27, "peak_rss_bytes": 160268288, "first_incumbent_ms": null},
+    {"side": 20, "status": "unknown", "variables": 80177, "constraints": 308828, "terms": 1140135, "incidences": 1109415, "construction_ms": 411, "search_ms": 5001, "wall_seconds": 5.44, "peak_rss_bytes": 260063232, "first_incumbent_ms": null},
+    {"side": 24, "status": "unknown", "variables": 118113, "constraints": 462748, "terms": 1731407, "incidences": 1682767, "construction_ms": 634, "search_ms": 5006, "wall_seconds": 5.69, "peak_rss_bytes": 408797184, "first_incumbent_ms": null},
+    {"side": 32, "status": "unknown", "variables": 216161, "constraints": 864668, "terms": 3286911, "incidences": 3190143, "construction_ms": 1258, "search_ms": 5004, "wall_seconds": 6.35, "peak_rss_bytes": 678690816, "first_incumbent_ms": null},
+    {"side": 40, "status": "unknown", "variables": 343777, "constraints": 1392028, "terms": 5339695, "incidences": 5178415, "construction_ms": 2161, "search_ms": 5006, "wall_seconds": 7.31, "peak_rss_bytes": 1095467008, "first_incumbent_ms": null},
+    {"side": 50, "status": "unknown", "variables": 544877, "constraints": 2227628, "terms": 8604975, "incidences": 8340015, "construction_ms": 3942, "search_ms": 5041, "wall_seconds": 9.23, "peak_rss_bytes": 1811251200, "first_incumbent_ms": null}
+  ],
+  "observed_square_bound_identities": {
+    "scope": "this phase, data revision, formulation, and measured side series only",
+    "variables": "231*N^2 - 680*N + 1377",
+    "constraints": "980*N^2 - 4640*N + 9628",
+    "terms": "3885*N^2 - 23122*N + 48575",
+    "incidences": "3757*N^2 - 21970*N + 46015"
+  }
+}

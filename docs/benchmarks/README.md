@@ -18,6 +18,12 @@ uses a temporary release-only ablation build to identify the smallest tested mod
 crosses the five-second first-solution budget. None of its relaxed variants are production solver
 paths.
 
+The fifth checkpoint,
+`heavy-xiranite-minimum-rate.fifth-circulation-permitted-remeasurement-report.md`, repeats the
+bound series after route acyclicity proof was removed. It includes the current model-family and
+first-incumbent breakdowns and identifies the one-to-two-network transition as the next measured
+research boundary.
+
 Regenerate it from a release binary with:
 
 ```bash
