@@ -9,6 +9,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::stable_id::{STABLE_ID_PATTERN, is_stable_id};
 
+mod validated;
+
+pub use validated::ValidatedFacilityCatalog;
+
 const STAGE: &str = "facility-catalog-validation";
 
 pub const SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION: u32 = 1;
