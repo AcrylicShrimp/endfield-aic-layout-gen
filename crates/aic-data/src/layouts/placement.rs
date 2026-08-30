@@ -1,14 +1,19 @@
 use std::collections::BTreeSet;
 use std::ops::ControlFlow;
+use std::time::Duration;
 
 use pumpkin_solver::Solver;
 use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
 use pumpkin_solver::core::DefaultBrancher;
+use pumpkin_solver::core::branching::branchers::dynamic_brancher::DynamicBrancher;
+use pumpkin_solver::core::branching::branchers::warm_start::WarmStart;
 use pumpkin_solver::core::constraints::NegatableConstraint;
 use pumpkin_solver::core::optimisation::OptimisationDirection;
 use pumpkin_solver::core::optimisation::linear_sat_unsat::LinearSatUnsat;
-use pumpkin_solver::core::results::{OptimisationResult, ProblemSolution, SolutionReference};
-use pumpkin_solver::core::termination::Indefinite;
+use pumpkin_solver::core::results::{
+    OptimisationResult, ProblemSolution, SatisfactionResult, SolutionReference,
+};
+use pumpkin_solver::core::termination::{Indefinite, TimeBudget};
 use pumpkin_solver::core::variables::{DomainId, Literal, TransformableVariable};
 use serde::{Deserialize, Serialize};
 
@@ -234,6 +239,47 @@ pub fn solve_facility_placement(
     }
 }
 
+pub(crate) fn solve_facility_placement_feasibly_with_time_limit(
+    instance_wiring: &FacilityInstanceWiringReport,
+    catalog: &ValidatedFacilityCatalog,
+    request: &FacilityPlacementRequest,
+    minimum_clearance: i64,
+    time_limit: Duration,
+) -> FacilityPlacementReport {
+    if !instance_wiring.success {
+        return FacilityPlacementReport::invalid(FacilityPlacementDiagnostic::error(
+            "upstream-instance-wiring-failed",
+            "/",
+            None,
+            "facility placement requires successful facility instance wiring",
+        ));
+    }
+
+    let request_diagnostics = validate_facility_placement_request(request);
+    if !request_diagnostics.is_empty() {
+        return FacilityPlacementReport::invalid_many(request_diagnostics);
+    }
+
+    let instances = match collect_instances(instance_wiring, catalog) {
+        Ok(instances) => instances,
+        Err(diagnostic) => return FacilityPlacementReport::invalid(diagnostic),
+    };
+
+    match solve_feasibly(
+        instances,
+        request.max_width,
+        request.max_height,
+        minimum_clearance,
+        time_limit,
+    ) {
+        Ok(report) => report,
+        Err(PlacementFailure::Invalid(diagnostic)) => FacilityPlacementReport::invalid(diagnostic),
+        Err(PlacementFailure::Infeasible(diagnostic)) => {
+            FacilityPlacementReport::infeasible(diagnostic)
+        }
+    }
+}
+
 #[derive(Debug)]
 struct InstanceSpec {
     instance: String,
@@ -314,67 +360,8 @@ fn solve_optimally(
     }
 
     instances.sort_by(|left, right| left.instance.cmp(&right.instance));
-    let max_width = solver_i32(max_width, None, "layout max_width")?;
-    let max_height = solver_i32(max_height, None, "layout max_height")?;
-
-    let mut solver = Solver::default();
-    let constraint_tag = solver.new_constraint_tag();
-    let used_height = solver.new_named_bounded_integer(0, max_height, "used-height");
-    let mut model_instances = Vec::with_capacity(instances.len());
-
-    for instance in instances {
-        let x = solver.new_named_bounded_integer(0, max_width, format!("{}-x", instance.instance));
-        let y = solver.new_named_bounded_integer(0, max_height, format!("{}-y", instance.instance));
-        let orientations = solver_orientations(&mut solver, &instance, max_width)?;
-        post_exactly_one_orientation(&mut solver, &orientations, constraint_tag);
-
-        for orientation in &orientations {
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(
-                    vec![x.scaled(-1)],
-                    -orientation.left_clearance,
-                    constraint_tag,
-                ))
-                .implied_by(orientation.literal);
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(
-                    vec![x.scaled(1)],
-                    max_width - orientation.width - orientation.right_clearance,
-                    constraint_tag,
-                ))
-                .implied_by(orientation.literal);
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(
-                    vec![y.scaled(-1)],
-                    -orientation.top_clearance,
-                    constraint_tag,
-                ))
-                .implied_by(orientation.literal);
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(
-                    vec![y.scaled(1)],
-                    max_height - orientation.height - orientation.bottom_clearance,
-                    constraint_tag,
-                ))
-                .implied_by(orientation.literal);
-            solver
-                .add_constraint(pumpkin_solver::less_than_or_equals(
-                    vec![y.scaled(1), used_height.scaled(-1)],
-                    -orientation.height,
-                    constraint_tag,
-                ))
-                .implied_by(orientation.literal);
-        }
-
-        model_instances.push(ModelInstance {
-            spec: instance,
-            x,
-            y,
-            orientations,
-        });
-    }
-
-    post_pairwise_non_overlap(&mut solver, &model_instances, constraint_tag);
+    let (mut solver, used_height, model_instances) =
+        build_model(instances, max_width, max_height, 0)?;
 
     let mut brancher = solver.default_brancher();
     let mut resolver = ResolutionResolver::default();
@@ -394,7 +381,6 @@ fn solve_optimally(
         OptimisationResult::Optimal(solution) => solved_report(
             &solution,
             &model_instances,
-            used_height,
             FacilityPlacementStatus::Optimal,
             "facility-placement-optimal",
             "facility placement is proven to have minimum height",
@@ -403,7 +389,6 @@ fn solve_optimally(
             solved_report(
                 &solution,
                 &model_instances,
-                used_height,
                 FacilityPlacementStatus::Feasible,
                 "facility-placement-feasible",
                 "facility placement is feasible but not proven optimal",
@@ -426,6 +411,195 @@ fn solve_optimally(
             ),
         )),
     }
+}
+
+fn solve_feasibly(
+    mut instances: Vec<InstanceSpec>,
+    max_width: i64,
+    max_height: i64,
+    minimum_clearance: i64,
+    time_limit: Duration,
+) -> Result<FacilityPlacementReport, PlacementFailure> {
+    if instances.is_empty() {
+        return Ok(FacilityPlacementReport::solved(
+            FacilityPlacementStatus::Feasible,
+            FacilityPlacementBounds {
+                width: 0,
+                height: 0,
+            },
+            Vec::new(),
+            "facility-placement-feasible",
+            "facility placement is feasible; optimality was not requested",
+        ));
+    }
+
+    instances.sort_by(|left, right| left.instance.cmp(&right.instance));
+    let (mut solver, _used_height, model_instances) =
+        build_model(instances, max_width, max_height, minimum_clearance)?;
+    let mut brancher = if let Some((variables, values)) = shelf_warm_start(
+        &model_instances,
+        solver_i32(max_width, None, "layout max_width")?,
+        solver_i32(max_height, None, "layout max_height")?,
+        solver_i32(minimum_clearance, None, "minimum clearance")?,
+    ) {
+        DynamicBrancher::new(vec![
+            Box::new(WarmStart::new(&variables, &values)),
+            Box::new(solver.default_brancher()),
+        ])
+    } else {
+        DynamicBrancher::new(vec![Box::new(solver.default_brancher())])
+    };
+    let mut resolver = ResolutionResolver::default();
+    let mut termination = TimeBudget::starting_now(time_limit);
+
+    match solver.satisfy(&mut brancher, &mut termination, &mut resolver) {
+        SatisfactionResult::Satisfiable(satisfiable) => solved_report(
+            &satisfiable.solution(),
+            &model_instances,
+            FacilityPlacementStatus::Feasible,
+            "facility-placement-feasible",
+            "facility placement is feasible; optimality was not requested",
+        ),
+        SatisfactionResult::Unsatisfiable(_, _, _) => Ok(FacilityPlacementReport::infeasible(
+            FacilityPlacementDiagnostic::error(
+                "facility-placement-infeasible",
+                "/",
+                None,
+                "facility placement constraints are infeasible",
+            ),
+        )),
+        SatisfactionResult::Unknown(_, _, _) => Ok(FacilityPlacementReport::unknown(
+            FacilityPlacementDiagnostic::error(
+                "facility-placement-unknown",
+                "/",
+                None,
+                "facility placement solver reached its time limit without a solution or proof",
+            ),
+        )),
+    }
+}
+
+fn shelf_warm_start(
+    instances: &[ModelInstance],
+    max_width: i32,
+    max_height: i32,
+    minimum_clearance: i32,
+) -> Option<(Vec<DomainId>, Vec<i32>)> {
+    let margin = minimum_clearance;
+    let mut x = margin;
+    let mut y = margin;
+    let mut row_height = 0;
+    let mut variables = Vec::with_capacity(instances.len() * 2);
+    let mut values = Vec::with_capacity(instances.len() * 2);
+
+    for instance in instances {
+        let orientation = instance.orientations.first()?;
+        if x + orientation.width + margin > max_width {
+            x = margin;
+            y += row_height + minimum_clearance;
+            row_height = 0;
+        }
+        if y + orientation.height + margin > max_height {
+            return None;
+        }
+        variables.extend([instance.x, instance.y]);
+        values.extend([x, y]);
+        x += orientation.width + minimum_clearance;
+        row_height = row_height.max(orientation.height);
+    }
+
+    Some((variables, values))
+}
+
+fn build_model(
+    instances: Vec<InstanceSpec>,
+    max_width: i64,
+    max_height: i64,
+    minimum_clearance: i64,
+) -> Result<(Solver, DomainId, Vec<ModelInstance>), PlacementFailure> {
+    let max_width = solver_i32(max_width, None, "layout max_width")?;
+    let max_height = solver_i32(max_height, None, "layout max_height")?;
+    let minimum_clearance = solver_i32(minimum_clearance, None, "minimum clearance")?;
+    if minimum_clearance < 0 {
+        return Err(PlacementFailure::Invalid(
+            FacilityPlacementDiagnostic::error(
+                "negative-placement-clearance",
+                "/",
+                None,
+                format!(
+                    "minimum placement clearance must be non-negative, found {minimum_clearance}"
+                ),
+            ),
+        ));
+    }
+    let mut solver = Solver::default();
+    let constraint_tag = solver.new_constraint_tag();
+    let used_height = solver.new_named_bounded_integer(0, max_height, "used-height");
+    let mut model_instances = Vec::with_capacity(instances.len());
+
+    for instance in instances {
+        let x = solver.new_named_bounded_integer(0, max_width, format!("{}-x", instance.instance));
+        let y = solver.new_named_bounded_integer(0, max_height, format!("{}-y", instance.instance));
+        let orientations = solver_orientations(&mut solver, &instance, max_width)?;
+        post_exactly_one_orientation(&mut solver, &orientations, constraint_tag);
+
+        for orientation in &orientations {
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    vec![x.scaled(-1)],
+                    -orientation.left_clearance.max(minimum_clearance),
+                    constraint_tag,
+                ))
+                .implied_by(orientation.literal);
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    vec![x.scaled(1)],
+                    max_width
+                        - orientation.width
+                        - orientation.right_clearance.max(minimum_clearance),
+                    constraint_tag,
+                ))
+                .implied_by(orientation.literal);
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    vec![y.scaled(-1)],
+                    -orientation.top_clearance.max(minimum_clearance),
+                    constraint_tag,
+                ))
+                .implied_by(orientation.literal);
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    vec![y.scaled(1)],
+                    max_height
+                        - orientation.height
+                        - orientation.bottom_clearance.max(minimum_clearance),
+                    constraint_tag,
+                ))
+                .implied_by(orientation.literal);
+            solver
+                .add_constraint(pumpkin_solver::less_than_or_equals(
+                    vec![y.scaled(1), used_height.scaled(-1)],
+                    -orientation.height,
+                    constraint_tag,
+                ))
+                .implied_by(orientation.literal);
+        }
+
+        model_instances.push(ModelInstance {
+            spec: instance,
+            x,
+            y,
+            orientations,
+        });
+    }
+
+    post_pairwise_non_overlap(
+        &mut solver,
+        &model_instances,
+        minimum_clearance,
+        constraint_tag,
+    );
+    Ok((solver, used_height, model_instances))
 }
 
 struct ModelInstance {
@@ -552,6 +726,7 @@ fn post_exactly_one_orientation(
 fn post_pairwise_non_overlap(
     solver: &mut Solver,
     instances: &[ModelInstance],
+    minimum_clearance: i32,
     constraint_tag: pumpkin_solver::core::proof::ConstraintTag,
 ) {
     for left_index in 0..instances.len() {
@@ -564,25 +739,25 @@ fn post_pairwise_non_overlap(
                     let left_of = reify_less_or_equal(
                         solver,
                         vec![left.x.scaled(1), right.x.scaled(-1)],
-                        -left_orientation.width,
+                        -left_orientation.width - minimum_clearance,
                         constraint_tag,
                     );
                     let right_of = reify_less_or_equal(
                         solver,
                         vec![right.x.scaled(1), left.x.scaled(-1)],
-                        -right_orientation.width,
+                        -right_orientation.width - minimum_clearance,
                         constraint_tag,
                     );
                     let below = reify_less_or_equal(
                         solver,
                         vec![left.y.scaled(1), right.y.scaled(-1)],
-                        -left_orientation.height,
+                        -left_orientation.height - minimum_clearance,
                         constraint_tag,
                     );
                     let above = reify_less_or_equal(
                         solver,
                         vec![right.y.scaled(1), left.y.scaled(-1)],
-                        -right_orientation.height,
+                        -right_orientation.height - minimum_clearance,
                         constraint_tag,
                     );
 
@@ -617,13 +792,13 @@ fn reify_less_or_equal(
 fn solved_report(
     solution: &impl ProblemSolution,
     instances: &[ModelInstance],
-    used_height: DomainId,
     status: FacilityPlacementStatus,
     code: &'static str,
     message: &'static str,
 ) -> Result<FacilityPlacementReport, PlacementFailure> {
     let mut placements = Vec::with_capacity(instances.len());
     let mut used_width = 0_i64;
+    let mut used_height = 0_i64;
 
     for instance in instances {
         let orientation = instance
@@ -643,6 +818,7 @@ fn solved_report(
         let width = i64::from(orientation.width);
         let height = i64::from(orientation.height);
         used_width = used_width.max(x + width);
+        used_height = used_height.max(y + height);
 
         placements.push(FacilityPlacement {
             instance: instance.spec.instance.clone(),
@@ -662,7 +838,7 @@ fn solved_report(
         status,
         FacilityPlacementBounds {
             width: used_width,
-            height: i64::from(solution.get_integer_value(used_height)),
+            height: used_height,
         },
         placements,
         code,

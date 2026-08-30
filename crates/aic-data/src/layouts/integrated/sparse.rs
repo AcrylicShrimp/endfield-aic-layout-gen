@@ -55,7 +55,15 @@ pub(super) fn construct(
             };
             match route_all(&input, &placements, &assigned) {
                 Ok((routes, bridges)) => {
-                    let report = success_report(&input, components, placements, routes, bridges);
+                    let report = success_report(
+                        &input,
+                        components,
+                        placements,
+                        routes,
+                        bridges,
+                        "sparse-integrated-layout-feasible",
+                        "sparse construction produced a feasible placement and routing witness; optimality is not proven",
+                    );
                     return match super::witness::validate(&input, components, &report) {
                         Ok(()) => report,
                         Err(diagnostic) => IntegratedLayoutReport::failure(
@@ -109,6 +117,152 @@ pub(super) fn construct(
         )
     };
     IntegratedLayoutReport::failure(IntegratedLayoutStatus::Unknown, diagnostic)
+}
+
+pub(super) fn construct_from_placements(
+    input: ModelInput,
+    components: &ValidatedLogisticsComponentCatalog,
+    placements: Vec<FacilityPlacement>,
+) -> IntegratedLayoutReport {
+    let placements = match index_placements(&input, placements) {
+        Ok(placements) => placements,
+        Err(diagnostic) => {
+            return IntegratedLayoutReport::failure(IntegratedLayoutStatus::Unknown, diagnostic);
+        }
+    };
+    let mut port_failure = None;
+    let mut best_routing_failure = None;
+
+    for order in route_orders(&input) {
+        let assigned = match assign_facility_ports(&input, &placements, &order) {
+            Ok(assigned) => assigned,
+            Err(failure) => {
+                port_failure = Some(failure);
+                continue;
+            }
+        };
+        match route_all(&input, &placements, &assigned) {
+            Ok((routes, bridges)) => {
+                let report = success_report(
+                    &input,
+                    components,
+                    placements,
+                    routes,
+                    bridges,
+                    "coordinate-integrated-layout-feasible",
+                    "coordinate CP placement and sparse routing produced a validated feasible witness; optimality is not proven",
+                );
+                return match super::witness::validate(&input, components, &report) {
+                    Ok(()) => report,
+                    Err(diagnostic) => {
+                        IntegratedLayoutReport::failure(IntegratedLayoutStatus::Unknown, diagnostic)
+                    }
+                };
+            }
+            Err(failure) => {
+                if best_routing_failure
+                    .as_ref()
+                    .is_none_or(|best: &RoutingFailure| failure.routed > best.routed)
+                {
+                    best_routing_failure = Some(failure);
+                }
+            }
+        }
+    }
+
+    let diagnostic = if let Some(failure) = best_routing_failure {
+        let edge = &input.edges[failure.edge_index].edge;
+        IntegratedLayoutDiagnostic::error(
+            "coordinate-routing-construction-failed",
+            format!("/edges/{}", failure.edge_index),
+            Some(edge.item.clone()),
+            format!(
+                "coordinate placement routed {} of {} capacity-split routes before failing from '{}' to '{}'; this is not proof of infeasibility",
+                failure.routed,
+                input.edges.len(),
+                edge.source,
+                edge.target
+            ),
+        )
+    } else if let Some(failure) = port_failure {
+        IntegratedLayoutDiagnostic::error(
+            "coordinate-port-assignment-failed",
+            format!("/edges/{}", failure.edge_index),
+            Some(failure.instance.clone()),
+            format!(
+                "facility instance '{}' has no unused compatible connection cell for the {} endpoint of capacity-split route {}; this is not proof of infeasibility",
+                failure.instance, failure.endpoint_kind, failure.edge_index
+            ),
+        )
+    } else {
+        IntegratedLayoutDiagnostic::error(
+            "coordinate-placement-projection-failed",
+            "/",
+            None,
+            "coordinate placement could not be projected into the routing grid",
+        )
+    };
+    IntegratedLayoutReport::failure(IntegratedLayoutStatus::Unknown, diagnostic)
+}
+
+fn index_placements(
+    input: &ModelInput,
+    placements: Vec<FacilityPlacement>,
+) -> Result<BTreeMap<String, SparsePlacement>, IntegratedLayoutDiagnostic> {
+    let mut indexed = BTreeMap::new();
+    for placement in placements {
+        let Some(instance) = input
+            .instances
+            .iter()
+            .find(|instance| instance.id == placement.instance)
+        else {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "coordinate-placement-instance-mismatch",
+                "/placements",
+                Some(placement.instance),
+                "coordinate placement contains an instance absent from integrated input",
+            ));
+        };
+        let x = i32::try_from(placement.x).map_err(|_| {
+            IntegratedLayoutDiagnostic::error(
+                "coordinate-placement-out-of-range",
+                "/placements",
+                Some(placement.instance.clone()),
+                "coordinate placement x does not fit the routing grid domain",
+            )
+        })?;
+        let y = i32::try_from(placement.y).map_err(|_| {
+            IntegratedLayoutDiagnostic::error(
+                "coordinate-placement-out-of-range",
+                "/placements",
+                Some(placement.instance.clone()),
+                "coordinate placement y does not fit the routing grid domain",
+            )
+        })?;
+        let Some(port_connections) = candidate_port_connections(
+            &instance.definition,
+            placement.rotation,
+            x,
+            y,
+            input.width,
+            input.height,
+        ) else {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "coordinate-placement-port-projection-failed",
+                "/placements",
+                Some(placement.instance.clone()),
+                "coordinate placement has a port connection outside the routing grid",
+            ));
+        };
+        indexed.insert(
+            placement.instance.clone(),
+            SparsePlacement {
+                placement,
+                port_connections,
+            },
+        );
+    }
+    Ok(indexed)
 }
 
 struct PortAssignmentFailure {
@@ -592,6 +746,8 @@ fn success_report(
     placements: BTreeMap<String, SparsePlacement>,
     mut indexed_routes: Vec<(usize, IntegratedRoute)>,
     bridges: BTreeSet<(TransportKind, usize)>,
+    diagnostic_code: &'static str,
+    diagnostic_message: &'static str,
 ) -> IntegratedLayoutReport {
     let mut placements = placements
         .into_values()
@@ -654,8 +810,8 @@ fn success_report(
         logistics_components,
         routes,
         diagnostics: vec![IntegratedLayoutDiagnostic::info(
-            "sparse-integrated-layout-feasible",
-            "sparse construction produced a feasible placement and routing witness; optimality is not proven",
+            diagnostic_code,
+            diagnostic_message,
         )],
     }
 }

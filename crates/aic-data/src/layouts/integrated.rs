@@ -17,7 +17,7 @@ use crate::facilities::{
     FacilityPortPosition, ValidatedFacilityCatalog,
 };
 use crate::layouts::{
-    FacilityPlacement, FacilityPlacementBounds, FacilityPlacementRequest,
+    FacilityPlacement, FacilityPlacementBounds, FacilityPlacementRequest, FacilityPlacementStatus,
     validate_facility_placement_request,
 };
 use crate::logistics::{
@@ -29,11 +29,13 @@ use crate::recipes::{
 };
 
 use super::WorldGridPosition;
+use super::placement::solve_facility_placement_feasibly_with_time_limit;
 
 mod sparse;
 mod witness;
 
 const STAGE: &str = "integrated-layout";
+const COORDINATE_ROUTING_CLEARANCE: i64 = 10;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -216,6 +218,62 @@ pub fn construct_sparse_integrated_layout(
                 IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
             }
         },
+        Err(diagnostic) => {
+            IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
+        }
+    }
+}
+
+pub fn construct_coordinate_integrated_layout_with_time_limit(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    time_limit: Duration,
+) -> IntegratedLayoutReport {
+    let placement = solve_facility_placement_feasibly_with_time_limit(
+        instance_wiring,
+        facilities,
+        request,
+        COORDINATE_ROUTING_CLEARANCE,
+        time_limit,
+    );
+    if !placement.success {
+        let status = match placement.status {
+            FacilityPlacementStatus::Infeasible => IntegratedLayoutStatus::Infeasible,
+            FacilityPlacementStatus::InvalidInput => IntegratedLayoutStatus::InvalidInput,
+            FacilityPlacementStatus::Unknown => IntegratedLayoutStatus::Unknown,
+            FacilityPlacementStatus::Optimal | FacilityPlacementStatus::Feasible => {
+                IntegratedLayoutStatus::Unknown
+            }
+        };
+        let diagnostic = placement.diagnostics.into_iter().next().map_or_else(
+            || {
+                IntegratedLayoutDiagnostic::error(
+                    "coordinate-placement-failed",
+                    "/",
+                    None,
+                    "coordinate placement failed without a diagnostic",
+                )
+            },
+            |diagnostic| {
+                IntegratedLayoutDiagnostic::error(
+                    "coordinate-placement-failed",
+                    diagnostic.path,
+                    diagnostic.entity,
+                    diagnostic.message,
+                )
+            },
+        );
+        return IntegratedLayoutReport::failure(status, diagnostic);
+    }
+
+    match prepare_model(instance_wiring, facilities, items, transports, request) {
+        Ok(input) => {
+            sparse::construct_from_placements(input, logistics_components, placement.placements)
+        }
         Err(diagnostic) => {
             IntegratedLayoutReport::failure(IntegratedLayoutStatus::InvalidInput, diagnostic)
         }
@@ -1319,7 +1377,9 @@ mod tests {
     use super::*;
     use crate::facilities::{FacilityCatalog, FacilityFootprint};
     use crate::logistics::{
-        ItemCatalog, ItemDefinition, SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+        CardinalDirection, ItemCatalog, ItemDefinition, LogisticsComponentCatalog,
+        LogisticsComponentDefinition, SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+        SUPPORTED_LOGISTICS_COMPONENT_CATALOG_SCHEMA_VERSION,
         SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION, TransportCapacity, TransportCatalog,
         TransportDefinition,
     };
@@ -1469,6 +1529,71 @@ mod tests {
         .expect("transport catalog should validate")
     }
 
+    fn logistics_component_catalog() -> ValidatedLogisticsComponentCatalog {
+        let mut components = Vec::new();
+        for transport in [TransportKind::Belt, TransportKind::Pipe] {
+            for kind in [
+                LogisticsComponentKind::Splitter,
+                LogisticsComponentKind::Converger,
+                LogisticsComponentKind::Bridge,
+            ] {
+                let (input_directions, output_directions) = match kind {
+                    LogisticsComponentKind::Splitter => (
+                        vec![CardinalDirection::North],
+                        vec![
+                            CardinalDirection::East,
+                            CardinalDirection::South,
+                            CardinalDirection::West,
+                        ],
+                    ),
+                    LogisticsComponentKind::Converger => (
+                        vec![
+                            CardinalDirection::North,
+                            CardinalDirection::East,
+                            CardinalDirection::West,
+                        ],
+                        vec![CardinalDirection::South],
+                    ),
+                    LogisticsComponentKind::Bridge => (
+                        vec![
+                            CardinalDirection::North,
+                            CardinalDirection::East,
+                            CardinalDirection::South,
+                            CardinalDirection::West,
+                        ],
+                        vec![
+                            CardinalDirection::North,
+                            CardinalDirection::East,
+                            CardinalDirection::South,
+                            CardinalDirection::West,
+                        ],
+                    ),
+                };
+                components.push(LogisticsComponentDefinition {
+                    id: format!("{transport:?}-{kind:?}").to_lowercase(),
+                    transport,
+                    kind,
+                    footprint: FacilityFootprint {
+                        width: 1,
+                        height: 1,
+                    },
+                    allowed_rotations: vec![0, 90, 180, 270],
+                    input_directions,
+                    output_directions,
+                    capacity: TransportCapacity {
+                        quantity: 2,
+                        duration_ms: 1000,
+                    },
+                });
+            }
+        }
+        ValidatedLogisticsComponentCatalog::try_from_catalog(LogisticsComponentCatalog {
+            schema_version: SUPPORTED_LOGISTICS_COMPONENT_CATALOG_SCHEMA_VERSION,
+            components,
+        })
+        .expect("logistics component catalog should validate")
+    }
+
     fn catalogs() -> (
         ValidatedFacilityCatalog,
         ValidatedItemCatalog,
@@ -1532,6 +1657,33 @@ mod tests {
         ));
         assert_eq!(report.routes[0].cells.len(), 2);
         assert_eq!(report.placements.len(), 2);
+    }
+
+    #[test]
+    fn coordinate_feasibility_stops_at_a_valid_routed_witness() {
+        let (facilities, items, transports) = catalogs();
+        let report = construct_coordinate_integrated_layout_with_time_limit(
+            &wiring(),
+            &facilities,
+            &items,
+            &transports,
+            &logistics_component_catalog(),
+            &FacilityPlacementRequest {
+                schema_version: 2,
+                max_width: 40,
+                max_height: 30,
+            },
+            Duration::from_secs(1),
+        );
+
+        assert!(report.success, "{:#?}", report.diagnostics);
+        assert_eq!(report.status, IntegratedLayoutStatus::Feasible);
+        assert_eq!(report.placements.len(), 2);
+        assert_eq!(report.routes.len(), 1);
+        assert_eq!(
+            report.diagnostics[0].code,
+            "coordinate-integrated-layout-feasible"
+        );
     }
 
     #[test]

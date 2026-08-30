@@ -6,7 +6,8 @@ use aic_data::facilities::{
 };
 use aic_data::layouts::{
     FacilityPlacementDiagnostic, FacilityPlacementReport, FacilityPlacementRequest,
-    IntegratedLayoutDiagnostic, IntegratedLayoutReport, construct_sparse_integrated_layout,
+    IntegratedLayoutDiagnostic, IntegratedLayoutReport,
+    construct_coordinate_integrated_layout_with_time_limit, construct_sparse_integrated_layout,
     solve_facility_placement, solve_integrated_layout_with_time_limit,
 };
 use aic_data::localization::{
@@ -173,7 +174,7 @@ enum LayoutsCommand {
         time_limit_seconds: NonZeroU64,
 
         /// Integrated solving strategy.
-        #[arg(long, value_enum, default_value = "dense")]
+        #[arg(long, value_enum, default_value = "coordinate-feasibility")]
         strategy: IntegratedLayoutStrategy,
     },
     /// Resolve contextual sources and solve placement, ports, and routing.
@@ -211,13 +212,14 @@ enum LayoutsCommand {
         time_limit_seconds: NonZeroU64,
 
         /// Integrated solving strategy.
-        #[arg(long, value_enum, default_value = "dense")]
+        #[arg(long, value_enum, default_value = "coordinate-feasibility")]
         strategy: IntegratedLayoutStrategy,
     },
 }
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
 enum IntegratedLayoutStrategy {
+    CoordinateFeasibility,
     Dense,
     SparseFeasibility,
 }
@@ -1121,6 +1123,17 @@ fn solve_layout(
     };
 
     let report = match strategy {
+        IntegratedLayoutStrategy::CoordinateFeasibility => {
+            construct_coordinate_integrated_layout_with_time_limit(
+                &instance_wiring_report,
+                &facilities,
+                &items,
+                &transports,
+                &logistics_components,
+                &request,
+                Duration::from_secs(time_limit_seconds.get()),
+            )
+        }
         IntegratedLayoutStrategy::Dense => solve_integrated_layout_with_time_limit(
             &instance_wiring_report,
             &facilities,
@@ -1244,6 +1257,17 @@ fn solve_contextual_layout(
     };
 
     let layout = match strategy {
+        IntegratedLayoutStrategy::CoordinateFeasibility => {
+            construct_coordinate_integrated_layout_with_time_limit(
+                &wiring,
+                &facilities,
+                &items,
+                &transports,
+                &logistics_components,
+                &request,
+                Duration::from_secs(time_limit_seconds.get()),
+            )
+        }
         IntegratedLayoutStrategy::Dense => solve_integrated_layout_with_time_limit(
             &wiring,
             &facilities,
