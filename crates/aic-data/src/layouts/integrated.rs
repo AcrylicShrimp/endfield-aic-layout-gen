@@ -113,6 +113,10 @@ pub use research::{
     run_endpoint_channel_probe,
 };
 pub use research::{
+    INTEGRATED_ENDPOINT_CHANNEL_COMPARISON_SCHEMA_VERSION, IntegratedEndpointChannelCaseReport,
+    IntegratedEndpointTableScale, run_integrated_endpoint_channel_case,
+};
+pub use research::{
     PHYSICAL_OCCUPANCY_PROBE_SCHEMA_VERSION, PhysicalOccupancyCaseReport,
     PhysicalOccupancyDomainSnapshot, PhysicalOccupancyEncoding, PhysicalOccupancyProbeReport,
     PhysicalOccupancyRestriction, render_physical_occupancy_probe_html,

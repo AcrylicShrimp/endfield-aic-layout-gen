@@ -203,3 +203,26 @@ production cutover or an unmeasured custom propagator.
 
 The result is recorded in
 `docs/benchmarks/heavy-xiranite-minimum-rate.fifty-ninth-actual-phase3-endpoint-channel-scaling-report.md`.
+
+## Integrated positive-table result
+
+The faithful Phase 3 `16 x 16` integration did not convert stronger endpoint propagation into a
+first feasible result. Three isolated five-second runs per encoding all returned `unknown` without
+an incumbent. Compared by median, the positive table increased decisions from 3,067 to 11,113,
+maximum RSS from 458,735,616 to 543,326,208 bytes, and retired instructions from 97.3 to 113.3
+billion. Backtracks and conflicts were approximately halved, but that did not reduce total work.
+
+Pumpkin's table encoder creates one hidden Boolean selector per row. The integrated relation has
+29,568 rows and approximately 107,608 generated clauses. `default_brancher()` is created after
+posting and covers all solver domains, so these selectors are branchable and can also enter VSIDS
+after appearing in conflict reasons. This mechanism makes selector-branching dilution a strong next
+hypothesis, but aggregate decision counts do not prove it. The next diagnostic must retain selector
+domain IDs and classify actual decisions without changing the search policy.
+
+Pumpkin's logged `propagations` value counts registered propagator calls, not atomic inferences or
+clause work. Future reports must label it accordingly and interpret it with retired instructions and
+cycles. Generic model-recorder totals also exclude variables and clauses created inside standard
+constraints; authored and hidden state must be reported separately.
+
+The result is recorded in
+`docs/benchmarks/heavy-xiranite-minimum-rate.sixtieth-integrated-positive-table-endpoint-report.md`.

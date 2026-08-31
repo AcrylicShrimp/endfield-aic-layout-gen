@@ -94,6 +94,10 @@ pub use integrated::{
     run_endpoint_channel_probe,
 };
 pub use integrated::{
+    INTEGRATED_ENDPOINT_CHANNEL_COMPARISON_SCHEMA_VERSION, IntegratedEndpointChannelCaseReport,
+    IntegratedEndpointTableScale, run_integrated_endpoint_channel_case,
+};
+pub use integrated::{
     SCALED_ENDPOINT_CHANNEL_PROBE_SCHEMA_VERSION, ScaledEndpointChannelProbeReport,
     ScaledEndpointDomainSnapshot, ScaledEndpointRestrictionReport,
     ScaledEndpointTerminalDomainSnapshot, ScaledEndpointTerminalScale,

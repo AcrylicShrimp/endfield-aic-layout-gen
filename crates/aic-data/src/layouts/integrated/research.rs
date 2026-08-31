@@ -19,6 +19,7 @@ mod coordinate_partition;
 mod dimension_sweep;
 mod endpoint_channel;
 mod facility_state_partition;
+mod integrated_endpoint_channel;
 mod possible_graph_connectivity;
 mod reference_ablation;
 mod residual_facility_state;
@@ -67,6 +68,10 @@ pub use facility_state_partition::{
     FacilityStatePartitionCaseReport,
     diagnose_cumulative_facility_state_partitions_with_local_continuation,
     diagnose_cumulative_facility_state_partitions_with_prior_overlap_facility_state,
+};
+pub use integrated_endpoint_channel::{
+    INTEGRATED_ENDPOINT_CHANNEL_COMPARISON_SCHEMA_VERSION, IntegratedEndpointChannelCaseReport,
+    IntegratedEndpointTableScale, run_integrated_endpoint_channel_case,
 };
 pub use possible_graph_connectivity::{
     LayerGridAnalyzerRuntime, POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION,

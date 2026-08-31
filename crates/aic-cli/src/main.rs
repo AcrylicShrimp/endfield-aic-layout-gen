@@ -1777,6 +1777,47 @@ mod tests {
     }
 
     #[test]
+    fn parses_integrated_endpoint_channel_comparison() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "compare-integrated-endpoint-channel",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--target-phase",
+            "3",
+            "--used-width",
+            "16",
+            "--used-height",
+            "16",
+            "--encoding",
+            "positive-table",
+            "--case-time-limit-ms",
+            "5000",
+            "--output-dir",
+            "report",
+        ])
+        .expect("integrated endpoint-channel comparison CLI should parse");
+
+        let Command::Research {
+            command: ResearchCommand::CompareIntegratedEndpointChannel(args),
+        } = cli.command
+        else {
+            panic!("expected integrated endpoint-channel comparison command")
+        };
+        assert_eq!(args.target_phase, 3);
+        assert_eq!((args.used_width, args.used_height), (16, 16));
+        assert_eq!(args.case_time_limit_ms, 5000);
+        assert!(matches!(
+            args.encoding,
+            research::EndpointChannelEncodingArg::PositiveTable
+        ));
+        assert_eq!(args.output_dir, PathBuf::from("report"));
+    }
+
+    #[test]
     fn parses_first_phase_research_solve_with_explicit_budget() {
         let cli = Cli::try_parse_from([
             "aic-cli",

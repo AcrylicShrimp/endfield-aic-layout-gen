@@ -33,6 +33,7 @@ mod facility_state_partition;
 mod factored_networks;
 mod first_phase;
 mod fixed_dimensions;
+mod integrated_endpoint_channel;
 mod pair_cliff;
 mod physical_occupancy;
 mod possible_graph_connectivity;
@@ -132,6 +133,28 @@ pub(crate) struct ScaledEndpointChannelResearchArgs {
     /// Self-contained HTML comparison path.
     #[arg(long, value_name = "FILE")]
     pub(crate) visualization_output: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct IntegratedEndpointChannelResearchArgs {
+    #[arg(long, value_name = "FILE")]
+    pub(crate) workload: PathBuf,
+    #[arg(long, value_name = "DIR", default_value = ".")]
+    pub(crate) workspace_root: PathBuf,
+    #[arg(long, value_name = "FILE")]
+    pub(crate) placement_request: PathBuf,
+    #[arg(long, value_name = "INDEX")]
+    pub(crate) target_phase: usize,
+    #[arg(long, value_name = "CELLS")]
+    pub(crate) used_width: i32,
+    #[arg(long, value_name = "CELLS")]
+    pub(crate) used_height: i32,
+    #[arg(long, value_enum)]
+    pub(crate) encoding: EndpointChannelEncodingArg,
+    #[arg(long, value_name = "MILLISECONDS")]
+    pub(crate) case_time_limit_ms: u64,
+    #[arg(long, value_name = "DIR")]
+    pub(crate) output_dir: PathBuf,
 }
 
 #[derive(Debug, Subcommand)]
@@ -904,6 +927,8 @@ pub(crate) enum ResearchCommand {
     },
     /// Scale an exact endpoint channel to the actual introduced facility of a cumulative phase.
     ProbeScaledEndpointChannels(Box<ScaledEndpointChannelResearchArgs>),
+    /// Run one faithful fixed-dimension joint solve with a selected facility endpoint channel.
+    CompareIntegratedEndpointChannel(Box<IntegratedEndpointChannelResearchArgs>),
 }
 
 pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
@@ -1461,6 +1486,19 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             args.output,
             args.visualization_output,
         ),
+        ResearchCommand::CompareIntegratedEndpointChannel(args) => {
+            integrated_endpoint_channel::run(
+                args.workload,
+                args.workspace_root,
+                args.placement_request,
+                args.target_phase,
+                args.used_width,
+                args.used_height,
+                args.encoding,
+                args.case_time_limit_ms,
+                args.output_dir,
+            )
+        }
     }
 }
 
