@@ -1,8 +1,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::time::{Duration, Instant};
 
+use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
+use pumpkin_solver::core::branching::Brancher;
+use pumpkin_solver::core::branching::branchers::dynamic_brancher::DynamicBrancher;
+use pumpkin_solver::core::branching::branchers::warm_start::WarmStart;
 use pumpkin_solver::core::predicates::PredicateConstructor;
-use pumpkin_solver::core::results::ProblemSolution;
+use pumpkin_solver::core::results::{ProblemSolution, SatisfactionResult};
+use pumpkin_solver::core::termination::TimeBudget;
 use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
 use super::boundary_terminals::{self, UsedBoundsVariables};
@@ -56,6 +61,20 @@ struct SharedLayer {
 enum EndpointEncoding {
     Flattened,
     Factored,
+}
+
+#[derive(Clone, Copy)]
+enum SearchMode {
+    Optimize,
+    FeasibilityOnly,
+}
+
+struct SharedSearchResult {
+    report: IntegratedLayoutReport,
+    stages: Vec<crate::layouts::integrated::ExactObjectiveStageReport>,
+    search_ms: u64,
+    first_incumbent_ms: Option<u64>,
+    incumbent_count: usize,
 }
 
 #[derive(Clone)]
@@ -131,6 +150,7 @@ pub(in crate::layouts::integrated) fn solve(
         time_limit,
         EndpointEncoding::Flattened,
         None,
+        SearchMode::Optimize,
     )
 }
 
@@ -154,6 +174,22 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_with_prior(
         time_limit,
         EndpointEncoding::Factored,
         prior_solution,
+        SearchMode::Optimize,
+    )
+}
+
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_feasibility_only(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+) -> IntegratedLayoutReport {
+    solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        None,
+        SearchMode::FeasibilityOnly,
     )
 }
 
@@ -163,6 +199,7 @@ fn solve_with_endpoint_encoding(
     time_limit: Option<Duration>,
     endpoint_encoding: EndpointEncoding,
     prior_solution: Option<&IntegratedLayoutReport>,
+    search_mode: SearchMode,
 ) -> IntegratedLayoutReport {
     let construction_started = Instant::now();
     let mut model_metrics = initial_metrics(&input);
@@ -279,25 +316,110 @@ fn solve_with_endpoint_encoding(
         &model_instances,
         &mut model_metrics,
     );
-    let search = optimise_lexicographically(
-        solver.solver_mut(),
-        objectives,
-        &solver_hint,
-        time_limit,
-        tag,
-        |solution, status| {
-            extract_report(
-                solution,
-                status,
-                &input,
-                &model_instances,
-                &model_terminals,
-                &layers,
-                &branch_components,
-                &bridges,
-            )
-        },
-    );
+    let search = match search_mode {
+        SearchMode::Optimize => {
+            let result = optimise_lexicographically(
+                solver.solver_mut(),
+                objectives,
+                &solver_hint,
+                time_limit,
+                tag,
+                |solution, status| {
+                    extract_report(
+                        solution,
+                        status,
+                        &input,
+                        &model_instances,
+                        &model_terminals,
+                        &layers,
+                        &branch_components,
+                        &bridges,
+                    )
+                },
+            );
+            SharedSearchResult {
+                report: result.report,
+                stages: result.stages,
+                search_ms: result.search_ms,
+                first_incumbent_ms: result.first_incumbent_ms,
+                incumbent_count: result.incumbent_count,
+            }
+        }
+        SearchMode::FeasibilityOnly => {
+            let search_started = Instant::now();
+            let hint_variables = solver_hint.assignments.keys().copied().collect::<Vec<_>>();
+            let hint_values = solver_hint
+                .assignments
+                .values()
+                .copied()
+                .collect::<Vec<_>>();
+            let mut branchers: Vec<Box<dyn Brancher>> = Vec::new();
+            if !hint_variables.is_empty() {
+                branchers.push(Box::new(WarmStart::new(&hint_variables, &hint_values)));
+            }
+            branchers.push(Box::new(solver.solver_mut().default_brancher()));
+            let mut brancher = DynamicBrancher::new(branchers);
+            let mut resolver = ResolutionResolver::default();
+            let mut termination = time_limit.map(TimeBudget::starting_now);
+            let result =
+                solver
+                    .solver_mut()
+                    .satisfy(&mut brancher, &mut termination, &mut resolver);
+            let search_ms = elapsed_millis(search_started.elapsed());
+            let (report, first_incumbent_ms, incumbent_count) = match result {
+                SatisfactionResult::Satisfiable(satisfiable) => {
+                    let solution = satisfiable.solution();
+                    (
+                        extract_report(
+                            &solution,
+                            IntegratedLayoutStatus::Feasible,
+                            &input,
+                            &model_instances,
+                            &model_terminals,
+                            &layers,
+                            &branch_components,
+                            &bridges,
+                        ),
+                        Some(search_ms),
+                        1,
+                    )
+                }
+                SatisfactionResult::Unsatisfiable(_, _, _) => (
+                    IntegratedLayoutReport::failure(
+                        IntegratedLayoutStatus::Infeasible,
+                        IntegratedLayoutDiagnostic::error(
+                            "integrated-layout-infeasible",
+                            "/",
+                            None,
+                            "facility placement, port selection, and route constraints are infeasible",
+                        ),
+                    ),
+                    None,
+                    0,
+                ),
+                SatisfactionResult::Unknown(_, _, _) => (
+                    IntegratedLayoutReport::failure(
+                        IntegratedLayoutStatus::Unknown,
+                        IntegratedLayoutDiagnostic::error(
+                            "integrated-layout-unknown",
+                            "/",
+                            None,
+                            "solver terminated without a solution or proof",
+                        ),
+                    ),
+                    None,
+                    0,
+                ),
+            };
+            SharedSearchResult {
+                report,
+                stages: Vec::new(),
+                search_ms,
+                first_incumbent_ms,
+                incumbent_count,
+            }
+        }
+    };
     let mut report = search.report;
     let validation = if report.success {
         match boundary_terminals::validate_witness(&report).and_then(|()| {

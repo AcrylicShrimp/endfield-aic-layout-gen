@@ -38,7 +38,7 @@ pub use report::{
     TransportNetworkEndpoint, TransportNetworkSegment, TransportNetworkTerminal,
 };
 pub use research::{
-    CUMULATIVE_SCC_GROWTH_SCHEMA_VERSION, CumulativeSccGrowthReport,
+    CUMULATIVE_SCC_GROWTH_SCHEMA_VERSION, CumulativeSccGrowthReport, DiagnosticSearchMode,
     EXACT_ABLATION_MATRIX_SCHEMA_VERSION, EXTERNAL_CONNECTOR_PORT_DOMAIN_SCHEMA_VERSION,
     EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION, ExactAblationCaseReport, ExactAblationFixation,
     ExactAblationMatrixReport, ExternalConnectorPortDomainClassification,
@@ -48,7 +48,8 @@ pub use research::{
     FACTORED_REQUIREMENT_DECOMPOSITION_SCHEMA_VERSION, FactoredEndpointComparisonReport,
     FactoredNetworkDecompositionReport, FactoredNetworkSubsetCaseReport,
     FactoredRequirementDecompositionReport, FactoredRequirementSubsetCaseReport,
-    SHARED_LAYER_COMPARISON_SCHEMA_VERSION, SharedLayerComparisonReport,
+    SEARCH_MODE_DIAGNOSIS_SCHEMA_VERSION, SHARED_LAYER_COMPARISON_SCHEMA_VERSION,
+    SearchModeDiagnosisCaseReport, SharedLayerComparisonReport,
     compare_first_integrated_layout_phase_factored_endpoints,
     compare_first_integrated_layout_phase_shared_layer,
     decompose_first_integrated_layout_phase_factored_networks,
@@ -56,6 +57,7 @@ pub use research::{
     decompose_first_integrated_layout_phase_pair, solve_cumulative_scc_growth_v2,
     solve_first_integrated_layout_phase_external_connector_port_domain,
     solve_first_integrated_layout_phase_external_connector_subset,
+    solve_first_integrated_layout_phase_search_mode,
 };
 pub use research::{
     PHYSICAL_OCCUPANCY_PROBE_SCHEMA_VERSION, PhysicalOccupancyCaseReport,

@@ -2065,6 +2065,60 @@ mod tests {
     }
 
     #[test]
+    fn parses_first_phase_search_mode_diagnosis() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "diagnose-first-phase-search-mode",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--network-index",
+            "0",
+            "--network-index",
+            "1",
+            "--search-mode",
+            "feasibility-only",
+            "--time-limit-ms",
+            "5000",
+            "--output",
+            "case.json",
+            "--visualization-output",
+            "case.html",
+        ])
+        .expect("first-phase search-mode diagnosis CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::DiagnoseFirstPhaseSearchMode {
+                    workload,
+                    workspace_root,
+                    placement_request,
+                    network_indices,
+                    search_mode,
+                    time_limit_ms,
+                    output,
+                    visualization_output,
+                },
+        } = cli.command
+        else {
+            panic!("expected first-phase search-mode diagnosis command")
+        };
+        assert_eq!(workload, PathBuf::from("workload.json"));
+        assert_eq!(workspace_root, PathBuf::from("."));
+        assert_eq!(placement_request, PathBuf::from("bounds.json"));
+        assert_eq!(network_indices, vec![0, 1]);
+        assert!(matches!(
+            search_mode,
+            super::research::DiagnosticSearchModeArg::FeasibilityOnly
+        ));
+        assert_eq!(time_limit_ms, 5_000);
+        assert_eq!(output, PathBuf::from("case.json"));
+        assert_eq!(visualization_output, PathBuf::from("case.html"));
+    }
+
+    #[test]
     fn parses_first_phase_factored_requirement_decomposition() {
         let cli = Cli::try_parse_from([
             "aic-cli",

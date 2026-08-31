@@ -30,6 +30,7 @@ mod first_phase;
 mod pair_cliff;
 mod physical_occupancy;
 mod requirement_cliff;
+mod search_mode;
 mod shared_layer;
 
 #[derive(Debug, Clone, Copy, ValueEnum)]
@@ -42,6 +43,12 @@ pub(super) enum PortDomainClassificationArg {
 pub(super) enum PhysicalOccupancyEncodingArg {
     CandidateCollision,
     CanonicalSharedOccupancy,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub(super) enum DiagnosticSearchModeArg {
+    Optimize,
+    FeasibilityOnly,
 }
 
 #[derive(Debug, Subcommand)]
@@ -298,6 +305,40 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
     },
+    /// Compare optimization and first-solution search on one exact phase-zero network subset.
+    DiagnoseFirstPhaseSearchMode {
+        /// Benchmark workload manifest JSON file to solve.
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+
+        /// Root used to resolve portable input paths in the workload manifest.
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Zero-based phase-zero commodity network index. Repeat for the selected subset.
+        #[arg(long = "network-index", value_name = "INDEX", required = true)]
+        network_indices: Vec<usize>,
+
+        /// Whether Pumpkin optimizes or stops at the first satisfying assignment.
+        #[arg(long, value_enum)]
+        search_mode: DiagnosticSearchModeArg,
+
+        /// Exact solver wall-clock budget in milliseconds.
+        #[arg(long, value_name = "MILLISECONDS")]
+        time_limit_ms: u64,
+
+        /// JSON artifact path.
+        #[arg(long, value_name = "FILE")]
+        output: PathBuf,
+
+        /// Standalone HTML result, including structured failure evidence.
+        #[arg(long, value_name = "FILE")]
+        visualization_output: PathBuf,
+    },
     /// Rebuild one factored shared-layer network from each logical requirement subset.
     DecomposeFirstPhaseFactoredRequirements {
         /// Benchmark workload manifest JSON file to solve.
@@ -492,6 +533,25 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             case_time_limit_ms,
             case_id,
             output_dir,
+        ),
+        ResearchCommand::DiagnoseFirstPhaseSearchMode {
+            workload,
+            workspace_root,
+            placement_request,
+            network_indices,
+            search_mode,
+            time_limit_ms,
+            output,
+            visualization_output,
+        } => search_mode::run(
+            workload,
+            workspace_root,
+            placement_request,
+            network_indices,
+            search_mode,
+            time_limit_ms,
+            output,
+            visualization_output,
         ),
         ResearchCommand::DecomposeFirstPhaseFactoredRequirements {
             workload,

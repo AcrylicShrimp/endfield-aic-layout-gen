@@ -9,7 +9,7 @@ pub use growth::{
 };
 
 pub use integrated::{
-    CUMULATIVE_SCC_GROWTH_SCHEMA_VERSION, CumulativeSccGrowthReport,
+    CUMULATIVE_SCC_GROWTH_SCHEMA_VERSION, CumulativeSccGrowthReport, DiagnosticSearchMode,
     EXACT_ABLATION_MATRIX_SCHEMA_VERSION, EXTERNAL_CONNECTOR_PORT_DOMAIN_SCHEMA_VERSION,
     EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION, ExactAblationCaseReport, ExactAblationFixation,
     ExactAblationMatrixReport, ExactModelMetrics, ExactObjectiveKind, ExactObjectiveStageReport,
@@ -25,7 +25,8 @@ pub use integrated::{
     IntegratedLayoutReport, IntegratedLayoutStatus, PHYSICAL_OCCUPANCY_PROBE_SCHEMA_VERSION,
     PhysicalOccupancyCaseReport, PhysicalOccupancyDomainSnapshot, PhysicalOccupancyEncoding,
     PhysicalOccupancyProbeReport, PhysicalOccupancyRestriction, PlacedLogisticsComponent,
-    SHARED_LAYER_COMPARISON_SCHEMA_VERSION, SharedLayerComparisonReport, TransportNetwork,
+    SEARCH_MODE_DIAGNOSIS_SCHEMA_VERSION, SHARED_LAYER_COMPARISON_SCHEMA_VERSION,
+    SearchModeDiagnosisCaseReport, SharedLayerComparisonReport, TransportNetwork,
     TransportNetworkEndpoint, TransportNetworkSegment, TransportNetworkTerminal,
     analyze_integrated_layout_search_space,
     compare_first_integrated_layout_phase_factored_endpoints,
@@ -37,6 +38,7 @@ pub use integrated::{
     run_physical_occupancy_probe, solve_cumulative_scc_growth_v2,
     solve_first_integrated_layout_phase_external_connector_port_domain,
     solve_first_integrated_layout_phase_external_connector_subset,
+    solve_first_integrated_layout_phase_search_mode,
     solve_first_integrated_layout_phase_with_time_limit, solve_integrated_layout,
     solve_integrated_layout_with_time_limit,
 };

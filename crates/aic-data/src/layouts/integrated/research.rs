@@ -704,6 +704,75 @@ pub struct FactoredNetworkDecompositionReport {
     pub cases: Vec<FactoredNetworkSubsetCaseReport>,
 }
 
+pub const SEARCH_MODE_DIAGNOSIS_SCHEMA_VERSION: u32 = 1;
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum DiagnosticSearchMode {
+    Optimize,
+    FeasibilityOnly,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct SearchModeDiagnosisCaseReport {
+    pub schema_version: u32,
+    pub selected_network_indices: Vec<usize>,
+    pub selected_networks: Vec<String>,
+    pub search_mode: DiagnosticSearchMode,
+    pub search_budget_ms: u64,
+    pub diagnostic_only: bool,
+    pub layout: IntegratedLayoutReport,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn solve_first_integrated_layout_phase_search_mode(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    network_indices: &[usize],
+    search_mode: DiagnosticSearchMode,
+    search_budget: Duration,
+) -> Result<SearchModeDiagnosisCaseReport, IntegratedLayoutReport> {
+    let first_phase_wiring = harness::first_iterative_scc_wiring(instance_wiring)?;
+    let input = prepare_exact_model(
+        &first_phase_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+    )?;
+    let (input, selected_networks) = input
+        .select_network_indices(network_indices)
+        .map_err(IntegratedLayoutReport::invalid)?;
+    let layout = match search_mode {
+        DiagnosticSearchMode::Optimize => exact::shared_layer::solve_factored_endpoints(
+            input,
+            logistics_components,
+            Some(search_budget),
+        ),
+        DiagnosticSearchMode::FeasibilityOnly => {
+            exact::shared_layer::solve_factored_endpoints_feasibility_only(
+                input,
+                logistics_components,
+                Some(search_budget),
+            )
+        }
+    };
+    Ok(SearchModeDiagnosisCaseReport {
+        schema_version: SEARCH_MODE_DIAGNOSIS_SCHEMA_VERSION,
+        selected_network_indices: network_indices.to_vec(),
+        selected_networks,
+        search_mode,
+        search_budget_ms: millis(search_budget),
+        diagnostic_only: search_mode == DiagnosticSearchMode::FeasibilityOnly,
+        layout,
+    })
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn decompose_first_integrated_layout_phase_factored_networks(
     instance_wiring: &FacilityInstanceWiringReport,

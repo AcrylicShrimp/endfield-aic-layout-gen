@@ -525,6 +525,47 @@ fn factored_shared_layer_routes_external_boundary_terminals_in_the_commodity_net
 }
 
 #[test]
+fn feasibility_only_search_preserves_the_exact_model_and_validates_its_witness() {
+    let (facilities, items, transports, components) = catalogs();
+    let input = super::prepare_model(
+        &external_connector_wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 4,
+            max_height: 3,
+        },
+    )
+    .expect("search-mode fixture should prepare");
+
+    let optimized =
+        super::exact::shared_layer::solve_factored_endpoints(input.clone(), &components, None);
+    let feasible = super::exact::shared_layer::solve_factored_endpoints_feasibility_only(
+        input,
+        &components,
+        None,
+    );
+
+    assert!(optimized.success, "{:#?}", optimized.diagnostics);
+    assert!(feasible.success, "{:#?}", feasible.diagnostics);
+    assert_eq!(feasible.status, IntegratedLayoutStatus::Feasible);
+    let optimized_exact = optimized.exact.expect("optimized solve reports evidence");
+    let feasible_exact = feasible.exact.expect("feasibility solve reports evidence");
+    assert_eq!(feasible_exact.formulation, optimized_exact.formulation);
+    assert_eq!(feasible_exact.model, optimized_exact.model);
+    assert_eq!(
+        feasible_exact.model_complexity,
+        optimized_exact.model_complexity
+    );
+    assert!(feasible_exact.objective_stages.is_empty());
+    assert_eq!(feasible_exact.incumbent_count, 1);
+    assert_eq!(feasible_exact.validation, ExactValidationStatus::Passed);
+}
+
+#[test]
 fn factored_endpoint_uses_one_geometry_lookup_per_compatible_port() {
     let (facilities, items, transports, components) = catalogs();
     let request = FacilityPlacementRequest {
