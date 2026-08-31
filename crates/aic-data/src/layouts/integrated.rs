@@ -104,6 +104,12 @@ pub use research::{
     sweep_first_integrated_layout_phase_fixed_dimensions,
 };
 pub use research::{
+    ENDPOINT_CHANNEL_PROBE_SCHEMA_VERSION, EndpointChannelCaseReport,
+    EndpointChannelDomainSnapshot, EndpointChannelEncoding, EndpointChannelEndpointSnapshot,
+    EndpointChannelProbeReport, EndpointChannelRestriction, render_endpoint_channel_probe_html,
+    run_endpoint_channel_probe,
+};
+pub use research::{
     PHYSICAL_OCCUPANCY_PROBE_SCHEMA_VERSION, PhysicalOccupancyCaseReport,
     PhysicalOccupancyDomainSnapshot, PhysicalOccupancyEncoding, PhysicalOccupancyProbeReport,
     PhysicalOccupancyRestriction, render_physical_occupancy_probe_html,

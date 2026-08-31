@@ -84,6 +84,12 @@ pub use integrated::{
     sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation,
     sweep_first_integrated_layout_phase_fixed_dimensions,
 };
+pub use integrated::{
+    ENDPOINT_CHANNEL_PROBE_SCHEMA_VERSION, EndpointChannelCaseReport,
+    EndpointChannelDomainSnapshot, EndpointChannelEncoding, EndpointChannelEndpointSnapshot,
+    EndpointChannelProbeReport, EndpointChannelRestriction, render_endpoint_channel_probe_html,
+    run_endpoint_channel_probe,
+};
 
 pub use placement::{
     FacilityPlacement, FacilityPlacementBounds, FacilityPlacementDiagnostic,

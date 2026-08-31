@@ -100,3 +100,24 @@ The likely production candidate is a sparse semantic GAC channel over the ternar
 relation. A small exact rotation-port-direction channel is a cheaper experiment but cannot replace
 cell-level support filtering. A full positive table is the strongest standard-constraint oracle but
 may recreate the placement-times-port memory cliff.
+
+## Formulation review rule
+
+Constraint names are not propagation guarantees. Every solver formulation used by the joint model
+must be reviewed through four separate contracts:
+
+1. **Semantic contract:** the complete assignments accepted by the constraint.
+2. **Propagation contract:** the domain changes that are detected at a root fixpoint, including
+   bounds, interior holes, last-support exhaustion, and propagation in every direction.
+3. **Cost contract:** authored and hidden variables, clauses, propagators, wake events, scans,
+   explanation sizes, build time, and memory.
+4. **Proof contract:** how every inference is explained and checked under learning and
+   backtracking.
+
+An exact semantic contract does not imply a strong propagation contract. A strong propagation
+contract does not imply an acceptable cost or proof contract. New channels must therefore be
+compared against a small exhaustive oracle before their integrated wall time is treated as useful
+evidence.
+
+The first controlled endpoint comparison is recorded in
+`docs/benchmarks/heavy-xiranite-minimum-rate.fifty-second-endpoint-channel-propagation-probe-report.md`.

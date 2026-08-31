@@ -1712,6 +1712,33 @@ mod tests {
     }
 
     #[test]
+    fn parses_endpoint_channel_propagation_probe() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "probe-endpoint-channels",
+            "--output",
+            "endpoint.json",
+            "--visualization-output",
+            "endpoint.html",
+        ])
+        .expect("endpoint channel propagation probe CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::ProbeEndpointChannels {
+                    output,
+                    visualization_output,
+                },
+        } = cli.command
+        else {
+            panic!("expected endpoint channel propagation probe command")
+        };
+        assert_eq!(output, PathBuf::from("endpoint.json"));
+        assert_eq!(visualization_output, PathBuf::from("endpoint.html"));
+    }
+
+    #[test]
     fn parses_first_phase_research_solve_with_explicit_budget() {
         let cli = Cli::try_parse_from([
             "aic-cli",

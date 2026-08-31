@@ -15,6 +15,7 @@ use crate::logistics::LogisticsComponentKind;
 
 mod boundary_terminals;
 mod connectivity_propagator;
+mod endpoint_channel_probe;
 mod extract;
 mod fixation;
 mod formulation;
@@ -30,6 +31,7 @@ mod search_statistics;
 pub(super) mod shared_layer;
 
 pub(in crate::layouts::integrated) use connectivity_propagator::PossibleRouteReachabilityStatistics;
+pub(super) use endpoint_channel_probe::probe_endpoint_channels;
 pub(in crate::layouts::integrated) use grid_analyzer::LayerGridAnalyzerStatistics;
 pub(super) use occupancy_probe::probe_physical_occupancy;
 

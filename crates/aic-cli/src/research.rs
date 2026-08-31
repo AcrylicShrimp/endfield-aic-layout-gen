@@ -27,6 +27,7 @@ mod connectivity_witness;
 mod coordinate_partition;
 mod cumulative_growth;
 mod dimension_sweep;
+mod endpoint_channel;
 mod external_connectors;
 mod facility_state_partition;
 mod factored_networks;
@@ -847,6 +848,16 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "FILE")]
         visualization_output: PathBuf,
     },
+    /// Compare exact endpoint channels under controlled root-domain restrictions.
+    ProbeEndpointChannels {
+        /// JSON artifact path.
+        #[arg(long, value_name = "FILE")]
+        output: PathBuf,
+
+        /// Self-contained HTML comparison path.
+        #[arg(long, value_name = "FILE")]
+        visualization_output: PathBuf,
+    },
 }
 
 pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
@@ -1387,6 +1398,10 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             output,
             visualization_output,
         ),
+        ResearchCommand::ProbeEndpointChannels {
+            output,
+            visualization_output,
+        } => endpoint_channel::run(output, visualization_output),
     }
 }
 
