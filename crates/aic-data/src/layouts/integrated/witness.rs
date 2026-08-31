@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::facilities::{FacilityPortDirection, FacilityPortEdge};
 use crate::layouts::FacilityPlacement;
@@ -183,8 +183,6 @@ fn validate_network(
 
     let mut incoming = BTreeMap::<usize, Rate>::new();
     let mut outgoing = BTreeMap::<usize, Rate>::new();
-    let mut forward = BTreeMap::<usize, BTreeSet<usize>>::new();
-    let mut reverse = BTreeMap::<usize, BTreeSet<usize>>::new();
     let mut incident_neighbors = BTreeMap::<usize, BTreeSet<usize>>::new();
     let mut incoming_directions = BTreeMap::<usize, BTreeSet<CardinalDirection>>::new();
     let mut outgoing_directions = BTreeMap::<usize, BTreeSet<CardinalDirection>>::new();
@@ -231,8 +229,6 @@ fn validate_network(
         }
         add_rate(&mut outgoing, from, segment.rate, network_index)?;
         add_rate(&mut incoming, to, segment.rate, network_index)?;
-        forward.entry(from).or_default().insert(to);
-        reverse.entry(to).or_default().insert(from);
         incident_neighbors.entry(from).or_default().insert(to);
         incident_neighbors.entry(to).or_default().insert(from);
         let outgoing_direction = direction_between(from, to, input.width);
@@ -399,8 +395,6 @@ fn validate_network(
             left,
         )?;
     }
-    validate_reachability(network_index, &cells, &supply, &demand, &forward, &reverse)?;
-
     let layer = layer_index(network.transport);
     for cell in &cells {
         for shape in network_cell_shapes(*cell, &incident_neighbors, input.width) {
@@ -752,46 +746,6 @@ fn validate_terminal_endpoint(
             "transport terminal endpoint does not match the prepared endpoint",
         )),
     }
-}
-
-fn validate_reachability(
-    network_index: usize,
-    cells: &BTreeSet<usize>,
-    supply: &BTreeMap<usize, Rate>,
-    demand: &BTreeMap<usize, Rate>,
-    forward: &BTreeMap<usize, BTreeSet<usize>>,
-    reverse: &BTreeMap<usize, BTreeSet<usize>>,
-) -> Result<(), IntegratedLayoutDiagnostic> {
-    let from_supply = reachable(supply.keys().copied(), forward);
-    let to_demand = reachable(demand.keys().copied(), reverse);
-    if !cells.is_subset(&from_supply) || !cells.is_subset(&to_demand) {
-        return Err(invalid(
-            format!("/transport_networks/{network_index}/cells"),
-            "every active transport cell must lie on a directed supply-to-demand flow path",
-        ));
-    }
-    Ok(())
-}
-
-fn reachable(
-    starts: impl IntoIterator<Item = usize>,
-    adjacency: &BTreeMap<usize, BTreeSet<usize>>,
-) -> BTreeSet<usize> {
-    let mut reached = BTreeSet::new();
-    let mut queue = VecDeque::new();
-    for start in starts {
-        if reached.insert(start) {
-            queue.push_back(start);
-        }
-    }
-    while let Some(cell) = queue.pop_front() {
-        for next in adjacency.get(&cell).into_iter().flatten() {
-            if reached.insert(*next) {
-                queue.push_back(*next);
-            }
-        }
-    }
-    reached
 }
 
 fn network_cell_shapes(
