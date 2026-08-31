@@ -14,7 +14,7 @@ use super::coordinate_partition::{invalid_input, millis, model_scale, prepare_ta
 use super::rotation_partition::diagnose_cumulative_facility_rotation_partitions;
 use super::{ExactDimensionCaseOutcome, ExactUsedDimensionCandidate, PartitionCaseModelScale};
 
-pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 6;
+pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 7;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -27,6 +27,7 @@ pub enum PossibleGraphConnectivityCaseKind {
     GroupedDemandPossibleGraphPropagator,
     DemandSilentPossibleGraphPropagator,
     LayerGridOpportunityAnalyzer,
+    TerminalSupportGridPropagator,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
@@ -70,6 +71,9 @@ pub struct LayerGridAnalyzerRuntime {
     pub distinct_terminal_unresolved_predicates: u64,
     pub maximum_unique_support_chain: u64,
     pub registered_domain_variables: u64,
+    pub forced_predicate_attempts: u64,
+    pub forcing_conflicts: u64,
+    pub maximum_reason_predicates: u64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -214,6 +218,13 @@ pub fn diagnose_phase2_possible_graph_connectivity(
         &reference,
     );
     let (grid_analyzed, grid_connectivity_runtime, grid_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_layer_grid_analysis(
+        input.clone(),
+        logistics_components,
+        Some(case_search_budget),
+        fixed_dimensions,
+        &reference,
+    );
+    let (grid_propagated, active_grid_connectivity_runtime, active_grid_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_terminal_support_grid_propagation(
         input,
         logistics_components,
         Some(case_search_budget),
@@ -276,6 +287,12 @@ pub fn diagnose_phase2_possible_graph_connectivity(
                 connectivity_runtime(grid_connectivity_runtime),
                 grid_analyzer_runtime(grid_runtime),
             ),
+            case_report(
+                PossibleGraphConnectivityCaseKind::TerminalSupportGridPropagator,
+                grid_propagated,
+                connectivity_runtime(active_grid_connectivity_runtime),
+                grid_analyzer_runtime(active_grid_runtime),
+            ),
         ],
         diagnostic_only: true,
     })
@@ -321,6 +338,9 @@ fn grid_analyzer_runtime(
         distinct_terminal_unresolved_predicates: statistics.distinct_terminal_unresolved_predicates,
         maximum_unique_support_chain: statistics.maximum_unique_support_chain,
         registered_domain_variables: statistics.registered_domain_variables,
+        forced_predicate_attempts: statistics.forced_predicate_attempts,
+        forcing_conflicts: statistics.forcing_conflicts,
+        maximum_reason_predicates: statistics.maximum_reason_predicates,
     }
 }
 

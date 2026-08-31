@@ -140,6 +140,13 @@ complete search tree while finding 194 distinct unresolved predicates on 66 uniq
 The terminal-adjacent subset contains 27 predicates on nine arcs and becomes the first active exact
 grid-propagation target.
 
+The fortieth checkpoint,
+`heavy-xiranite-minimum-rate.fortieth-terminal-support-grid-propagator-report.md`, implements that
+active exact inference. After rejecting a layer-wide 1,085-predicate explanation, it uses a local
+physical-adjacency reason of at most nine predicates and targeted execution. Repeated release runs
+cut controlled Phase 2 backtracks by 23.5%, native propagations by 8.5%, and median first-witness
+time by 9.4%, while preserving independent witness validation.
+
 Regenerate it from a release binary with:
 
 ```bash

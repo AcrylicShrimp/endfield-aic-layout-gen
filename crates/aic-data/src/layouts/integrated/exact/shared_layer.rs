@@ -25,8 +25,8 @@ use super::formulation::{
     rotate_direction,
 };
 use super::grid_analyzer::{
-    LayerGridAnalyzerArgs, LayerGridAnalyzerCounters, LayerGridAnalyzerStatistics,
-    LayerGridMaterial,
+    LayerGridAnalyzerArgs, LayerGridAnalyzerCounters, LayerGridAnalyzerMode,
+    LayerGridAnalyzerStatistics, LayerGridMaterial,
 };
 use super::metrics::{elapsed_millis, finish_report_with_formulation};
 use super::objective::{
@@ -89,7 +89,7 @@ enum ConnectivityMode {
         counters: SyncArc<PossibleRouteReachabilityCounters>,
         wake_mode: PossibleRouteReachabilityWakeMode,
         traversal_mode: PossibleRouteReachabilityTraversalMode,
-        grid_analyzer_counters: Option<SyncArc<LayerGridAnalyzerCounters>>,
+        grid_analyzer: Option<(SyncArc<LayerGridAnalyzerCounters>, LayerGridAnalyzerMode)>,
     },
 }
 
@@ -523,7 +523,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_possible_graph_co
             counters,
             wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
             traversal_mode: PossibleRouteReachabilityTraversalMode::EagerAdjacencyAndReason,
-            grid_analyzer_counters: None,
+            grid_analyzer: None,
         },
     )
 }
@@ -552,7 +552,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_event_selective_p
             counters,
             wake_mode: PossibleRouteReachabilityWakeMode::ExclusionPredicates,
             traversal_mode: PossibleRouteReachabilityTraversalMode::EagerAdjacencyAndReason,
-            grid_analyzer_counters: None,
+            grid_analyzer: None,
         },
     )
 }
@@ -581,7 +581,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_lazy_possible_gra
             counters,
             wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
             traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
-            grid_analyzer_counters: None,
+            grid_analyzer: None,
         },
     )
 }
@@ -611,7 +611,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
             counters: SyncArc::clone(&counters),
             wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
             traversal_mode: PossibleRouteReachabilityTraversalMode::EagerAdjacencyAndReason,
-            grid_analyzer_counters: None,
+            grid_analyzer: None,
         },
     );
     (report, counters.snapshot())
@@ -642,7 +642,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
             counters: SyncArc::clone(&counters),
             wake_mode: PossibleRouteReachabilityWakeMode::ExclusionPredicates,
             traversal_mode: PossibleRouteReachabilityTraversalMode::EagerAdjacencyAndReason,
-            grid_analyzer_counters: None,
+            grid_analyzer: None,
         },
     );
     (report, counters.snapshot())
@@ -673,7 +673,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
             counters: SyncArc::clone(&counters),
             wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
             traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
-            grid_analyzer_counters: None,
+            grid_analyzer: None,
         },
     );
     (report, counters.snapshot())
@@ -704,7 +704,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
             counters: SyncArc::clone(&counters),
             wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
             traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndGroupedDemands,
-            grid_analyzer_counters: None,
+            grid_analyzer: None,
         },
     );
     (report, counters.snapshot())
@@ -735,7 +735,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
             counters: SyncArc::clone(&counters),
             wake_mode: PossibleRouteReachabilityWakeMode::PathAndSupplyDomainEvents,
             traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
-            grid_analyzer_counters: None,
+            grid_analyzer: None,
         },
     );
     (report, counters.snapshot())
@@ -771,7 +771,53 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
             counters: SyncArc::clone(&connectivity_counters),
             wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
             traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
-            grid_analyzer_counters: Some(SyncArc::clone(&grid_counters)),
+            grid_analyzer: Some((
+                SyncArc::clone(&grid_counters),
+                LayerGridAnalyzerMode::Observe,
+            )),
+        },
+    );
+    (
+        report,
+        connectivity_counters.snapshot(),
+        grid_counters.snapshot(),
+    )
+}
+
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_reference_terminal_support_grid_propagation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    reference: &IntegratedLayoutReport,
+) -> (
+    IntegratedLayoutReport,
+    PossibleRouteReachabilityStatistics,
+    LayerGridAnalyzerStatistics,
+) {
+    let connectivity_counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    let grid_counters = SyncArc::new(LayerGridAnalyzerCounters::default());
+    let report = solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        Some(reference),
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        None,
+        None,
+        Some(ReferenceAblationFixation::PlacementsAndAllTerminals),
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters: SyncArc::clone(&connectivity_counters),
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
+            grid_analyzer: Some((
+                SyncArc::clone(&grid_counters),
+                LayerGridAnalyzerMode::ForceTerminalSupport,
+            )),
         },
     );
     (
@@ -1033,7 +1079,7 @@ fn solve_with_endpoint_encoding(
             counters,
             wake_mode,
             traversal_mode,
-            grid_analyzer_counters,
+            grid_analyzer,
         } => {
             post_possible_graph_connectivity(
                 &mut solver,
@@ -1045,13 +1091,15 @@ fn solve_with_endpoint_encoding(
                 *traversal_mode,
                 tag,
             );
-            if let Some(grid_analyzer_counters) = grid_analyzer_counters {
+            if let Some((grid_analyzer_counters, mode)) = grid_analyzer {
                 post_layer_grid_analyzer(
                     &mut solver,
                     &input,
                     &layers,
                     &model_terminals,
                     SyncArc::clone(grid_analyzer_counters),
+                    *mode,
+                    tag,
                 );
             }
         }
@@ -1318,10 +1366,18 @@ fn solve_with_endpoint_encoding(
                 _,
                 _,
                 ConnectivityMode::PossibleGraphPropagator {
-                    grid_analyzer_counters: Some(_),
+                    grid_analyzer: Some((_, LayerGridAnalyzerMode::Observe)),
                     ..
                 },
             ) => "joint-shared-v4-layer-grid-opportunity-analysis",
+            (
+                _,
+                _,
+                ConnectivityMode::PossibleGraphPropagator {
+                    grid_analyzer: Some((_, LayerGridAnalyzerMode::ForceTerminalSupport)),
+                    ..
+                },
+            ) => "joint-shared-v4-terminal-support-grid-propagation",
             (
                 _,
                 _,
@@ -1847,6 +1903,8 @@ fn post_layer_grid_analyzer(
     layers: &[SharedLayer],
     terminals: &[Vec<SharedTerminal>],
     counters: SyncArc<LayerGridAnalyzerCounters>,
+    mode: LayerGridAnalyzerMode,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
 ) {
     for layer in layers {
         let arcs = layer
@@ -1902,6 +1960,8 @@ fn post_layer_grid_analyzer(
             arcs,
             materials,
             counters: SyncArc::clone(&counters),
+            mode,
+            constraint_tag: tag,
         };
         solver.record_global_constraint(ConstraintFamily::GridAnalyzer, args.variables());
         let _ = solver.solver_mut().add_propagator(args);
