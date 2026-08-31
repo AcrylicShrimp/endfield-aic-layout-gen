@@ -26,6 +26,7 @@ mod recorder;
 mod search_statistics;
 pub(super) mod shared_layer;
 
+pub(in crate::layouts::integrated) use connectivity_propagator::PossibleRouteReachabilityStatistics;
 pub(super) use occupancy_probe::probe_physical_occupancy;
 
 use extract::extract_report;

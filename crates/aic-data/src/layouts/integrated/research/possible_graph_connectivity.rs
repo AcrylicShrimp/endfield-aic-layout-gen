@@ -14,7 +14,7 @@ use super::coordinate_partition::{invalid_input, millis, model_scale, prepare_ta
 use super::rotation_partition::diagnose_cumulative_facility_rotation_partitions;
 use super::{ExactDimensionCaseOutcome, ExactUsedDimensionCandidate, PartitionCaseModelScale};
 
-pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 2;
+pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 3;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -23,6 +23,7 @@ pub enum PossibleGraphConnectivityCaseKind {
     Baseline,
     PossibleGraphPropagator,
     EventSelectivePossibleGraphPropagator,
+    LazyTraversalPossibleGraphPropagator,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
@@ -42,6 +43,9 @@ pub struct PossibleGraphConnectivityRuntime {
     pub maximum_reason_predicates: u64,
     pub predicate_notifications: u64,
     pub registered_predicates: u64,
+    pub reachability_arc_checks: u64,
+    pub reason_builds: u64,
+    pub reason_arc_scans: u64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -157,6 +161,13 @@ pub fn diagnose_phase2_possible_graph_connectivity(
         &reference,
     );
     let (event_selective, event_selective_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_event_selective_possible_graph_connectivity(
+        input.clone(),
+        logistics_components,
+        Some(case_search_budget),
+        fixed_dimensions,
+        &reference,
+    );
+    let (lazy, lazy_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_lazy_possible_graph_connectivity(
         input,
         logistics_components,
         Some(case_search_budget),
@@ -185,34 +196,39 @@ pub fn diagnose_phase2_possible_graph_connectivity(
             case_report(
                 PossibleGraphConnectivityCaseKind::PossibleGraphPropagator,
                 propagated,
-                PossibleGraphConnectivityRuntime {
-                    propagations: propagated_runtime.propagations,
-                    arcs_scanned: propagated_runtime.arcs_scanned,
-                    demand_options_checked: propagated_runtime.demand_options_checked,
-                    demand_pruning_attempts: propagated_runtime.demand_pruning_attempts,
-                    selected_demand_conflicts: propagated_runtime.selected_demand_conflicts,
-                    maximum_reason_predicates: propagated_runtime.maximum_reason_predicates,
-                    predicate_notifications: propagated_runtime.predicate_notifications,
-                    registered_predicates: propagated_runtime.registered_predicates,
-                },
+                connectivity_runtime(propagated_runtime),
             ),
             case_report(
                 PossibleGraphConnectivityCaseKind::EventSelectivePossibleGraphPropagator,
                 event_selective,
-                PossibleGraphConnectivityRuntime {
-                    propagations: event_selective_runtime.propagations,
-                    arcs_scanned: event_selective_runtime.arcs_scanned,
-                    demand_options_checked: event_selective_runtime.demand_options_checked,
-                    demand_pruning_attempts: event_selective_runtime.demand_pruning_attempts,
-                    selected_demand_conflicts: event_selective_runtime.selected_demand_conflicts,
-                    maximum_reason_predicates: event_selective_runtime.maximum_reason_predicates,
-                    predicate_notifications: event_selective_runtime.predicate_notifications,
-                    registered_predicates: event_selective_runtime.registered_predicates,
-                },
+                connectivity_runtime(event_selective_runtime),
+            ),
+            case_report(
+                PossibleGraphConnectivityCaseKind::LazyTraversalPossibleGraphPropagator,
+                lazy,
+                connectivity_runtime(lazy_runtime),
             ),
         ],
         diagnostic_only: true,
     })
+}
+
+fn connectivity_runtime(
+    statistics: exact::PossibleRouteReachabilityStatistics,
+) -> PossibleGraphConnectivityRuntime {
+    PossibleGraphConnectivityRuntime {
+        propagations: statistics.propagations,
+        arcs_scanned: statistics.arcs_scanned,
+        demand_options_checked: statistics.demand_options_checked,
+        demand_pruning_attempts: statistics.demand_pruning_attempts,
+        selected_demand_conflicts: statistics.selected_demand_conflicts,
+        maximum_reason_predicates: statistics.maximum_reason_predicates,
+        predicate_notifications: statistics.predicate_notifications,
+        registered_predicates: statistics.registered_predicates,
+        reachability_arc_checks: statistics.reachability_arc_checks,
+        reason_builds: statistics.reason_builds,
+        reason_arc_scans: statistics.reason_arc_scans,
+    }
 }
 
 fn case_report(

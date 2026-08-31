@@ -602,10 +602,16 @@ fn possible_graph_connectivity_preserves_a_controlled_external_route_without_new
             None,
         );
     let event_selective = super::exact::shared_layer::solve_factored_endpoints_event_selective_possible_graph_connectivity(
-        input,
+        input.clone(),
         &components,
         None,
     );
+    let lazy =
+        super::exact::shared_layer::solve_factored_endpoints_lazy_possible_graph_connectivity(
+            input,
+            &components,
+            None,
+        );
 
     assert!(baseline.success, "{:#?}", baseline.diagnostics);
     assert!(propagated.success, "{:#?}", propagated.diagnostics);
@@ -614,12 +620,14 @@ fn possible_graph_connectivity_preserves_a_controlled_external_route_without_new
         "{:#?}",
         event_selective.diagnostics
     );
+    assert!(lazy.success, "{:#?}", lazy.diagnostics);
     assert_eq!(propagated.status, IntegratedLayoutStatus::Optimal);
     let baseline_exact = baseline.exact.expect("baseline reports exact evidence");
     let propagated_exact = propagated.exact.expect("propagator reports exact evidence");
     let event_selective_exact = event_selective
         .exact
         .expect("event-selective propagator reports exact evidence");
+    let lazy_exact = lazy.exact.expect("lazy propagator reports exact evidence");
     assert_eq!(propagated_exact.validation, ExactValidationStatus::Passed);
     assert!(baseline_exact.search_statistics.branch_decisions.is_some());
     assert!(baseline_exact.search_statistics.backtracks.is_some());
@@ -633,6 +641,7 @@ fn possible_graph_connectivity_preserves_a_controlled_external_route_without_new
     );
     assert_eq!(propagated_exact.objective, baseline_exact.objective);
     assert_eq!(event_selective_exact.objective, baseline_exact.objective);
+    assert_eq!(lazy_exact.objective, baseline_exact.objective);
     assert_eq!(
         propagated_exact.model_complexity.variables.total_variables,
         baseline_exact.model_complexity.variables.total_variables
@@ -646,10 +655,18 @@ fn possible_graph_connectivity_preserves_a_controlled_external_route_without_new
         "joint-shared-v4-event-selective-possible-graph-connectivity"
     );
     assert_eq!(
+        lazy_exact.formulation,
+        "joint-shared-v4-lazy-possible-graph-connectivity"
+    );
+    assert_eq!(
         event_selective_exact
             .model_complexity
             .variables
             .total_variables,
+        baseline_exact.model_complexity.variables.total_variables
+    );
+    assert_eq!(
+        lazy_exact.model_complexity.variables.total_variables,
         baseline_exact.model_complexity.variables.total_variables
     );
     assert!(

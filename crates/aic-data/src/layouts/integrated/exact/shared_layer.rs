@@ -15,7 +15,8 @@ use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 use super::boundary_terminals::{self, UsedBoundsVariables};
 use super::connectivity_propagator::{
     PossibleRouteArc, PossibleRouteReachabilityArgs, PossibleRouteReachabilityCounters,
-    PossibleRouteReachabilityStatistics, PossibleRouteReachabilityWakeMode, PossibleTerminalOption,
+    PossibleRouteReachabilityStatistics, PossibleRouteReachabilityTraversalMode,
+    PossibleRouteReachabilityWakeMode, PossibleTerminalOption,
 };
 use super::extract::rate_from_flow_units;
 use super::formulation::{
@@ -83,6 +84,7 @@ enum ConnectivityMode {
     PossibleGraphPropagator {
         counters: SyncArc<PossibleRouteReachabilityCounters>,
         wake_mode: PossibleRouteReachabilityWakeMode,
+        traversal_mode: PossibleRouteReachabilityTraversalMode,
     },
 }
 
@@ -515,6 +517,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_possible_graph_co
         ConnectivityMode::PossibleGraphPropagator {
             counters,
             wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::EagerAdjacencyAndReason,
         },
     )
 }
@@ -542,6 +545,35 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_event_selective_p
         ConnectivityMode::PossibleGraphPropagator {
             counters,
             wake_mode: PossibleRouteReachabilityWakeMode::ExclusionPredicates,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::EagerAdjacencyAndReason,
+        },
+    )
+}
+
+#[cfg(test)]
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_lazy_possible_graph_connectivity(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+) -> IntegratedLayoutReport {
+    let counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        None,
+        SearchMode::Optimize,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters,
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
         },
     )
 }
@@ -570,6 +602,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         ConnectivityMode::PossibleGraphPropagator {
             counters: SyncArc::clone(&counters),
             wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::EagerAdjacencyAndReason,
         },
     );
     (report, counters.snapshot())
@@ -599,6 +632,37 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         ConnectivityMode::PossibleGraphPropagator {
             counters: SyncArc::clone(&counters),
             wake_mode: PossibleRouteReachabilityWakeMode::ExclusionPredicates,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::EagerAdjacencyAndReason,
+        },
+    );
+    (report, counters.snapshot())
+}
+
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_reference_lazy_possible_graph_connectivity(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    reference: &IntegratedLayoutReport,
+) -> (IntegratedLayoutReport, PossibleRouteReachabilityStatistics) {
+    let counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    let report = solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        Some(reference),
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        None,
+        None,
+        Some(ReferenceAblationFixation::PlacementsAndAllTerminals),
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters: SyncArc::clone(&counters),
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
         },
     );
     (report, counters.snapshot())
@@ -855,6 +919,7 @@ fn solve_with_endpoint_encoding(
         ConnectivityMode::PossibleGraphPropagator {
             counters,
             wake_mode,
+            traversal_mode,
         } => {
             post_possible_graph_connectivity(
                 &mut solver,
@@ -863,6 +928,7 @@ fn solve_with_endpoint_encoding(
                 &model_terminals,
                 SyncArc::clone(counters),
                 *wake_mode,
+                *traversal_mode,
                 tag,
             );
         }
@@ -1112,6 +1178,7 @@ fn solve_with_endpoint_encoding(
                 _,
                 ConnectivityMode::PossibleGraphPropagator {
                     wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+                    traversal_mode: PossibleRouteReachabilityTraversalMode::EagerAdjacencyAndReason,
                     ..
                 },
             ) => "joint-shared-v4-possible-graph-connectivity",
@@ -1120,9 +1187,19 @@ fn solve_with_endpoint_encoding(
                 _,
                 ConnectivityMode::PossibleGraphPropagator {
                     wake_mode: PossibleRouteReachabilityWakeMode::ExclusionPredicates,
+                    traversal_mode: PossibleRouteReachabilityTraversalMode::EagerAdjacencyAndReason,
                     ..
                 },
             ) => "joint-shared-v4-event-selective-possible-graph-connectivity",
+            (
+                _,
+                _,
+                ConnectivityMode::PossibleGraphPropagator {
+                    traversal_mode:
+                        PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
+                    ..
+                },
+            ) => "joint-shared-v4-lazy-possible-graph-connectivity",
             (_, Some(_), ConnectivityMode::None) => {
                 "joint-shared-v4-reference-routing-state-ablation"
             }
@@ -1550,6 +1627,7 @@ fn post_possible_graph_connectivity(
     terminals: &[Vec<SharedTerminal>],
     counters: SyncArc<PossibleRouteReachabilityCounters>,
     wake_mode: PossibleRouteReachabilityWakeMode,
+    traversal_mode: PossibleRouteReachabilityTraversalMode,
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) {
     for layer in layers {
@@ -1599,6 +1677,7 @@ fn post_possible_graph_connectivity(
                 constraint_tag: tag,
                 counters: SyncArc::clone(&counters),
                 wake_mode,
+                traversal_mode,
             };
             solver.record_global_constraint(
                 ConstraintFamily::ConnectivityPropagator,

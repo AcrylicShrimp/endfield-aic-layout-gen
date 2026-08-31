@@ -112,6 +112,13 @@ while more than one million predicate notifications make the event-selective var
 predicate-watcher variant is rejected, and lazy graph traversal plus lazy explanations become the
 next exact optimization target.
 
+The thirty-sixth checkpoint,
+`heavy-xiranite-minimum-rate.thirty-sixth-lazy-connectivity-propagator-report.md`, keeps the broad
+wakeup schedule and exact search tree while traversing only arcs reachable from possible supplies
+and constructing explanations only for unsupported demands. It cuts custom arc scans by 86.5%,
+explanation builds by 99.4%, and controlled Phase 2 first-witness time by 13.3%. Demand-option
+scanning is the next measured custom-propagator bottleneck.
+
 Regenerate it from a release binary with:
 
 ```bash
