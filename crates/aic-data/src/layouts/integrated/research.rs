@@ -14,6 +14,14 @@ use super::{
     IntegratedLayoutStatus, exact, harness, prepare_exact_model,
 };
 
+mod dimension_sweep;
+
+pub use dimension_sweep::{
+    ExactDimensionCaseDisposition, ExactDimensionCaseOutcome, ExactDimensionUpperBoundImprovement,
+    PARALLEL_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION, ParallelExactDimensionCaseReport,
+    ParallelExactDimensionSweepReport, sweep_first_integrated_layout_phase_fixed_dimensions,
+};
+
 pub const EXACT_ABLATION_MATRIX_SCHEMA_VERSION: u32 = 1;
 pub const SHARED_LAYER_COMPARISON_SCHEMA_VERSION: u32 = 1;
 pub const FACTORED_ENDPOINT_COMPARISON_SCHEMA_VERSION: u32 = 1;
@@ -823,7 +831,7 @@ pub fn solve_first_integrated_layout_phase_fixed_dimensions(
     })
 }
 
-fn exact_dimension_lower_bounds(
+pub(super) fn exact_dimension_lower_bounds(
     input: &super::ModelInput,
 ) -> Result<ExactDimensionLowerBoundsReport, IntegratedLayoutReport> {
     let minimum_width = input
@@ -881,7 +889,7 @@ fn exact_dimension_lower_bounds(
     })
 }
 
-fn enumerate_exact_dimension_candidates(
+pub(super) fn enumerate_exact_dimension_candidates(
     request_width: i32,
     request_height: i32,
     lower_bounds: &ExactDimensionLowerBoundsReport,

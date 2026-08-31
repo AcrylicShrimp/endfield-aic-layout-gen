@@ -646,6 +646,56 @@ fn fixed_dimension_research_adds_only_two_equalities_and_validates_exact_bounds(
 }
 
 #[test]
+fn parallel_dimension_sweep_never_skips_at_or_below_its_final_upper_bound() {
+    let (facilities, items, transports, components) = catalogs();
+    let report = super::research::sweep_first_integrated_layout_phase_fixed_dimensions(
+        &external_connector_wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 4,
+            max_height: 3,
+        },
+        &[0],
+        2,
+        Duration::from_secs(1),
+    )
+    .expect("parallel dimension sweep should build");
+
+    let upper_bound = report
+        .feasible_upper_bound_area
+        .expect("controlled sweep should find a validated witness");
+    assert!(report.primary_area_optimum_proven);
+    assert_eq!(report.actual_worker_count, 2);
+    assert!(report.upper_bound_improvements.len() >= 1);
+    for case in &report.cases {
+        if case.disposition
+            == super::research::ExactDimensionCaseDisposition::SkippedAboveUpperBound
+        {
+            assert!(case.candidate.area > upper_bound);
+        }
+    }
+    for candidate in report
+        .candidates
+        .iter()
+        .filter(|candidate| candidate.area < upper_bound)
+    {
+        let case = report
+            .cases
+            .iter()
+            .find(|case| case.candidate == *candidate)
+            .expect("every smaller candidate has a case record");
+        assert_eq!(
+            case.outcome,
+            Some(super::research::ExactDimensionCaseOutcome::ProvenInfeasible)
+        );
+    }
+}
+
+#[test]
 fn factored_endpoint_uses_one_geometry_lookup_per_compatible_port() {
     let (facilities, items, transports, components) = catalogs();
     let request = FacilityPlacementRequest {
