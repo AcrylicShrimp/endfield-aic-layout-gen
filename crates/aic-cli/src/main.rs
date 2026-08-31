@@ -2322,6 +2322,64 @@ mod tests {
     }
 
     #[test]
+    fn parses_cumulative_facility_port_partition() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "diagnose-cumulative-facility-ports",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--target-phase",
+            "2",
+            "--used-width",
+            "12",
+            "--used-height",
+            "12",
+            "--facility-x",
+            "0",
+            "--facility-y",
+            "1",
+            "--worker-count",
+            "4",
+            "--prefix-case-time-limit-ms",
+            "5000",
+            "--port-case-time-limit-ms",
+            "1000",
+            "--output-dir",
+            "port-partition",
+        ])
+        .expect("cumulative facility port partition CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::DiagnoseCumulativeFacilityPorts {
+                    target_phase,
+                    used_width,
+                    used_height,
+                    facility_x,
+                    facility_y,
+                    worker_count,
+                    prefix_case_time_limit_ms,
+                    port_case_time_limit_ms,
+                    output_dir,
+                    ..
+                },
+        } = cli.command
+        else {
+            panic!("expected cumulative facility port partition command")
+        };
+        assert_eq!(target_phase, 2);
+        assert_eq!((used_width, used_height), (12, 12));
+        assert_eq!((facility_x, facility_y), (0, 1));
+        assert_eq!(worker_count, 4);
+        assert_eq!(prefix_case_time_limit_ms, 5_000);
+        assert_eq!(port_case_time_limit_ms, 1_000);
+        assert_eq!(output_dir, PathBuf::from("port-partition"));
+    }
+
+    #[test]
     fn parses_first_phase_factored_requirement_decomposition() {
         let cli = Cli::try_parse_from([
             "aic-cli",

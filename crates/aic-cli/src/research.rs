@@ -482,6 +482,56 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
     },
+    /// Partition one fixed facility coordinate by every compatible port assignment.
+    DiagnoseCumulativeFacilityPorts {
+        /// Benchmark workload manifest JSON file to solve.
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+
+        /// Root used to resolve portable input paths in the workload manifest.
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Zero-based cumulative SCC target phase introducing one facility.
+        #[arg(long, value_name = "INDEX")]
+        target_phase: usize,
+
+        /// Exact used width for every port-assignment case.
+        #[arg(long, value_name = "CELLS")]
+        used_width: i32,
+
+        /// Exact used height for every port-assignment case.
+        #[arg(long, value_name = "CELLS")]
+        used_height: i32,
+
+        /// Fixed X coordinate of the introduced facility.
+        #[arg(long, value_name = "CELL")]
+        facility_x: i32,
+
+        /// Fixed Y coordinate of the introduced facility.
+        #[arg(long, value_name = "CELL")]
+        facility_y: i32,
+
+        /// Independent Pumpkin worker threads.
+        #[arg(long, value_name = "COUNT")]
+        worker_count: usize,
+
+        /// Per-dimension case budget used to obtain the preceding phase hint.
+        #[arg(long, value_name = "MILLISECONDS")]
+        prefix_case_time_limit_ms: u64,
+
+        /// Wall-clock search budget independently given to every port assignment.
+        #[arg(long, value_name = "MILLISECONDS")]
+        port_case_time_limit_ms: u64,
+
+        /// Directory receiving summary JSON/HTML and a representative layout.
+        #[arg(long, value_name = "DIR")]
+        output_dir: PathBuf,
+    },
     /// Rebuild one factored shared-layer network from each logical requirement subset.
     DecomposeFirstPhaseFactoredRequirements {
         /// Benchmark workload manifest JSON file to solve.
@@ -772,6 +822,33 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             worker_count,
             prefix_case_time_limit_ms,
             coordinate_case_time_limit_ms,
+            output_dir,
+        ),
+        ResearchCommand::DiagnoseCumulativeFacilityPorts {
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            used_width,
+            used_height,
+            facility_x,
+            facility_y,
+            worker_count,
+            prefix_case_time_limit_ms,
+            port_case_time_limit_ms,
+            output_dir,
+        } => coordinate_partition::run_ports(
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            used_width,
+            used_height,
+            facility_x,
+            facility_y,
+            worker_count,
+            prefix_case_time_limit_ms,
+            port_case_time_limit_ms,
             output_dir,
         ),
         ResearchCommand::DecomposeFirstPhaseFactoredRequirements {

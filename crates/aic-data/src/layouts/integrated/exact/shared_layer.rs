@@ -82,6 +82,18 @@ pub(in crate::layouts::integrated) struct FixedFacilityCoordinate {
     pub y: i32,
 }
 
+#[derive(Debug, Clone, serde::Serialize, PartialEq, Eq)]
+pub(in crate::layouts::integrated) struct FacilityPortPartitionDomain {
+    pub(in crate::layouts::integrated) terminal: String,
+    pub(in crate::layouts::integrated) ports: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(in crate::layouts::integrated) struct FixedTerminalPortChoice {
+    pub terminal: String,
+    pub port: String,
+}
+
 struct SharedSearchResult {
     report: IntegratedLayoutReport,
     stages: Vec<crate::layouts::integrated::ExactObjectiveStageReport>,
@@ -166,6 +178,7 @@ pub(in crate::layouts::integrated) fn solve(
         SearchMode::Optimize,
         None,
         None,
+        None,
     )
 }
 
@@ -192,6 +205,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_with_prior(
         SearchMode::Optimize,
         None,
         None,
+        None,
     )
 }
 
@@ -207,6 +221,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_feasibility_only(
         EndpointEncoding::Factored,
         None,
         SearchMode::FeasibilityOnly,
+        None,
         None,
         None,
     )
@@ -243,6 +258,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         SearchMode::FeasibilityOnly,
         Some(fixed_dimensions),
         None,
+        None,
     )
 }
 
@@ -264,6 +280,30 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         SearchMode::FeasibilityOnly,
         Some(fixed_dimensions),
         Some(fixed_coordinate),
+        None,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_coordinate_ports_feasibility_only_with_prior(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: Option<&IntegratedLayoutReport>,
+) -> IntegratedLayoutReport {
+    solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        prior_solution,
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        Some(fixed_coordinate),
+        Some(fixed_ports),
     )
 }
 
@@ -298,6 +338,48 @@ pub(in crate::layouts::integrated) fn facility_coordinate_partitions(
     )
 }
 
+pub(in crate::layouts::integrated) fn facility_port_partition_domains(
+    input: &ModelInput,
+    instance_id: &str,
+) -> Result<Vec<FacilityPortPartitionDomain>, IntegratedLayoutDiagnostic> {
+    if !input
+        .instances
+        .iter()
+        .any(|instance| instance.id == instance_id)
+    {
+        return Err(IntegratedLayoutDiagnostic::error(
+            "unknown-port-partition-facility",
+            "/fixed_ports/instance",
+            Some(instance_id.to_string()),
+            "the port partition facility is not present in the cumulative exact model",
+        ));
+    }
+    let mut domains = Vec::new();
+    let mut seen = BTreeSet::new();
+    for network in &input.networks {
+        for terminal in network.terminals() {
+            let edge = &input.edges[terminal.route_index()];
+            let endpoint = if terminal.direction() == FacilityPortDirection::Output {
+                &edge.source
+            } else {
+                &edge.target
+            };
+            let EndpointInput::Facility { instance, ports } = endpoint else {
+                continue;
+            };
+            if instance != instance_id || !seen.insert(terminal.id().to_string()) {
+                continue;
+            }
+            domains.push(FacilityPortPartitionDomain {
+                terminal: terminal.id().to_string(),
+                ports: ports.iter().map(|port| port.id.clone()).collect(),
+            });
+        }
+    }
+    domains.sort_by(|left, right| left.terminal.cmp(&right.terminal));
+    Ok(domains)
+}
+
 fn solve_with_endpoint_encoding(
     input: ModelInput,
     logistics_components: &ValidatedLogisticsComponentCatalog,
@@ -307,6 +389,7 @@ fn solve_with_endpoint_encoding(
     search_mode: SearchMode,
     fixed_dimensions: Option<FixedUsedDimensions>,
     fixed_coordinate: Option<FixedFacilityCoordinate>,
+    fixed_ports: Option<Vec<FixedTerminalPortChoice>>,
 ) -> IntegratedLayoutReport {
     let construction_started = Instant::now();
     let mut model_metrics = initial_metrics(&input);
@@ -372,6 +455,12 @@ fn solve_with_endpoint_encoding(
             tag,
         ),
     };
+    if let Some(fixed) = fixed_ports.as_ref()
+        && let Err(diagnostic) =
+            post_fixed_terminal_ports(&mut solver, &model_terminals, fixed, tag)
+    {
+        return IntegratedLayoutReport::invalid(diagnostic);
+    }
 
     let mut layers = Vec::new();
     let mut branch_components = Vec::new();
@@ -554,6 +643,7 @@ fn solve_with_endpoint_encoding(
         match boundary_terminals::validate_witness(&report)
             .and_then(|()| validate_fixed_dimensions(&report, fixed_dimensions))
             .and_then(|()| validate_fixed_coordinate(&report, fixed_coordinate.as_ref()))
+            .and_then(|()| validate_fixed_terminal_ports(&report, fixed_ports.as_deref()))
             .and_then(|()| {
                 crate::layouts::integrated::witness::validate(&input, logistics_components, &report)
             }) {
@@ -578,21 +668,29 @@ fn solve_with_endpoint_encoding(
     };
     finish_report_with_formulation(
         report,
-        match (endpoint_encoding, fixed_dimensions, fixed_coordinate) {
-            (EndpointEncoding::Flattened, _, _) => {
+        match (
+            endpoint_encoding,
+            fixed_dimensions,
+            fixed_coordinate,
+            fixed_ports,
+        ) {
+            (EndpointEncoding::Flattened, _, _, _) => {
                 "joint-shared-transport-layer-canonical-occupancy-v2"
             }
-            (EndpointEncoding::Factored, Some(_), Some(_)) => {
+            (EndpointEncoding::Factored, Some(_), Some(_), Some(_)) => {
+                "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions-coordinate-port-partition"
+            }
+            (EndpointEncoding::Factored, Some(_), Some(_), None) => {
                 "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions-coordinate-partition"
             }
-            (EndpointEncoding::Factored, Some(_), None) => {
+            (EndpointEncoding::Factored, Some(_), None, None) => {
                 "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions"
             }
-            (EndpointEncoding::Factored, None, None) => {
+            (EndpointEncoding::Factored, None, None, None) => {
                 "joint-shared-boundary-terminals-canonical-occupancy-v4"
             }
-            (EndpointEncoding::Factored, None, Some(_)) => {
-                unreachable!("coordinate partitions always fix used dimensions")
+            (EndpointEncoding::Factored, _, _, _) => {
+                unreachable!("port and coordinate partitions always fix their parent decisions")
             }
         },
         model_metrics,
@@ -604,6 +702,64 @@ fn solve_with_endpoint_encoding(
         validation,
         search.stages,
     )
+}
+
+fn post_fixed_terminal_ports(
+    solver: &mut RecordedModel,
+    model_terminals: &[Vec<SharedTerminal>],
+    fixed_ports: &[FixedTerminalPortChoice],
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    for fixed in fixed_ports {
+        let terminal = model_terminals
+            .iter()
+            .flatten()
+            .find(|terminal| terminal.id == fixed.terminal)
+            .ok_or_else(|| {
+                IntegratedLayoutDiagnostic::error(
+                    "unknown-port-partition-terminal",
+                    "/fixed_ports/terminal",
+                    Some(fixed.terminal.clone()),
+                    "the port partition terminal is not present in the exact model",
+                )
+            })?;
+        let SharedTerminalEndpoint::Factored {
+            kind:
+                FactoredEndpointKind::Facility {
+                    port_choice,
+                    port_ids,
+                    ..
+                },
+            ..
+        } = &terminal.endpoint
+        else {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "invalid-port-partition-terminal",
+                "/fixed_ports/terminal",
+                Some(fixed.terminal.clone()),
+                "the port partition terminal is not a factored facility endpoint",
+            ));
+        };
+        let port_index = port_ids
+            .iter()
+            .position(|port| port == &fixed.port)
+            .ok_or_else(|| {
+                IntegratedLayoutDiagnostic::error(
+                    "invalid-port-partition-choice",
+                    "/fixed_ports/port",
+                    Some(format!("{}:{}", fixed.terminal, fixed.port)),
+                    "the selected port is outside the terminal's compatible port domain",
+                )
+            })?;
+        solver.post_equals(
+            ConstraintFamily::ResearchFixation,
+            vec![port_choice.scaled(1)],
+            i32::try_from(port_index).expect("port index fits i32"),
+            1,
+            tag,
+        );
+    }
+    Ok(())
 }
 
 fn post_fixed_facility_coordinate(
@@ -702,6 +858,50 @@ fn validate_fixed_coordinate(
                 fixed.instance, fixed.x, fixed.y
             ),
         ));
+    }
+    Ok(())
+}
+
+fn validate_fixed_terminal_ports(
+    report: &IntegratedLayoutReport,
+    fixed_ports: Option<&[FixedTerminalPortChoice]>,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let Some(fixed_ports) = fixed_ports else {
+        return Ok(());
+    };
+    for fixed in fixed_ports {
+        let terminal = report
+            .transport_networks
+            .iter()
+            .flat_map(|network| network.terminals.iter())
+            .find(|terminal| terminal.id == fixed.terminal)
+            .ok_or_else(|| {
+                IntegratedLayoutDiagnostic::error(
+                    "invalid-port-partition-witness",
+                    "/transport_networks",
+                    Some(fixed.terminal.clone()),
+                    "port-partition witness is missing the fixed terminal",
+                )
+            })?;
+        let TransportNetworkEndpoint::Facility { port, .. } = &terminal.endpoint else {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "invalid-port-partition-witness",
+                "/transport_networks",
+                Some(fixed.terminal.clone()),
+                "port-partition witness fixed a non-facility terminal",
+            ));
+        };
+        if port != &fixed.port {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "invalid-port-partition-witness",
+                "/transport_networks",
+                Some(format!("{}:{}", fixed.terminal, port)),
+                format!(
+                    "port-partition witness must select port '{}' for terminal '{}'",
+                    fixed.port, fixed.terminal
+                ),
+            ));
+        }
     }
     Ok(())
 }

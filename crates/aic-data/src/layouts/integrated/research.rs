@@ -19,8 +19,12 @@ mod dimension_sweep;
 
 pub use coordinate_partition::{
     CUMULATIVE_FACILITY_COORDINATE_PARTITION_SCHEMA_VERSION,
-    CumulativeFacilityCoordinatePartitionReport, FacilityCoordinateCaseDisposition,
-    FacilityCoordinateCaseReport, diagnose_cumulative_facility_coordinate_partitions,
+    CUMULATIVE_FACILITY_PORT_PARTITION_SCHEMA_VERSION, CumulativeFacilityCoordinatePartitionReport,
+    CumulativeFacilityPortPartitionReport, FacilityCoordinateCaseDisposition,
+    FacilityCoordinateCaseReport, FacilityPortAssignment, FacilityPortDomainReport,
+    FacilityPortPartitionCaseReport, PartitionCaseModelScale,
+    diagnose_cumulative_facility_coordinate_partitions,
+    diagnose_cumulative_facility_port_partitions,
 };
 pub use dimension_sweep::{
     CUMULATIVE_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION, CumulativeExactDimensionSweepReport,

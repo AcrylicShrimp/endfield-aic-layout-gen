@@ -46,6 +46,12 @@ The original fixed-dimension feasible set is the union of all coordinate-partiti
 - Timeouts across many coordinate cases move the cliff inward; the next exact partition should separate port selection or boundary-terminal selection while retaining all remaining solver decisions.
 - A proof of infeasibility for every coordinate proves only the requested exact dimensions infeasible.
 
+## Port sub-partition
+
+When one coordinate remains unresolved, a second diagnostic may fix that coordinate and partition every compatible port assignment of the introduced facility. It constructs the complete Cartesian product of the facility's logical terminal port domains. Each case fixes those port choices while retaining all other placement, boundary-terminal, routing, flow, topology, capacity, and collision decisions.
+
+One validated assignment proves the fixed-coordinate case feasible. Every assignment must be proven infeasible before the fixed-coordinate case may be reported infeasible. Any unresolved assignment keeps the aggregate fixed-coordinate result unknown.
+
 ## Failure modes
 
 - Invalid growth phase.
