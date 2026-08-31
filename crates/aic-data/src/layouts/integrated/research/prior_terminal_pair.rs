@@ -26,8 +26,10 @@ use super::{
 mod completion;
 
 pub use completion::{
+    EXTERNAL_BOUNDARY_CELL_PARTITION_SCHEMA_VERSION,
     EXTERNAL_BOUNDARY_KEY_LEGAL_SUPPORT_AB_SCHEMA_VERSION,
-    EXTERNAL_BOUNDARY_SIDE_PARTITION_SCHEMA_VERSION, ExternalBoundaryKeyCommonModelContract,
+    EXTERNAL_BOUNDARY_SIDE_PARTITION_SCHEMA_VERSION, ExternalBoundaryCellCaseReport,
+    ExternalBoundaryCellPartitionReport, ExternalBoundaryKeyCommonModelContract,
     ExternalBoundaryKeyLegalSupportAbReport, ExternalBoundaryKeyNetworkContract,
     ExternalBoundaryKeyRootComparison, ExternalBoundaryKeyRootTotals,
     ExternalBoundaryKeySolveReport, ExternalBoundaryKeyStaticCertificate,
@@ -43,11 +45,11 @@ pub use completion::{
     PriorTerminalCompletionParentReport, PriorTerminalCompletionPortfolioReport,
     RESIDUAL_FACILITY_PORT_TUPLE_PORTFOLIO_SCHEMA_VERSION, ResidualFacilityPortDomain,
     ResidualFacilityPortFixationObservation, ResidualFacilityPortTupleCaseReport,
-    ResidualFacilityPortTuplePortfolioReport, diagnose_external_boundary_key_legal_support_ab,
-    diagnose_external_boundary_side_partition, diagnose_prior_input_pair_root_snapshot,
-    diagnose_prior_input_port_controls, diagnose_prior_input_port_pair_portfolio,
-    diagnose_prior_source_port_portfolio, diagnose_prior_terminal_completion_portfolio,
-    diagnose_residual_facility_port_tuple_portfolio,
+    ResidualFacilityPortTuplePortfolioReport, diagnose_external_boundary_cell_partition,
+    diagnose_external_boundary_key_legal_support_ab, diagnose_external_boundary_side_partition,
+    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
+    diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
+    diagnose_prior_terminal_completion_portfolio, diagnose_residual_facility_port_tuple_portfolio,
 };
 
 pub const PRIOR_TERMINAL_PAIR_VALUE_PORTFOLIO_SCHEMA_VERSION: u32 = 2;

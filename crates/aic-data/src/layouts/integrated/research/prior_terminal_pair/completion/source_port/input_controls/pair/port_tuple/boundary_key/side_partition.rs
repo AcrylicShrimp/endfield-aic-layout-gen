@@ -6,6 +6,10 @@ use serde::Serialize;
 use super::*;
 use crate::facilities::FacilityPortDirection;
 
+mod cell_partition;
+
+pub use cell_partition::*;
+
 pub const EXTERNAL_BOUNDARY_SIDE_PARTITION_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
