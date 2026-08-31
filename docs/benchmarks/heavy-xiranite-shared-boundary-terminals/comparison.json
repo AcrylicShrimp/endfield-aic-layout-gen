@@ -1,0 +1,83 @@
+{
+  "schema_version": 1,
+  "workload": "heavy-xiranite-minimum-rate",
+  "classification": "semantics-restoring-exact-architecture-cutover",
+  "request_bounds": {
+    "max_width": 12,
+    "max_height": 12
+  },
+  "phase": 0,
+  "graph": {
+    "facility_count": 1,
+    "route_requirement_count": 4,
+    "commodity_network_count": 3,
+    "belt_network_count": 2,
+    "pipe_network_count": 1,
+    "external_terminal_count": 4
+  },
+  "canonical_straight_connector_v3": {
+    "search_budget_ms": 5000,
+    "construction_ms": 66,
+    "search_ms": 1912,
+    "first_incumbent_ms": 16,
+    "incumbent_count": 22,
+    "termination": "optimal",
+    "objective": [42, 4, 0],
+    "variables": 16346,
+    "boolean_variables": 16310,
+    "integer_variables": 36,
+    "log2_domain_volume": 16543.165840712638,
+    "constraints": 64408,
+    "terms": 162945,
+    "external_connector_variables": 15336,
+    "commodity_network_count": 0
+  },
+  "shared_boundary_terminal_v4_5s": {
+    "search_budget_ms": 5000,
+    "construction_ms": 138,
+    "search_ms": 5000,
+    "first_incumbent_ms": null,
+    "incumbent_count": 0,
+    "termination": "unknown",
+    "objective": null,
+    "variables": 19582,
+    "boolean_variables": 17194,
+    "integer_variables": 2388,
+    "log2_domain_volume": 22480.84096776083,
+    "constraints": 57843,
+    "terms": 186379,
+    "boundary_terminal_variables": 1252,
+    "commodity_network_count": 3,
+    "peak_rss_bytes": 133677056
+  },
+  "shared_boundary_terminal_v4_30s": {
+    "search_budget_ms": 30000,
+    "construction_ms": 121,
+    "search_ms": 30001,
+    "first_incumbent_ms": null,
+    "incumbent_count": 0,
+    "termination": "unknown",
+    "objective": null,
+    "variables": 19582,
+    "constraints": 57843,
+    "terms": 186379,
+    "peak_rss_bytes": 157876224
+  },
+  "structural_delta_v3_to_v4": {
+    "dedicated_external_decision_variables": -14084,
+    "dedicated_external_decision_variable_percent": -91.84,
+    "total_variables": 3236,
+    "total_variable_percent": 19.8,
+    "constraints": -6565,
+    "constraint_percent": -10.19,
+    "terms": 23434,
+    "term_percent": 14.38
+  },
+  "verdict": {
+    "remove_straight_shape_heuristic": true,
+    "external_flow_uses_shared_commodity_networks": true,
+    "phase0_first_incumbent_within_30s": false,
+    "authoritative_fallback_used": false,
+    "next_exact_diagnosis_target": "pre-incumbent-coupling-among-boundary-terminal-selection-and-shared-network-routing"
+  }
+}
