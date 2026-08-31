@@ -75,6 +75,13 @@ pub(in crate::layouts::integrated) struct FixedUsedDimensions {
     pub(in crate::layouts::integrated) height: i32,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(in crate::layouts::integrated) struct FixedFacilityCoordinate {
+    pub instance: String,
+    pub x: i32,
+    pub y: i32,
+}
+
 struct SharedSearchResult {
     report: IntegratedLayoutReport,
     stages: Vec<crate::layouts::integrated::ExactObjectiveStageReport>,
@@ -158,6 +165,7 @@ pub(in crate::layouts::integrated) fn solve(
         None,
         SearchMode::Optimize,
         None,
+        None,
     )
 }
 
@@ -183,6 +191,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_with_prior(
         prior_solution,
         SearchMode::Optimize,
         None,
+        None,
     )
 }
 
@@ -198,6 +207,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_feasibility_only(
         EndpointEncoding::Factored,
         None,
         SearchMode::FeasibilityOnly,
+        None,
         None,
     )
 }
@@ -232,6 +242,59 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         prior_solution,
         SearchMode::FeasibilityOnly,
         Some(fixed_dimensions),
+        None,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_coordinate_feasibility_only_with_prior(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    prior_solution: Option<&IntegratedLayoutReport>,
+) -> IntegratedLayoutReport {
+    solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        prior_solution,
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        Some(fixed_coordinate),
+    )
+}
+
+pub(in crate::layouts::integrated) fn facility_coordinate_partitions(
+    input: &ModelInput,
+    instance_id: &str,
+) -> Result<Vec<FixedFacilityCoordinate>, IntegratedLayoutDiagnostic> {
+    let instance = input
+        .instances
+        .iter()
+        .find(|instance| instance.id == instance_id)
+        .ok_or_else(|| {
+            IntegratedLayoutDiagnostic::error(
+                "unknown-coordinate-partition-facility",
+                "/fixed_coordinate/instance",
+                Some(instance_id.to_string()),
+                "the coordinate partition facility is not present in the cumulative exact model",
+            )
+        })?;
+    Ok(
+        generate_candidate_geometries(instance, input.width, input.height)
+            .into_iter()
+            .map(|candidate| (candidate.x, candidate.y))
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .map(|(x, y)| FixedFacilityCoordinate {
+                instance: instance_id.to_string(),
+                x,
+                y,
+            })
+            .collect(),
     )
 }
 
@@ -243,6 +306,7 @@ fn solve_with_endpoint_encoding(
     prior_solution: Option<&IntegratedLayoutReport>,
     search_mode: SearchMode,
     fixed_dimensions: Option<FixedUsedDimensions>,
+    fixed_coordinate: Option<FixedFacilityCoordinate>,
 ) -> IntegratedLayoutReport {
     let construction_started = Instant::now();
     let mut model_metrics = initial_metrics(&input);
@@ -280,6 +344,12 @@ fn solve_with_endpoint_encoding(
                 "a facility has no rotation and origin within the hard layout bounds",
             ),
         );
+    }
+    if let Some(fixed) = fixed_coordinate.as_ref()
+        && let Err(diagnostic) =
+            post_fixed_facility_coordinate(&mut solver, &model_instances, fixed, tag)
+    {
+        return IntegratedLayoutReport::invalid(diagnostic);
     }
     let model_terminals = match endpoint_encoding {
         EndpointEncoding::Flattened => {
@@ -483,6 +553,7 @@ fn solve_with_endpoint_encoding(
     let validation = if report.success {
         match boundary_terminals::validate_witness(&report)
             .and_then(|()| validate_fixed_dimensions(&report, fixed_dimensions))
+            .and_then(|()| validate_fixed_coordinate(&report, fixed_coordinate.as_ref()))
             .and_then(|()| {
                 crate::layouts::integrated::witness::validate(&input, logistics_components, &report)
             }) {
@@ -507,15 +578,21 @@ fn solve_with_endpoint_encoding(
     };
     finish_report_with_formulation(
         report,
-        match (endpoint_encoding, fixed_dimensions) {
-            (EndpointEncoding::Flattened, _) => {
+        match (endpoint_encoding, fixed_dimensions, fixed_coordinate) {
+            (EndpointEncoding::Flattened, _, _) => {
                 "joint-shared-transport-layer-canonical-occupancy-v2"
             }
-            (EndpointEncoding::Factored, Some(_)) => {
+            (EndpointEncoding::Factored, Some(_), Some(_)) => {
+                "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions-coordinate-partition"
+            }
+            (EndpointEncoding::Factored, Some(_), None) => {
                 "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions"
             }
-            (EndpointEncoding::Factored, None) => {
+            (EndpointEncoding::Factored, None, None) => {
                 "joint-shared-boundary-terminals-canonical-occupancy-v4"
+            }
+            (EndpointEncoding::Factored, None, Some(_)) => {
+                unreachable!("coordinate partitions always fix used dimensions")
             }
         },
         model_metrics,
@@ -527,6 +604,41 @@ fn solve_with_endpoint_encoding(
         validation,
         search.stages,
     )
+}
+
+fn post_fixed_facility_coordinate(
+    solver: &mut RecordedModel,
+    instances: &[ModelInstance],
+    fixed: &FixedFacilityCoordinate,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let instance = instances
+        .iter()
+        .find(|instance| instance.input.id == fixed.instance)
+        .ok_or_else(|| {
+            IntegratedLayoutDiagnostic::error(
+                "unknown-coordinate-partition-facility",
+                "/fixed_coordinate/instance",
+                Some(fixed.instance.clone()),
+                "the coordinate partition facility is not present in the cumulative exact model",
+            )
+        })?;
+    let matching = instance
+        .candidates
+        .iter()
+        .filter(|candidate| candidate.x == fixed.x && candidate.y == fixed.y)
+        .map(|candidate| candidate.selected.scaled(1))
+        .collect::<Vec<_>>();
+    if matching.is_empty() {
+        return Err(IntegratedLayoutDiagnostic::error(
+            "invalid-coordinate-partition",
+            "/fixed_coordinate",
+            Some(format!("{}@{},{}", fixed.instance, fixed.x, fixed.y)),
+            "the requested coordinate has no legal rotation within the hard layout bounds",
+        ));
+    }
+    solver.post_equals(ConstraintFamily::ResearchFixation, matching, 1, 1, tag);
+    Ok(())
 }
 
 fn validate_fixed_dimensions(
@@ -552,6 +664,42 @@ fn validate_fixed_dimensions(
             format!(
                 "fixed-dimension research witness must use exactly {}x{} cells",
                 fixed.width, fixed.height
+            ),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_fixed_coordinate(
+    report: &IntegratedLayoutReport,
+    fixed_coordinate: Option<&FixedFacilityCoordinate>,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let Some(fixed) = fixed_coordinate else {
+        return Ok(());
+    };
+    let placement = report
+        .placements
+        .iter()
+        .find(|placement| placement.instance == fixed.instance)
+        .ok_or_else(|| {
+            IntegratedLayoutDiagnostic::error(
+                "invalid-coordinate-partition-witness",
+                "/placements",
+                Some(fixed.instance.clone()),
+                "coordinate-partition witness is missing the partitioned facility",
+            )
+        })?;
+    if placement.x != i64::from(fixed.x) || placement.y != i64::from(fixed.y) {
+        return Err(IntegratedLayoutDiagnostic::error(
+            "invalid-coordinate-partition-witness",
+            "/placements",
+            Some(format!(
+                "{}@{},{}",
+                placement.instance, placement.x, placement.y
+            )),
+            format!(
+                "coordinate-partition witness must place '{}' at {},{}",
+                fixed.instance, fixed.x, fixed.y
             ),
         ));
     }

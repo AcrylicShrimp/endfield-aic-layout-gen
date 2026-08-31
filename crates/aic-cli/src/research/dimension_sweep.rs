@@ -25,14 +25,14 @@ use anyhow::{Context, Result, ensure};
 use super::first_phase::{load_localization, write_bytes, write_json};
 use super::{load_contextual_recipe_request, resolve_workload_paths};
 
-struct LoadedDimensionSweepInputs {
-    wiring: FacilityInstanceWiringReport,
-    facilities: ValidatedFacilityCatalog,
-    items: ValidatedItemCatalog,
-    transports: ValidatedTransportCatalog,
-    components: ValidatedLogisticsComponentCatalog,
-    placement_request: FacilityPlacementRequest,
-    localization: Option<ValidatedLocalizationCatalog>,
+pub(super) struct LoadedDimensionSweepInputs {
+    pub(super) wiring: FacilityInstanceWiringReport,
+    pub(super) facilities: ValidatedFacilityCatalog,
+    pub(super) items: ValidatedItemCatalog,
+    pub(super) transports: ValidatedTransportCatalog,
+    pub(super) components: ValidatedLogisticsComponentCatalog,
+    pub(super) placement_request: FacilityPlacementRequest,
+    pub(super) localization: Option<ValidatedLocalizationCatalog>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -118,7 +118,7 @@ pub(super) fn run_cumulative(
     Ok(report.completed_target_phase)
 }
 
-fn load_inputs(
+pub(super) fn load_inputs(
     workload_path: PathBuf,
     workspace_root: PathBuf,
     placement_request_path: PathBuf,
@@ -235,7 +235,7 @@ fn write_phase_artifacts(
     write_json(&output_dir.join("summary.json"), report)
 }
 
-fn write_layout_html(
+pub(super) fn write_layout_html(
     path: &PathBuf,
     layout: &IntegratedLayoutReport,
     localization: Option<&ValidatedLocalizationCatalog>,

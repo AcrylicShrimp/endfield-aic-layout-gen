@@ -2266,6 +2266,62 @@ mod tests {
     }
 
     #[test]
+    fn parses_cumulative_facility_coordinate_partition() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "diagnose-cumulative-facility-coordinates",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--target-phase",
+            "2",
+            "--used-width",
+            "12",
+            "--used-height",
+            "12",
+            "--worker-count",
+            "4",
+            "--prefix-case-time-limit-ms",
+            "5000",
+            "--coordinate-case-time-limit-ms",
+            "1000",
+            "--output-dir",
+            "coordinate-partition",
+        ])
+        .expect("cumulative facility coordinate partition CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::DiagnoseCumulativeFacilityCoordinates {
+                    workload,
+                    workspace_root,
+                    placement_request,
+                    target_phase,
+                    used_width,
+                    used_height,
+                    worker_count,
+                    prefix_case_time_limit_ms,
+                    coordinate_case_time_limit_ms,
+                    output_dir,
+                },
+        } = cli.command
+        else {
+            panic!("expected cumulative facility coordinate partition command")
+        };
+        assert_eq!(workload, PathBuf::from("workload.json"));
+        assert_eq!(workspace_root, PathBuf::from("."));
+        assert_eq!(placement_request, PathBuf::from("bounds.json"));
+        assert_eq!(target_phase, 2);
+        assert_eq!((used_width, used_height), (12, 12));
+        assert_eq!(worker_count, 4);
+        assert_eq!(prefix_case_time_limit_ms, 5_000);
+        assert_eq!(coordinate_case_time_limit_ms, 1_000);
+        assert_eq!(output_dir, PathBuf::from("coordinate-partition"));
+    }
+
+    #[test]
     fn parses_first_phase_factored_requirement_decomposition() {
         let cli = Cli::try_parse_from([
             "aic-cli",

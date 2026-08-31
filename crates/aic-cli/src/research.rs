@@ -23,6 +23,7 @@ use anyhow::{Context, Result, ensure};
 use clap::{Subcommand, ValueEnum};
 use sha2::{Digest, Sha256};
 
+mod coordinate_partition;
 mod cumulative_growth;
 mod dimension_sweep;
 mod external_connectors;
@@ -439,6 +440,48 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
     },
+    /// Partition one cumulative fixed-dimension model by the introduced facility coordinate.
+    DiagnoseCumulativeFacilityCoordinates {
+        /// Benchmark workload manifest JSON file to solve.
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+
+        /// Root used to resolve portable input paths in the workload manifest.
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Zero-based cumulative SCC target phase introducing one facility.
+        #[arg(long, value_name = "INDEX")]
+        target_phase: usize,
+
+        /// Exact used width for every coordinate case.
+        #[arg(long, value_name = "CELLS")]
+        used_width: i32,
+
+        /// Exact used height for every coordinate case.
+        #[arg(long, value_name = "CELLS")]
+        used_height: i32,
+
+        /// Independent Pumpkin worker threads.
+        #[arg(long, value_name = "COUNT")]
+        worker_count: usize,
+
+        /// Per-dimension case budget used to obtain the preceding phase hint.
+        #[arg(long, value_name = "MILLISECONDS")]
+        prefix_case_time_limit_ms: u64,
+
+        /// Wall-clock search budget independently given to every coordinate case.
+        #[arg(long, value_name = "MILLISECONDS")]
+        coordinate_case_time_limit_ms: u64,
+
+        /// Directory receiving summary JSON/HTML and a representative layout.
+        #[arg(long, value_name = "DIR")]
+        output_dir: PathBuf,
+    },
     /// Rebuild one factored shared-layer network from each logical requirement subset.
     DecomposeFirstPhaseFactoredRequirements {
         /// Benchmark workload manifest JSON file to solve.
@@ -706,6 +749,29 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             target_phase,
             worker_count,
             case_time_limit_ms,
+            output_dir,
+        ),
+        ResearchCommand::DiagnoseCumulativeFacilityCoordinates {
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            used_width,
+            used_height,
+            worker_count,
+            prefix_case_time_limit_ms,
+            coordinate_case_time_limit_ms,
+            output_dir,
+        } => coordinate_partition::run(
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            used_width,
+            used_height,
+            worker_count,
+            prefix_case_time_limit_ms,
+            coordinate_case_time_limit_ms,
             output_dir,
         ),
         ResearchCommand::DecomposeFirstPhaseFactoredRequirements {

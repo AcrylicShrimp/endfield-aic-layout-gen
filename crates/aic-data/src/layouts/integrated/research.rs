@@ -14,8 +14,14 @@ use super::{
     IntegratedLayoutStatus, exact, harness, prepare_exact_model,
 };
 
+mod coordinate_partition;
 mod dimension_sweep;
 
+pub use coordinate_partition::{
+    CUMULATIVE_FACILITY_COORDINATE_PARTITION_SCHEMA_VERSION,
+    CumulativeFacilityCoordinatePartitionReport, FacilityCoordinateCaseDisposition,
+    FacilityCoordinateCaseReport, diagnose_cumulative_facility_coordinate_partitions,
+};
 pub use dimension_sweep::{
     CUMULATIVE_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION, CumulativeExactDimensionSweepReport,
     ExactDimensionCaseDisposition, ExactDimensionCaseOutcome, ExactDimensionUpperBoundImprovement,
