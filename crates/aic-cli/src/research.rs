@@ -40,6 +40,7 @@ mod reference_ablation;
 mod requirement_cliff;
 mod residual_facility_state;
 mod routing_state_breakdown;
+mod scaled_endpoint_channel;
 mod search_mode;
 mod shared_layer;
 mod transport_tile_cap;
@@ -60,6 +61,12 @@ pub(super) enum PhysicalOccupancyEncodingArg {
 pub(super) enum DiagnosticSearchModeArg {
     Optimize,
     FeasibilityOnly,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub(super) enum EndpointChannelEncodingArg {
+    NestedElement,
+    PositiveTable,
 }
 
 #[derive(Debug, Args)]
@@ -100,6 +107,31 @@ pub(crate) struct FacilityStateResearchArgs {
     pub(crate) state_case_time_limit_ms: u64,
     #[arg(long, value_name = "DIR")]
     pub(crate) output_dir: PathBuf,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct ScaledEndpointChannelResearchArgs {
+    /// Benchmark workload manifest JSON file.
+    #[arg(long, value_name = "FILE")]
+    pub(crate) workload: PathBuf,
+    /// Root used to resolve portable input paths in the workload manifest.
+    #[arg(long, value_name = "DIR", default_value = ".")]
+    pub(crate) workspace_root: PathBuf,
+    /// Fixed used-dimension request for this diagnostic.
+    #[arg(long, value_name = "FILE")]
+    pub(crate) placement_request: PathBuf,
+    /// Zero-based cumulative growth phase containing the introduced facility.
+    #[arg(long, value_name = "INDEX")]
+    pub(crate) target_phase: usize,
+    /// Exact endpoint-channel encoding to measure.
+    #[arg(long, value_enum)]
+    pub(crate) encoding: EndpointChannelEncodingArg,
+    /// JSON artifact path.
+    #[arg(long, value_name = "FILE")]
+    pub(crate) output: PathBuf,
+    /// Self-contained HTML comparison path.
+    #[arg(long, value_name = "FILE")]
+    pub(crate) visualization_output: PathBuf,
 }
 
 #[derive(Debug, Subcommand)]
@@ -870,6 +902,8 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "FILE")]
         visualization_output: PathBuf,
     },
+    /// Scale an exact endpoint channel to the actual introduced facility of a cumulative phase.
+    ProbeScaledEndpointChannels(Box<ScaledEndpointChannelResearchArgs>),
 }
 
 pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
@@ -1418,6 +1452,15 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             output,
             visualization_output,
         } => endpoint_channel::run(output, visualization_output),
+        ResearchCommand::ProbeScaledEndpointChannels(args) => scaled_endpoint_channel::run(
+            args.workload,
+            args.workspace_root,
+            args.placement_request,
+            args.target_phase,
+            args.encoding,
+            args.output,
+            args.visualization_output,
+        ),
     }
 }
 

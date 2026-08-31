@@ -118,6 +118,12 @@ pub use research::{
     PhysicalOccupancyRestriction, render_physical_occupancy_probe_html,
     run_physical_occupancy_probe,
 };
+pub use research::{
+    SCALED_ENDPOINT_CHANNEL_PROBE_SCHEMA_VERSION, ScaledEndpointChannelProbeReport,
+    ScaledEndpointDomainSnapshot, ScaledEndpointRestrictionReport,
+    ScaledEndpointTerminalDomainSnapshot, ScaledEndpointTerminalScale,
+    render_scaled_endpoint_channel_probe_html, run_scaled_endpoint_channel_probe,
+};
 pub use score::LayoutScore;
 
 pub fn solve_integrated_layout(

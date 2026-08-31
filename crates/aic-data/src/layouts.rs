@@ -93,6 +93,12 @@ pub use integrated::{
     EndpointChannelProbeReport, EndpointChannelRestriction, render_endpoint_channel_probe_html,
     run_endpoint_channel_probe,
 };
+pub use integrated::{
+    SCALED_ENDPOINT_CHANNEL_PROBE_SCHEMA_VERSION, ScaledEndpointChannelProbeReport,
+    ScaledEndpointDomainSnapshot, ScaledEndpointRestrictionReport,
+    ScaledEndpointTerminalDomainSnapshot, ScaledEndpointTerminalScale,
+    render_scaled_endpoint_channel_probe_html, run_scaled_endpoint_channel_probe,
+};
 
 pub use placement::{
     FacilityPlacement, FacilityPlacementBounds, FacilityPlacementDiagnostic,

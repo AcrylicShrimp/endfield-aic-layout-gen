@@ -186,3 +186,20 @@ evidence.
 
 The first controlled endpoint comparison is recorded in
 `docs/benchmarks/heavy-xiranite-minimum-rate.fifty-second-endpoint-channel-propagation-probe-report.md`.
+
+## Actual Phase 3 endpoint-channel scale
+
+The scaled Phase 3 diagnostic projected both encodings to the same 480 legal shared placement
+values and compared four actual logical terminals with 7,280 complete legal tuple rows. The current
+nested Element channel retained all 480 placements after a world-direction restriction, while the
+positive table reduced the domain to 120. Removing every endpoint geometry supporting one
+placement likewise left 480 placements under nested Element and 479 under the table.
+
+The propagation improvement is not free. In isolated release processes, the positive table used
+7,280 hidden row literals, an estimated 26,116 clauses, 46,481,408 bytes maximum RSS, and 34.086 ms
+representative build time. Nested Element used 13,172,736 bytes and 0.902 ms. The next gated
+experiment is therefore a research-only faithful Phase 3 table integration, not an immediate
+production cutover or an unmeasured custom propagator.
+
+The result is recorded in
+`docs/benchmarks/heavy-xiranite-minimum-rate.fifty-ninth-actual-phase3-endpoint-channel-scaling-report.md`.

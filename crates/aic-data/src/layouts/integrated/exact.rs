@@ -27,6 +27,7 @@ mod occupancy_probe;
 #[cfg(test)]
 mod propagation_capability;
 mod recorder;
+mod scaled_endpoint_channel_probe;
 mod search_statistics;
 pub(super) mod shared_layer;
 
@@ -34,6 +35,7 @@ pub(in crate::layouts::integrated) use connectivity_propagator::PossibleRouteRea
 pub(super) use endpoint_channel_probe::probe_endpoint_channels;
 pub(in crate::layouts::integrated) use grid_analyzer::LayerGridAnalyzerStatistics;
 pub(super) use occupancy_probe::probe_physical_occupancy;
+pub(super) use scaled_endpoint_channel_probe::probe_scaled_endpoint_channels;
 
 use extract::extract_report;
 use fixation::post_research_fixation;

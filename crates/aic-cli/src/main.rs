@@ -1739,6 +1739,44 @@ mod tests {
     }
 
     #[test]
+    fn parses_scaled_endpoint_channel_probe() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "probe-scaled-endpoint-channels",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--target-phase",
+            "3",
+            "--encoding",
+            "positive-table",
+            "--output",
+            "scaled.json",
+            "--visualization-output",
+            "scaled.html",
+        ])
+        .expect("scaled endpoint channel probe CLI should parse");
+
+        let Command::Research {
+            command: ResearchCommand::ProbeScaledEndpointChannels(args),
+        } = cli.command
+        else {
+            panic!("expected scaled endpoint channel probe command")
+        };
+        assert_eq!(args.workload, PathBuf::from("workload.json"));
+        assert_eq!(args.placement_request, PathBuf::from("bounds.json"));
+        assert_eq!(args.target_phase, 3);
+        assert!(matches!(
+            args.encoding,
+            research::EndpointChannelEncodingArg::PositiveTable
+        ));
+        assert_eq!(args.output, PathBuf::from("scaled.json"));
+        assert_eq!(args.visualization_output, PathBuf::from("scaled.html"));
+    }
+
+    #[test]
     fn parses_first_phase_research_solve_with_explicit_budget() {
         let cli = Cli::try_parse_from([
             "aic-cli",

@@ -24,6 +24,7 @@ mod reference_ablation;
 mod residual_facility_state;
 mod rotation_partition;
 mod routing_state_breakdown;
+mod scaled_endpoint_channel;
 mod transport_tile_cap;
 
 pub use connectivity_witness::{
@@ -90,6 +91,12 @@ pub use routing_state_breakdown::{
     RouteCellValueScope, RoutingStateBreakdownCaseReport, RoutingStateBreakdownReport,
     RoutingStateFamily, RoutingStateMatrixKind, diagnose_phase2_route_cell_breakdown,
     diagnose_phase2_routing_state_breakdown,
+};
+pub use scaled_endpoint_channel::{
+    SCALED_ENDPOINT_CHANNEL_PROBE_SCHEMA_VERSION, ScaledEndpointChannelProbeReport,
+    ScaledEndpointDomainSnapshot, ScaledEndpointRestrictionReport,
+    ScaledEndpointTerminalDomainSnapshot, ScaledEndpointTerminalScale,
+    render_scaled_endpoint_channel_probe_html, run_scaled_endpoint_channel_probe,
 };
 pub use transport_tile_cap::{
     TRANSPORT_TILE_CAP_DIAGNOSIS_SCHEMA_VERSION, TransportTileCapCaseReport,
