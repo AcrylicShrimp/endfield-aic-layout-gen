@@ -23,29 +23,10 @@ pub(super) fn build_solver_hint(
     bridges: &[ModelBridge],
     metrics: &mut ExactModelMetrics,
 ) -> SolverHint {
+    let mut hint = build_placement_solver_hint(prior, instances, metrics);
     let Some(prior) = prior.filter(|report| report.success) else {
-        return SolverHint::default();
+        return hint;
     };
-    let mut hint = SolverHint::default();
-
-    for instance in instances {
-        let Some(placement) = prior
-            .placements
-            .iter()
-            .find(|placement| placement.instance == instance.input.id)
-        else {
-            continue;
-        };
-        let mut matched = false;
-        for candidate in &instance.candidates {
-            let selected = candidate.rotation == placement.rotation
-                && i64::from(candidate.x) == placement.x
-                && i64::from(candidate.y) == placement.y;
-            hint.push(candidate.selected, i32::from(selected));
-            matched |= selected;
-        }
-        metrics.hinted_placements += usize::from(matched);
-    }
 
     let prior_networks = prior
         .transport_networks
@@ -95,6 +76,38 @@ pub(super) fn build_solver_hint(
         metrics,
     );
     hint_bridges(&mut hint, prior, input, bridges, metrics);
+    metrics.hint_variables = hint.assignments.len();
+    hint
+}
+
+pub(super) fn build_placement_solver_hint(
+    prior: Option<&IntegratedLayoutReport>,
+    instances: &[ModelInstance],
+    metrics: &mut ExactModelMetrics,
+) -> SolverHint {
+    let Some(prior) = prior.filter(|report| report.success) else {
+        return SolverHint::default();
+    };
+    let mut hint = SolverHint::default();
+
+    for instance in instances {
+        let Some(placement) = prior
+            .placements
+            .iter()
+            .find(|placement| placement.instance == instance.input.id)
+        else {
+            continue;
+        };
+        let mut matched = false;
+        for candidate in &instance.candidates {
+            let selected = candidate.rotation == placement.rotation
+                && i64::from(candidate.x) == placement.x
+                && i64::from(candidate.y) == placement.y;
+            hint.push(candidate.selected, i32::from(selected));
+            matched |= selected;
+        }
+        metrics.hinted_placements += usize::from(matched);
+    }
     metrics.hint_variables = hint.assignments.len();
     hint
 }

@@ -790,6 +790,47 @@ fn prior_solution_warm_start_is_non_binding() {
 }
 
 #[test]
+fn factored_shared_layer_reuses_only_non_binding_placement_hints() {
+    let (facilities, items, transports, components) = catalogs();
+    let request = FacilityPlacementRequest {
+        schema_version: 2,
+        max_width: 4,
+        max_height: 1,
+    };
+    let prior = solve_integrated_layout(
+        &wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &request,
+    );
+    let input = super::prepare_model(
+        &wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &request,
+    )
+    .expect("fixture should prepare");
+
+    let hinted = super::exact::shared_layer::solve_factored_endpoints_with_prior(
+        input,
+        &components,
+        None,
+        Some(&prior),
+    );
+
+    assert!(hinted.success, "{:#?}", hinted.diagnostics);
+    let metrics = hinted.exact.expect("hinted solve reports metrics").model;
+    assert!(metrics.hint_variables > 0);
+    assert_eq!(metrics.hinted_placements, 2);
+    assert_eq!(metrics.hinted_terminals, 0);
+    assert_eq!(metrics.hinted_networks, 0);
+}
+
+#[test]
 fn prior_solution_warm_start_maps_only_the_common_enlarged_graph() {
     let (facilities, items, transports, components) = catalogs();
     let small_request = FacilityPlacementRequest {

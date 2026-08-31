@@ -14,7 +14,6 @@ use super::formulation::{
     grid_arcs, model_facility_endpoint_options, post_at_most_one, post_equals_one,
     rotate_direction,
 };
-use super::hint::SolverHint;
 use super::metrics::{elapsed_millis, finish_report_with_formulation};
 use super::objective::{
     ExactObjectives, optimise_lexicographically, post_and, post_count, post_exactly_one_indicator,
@@ -133,6 +132,7 @@ pub(in crate::layouts::integrated) fn solve(
         logistics_components,
         time_limit,
         EndpointEncoding::Flattened,
+        None,
     )
 }
 
@@ -141,11 +141,21 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints(
     logistics_components: &ValidatedLogisticsComponentCatalog,
     time_limit: Option<Duration>,
 ) -> IntegratedLayoutReport {
+    solve_factored_endpoints_with_prior(input, logistics_components, time_limit, None)
+}
+
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_with_prior(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    prior_solution: Option<&IntegratedLayoutReport>,
+) -> IntegratedLayoutReport {
     solve_with_endpoint_encoding(
         input,
         logistics_components,
         time_limit,
         EndpointEncoding::Factored,
+        prior_solution,
     )
 }
 
@@ -154,6 +164,7 @@ fn solve_with_endpoint_encoding(
     logistics_components: &ValidatedLogisticsComponentCatalog,
     time_limit: Option<Duration>,
     endpoint_encoding: EndpointEncoding,
+    prior_solution: Option<&IntegratedLayoutReport>,
 ) -> IntegratedLayoutReport {
     let construction_started = Instant::now();
     let original_requirement_count = input.edges.len();
@@ -327,10 +338,15 @@ fn solve_with_endpoint_encoding(
     solver.set_logical_coupling(facility_network_incidences, shared_network_facility_pairs);
     let model_complexity = solver.metrics();
     let construction_ms = elapsed_millis(construction_started.elapsed());
+    let solver_hint = super::hint::build_placement_solver_hint(
+        prior_solution,
+        &model_instances,
+        &mut model_metrics,
+    );
     let search = optimise_lexicographically(
         solver.solver_mut(),
         objectives,
-        &SolverHint::default(),
+        &solver_hint,
         time_limit,
         tag,
         |solution, status| {
