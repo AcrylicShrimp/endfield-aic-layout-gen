@@ -860,6 +860,29 @@ fn validate_crossings(
     placements: &ValidatedPlacements<'_>,
     layer_cells: &[Vec<Vec<SegmentShape>>; 2],
 ) -> Result<(), IntegratedLayoutDiagnostic> {
+    let branch_cells = report
+        .logistics_components
+        .iter()
+        .filter(|component| {
+            matches!(
+                component.kind,
+                LogisticsComponentKind::Splitter | LogisticsComponentKind::Converger
+            ) && component.position.x >= 0
+                && component.position.y >= 0
+                && component.position.x < i64::from(input.width)
+                && component.position.y < i64::from(input.height)
+        })
+        .map(|component| {
+            (
+                component.transport,
+                grid_index(
+                    component.position.x as i32,
+                    component.position.y as i32,
+                    input.width,
+                ),
+            )
+        })
+        .collect::<BTreeSet<_>>();
     let mut expected_bridges = BTreeSet::new();
     for transport in [TransportKind::Belt, TransportKind::Pipe] {
         for (cell, shapes) in layer_cells[layer_index(transport)].iter().enumerate() {
@@ -872,7 +895,9 @@ fn validate_crossings(
                             | (SegmentShape::Vertical, SegmentShape::Horizontal)
                     ) =>
                 {
-                    expected_bridges.insert((transport, cell));
+                    if !branch_cells.contains(&(transport, cell)) {
+                        expected_bridges.insert((transport, cell));
+                    }
                 }
                 _ => {
                     return Err(invalid(
