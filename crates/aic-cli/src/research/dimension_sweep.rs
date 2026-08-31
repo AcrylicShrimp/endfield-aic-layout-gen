@@ -5,22 +5,35 @@ use std::time::Duration;
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    ExactDimensionCaseDisposition, FacilityPlacementRequest,
-    render_integrated_layout_html_with_localization,
+    ExactDimensionCaseDisposition, FacilityPlacementRequest, IntegratedLayoutReport,
+    ParallelExactDimensionSweepReport, render_integrated_layout_html_with_localization,
+    sweep_cumulative_integrated_layout_fixed_dimensions,
     sweep_first_integrated_layout_phase_fixed_dimensions,
 };
+use aic_data::localization::ValidatedLocalizationCatalog;
 use aic_data::logistics::{
     ValidatedItemCatalog, ValidatedLogisticsComponentCatalog, ValidatedTransportCatalog,
     load_item_catalog, load_logistics_component_catalog, load_transport_catalog,
 };
 use aic_data::recipes::{
-    build_contextual_facility_instance_wiring, calculate_contextual_facility_requirements,
+    FacilityInstanceWiringReport, build_contextual_facility_instance_wiring,
+    calculate_contextual_facility_requirements,
 };
 use aic_data::research::{ValidatedBenchmarkWorkloadManifest, load_benchmark_workload_manifest};
 use anyhow::{Context, Result, ensure};
 
 use super::first_phase::{load_localization, write_bytes, write_json};
 use super::{load_contextual_recipe_request, resolve_workload_paths};
+
+struct LoadedDimensionSweepInputs {
+    wiring: FacilityInstanceWiringReport,
+    facilities: ValidatedFacilityCatalog,
+    items: ValidatedItemCatalog,
+    transports: ValidatedTransportCatalog,
+    components: ValidatedLogisticsComponentCatalog,
+    placement_request: FacilityPlacementRequest,
+    localization: Option<ValidatedLocalizationCatalog>,
+}
 
 #[allow(clippy::too_many_arguments)]
 pub(super) fn run(
@@ -40,6 +53,76 @@ pub(super) fn run(
         !network_indices.is_empty(),
         "parallel dimension sweep requires at least one --network-index"
     );
+    let loaded = load_inputs(workload_path, workspace_root, placement_request_path)?;
+    let report = sweep_first_integrated_layout_phase_fixed_dimensions(
+        &loaded.wiring,
+        &loaded.facilities,
+        &loaded.items,
+        &loaded.transports,
+        &loaded.components,
+        &loaded.placement_request,
+        &network_indices,
+        worker_count.get(),
+        Duration::from_millis(case_time_limit.get()),
+    )
+    .map_err(|report| anyhow::anyhow!("parallel dimension sweep failed: {report:?}"))?;
+
+    write_phase_artifacts(&output_dir, &report, loaded.localization.as_ref())?;
+    write_stdout(&report, "parallel dimension sweep report")?;
+    Ok(true)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn run_cumulative(
+    workload_path: PathBuf,
+    workspace_root: PathBuf,
+    placement_request_path: PathBuf,
+    target_phase: usize,
+    worker_count: usize,
+    case_time_limit_ms: u64,
+    output_dir: PathBuf,
+) -> Result<bool> {
+    let worker_count = NonZeroUsize::new(worker_count)
+        .context("cumulative dimension sweep worker_count must be positive")?;
+    let case_time_limit = NonZeroU64::new(case_time_limit_ms)
+        .context("cumulative dimension sweep case_time_limit_ms must be positive")?;
+    let loaded = load_inputs(workload_path, workspace_root, placement_request_path)?;
+    let report = sweep_cumulative_integrated_layout_fixed_dimensions(
+        &loaded.wiring,
+        &loaded.facilities,
+        &loaded.items,
+        &loaded.transports,
+        &loaded.components,
+        &loaded.placement_request,
+        target_phase,
+        worker_count.get(),
+        Duration::from_millis(case_time_limit.get()),
+    )
+    .map_err(|report| anyhow::anyhow!("cumulative dimension sweep failed: {report:?}"))?;
+
+    for phase in &report.phase_sweeps {
+        write_phase_artifacts(
+            &output_dir.join(format!("phase{}", phase.phase_index)),
+            phase,
+            loaded.localization.as_ref(),
+        )?;
+    }
+    write_json(&output_dir.join("summary.json"), &report)?;
+    write_layout_html(
+        &output_dir.join("summary.html"),
+        &report.layout,
+        loaded.localization.as_ref(),
+        "cumulative dimension sweep visualization",
+    )?;
+    write_stdout(&report, "cumulative dimension sweep report")?;
+    Ok(report.completed_target_phase)
+}
+
+fn load_inputs(
+    workload_path: PathBuf,
+    workspace_root: PathBuf,
+    placement_request_path: PathBuf,
+) -> Result<LoadedDimensionSweepInputs> {
     let manifest = load_benchmark_workload_manifest(&workload_path)?;
     let validated = ValidatedBenchmarkWorkloadManifest::try_from_manifest(manifest)
         .map_err(|report| anyhow::anyhow!("benchmark workload validation failed: {report:?}"))?;
@@ -94,21 +177,24 @@ pub(super) fn run(
             placement_request_path.display()
         )
     })?;
-
-    let report = sweep_first_integrated_layout_phase_fixed_dimensions(
-        &wiring,
-        &facilities,
-        &items,
-        &transports,
-        &components,
-        &placement_request,
-        &network_indices,
-        worker_count.get(),
-        Duration::from_millis(case_time_limit.get()),
-    )
-    .map_err(|report| anyhow::anyhow!("parallel dimension sweep failed: {report:?}"))?;
-
     let localization = load_localization(paths.localization_catalog.as_ref())?;
+
+    Ok(LoadedDimensionSweepInputs {
+        wiring,
+        facilities,
+        items,
+        transports,
+        components,
+        placement_request,
+        localization,
+    })
+}
+
+fn write_phase_artifacts(
+    output_dir: &PathBuf,
+    report: &ParallelExactDimensionSweepReport,
+    localization: Option<&ValidatedLocalizationCatalog>,
+) -> Result<()> {
     for case in &report.cases {
         if case.disposition != ExactDimensionCaseDisposition::Executed {
             continue;
@@ -124,20 +210,13 @@ pub(super) fn run(
             .layout
             .as_ref()
             .expect("executed dimension case has a layout report");
-        let html = render_integrated_layout_html_with_localization(layout, localization.as_ref())
-            .map_err(|diagnostic| {
-            anyhow::anyhow!(
-                "parallel dimension case visualization failed with {}: {}",
-                diagnostic.code,
-                diagnostic.message
-            )
-        })?;
-        write_bytes(
+        write_layout_html(
             &output_dir.join(format!(
                 "case.{}x{}.html",
                 case.candidate.width, case.candidate.height
             )),
-            html.as_bytes(),
+            layout,
+            localization,
             "parallel dimension case visualization",
         )?;
     }
@@ -146,27 +225,41 @@ pub(super) fn run(
         .as_ref()
         .or_else(|| report.cases.iter().find_map(|case| case.layout.as_ref()));
     if let Some(layout) = summary_layout {
-        let html = render_integrated_layout_html_with_localization(layout, localization.as_ref())
-            .map_err(|diagnostic| {
-            anyhow::anyhow!(
-                "parallel dimension summary visualization failed with {}: {}",
-                diagnostic.code,
-                diagnostic.message
-            )
-        })?;
-        write_bytes(
+        write_layout_html(
             &output_dir.join("summary.html"),
-            html.as_bytes(),
+            layout,
+            localization,
             "parallel dimension summary visualization",
         )?;
     }
-    write_json(&output_dir.join("summary.json"), &report)?;
-    let encoded = serde_json::to_vec_pretty(&report)
-        .context("failed to serialize parallel dimension sweep report")?;
+    write_json(&output_dir.join("summary.json"), report)
+}
+
+fn write_layout_html(
+    path: &PathBuf,
+    layout: &IntegratedLayoutReport,
+    localization: Option<&ValidatedLocalizationCatalog>,
+    kind: &str,
+) -> Result<()> {
+    let html = render_integrated_layout_html_with_localization(layout, localization).map_err(
+        |diagnostic| {
+            anyhow::anyhow!(
+                "{kind} failed with {}: {}",
+                diagnostic.code,
+                diagnostic.message
+            )
+        },
+    )?;
+    write_bytes(path, html.as_bytes(), kind)
+}
+
+fn write_stdout(report: &impl serde::Serialize, kind: &str) -> Result<()> {
+    let encoded =
+        serde_json::to_vec_pretty(report).with_context(|| format!("failed to serialize {kind}"))?;
     std::io::stdout()
         .lock()
         .write_all(&encoded)
-        .context("failed to write parallel dimension sweep report")?;
+        .with_context(|| format!("failed to write {kind}"))?;
     println!();
-    Ok(true)
+    Ok(())
 }

@@ -409,6 +409,36 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
     },
+    /// Grow cumulative SCC phases with an exact parallel dimension portfolio.
+    SweepCumulativeSccFixedDimensions {
+        /// Benchmark workload manifest JSON file to solve.
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+
+        /// Root used to resolve portable input paths in the workload manifest.
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Zero-based cumulative SCC target phase.
+        #[arg(long, value_name = "INDEX")]
+        target_phase: usize,
+
+        /// Independent Pumpkin worker threads in every phase portfolio.
+        #[arg(long, value_name = "COUNT")]
+        worker_count: usize,
+
+        /// Wall-clock search budget independently given to every dimension case.
+        #[arg(long, value_name = "MILLISECONDS")]
+        case_time_limit_ms: u64,
+
+        /// Directory receiving cumulative, phase, and per-case JSON/HTML artifacts.
+        #[arg(long, value_name = "DIR")]
+        output_dir: PathBuf,
+    },
     /// Rebuild one factored shared-layer network from each logical requirement subset.
     DecomposeFirstPhaseFactoredRequirements {
         /// Benchmark workload manifest JSON file to solve.
@@ -657,6 +687,23 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             workspace_root,
             placement_request,
             network_indices,
+            worker_count,
+            case_time_limit_ms,
+            output_dir,
+        ),
+        ResearchCommand::SweepCumulativeSccFixedDimensions {
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            worker_count,
+            case_time_limit_ms,
+            output_dir,
+        } => dimension_sweep::run_cumulative(
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
             worker_count,
             case_time_limit_ms,
             output_dir,

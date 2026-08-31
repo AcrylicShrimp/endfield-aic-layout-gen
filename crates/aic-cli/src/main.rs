@@ -2221,6 +2221,51 @@ mod tests {
     }
 
     #[test]
+    fn parses_cumulative_parallel_dimension_sweep() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "sweep-cumulative-scc-fixed-dimensions",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--target-phase",
+            "1",
+            "--worker-count",
+            "4",
+            "--case-time-limit-ms",
+            "5000",
+            "--output-dir",
+            "cumulative-dimension-sweep",
+        ])
+        .expect("cumulative parallel dimension sweep CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::SweepCumulativeSccFixedDimensions {
+                    workload,
+                    workspace_root,
+                    placement_request,
+                    target_phase,
+                    worker_count,
+                    case_time_limit_ms,
+                    output_dir,
+                },
+        } = cli.command
+        else {
+            panic!("expected cumulative parallel dimension sweep command")
+        };
+        assert_eq!(workload, PathBuf::from("workload.json"));
+        assert_eq!(workspace_root, PathBuf::from("."));
+        assert_eq!(placement_request, PathBuf::from("bounds.json"));
+        assert_eq!(target_phase, 1);
+        assert_eq!(worker_count, 4);
+        assert_eq!(case_time_limit_ms, 5_000);
+        assert_eq!(output_dir, PathBuf::from("cumulative-dimension-sweep"));
+    }
+
+    #[test]
     fn parses_first_phase_factored_requirement_decomposition() {
         let cli = Cli::try_parse_from([
             "aic-cli",

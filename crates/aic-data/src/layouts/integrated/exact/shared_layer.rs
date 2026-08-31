@@ -208,12 +208,28 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
     time_limit: Option<Duration>,
     fixed_dimensions: FixedUsedDimensions,
 ) -> IntegratedLayoutReport {
+    solve_factored_endpoints_fixed_dimensions_feasibility_only_with_prior(
+        input,
+        logistics_components,
+        time_limit,
+        fixed_dimensions,
+        None,
+    )
+}
+
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_feasibility_only_with_prior(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    prior_solution: Option<&IntegratedLayoutReport>,
+) -> IntegratedLayoutReport {
     solve_with_endpoint_encoding(
         input,
         logistics_components,
         time_limit,
         EndpointEncoding::Factored,
-        None,
+        prior_solution,
         SearchMode::FeasibilityOnly,
         Some(fixed_dimensions),
     )

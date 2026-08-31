@@ -9,7 +9,8 @@ pub use growth::{
 };
 
 pub use integrated::{
-    CUMULATIVE_SCC_GROWTH_SCHEMA_VERSION, CumulativeSccGrowthReport, DiagnosticSearchMode,
+    CUMULATIVE_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION, CUMULATIVE_SCC_GROWTH_SCHEMA_VERSION,
+    CumulativeExactDimensionSweepReport, CumulativeSccGrowthReport, DiagnosticSearchMode,
     EXACT_ABLATION_MATRIX_SCHEMA_VERSION, EXACT_DIMENSION_PARTITION_SCHEMA_VERSION,
     EXTERNAL_CONNECTOR_PORT_DOMAIN_SCHEMA_VERSION, EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION,
     ExactAblationCaseReport, ExactAblationFixation, ExactAblationMatrixReport,
@@ -44,7 +45,8 @@ pub use integrated::{
     solve_first_integrated_layout_phase_fixed_dimensions,
     solve_first_integrated_layout_phase_search_mode,
     solve_first_integrated_layout_phase_with_time_limit, solve_integrated_layout,
-    solve_integrated_layout_with_time_limit, sweep_first_integrated_layout_phase_fixed_dimensions,
+    solve_integrated_layout_with_time_limit, sweep_cumulative_integrated_layout_fixed_dimensions,
+    sweep_first_integrated_layout_phase_fixed_dimensions,
 };
 
 pub use placement::{

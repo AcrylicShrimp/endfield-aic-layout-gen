@@ -17,9 +17,11 @@ use super::{
 mod dimension_sweep;
 
 pub use dimension_sweep::{
+    CUMULATIVE_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION, CumulativeExactDimensionSweepReport,
     ExactDimensionCaseDisposition, ExactDimensionCaseOutcome, ExactDimensionUpperBoundImprovement,
     PARALLEL_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION, ParallelExactDimensionCaseReport,
-    ParallelExactDimensionSweepReport, sweep_first_integrated_layout_phase_fixed_dimensions,
+    ParallelExactDimensionSweepReport, sweep_cumulative_integrated_layout_fixed_dimensions,
+    sweep_first_integrated_layout_phase_fixed_dimensions,
 };
 
 pub const EXACT_ABLATION_MATRIX_SCHEMA_VERSION: u32 = 1;

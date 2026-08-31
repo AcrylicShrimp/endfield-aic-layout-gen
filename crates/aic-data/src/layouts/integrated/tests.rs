@@ -19,7 +19,7 @@ use crate::recipes::{
 use super::{
     ExactObjectiveKind, ExactObjectiveValue, ExactProofStatus, ExactValidationStatus,
     IntegratedLayoutStatus, TransportNetworkEndpoint, solve_cumulative_scc_growth_v2,
-    solve_integrated_layout,
+    solve_integrated_layout, sweep_cumulative_integrated_layout_fixed_dimensions,
 };
 use std::time::Duration;
 
@@ -693,6 +693,51 @@ fn parallel_dimension_sweep_never_skips_at_or_below_its_final_upper_bound() {
             Some(super::research::ExactDimensionCaseOutcome::ProvenInfeasible)
         );
     }
+}
+
+#[test]
+fn cumulative_dimension_sweep_grows_with_non_binding_prior_hints() {
+    let (facilities, items, transports, components) = catalogs();
+    let report = sweep_cumulative_integrated_layout_fixed_dimensions(
+        &wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 4,
+            max_height: 1,
+        },
+        1,
+        2,
+        Duration::from_secs(1),
+    )
+    .expect("cumulative exact dimension sweep should build");
+
+    assert!(
+        report.completed_target_phase,
+        "{:#?}",
+        report.layout.diagnostics
+    );
+    assert_eq!(report.target_phase_index, 1);
+    assert_eq!(report.phase_sweeps.len(), 2);
+    assert_eq!(report.layout.phases.len(), 2);
+    assert!(report.phase_sweeps[0].primary_area_optimum_proven);
+    assert!(report.phase_sweeps[1].primary_area_optimum_proven);
+    let phase_zero_exact = report.phase_sweeps[0]
+        .selected_incumbent
+        .as_ref()
+        .and_then(|layout| layout.exact.as_ref())
+        .expect("phase zero has exact evidence");
+    let phase_one_exact = report.phase_sweeps[1]
+        .selected_incumbent
+        .as_ref()
+        .and_then(|layout| layout.exact.as_ref())
+        .expect("phase one has exact evidence");
+    assert_eq!(phase_zero_exact.model.hint_variables, 0);
+    assert!(phase_one_exact.model.hint_variables > 0);
+    assert_eq!(phase_one_exact.model.hinted_placements, 1);
 }
 
 #[test]
