@@ -69,6 +69,12 @@ enum SearchMode {
     FeasibilityOnly,
 }
 
+#[derive(Clone, Copy)]
+pub(in crate::layouts::integrated) struct FixedUsedDimensions {
+    pub(in crate::layouts::integrated) width: i32,
+    pub(in crate::layouts::integrated) height: i32,
+}
+
 struct SharedSearchResult {
     report: IntegratedLayoutReport,
     stages: Vec<crate::layouts::integrated::ExactObjectiveStageReport>,
@@ -151,6 +157,7 @@ pub(in crate::layouts::integrated) fn solve(
         EndpointEncoding::Flattened,
         None,
         SearchMode::Optimize,
+        None,
     )
 }
 
@@ -175,6 +182,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_with_prior(
         EndpointEncoding::Factored,
         prior_solution,
         SearchMode::Optimize,
+        None,
     )
 }
 
@@ -190,6 +198,24 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_feasibility_only(
         EndpointEncoding::Factored,
         None,
         SearchMode::FeasibilityOnly,
+        None,
+    )
+}
+
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_feasibility_only(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+) -> IntegratedLayoutReport {
+    solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        None,
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
     )
 }
 
@@ -200,6 +226,7 @@ fn solve_with_endpoint_encoding(
     endpoint_encoding: EndpointEncoding,
     prior_solution: Option<&IntegratedLayoutReport>,
     search_mode: SearchMode,
+    fixed_dimensions: Option<FixedUsedDimensions>,
 ) -> IntegratedLayoutReport {
     let construction_started = Instant::now();
     let mut model_metrics = initial_metrics(&input);
@@ -208,6 +235,22 @@ fn solve_with_endpoint_encoding(
     let mut solver = RecordedModel::default();
     let tag = solver.new_constraint_tag();
     let used_bounds = boundary_terminals::new_used_bounds(&mut solver, &input);
+    if let Some(fixed) = fixed_dimensions {
+        solver.post_equals(
+            ConstraintFamily::ResearchFixation,
+            vec![used_bounds.width.scaled(1)],
+            fixed.width,
+            1,
+            tag,
+        );
+        solver.post_equals(
+            ConstraintFamily::ResearchFixation,
+            vec![used_bounds.height.scaled(1)],
+            fixed.height,
+            1,
+            tag,
+        );
+    }
 
     let (model_instances, placement_choices, facility_occupancy) =
         build_placements(&mut solver, &input, &mut model_metrics, cell_count, tag);
@@ -422,9 +465,11 @@ fn solve_with_endpoint_encoding(
     };
     let mut report = search.report;
     let validation = if report.success {
-        match boundary_terminals::validate_witness(&report).and_then(|()| {
-            crate::layouts::integrated::witness::validate(&input, logistics_components, &report)
-        }) {
+        match boundary_terminals::validate_witness(&report)
+            .and_then(|()| validate_fixed_dimensions(&report, fixed_dimensions))
+            .and_then(|()| {
+                crate::layouts::integrated::witness::validate(&input, logistics_components, &report)
+            }) {
             Ok(()) => match super::validate_objective_witness(&report, &search.stages) {
                 Ok(()) => ExactValidationStatus::Passed,
                 Err(diagnostic) => {
@@ -446,9 +491,16 @@ fn solve_with_endpoint_encoding(
     };
     finish_report_with_formulation(
         report,
-        match endpoint_encoding {
-            EndpointEncoding::Flattened => "joint-shared-transport-layer-canonical-occupancy-v2",
-            EndpointEncoding::Factored => "joint-shared-boundary-terminals-canonical-occupancy-v4",
+        match (endpoint_encoding, fixed_dimensions) {
+            (EndpointEncoding::Flattened, _) => {
+                "joint-shared-transport-layer-canonical-occupancy-v2"
+            }
+            (EndpointEncoding::Factored, Some(_)) => {
+                "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions"
+            }
+            (EndpointEncoding::Factored, None) => {
+                "joint-shared-boundary-terminals-canonical-occupancy-v4"
+            }
         },
         model_metrics,
         model_complexity,
@@ -459,6 +511,35 @@ fn solve_with_endpoint_encoding(
         validation,
         search.stages,
     )
+}
+
+fn validate_fixed_dimensions(
+    report: &IntegratedLayoutReport,
+    fixed_dimensions: Option<FixedUsedDimensions>,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let Some(fixed) = fixed_dimensions else {
+        return Ok(());
+    };
+    let bounds = report.bounds.as_ref().ok_or_else(|| {
+        IntegratedLayoutDiagnostic::error(
+            "invalid-fixed-dimension-witness",
+            "/bounds",
+            None,
+            "fixed-dimension research witness is missing exact used bounds",
+        )
+    })?;
+    if bounds.width != i64::from(fixed.width) || bounds.height != i64::from(fixed.height) {
+        return Err(IntegratedLayoutDiagnostic::error(
+            "invalid-fixed-dimension-witness",
+            "/bounds",
+            Some(format!("{}x{}", bounds.width, bounds.height)),
+            format!(
+                "fixed-dimension research witness must use exactly {}x{} cells",
+                fixed.width, fixed.height
+            ),
+        ));
+    }
+    Ok(())
 }
 
 fn initial_metrics(input: &ModelInput) -> ExactModelMetrics {

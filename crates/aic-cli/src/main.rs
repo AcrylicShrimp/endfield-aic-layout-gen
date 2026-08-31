@@ -2119,6 +2119,61 @@ mod tests {
     }
 
     #[test]
+    fn parses_first_phase_fixed_dimension_diagnosis() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "diagnose-first-phase-fixed-dimensions",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--network-index",
+            "0",
+            "--network-index",
+            "1",
+            "--used-width",
+            "5",
+            "--used-height",
+            "6",
+            "--time-limit-ms",
+            "5000",
+            "--output",
+            "case.json",
+            "--visualization-output",
+            "case.html",
+        ])
+        .expect("first-phase fixed-dimension diagnosis CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::DiagnoseFirstPhaseFixedDimensions {
+                    workload,
+                    workspace_root,
+                    placement_request,
+                    network_indices,
+                    used_width,
+                    used_height,
+                    time_limit_ms,
+                    output,
+                    visualization_output,
+                },
+        } = cli.command
+        else {
+            panic!("expected first-phase fixed-dimension diagnosis command")
+        };
+        assert_eq!(workload, PathBuf::from("workload.json"));
+        assert_eq!(workspace_root, PathBuf::from("."));
+        assert_eq!(placement_request, PathBuf::from("bounds.json"));
+        assert_eq!(network_indices, vec![0, 1]);
+        assert_eq!(used_width, 5);
+        assert_eq!(used_height, 6);
+        assert_eq!(time_limit_ms, 5_000);
+        assert_eq!(output, PathBuf::from("case.json"));
+        assert_eq!(visualization_output, PathBuf::from("case.html"));
+    }
+
+    #[test]
     fn parses_first_phase_factored_requirement_decomposition() {
         let cli = Cli::try_parse_from([
             "aic-cli",

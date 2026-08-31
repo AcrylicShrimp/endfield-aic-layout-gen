@@ -39,9 +39,11 @@ pub use report::{
 };
 pub use research::{
     CUMULATIVE_SCC_GROWTH_SCHEMA_VERSION, CumulativeSccGrowthReport, DiagnosticSearchMode,
-    EXACT_ABLATION_MATRIX_SCHEMA_VERSION, EXTERNAL_CONNECTOR_PORT_DOMAIN_SCHEMA_VERSION,
-    EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION, ExactAblationCaseReport, ExactAblationFixation,
-    ExactAblationMatrixReport, ExternalConnectorPortDomainClassification,
+    EXACT_ABLATION_MATRIX_SCHEMA_VERSION, EXACT_DIMENSION_PARTITION_SCHEMA_VERSION,
+    EXTERNAL_CONNECTOR_PORT_DOMAIN_SCHEMA_VERSION, EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION,
+    ExactAblationCaseReport, ExactAblationFixation, ExactAblationMatrixReport,
+    ExactDimensionLowerBoundsReport, ExactDimensionPartitionCaseReport,
+    ExactUsedDimensionCandidate, ExternalConnectorPortDomainClassification,
     ExternalConnectorPortDomainReport, ExternalConnectorRequirementDescriptor,
     ExternalConnectorSubsetReport, FACTORED_ENDPOINT_COMPARISON_SCHEMA_VERSION,
     FACTORED_NETWORK_DECOMPOSITION_SCHEMA_VERSION,
@@ -57,6 +59,7 @@ pub use research::{
     decompose_first_integrated_layout_phase_pair, solve_cumulative_scc_growth_v2,
     solve_first_integrated_layout_phase_external_connector_port_domain,
     solve_first_integrated_layout_phase_external_connector_subset,
+    solve_first_integrated_layout_phase_fixed_dimensions,
     solve_first_integrated_layout_phase_search_mode,
 };
 pub use research::{

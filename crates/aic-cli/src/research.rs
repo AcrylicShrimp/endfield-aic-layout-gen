@@ -27,6 +27,7 @@ mod cumulative_growth;
 mod external_connectors;
 mod factored_networks;
 mod first_phase;
+mod fixed_dimensions;
 mod pair_cliff;
 mod physical_occupancy;
 mod requirement_cliff;
@@ -339,6 +340,44 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "FILE")]
         visualization_output: PathBuf,
     },
+    /// Fix exact used dimensions for one first-solution phase-zero diagnosis.
+    DiagnoseFirstPhaseFixedDimensions {
+        /// Benchmark workload manifest JSON file to solve.
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+
+        /// Root used to resolve portable input paths in the workload manifest.
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Zero-based phase-zero commodity network index. Repeat for the selected subset.
+        #[arg(long = "network-index", value_name = "INDEX", required = true)]
+        network_indices: Vec<usize>,
+
+        /// Exact actual used width for this partition.
+        #[arg(long, value_name = "CELLS")]
+        used_width: i32,
+
+        /// Exact actual used height for this partition.
+        #[arg(long, value_name = "CELLS")]
+        used_height: i32,
+
+        /// Exact solver wall-clock budget in milliseconds.
+        #[arg(long, value_name = "MILLISECONDS")]
+        time_limit_ms: u64,
+
+        /// JSON artifact path.
+        #[arg(long, value_name = "FILE")]
+        output: PathBuf,
+
+        /// Standalone HTML result, including structured failure evidence.
+        #[arg(long, value_name = "FILE")]
+        visualization_output: PathBuf,
+    },
     /// Rebuild one factored shared-layer network from each logical requirement subset.
     DecomposeFirstPhaseFactoredRequirements {
         /// Benchmark workload manifest JSON file to solve.
@@ -549,6 +588,27 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             placement_request,
             network_indices,
             search_mode,
+            time_limit_ms,
+            output,
+            visualization_output,
+        ),
+        ResearchCommand::DiagnoseFirstPhaseFixedDimensions {
+            workload,
+            workspace_root,
+            placement_request,
+            network_indices,
+            used_width,
+            used_height,
+            time_limit_ms,
+            output,
+            visualization_output,
+        } => fixed_dimensions::run(
+            workload,
+            workspace_root,
+            placement_request,
+            network_indices,
+            used_width,
+            used_height,
             time_limit_ms,
             output,
             visualization_output,

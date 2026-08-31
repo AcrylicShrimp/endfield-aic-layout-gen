@@ -2,7 +2,7 @@ use crate::facilities::{
     FacilityCatalog, FacilityDefinition, FacilityFootprint, FacilityPortDefinition,
     FacilityPortDirection, FacilityPortEdge, FacilityPortPosition, ValidatedFacilityCatalog,
 };
-use crate::layouts::FacilityPlacementRequest;
+use crate::layouts::{FacilityPlacementBounds, FacilityPlacementRequest};
 use crate::logistics::{
     CardinalDirection, ItemCatalog, ItemDefinition, LogisticsComponentCatalog,
     LogisticsComponentDefinition, LogisticsComponentKind, SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
@@ -563,6 +563,86 @@ fn feasibility_only_search_preserves_the_exact_model_and_validates_its_witness()
     assert!(feasible_exact.objective_stages.is_empty());
     assert_eq!(feasible_exact.incumbent_count, 1);
     assert_eq!(feasible_exact.validation, ExactValidationStatus::Passed);
+}
+
+#[test]
+fn fixed_dimension_research_adds_only_two_equalities_and_validates_exact_bounds() {
+    let (facilities, items, transports, components) = catalogs();
+    let input = super::prepare_model(
+        &external_connector_wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 4,
+            max_height: 3,
+        },
+    )
+    .expect("fixed-dimension fixture should prepare");
+
+    let unfixed = super::exact::shared_layer::solve_factored_endpoints_feasibility_only(
+        input.clone(),
+        &components,
+        None,
+    );
+    let fixed =
+        super::exact::shared_layer::solve_factored_endpoints_fixed_dimensions_feasibility_only(
+            input,
+            &components,
+            None,
+            super::exact::shared_layer::FixedUsedDimensions {
+                width: 4,
+                height: 3,
+            },
+        );
+
+    assert!(unfixed.success, "{:#?}", unfixed.diagnostics);
+    assert!(fixed.success, "{:#?}", fixed.diagnostics);
+    assert_eq!(
+        fixed.bounds,
+        Some(FacilityPlacementBounds {
+            width: 4,
+            height: 3,
+        })
+    );
+    let unfixed_exact = unfixed.exact.expect("unfixed solve reports evidence");
+    let fixed_exact = fixed.exact.expect("fixed solve reports evidence");
+    assert_eq!(
+        fixed_exact.formulation,
+        "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions"
+    );
+    assert_eq!(
+        fixed_exact.model_complexity.variables,
+        unfixed_exact.model_complexity.variables
+    );
+    let unfixed_constraints = unfixed_exact
+        .model_complexity
+        .constraints
+        .expect("unfixed constraints are recorded");
+    let fixed_constraints = fixed_exact
+        .model_complexity
+        .constraints
+        .expect("fixed constraints are recorded");
+    assert_eq!(
+        fixed_constraints.total_constraints,
+        unfixed_constraints.total_constraints + 2
+    );
+    assert_eq!(
+        fixed_constraints.total_terms,
+        unfixed_constraints.total_terms + 2
+    );
+    assert_eq!(
+        fixed_constraints
+            .by_family
+            .iter()
+            .filter(|family| family.family == "research-fixation")
+            .map(|family| family.constraints)
+            .sum::<u64>(),
+        2
+    );
+    assert_eq!(fixed_exact.validation, ExactValidationStatus::Passed);
 }
 
 #[test]

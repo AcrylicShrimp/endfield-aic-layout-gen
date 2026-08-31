@@ -23,6 +23,7 @@ pub const EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION: u32 = 1;
 pub const EXTERNAL_CONNECTOR_PORT_DOMAIN_SCHEMA_VERSION: u32 = 1;
 pub const CUMULATIVE_SCC_GROWTH_SCHEMA_VERSION: u32 = 1;
 pub const PHYSICAL_OCCUPANCY_PROBE_SCHEMA_VERSION: u32 = 2;
+pub const EXACT_DIMENSION_PARTITION_SCHEMA_VERSION: u32 = 1;
 
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
@@ -724,6 +725,192 @@ pub struct SearchModeDiagnosisCaseReport {
     pub layout: IntegratedLayoutReport,
 }
 
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ExactDimensionLowerBoundsReport {
+    pub minimum_width: i32,
+    pub minimum_height: i32,
+    pub facility_area: i64,
+    pub mandatory_transport_cells: i64,
+    pub minimum_area: i64,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ExactUsedDimensionCandidate {
+    pub width: i32,
+    pub height: i32,
+    pub area: i64,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct ExactDimensionPartitionCaseReport {
+    pub schema_version: u32,
+    pub selected_network_indices: Vec<usize>,
+    pub selected_networks: Vec<String>,
+    pub request_width: i32,
+    pub request_height: i32,
+    pub lower_bounds: ExactDimensionLowerBoundsReport,
+    pub candidates: Vec<ExactUsedDimensionCandidate>,
+    pub fixed_dimensions: ExactUsedDimensionCandidate,
+    pub search_budget_ms: u64,
+    pub diagnostic_only: bool,
+    pub layout: IntegratedLayoutReport,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn solve_first_integrated_layout_phase_fixed_dimensions(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    network_indices: &[usize],
+    used_width: i32,
+    used_height: i32,
+    search_budget: Duration,
+) -> Result<ExactDimensionPartitionCaseReport, IntegratedLayoutReport> {
+    let first_phase_wiring = harness::first_iterative_scc_wiring(instance_wiring)?;
+    let input = prepare_exact_model(
+        &first_phase_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+    )?;
+    let (input, selected_networks) = input
+        .select_network_indices(network_indices)
+        .map_err(IntegratedLayoutReport::invalid)?;
+    let lower_bounds = exact_dimension_lower_bounds(&input)?;
+    let candidates = enumerate_exact_dimension_candidates(input.width, input.height, &lower_bounds);
+    let fixed_dimensions = ExactUsedDimensionCandidate {
+        width: used_width,
+        height: used_height,
+        area: i64::from(used_width) * i64::from(used_height),
+    };
+    if !candidates.contains(&fixed_dimensions) {
+        return Err(IntegratedLayoutReport::invalid(
+            IntegratedLayoutDiagnostic::error(
+                "research-fixed-dimensions-outside-proven-domain",
+                "/fixed_dimensions",
+                Some(format!("{used_width}x{used_height}")),
+                "fixed research dimensions are outside the request ceilings or violate a proven lower bound",
+            ),
+        ));
+    }
+    let layout = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_feasibility_only(
+        input,
+        logistics_components,
+        Some(search_budget),
+        exact::shared_layer::FixedUsedDimensions {
+            width: used_width,
+            height: used_height,
+        },
+    );
+    Ok(ExactDimensionPartitionCaseReport {
+        schema_version: EXACT_DIMENSION_PARTITION_SCHEMA_VERSION,
+        selected_network_indices: network_indices.to_vec(),
+        selected_networks,
+        request_width: i32::try_from(request.max_width).expect("validated request width fits i32"),
+        request_height: i32::try_from(request.max_height)
+            .expect("validated request height fits i32"),
+        lower_bounds,
+        candidates,
+        fixed_dimensions,
+        search_budget_ms: millis(search_budget),
+        diagnostic_only: true,
+        layout,
+    })
+}
+
+fn exact_dimension_lower_bounds(
+    input: &super::ModelInput,
+) -> Result<ExactDimensionLowerBoundsReport, IntegratedLayoutReport> {
+    let minimum_width = input
+        .instances
+        .iter()
+        .map(|instance| {
+            instance
+                .definition
+                .allowed_rotations
+                .iter()
+                .map(|rotation| {
+                    if matches!(rotation, 90 | 270) {
+                        instance.definition.footprint.height
+                    } else {
+                        instance.definition.footprint.width
+                    }
+                })
+                .min()
+                .expect("validated facility has an allowed rotation")
+        })
+        .max()
+        .unwrap_or(1);
+    let minimum_height = input
+        .instances
+        .iter()
+        .map(|instance| {
+            instance
+                .definition
+                .allowed_rotations
+                .iter()
+                .map(|rotation| {
+                    if matches!(rotation, 90 | 270) {
+                        instance.definition.footprint.width
+                    } else {
+                        instance.definition.footprint.height
+                    }
+                })
+                .min()
+                .expect("validated facility has an allowed rotation")
+        })
+        .max()
+        .unwrap_or(1);
+    let facility_area =
+        super::required_facility_area(input).map_err(IntegratedLayoutReport::invalid)?;
+    let mandatory_transport_cells = i64::from(!input.networks.is_empty());
+    let minimum_area = facility_area
+        .checked_add(mandatory_transport_cells)
+        .expect("validated request area fits i64");
+    Ok(ExactDimensionLowerBoundsReport {
+        minimum_width: i32::try_from(minimum_width).expect("validated facility width fits i32"),
+        minimum_height: i32::try_from(minimum_height).expect("validated facility height fits i32"),
+        facility_area,
+        mandatory_transport_cells,
+        minimum_area,
+    })
+}
+
+fn enumerate_exact_dimension_candidates(
+    request_width: i32,
+    request_height: i32,
+    lower_bounds: &ExactDimensionLowerBoundsReport,
+) -> Vec<ExactUsedDimensionCandidate> {
+    let mut candidates = Vec::new();
+    for width in lower_bounds.minimum_width..=request_width {
+        for height in lower_bounds.minimum_height..=request_height {
+            let area = i64::from(width) * i64::from(height);
+            if area < lower_bounds.minimum_area {
+                continue;
+            }
+            candidates.push(ExactUsedDimensionCandidate {
+                width,
+                height,
+                area,
+            });
+        }
+    }
+    candidates.sort_by_key(|candidate| {
+        (
+            candidate.area,
+            candidate.width.max(candidate.height),
+            candidate.width,
+            candidate.height,
+        )
+    });
+    candidates
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn solve_first_integrated_layout_phase_search_mode(
     instance_wiring: &FacilityInstanceWiringReport,
@@ -1223,4 +1410,48 @@ fn run_case(
 
 fn millis(duration: Duration) -> u64 {
     duration.as_millis().try_into().unwrap_or(u64::MAX)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn exact_dimension_candidates_apply_only_proven_bounds_and_are_area_ordered() {
+        let lower_bounds = ExactDimensionLowerBoundsReport {
+            minimum_width: 5,
+            minimum_height: 5,
+            facility_area: 25,
+            mandatory_transport_cells: 1,
+            minimum_area: 26,
+        };
+        let candidates = enumerate_exact_dimension_candidates(12, 12, &lower_bounds);
+
+        assert_eq!(candidates.len(), 63);
+        assert_eq!(
+            candidates.first(),
+            Some(&ExactUsedDimensionCandidate {
+                width: 5,
+                height: 6,
+                area: 30,
+            })
+        );
+        assert_eq!(
+            candidates.get(1),
+            Some(&ExactUsedDimensionCandidate {
+                width: 6,
+                height: 5,
+                area: 30,
+            })
+        );
+        assert_eq!(
+            candidates.last(),
+            Some(&ExactUsedDimensionCandidate {
+                width: 12,
+                height: 12,
+                area: 144,
+            })
+        );
+        assert!(!candidates.iter().any(|candidate| candidate.area < 26));
+    }
 }
