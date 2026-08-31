@@ -2,7 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::ops::{Deref, DerefMut};
 
 use pumpkin_solver::Solver;
-use pumpkin_solver::core::predicates::Predicate;
+use pumpkin_solver::core::predicates::{Predicate, PredicateConstructor};
 use pumpkin_solver::core::proof::ConstraintTag;
 use pumpkin_solver::core::variables::{AffineView, DomainId, Literal, TransformableVariable};
 
@@ -387,6 +387,37 @@ impl RecordedModel {
         self.solver
             .add_constraint(pumpkin_solver::equals(terms, rhs, tag))
             .implied_by(condition);
+    }
+
+    pub(super) fn post_implied_value_equals_clause(
+        &mut self,
+        family: ConstraintFamily,
+        variable_family: VariableFamily,
+        variable: DomainId,
+        value: i32,
+        condition: Literal,
+        condition_parent: DomainId,
+        tag: ConstraintTag,
+    ) {
+        self.record_constraint(
+            family,
+            ConstraintRelation::Equality,
+            &[variable.scaled(1), condition_parent.scaled(1)],
+            value.unsigned_abs() as u64,
+        );
+        let required_value = self.new_named_literal_for_predicate(
+            variable_family,
+            variable.equality_predicate(value),
+            tag,
+            format!("guarded-value-{variable:?}-{value}"),
+        );
+        self.solver.add_clause(
+            [
+                condition.get_false_predicate(),
+                required_value.get_true_predicate(),
+            ],
+            tag,
+        );
     }
 
     pub(super) fn post_implied_binary_equals(

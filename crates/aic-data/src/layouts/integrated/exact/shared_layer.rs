@@ -4044,11 +4044,11 @@ fn post_selected_item(
     let condition = solver
         .solver_mut()
         .new_literal_for_predicate(selected.equality_predicate(1), tag);
-    solver.post_implied_equals(
+    solver.post_implied_value_equals_clause(
         ConstraintFamily::ItemAssignment,
-        vec![item.scaled(1)],
+        VariableFamily::ArmItem,
+        item,
         item_code,
-        1,
         condition,
         selected,
         tag,
