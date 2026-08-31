@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "workload": "heavy-xiranite-minimum-rate",
+  "formulation": "joint-shared-boundary-terminals-canonical-occupancy-v4",
+  "classification": "semantics-preserving-exact-dimension-partition-diagnosis",
+  "phase": 0,
+  "selected_network_indices": [0, 1],
+  "selected_networks": [
+    "network:belt:item-xiranite-enr-powder",
+    "network:belt:item-xiranite-powder"
+  ],
+  "request_bounds": {
+    "max_width": 12,
+    "max_height": 12
+  },
+  "proven_lower_bounds": {
+    "minimum_width": 5,
+    "minimum_height": 5,
+    "facility_area": 25,
+    "mandatory_transport_cells": 1,
+    "minimum_area": 26
+  },
+  "candidate_count": 63,
+  "search_budget_ms_per_case": 5000,
+  "unfixed_baseline": {
+    "variables": 10970,
+    "boolean_variables": 9402,
+    "integer_variables": 1568,
+    "constraints": 33256,
+    "terms": 109133,
+    "construction_ms": 67,
+    "search_ms": 5001,
+    "first_incumbent_ms": null,
+    "termination": "unknown",
+    "proof": "unproven",
+    "validation": "not-attempted",
+    "peak_rss_bytes": 89276416
+  },
+  "fixed_model_delta": {
+    "variables": 0,
+    "constraints": 2,
+    "terms": 2,
+    "description": "used_width=w and used_height=h research equalities"
+  },
+  "executed_cases": [
+    {
+      "width": 5,
+      "height": 6,
+      "area": 30,
+      "construction_ms": 83,
+      "search_ms": 47,
+      "first_incumbent_ms": null,
+      "termination": "infeasible",
+      "proof": "proven-infeasible",
+      "validation": "not-attempted",
+      "peak_rss_bytes": 84934656,
+      "instructions_retired": 1977267987,
+      "cycles_elapsed": 502613714
+    },
+    {
+      "width": 6,
+      "height": 5,
+      "area": 30,
+      "construction_ms": 72,
+      "search_ms": 25,
+      "first_incumbent_ms": null,
+      "termination": "infeasible",
+      "proof": "proven-infeasible",
+      "validation": "not-attempted",
+      "peak_rss_bytes": 83410944,
+      "instructions_retired": 1647975090,
+      "cycles_elapsed": 406247752
+    },
+    {
+      "width": 5,
+      "height": 7,
+      "area": 35,
+      "construction_ms": 76,
+      "search_ms": 26,
+      "first_incumbent_ms": 26,
+      "termination": "feasible",
+      "proof": "unproven",
+      "validation": "passed",
+      "objective": {
+        "used_bounding_box_area": 35,
+        "physical_transport_tiles": 4,
+        "total_route_turns": 0,
+        "maximum_used_side": 7,
+        "logistics_component_count": 0
+      },
+      "peak_rss_bytes": 88604672,
+      "instructions_retired": 1644947683,
+      "cycles_elapsed": 417907758
+    }
+  ],
+  "stop_reason": "first-validated-witness",
+  "primary_area_optimum": {
+    "value": 35,
+    "proven": true,
+    "reason": "all legal smaller-area dimension candidates were proven infeasible and 5x7 has a validated witness"
+  },
+  "verdict": {
+    "fixed_dimensions_restore_first_witness": true,
+    "used_bounds_boundary_terminal_route_feedback_is_immediate_cliff": true,
+    "branch_order_is_proven_root_cause": false,
+    "next_action": "evaluate exact dimension partitioning as solve orchestration before growing the cumulative production graph"
+  }
+}
