@@ -14,7 +14,7 @@ use super::coordinate_partition::{invalid_input, millis, model_scale, prepare_ta
 use super::rotation_partition::diagnose_cumulative_facility_rotation_partitions;
 use super::{ExactDimensionCaseOutcome, ExactUsedDimensionCandidate, PartitionCaseModelScale};
 
-pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 7;
+pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 8;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -28,6 +28,7 @@ pub enum PossibleGraphConnectivityCaseKind {
     DemandSilentPossibleGraphPropagator,
     LayerGridOpportunityAnalyzer,
     TerminalSupportGridPropagator,
+    UniqueSupportChainGridPropagator,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
@@ -225,6 +226,13 @@ pub fn diagnose_phase2_possible_graph_connectivity(
         &reference,
     );
     let (grid_propagated, active_grid_connectivity_runtime, active_grid_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_terminal_support_grid_propagation(
+        input.clone(),
+        logistics_components,
+        Some(case_search_budget),
+        fixed_dimensions,
+        &reference,
+    );
+    let (chain_propagated, chain_connectivity_runtime, chain_grid_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_unique_support_chain_grid_propagation(
         input,
         logistics_components,
         Some(case_search_budget),
@@ -292,6 +300,12 @@ pub fn diagnose_phase2_possible_graph_connectivity(
                 grid_propagated,
                 connectivity_runtime(active_grid_connectivity_runtime),
                 grid_analyzer_runtime(active_grid_runtime),
+            ),
+            case_report(
+                PossibleGraphConnectivityCaseKind::UniqueSupportChainGridPropagator,
+                chain_propagated,
+                connectivity_runtime(chain_connectivity_runtime),
+                grid_analyzer_runtime(chain_grid_runtime),
             ),
         ],
         diagnostic_only: true,

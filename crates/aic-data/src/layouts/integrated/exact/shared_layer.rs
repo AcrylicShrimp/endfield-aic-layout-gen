@@ -827,6 +827,49 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
     )
 }
 
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_reference_unique_support_chain_grid_propagation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    reference: &IntegratedLayoutReport,
+) -> (
+    IntegratedLayoutReport,
+    PossibleRouteReachabilityStatistics,
+    LayerGridAnalyzerStatistics,
+) {
+    let connectivity_counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    let grid_counters = SyncArc::new(LayerGridAnalyzerCounters::default());
+    let report = solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        Some(reference),
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        None,
+        None,
+        Some(ReferenceAblationFixation::PlacementsAndAllTerminals),
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters: SyncArc::clone(&connectivity_counters),
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
+            grid_analyzer: Some((
+                SyncArc::clone(&grid_counters),
+                LayerGridAnalyzerMode::ForceUniqueSupportChain,
+            )),
+        },
+    );
+    (
+        report,
+        connectivity_counters.snapshot(),
+        grid_counters.snapshot(),
+    )
+}
+
 pub(in crate::layouts::integrated) fn facility_coordinate_partitions(
     input: &ModelInput,
     instance_id: &str,
@@ -1378,6 +1421,14 @@ fn solve_with_endpoint_encoding(
                     ..
                 },
             ) => "joint-shared-v4-terminal-support-grid-propagation",
+            (
+                _,
+                _,
+                ConnectivityMode::PossibleGraphPropagator {
+                    grid_analyzer: Some((_, LayerGridAnalyzerMode::ForceUniqueSupportChain)),
+                    ..
+                },
+            ) => "joint-shared-v4-unique-support-chain-grid-propagation",
             (
                 _,
                 _,

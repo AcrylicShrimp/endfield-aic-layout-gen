@@ -147,6 +147,13 @@ physical-adjacency reason of at most nine predicates and targeted execution. Rep
 cut controlled Phase 2 backtracks by 23.5%, native propagations by 8.5%, and median first-witness
 time by 9.4%, while preserving independent witness validation.
 
+The forty-first checkpoint,
+`heavy-xiranite-minimum-rate.forty-first-unique-support-chain-report.md`, recursively extends the
+same exact rule through sole-predecessor route cells. It cuts another 2.6% of backtracks and reaches
+23-cell chains, but 176-predicate explanations and broad wakeups leave median runtime flat. The
+variant passes Pumpkin reason checking but is rejected as a runtime improvement; selective exact
+wakeup scheduling becomes the next implementation target.
+
 Regenerate it from a release binary with:
 
 ```bash
