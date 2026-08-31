@@ -102,7 +102,14 @@ enum EndpointEncoding {
         counters: SyncArc<EndpointSupportPropagationCounters>,
         sparse_legal_domain: bool,
         certificates: BoundaryKeyBuildCertificateCollector,
+        boundary_key_restriction: Option<BoundaryKeyRestriction>,
     },
+}
+
+#[derive(Clone)]
+struct BoundaryKeyRestriction {
+    terminal: String,
+    allowed_keys: Vec<i32>,
 }
 
 impl EndpointEncoding {
@@ -122,6 +129,16 @@ impl EndpointEncoding {
             _ => None,
         }
     }
+
+    fn boundary_key_restriction(&self) -> Option<&BoundaryKeyRestriction> {
+        match self {
+            Self::FactoredSparseSupportBoundaryKeyAudit {
+                boundary_key_restriction,
+                ..
+            } => boundary_key_restriction.as_ref(),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -135,6 +152,7 @@ pub(in crate::layouts::integrated) struct BoundaryKeyBuildCertificate {
     pub declared_values: Vec<i32>,
     pub unary_table_projection: Vec<i32>,
     pub routing_option_keys: Vec<i32>,
+    pub restriction_values: Option<Vec<i32>>,
 }
 
 type BoundaryKeyBuildCertificateCollector = SyncArc<Mutex<Vec<BoundaryKeyBuildCertificate>>>;
@@ -932,6 +950,53 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
             counters: SyncArc::new(EndpointSupportPropagationCounters::default()),
             sparse_legal_domain,
             certificates: SyncArc::clone(&certificates),
+            boundary_key_restriction: None,
+        },
+        fixed_dimensions,
+        fixed_coordinate,
+        fixed_ports,
+        prior_solution,
+        fixation,
+    );
+    let captured = certificates
+        .lock()
+        .expect("boundary-key certificate collector is not poisoned")
+        .clone();
+    (report, captured)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_key_restricted_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: &IntegratedLayoutReport,
+    fixation: ReferenceAblationFixation,
+    terminal: String,
+    mut allowed_keys: Vec<i32>,
+) -> (IntegratedLayoutReport, Vec<BoundaryKeyBuildCertificate>) {
+    allowed_keys.sort_unstable();
+    allowed_keys.dedup();
+    assert!(
+        !allowed_keys.is_empty(),
+        "boundary-key restriction must contain at least one value"
+    );
+    let certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let report = solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+            counters: SyncArc::new(EndpointSupportPropagationCounters::default()),
+            sparse_legal_domain: true,
+            certificates: SyncArc::clone(&certificates),
+            boundary_key_restriction: Some(BoundaryKeyRestriction {
+                terminal,
+                allowed_keys,
+            }),
         },
         fixed_dimensions,
         fixed_coordinate,
@@ -1092,6 +1157,67 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
                 counters: SyncArc::new(EndpointSupportPropagationCounters::default()),
                 sparse_legal_domain,
                 certificates: SyncArc::clone(&certificates),
+                boundary_key_restriction: None,
+            },
+            fixed_dimensions,
+            fixed_coordinate,
+            fixed_ports,
+            prior_solution,
+            fixation,
+            SearchMode::FeasibilityOnlyWithRootSnapshot(SyncArc::clone(&collector)),
+        );
+    let mut snapshot = collector
+        .lock()
+        .expect("root-domain snapshot collector is not poisoned")
+        .clone();
+    if snapshot.is_none() && report.status == IntegratedLayoutStatus::Infeasible {
+        snapshot = Some(RootDomainSnapshot::root_infeasible_without_brancher_call());
+    }
+    let captured = certificates
+        .lock()
+        .expect("boundary-key certificate collector is not poisoned")
+        .clone();
+    (report, snapshot, captured)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_key_restricted_fixed_dimensions_coordinate_ports_prior_overlap_root_snapshot(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: &IntegratedLayoutReport,
+    fixation: ReferenceAblationFixation,
+    terminal: String,
+    mut allowed_keys: Vec<i32>,
+) -> (
+    IntegratedLayoutReport,
+    Option<RootDomainSnapshot>,
+    Vec<BoundaryKeyBuildCertificate>,
+) {
+    allowed_keys.sort_unstable();
+    allowed_keys.dedup();
+    assert!(
+        !allowed_keys.is_empty(),
+        "boundary-key restriction must contain at least one value"
+    );
+    let collector: RootDomainSnapshotCollector = SyncArc::new(Mutex::new(None));
+    let certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let report =
+        solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation_with_search_mode(
+            input,
+            logistics_components,
+            time_limit,
+            EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+                counters: SyncArc::new(EndpointSupportPropagationCounters::default()),
+                sparse_legal_domain: true,
+                certificates: SyncArc::clone(&certificates),
+                boundary_key_restriction: Some(BoundaryKeyRestriction {
+                    terminal,
+                    allowed_keys,
+                }),
             },
             fixed_dimensions,
             fixed_coordinate,
@@ -2657,6 +2783,13 @@ fn solve_with_endpoint_encoding(
         }
         EndpointEncoding::FactoredSparseSupport(_) => {
             "joint-shared-v4-sparse-support-endpoints-watched-demand-local-continuation-guarded-intersection-propagation"
+        }
+        EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+            sparse_legal_domain: true,
+            boundary_key_restriction: Some(_),
+            ..
+        } => {
+            "joint-shared-v4-sparse-support-endpoints-legal-boundary-key-partition-watched-demand-local-continuation-guarded-intersection-propagation"
         }
         EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
             sparse_legal_domain: true,
@@ -4326,6 +4459,32 @@ fn build_flattened_terminals(
         .collect()
 }
 
+fn boundary_key_restriction_for_route<'a>(
+    input: &ModelInput,
+    endpoint_encoding: &'a EndpointEncoding,
+    route_index: usize,
+    direction: FacilityPortDirection,
+) -> Option<&'a [i32]> {
+    let restriction = endpoint_encoding.boundary_key_restriction()?;
+    let matching_terminals = input
+        .networks
+        .iter()
+        .flat_map(|network| network.terminals())
+        .filter(|terminal| {
+            terminal.route_index() == route_index
+                && terminal.direction() == direction
+                && matches!(terminal.endpoint(), EndpointInput::External { .. })
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(
+        matching_terminals.len(),
+        1,
+        "each external route endpoint must identify one logical terminal"
+    );
+    (matching_terminals[0].id() == restriction.terminal)
+        .then_some(restriction.allowed_keys.as_slice())
+}
+
 fn build_factored_terminals(
     solver: &mut RecordedModel,
     input: &ModelInput,
@@ -4375,6 +4534,12 @@ fn build_factored_terminals(
                 }
             }
             (EndpointInput::External { node }, EndpointInput::Facility { .. }) => {
+                let restricted_keys = boundary_key_restriction_for_route(
+                    input,
+                    endpoint_encoding,
+                    edge_index,
+                    FacilityPortDirection::Output,
+                );
                 let source = boundary_terminals::build_selector(
                     solver,
                     input,
@@ -4382,6 +4547,7 @@ fn build_factored_terminals(
                     "source",
                     used_bounds,
                     endpoint_encoding.sparse_legal_boundary_keys(),
+                    restricted_keys,
                     metrics,
                     tag,
                 );
@@ -4417,6 +4583,12 @@ fn build_factored_terminals(
                     metrics,
                     tag,
                 );
+                let restricted_keys = boundary_key_restriction_for_route(
+                    input,
+                    endpoint_encoding,
+                    edge_index,
+                    FacilityPortDirection::Input,
+                );
                 let target = boundary_terminals::build_selector(
                     solver,
                     input,
@@ -4424,6 +4596,7 @@ fn build_factored_terminals(
                     "target",
                     used_bounds,
                     endpoint_encoding.sparse_legal_boundary_keys(),
+                    restricted_keys,
                     metrics,
                     tag,
                 );
@@ -4491,6 +4664,24 @@ fn build_factored_terminals(
                             }
                         })
                         .collect::<Vec<_>>();
+                    let restriction_values =
+                        if matches!(&view.kind, FactoredEndpointKind::External { .. }) {
+                            endpoint_encoding
+                            .boundary_key_restriction()
+                            .filter(|restriction| restriction.terminal == terminal.id())
+                            .map(|restriction| {
+                                assert!(
+                                    restriction
+                                        .allowed_keys
+                                        .iter()
+                                        .all(|key| view.reachable_keys.binary_search(key).is_ok()),
+                                    "boundary-key restriction must be a subset of reachable keys"
+                                );
+                                restriction.allowed_keys.clone()
+                            })
+                        } else {
+                            None
+                        };
                     if matches!(&view.kind, FactoredEndpointKind::External { .. })
                         && let Some(certificates) =
                             endpoint_encoding.boundary_key_certificate_collector()
@@ -4512,6 +4703,7 @@ fn build_factored_terminals(
                                 declared_values: domain.declared_values.clone(),
                                 unary_table_projection: domain.unary_table_projection.clone(),
                                 routing_option_keys: view.reachable_keys.clone(),
+                                restriction_values,
                             });
                     }
                     SharedTerminal {

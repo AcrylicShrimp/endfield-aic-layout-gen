@@ -4,15 +4,15 @@ use std::time::Duration;
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    ExternalBoundaryKeyLegalSupportAbReport, FacilityPlacementRequest,
-    PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
+    ExternalBoundaryKeyLegalSupportAbReport, ExternalBoundarySidePartitionReport,
+    FacilityPlacementRequest, PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
     PriorInputPortPairPortfolioReport, PriorSourcePortPortfolioReport,
     PriorTerminalCompletionPortfolioReport, PriorTerminalPairValuePortfolioReport,
     ResidualFacilityPortTuplePortfolioReport, diagnose_external_boundary_key_legal_support_ab,
-    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
-    diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
-    diagnose_prior_terminal_completion_portfolio, diagnose_prior_terminal_pair_value_portfolio,
-    diagnose_residual_facility_port_tuple_portfolio,
+    diagnose_external_boundary_side_partition, diagnose_prior_input_pair_root_snapshot,
+    diagnose_prior_input_port_controls, diagnose_prior_input_port_pair_portfolio,
+    diagnose_prior_source_port_portfolio, diagnose_prior_terminal_completion_portfolio,
+    diagnose_prior_terminal_pair_value_portfolio, diagnose_residual_facility_port_tuple_portfolio,
     render_integrated_layout_html_with_localization,
 };
 use aic_data::localization::{ValidatedLocalizationCatalog, load_localization_catalog};
@@ -108,6 +108,13 @@ struct Args {
     boundary_key_case_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "MILLISECONDS")]
     boundary_key_observation_time_limit_ms: Option<u64>,
+    /// Split one selected external demand into exact north/east/south/west cases.
+    #[arg(long)]
+    partition_external_boundary_side: bool,
+    #[arg(long, value_name = "MILLISECONDS")]
+    boundary_side_case_time_limit_ms: Option<u64>,
+    #[arg(long, value_name = "MILLISECONDS")]
+    boundary_side_observation_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -171,6 +178,19 @@ fn main() -> Result<()> {
         args.compare_external_boundary_key_support
             == args.boundary_key_observation_time_limit_ms.is_some(),
         "--boundary-key-observation-time-limit-ms must be supplied exactly when --compare-external-boundary-key-support is enabled"
+    );
+    ensure!(
+        !args.partition_external_boundary_side || args.compare_external_boundary_key_support,
+        "--partition-external-boundary-side requires --compare-external-boundary-key-support"
+    );
+    ensure!(
+        args.partition_external_boundary_side == args.boundary_side_case_time_limit_ms.is_some(),
+        "--boundary-side-case-time-limit-ms must be supplied exactly when --partition-external-boundary-side is enabled"
+    );
+    ensure!(
+        args.partition_external_boundary_side
+            == args.boundary_side_observation_time_limit_ms.is_some(),
+        "--boundary-side-observation-time-limit-ms must be supplied exactly when --partition-external-boundary-side is enabled"
     );
     let terminal_bits = parse_terminal_pair(&args.terminal_pair)?;
     let worker_count = NonZeroUsize::new(args.worker_count)
@@ -628,6 +648,59 @@ fn run_input_pair(
                     "boundary-key A/B requires --boundary-key-observation-time-limit-ms",
                 )?)
                 .context("boundary-key observation case time limit must be positive")?;
+            if args.partition_external_boundary_side {
+                let side_authoritative_budget =
+                    NonZeroU64::new(args.boundary_side_case_time_limit_ms.context(
+                        "boundary-side partition requires --boundary-side-case-time-limit-ms",
+                    )?)
+                    .context("boundary-side authoritative case time limit must be positive")?;
+                let side_observation_budget = NonZeroU64::new(
+                    args.boundary_side_observation_time_limit_ms.context(
+                        "boundary-side partition requires --boundary-side-observation-time-limit-ms",
+                    )?,
+                )
+                .context("boundary-side observation case time limit must be positive")?;
+                let report = diagnose_external_boundary_side_partition(
+                    &loaded.wiring,
+                    &loaded.facilities,
+                    &loaded.items,
+                    &loaded.transports,
+                    &loaded.components,
+                    &loaded.placement_request,
+                    args.target_phase,
+                    args.used_width,
+                    args.used_height,
+                    args.facility_x,
+                    args.facility_y,
+                    args.port_assignment_index,
+                    args.facility_rotation,
+                    args.prior_facility_bit,
+                    terminal_bits,
+                    representative_source_leaf_index,
+                    worker_count.get(),
+                    Duration::from_millis(prefix_budget.get()),
+                    Duration::from_millis(pair_budget.get()),
+                    Duration::from_millis(completion_budget.get()),
+                    Duration::from_millis(source_budget.get()),
+                    Duration::from_millis(control_budget.get()),
+                    Duration::from_millis(residual_pair_budget.get()),
+                    Duration::from_millis(parent_observation_budget.get()),
+                    Duration::from_millis(authoritative_budget.get()),
+                    Duration::from_millis(observation_budget.get()),
+                    Duration::from_millis(ab_authoritative_budget.get()),
+                    Duration::from_millis(ab_observation_budget.get()),
+                    Duration::from_millis(side_authoritative_budget.get()),
+                    Duration::from_millis(side_observation_budget.get()),
+                )
+                .map_err(|report| {
+                    anyhow::anyhow!("external boundary-side diagnosis failed: {report:?}")
+                })?;
+                write_external_boundary_side_artifacts(args, loaded, &report)?;
+                serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+                    .context("failed to write external boundary-side report")?;
+                println!();
+                return Ok(());
+            }
             let report = diagnose_external_boundary_key_legal_support_ab(
                 &loaded.wiring,
                 &loaded.facilities,
@@ -897,6 +970,44 @@ fn write_external_boundary_key_ab_artifacts(
             html.as_bytes(),
             "external boundary-key A/B layout",
         )?;
+    }
+    Ok(())
+}
+
+fn write_external_boundary_side_artifacts(
+    args: &Args,
+    loaded: &LoadedInputs,
+    report: &ExternalBoundarySidePartitionReport,
+) -> Result<()> {
+    write_json(&args.output_dir.join("summary.json"), report)?;
+    write_bytes(
+        &args.output_dir.join("summary.html"),
+        render_external_boundary_side_summary(report)?.as_bytes(),
+        "external boundary-side summary",
+    )?;
+    for case in &report.cases {
+        for (kind, layout) in [
+            ("authoritative", &case.solve.authoritative_layout),
+            ("observation", &case.solve.observation_layout),
+        ] {
+            let html = render_integrated_layout_html_with_localization(
+                layout,
+                loaded.localization.as_ref(),
+            )
+            .map_err(|diagnostic| {
+                anyhow::anyhow!(
+                    "external boundary-side {} {kind} visualization failed with {}: {}",
+                    case.side,
+                    diagnostic.code,
+                    diagnostic.message
+                )
+            })?;
+            write_bytes(
+                &args.output_dir.join(format!("{}.{kind}.html", case.side)),
+                html.as_bytes(),
+                "external boundary-side layout",
+            )?;
+        }
     }
     Ok(())
 }
@@ -1725,6 +1836,76 @@ fn render_external_boundary_key_ab_summary(
         solve_rows,
         static_rows,
         root_rows,
+        json,
+    ))
+}
+
+fn render_external_boundary_side_summary(
+    report: &ExternalBoundarySidePartitionReport,
+) -> Result<String> {
+    let side_rows = report
+        .cases
+        .iter()
+        .map(|case| {
+            format!(
+                "<tr><td>{}</td><td>{}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{}</td><td>{}</td><td><a href=\"{}.authoritative.html\">solve</a> · <a href=\"{}.observation.html\">root</a></td></tr>",
+                case.case_index,
+                case.side,
+                case.allowed_keys.len(),
+                case.solve.authoritative_outcome,
+                case.solve.observation_outcome,
+                case.solve.combined_outcome,
+                case.solve.construction_ms,
+                case.solve.search_ms,
+                case.solve.first_incumbent_ms,
+                case.solve.search_statistics.branch_decisions,
+                case.solve.search_statistics.backtracks,
+                case.solve.search_statistics.conflicts,
+                case.root_restriction_satisfied,
+                case.facility_fixation_satisfied,
+                case.side,
+                case.side,
+            )
+        })
+        .collect::<String>();
+    let domain_rows = report
+        .sides
+        .iter()
+        .map(|side| {
+            format!(
+                "<tr><td>{}</td><td>{}</td><td>{}</td><td><code>{:?}</code></td></tr>",
+                side.case_index,
+                side.side,
+                side.keys.len(),
+                side.keys,
+            )
+        })
+        .collect::<String>();
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 3 external boundary-side partition</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.warning{{border:1px solid #ffd166;padding:10px;color:#ffd166}}table{{border-collapse:collapse;width:100%;margin-bottom:24px}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}code,a{{color:#ffd166}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {} external boundary-side exact partition</h1><div class="meta">network={}: <code>{}</code> · terminal=<code>{}</code> · parent keys={} · authoritative budget={}ms · observation budget={}ms · experiment={}ms · total={}ms</div><p class="warning">Each child preserves every parent-root value on one compass side. The four disjoint children exactly cover the selected terminal domain. Every child inherits the parent's four fixed placements/rotations and fifteen fixed facility ports; routing, flow, and all other external terminals remain solver decisions.</p><p>partition non-empty/disjoint/cover = {}/{}/{} · static certificates={} · controlled model contract={} · combined={:?} · feasible/infeasible/unknown/invalid={}/{}/{}/{} · blocked={}</p><h2>Partition domains</h2><table><thead><tr><th>case</th><th>side</th><th>keys</th><th>values</th></tr></thead><tbody>{}</tbody></table><h2>Child outcomes</h2><table><thead><tr><th>case</th><th>side</th><th>keys</th><th>authoritative</th><th>observation</th><th>combined</th><th>build ms</th><th>search ms</th><th>first</th><th>decisions</th><th>backtracks</th><th>conflicts</th><th>root restriction</th><th>facility fixation</th><th>artifacts</th></tr></thead><tbody>{}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        report.target_phase_index,
+        report.selected_network_index,
+        report.selected_network_id,
+        report.selected_terminal,
+        report.parent_root_keys.len(),
+        report.authoritative_case_search_budget_ms,
+        report.observation_case_search_budget_ms,
+        report.experiment_ms,
+        report.total_wall_ms,
+        report.partition_non_empty,
+        report.partition_pairwise_disjoint,
+        report.partition_exact_cover,
+        report.common_static_certificates_satisfied,
+        report.controlled_model_contract_satisfied,
+        report.combined_outcome,
+        report.validated_feasible_count,
+        report.proven_infeasible_count,
+        report.unknown_count,
+        report.invalid_witness_count,
+        report.interpretation_blocked,
+        domain_rows,
+        side_rows,
         json,
     ))
 }

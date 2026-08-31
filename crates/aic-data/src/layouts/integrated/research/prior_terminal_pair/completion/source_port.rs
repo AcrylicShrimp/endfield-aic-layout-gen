@@ -24,20 +24,23 @@ use super::{PriorTerminalCompletionPortfolioReport, diagnose_prior_terminal_comp
 mod input_controls;
 
 pub use input_controls::{
-    EXTERNAL_BOUNDARY_KEY_LEGAL_SUPPORT_AB_SCHEMA_VERSION, ExternalBoundaryKeyCommonModelContract,
+    EXTERNAL_BOUNDARY_KEY_LEGAL_SUPPORT_AB_SCHEMA_VERSION,
+    EXTERNAL_BOUNDARY_SIDE_PARTITION_SCHEMA_VERSION, ExternalBoundaryKeyCommonModelContract,
     ExternalBoundaryKeyLegalSupportAbReport, ExternalBoundaryKeyNetworkContract,
     ExternalBoundaryKeyRootComparison, ExternalBoundaryKeyRootTotals,
     ExternalBoundaryKeySolveReport, ExternalBoundaryKeyStaticCertificate,
-    PRIOR_INPUT_PAIR_ROOT_SNAPSHOT_SCHEMA_VERSION, PRIOR_INPUT_PORT_CONTROLS_SCHEMA_VERSION,
-    PRIOR_INPUT_PORT_PAIR_PORTFOLIO_SCHEMA_VERSION, PriorInputPairRootSnapshotReport,
-    PriorInputPortControlCaseReport, PriorInputPortControlSuiteReport,
-    PriorInputPortControlsReport, PriorInputPortPairCaseReport, PriorInputPortPairPortfolioReport,
-    PriorInputPortProofExclusion, PriorInputPortResidualDomain,
+    ExternalBoundarySideCaseReport, ExternalBoundarySideDomain,
+    ExternalBoundarySidePartitionReport, PRIOR_INPUT_PAIR_ROOT_SNAPSHOT_SCHEMA_VERSION,
+    PRIOR_INPUT_PORT_CONTROLS_SCHEMA_VERSION, PRIOR_INPUT_PORT_PAIR_PORTFOLIO_SCHEMA_VERSION,
+    PriorInputPairRootSnapshotReport, PriorInputPortControlCaseReport,
+    PriorInputPortControlSuiteReport, PriorInputPortControlsReport, PriorInputPortPairCaseReport,
+    PriorInputPortPairPortfolioReport, PriorInputPortProofExclusion, PriorInputPortResidualDomain,
     RESIDUAL_FACILITY_PORT_TUPLE_PORTFOLIO_SCHEMA_VERSION, ResidualFacilityPortDomain,
     ResidualFacilityPortFixationObservation, ResidualFacilityPortTupleCaseReport,
     ResidualFacilityPortTuplePortfolioReport, diagnose_external_boundary_key_legal_support_ab,
-    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
-    diagnose_prior_input_port_pair_portfolio, diagnose_residual_facility_port_tuple_portfolio,
+    diagnose_external_boundary_side_partition, diagnose_prior_input_pair_root_snapshot,
+    diagnose_prior_input_port_controls, diagnose_prior_input_port_pair_portfolio,
+    diagnose_residual_facility_port_tuple_portfolio,
 };
 
 pub const PRIOR_SOURCE_PORT_PORTFOLIO_SCHEMA_VERSION: u32 = 1;

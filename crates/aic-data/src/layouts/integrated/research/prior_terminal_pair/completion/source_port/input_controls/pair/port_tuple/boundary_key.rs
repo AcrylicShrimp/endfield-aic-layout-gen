@@ -6,6 +6,10 @@ use serde::Serialize;
 use super::*;
 use crate::layouts::integrated::ModelInput;
 
+mod side_partition;
+
+pub use side_partition::*;
+
 pub const EXTERNAL_BOUNDARY_KEY_LEGAL_SUPPORT_AB_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -636,7 +640,9 @@ fn compare_static_certificates(
                 && sparse.declared_values == bounded.unary_table_projection
                 && bounded.unary_table_projection == sparse.unary_table_projection
                 && bounded.unary_table_projection == bounded.routing_option_keys
-                && sparse.unary_table_projection == sparse.routing_option_keys;
+                && sparse.unary_table_projection == sparse.routing_option_keys
+                && bounded.restriction_values.is_none()
+                && sparse.restriction_values.is_none();
             Some(ExternalBoundaryKeyStaticCertificate {
                 terminal: terminal.clone(),
                 network_index: bounded.network_index,
@@ -881,6 +887,7 @@ mod tests {
             declared_values,
             unary_table_projection: legal_values,
             routing_option_keys: option_values,
+            restriction_values: None,
         }
     }
 

@@ -58,10 +58,27 @@ pub(super) fn build_selector(
     endpoint_kind: &str,
     used_bounds: UsedBoundsVariables,
     sparse_legal_key_domain: bool,
+    restricted_keys: Option<&[i32]>,
     metrics: &mut ExactModelMetrics,
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) -> BoundaryTerminalSelector {
-    let reachable_keys = reachable_boundary_keys(input.width, input.height);
+    let full_reachable_keys = reachable_boundary_keys(input.width, input.height);
+    let reachable_keys = restricted_keys.map_or_else(
+        || full_reachable_keys.clone(),
+        |restricted| {
+            assert!(
+                !restricted.is_empty()
+                    && restricted
+                        .iter()
+                        .all(|key| full_reachable_keys.binary_search(key).is_ok()),
+                "restricted boundary keys must be a non-empty subset of legal keys"
+            );
+            let mut keys = restricted.to_vec();
+            keys.sort_unstable();
+            keys.dedup();
+            keys
+        },
+    );
     let key_upper = input
         .cell_count
         .checked_mul(4)
