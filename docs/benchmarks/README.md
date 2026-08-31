@@ -55,6 +55,13 @@ rebuilds the hard Xiranite Powder network from each logical requirement. It show
 requirements are individually tractable and that the first local cliff is the second terminal
 pair's placement-port-to-grid coupling, not additional routing-grid state.
 
+The twenty-fourth checkpoint,
+`heavy-xiranite-minimum-rate.twenty-fourth-full-phase0-dimension-sweep-report.md`, applies the
+parallel exact dimension portfolio to all three phase-zero networks. It proves minimum used area
+42 in about 0.8 seconds after the same current free-dimension formulation finds no incumbent in
+five seconds, and identifies the used-dimension/boundary-terminal/routing propagation cycle as the
+closed phase-zero cliff.
+
 Regenerate it from a release binary with:
 
 ```bash

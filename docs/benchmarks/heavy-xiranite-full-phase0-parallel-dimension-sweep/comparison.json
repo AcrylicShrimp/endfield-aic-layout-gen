@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "diagnostic_only": true,
+  "workload": "heavy-xiranite-minimum-rate",
+  "phase": 0,
+  "selected_network_indices": [0, 1, 2],
+  "request_ceiling": {
+    "width": 12,
+    "height": 12
+  },
+  "free_dimension_baseline": {
+    "worker_count": 1,
+    "search_budget_ms": 5000,
+    "construction_ms": 120,
+    "search_ms": 5000,
+    "status": "unknown",
+    "first_incumbent_ms": null,
+    "incumbent_count": 0,
+    "primary_area_optimum_proven": false,
+    "model": {
+      "variables": 19582,
+      "constraints": 57843,
+      "incidences": 186379
+    },
+    "measured_peak_rss_bytes": 138756096
+  },
+  "parallel_exact_dimension_sweep": {
+    "worker_count": 4,
+    "search_budget_ms_per_case": 5000,
+    "candidate_count": 63,
+    "executed_case_count": 11,
+    "skipped_above_upper_bound_count": 52,
+    "validated_feasible_case_count": 2,
+    "proven_infeasible_case_count": 9,
+    "unknown_case_count": 0,
+    "outer_wall_ms": 801,
+    "repeat_outer_wall_ms": 804,
+    "repeat_process_wall_ms": 810,
+    "repeat_measured_peak_rss_bytes": 510820352,
+    "feasible_upper_bound_area": 42,
+    "primary_area_optimum_proven": true,
+    "secondary_objectives_proven": false,
+    "unresolved_smaller_candidate_count": 0,
+    "selected_incumbent": {
+      "width": 6,
+      "height": 7,
+      "objective": {
+        "used_bounding_box_area": 42,
+        "physical_transport_tiles": 23,
+        "total_route_turns": 2,
+        "maximum_used_side": 7,
+        "logistics_component_count": 0
+      }
+    },
+    "representative_fixed_case_model": {
+      "variables": 19582,
+      "constraints": 57845,
+      "incidences": 186381
+    }
+  },
+  "proof_boundary": {
+    "all_candidates_below_area_42_proven_infeasible": true,
+    "both_area_42_aspect_ratios_validated_feasible": true,
+    "area_42_secondary_optimum_proven": false,
+    "interpretation": "Exact dimension partition removes the free used-dimension decision from each solver instance without removing placement, port, terminal, routing, flow, topology, capacity, or collision decisions."
+  },
+  "next_experiment": "Apply exact dimension partition to cumulative SCC phase 1 to locate the next first-feasible cliff; evaluate secondary-objective proof inside the minimum-area phase-zero partitions as a separate optimization experiment."
+}
