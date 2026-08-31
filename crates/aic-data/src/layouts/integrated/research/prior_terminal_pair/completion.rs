@@ -20,6 +20,14 @@ use super::super::coordinate_partition::{
 use super::super::{ExactDimensionCaseOutcome, ExactDimensionSolverStack};
 use super::{PriorTerminalPairValuePortfolioReport, diagnose_prior_terminal_pair_value_portfolio};
 
+mod source_port;
+
+pub use source_port::{
+    PRIOR_SOURCE_PORT_PORTFOLIO_SCHEMA_VERSION, PriorSourcePortCaseReport,
+    PriorSourcePortParentReport, PriorSourcePortPortfolioReport,
+    diagnose_prior_source_port_portfolio,
+};
+
 pub const PRIOR_TERMINAL_COMPLETION_PORTFOLIO_SCHEMA_VERSION: u32 = 1;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 

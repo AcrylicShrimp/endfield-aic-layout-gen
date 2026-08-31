@@ -26,9 +26,11 @@ use super::{
 mod completion;
 
 pub use completion::{
-    PRIOR_TERMINAL_COMPLETION_PORTFOLIO_SCHEMA_VERSION, PriorTerminalCompletionCaseReport,
-    PriorTerminalCompletionDomain, PriorTerminalCompletionParentReport,
-    PriorTerminalCompletionPortfolioReport, diagnose_prior_terminal_completion_portfolio,
+    PRIOR_SOURCE_PORT_PORTFOLIO_SCHEMA_VERSION, PRIOR_TERMINAL_COMPLETION_PORTFOLIO_SCHEMA_VERSION,
+    PriorSourcePortCaseReport, PriorSourcePortParentReport, PriorSourcePortPortfolioReport,
+    PriorTerminalCompletionCaseReport, PriorTerminalCompletionDomain,
+    PriorTerminalCompletionParentReport, PriorTerminalCompletionPortfolioReport,
+    diagnose_prior_source_port_portfolio, diagnose_prior_terminal_completion_portfolio,
 };
 
 pub const PRIOR_TERMINAL_PAIR_VALUE_PORTFOLIO_SCHEMA_VERSION: u32 = 2;

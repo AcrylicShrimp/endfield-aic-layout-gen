@@ -4,8 +4,9 @@ use std::time::Duration;
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    FacilityPlacementRequest, PriorTerminalCompletionPortfolioReport,
-    PriorTerminalPairValuePortfolioReport, diagnose_prior_terminal_completion_portfolio,
+    FacilityPlacementRequest, PriorSourcePortPortfolioReport,
+    PriorTerminalCompletionPortfolioReport, PriorTerminalPairValuePortfolioReport,
+    diagnose_prior_source_port_portfolio, diagnose_prior_terminal_completion_portfolio,
     diagnose_prior_terminal_pair_value_portfolio, render_integrated_layout_html_with_localization,
 };
 use aic_data::localization::{ValidatedLocalizationCatalog, load_localization_catalog};
@@ -65,6 +66,11 @@ struct Args {
     complete_target_ports: bool,
     #[arg(long, value_name = "MILLISECONDS")]
     child_case_time_limit_ms: Option<u64>,
+    /// Expand every non-infeasible target completion by all old same-lane source ports.
+    #[arg(long)]
+    split_prior_source_port: bool,
+    #[arg(long, value_name = "MILLISECONDS")]
+    source_case_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -99,7 +105,16 @@ fn main() -> Result<()> {
     let pair_budget = NonZeroU64::new(args.pair_case_time_limit_ms)
         .context("prior-terminal pair pair_case_time_limit_ms must be positive")?;
     let loaded = load_inputs(&args)?;
-    if args.complete_target_ports {
+    if args.split_prior_source_port {
+        run_source_port(
+            &args,
+            terminal_bits,
+            worker_count,
+            prefix_budget,
+            pair_budget,
+            &loaded,
+        )
+    } else if args.complete_target_ports {
         run_completion(
             &args,
             terminal_bits,
@@ -131,6 +146,10 @@ fn run_pair(
     ensure!(
         args.child_case_time_limit_ms.is_none(),
         "--child-case-time-limit-ms requires --complete-target-ports"
+    );
+    ensure!(
+        args.source_case_time_limit_ms.is_none(),
+        "--source-case-time-limit-ms requires --split-prior-source-port"
     );
     let report = diagnose_prior_terminal_pair_value_portfolio(
         &loaded.wiring,
@@ -194,6 +213,10 @@ fn run_completion(
     pair_budget: NonZeroU64,
     loaded: &LoadedInputs,
 ) -> Result<()> {
+    ensure!(
+        args.source_case_time_limit_ms.is_none(),
+        "--source-case-time-limit-ms requires --split-prior-source-port"
+    );
     let child_budget = NonZeroU64::new(
         args.child_case_time_limit_ms
             .context("completion portfolio requires --child-case-time-limit-ms")?,
@@ -250,6 +273,85 @@ fn run_completion(
     }
     serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
         .context("failed to write prior-terminal completion report")?;
+    println!();
+    Ok(())
+}
+
+fn run_source_port(
+    args: &Args,
+    terminal_bits: [usize; 2],
+    worker_count: NonZeroUsize,
+    prefix_budget: NonZeroU64,
+    pair_budget: NonZeroU64,
+    loaded: &LoadedInputs,
+) -> Result<()> {
+    ensure!(
+        args.complete_target_ports,
+        "--split-prior-source-port requires --complete-target-ports"
+    );
+    let completion_budget = NonZeroU64::new(
+        args.child_case_time_limit_ms
+            .context("source-port portfolio requires --child-case-time-limit-ms")?,
+    )
+    .context("prior-source completion child_case_time_limit_ms must be positive")?;
+    let source_budget = NonZeroU64::new(
+        args.source_case_time_limit_ms
+            .context("source-port portfolio requires --source-case-time-limit-ms")?,
+    )
+    .context("prior-source source_case_time_limit_ms must be positive")?;
+    let report = diagnose_prior_source_port_portfolio(
+        &loaded.wiring,
+        &loaded.facilities,
+        &loaded.items,
+        &loaded.transports,
+        &loaded.components,
+        &loaded.placement_request,
+        args.target_phase,
+        args.used_width,
+        args.used_height,
+        args.facility_x,
+        args.facility_y,
+        args.port_assignment_index,
+        args.facility_rotation,
+        args.prior_facility_bit,
+        terminal_bits,
+        worker_count.get(),
+        Duration::from_millis(prefix_budget.get()),
+        Duration::from_millis(pair_budget.get()),
+        Duration::from_millis(completion_budget.get()),
+        Duration::from_millis(source_budget.get()),
+    )
+    .map_err(|report| anyhow::anyhow!("prior-source port diagnosis failed: {report:?}"))?;
+
+    write_json(&args.output_dir.join("summary.json"), &report)?;
+    write_bytes(
+        &args.output_dir.join("summary.html"),
+        render_source_port_summary(&report)?.as_bytes(),
+        "prior-source port summary",
+    )?;
+    for case in &report.cases {
+        let html = render_integrated_layout_html_with_localization(
+            &case.layout,
+            loaded.localization.as_ref(),
+        )
+        .map_err(|diagnostic| {
+            anyhow::anyhow!(
+                "prior-source port case visualization failed with {}: {}",
+                diagnostic.code,
+                diagnostic.message
+            )
+        })?;
+        write_bytes(
+            &args.output_dir.join(format!(
+                "case.source-leaf-{:03}.html",
+                case.source_leaf_index
+            )),
+            html.as_bytes(),
+            "prior-source port case",
+        )?;
+    }
+    serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+        .context("failed to write prior-source port report")?;
     println!();
     Ok(())
 }
@@ -513,6 +615,77 @@ fn render_completion_summary(report: &PriorTerminalCompletionPortfolioReport) ->
         report.child_proven_infeasible_count,
         report.child_unknown_count,
         report.child_invalid_witness_count,
+        report.selected_state_infeasibility_proven,
+        rows,
+        json,
+    ))
+}
+
+fn render_source_port_summary(report: &PriorSourcePortPortfolioReport) -> Result<String> {
+    let source_values = report
+        .source_ports
+        .iter()
+        .zip(&report.source_port_positions)
+        .map(|(port, position)| {
+            format!(
+                "<li><code>{port}</code> at ({},{})</li>",
+                position.x, position.y
+            )
+        })
+        .collect::<String>();
+    let rows = report
+        .cases
+        .iter()
+        .map(|case| {
+            let pair = case
+                .pair_assignments
+                .iter()
+                .map(|assignment| assignment.port.clone())
+                .collect::<Vec<_>>()
+                .join(" / ");
+            format!(
+                "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>({},{})</td><td>{:?}</td><td>{}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td></tr>",
+                case.source_leaf_index,
+                case.parent_completion_leaf_index,
+                pair,
+                case.source_assignment.port,
+                case.source_position.x,
+                case.source_position.y,
+                case.outcome,
+                case.construction_ms,
+                case.search_ms,
+                case.first_incumbent_ms,
+                case.search_statistics.branch_decisions,
+                case.search_statistics.backtracks,
+                case.search_statistics.conflicts,
+                case.search_statistics.learned_clauses,
+                case.search_statistics.solver_propagations,
+            )
+        })
+        .collect::<String>();
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 3 prior-source port portfolio</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}code{{color:#ffd166}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {} prior-source port portfolio</h1><div class="meta">source=<code>{}</code> · facility=<code>{}</code> · closed pair={} · closed target completion={} · expanded parents={} · source values={} · coverage regions={} · fixed terminals/leaf={} · selected lanes fixed={} · other free facility terminals={} · workers={} · source wall={}ms · total={}ms</div><h2>Source endpoint values</h2><ul>{}</ul><p>source feasible={} · source infeasible={} · source unknown={} · source invalid={} · witness={} · selected-state proof={}</p><table><thead><tr><th>leaf</th><th>parent</th><th>demand pair</th><th>source port</th><th>source cell</th><th>outcome</th><th>build ms</th><th>search ms</th><th>first</th><th>decisions</th><th>backtracks</th><th>conflicts</th><th>learned</th><th>propagations</th></tr></thead><tbody>{}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        report.target_phase_index,
+        report.source_terminal,
+        report.source_facility,
+        report.closed_pair_region_count,
+        report.closed_completion_region_count,
+        report.expanded_completion_parent_count,
+        report.source_assignment_count_per_parent,
+        report.coverage_region_count,
+        report.fixed_terminal_count_per_source_leaf,
+        report.selected_lane_terminals_fully_fixed,
+        report.unfixed_facility_terminal_domains.len(),
+        report.worker_count,
+        report.source_portfolio_wall_ms,
+        report.total_wall_ms,
+        source_values,
+        report.source_child_validated_feasible_count,
+        report.source_child_proven_infeasible_count,
+        report.source_child_unknown_count,
+        report.source_child_invalid_witness_count,
+        report.validated_witness_found,
         report.selected_state_infeasibility_proven,
         rows,
         json,

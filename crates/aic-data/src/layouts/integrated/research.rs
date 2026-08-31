@@ -87,12 +87,14 @@ pub use prior_port_subset::{
     PriorTerminalSubsetTerminal, diagnose_prior_port_subset_ablation,
 };
 pub use prior_terminal_pair::{
-    PRIOR_TERMINAL_COMPLETION_PORTFOLIO_SCHEMA_VERSION,
-    PRIOR_TERMINAL_PAIR_VALUE_PORTFOLIO_SCHEMA_VERSION, PriorTerminalCompletionCaseReport,
+    PRIOR_SOURCE_PORT_PORTFOLIO_SCHEMA_VERSION, PRIOR_TERMINAL_COMPLETION_PORTFOLIO_SCHEMA_VERSION,
+    PRIOR_TERMINAL_PAIR_VALUE_PORTFOLIO_SCHEMA_VERSION, PriorSourcePortCaseReport,
+    PriorSourcePortParentReport, PriorSourcePortPortfolioReport, PriorTerminalCompletionCaseReport,
     PriorTerminalCompletionDomain, PriorTerminalCompletionParentReport,
     PriorTerminalCompletionPortfolioReport, PriorTerminalPairDomain,
     PriorTerminalPairValueCaseReport, PriorTerminalPairValuePortfolioReport,
-    diagnose_prior_terminal_completion_portfolio, diagnose_prior_terminal_pair_value_portfolio,
+    diagnose_prior_source_port_portfolio, diagnose_prior_terminal_completion_portfolio,
+    diagnose_prior_terminal_pair_value_portfolio,
 };
 pub use reference_ablation::{
     PHASE2_REFERENCE_ABLATION_SCHEMA_VERSION, Phase2ReferenceAblationCaseReport,
