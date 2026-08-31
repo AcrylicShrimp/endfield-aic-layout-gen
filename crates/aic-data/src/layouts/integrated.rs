@@ -58,6 +58,12 @@ pub use research::{
     solve_first_integrated_layout_phase_external_connector_port_domain,
     solve_first_integrated_layout_phase_external_connector_subset,
 };
+pub use research::{
+    PHYSICAL_OCCUPANCY_PROBE_SCHEMA_VERSION, PhysicalOccupancyCaseReport,
+    PhysicalOccupancyDomainSnapshot, PhysicalOccupancyEncoding, PhysicalOccupancyProbeReport,
+    PhysicalOccupancyRestriction, render_physical_occupancy_probe_html,
+    run_physical_occupancy_probe,
+};
 pub use score::LayoutScore;
 
 pub fn solve_integrated_layout(

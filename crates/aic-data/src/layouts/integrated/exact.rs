@@ -20,8 +20,11 @@ mod formulation;
 mod hint;
 mod metrics;
 mod objective;
+mod occupancy_probe;
 mod recorder;
 pub(super) mod shared_layer;
+
+pub(super) use occupancy_probe::probe_candidate_collision_occupancy;
 
 use extract::extract_report;
 use fixation::post_research_fixation;

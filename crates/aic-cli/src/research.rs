@@ -28,6 +28,7 @@ mod external_connectors;
 mod factored_networks;
 mod first_phase;
 mod pair_cliff;
+mod physical_occupancy;
 mod requirement_cliff;
 mod shared_layer;
 
@@ -313,6 +314,28 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
     },
+    /// Measure root propagation through facility and transport occupancy constraints.
+    ProbePhysicalOccupancy {
+        /// Validated facility catalog JSON file.
+        #[arg(long, value_name = "FILE")]
+        facility_catalog: PathBuf,
+
+        /// Stable ID of the 5 by 5 facility used by the controlled probe.
+        #[arg(long, value_name = "ID")]
+        facility_id: String,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// JSON artifact path.
+        #[arg(long, value_name = "FILE")]
+        output: PathBuf,
+
+        /// Self-contained HTML comparison path.
+        #[arg(long, value_name = "FILE")]
+        visualization_output: PathBuf,
+    },
 }
 
 pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
@@ -468,6 +491,19 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             network_index,
             case_time_limit_ms,
             output_dir,
+        ),
+        ResearchCommand::ProbePhysicalOccupancy {
+            facility_catalog,
+            facility_id,
+            placement_request,
+            output,
+            visualization_output,
+        } => physical_occupancy::run(
+            facility_catalog,
+            facility_id,
+            placement_request,
+            output,
+            visualization_output,
         ),
     }
 }

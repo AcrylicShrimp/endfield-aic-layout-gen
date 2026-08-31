@@ -1,0 +1,383 @@
+{
+  "schema_version": 1,
+  "encoding": "candidate-collision",
+  "facility_id": "xiranite-oven-1-mode-gasliquid",
+  "request_bounds": {
+    "max_width": 12,
+    "max_height": 12
+  },
+  "target_cell": [
+    6,
+    6
+  ],
+  "same_footprint_origin": [
+    2,
+    2
+  ],
+  "non_covering_origin": [
+    0,
+    0
+  ],
+  "candidate_count": 256,
+  "analytically_target_covering_candidates": 100,
+  "collision_rows": 288,
+  "collision_terms": 13088,
+  "cases": [
+    {
+      "restriction": "none",
+      "before": {
+        "supported_placement_candidates": 256,
+        "fixed_false_placement_candidates": 0,
+        "fixed_true_placement_candidates": 0,
+        "supported_placement_choice_values": 256,
+        "distinct_x_values": 8,
+        "distinct_y_values": 8,
+        "distinct_rotation_values": 4,
+        "belt_cells_fixed_true": 0,
+        "belt_cells_fixed_false": 0,
+        "belt_cells_free": 144,
+        "pipe_cells_fixed_true": 0,
+        "pipe_cells_fixed_false": 0,
+        "pipe_cells_free": 144,
+        "target_belt_domain": [
+          0,
+          1
+        ],
+        "target_pipe_domain": [
+          0,
+          1
+        ]
+      },
+      "after": {
+        "supported_placement_candidates": 256,
+        "fixed_false_placement_candidates": 0,
+        "fixed_true_placement_candidates": 0,
+        "supported_placement_choice_values": 256,
+        "distinct_x_values": 8,
+        "distinct_y_values": 8,
+        "distinct_rotation_values": 4,
+        "belt_cells_fixed_true": 0,
+        "belt_cells_fixed_false": 0,
+        "belt_cells_free": 144,
+        "pipe_cells_fixed_true": 0,
+        "pipe_cells_fixed_false": 0,
+        "pipe_cells_free": 144,
+        "target_belt_domain": [
+          0,
+          1
+        ],
+        "target_pipe_domain": [
+          0,
+          1
+        ]
+      },
+      "removed_target_covering_candidates": 0,
+      "removed_non_covering_candidates": 0,
+      "newly_forbidden_belt_cells_inside_selected_footprint": 0,
+      "newly_forbidden_pipe_cells_inside_selected_footprint": 0,
+      "changed_collision_rows": 0,
+      "fully_decided_collision_rows": 0,
+      "incident_collision_rows": 0,
+      "incident_collision_terms": 0,
+      "propagation_time_us": 37,
+      "inconsistent": false,
+      "verdict": "base root fixed point"
+    },
+    {
+      "restriction": "belt-used",
+      "before": {
+        "supported_placement_candidates": 256,
+        "fixed_false_placement_candidates": 0,
+        "fixed_true_placement_candidates": 0,
+        "supported_placement_choice_values": 256,
+        "distinct_x_values": 8,
+        "distinct_y_values": 8,
+        "distinct_rotation_values": 4,
+        "belt_cells_fixed_true": 0,
+        "belt_cells_fixed_false": 0,
+        "belt_cells_free": 144,
+        "pipe_cells_fixed_true": 0,
+        "pipe_cells_fixed_false": 0,
+        "pipe_cells_free": 144,
+        "target_belt_domain": [
+          0,
+          1
+        ],
+        "target_pipe_domain": [
+          0,
+          1
+        ]
+      },
+      "after": {
+        "supported_placement_candidates": 156,
+        "fixed_false_placement_candidates": 100,
+        "fixed_true_placement_candidates": 0,
+        "supported_placement_choice_values": 256,
+        "distinct_x_values": 8,
+        "distinct_y_values": 8,
+        "distinct_rotation_values": 4,
+        "belt_cells_fixed_true": 1,
+        "belt_cells_fixed_false": 0,
+        "belt_cells_free": 143,
+        "pipe_cells_fixed_true": 0,
+        "pipe_cells_fixed_false": 0,
+        "pipe_cells_free": 144,
+        "target_belt_domain": [
+          1
+        ],
+        "target_pipe_domain": [
+          0,
+          1
+        ]
+      },
+      "removed_target_covering_candidates": 100,
+      "removed_non_covering_candidates": 0,
+      "newly_forbidden_belt_cells_inside_selected_footprint": 0,
+      "newly_forbidden_pipe_cells_inside_selected_footprint": 0,
+      "changed_collision_rows": 162,
+      "fully_decided_collision_rows": 1,
+      "incident_collision_rows": 1,
+      "incident_collision_terms": 101,
+      "propagation_time_us": 140,
+      "inconsistent": false,
+      "verdict": "strong transport-to-placement propagation"
+    },
+    {
+      "restriction": "pipe-used",
+      "before": {
+        "supported_placement_candidates": 256,
+        "fixed_false_placement_candidates": 0,
+        "fixed_true_placement_candidates": 0,
+        "supported_placement_choice_values": 256,
+        "distinct_x_values": 8,
+        "distinct_y_values": 8,
+        "distinct_rotation_values": 4,
+        "belt_cells_fixed_true": 0,
+        "belt_cells_fixed_false": 0,
+        "belt_cells_free": 144,
+        "pipe_cells_fixed_true": 0,
+        "pipe_cells_fixed_false": 0,
+        "pipe_cells_free": 144,
+        "target_belt_domain": [
+          0,
+          1
+        ],
+        "target_pipe_domain": [
+          0,
+          1
+        ]
+      },
+      "after": {
+        "supported_placement_candidates": 156,
+        "fixed_false_placement_candidates": 100,
+        "fixed_true_placement_candidates": 0,
+        "supported_placement_choice_values": 256,
+        "distinct_x_values": 8,
+        "distinct_y_values": 8,
+        "distinct_rotation_values": 4,
+        "belt_cells_fixed_true": 0,
+        "belt_cells_fixed_false": 0,
+        "belt_cells_free": 144,
+        "pipe_cells_fixed_true": 1,
+        "pipe_cells_fixed_false": 0,
+        "pipe_cells_free": 143,
+        "target_belt_domain": [
+          0,
+          1
+        ],
+        "target_pipe_domain": [
+          1
+        ]
+      },
+      "removed_target_covering_candidates": 100,
+      "removed_non_covering_candidates": 0,
+      "newly_forbidden_belt_cells_inside_selected_footprint": 0,
+      "newly_forbidden_pipe_cells_inside_selected_footprint": 0,
+      "changed_collision_rows": 162,
+      "fully_decided_collision_rows": 1,
+      "incident_collision_rows": 1,
+      "incident_collision_terms": 101,
+      "propagation_time_us": 110,
+      "inconsistent": false,
+      "verdict": "strong transport-to-placement propagation"
+    },
+    {
+      "restriction": "exact-placement",
+      "before": {
+        "supported_placement_candidates": 256,
+        "fixed_false_placement_candidates": 0,
+        "fixed_true_placement_candidates": 0,
+        "supported_placement_choice_values": 256,
+        "distinct_x_values": 8,
+        "distinct_y_values": 8,
+        "distinct_rotation_values": 4,
+        "belt_cells_fixed_true": 0,
+        "belt_cells_fixed_false": 0,
+        "belt_cells_free": 144,
+        "pipe_cells_fixed_true": 0,
+        "pipe_cells_fixed_false": 0,
+        "pipe_cells_free": 144,
+        "target_belt_domain": [
+          0,
+          1
+        ],
+        "target_pipe_domain": [
+          0,
+          1
+        ]
+      },
+      "after": {
+        "supported_placement_candidates": 1,
+        "fixed_false_placement_candidates": 255,
+        "fixed_true_placement_candidates": 1,
+        "supported_placement_choice_values": 1,
+        "distinct_x_values": 1,
+        "distinct_y_values": 1,
+        "distinct_rotation_values": 1,
+        "belt_cells_fixed_true": 0,
+        "belt_cells_fixed_false": 25,
+        "belt_cells_free": 119,
+        "pipe_cells_fixed_true": 0,
+        "pipe_cells_fixed_false": 25,
+        "pipe_cells_free": 119,
+        "target_belt_domain": [
+          0
+        ],
+        "target_pipe_domain": [
+          0
+        ]
+      },
+      "removed_target_covering_candidates": 99,
+      "removed_non_covering_candidates": 156,
+      "newly_forbidden_belt_cells_inside_selected_footprint": 25,
+      "newly_forbidden_pipe_cells_inside_selected_footprint": 25,
+      "changed_collision_rows": 288,
+      "fully_decided_collision_rows": 50,
+      "incident_collision_rows": 50,
+      "incident_collision_terms": 3922,
+      "propagation_time_us": 455,
+      "inconsistent": false,
+      "verdict": "strong exact-placement-to-transport propagation"
+    },
+    {
+      "restriction": "same-footprint-domain",
+      "before": {
+        "supported_placement_candidates": 256,
+        "fixed_false_placement_candidates": 0,
+        "fixed_true_placement_candidates": 0,
+        "supported_placement_choice_values": 256,
+        "distinct_x_values": 8,
+        "distinct_y_values": 8,
+        "distinct_rotation_values": 4,
+        "belt_cells_fixed_true": 0,
+        "belt_cells_fixed_false": 0,
+        "belt_cells_free": 144,
+        "pipe_cells_fixed_true": 0,
+        "pipe_cells_fixed_false": 0,
+        "pipe_cells_free": 144,
+        "target_belt_domain": [
+          0,
+          1
+        ],
+        "target_pipe_domain": [
+          0,
+          1
+        ]
+      },
+      "after": {
+        "supported_placement_candidates": 4,
+        "fixed_false_placement_candidates": 252,
+        "fixed_true_placement_candidates": 0,
+        "supported_placement_choice_values": 256,
+        "distinct_x_values": 1,
+        "distinct_y_values": 1,
+        "distinct_rotation_values": 4,
+        "belt_cells_fixed_true": 0,
+        "belt_cells_fixed_false": 0,
+        "belt_cells_free": 144,
+        "pipe_cells_fixed_true": 0,
+        "pipe_cells_fixed_false": 0,
+        "pipe_cells_free": 144,
+        "target_belt_domain": [
+          0,
+          1
+        ],
+        "target_pipe_domain": [
+          0,
+          1
+        ]
+      },
+      "removed_target_covering_candidates": 96,
+      "removed_non_covering_candidates": 156,
+      "newly_forbidden_belt_cells_inside_selected_footprint": 0,
+      "newly_forbidden_pipe_cells_inside_selected_footprint": 0,
+      "changed_collision_rows": 288,
+      "fully_decided_collision_rows": 0,
+      "incident_collision_rows": 50,
+      "incident_collision_terms": 3922,
+      "propagation_time_us": 69,
+      "inconsistent": false,
+      "verdict": "partial placement domain does not propagate mandatory occupancy"
+    },
+    {
+      "restriction": "non-covering-control",
+      "before": {
+        "supported_placement_candidates": 256,
+        "fixed_false_placement_candidates": 0,
+        "fixed_true_placement_candidates": 0,
+        "supported_placement_choice_values": 256,
+        "distinct_x_values": 8,
+        "distinct_y_values": 8,
+        "distinct_rotation_values": 4,
+        "belt_cells_fixed_true": 0,
+        "belt_cells_fixed_false": 0,
+        "belt_cells_free": 144,
+        "pipe_cells_fixed_true": 0,
+        "pipe_cells_fixed_false": 0,
+        "pipe_cells_free": 144,
+        "target_belt_domain": [
+          0,
+          1
+        ],
+        "target_pipe_domain": [
+          0,
+          1
+        ]
+      },
+      "after": {
+        "supported_placement_candidates": 4,
+        "fixed_false_placement_candidates": 252,
+        "fixed_true_placement_candidates": 0,
+        "supported_placement_choice_values": 256,
+        "distinct_x_values": 1,
+        "distinct_y_values": 1,
+        "distinct_rotation_values": 4,
+        "belt_cells_fixed_true": 0,
+        "belt_cells_fixed_false": 0,
+        "belt_cells_free": 144,
+        "pipe_cells_fixed_true": 0,
+        "pipe_cells_fixed_false": 0,
+        "pipe_cells_free": 144,
+        "target_belt_domain": [
+          0,
+          1
+        ],
+        "target_pipe_domain": [
+          0,
+          1
+        ]
+      },
+      "removed_target_covering_candidates": 100,
+      "removed_non_covering_candidates": 152,
+      "newly_forbidden_belt_cells_inside_selected_footprint": 0,
+      "newly_forbidden_pipe_cells_inside_selected_footprint": 0,
+      "changed_collision_rows": 286,
+      "fully_decided_collision_rows": 0,
+      "incident_collision_rows": 50,
+      "incident_collision_terms": 3922,
+      "propagation_time_us": 57,
+      "inconsistent": false,
+      "verdict": "control target remains available"
+    }
+  ]
+}

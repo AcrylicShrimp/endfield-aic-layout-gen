@@ -22,8 +22,129 @@ pub const FACTORED_REQUIREMENT_DECOMPOSITION_SCHEMA_VERSION: u32 = 1;
 pub const EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION: u32 = 1;
 pub const EXTERNAL_CONNECTOR_PORT_DOMAIN_SCHEMA_VERSION: u32 = 1;
 pub const CUMULATIVE_SCC_GROWTH_SCHEMA_VERSION: u32 = 1;
+pub const PHYSICAL_OCCUPANCY_PROBE_SCHEMA_VERSION: u32 = 1;
 
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum PhysicalOccupancyEncoding {
+    CandidateCollision,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum PhysicalOccupancyRestriction {
+    None,
+    BeltUsed,
+    PipeUsed,
+    ExactPlacement,
+    SameFootprintDomain,
+    NonCoveringControl,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct PhysicalOccupancyDomainSnapshot {
+    pub supported_placement_candidates: usize,
+    pub fixed_false_placement_candidates: usize,
+    pub fixed_true_placement_candidates: usize,
+    pub supported_placement_choice_values: usize,
+    pub distinct_x_values: usize,
+    pub distinct_y_values: usize,
+    pub distinct_rotation_values: usize,
+    pub belt_cells_fixed_true: usize,
+    pub belt_cells_fixed_false: usize,
+    pub belt_cells_free: usize,
+    pub pipe_cells_fixed_true: usize,
+    pub pipe_cells_fixed_false: usize,
+    pub pipe_cells_free: usize,
+    pub target_belt_domain: Vec<i32>,
+    pub target_pipe_domain: Vec<i32>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct PhysicalOccupancyCaseReport {
+    pub restriction: PhysicalOccupancyRestriction,
+    pub before: PhysicalOccupancyDomainSnapshot,
+    pub after: PhysicalOccupancyDomainSnapshot,
+    pub removed_target_covering_candidates: usize,
+    pub removed_non_covering_candidates: usize,
+    pub newly_forbidden_belt_cells_inside_selected_footprint: usize,
+    pub newly_forbidden_pipe_cells_inside_selected_footprint: usize,
+    pub changed_collision_rows: usize,
+    pub fully_decided_collision_rows: usize,
+    pub incident_collision_rows: usize,
+    pub incident_collision_terms: usize,
+    pub propagation_time_us: u64,
+    pub inconsistent: bool,
+    pub verdict: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct PhysicalOccupancyProbeReport {
+    pub schema_version: u32,
+    pub encoding: PhysicalOccupancyEncoding,
+    pub facility_id: String,
+    pub request_bounds: crate::research::BenchmarkRequestBounds,
+    pub target_cell: [i32; 2],
+    pub same_footprint_origin: [i32; 2],
+    pub non_covering_origin: [i32; 2],
+    pub candidate_count: usize,
+    pub analytically_target_covering_candidates: usize,
+    pub collision_rows: usize,
+    pub collision_terms: usize,
+    pub cases: Vec<PhysicalOccupancyCaseReport>,
+}
+
+pub fn run_physical_occupancy_probe(
+    facilities: &ValidatedFacilityCatalog,
+    facility_id: &str,
+    request: &FacilityPlacementRequest,
+) -> Result<PhysicalOccupancyProbeReport, String> {
+    let diagnostics = crate::layouts::validate_facility_placement_request(request);
+    if let Some(diagnostic) = diagnostics.first() {
+        return Err(format!("{}: {}", diagnostic.code, diagnostic.message));
+    }
+    let facility = facilities
+        .facility(facility_id)
+        .ok_or_else(|| format!("facility '{facility_id}' is absent from the facility catalog"))?;
+    exact::probe_candidate_collision_occupancy(facility, request)
+}
+
+pub fn render_physical_occupancy_probe_html(
+    report: &PhysicalOccupancyProbeReport,
+) -> Result<String, serde_json::Error> {
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    let rows = report
+        .cases
+        .iter()
+        .map(|case| {
+            format!(
+                "<tr><td>{:?}</td><td>{}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
+                case.restriction,
+                case.removed_target_covering_candidates,
+                case.removed_non_covering_candidates,
+                case.after.target_belt_domain,
+                case.after.target_pipe_domain,
+                case.newly_forbidden_belt_cells_inside_selected_footprint,
+                case.newly_forbidden_pipe_cells_inside_selected_footprint,
+                case.propagation_time_us,
+                case.verdict,
+            )
+        })
+        .collect::<String>();
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Physical occupancy propagation probe</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:8px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}code{{color:#ffd166}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Physical occupancy propagation probe</h1><div class="meta">encoding=<code>{:?}</code> · facility=<code>{}</code> · bounds={}×{} · candidates={} · target-covering={}</div><table><thead><tr><th>restriction</th><th>covering candidates removed</th><th>other candidates removed</th><th>target belt</th><th>target pipe</th><th>belt footprint cells newly forbidden</th><th>pipe footprint cells newly forbidden</th><th>root μs</th><th>verdict</th></tr></thead><tbody>{}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        report.encoding,
+        report.facility_id,
+        report.request_bounds.max_width,
+        report.request_bounds.max_height,
+        report.candidate_count,
+        report.analytically_target_covering_candidates,
+        rows,
+        json,
+    ))
+}
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct CumulativeSccGrowthReport {
