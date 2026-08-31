@@ -6,6 +6,9 @@ license.workspace = true
 rust-version.workspace = true
 publish = false
 
+[features]
+pumpkin-debug-checks = ["pumpkin-solver/debug-checks"]
+
 [dependencies]
 crossbeam-channel.workspace = true
 pumpkin-solver.workspace = true

@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
@@ -16,6 +16,7 @@ use pumpkin_solver::core::variables::DomainId;
 use super::connectivity_propagator::{PossibleRouteArc, PossibleTerminalOption};
 
 declare_inference_label!(TerminalGridSupport);
+declare_inference_label!(UniqueSupportChain);
 
 #[derive(Debug, Default)]
 pub(super) struct LayerGridAnalyzerCounters {
@@ -109,10 +110,17 @@ impl LayerGridAnalyzerCounters {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum LayerGridAnalyzerMode {
+pub(super) enum LayerGridRule {
     Observe,
     ForceTerminalSupport,
     ForceUniqueSupportChain,
+    ForceUniqueSupportChainSelectiveWake,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum UniqueSupportChainWakeMode {
+    AnyDomainEvent,
+    SupportLossEvents,
 }
 
 #[derive(Clone, Debug)]
@@ -123,17 +131,16 @@ pub(super) struct LayerGridMaterial {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct LayerGridAnalyzerArgs {
+pub(super) struct LayerGridRuleArgs {
     pub name: String,
     pub cell_count: usize,
     pub arcs: Vec<PossibleRouteArc>,
     pub materials: Vec<LayerGridMaterial>,
     pub counters: Arc<LayerGridAnalyzerCounters>,
-    pub mode: LayerGridAnalyzerMode,
     pub constraint_tag: ConstraintTag,
 }
 
-impl LayerGridAnalyzerArgs {
+impl LayerGridRuleArgs {
     pub(super) fn variables(&self) -> impl Iterator<Item = DomainId> + '_ {
         self.arcs
             .iter()
@@ -180,70 +187,188 @@ impl LayerGridAnalyzerArgs {
     }
 }
 
-impl PropagatorConstructor for LayerGridAnalyzerArgs {
-    type PropagatorImpl = LayerGridAnalyzer;
+fn registration(
+    counters: &LayerGridAnalyzerCounters,
+    registrations: Vec<(DomainId, DomainEvents)>,
+) -> EventsToRegister {
+    counters.registered_domain_variables.fetch_add(
+        registrations.len().try_into().unwrap_or(u64::MAX),
+        Ordering::Relaxed,
+    );
+    let mut registrations = registrations.into_iter();
+    let (first, events) = registrations
+        .next()
+        .expect("a layer grid rule has terminals or arcs");
+    let mut result = EventsToRegister::builder()
+        .add(&first, events, LocalId::from(0))
+        .build();
+    for (index, (variable, events)) in registrations.enumerate() {
+        result.add(
+            &variable,
+            events,
+            LocalId::from(u32::try_from(index + 1).expect("grid rule variable count fits u32")),
+        );
+    }
+    result
+}
+
+fn broad_registration(args: &LayerGridRuleArgs) -> EventsToRegister {
+    registration(
+        &args.counters,
+        args.variables()
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .map(|variable| (variable, DomainEvents::ANY_INT))
+            .collect(),
+    )
+}
+
+fn terminal_registration(args: &LayerGridRuleArgs) -> EventsToRegister {
+    registration(
+        &args.counters,
+        args.terminal_support_variables()
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .map(|variable| (variable, DomainEvents::ANY_INT))
+            .collect(),
+    )
+}
+
+#[derive(Default)]
+struct WakeFlags {
+    any: bool,
+    lower: bool,
+    upper: bool,
+}
+
+fn support_loss_registration(args: &LayerGridRuleArgs) -> EventsToRegister {
+    let mut variables = BTreeMap::<DomainId, WakeFlags>::new();
+    for arc in &args.arcs {
+        variables.entry(arc.selected).or_default().upper = true;
+        variables.entry(arc.from_item).or_default().any = true;
+        variables.entry(arc.to_item).or_default().any = true;
+    }
+    for material in &args.materials {
+        for supply in &material.supplies {
+            variables.entry(supply.selected).or_default().upper = true;
+        }
+        for demand in &material.demands {
+            variables.entry(demand.selected).or_default().lower = true;
+        }
+    }
+    registration(
+        &args.counters,
+        variables
+            .into_iter()
+            .map(|(variable, flags)| {
+                let events = if flags.any {
+                    DomainEvents::ANY_INT
+                } else if flags.lower && flags.upper {
+                    DomainEvents::BOUNDS
+                } else if flags.lower {
+                    DomainEvents::LOWER_BOUND
+                } else {
+                    DomainEvents::UPPER_BOUND
+                };
+                (variable, events)
+            })
+            .collect(),
+    )
+}
+
+fn rule_state(args: LayerGridRuleArgs, inference_code: InferenceCode) -> LayerGridRuleState {
+    let mut outgoing_arc_indices = vec![Vec::new(); args.cell_count];
+    let mut incoming_arc_indices = vec![Vec::new(); args.cell_count];
+    for (index, arc) in args.arcs.iter().enumerate() {
+        outgoing_arc_indices[arc.from].push(index);
+        incoming_arc_indices[arc.to].push(index);
+    }
+    LayerGridRuleState {
+        name: args.name,
+        cell_count: args.cell_count,
+        arcs: args.arcs,
+        outgoing_arc_indices,
+        incoming_arc_indices,
+        materials: args.materials,
+        counters: args.counters,
+        inference_code,
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct LayerGridOpportunityAnalyzerArgs(pub LayerGridRuleArgs);
+
+impl PropagatorConstructor for LayerGridOpportunityAnalyzerArgs {
+    type PropagatorImpl = LayerGridOpportunityAnalyzer;
 
     fn create(
         self,
         _context: PropagatorConstructorContext,
     ) -> PropagatorSpec<Self::PropagatorImpl> {
-        let variables = match self.mode {
-            LayerGridAnalyzerMode::Observe => self.variables().collect::<BTreeSet<_>>(),
-            LayerGridAnalyzerMode::ForceTerminalSupport => {
-                self.terminal_support_variables().collect::<BTreeSet<_>>()
-            }
-            LayerGridAnalyzerMode::ForceUniqueSupportChain => {
-                self.variables().collect::<BTreeSet<_>>()
-            }
-        };
-        self.counters.registered_domain_variables.fetch_add(
-            variables.len().try_into().unwrap_or(u64::MAX),
-            Ordering::Relaxed,
-        );
-        let mut variables = variables.into_iter();
-        let first = variables
-            .next()
-            .expect("a layer grid analyzer has terminals or arcs");
-        let mut registration = EventsToRegister::builder()
-            .add(&first, DomainEvents::ANY_INT, LocalId::from(0))
-            .build();
-        for (index, variable) in variables.enumerate() {
-            registration.add(
-                &variable,
-                DomainEvents::ANY_INT,
-                LocalId::from(
-                    u32::try_from(index + 1).expect("grid analyzer variable count fits u32"),
-                ),
-            );
-        }
-
-        let mut outgoing_arc_indices = vec![Vec::new(); self.cell_count];
-        let mut incoming_arc_indices = vec![Vec::new(); self.cell_count];
-        for (index, arc) in self.arcs.iter().enumerate() {
-            outgoing_arc_indices[arc.from].push(index);
-            incoming_arc_indices[arc.to].push(index);
-        }
-
+        let registration = broad_registration(&self.0);
+        let tag = self.0.constraint_tag;
         PropagatorSpec {
             registration,
             checkers: RuntimeCheckers::empty(),
-            propagator: LayerGridAnalyzer {
-                name: self.name,
-                cell_count: self.cell_count,
-                arcs: self.arcs,
-                outgoing_arc_indices,
-                incoming_arc_indices,
-                materials: self.materials,
-                counters: self.counters,
-                mode: self.mode,
-                inference_code: InferenceCode::new(self.constraint_tag, TerminalGridSupport),
+            propagator: LayerGridOpportunityAnalyzer {
+                state: rule_state(self.0, InferenceCode::new(tag, TerminalGridSupport)),
             },
         }
     }
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct LayerGridAnalyzer {
+pub(super) struct TerminalSupportGridPropagatorArgs(pub LayerGridRuleArgs);
+
+impl PropagatorConstructor for TerminalSupportGridPropagatorArgs {
+    type PropagatorImpl = TerminalSupportGridPropagator;
+
+    fn create(
+        self,
+        _context: PropagatorConstructorContext,
+    ) -> PropagatorSpec<Self::PropagatorImpl> {
+        let registration = terminal_registration(&self.0);
+        let tag = self.0.constraint_tag;
+        PropagatorSpec {
+            registration,
+            checkers: RuntimeCheckers::empty(),
+            propagator: TerminalSupportGridPropagator {
+                state: rule_state(self.0, InferenceCode::new(tag, TerminalGridSupport)),
+            },
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct UniqueSupportChainGridPropagatorArgs {
+    pub rule: LayerGridRuleArgs,
+    pub wake_mode: UniqueSupportChainWakeMode,
+}
+
+impl PropagatorConstructor for UniqueSupportChainGridPropagatorArgs {
+    type PropagatorImpl = UniqueSupportChainGridPropagator;
+
+    fn create(
+        self,
+        _context: PropagatorConstructorContext,
+    ) -> PropagatorSpec<Self::PropagatorImpl> {
+        let registration = match self.wake_mode {
+            UniqueSupportChainWakeMode::AnyDomainEvent => broad_registration(&self.rule),
+            UniqueSupportChainWakeMode::SupportLossEvents => support_loss_registration(&self.rule),
+        };
+        let tag = self.rule.constraint_tag;
+        PropagatorSpec {
+            registration,
+            checkers: RuntimeCheckers::empty(),
+            propagator: UniqueSupportChainGridPropagator {
+                state: rule_state(self.rule, InferenceCode::new(tag, UniqueSupportChain)),
+            },
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+struct LayerGridRuleState {
     name: String,
     cell_count: usize,
     arcs: Vec<PossibleRouteArc>,
@@ -251,11 +376,10 @@ pub(super) struct LayerGridAnalyzer {
     incoming_arc_indices: Vec<Vec<usize>>,
     materials: Vec<LayerGridMaterial>,
     counters: Arc<LayerGridAnalyzerCounters>,
-    mode: LayerGridAnalyzerMode,
     inference_code: InferenceCode,
 }
 
-impl LayerGridAnalyzer {
+impl LayerGridRuleState {
     fn arc_is_possible(context: &impl ReadDomains, arc: &PossibleRouteArc, item_code: i32) -> bool {
         context.contains(&arc.selected, 1)
             && context.contains(&arc.from_item, item_code)
@@ -721,9 +845,14 @@ impl LayerGridAnalyzer {
     }
 }
 
-impl Propagator for LayerGridAnalyzer {
+#[derive(Clone, Debug)]
+pub(super) struct LayerGridOpportunityAnalyzer {
+    state: LayerGridRuleState,
+}
+
+impl Propagator for LayerGridOpportunityAnalyzer {
     fn name(&self) -> &str {
-        &self.name
+        &self.state.name
     }
 
     fn priority(&self) -> Priority {
@@ -731,19 +860,66 @@ impl Propagator for LayerGridAnalyzer {
     }
 
     fn propagate_from_scratch(&self, mut context: PropagationContext) -> PropagationStatusCP {
-        self.counters.executions.fetch_add(1, Ordering::Relaxed);
-        for material in &self.materials {
-            match self.mode {
-                LayerGridAnalyzerMode::Observe => {
-                    self.analyze_material(&mut context, material)?;
-                }
-                LayerGridAnalyzerMode::ForceTerminalSupport => {
-                    self.propagate_terminal_support(&mut context, material)?;
-                }
-                LayerGridAnalyzerMode::ForceUniqueSupportChain => {
-                    self.propagate_unique_support_chain(&mut context, material)?;
-                }
-            }
+        self.state
+            .counters
+            .executions
+            .fetch_add(1, Ordering::Relaxed);
+        for material in &self.state.materials {
+            self.state.analyze_material(&mut context, material)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct TerminalSupportGridPropagator {
+    state: LayerGridRuleState,
+}
+
+impl Propagator for TerminalSupportGridPropagator {
+    fn name(&self) -> &str {
+        &self.state.name
+    }
+
+    fn priority(&self) -> Priority {
+        Priority::Low
+    }
+
+    fn propagate_from_scratch(&self, mut context: PropagationContext) -> PropagationStatusCP {
+        self.state
+            .counters
+            .executions
+            .fetch_add(1, Ordering::Relaxed);
+        for material in &self.state.materials {
+            self.state
+                .propagate_terminal_support(&mut context, material)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct UniqueSupportChainGridPropagator {
+    state: LayerGridRuleState,
+}
+
+impl Propagator for UniqueSupportChainGridPropagator {
+    fn name(&self) -> &str {
+        &self.state.name
+    }
+
+    fn priority(&self) -> Priority {
+        Priority::Low
+    }
+
+    fn propagate_from_scratch(&self, mut context: PropagationContext) -> PropagationStatusCP {
+        self.state
+            .counters
+            .executions
+            .fetch_add(1, Ordering::Relaxed);
+        for material in &self.state.materials {
+            self.state
+                .propagate_unique_support_chain(&mut context, material)?;
         }
         Ok(())
     }
@@ -766,7 +942,7 @@ mod tests {
         let demand = solver.new_bounded_integer(1, 1);
         let counters = Arc::new(LayerGridAnalyzerCounters::default());
         let tag = solver.new_constraint_tag();
-        let _ = solver.add_propagator(LayerGridAnalyzerArgs {
+        let _ = solver.add_propagator(LayerGridOpportunityAnalyzerArgs(LayerGridRuleArgs {
             name: "controlled-layer-grid".to_string(),
             cell_count: 3,
             arcs: vec![
@@ -797,9 +973,8 @@ mod tests {
                 }],
             }],
             counters: Arc::clone(&counters),
-            mode: LayerGridAnalyzerMode::Observe,
             constraint_tag: tag,
-        });
+        }));
 
         assert_eq!(
             solver.propagate_to_fixpoint(),
@@ -824,7 +999,7 @@ mod tests {
         let demand = solver.new_bounded_integer(1, 1);
         let counters = Arc::new(LayerGridAnalyzerCounters::default());
         let tag = solver.new_constraint_tag();
-        let _ = solver.add_propagator(LayerGridAnalyzerArgs {
+        let _ = solver.add_propagator(TerminalSupportGridPropagatorArgs(LayerGridRuleArgs {
             name: "controlled-terminal-grid-support".to_string(),
             cell_count: 3,
             arcs: vec![
@@ -855,9 +1030,8 @@ mod tests {
                 }],
             }],
             counters: Arc::clone(&counters),
-            mode: LayerGridAnalyzerMode::ForceTerminalSupport,
             constraint_tag: tag,
-        });
+        }));
 
         assert_eq!(
             solver.propagate_to_fixpoint(),
@@ -878,7 +1052,7 @@ mod tests {
         let demand = solver.new_bounded_integer(1, 1);
         let counters = Arc::new(LayerGridAnalyzerCounters::default());
         let tag = solver.new_constraint_tag();
-        let _ = solver.add_propagator(LayerGridAnalyzerArgs {
+        let _ = solver.add_propagator(TerminalSupportGridPropagatorArgs(LayerGridRuleArgs {
             name: "controlled-terminal-grid-alternative".to_string(),
             cell_count: 3,
             arcs: vec![
@@ -909,9 +1083,8 @@ mod tests {
                 }],
             }],
             counters: Arc::clone(&counters),
-            mode: LayerGridAnalyzerMode::ForceTerminalSupport,
             constraint_tag: tag,
-        });
+        }));
 
         assert_eq!(
             solver.propagate_to_fixpoint(),
@@ -932,39 +1105,41 @@ mod tests {
         let demand = solver.new_bounded_integer(1, 1);
         let counters = Arc::new(LayerGridAnalyzerCounters::default());
         let tag = solver.new_constraint_tag();
-        let _ = solver.add_propagator(LayerGridAnalyzerArgs {
-            name: "controlled-unique-support-chain".to_string(),
-            cell_count: 3,
-            arcs: vec![
-                PossibleRouteArc {
-                    from: 0,
-                    to: 1,
-                    selected: upstream,
-                    from_item: item,
-                    to_item: item,
-                },
-                PossibleRouteArc {
-                    from: 1,
-                    to: 2,
-                    selected: terminal,
-                    from_item: item,
-                    to_item: item,
-                },
-            ],
-            materials: vec![LayerGridMaterial {
-                item_code: 1,
-                supplies: vec![PossibleTerminalOption {
-                    cell: 0,
-                    selected: supply,
+        let _ = solver.add_propagator(UniqueSupportChainGridPropagatorArgs {
+            rule: LayerGridRuleArgs {
+                name: "controlled-unique-support-chain".to_string(),
+                cell_count: 3,
+                arcs: vec![
+                    PossibleRouteArc {
+                        from: 0,
+                        to: 1,
+                        selected: upstream,
+                        from_item: item,
+                        to_item: item,
+                    },
+                    PossibleRouteArc {
+                        from: 1,
+                        to: 2,
+                        selected: terminal,
+                        from_item: item,
+                        to_item: item,
+                    },
+                ],
+                materials: vec![LayerGridMaterial {
+                    item_code: 1,
+                    supplies: vec![PossibleTerminalOption {
+                        cell: 0,
+                        selected: supply,
+                    }],
+                    demands: vec![PossibleTerminalOption {
+                        cell: 2,
+                        selected: demand,
+                    }],
                 }],
-                demands: vec![PossibleTerminalOption {
-                    cell: 2,
-                    selected: demand,
-                }],
-            }],
-            counters: Arc::clone(&counters),
-            mode: LayerGridAnalyzerMode::ForceUniqueSupportChain,
-            constraint_tag: tag,
+                counters: Arc::clone(&counters),
+                constraint_tag: tag,
+            },
+            wake_mode: UniqueSupportChainWakeMode::AnyDomainEvent,
         });
 
         assert_eq!(
@@ -989,46 +1164,48 @@ mod tests {
         let demand = solver.new_bounded_integer(1, 1);
         let counters = Arc::new(LayerGridAnalyzerCounters::default());
         let tag = solver.new_constraint_tag();
-        let _ = solver.add_propagator(LayerGridAnalyzerArgs {
-            name: "controlled-unique-support-branch".to_string(),
-            cell_count: 4,
-            arcs: vec![
-                PossibleRouteArc {
-                    from: 0,
-                    to: 2,
-                    selected: first_upstream,
-                    from_item: item,
-                    to_item: item,
-                },
-                PossibleRouteArc {
-                    from: 1,
-                    to: 2,
-                    selected: second_upstream,
-                    from_item: item,
-                    to_item: item,
-                },
-                PossibleRouteArc {
-                    from: 2,
-                    to: 3,
-                    selected: terminal,
-                    from_item: item,
-                    to_item: item,
-                },
-            ],
-            materials: vec![LayerGridMaterial {
-                item_code: 1,
-                supplies: vec![PossibleTerminalOption {
-                    cell: 0,
-                    selected: supply,
+        let _ = solver.add_propagator(UniqueSupportChainGridPropagatorArgs {
+            rule: LayerGridRuleArgs {
+                name: "controlled-unique-support-branch".to_string(),
+                cell_count: 4,
+                arcs: vec![
+                    PossibleRouteArc {
+                        from: 0,
+                        to: 2,
+                        selected: first_upstream,
+                        from_item: item,
+                        to_item: item,
+                    },
+                    PossibleRouteArc {
+                        from: 1,
+                        to: 2,
+                        selected: second_upstream,
+                        from_item: item,
+                        to_item: item,
+                    },
+                    PossibleRouteArc {
+                        from: 2,
+                        to: 3,
+                        selected: terminal,
+                        from_item: item,
+                        to_item: item,
+                    },
+                ],
+                materials: vec![LayerGridMaterial {
+                    item_code: 1,
+                    supplies: vec![PossibleTerminalOption {
+                        cell: 0,
+                        selected: supply,
+                    }],
+                    demands: vec![PossibleTerminalOption {
+                        cell: 3,
+                        selected: demand,
+                    }],
                 }],
-                demands: vec![PossibleTerminalOption {
-                    cell: 3,
-                    selected: demand,
-                }],
-            }],
-            counters: Arc::clone(&counters),
-            mode: LayerGridAnalyzerMode::ForceUniqueSupportChain,
-            constraint_tag: tag,
+                counters: Arc::clone(&counters),
+                constraint_tag: tag,
+            },
+            wake_mode: UniqueSupportChainWakeMode::AnyDomainEvent,
         });
 
         assert_eq!(
@@ -1039,5 +1216,66 @@ mod tests {
         assert!(solver.contains(&first_upstream, 0));
         assert!(solver.contains(&second_upstream, 0));
         assert_eq!(counters.snapshot().maximum_unique_support_chain, 1);
+    }
+
+    #[test]
+    fn selective_chain_wakes_for_demand_selection_but_not_arc_selection() {
+        let mut solver = Solver::default();
+        let selected = solver.new_bounded_integer(0, 1);
+        let item = solver.new_bounded_integer(1, 1);
+        let supply = solver.new_bounded_integer(1, 1);
+        let demand = solver.new_bounded_integer(0, 1);
+        let counters = Arc::new(LayerGridAnalyzerCounters::default());
+        let tag = solver.new_constraint_tag();
+        let _ = solver.add_propagator(UniqueSupportChainGridPropagatorArgs {
+            rule: LayerGridRuleArgs {
+                name: "controlled-selective-chain-wakeup".to_string(),
+                cell_count: 2,
+                arcs: vec![PossibleRouteArc {
+                    from: 0,
+                    to: 1,
+                    selected,
+                    from_item: item,
+                    to_item: item,
+                }],
+                materials: vec![LayerGridMaterial {
+                    item_code: 1,
+                    supplies: vec![PossibleTerminalOption {
+                        cell: 0,
+                        selected: supply,
+                    }],
+                    demands: vec![PossibleTerminalOption {
+                        cell: 1,
+                        selected: demand,
+                    }],
+                }],
+                counters: Arc::clone(&counters),
+                constraint_tag: tag,
+            },
+            wake_mode: UniqueSupportChainWakeMode::SupportLossEvents,
+        });
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let initial_executions = counters.snapshot().executions;
+        solver.add_clause([selected.lower_bound_predicate(1)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let after_arc_selection = counters.snapshot().executions;
+        #[cfg(not(feature = "pumpkin-debug-checks"))]
+        assert_eq!(after_arc_selection, initial_executions);
+        #[cfg(feature = "pumpkin-debug-checks")]
+        assert!(after_arc_selection <= initial_executions + 1);
+
+        solver.add_clause([demand.lower_bound_predicate(1)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        assert!(counters.snapshot().executions > after_arc_selection);
     }
 }

@@ -25,8 +25,10 @@ use super::formulation::{
     rotate_direction,
 };
 use super::grid_analyzer::{
-    LayerGridAnalyzerArgs, LayerGridAnalyzerCounters, LayerGridAnalyzerMode,
-    LayerGridAnalyzerStatistics, LayerGridMaterial,
+    LayerGridAnalyzerCounters, LayerGridAnalyzerStatistics, LayerGridMaterial,
+    LayerGridOpportunityAnalyzerArgs, LayerGridRule, LayerGridRuleArgs,
+    TerminalSupportGridPropagatorArgs, UniqueSupportChainGridPropagatorArgs,
+    UniqueSupportChainWakeMode,
 };
 use super::metrics::{elapsed_millis, finish_report_with_formulation};
 use super::objective::{
@@ -89,7 +91,7 @@ enum ConnectivityMode {
         counters: SyncArc<PossibleRouteReachabilityCounters>,
         wake_mode: PossibleRouteReachabilityWakeMode,
         traversal_mode: PossibleRouteReachabilityTraversalMode,
-        grid_analyzer: Option<(SyncArc<LayerGridAnalyzerCounters>, LayerGridAnalyzerMode)>,
+        grid_analyzer: Option<(SyncArc<LayerGridAnalyzerCounters>, LayerGridRule)>,
     },
 }
 
@@ -771,10 +773,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
             counters: SyncArc::clone(&connectivity_counters),
             wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
             traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
-            grid_analyzer: Some((
-                SyncArc::clone(&grid_counters),
-                LayerGridAnalyzerMode::Observe,
-            )),
+            grid_analyzer: Some((SyncArc::clone(&grid_counters), LayerGridRule::Observe)),
         },
     );
     (
@@ -816,7 +815,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
             traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
             grid_analyzer: Some((
                 SyncArc::clone(&grid_counters),
-                LayerGridAnalyzerMode::ForceTerminalSupport,
+                LayerGridRule::ForceTerminalSupport,
             )),
         },
     );
@@ -859,7 +858,50 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
             traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
             grid_analyzer: Some((
                 SyncArc::clone(&grid_counters),
-                LayerGridAnalyzerMode::ForceUniqueSupportChain,
+                LayerGridRule::ForceUniqueSupportChain,
+            )),
+        },
+    );
+    (
+        report,
+        connectivity_counters.snapshot(),
+        grid_counters.snapshot(),
+    )
+}
+
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_reference_selective_unique_support_chain_grid_propagation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    reference: &IntegratedLayoutReport,
+) -> (
+    IntegratedLayoutReport,
+    PossibleRouteReachabilityStatistics,
+    LayerGridAnalyzerStatistics,
+) {
+    let connectivity_counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    let grid_counters = SyncArc::new(LayerGridAnalyzerCounters::default());
+    let report = solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        Some(reference),
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        None,
+        None,
+        Some(ReferenceAblationFixation::PlacementsAndAllTerminals),
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters: SyncArc::clone(&connectivity_counters),
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
+            grid_analyzer: Some((
+                SyncArc::clone(&grid_counters),
+                LayerGridRule::ForceUniqueSupportChainSelectiveWake,
             )),
         },
     );
@@ -1409,7 +1451,7 @@ fn solve_with_endpoint_encoding(
                 _,
                 _,
                 ConnectivityMode::PossibleGraphPropagator {
-                    grid_analyzer: Some((_, LayerGridAnalyzerMode::Observe)),
+                    grid_analyzer: Some((_, LayerGridRule::Observe)),
                     ..
                 },
             ) => "joint-shared-v4-layer-grid-opportunity-analysis",
@@ -1417,7 +1459,7 @@ fn solve_with_endpoint_encoding(
                 _,
                 _,
                 ConnectivityMode::PossibleGraphPropagator {
-                    grid_analyzer: Some((_, LayerGridAnalyzerMode::ForceTerminalSupport)),
+                    grid_analyzer: Some((_, LayerGridRule::ForceTerminalSupport)),
                     ..
                 },
             ) => "joint-shared-v4-terminal-support-grid-propagation",
@@ -1425,10 +1467,18 @@ fn solve_with_endpoint_encoding(
                 _,
                 _,
                 ConnectivityMode::PossibleGraphPropagator {
-                    grid_analyzer: Some((_, LayerGridAnalyzerMode::ForceUniqueSupportChain)),
+                    grid_analyzer: Some((_, LayerGridRule::ForceUniqueSupportChain)),
                     ..
                 },
             ) => "joint-shared-v4-unique-support-chain-grid-propagation",
+            (
+                _,
+                _,
+                ConnectivityMode::PossibleGraphPropagator {
+                    grid_analyzer: Some((_, LayerGridRule::ForceUniqueSupportChainSelectiveWake)),
+                    ..
+                },
+            ) => "joint-shared-v4-selective-unique-support-chain-grid-propagation",
             (
                 _,
                 _,
@@ -1954,7 +2004,7 @@ fn post_layer_grid_analyzer(
     layers: &[SharedLayer],
     terminals: &[Vec<SharedTerminal>],
     counters: SyncArc<LayerGridAnalyzerCounters>,
-    mode: LayerGridAnalyzerMode,
+    rule: LayerGridRule,
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) {
     for layer in layers {
@@ -1999,7 +2049,7 @@ fn post_layer_grid_analyzer(
                 }
             })
             .collect::<Vec<_>>();
-        let args = LayerGridAnalyzerArgs {
+        let args = LayerGridRuleArgs {
             name: format!(
                 "{}-layer-grid-opportunity-analyzer",
                 match layer.transport {
@@ -2011,11 +2061,37 @@ fn post_layer_grid_analyzer(
             arcs,
             materials,
             counters: SyncArc::clone(&counters),
-            mode,
             constraint_tag: tag,
         };
         solver.record_global_constraint(ConstraintFamily::GridAnalyzer, args.variables());
-        let _ = solver.solver_mut().add_propagator(args);
+        match rule {
+            LayerGridRule::Observe => {
+                let _ = solver
+                    .solver_mut()
+                    .add_propagator(LayerGridOpportunityAnalyzerArgs(args));
+            }
+            LayerGridRule::ForceTerminalSupport => {
+                let _ = solver
+                    .solver_mut()
+                    .add_propagator(TerminalSupportGridPropagatorArgs(args));
+            }
+            LayerGridRule::ForceUniqueSupportChain => {
+                let _ = solver
+                    .solver_mut()
+                    .add_propagator(UniqueSupportChainGridPropagatorArgs {
+                        rule: args,
+                        wake_mode: UniqueSupportChainWakeMode::AnyDomainEvent,
+                    });
+            }
+            LayerGridRule::ForceUniqueSupportChainSelectiveWake => {
+                let _ = solver
+                    .solver_mut()
+                    .add_propagator(UniqueSupportChainGridPropagatorArgs {
+                        rule: args,
+                        wake_mode: UniqueSupportChainWakeMode::SupportLossEvents,
+                    });
+            }
+        }
     }
 }
 

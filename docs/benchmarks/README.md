@@ -154,6 +154,13 @@ same exact rule through sole-predecessor route cells. It cuts another 2.6% of ba
 variant passes Pumpkin reason checking but is rejected as a runtime improvement; selective exact
 wakeup scheduling becomes the next implementation target.
 
+The forty-second checkpoint,
+`heavy-xiranite-minimum-rate.forty-second-semantic-grid-propagators-report.md`, separates passive
+analysis, terminal support, and recursive chain support into semantic-rule-specific Pumpkin
+propagators. A support-loss-only schedule preserves the chain's exact search tree but removes none
+of its 33,376 executions, so event masks are rejected as the next optimization boundary. Future
+work must maintain incremental watched state or add a stronger exact semantic rule.
+
 Regenerate it from a release binary with:
 
 ```bash
