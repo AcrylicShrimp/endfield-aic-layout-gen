@@ -81,6 +81,15 @@ The weakness is therefore operationally relevant but remains one part of the thr
 See
 `docs/benchmarks/heavy-xiranite-minimum-rate.fifty-sixth-guarded-positive-item-intersection-report.md`.
 
+The two bridge axes were then grouped under one active relation and perimeter bridge relations that
+are already logically impossible in the native exact model were omitted. At 16x16 this reduces the
+active structure from 2,944 to 2,312 relations and from 2,048 to 1,920 watched item domains. Three
+completed Phase 2 proofs retained identical decisions, backtracks, and conflicts while relation
+checks fell by approximately 19% and search time fell by 2.8% to 6.1%. The complete Phase 2 sweep
+still produced no feasible incumbent. This is a useful exact implementation reduction, not the
+cliff breaker. See
+`docs/benchmarks/heavy-xiranite-minimum-rate.fifty-seventh-grouped-guarded-item-intersection-report.md`.
+
 ## Confirmed endpoint weakness
 
 The current factored endpoint encoding creates one placement integer whose values are complete

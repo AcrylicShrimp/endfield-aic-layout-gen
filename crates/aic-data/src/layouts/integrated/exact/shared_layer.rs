@@ -27,7 +27,8 @@ use super::formulation::{
 use super::grid_analyzer::{
     DirtyMaterialUniqueSupportChainGridPropagatorArgs, GuardedItemEquality,
     GuardedItemEqualityKind, GuardedItemIntersectionObserverArgs,
-    GuardedPositiveItemIntersectionPropagatorArgs, LayerGridAnalyzerCounters,
+    GuardedPositiveItemIntersectionPropagatorArgs, GuardedPositiveItemPair,
+    GuardedPositiveItemRelation, GuardedPositiveItemRelationKind, LayerGridAnalyzerCounters,
     LayerGridAnalyzerStatistics, LayerGridMaterial, LayerGridOpportunityAnalyzerArgs,
     LayerGridRule, LayerGridRuleArgs, LocalPositiveFlowContinuationAnalyzerArgs,
     LocalPositiveFlowContinuationPropagatorArgs, TerminalSupportGridPropagatorArgs,
@@ -2542,6 +2543,72 @@ fn guarded_item_equalities(
     relations
 }
 
+fn guarded_positive_item_relations(
+    input: &ModelInput,
+    layer: &SharedLayer,
+    bridges: &[ModelBridge],
+) -> Vec<GuardedPositiveItemRelation> {
+    let maximum_item_code =
+        i32::try_from(layer.network_indices.len()).expect("shared layer item count fits i32");
+    let mut relations = layer
+        .arcs
+        .iter()
+        .map(|arc| {
+            let from_direction = direction_index(direction_between(arc.from, arc.to, input.width));
+            let to_direction = direction_index(direction_between(arc.to, arc.from, input.width));
+            GuardedPositiveItemRelation {
+                guard: arc.selected,
+                first: GuardedPositiveItemPair {
+                    left: layer.arm_items[arc.from][from_direction],
+                    right: layer.arm_items[arc.to][to_direction],
+                },
+                second: None,
+                maximum_item_code,
+                kind: GuardedPositiveItemRelationKind::RouteArc,
+            }
+        })
+        .collect::<Vec<_>>();
+    let width = usize::try_from(input.width).expect("validated width is positive");
+    let height = usize::try_from(input.height).expect("validated height is positive");
+    for bridge in bridges
+        .iter()
+        .filter(|bridge| bridge.transport == layer.transport)
+        .filter(|bridge| cell_has_four_neighbors(width, height, bridge.cell))
+    {
+        relations.push(GuardedPositiveItemRelation {
+            guard: bridge.selected,
+            first: GuardedPositiveItemPair {
+                left: layer.arm_items[bridge.cell][direction_index(CardinalDirection::West)],
+                right: layer.arm_items[bridge.cell][direction_index(CardinalDirection::East)],
+            },
+            second: Some(GuardedPositiveItemPair {
+                left: layer.arm_items[bridge.cell][direction_index(CardinalDirection::North)],
+                right: layer.arm_items[bridge.cell][direction_index(CardinalDirection::South)],
+            }),
+            maximum_item_code,
+            kind: GuardedPositiveItemRelationKind::Bridge,
+        });
+    }
+    relations
+}
+
+fn cell_has_four_neighbors(width: usize, height: usize, cell: usize) -> bool {
+    let x = cell % width;
+    let y = cell / width;
+    x > 0 && x + 1 < width && y > 0 && y + 1 < height
+}
+
+#[cfg(test)]
+#[test]
+fn only_interior_grid_cells_have_four_neighbors() {
+    assert!(!cell_has_four_neighbors(1, 1, 0));
+    assert!(!cell_has_four_neighbors(2, 2, 0));
+    assert!(!cell_has_four_neighbors(3, 3, 0));
+    assert!(!cell_has_four_neighbors(3, 3, 1));
+    assert!(cell_has_four_neighbors(3, 3, 4));
+    assert!(!cell_has_four_neighbors(3, 3, 8));
+}
+
 fn bridge_selection_by_cell(
     input: &ModelInput,
     layer: &SharedLayer,
@@ -2725,12 +2792,9 @@ fn post_layer_grid_analyzer(
             }
             LayerGridRule::ForceWatchedDemandUniqueSupportChainAndLocalContinuationWithGuardedIntersectionPropagation => {
                 let local_rule = args.clone();
-                let propagator = GuardedPositiveItemIntersectionPropagatorArgs {
-                    name: format!("{}-guarded-positive-item-intersection", args.name),
-                    relations: guarded_item_equalities(input, layer, bridges),
-                    counters: SyncArc::clone(&args.counters),
-                    constraint_tag: tag,
-                };
+                let guarded_relations = guarded_positive_item_relations(input, layer, bridges);
+                let guarded_counters = SyncArc::clone(&args.counters);
+                let guarded_name = format!("{}-guarded-positive-item-intersection", args.name);
                 let bridge_selected_by_cell = bridge_selection_by_cell(input, layer, bridges);
                 let _ = solver
                     .solver_mut()
@@ -2743,7 +2807,16 @@ fn post_layer_grid_analyzer(
                         },
                     ),
                 );
-                let _ = solver.solver_mut().add_propagator(propagator);
+                if !guarded_relations.is_empty() {
+                    let _ = solver.solver_mut().add_propagator(
+                        GuardedPositiveItemIntersectionPropagatorArgs {
+                            name: guarded_name,
+                            relations: guarded_relations,
+                            counters: guarded_counters,
+                            constraint_tag: tag,
+                        },
+                    );
+                }
             }
         }
     }

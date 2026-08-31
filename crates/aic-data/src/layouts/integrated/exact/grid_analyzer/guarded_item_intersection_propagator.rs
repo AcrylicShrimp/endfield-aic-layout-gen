@@ -13,14 +13,35 @@ use pumpkin_solver::core::propagation::{
 use pumpkin_solver::core::state::PropagationStatusCP;
 use pumpkin_solver::core::variables::DomainId;
 
-use super::{GuardedItemEquality, GuardedItemEqualityKind, LayerGridAnalyzerCounters};
+use super::LayerGridAnalyzerCounters;
 
 declare_inference_label!(GuardedPositiveItemIntersection);
+
+#[derive(Clone, Copy, Debug)]
+pub(in crate::layouts::integrated::exact) struct GuardedPositiveItemPair {
+    pub left: DomainId,
+    pub right: DomainId,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(in crate::layouts::integrated::exact) enum GuardedPositiveItemRelationKind {
+    RouteArc,
+    Bridge,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub(in crate::layouts::integrated::exact) struct GuardedPositiveItemRelation {
+    pub guard: DomainId,
+    pub first: GuardedPositiveItemPair,
+    pub second: Option<GuardedPositiveItemPair>,
+    pub maximum_item_code: i32,
+    pub kind: GuardedPositiveItemRelationKind,
+}
 
 #[derive(Clone, Debug)]
 pub(in crate::layouts::integrated::exact) struct GuardedPositiveItemIntersectionPropagatorArgs {
     pub name: String,
-    pub relations: Vec<GuardedItemEquality>,
+    pub relations: Vec<GuardedPositiveItemRelation>,
     pub counters: Arc<LayerGridAnalyzerCounters>,
     pub constraint_tag: pumpkin_solver::core::proof::ConstraintTag,
 }
@@ -34,7 +55,11 @@ impl PropagatorConstructor for GuardedPositiveItemIntersectionPropagatorArgs {
     ) -> PropagatorSpec<Self::PropagatorImpl> {
         let mut impacts = BTreeMap::<DomainId, BTreeSet<usize>>::new();
         for (relation_index, relation) in self.relations.iter().enumerate() {
-            for variable in [relation.left, relation.right] {
+            for variable in [Some(relation.first), relation.second]
+                .into_iter()
+                .flatten()
+                .flat_map(|pair| [pair.left, pair.right])
+            {
                 impacts.entry(variable).or_default().insert(relation_index);
             }
         }
@@ -91,7 +116,7 @@ impl PropagatorConstructor for GuardedPositiveItemIntersectionPropagatorArgs {
 #[derive(Clone, Debug)]
 pub(in crate::layouts::integrated::exact) struct GuardedPositiveItemIntersectionPropagator {
     name: String,
-    relations: Vec<GuardedItemEquality>,
+    relations: Vec<GuardedPositiveItemRelation>,
     counters: Arc<LayerGridAnalyzerCounters>,
     event_impacts: Vec<Vec<usize>>,
     dirty_relations: Vec<usize>,
@@ -103,19 +128,20 @@ impl GuardedPositiveItemIntersectionPropagator {
     fn disjoint_reason(
         &self,
         context: &impl ReadDomains,
-        relation: GuardedItemEquality,
+        pair: GuardedPositiveItemPair,
+        maximum_item_code: i32,
     ) -> Option<PropositionalConjunction> {
         let mut reason = PropositionalConjunction::default();
         let mut membership_checks = 0;
-        for item_code in 1..=relation.maximum_item_code {
+        for item_code in 1..=maximum_item_code {
             membership_checks += 1;
-            if !context.contains(&relation.left, item_code) {
-                reason.push(relation.left.disequality_predicate(item_code));
+            if !context.contains(&pair.left, item_code) {
+                reason.push(pair.left.disequality_predicate(item_code));
                 continue;
             }
             membership_checks += 1;
-            if !context.contains(&relation.right, item_code) {
-                reason.push(relation.right.disequality_predicate(item_code));
+            if !context.contains(&pair.right, item_code) {
+                reason.push(pair.right.disequality_predicate(item_code));
                 continue;
             }
             self.counters
@@ -153,7 +179,17 @@ impl GuardedPositiveItemIntersectionPropagator {
                     .fetch_add(1, Ordering::Relaxed);
             }
         }
-        let Some(reason) = self.disjoint_reason(context, relation) else {
+        let mut disjoint_reason = None;
+        for pair in [Some(relation.first), relation.second]
+            .into_iter()
+            .flatten()
+        {
+            if let Some(reason) = self.disjoint_reason(context, pair, relation.maximum_item_code) {
+                disjoint_reason = Some(reason);
+                break;
+            }
+        }
+        let Some(reason) = disjoint_reason else {
             self.counters
                 .guarded_intersection_supported_checks
                 .fetch_add(1, Ordering::Relaxed);
@@ -166,11 +202,11 @@ impl GuardedPositiveItemIntersectionPropagator {
             .guarded_intersection_forced_guard_rejections
             .fetch_add(1, Ordering::Relaxed);
         match relation.kind {
-            GuardedItemEqualityKind::RouteArc => self
+            GuardedPositiveItemRelationKind::RouteArc => self
                 .counters
                 .guarded_intersection_forced_route_arc_rejections
                 .fetch_add(1, Ordering::Relaxed),
-            GuardedItemEqualityKind::BridgeAxis => self
+            GuardedPositiveItemRelationKind::Bridge => self
                 .counters
                 .guarded_intersection_forced_bridge_rejections
                 .fetch_add(1, Ordering::Relaxed),
@@ -286,12 +322,35 @@ mod tests {
         let constraint_tag = solver.new_constraint_tag();
         let _ = solver.add_propagator(GuardedPositiveItemIntersectionPropagatorArgs {
             name: "test-active-guarded-item-intersection".to_string(),
-            relations: vec![GuardedItemEquality {
+            relations: vec![GuardedPositiveItemRelation {
                 guard,
-                left,
-                right,
+                first: GuardedPositiveItemPair { left, right },
+                second: None,
                 maximum_item_code,
-                kind: GuardedItemEqualityKind::RouteArc,
+                kind: GuardedPositiveItemRelationKind::RouteArc,
+            }],
+            counters,
+            constraint_tag,
+        });
+    }
+
+    fn add_bridge_propagator(
+        solver: &mut Solver,
+        guard: DomainId,
+        horizontal: GuardedPositiveItemPair,
+        vertical: GuardedPositiveItemPair,
+        maximum_item_code: i32,
+        counters: Arc<LayerGridAnalyzerCounters>,
+    ) {
+        let constraint_tag = solver.new_constraint_tag();
+        let _ = solver.add_propagator(GuardedPositiveItemIntersectionPropagatorArgs {
+            name: "test-active-guarded-bridge-item-intersection".to_string(),
+            relations: vec![GuardedPositiveItemRelation {
+                guard,
+                first: horizontal,
+                second: Some(vertical),
+                maximum_item_code,
+                kind: GuardedPositiveItemRelationKind::Bridge,
             }],
             counters,
             constraint_tag,
@@ -446,6 +505,207 @@ mod tests {
     }
 
     #[test]
+    fn bridge_with_positive_support_on_both_axes_preserves_the_guard() {
+        let mut solver = Solver::default();
+        let tag = solver.new_constraint_tag();
+        let guard = solver.new_named_bounded_integer(0, 1, "guard");
+        let west = solver.new_named_sparse_integer([0, 1, 2], "west");
+        let east = solver.new_named_sparse_integer([1, 3], "east");
+        let north = solver.new_named_sparse_integer([0, 2, 3], "north");
+        let south = solver.new_named_sparse_integer([2, 4], "south");
+        add_bridge_propagator(
+            &mut solver,
+            guard,
+            GuardedPositiveItemPair {
+                left: west,
+                right: east,
+            },
+            GuardedPositiveItemPair {
+                left: north,
+                right: south,
+            },
+            4,
+            Arc::new(LayerGridAnalyzerCounters::default()),
+        );
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let selected = solver.new_literal_for_predicate(guard.equality_predicate(1), tag);
+        assert_eq!(solver.get_literal_value(selected), None);
+    }
+
+    #[test]
+    fn bridge_with_a_disjoint_horizontal_axis_is_rejected() {
+        let mut solver = Solver::default();
+        let tag = solver.new_constraint_tag();
+        let guard = solver.new_named_bounded_integer(0, 1, "guard");
+        let west = solver.new_named_sparse_integer([0, 1], "west");
+        let east = solver.new_named_sparse_integer([0, 2], "east");
+        let north = solver.new_named_sparse_integer([0, 3], "north");
+        let south = solver.new_named_sparse_integer([0, 3], "south");
+        let rejected = solver.new_literal_for_predicate(guard.equality_predicate(0), tag);
+        add_bridge_propagator(
+            &mut solver,
+            guard,
+            GuardedPositiveItemPair {
+                left: west,
+                right: east,
+            },
+            GuardedPositiveItemPair {
+                left: north,
+                right: south,
+            },
+            3,
+            Arc::new(LayerGridAnalyzerCounters::default()),
+        );
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        assert_eq!(solver.get_literal_value(rejected), Some(true));
+    }
+
+    #[test]
+    fn bridge_with_a_disjoint_vertical_axis_is_rejected() {
+        let mut solver = Solver::default();
+        let tag = solver.new_constraint_tag();
+        let guard = solver.new_named_bounded_integer(0, 1, "guard");
+        let west = solver.new_named_sparse_integer([0, 1], "west");
+        let east = solver.new_named_sparse_integer([0, 1], "east");
+        let north = solver.new_named_sparse_integer([0, 2], "north");
+        let south = solver.new_named_sparse_integer([0, 3], "south");
+        let rejected = solver.new_literal_for_predicate(guard.equality_predicate(0), tag);
+        add_bridge_propagator(
+            &mut solver,
+            guard,
+            GuardedPositiveItemPair {
+                left: west,
+                right: east,
+            },
+            GuardedPositiveItemPair {
+                left: north,
+                right: south,
+            },
+            3,
+            Arc::new(LayerGridAnalyzerCounters::default()),
+        );
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        assert_eq!(solver.get_literal_value(rejected), Some(true));
+    }
+
+    #[test]
+    fn last_vertical_bridge_support_removal_wakes_and_rejects_the_guard() {
+        let mut solver = Solver::default();
+        let tag = solver.new_constraint_tag();
+        let guard = solver.new_named_bounded_integer(0, 1, "guard");
+        let west = solver.new_named_sparse_integer([0, 1], "west");
+        let east = solver.new_named_sparse_integer([0, 1], "east");
+        let north = solver.new_named_sparse_integer([0, 2, 3], "north");
+        let south = solver.new_named_sparse_integer([0, 2], "south");
+        let rejected = solver.new_literal_for_predicate(guard.equality_predicate(0), tag);
+        add_bridge_propagator(
+            &mut solver,
+            guard,
+            GuardedPositiveItemPair {
+                left: west,
+                right: east,
+            },
+            GuardedPositiveItemPair {
+                left: north,
+                right: south,
+            },
+            3,
+            Arc::new(LayerGridAnalyzerCounters::default()),
+        );
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+
+        solver.add_clause([north.disequality_predicate(2)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        assert_eq!(solver.get_literal_value(rejected), Some(true));
+    }
+
+    #[test]
+    fn last_horizontal_bridge_support_removal_wakes_and_rejects_the_guard() {
+        let mut solver = Solver::default();
+        let tag = solver.new_constraint_tag();
+        let guard = solver.new_named_bounded_integer(0, 1, "guard");
+        let west = solver.new_named_sparse_integer([0, 1, 2], "west");
+        let east = solver.new_named_sparse_integer([0, 2], "east");
+        let north = solver.new_named_sparse_integer([0, 3], "north");
+        let south = solver.new_named_sparse_integer([0, 3], "south");
+        let rejected = solver.new_literal_for_predicate(guard.equality_predicate(0), tag);
+        add_bridge_propagator(
+            &mut solver,
+            guard,
+            GuardedPositiveItemPair {
+                left: west,
+                right: east,
+            },
+            GuardedPositiveItemPair {
+                left: north,
+                right: south,
+            },
+            3,
+            Arc::new(LayerGridAnalyzerCounters::default()),
+        );
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+
+        solver.add_clause([west.disequality_predicate(2)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        assert_eq!(solver.get_literal_value(rejected), Some(true));
+    }
+
+    #[test]
+    fn selected_bridge_with_a_disjoint_axis_conflicts() {
+        let mut solver = Solver::default();
+        let tag = solver.new_constraint_tag();
+        let guard = solver.new_named_bounded_integer(0, 1, "guard");
+        let west = solver.new_named_sparse_integer([0, 1], "west");
+        let east = solver.new_named_sparse_integer([0, 1], "east");
+        let north = solver.new_named_sparse_integer([0, 2], "north");
+        let south = solver.new_named_sparse_integer([0, 3], "south");
+        solver.add_clause([guard.equality_predicate(1)], tag);
+        add_bridge_propagator(
+            &mut solver,
+            guard,
+            GuardedPositiveItemPair {
+                left: west,
+                right: east,
+            },
+            GuardedPositiveItemPair {
+                left: north,
+                right: south,
+            },
+            3,
+            Arc::new(LayerGridAnalyzerCounters::default()),
+        );
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Infeasible
+        );
+    }
+
+    #[test]
     fn conflict_backtracking_reenables_unprocessed_dirty_relations() {
         let mut solver = Solver::default();
         let tag = solver.new_constraint_tag();
@@ -459,19 +719,25 @@ mod tests {
         let _ = solver.add_propagator(GuardedPositiveItemIntersectionPropagatorArgs {
             name: "test-conflict-tail-restoration".to_string(),
             relations: vec![
-                GuardedItemEquality {
+                GuardedPositiveItemRelation {
                     guard: first_guard,
-                    left: shared,
-                    right: first_right,
+                    first: GuardedPositiveItemPair {
+                        left: shared,
+                        right: first_right,
+                    },
+                    second: None,
                     maximum_item_code: 3,
-                    kind: GuardedItemEqualityKind::RouteArc,
+                    kind: GuardedPositiveItemRelationKind::RouteArc,
                 },
-                GuardedItemEquality {
+                GuardedPositiveItemRelation {
                     guard: second_guard,
-                    left: shared,
-                    right: second_right,
+                    first: GuardedPositiveItemPair {
+                        left: shared,
+                        right: second_right,
+                    },
+                    second: None,
                     maximum_item_code: 3,
-                    kind: GuardedItemEqualityKind::RouteArc,
+                    kind: GuardedPositiveItemRelationKind::RouteArc,
                 },
             ],
             counters: Arc::new(LayerGridAnalyzerCounters::default()),

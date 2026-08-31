@@ -23,7 +23,10 @@ mod local_continuation_propagator;
 pub(super) use guarded_item_intersection::{
     GuardedItemEquality, GuardedItemEqualityKind, GuardedItemIntersectionObserverArgs,
 };
-pub(super) use guarded_item_intersection_propagator::GuardedPositiveItemIntersectionPropagatorArgs;
+pub(super) use guarded_item_intersection_propagator::{
+    GuardedPositiveItemIntersectionPropagatorArgs, GuardedPositiveItemPair,
+    GuardedPositiveItemRelation, GuardedPositiveItemRelationKind,
+};
 pub(super) use local_continuation::LocalPositiveFlowContinuationAnalyzerArgs;
 pub(super) use local_continuation_propagator::LocalPositiveFlowContinuationPropagatorArgs;
 
