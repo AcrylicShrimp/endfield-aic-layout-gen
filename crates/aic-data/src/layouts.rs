@@ -35,8 +35,9 @@ pub use integrated::{
     FacilityStatePartitionCaseReport, FactoredEndpointComparisonReport,
     FactoredNetworkDecompositionReport, FactoredNetworkSubsetCaseReport,
     FactoredRequirementDecompositionReport, FactoredRequirementSubsetCaseReport,
-    INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic, IntegratedLayoutPhase,
-    IntegratedLayoutReport, IntegratedLayoutStatus, LayerGridAnalyzerRuntime,
+    GuardedItemIntersectionObservation, INTEGRATED_LAYOUT_SCHEMA_VERSION,
+    IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutReport,
+    IntegratedLayoutStatus, LayerGridAnalyzerRuntime,
     PARALLEL_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION, PHASE2_REFERENCE_ABLATION_SCHEMA_VERSION,
     PHYSICAL_OCCUPANCY_PROBE_SCHEMA_VERSION, POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION,
     ParallelExactDimensionCaseReport, ParallelExactDimensionSweepReport, PartitionCaseModelScale,
@@ -82,6 +83,7 @@ pub use integrated::{
     solve_first_integrated_layout_phase_with_time_limit, solve_integrated_layout,
     solve_integrated_layout_with_time_limit, sweep_cumulative_integrated_layout_fixed_dimensions,
     sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation,
+    sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation_guarded_intersection_observation,
     sweep_first_integrated_layout_phase_fixed_dimensions,
 };
 pub use integrated::{

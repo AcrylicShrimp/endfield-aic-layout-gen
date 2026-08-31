@@ -15,9 +15,13 @@ use pumpkin_solver::core::variables::DomainId;
 
 use super::connectivity_propagator::{PossibleRouteArc, PossibleTerminalOption};
 
+mod guarded_item_intersection;
 mod local_continuation;
 mod local_continuation_propagator;
 
+pub(super) use guarded_item_intersection::{
+    GuardedItemEquality, GuardedItemEqualityKind, GuardedItemIntersectionObserverArgs,
+};
 pub(super) use local_continuation::LocalPositiveFlowContinuationAnalyzerArgs;
 pub(super) use local_continuation_propagator::LocalPositiveFlowContinuationPropagatorArgs;
 
@@ -67,6 +71,19 @@ pub(super) struct LayerGridAnalyzerCounters {
     local_active_forced_predicate_attempts: AtomicU64,
     local_active_conflicts: AtomicU64,
     local_active_maximum_reason_predicates: AtomicU64,
+    guarded_intersection_executions: AtomicU64,
+    guarded_intersection_notifications: AtomicU64,
+    guarded_intersection_relation_checks: AtomicU64,
+    guarded_intersection_unresolved_guard_checks: AtomicU64,
+    guarded_intersection_supported_checks: AtomicU64,
+    guarded_intersection_disjoint_checks: AtomicU64,
+    guarded_intersection_unique_disjoint_relations: AtomicU64,
+    guarded_intersection_unique_disjoint_route_arcs: AtomicU64,
+    guarded_intersection_unique_disjoint_bridge_axes: AtomicU64,
+    guarded_intersection_membership_checks: AtomicU64,
+    guarded_intersection_registered_relations: AtomicU64,
+    guarded_intersection_registered_domain_variables: AtomicU64,
+    guarded_intersection_maximum_dirty_relations: AtomicU64,
     distinct_support_arcs: Mutex<BTreeSet<(i32, DomainId)>>,
     distinct_unresolved_predicates: Mutex<BTreeSet<(DomainId, i32)>>,
     distinct_terminal_support_arcs: Mutex<BTreeSet<(i32, DomainId)>>,
@@ -124,6 +141,19 @@ pub(in crate::layouts::integrated) struct LayerGridAnalyzerStatistics {
     pub local_active_forced_predicate_attempts: u64,
     pub local_active_conflicts: u64,
     pub local_active_maximum_reason_predicates: u64,
+    pub guarded_intersection_executions: u64,
+    pub guarded_intersection_notifications: u64,
+    pub guarded_intersection_relation_checks: u64,
+    pub guarded_intersection_unresolved_guard_checks: u64,
+    pub guarded_intersection_supported_checks: u64,
+    pub guarded_intersection_disjoint_checks: u64,
+    pub guarded_intersection_unique_disjoint_relations: u64,
+    pub guarded_intersection_unique_disjoint_route_arcs: u64,
+    pub guarded_intersection_unique_disjoint_bridge_axes: u64,
+    pub guarded_intersection_membership_checks: u64,
+    pub guarded_intersection_registered_relations: u64,
+    pub guarded_intersection_registered_domain_variables: u64,
+    pub guarded_intersection_maximum_dirty_relations: u64,
 }
 
 impl LayerGridAnalyzerCounters {
@@ -238,6 +268,45 @@ impl LayerGridAnalyzerCounters {
             local_active_maximum_reason_predicates: self
                 .local_active_maximum_reason_predicates
                 .load(Ordering::Relaxed),
+            guarded_intersection_executions: self
+                .guarded_intersection_executions
+                .load(Ordering::Relaxed),
+            guarded_intersection_notifications: self
+                .guarded_intersection_notifications
+                .load(Ordering::Relaxed),
+            guarded_intersection_relation_checks: self
+                .guarded_intersection_relation_checks
+                .load(Ordering::Relaxed),
+            guarded_intersection_unresolved_guard_checks: self
+                .guarded_intersection_unresolved_guard_checks
+                .load(Ordering::Relaxed),
+            guarded_intersection_supported_checks: self
+                .guarded_intersection_supported_checks
+                .load(Ordering::Relaxed),
+            guarded_intersection_disjoint_checks: self
+                .guarded_intersection_disjoint_checks
+                .load(Ordering::Relaxed),
+            guarded_intersection_unique_disjoint_relations: self
+                .guarded_intersection_unique_disjoint_relations
+                .load(Ordering::Relaxed),
+            guarded_intersection_unique_disjoint_route_arcs: self
+                .guarded_intersection_unique_disjoint_route_arcs
+                .load(Ordering::Relaxed),
+            guarded_intersection_unique_disjoint_bridge_axes: self
+                .guarded_intersection_unique_disjoint_bridge_axes
+                .load(Ordering::Relaxed),
+            guarded_intersection_membership_checks: self
+                .guarded_intersection_membership_checks
+                .load(Ordering::Relaxed),
+            guarded_intersection_registered_relations: self
+                .guarded_intersection_registered_relations
+                .load(Ordering::Relaxed),
+            guarded_intersection_registered_domain_variables: self
+                .guarded_intersection_registered_domain_variables
+                .load(Ordering::Relaxed),
+            guarded_intersection_maximum_dirty_relations: self
+                .guarded_intersection_maximum_dirty_relations
+                .load(Ordering::Relaxed),
         }
     }
 }
@@ -252,6 +321,7 @@ pub(super) enum LayerGridRule {
     ForceWatchedDemandUniqueSupportChain,
     ForceWatchedDemandUniqueSupportChainAndObserveLocalContinuation,
     ForceWatchedDemandUniqueSupportChainAndLocalContinuation,
+    ForceWatchedDemandUniqueSupportChainAndLocalContinuationWithGuardedIntersectionObservation,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

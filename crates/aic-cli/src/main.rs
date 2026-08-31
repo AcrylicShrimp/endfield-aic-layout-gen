@@ -2264,6 +2264,7 @@ mod tests {
             "--case-time-limit-ms",
             "5000",
             "--active-local-continuation",
+            "--observe-guarded-item-intersections",
             "--output-dir",
             "cumulative-dimension-sweep",
         ])
@@ -2279,6 +2280,7 @@ mod tests {
                     worker_count,
                     case_time_limit_ms,
                     active_local_continuation,
+                    observe_guarded_item_intersections,
                     output_dir,
                 },
         } = cli.command
@@ -2292,6 +2294,7 @@ mod tests {
         assert_eq!(worker_count, 4);
         assert_eq!(case_time_limit_ms, 5_000);
         assert!(active_local_continuation);
+        assert!(observe_guarded_item_intersections);
         assert_eq!(output_dir, PathBuf::from("cumulative-dimension-sweep"));
     }
 

@@ -63,6 +63,16 @@ the required item value becomes an interior hole. Its integrated cost still need
 because creating an item equality predicate may allocate a Boolean view when Pumpkin cannot reuse
 an existing one.
 
+The guarded binary weakness was subsequently measured with a passive full-domain observer on the
+current three-facility Phase 2 cliff. The relevant composite transport rule admits only positive
+item codes when the route arc or bridge is selected; item code zero denotes an inactive arm and is
+not equality support. Across 100 independent five-second dimension cases, 93 cases observed an
+unresolved guard with disjoint positive-item domains. The maximum was 443 of 2,944 relations in one
+case, and 81,711 disjoint checks were seen among 319,321 unresolved-guard checks. Of 12,235
+case-local relation identities, 12,115 were bridge axes. This is a frequent measured opportunity
+and justifies an exact active guard-rejection experiment. See
+`docs/benchmarks/heavy-xiranite-minimum-rate.fifty-fifth-guarded-item-intersection-census.md`.
+
 ## Confirmed endpoint weakness
 
 The current factored endpoint encoding creates one placement integer whose values are complete
