@@ -27,9 +27,9 @@ use super::formulation::{
 use super::grid_analyzer::{
     DirtyMaterialUniqueSupportChainGridPropagatorArgs, LayerGridAnalyzerCounters,
     LayerGridAnalyzerStatistics, LayerGridMaterial, LayerGridOpportunityAnalyzerArgs,
-    LayerGridRule, LayerGridRuleArgs, TerminalSupportGridPropagatorArgs,
-    UniqueSupportChainGridPropagatorArgs, UniqueSupportChainWakeMode,
-    WatchedDemandUniqueSupportChainGridPropagatorArgs,
+    LayerGridRule, LayerGridRuleArgs, LocalPositiveFlowContinuationAnalyzerArgs,
+    TerminalSupportGridPropagatorArgs, UniqueSupportChainGridPropagatorArgs,
+    UniqueSupportChainWakeMode, WatchedDemandUniqueSupportChainGridPropagatorArgs,
 };
 use super::metrics::{elapsed_millis, finish_report_with_formulation};
 use super::objective::{
@@ -999,6 +999,49 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
     )
 }
 
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_reference_watched_demand_with_local_continuation_analysis(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    reference: &IntegratedLayoutReport,
+) -> (
+    IntegratedLayoutReport,
+    PossibleRouteReachabilityStatistics,
+    LayerGridAnalyzerStatistics,
+) {
+    let connectivity_counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    let grid_counters = SyncArc::new(LayerGridAnalyzerCounters::default());
+    let report = solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        Some(reference),
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        None,
+        None,
+        Some(ReferenceAblationFixation::PlacementsAndAllTerminals),
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters: SyncArc::clone(&connectivity_counters),
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
+            grid_analyzer: Some((
+                SyncArc::clone(&grid_counters),
+                LayerGridRule::ForceWatchedDemandUniqueSupportChainAndObserveLocalContinuation,
+            )),
+        },
+    );
+    (
+        report,
+        connectivity_counters.snapshot(),
+        grid_counters.snapshot(),
+    )
+}
+
 pub(in crate::layouts::integrated) fn facility_coordinate_partitions(
     input: &ModelInput,
     instance_id: &str,
@@ -1269,6 +1312,7 @@ fn solve_with_endpoint_encoding(
                     &input,
                     &layers,
                     &model_terminals,
+                    &bridges,
                     SyncArc::clone(grid_analyzer_counters),
                     *mode,
                     tag,
@@ -1582,6 +1626,17 @@ fn solve_with_endpoint_encoding(
                     ..
                 },
             ) => "joint-shared-v4-watched-demand-unique-support-chain-grid-propagation",
+            (
+                _,
+                _,
+                ConnectivityMode::PossibleGraphPropagator {
+                    grid_analyzer: Some((
+                        _,
+                        LayerGridRule::ForceWatchedDemandUniqueSupportChainAndObserveLocalContinuation,
+                    )),
+                    ..
+                },
+            ) => "joint-shared-v4-watched-demand-local-continuation-analysis",
             (
                 _,
                 _,
@@ -2106,6 +2161,7 @@ fn post_layer_grid_analyzer(
     input: &ModelInput,
     layers: &[SharedLayer],
     terminals: &[Vec<SharedTerminal>],
+    bridges: &[ModelBridge],
     counters: SyncArc<LayerGridAnalyzerCounters>,
     rule: LayerGridRule,
     tag: pumpkin_solver::core::proof::ConstraintTag,
@@ -2203,6 +2259,26 @@ fn post_layer_grid_analyzer(
                 let _ = solver
                     .solver_mut()
                     .add_propagator(WatchedDemandUniqueSupportChainGridPropagatorArgs(args));
+            }
+            LayerGridRule::ForceWatchedDemandUniqueSupportChainAndObserveLocalContinuation => {
+                let analyzer_args = args.clone();
+                let mut bridge_selected_by_cell = vec![None; input.cell_count as usize];
+                for bridge in bridges
+                    .iter()
+                    .filter(|bridge| bridge.transport == layer.transport)
+                {
+                    bridge_selected_by_cell[bridge.cell] = Some(bridge.selected);
+                }
+                let _ = solver
+                    .solver_mut()
+                    .add_propagator(WatchedDemandUniqueSupportChainGridPropagatorArgs(args));
+                let _ =
+                    solver
+                        .solver_mut()
+                        .add_propagator(LocalPositiveFlowContinuationAnalyzerArgs {
+                            rule: analyzer_args,
+                            bridge_selected_by_cell,
+                        });
             }
         }
     }

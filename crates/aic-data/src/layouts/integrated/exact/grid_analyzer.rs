@@ -15,6 +15,10 @@ use pumpkin_solver::core::variables::DomainId;
 
 use super::connectivity_propagator::{PossibleRouteArc, PossibleTerminalOption};
 
+mod local_continuation;
+
+pub(super) use local_continuation::LocalPositiveFlowContinuationAnalyzerArgs;
+
 declare_inference_label!(TerminalGridSupport);
 declare_inference_label!(UniqueSupportChain);
 
@@ -39,10 +43,27 @@ pub(super) struct LayerGridAnalyzerCounters {
     frontier_demand_rechecks: AtomicU64,
     frontier_watched_cell_registrations: AtomicU64,
     frontier_maximum_dirty_demands: AtomicU64,
+    local_continuation_executions: AtomicU64,
+    local_continuation_material_passes: AtomicU64,
+    local_positive_inflow_cells: AtomicU64,
+    local_positive_outflow_cells: AtomicU64,
+    local_forward_continuation_cells: AtomicU64,
+    local_backward_continuation_cells: AtomicU64,
+    local_forward_zero_supports: AtomicU64,
+    local_backward_zero_supports: AtomicU64,
+    local_forward_unique_supports: AtomicU64,
+    local_backward_unique_supports: AtomicU64,
+    local_forward_unresolved_predicates: AtomicU64,
+    local_backward_unresolved_predicates: AtomicU64,
+    local_bridge_possible_cell_skips: AtomicU64,
+    local_maximum_reason_predicates: AtomicU64,
+    local_registered_domain_variables: AtomicU64,
     distinct_support_arcs: Mutex<BTreeSet<(i32, DomainId)>>,
     distinct_unresolved_predicates: Mutex<BTreeSet<(DomainId, i32)>>,
     distinct_terminal_support_arcs: Mutex<BTreeSet<(i32, DomainId)>>,
     distinct_terminal_unresolved_predicates: Mutex<BTreeSet<(DomainId, i32)>>,
+    distinct_local_forward_support_arcs: Mutex<BTreeSet<(i32, DomainId)>>,
+    distinct_local_backward_support_arcs: Mutex<BTreeSet<(i32, DomainId)>>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -70,6 +91,23 @@ pub(in crate::layouts::integrated) struct LayerGridAnalyzerStatistics {
     pub frontier_demand_rechecks: u64,
     pub frontier_watched_cell_registrations: u64,
     pub frontier_maximum_dirty_demands: u64,
+    pub local_continuation_executions: u64,
+    pub local_continuation_material_passes: u64,
+    pub local_positive_inflow_cells: u64,
+    pub local_positive_outflow_cells: u64,
+    pub local_forward_continuation_cells: u64,
+    pub local_backward_continuation_cells: u64,
+    pub local_forward_zero_supports: u64,
+    pub local_backward_zero_supports: u64,
+    pub local_forward_unique_supports: u64,
+    pub local_backward_unique_supports: u64,
+    pub local_forward_unresolved_predicates: u64,
+    pub local_backward_unresolved_predicates: u64,
+    pub distinct_local_forward_support_arcs: u64,
+    pub distinct_local_backward_support_arcs: u64,
+    pub local_bridge_possible_cell_skips: u64,
+    pub local_maximum_reason_predicates: u64,
+    pub local_registered_domain_variables: u64,
 }
 
 impl LayerGridAnalyzerCounters {
@@ -124,6 +162,53 @@ impl LayerGridAnalyzerCounters {
             frontier_maximum_dirty_demands: self
                 .frontier_maximum_dirty_demands
                 .load(Ordering::Relaxed),
+            local_continuation_executions: self
+                .local_continuation_executions
+                .load(Ordering::Relaxed),
+            local_continuation_material_passes: self
+                .local_continuation_material_passes
+                .load(Ordering::Relaxed),
+            local_positive_inflow_cells: self.local_positive_inflow_cells.load(Ordering::Relaxed),
+            local_positive_outflow_cells: self.local_positive_outflow_cells.load(Ordering::Relaxed),
+            local_forward_continuation_cells: self
+                .local_forward_continuation_cells
+                .load(Ordering::Relaxed),
+            local_backward_continuation_cells: self
+                .local_backward_continuation_cells
+                .load(Ordering::Relaxed),
+            local_forward_zero_supports: self.local_forward_zero_supports.load(Ordering::Relaxed),
+            local_backward_zero_supports: self.local_backward_zero_supports.load(Ordering::Relaxed),
+            local_forward_unique_supports: self
+                .local_forward_unique_supports
+                .load(Ordering::Relaxed),
+            local_backward_unique_supports: self
+                .local_backward_unique_supports
+                .load(Ordering::Relaxed),
+            local_forward_unresolved_predicates: self
+                .local_forward_unresolved_predicates
+                .load(Ordering::Relaxed),
+            local_backward_unresolved_predicates: self
+                .local_backward_unresolved_predicates
+                .load(Ordering::Relaxed),
+            distinct_local_forward_support_arcs: self
+                .distinct_local_forward_support_arcs
+                .lock()
+                .expect("local forward support-arc counter is not poisoned")
+                .len() as u64,
+            distinct_local_backward_support_arcs: self
+                .distinct_local_backward_support_arcs
+                .lock()
+                .expect("local backward support-arc counter is not poisoned")
+                .len() as u64,
+            local_bridge_possible_cell_skips: self
+                .local_bridge_possible_cell_skips
+                .load(Ordering::Relaxed),
+            local_maximum_reason_predicates: self
+                .local_maximum_reason_predicates
+                .load(Ordering::Relaxed),
+            local_registered_domain_variables: self
+                .local_registered_domain_variables
+                .load(Ordering::Relaxed),
         }
     }
 }
@@ -136,6 +221,7 @@ pub(super) enum LayerGridRule {
     ForceUniqueSupportChainSelectiveWake,
     ForceDirtyMaterialUniqueSupportChain,
     ForceWatchedDemandUniqueSupportChain,
+    ForceWatchedDemandUniqueSupportChainAndObserveLocalContinuation,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

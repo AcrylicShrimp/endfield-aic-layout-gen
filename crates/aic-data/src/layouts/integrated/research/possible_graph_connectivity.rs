@@ -14,7 +14,7 @@ use super::coordinate_partition::{invalid_input, millis, model_scale, prepare_ta
 use super::rotation_partition::diagnose_cumulative_facility_rotation_partitions;
 use super::{ExactDimensionCaseOutcome, ExactUsedDimensionCandidate, PartitionCaseModelScale};
 
-pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 11;
+pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 12;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -32,6 +32,7 @@ pub enum PossibleGraphConnectivityCaseKind {
     SelectiveUniqueSupportChainGridPropagator,
     DirtyMaterialUniqueSupportChainGridPropagator,
     WatchedDemandUniqueSupportChainGridPropagator,
+    WatchedDemandWithLocalContinuationAnalyzer,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
@@ -83,6 +84,23 @@ pub struct LayerGridAnalyzerRuntime {
     pub frontier_demand_rechecks: u64,
     pub frontier_watched_cell_registrations: u64,
     pub frontier_maximum_dirty_demands: u64,
+    pub local_continuation_executions: u64,
+    pub local_continuation_material_passes: u64,
+    pub local_positive_inflow_cells: u64,
+    pub local_positive_outflow_cells: u64,
+    pub local_forward_continuation_cells: u64,
+    pub local_backward_continuation_cells: u64,
+    pub local_forward_zero_supports: u64,
+    pub local_backward_zero_supports: u64,
+    pub local_forward_unique_supports: u64,
+    pub local_backward_unique_supports: u64,
+    pub local_forward_unresolved_predicates: u64,
+    pub local_backward_unresolved_predicates: u64,
+    pub distinct_local_forward_support_arcs: u64,
+    pub distinct_local_backward_support_arcs: u64,
+    pub local_bridge_possible_cell_skips: u64,
+    pub local_maximum_reason_predicates: u64,
+    pub local_registered_domain_variables: u64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -262,6 +280,13 @@ pub fn diagnose_phase2_possible_graph_connectivity(
         &reference,
     );
     let (watched_demand_chain_propagated, watched_demand_chain_connectivity_runtime, watched_demand_chain_grid_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_watched_demand_unique_support_chain_grid_propagation(
+        input.clone(),
+        logistics_components,
+        Some(case_search_budget),
+        fixed_dimensions,
+        &reference,
+    );
+    let (local_continuation_analyzed, local_continuation_connectivity_runtime, local_continuation_grid_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_watched_demand_with_local_continuation_analysis(
         input,
         logistics_components,
         Some(case_search_budget),
@@ -354,6 +379,12 @@ pub fn diagnose_phase2_possible_graph_connectivity(
                 connectivity_runtime(watched_demand_chain_connectivity_runtime),
                 grid_analyzer_runtime(watched_demand_chain_grid_runtime),
             ),
+            case_report(
+                PossibleGraphConnectivityCaseKind::WatchedDemandWithLocalContinuationAnalyzer,
+                local_continuation_analyzed,
+                connectivity_runtime(local_continuation_connectivity_runtime),
+                grid_analyzer_runtime(local_continuation_grid_runtime),
+            ),
         ],
         diagnostic_only: true,
     })
@@ -407,6 +438,23 @@ fn grid_analyzer_runtime(
         frontier_demand_rechecks: statistics.frontier_demand_rechecks,
         frontier_watched_cell_registrations: statistics.frontier_watched_cell_registrations,
         frontier_maximum_dirty_demands: statistics.frontier_maximum_dirty_demands,
+        local_continuation_executions: statistics.local_continuation_executions,
+        local_continuation_material_passes: statistics.local_continuation_material_passes,
+        local_positive_inflow_cells: statistics.local_positive_inflow_cells,
+        local_positive_outflow_cells: statistics.local_positive_outflow_cells,
+        local_forward_continuation_cells: statistics.local_forward_continuation_cells,
+        local_backward_continuation_cells: statistics.local_backward_continuation_cells,
+        local_forward_zero_supports: statistics.local_forward_zero_supports,
+        local_backward_zero_supports: statistics.local_backward_zero_supports,
+        local_forward_unique_supports: statistics.local_forward_unique_supports,
+        local_backward_unique_supports: statistics.local_backward_unique_supports,
+        local_forward_unresolved_predicates: statistics.local_forward_unresolved_predicates,
+        local_backward_unresolved_predicates: statistics.local_backward_unresolved_predicates,
+        distinct_local_forward_support_arcs: statistics.distinct_local_forward_support_arcs,
+        distinct_local_backward_support_arcs: statistics.distinct_local_backward_support_arcs,
+        local_bridge_possible_cell_skips: statistics.local_bridge_possible_cell_skips,
+        local_maximum_reason_predicates: statistics.local_maximum_reason_predicates,
+        local_registered_domain_variables: statistics.local_registered_domain_variables,
     }
 }
 

@@ -177,6 +177,15 @@ steps by 66.8%, and two-run first-witness midpoint by 7.5%. The deterministic sc
 reduction is accepted; the elapsed values remain fixed-order host-local observations. The next
 experiment must strengthen exact semantic inference enough to remove search decisions.
 
+The forty-fifth checkpoint,
+`heavy-xiranite-minimum-rate.forty-fifth-local-continuation-analysis-report.md`, passively measures
+an exact non-bridge cell-conservation rule beyond the watched-demand chain. After rejecting
+bridge-unfiltered preliminary counts, the conservative completed A/B preserves all 43,543
+decisions, 8,577 backtracks, the validated witness, and its objective while identifying 133 distinct
+unresolved forward support arcs and 94 backward arcs. The broad observer is diagnostic-only because
+its full rescans more than double elapsed time; an event-driven active propagator is the next exact
+experiment.
+
 Regenerate it from a release binary with:
 
 ```bash
