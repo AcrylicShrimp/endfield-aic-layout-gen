@@ -2450,6 +2450,64 @@ mod tests {
     }
 
     #[test]
+    fn parses_cumulative_facility_state_partition() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "diagnose-cumulative-facility-states",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--target-phase",
+            "3",
+            "--used-width",
+            "16",
+            "--used-height",
+            "16",
+            "--facility-x",
+            "5",
+            "--facility-y",
+            "5",
+            "--worker-count",
+            "12",
+            "--prefix-case-time-limit-ms",
+            "10000",
+            "--state-case-time-limit-ms",
+            "5000",
+            "--output-dir",
+            "state-partition",
+        ])
+        .expect("cumulative facility state partition CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::DiagnoseCumulativeFacilityStates {
+                    target_phase,
+                    used_width,
+                    used_height,
+                    facility_x,
+                    facility_y,
+                    worker_count,
+                    prefix_case_time_limit_ms,
+                    state_case_time_limit_ms,
+                    output_dir,
+                    ..
+                },
+        } = cli.command
+        else {
+            panic!("expected cumulative facility state partition command")
+        };
+        assert_eq!(target_phase, 3);
+        assert_eq!((used_width, used_height), (16, 16));
+        assert_eq!((facility_x, facility_y), (5, 5));
+        assert_eq!(worker_count, 12);
+        assert_eq!(prefix_case_time_limit_ms, 10_000);
+        assert_eq!(state_case_time_limit_ms, 5_000);
+        assert_eq!(output_dir, PathBuf::from("state-partition"));
+    }
+
+    #[test]
     fn parses_cumulative_transport_tile_cap_diagnosis() {
         let cli = Cli::try_parse_from([
             "aic-cli",

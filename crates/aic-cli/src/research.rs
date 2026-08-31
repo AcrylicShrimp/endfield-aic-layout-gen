@@ -28,6 +28,7 @@ mod coordinate_partition;
 mod cumulative_growth;
 mod dimension_sweep;
 mod external_connectors;
+mod facility_state_partition;
 mod factored_networks;
 mod first_phase;
 mod fixed_dimensions;
@@ -580,6 +581,36 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
     },
+    /// Exhaustively partition one fixed coordinate by every compatible port and rotation state.
+    DiagnoseCumulativeFacilityStates {
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+        #[arg(long, value_name = "INDEX")]
+        target_phase: usize,
+        #[arg(long, value_name = "CELLS")]
+        used_width: i32,
+        #[arg(long, value_name = "CELLS")]
+        used_height: i32,
+        #[arg(long, value_name = "CELL")]
+        facility_x: i32,
+        #[arg(long, value_name = "CELL")]
+        facility_y: i32,
+        /// Independent Pumpkin worker threads.
+        #[arg(long, value_name = "COUNT")]
+        worker_count: usize,
+        /// Per-dimension case budget used to obtain the preceding phase hint.
+        #[arg(long, value_name = "MILLISECONDS")]
+        prefix_case_time_limit_ms: u64,
+        /// Wall-clock search budget independently given to every port-and-rotation state.
+        #[arg(long, value_name = "MILLISECONDS")]
+        state_case_time_limit_ms: u64,
+        #[arg(long, value_name = "DIR")]
+        output_dir: PathBuf,
+    },
     /// Compare placement, facility-port, and all-terminal reference fixations.
     DiagnosePhase2ReferenceAblation {
         #[arg(long, value_name = "FILE")]
@@ -1103,6 +1134,33 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             prefix_case_time_limit_ms,
             rotation_case_time_limit_ms,
             active_local_continuation,
+            output_dir,
+        ),
+        ResearchCommand::DiagnoseCumulativeFacilityStates {
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            used_width,
+            used_height,
+            facility_x,
+            facility_y,
+            worker_count,
+            prefix_case_time_limit_ms,
+            state_case_time_limit_ms,
+            output_dir,
+        } => facility_state_partition::run(
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            used_width,
+            used_height,
+            facility_x,
+            facility_y,
+            worker_count,
+            prefix_case_time_limit_ms,
+            state_case_time_limit_ms,
             output_dir,
         ),
         ResearchCommand::DiagnosePhase2ReferenceAblation {
