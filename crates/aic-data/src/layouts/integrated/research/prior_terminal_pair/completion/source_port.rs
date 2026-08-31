@@ -21,6 +21,14 @@ use super::super::super::coordinate_partition::{
 use super::super::super::{ExactDimensionCaseOutcome, ExactDimensionSolverStack};
 use super::{PriorTerminalCompletionPortfolioReport, diagnose_prior_terminal_completion_portfolio};
 
+mod input_controls;
+
+pub use input_controls::{
+    PRIOR_INPUT_PORT_CONTROLS_SCHEMA_VERSION, PriorInputPortControlCaseReport,
+    PriorInputPortControlSuiteReport, PriorInputPortControlsReport,
+    diagnose_prior_input_port_controls,
+};
+
 pub const PRIOR_SOURCE_PORT_PORTFOLIO_SCHEMA_VERSION: u32 = 1;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 

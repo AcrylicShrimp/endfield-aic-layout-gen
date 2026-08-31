@@ -151,6 +151,8 @@ pub(in crate::layouts::integrated) struct FixedFacilityCoordinate {
 pub(in crate::layouts::integrated) struct FacilityPortPartitionDomain {
     pub(in crate::layouts::integrated) terminal: String,
     pub(in crate::layouts::integrated) ports: Vec<String>,
+    pub(in crate::layouts::integrated) direction: FacilityPortDirection,
+    pub(in crate::layouts::integrated) transport: TransportKind,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1734,6 +1736,8 @@ pub(in crate::layouts::integrated) fn facility_port_partition_domains(
             domains.push(FacilityPortPartitionDomain {
                 terminal: terminal.id().to_string(),
                 ports: ports.iter().map(|port| port.id.clone()).collect(),
+                direction: terminal.direction(),
+                transport: edge.transport,
             });
         }
     }
