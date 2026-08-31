@@ -2768,6 +2768,58 @@ mod tests {
     }
 
     #[test]
+    fn parses_prior_terminal_subset_ablation() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "diagnose-cumulative-facility-states",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--target-phase",
+            "3",
+            "--used-width",
+            "16",
+            "--used-height",
+            "16",
+            "--facility-x",
+            "8",
+            "--facility-y",
+            "5",
+            "--prior-port-subset-ablation",
+            "--prior-facility-bit",
+            "2",
+            "--port-assignment-index",
+            "5",
+            "--facility-rotation",
+            "0",
+            "--endpoint-encoding",
+            "sparse-support",
+            "--worker-count",
+            "12",
+            "--prefix-case-time-limit-ms",
+            "10000",
+            "--state-case-time-limit-ms",
+            "5000",
+            "--output-dir",
+            "prior-terminal-subsets",
+        ])
+        .expect("prior-terminal subset ablation CLI should parse");
+
+        let Command::Research {
+            command: ResearchCommand::DiagnoseCumulativeFacilityStates(args),
+        } = cli.command
+        else {
+            panic!("expected prior-terminal subset ablation command")
+        };
+        assert!(args.prior_port_subset_ablation);
+        assert!(!args.prior_overlap_ablation);
+        assert_eq!(args.prior_facility_bit, Some(2));
+        assert_eq!(args.output_dir, PathBuf::from("prior-terminal-subsets"));
+    }
+
+    #[test]
     fn parses_cumulative_transport_tile_cap_diagnosis() {
         let cli = Cli::try_parse_from([
             "aic-cli",

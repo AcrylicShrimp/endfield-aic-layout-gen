@@ -114,6 +114,10 @@ pub(in crate::layouts::integrated) enum ReferenceAblationFixation {
     PriorOverlapPlacements,
     PriorOverlapPlacementsAndFacilityPorts,
     PriorOverlapPlacementsAndFacilityPortSubset(u64),
+    PriorOverlapPlacementsAndTerminalSubset {
+        facility_bit_index: usize,
+        terminal_mask: u64,
+    },
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -879,6 +883,36 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_fixed_dimen
 }
 
 #[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_fixed_dimensions_coordinate_ports_prior_terminal_subset_ablation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: &IntegratedLayoutReport,
+    facility_bit_index: usize,
+    terminal_mask: u64,
+) -> IntegratedLayoutReport {
+    solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::FactoredSparseSupport(SyncArc::new(
+            EndpointSupportPropagationCounters::default(),
+        )),
+        fixed_dimensions,
+        fixed_coordinate,
+        fixed_ports,
+        prior_solution,
+        ReferenceAblationFixation::PriorOverlapPlacementsAndTerminalSubset {
+            facility_bit_index,
+            terminal_mask,
+        },
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
 fn solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
     input: ModelInput,
     logistics_components: &ValidatedLogisticsComponentCatalog,
@@ -895,6 +929,7 @@ fn solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
         ReferenceAblationFixation::PriorOverlapPlacements
             | ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPorts
             | ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPortSubset(_)
+            | ReferenceAblationFixation::PriorOverlapPlacementsAndTerminalSubset { .. }
     ));
     let connectivity_counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
     let grid_counters = SyncArc::new(LayerGridAnalyzerCounters::default());
@@ -1777,6 +1812,7 @@ fn solve_with_endpoint_encoding(
                 ReferenceAblationFixation::PriorOverlapPlacements
                     | ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPorts
                     | ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPortSubset(_)
+                    | ReferenceAblationFixation::PriorOverlapPlacementsAndTerminalSubset { .. }
             ),
             tag,
         )
@@ -2313,6 +2349,11 @@ fn solve_with_endpoint_encoding(
                 None,
                 ConnectivityMode::None,
             ) => "joint-shared-v4-prior-overlap-placements-facility-port-subset-ablation",
+            (
+                Some(ReferenceAblationFixation::PriorOverlapPlacementsAndTerminalSubset { .. }),
+                None,
+                ConnectivityMode::None,
+            ) => "joint-shared-v4-prior-overlap-placements-terminal-subset-ablation",
             (None, None, ConnectivityMode::None) if transport_tile_upper_bound.is_some() => {
                 "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions-transport-tile-cap"
             }
@@ -2529,6 +2570,7 @@ fn post_reference_terminals(
         fixation,
         ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPorts
             | ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPortSubset(_)
+            | ReferenceAblationFixation::PriorOverlapPlacementsAndTerminalSubset { .. }
     );
     let selected_facilities = match fixation {
         ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPortSubset(mask) => {
@@ -2549,6 +2591,48 @@ fn post_reference_terminals(
                     .enumerate()
                     .filter_map(|(index, instance)| {
                         ((mask & (1_u64 << index)) != 0).then_some(instance)
+                    })
+                    .collect::<BTreeSet<_>>(),
+            )
+        }
+        _ => None,
+    };
+    let selected_terminals = match fixation {
+        ReferenceAblationFixation::PriorOverlapPlacementsAndTerminalSubset {
+            facility_bit_index,
+            terminal_mask,
+        } => {
+            let facility_ids = reference
+                .placements
+                .iter()
+                .map(|placement| placement.instance.clone())
+                .collect::<BTreeSet<_>>();
+            let facility = facility_ids.iter().nth(facility_bit_index).ok_or_else(|| {
+                reference_mismatch("prior facility bit index", &facility_bit_index.to_string())
+            })?;
+            let terminal_ids = reference
+                .transport_networks
+                .iter()
+                .flat_map(|network| network.terminals.iter())
+                .filter_map(|terminal| match &terminal.endpoint {
+                    TransportNetworkEndpoint::Facility { instance, .. } if instance == facility => {
+                        Some(terminal.id.clone())
+                    }
+                    _ => None,
+                })
+                .collect::<BTreeSet<_>>();
+            if terminal_ids.len() > 63 {
+                return Err(reference_mismatch(
+                    "at most 63 prior facility terminals for a terminal-subset mask",
+                    &terminal_ids.len().to_string(),
+                ));
+            }
+            Some(
+                terminal_ids
+                    .into_iter()
+                    .enumerate()
+                    .filter_map(|(index, terminal)| {
+                        ((terminal_mask & (1_u64 << index)) != 0).then_some(terminal)
                     })
                     .collect::<BTreeSet<_>>(),
             )
@@ -2582,6 +2666,9 @@ fn post_reference_terminals(
                 if selected_facilities
                     .as_ref()
                     .is_some_and(|selected| !selected.contains(instance))
+                    || selected_terminals
+                        .as_ref()
+                        .is_some_and(|selected| !selected.contains(&terminal.id))
                 {
                     continue;
                 }

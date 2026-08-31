@@ -82,7 +82,8 @@ pub use possible_graph_connectivity::{
 };
 pub use prior_port_subset::{
     PRIOR_PORT_SUBSET_ABLATION_SCHEMA_VERSION, PriorPortSubsetAblationReport,
-    PriorPortSubsetCaseReport, PriorPortSubsetFacility, diagnose_prior_port_subset_ablation,
+    PriorPortSubsetCaseReport, PriorPortSubsetFacility, PriorTerminalSubsetPartition,
+    PriorTerminalSubsetTerminal, diagnose_prior_port_subset_ablation,
 };
 pub use reference_ablation::{
     PHASE2_REFERENCE_ABLATION_SCHEMA_VERSION, Phase2ReferenceAblationCaseReport,

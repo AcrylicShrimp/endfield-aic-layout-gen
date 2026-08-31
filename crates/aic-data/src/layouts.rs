@@ -48,6 +48,7 @@ pub use integrated::{
     PossibleGraphConnectivityCaseReport, PossibleGraphConnectivityDiagnosisReport,
     PossibleGraphConnectivityRuntime, PossibleGraphConnectivityScale,
     PriorPortSubsetAblationReport, PriorPortSubsetCaseReport, PriorPortSubsetFacility,
+    PriorTerminalSubsetPartition, PriorTerminalSubsetTerminal,
     RESIDUAL_FACILITY_STATE_ABLATION_SCHEMA_VERSION, ROUTE_CELL_BREAKDOWN_SCHEMA_VERSION,
     ROUTING_STATE_BREAKDOWN_SCHEMA_VERSION, ResidualFacilityStateAblationReport,
     ResidualFacilityStateCaseKind, ResidualFacilityStateCaseReport, RouteCellBreakdownCaseReport,

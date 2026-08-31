@@ -23,7 +23,7 @@ use super::{
     sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation,
 };
 
-pub const PRIOR_PORT_SUBSET_ABLATION_SCHEMA_VERSION: u32 = 1;
+pub const PRIOR_PORT_SUBSET_ABLATION_SCHEMA_VERSION: u32 = 2;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -33,10 +33,25 @@ pub struct PriorPortSubsetFacility {
     pub matching_terminal_count: usize,
 }
 
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct PriorTerminalSubsetTerminal {
+    pub bit_index: usize,
+    pub terminal: String,
+    pub reference_port: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct PriorTerminalSubsetPartition {
+    pub facility_bit_index: usize,
+    pub facility_instance: String,
+    pub terminals: Vec<PriorTerminalSubsetTerminal>,
+}
+
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct PriorPortSubsetCaseReport {
     pub facility_mask: u64,
     pub selected_facilities: Vec<String>,
+    pub selected_terminals: Vec<String>,
     pub fixed_terminal_count: usize,
     pub outcome: ExactDimensionCaseOutcome,
     pub construction_ms: u64,
@@ -61,6 +76,7 @@ pub struct PriorPortSubsetAblationReport {
     pub fixed_ports: Vec<FacilityPortAssignment>,
     pub fixed_rotation: i64,
     pub prior_facilities: Vec<PriorPortSubsetFacility>,
+    pub terminal_partition: Option<PriorTerminalSubsetPartition>,
     pub worker_count: usize,
     pub prefix_search_budget_ms_per_case: u64,
     pub case_search_budget_ms: u64,
@@ -84,6 +100,7 @@ pub fn diagnose_prior_port_subset_ablation(
     fixed_y: i32,
     port_assignment_index: usize,
     fixed_rotation: i64,
+    terminal_subset_facility_bit: Option<usize>,
     worker_count: usize,
     prefix_search_budget: Duration,
     case_search_budget: Duration,
@@ -162,6 +179,53 @@ pub fn diagnose_prior_port_subset_ablation(
             instance,
         })
         .collect::<Vec<_>>();
+    let terminal_partition = terminal_subset_facility_bit
+        .map(|facility_bit_index| {
+            let facility = prior_facilities.get(facility_bit_index).ok_or_else(|| {
+                invalid_input(
+                    "/terminal_subset_facility_bit",
+                    format!(
+                        "prior facility bit {facility_bit_index} is outside 0..{}",
+                        prior_facilities.len()
+                    ),
+                )
+            })?;
+            let terminals = prior_solution
+                .transport_networks
+                .iter()
+                .flat_map(|network| network.terminals.iter())
+                .filter_map(|terminal| match &terminal.endpoint {
+                    TransportNetworkEndpoint::Facility { instance, port }
+                        if instance == &facility.instance =>
+                    {
+                        Some((terminal.id.clone(), port.clone()))
+                    }
+                    _ => None,
+                })
+                .collect::<BTreeMap<_, _>>()
+                .into_iter()
+                .enumerate()
+                .map(
+                    |(bit_index, (terminal, reference_port))| PriorTerminalSubsetTerminal {
+                        bit_index,
+                        terminal,
+                        reference_port,
+                    },
+                )
+                .collect::<Vec<_>>();
+            if terminals.len() > 63 {
+                return Err(invalid_input(
+                    "/terminal_subset_facility_bit",
+                    "prior terminal subset ablation supports at most 63 terminals",
+                ));
+            }
+            Ok(PriorTerminalSubsetPartition {
+                facility_bit_index,
+                facility_instance: facility.instance.clone(),
+                terminals,
+            })
+        })
+        .transpose()?;
 
     let input = prepare_target_input(
         instance_wiring,
@@ -226,7 +290,12 @@ pub fn diagnose_prior_port_subset_ablation(
         rotation: Some(fixed_rotation),
     };
 
-    let subset_count = 1_u64 << prior_facilities.len();
+    let subset_unit_count = terminal_partition
+        .as_ref()
+        .map_or(prior_facilities.len(), |partition| {
+            partition.terminals.len()
+        });
+    let subset_count = 1_u64 << subset_unit_count;
     let masks = (0..subset_count).collect::<Vec<_>>();
     let started = Instant::now();
     let mut completed = Vec::with_capacity(masks.len());
@@ -238,19 +307,34 @@ pub fn diagnose_prior_port_subset_ablation(
                 let ports = exact_ports.clone();
                 let coordinate = coordinate.clone();
                 let prior_solution = &prior_solution;
+                let terminal_subset_facility_bit = terminal_subset_facility_bit;
                 handles.push((
                     mask,
                     scope.spawn(move || {
-                        exact::shared_layer::solve_sparse_support_endpoints_fixed_dimensions_coordinate_ports_prior_port_subset_ablation(
-                            input,
-                            logistics_components,
-                            Some(case_search_budget),
-                            dimensions,
-                            coordinate,
-                            ports,
-                            prior_solution,
-                            mask,
-                        )
+                        if let Some(facility_bit_index) = terminal_subset_facility_bit {
+                            exact::shared_layer::solve_sparse_support_endpoints_fixed_dimensions_coordinate_ports_prior_terminal_subset_ablation(
+                                input,
+                                logistics_components,
+                                Some(case_search_budget),
+                                dimensions,
+                                coordinate,
+                                ports,
+                                prior_solution,
+                                facility_bit_index,
+                                mask,
+                            )
+                        } else {
+                            exact::shared_layer::solve_sparse_support_endpoints_fixed_dimensions_coordinate_ports_prior_port_subset_ablation(
+                                input,
+                                logistics_components,
+                                Some(case_search_budget),
+                                dimensions,
+                                coordinate,
+                                ports,
+                                prior_solution,
+                                mask,
+                            )
+                        }
                     }),
                 ));
             }
@@ -282,17 +366,39 @@ pub fn diagnose_prior_port_subset_ablation(
             let scale = model_scale(exact);
             let selected_facilities = prior_facilities
                 .iter()
-                .filter(|facility| mask & (1_u64 << facility.bit_index) != 0)
+                .filter(|facility| {
+                    terminal_partition.as_ref().map_or_else(
+                        || mask & (1_u64 << facility.bit_index) != 0,
+                        |partition| facility.bit_index == partition.facility_bit_index && mask != 0,
+                    )
+                })
                 .map(|facility| facility.instance.clone())
                 .collect::<Vec<_>>();
-            let fixed_terminal_count = prior_facilities
-                .iter()
-                .filter(|facility| mask & (1_u64 << facility.bit_index) != 0)
-                .map(|facility| facility.matching_terminal_count)
-                .sum();
+            let selected_terminals = terminal_partition
+                .as_ref()
+                .map(|partition| {
+                    partition
+                        .terminals
+                        .iter()
+                        .filter(|terminal| mask & (1_u64 << terminal.bit_index) != 0)
+                        .map(|terminal| terminal.terminal.clone())
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+            let fixed_terminal_count = terminal_partition.as_ref().map_or_else(
+                || {
+                    prior_facilities
+                        .iter()
+                        .filter(|facility| mask & (1_u64 << facility.bit_index) != 0)
+                        .map(|facility| facility.matching_terminal_count)
+                        .sum()
+                },
+                |_| selected_terminals.len(),
+            );
             PriorPortSubsetCaseReport {
                 facility_mask: mask,
                 selected_facilities,
+                selected_terminals,
                 fixed_terminal_count,
                 outcome: classify_outcome(&layout),
                 construction_ms: exact.construction_ms,
@@ -320,6 +426,7 @@ pub fn diagnose_prior_port_subset_ablation(
         fixed_ports,
         fixed_rotation,
         prior_facilities,
+        terminal_partition,
         worker_count,
         prefix_search_budget_ms_per_case: millis(prefix_search_budget),
         case_search_budget_ms: millis(case_search_budget),

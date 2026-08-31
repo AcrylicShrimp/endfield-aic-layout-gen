@@ -91,16 +91,16 @@ pub(crate) struct FacilityStateResearchArgs {
     #[arg(long, value_name = "CELL")]
     pub(crate) facility_y: i32,
     /// Run the residual prior-overlap ablation instead of the full state portfolio.
-    #[arg(long, conflicts_with = "prior_port_subset_ablation")]
+    #[arg(long)]
     pub(crate) prior_overlap_ablation: bool,
     /// Enumerate every subset of preceding facilities whose ports are fixed.
-    #[arg(long, conflicts_with = "prior_overlap_ablation")]
+    #[arg(long)]
     pub(crate) prior_port_subset_ablation: bool,
+    /// When set, partition that facility's terminals instead of whole facilities.
+    #[arg(long, value_name = "INDEX")]
+    pub(crate) prior_facility_bit: Option<usize>,
     /// Fix preceding-phase placements and matching facility ports in every portfolio case.
-    #[arg(
-        long,
-        conflicts_with_all = ["prior_overlap_ablation", "prior_port_subset_ablation"]
-    )]
+    #[arg(long)]
     pub(crate) fix_prior_overlap_facility_state: bool,
     /// Complete introduced-facility port assignment selected by the residual ablation.
     #[arg(long, value_name = "INDEX")]
@@ -1250,6 +1250,13 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             output_dir,
         ),
         ResearchCommand::DiagnoseCumulativeFacilityStates(args) => {
+            let diagnostic_mode_count = usize::from(args.prior_overlap_ablation)
+                + usize::from(args.prior_port_subset_ablation)
+                + usize::from(args.fix_prior_overlap_facility_state);
+            anyhow::ensure!(
+                diagnostic_mode_count <= 1,
+                "facility-state diagnostic modes are mutually exclusive"
+            );
             if args.prior_port_subset_ablation {
                 prior_port_subset::run(
                     args.workload,
@@ -1265,6 +1272,7 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
                     args.facility_rotation
                         .context("prior-port subset ablation requires --facility-rotation")?,
                     args.endpoint_encoding,
+                    args.prior_facility_bit,
                     args.worker_count,
                     args.prefix_case_time_limit_ms,
                     args.state_case_time_limit_ms,
