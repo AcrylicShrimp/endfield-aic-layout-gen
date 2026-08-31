@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "workload": "heavy-xiranite-minimum-rate",
+  "phase": 0,
+  "selected_network_indices": [0, 1],
+  "candidate_count": 63,
+  "case_time_limit_ms": 5000,
+  "free_dimension_baseline": {
+    "workers": 1,
+    "outer_search_ms": 5001,
+    "feasible_upper_bound_area": null,
+    "first_incumbent_ms": null,
+    "peak_rss_bytes": 89276416,
+    "termination": "unknown"
+  },
+  "sweeps": [
+    {
+      "id": "single-worker-repetition-1",
+      "workers": 1,
+      "sweep_wall_ms": 468,
+      "process_wall_seconds": 0.47,
+      "peak_rss_bytes": 93241344,
+      "executed_cases": 4,
+      "skipped_cases": 59,
+      "upper_bound_area": 35,
+      "primary_area_optimum_proven": true
+    },
+    {
+      "id": "single-worker-repetition-2",
+      "workers": 1,
+      "sweep_wall_ms": 451,
+      "process_wall_seconds": 0.46,
+      "peak_rss_bytes": 93175808,
+      "executed_cases": 4,
+      "skipped_cases": 59,
+      "upper_bound_area": 35,
+      "primary_area_optimum_proven": true
+    },
+    {
+      "id": "four-worker-repetition-1",
+      "workers": 4,
+      "sweep_wall_ms": 289,
+      "process_wall_seconds": 0.70,
+      "peak_rss_bytes": 314327040,
+      "executed_cases": 5,
+      "skipped_cases": 58,
+      "upper_bound_area": 35,
+      "primary_area_optimum_proven": true
+    },
+    {
+      "id": "four-worker-repetition-2",
+      "workers": 4,
+      "sweep_wall_ms": 187,
+      "process_wall_seconds": 0.20,
+      "peak_rss_bytes": 312705024,
+      "executed_cases": 4,
+      "skipped_cases": 59,
+      "upper_bound_area": 35,
+      "primary_area_optimum_proven": true
+    }
+  ],
+  "repeat_2_sweep_speedup": 2.411764705882353,
+  "repeat_2_peak_rss_ratio": 3.3560752593634606,
+  "upper_bound_propagation": {
+    "candidate": {
+      "width": 5,
+      "height": 7,
+      "area": 35
+    },
+    "four_worker_repetition_2_completion_order": 0,
+    "unresolved_smaller_candidates": 0
+  },
+  "verdict": {
+    "exact_sweep_restores_a_validated_upper_bound": true,
+    "parallel_workers_reduce_solver_sweep_wall_time": true,
+    "memory_scales_materially_with_worker_count": true,
+    "primary_area_optimum_proven": true,
+    "secondary_objectives_proven": false,
+    "next_experiment": "parallel exact dimension sweep of all three phase-zero networks"
+  }
+}
