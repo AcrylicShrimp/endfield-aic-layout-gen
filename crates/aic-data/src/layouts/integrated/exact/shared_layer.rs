@@ -5,9 +5,7 @@ use pumpkin_solver::core::predicates::PredicateConstructor;
 use pumpkin_solver::core::results::ProblemSolution;
 use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
-use super::external_connectors::{
-    self, ConnectorSelector, ModelExternalConnector, UsedBoundsVariables,
-};
+use super::boundary_terminals::{self, UsedBoundsVariables};
 use super::extract::rate_from_flow_units;
 use super::formulation::{
     DIRECTIONS, direction_between, direction_index, external_endpoint_options,
@@ -72,17 +70,20 @@ enum SharedTerminalEndpoint {
     Flattened(Vec<EndpointOption>),
     Factored {
         key: DomainId,
-        port_choice: DomainId,
-        port_ids: Vec<String>,
         kind: FactoredEndpointKind,
-        reverse_direction: bool,
     },
 }
 
 #[derive(Clone)]
 enum FactoredEndpointKind {
-    Facility { instance: String },
-    External { node: String },
+    Facility {
+        instance: String,
+        port_choice: DomainId,
+        port_ids: Vec<String>,
+    },
+    External {
+        node: String,
+    },
 }
 
 struct SharedTerminal {
@@ -115,11 +116,8 @@ struct FactoredEdgeEndpoints {
 
 struct FactoredTerminalView {
     key: DomainId,
-    port_choice: DomainId,
-    port_ids: Vec<String>,
     kind: FactoredEndpointKind,
     reachable_keys: Vec<i32>,
-    reverse_direction: bool,
 }
 
 pub(in crate::layouts::integrated) fn solve(
@@ -167,27 +165,12 @@ fn solve_with_endpoint_encoding(
     prior_solution: Option<&IntegratedLayoutReport>,
 ) -> IntegratedLayoutReport {
     let construction_started = Instant::now();
-    let original_requirement_count = input.edges.len();
-    let (input, external_requirements) = match endpoint_encoding {
-        EndpointEncoding::Flattened => (input, Vec::new()),
-        EndpointEncoding::Factored => {
-            match external_connectors::partition_external_requirements(&input) {
-                Ok(partitioned) => partitioned,
-                Err(diagnostic) => {
-                    return IntegratedLayoutReport::failure(
-                        IntegratedLayoutStatus::InvalidInput,
-                        diagnostic,
-                    );
-                }
-            }
-        }
-    };
     let mut model_metrics = initial_metrics(&input);
-    model_metrics.route_requirement_count = original_requirement_count;
-    model_metrics.external_connector_count = external_requirements.len();
+    model_metrics.boundary_terminal_count = model_metrics.external_terminal_count;
     let cell_count = input.cell_count as usize;
     let mut solver = RecordedModel::default();
     let tag = solver.new_constraint_tag();
+    let used_bounds = boundary_terminals::new_used_bounds(&mut solver, &input);
 
     let (model_instances, placement_choices, facility_occupancy) =
         build_placements(&mut solver, &input, &mut model_metrics, cell_count, tag);
@@ -218,51 +201,11 @@ fn solve_with_endpoint_encoding(
             &input,
             &model_instances,
             &placement_choices,
+            used_bounds,
             &mut model_metrics,
             tag,
         ),
     };
-
-    let used_bounds = external_connectors::new_used_bounds(&mut solver, &input);
-    let connector_selectors = external_requirements
-        .iter()
-        .enumerate()
-        .map(|(index, requirement)| {
-            let selector = build_factored_selector(
-                &mut solver,
-                &input,
-                &model_instances,
-                &placement_choices,
-                index,
-                "external",
-                &requirement.facility_endpoint,
-                &mut model_metrics,
-                tag,
-            );
-            ConnectorSelector {
-                geometry_key: selector.facility_key,
-                port_choice: selector.port_choice,
-                port_ids: selector.port_ids,
-                facility_instance: selector.instance,
-                reachable_geometry_keys: selector.facility_keys,
-            }
-        })
-        .collect::<Vec<_>>();
-    let external_connectors = external_connectors::build(
-        &mut solver,
-        &input,
-        &external_requirements,
-        connector_selectors,
-        used_bounds,
-        &mut model_metrics,
-        tag,
-    );
-    external_connectors::validate_unique_ports(
-        &mut solver,
-        &external_connectors,
-        &mut model_metrics,
-        tag,
-    );
 
     let mut layers = Vec::new();
     let mut branch_components = Vec::new();
@@ -291,7 +234,7 @@ fn solve_with_endpoint_encoding(
         );
         layers.push(layer);
     }
-    let transport_occupancy = external_connectors::build_transport_occupancy(
+    let transport_occupancy = build_transport_occupancy(
         &mut solver,
         &input,
         &facility_occupancy,
@@ -301,7 +244,6 @@ fn solve_with_endpoint_encoding(
                 .find(|layer| layer.transport == transport)
                 .map(|layer| layer.route_cells[cell])
         },
-        &external_connectors,
         &mut model_metrics,
         tag,
     );
@@ -314,7 +256,6 @@ fn solve_with_endpoint_encoding(
         &layers,
         &branch_components,
         &bridges,
-        &external_connectors,
         used_bounds,
         &mut model_metrics,
         tag,
@@ -354,16 +295,14 @@ fn solve_with_endpoint_encoding(
                 &layers,
                 &branch_components,
                 &bridges,
-                &external_connectors,
             )
         },
     );
     let mut report = search.report;
     let validation = if report.success {
-        match external_connectors::validate_witness(&input, &external_requirements, &report)
-            .and_then(|()| {
-                crate::layouts::integrated::witness::validate(&input, logistics_components, &report)
-            }) {
+        match boundary_terminals::validate_witness(&report).and_then(|()| {
+            crate::layouts::integrated::witness::validate(&input, logistics_components, &report)
+        }) {
             Ok(()) => match super::validate_objective_witness(&report, &search.stages) {
                 Ok(()) => ExactValidationStatus::Passed,
                 Err(diagnostic) => {
@@ -387,9 +326,7 @@ fn solve_with_endpoint_encoding(
         report,
         match endpoint_encoding {
             EndpointEncoding::Flattened => "joint-shared-transport-layer-canonical-occupancy-v2",
-            EndpointEncoding::Factored => {
-                "joint-shared-transport-layer-external-connectors-canonical-occupancy-v3"
-            }
+            EndpointEncoding::Factored => "joint-shared-boundary-terminals-canonical-occupancy-v4",
         },
         model_metrics,
         model_complexity,
@@ -703,6 +640,7 @@ fn build_factored_terminals(
     input: &ModelInput,
     instances: &[ModelInstance],
     placement_choices: &BTreeMap<String, PlacementChoice>,
+    used_bounds: UsedBoundsVariables,
     metrics: &mut ExactModelMetrics,
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) -> Vec<Vec<SharedTerminal>> {
@@ -740,6 +678,15 @@ fn build_factored_terminals(
                 }
             }
             (EndpointInput::External { node }, EndpointInput::Facility { .. }) => {
+                let source = boundary_terminals::build_selector(
+                    solver,
+                    input,
+                    edge_index,
+                    "source",
+                    used_bounds,
+                    metrics,
+                    tag,
+                );
                 let target = build_factored_selector(
                     solver,
                     input,
@@ -752,7 +699,7 @@ fn build_factored_terminals(
                     tag,
                 );
                 FactoredEdgeEndpoints {
-                    source: factored_external_view(&target, node),
+                    source: factored_boundary_view(&source, node),
                     target: factored_facility_view(&target),
                 }
             }
@@ -768,9 +715,18 @@ fn build_factored_terminals(
                     metrics,
                     tag,
                 );
+                let target = boundary_terminals::build_selector(
+                    solver,
+                    input,
+                    edge_index,
+                    "target",
+                    used_bounds,
+                    metrics,
+                    tag,
+                );
                 FactoredEdgeEndpoints {
                     source: factored_facility_view(&source),
-                    target: factored_external_view(&source, node),
+                    target: factored_boundary_view(&target, node),
                 }
             }
             (EndpointInput::External { .. }, EndpointInput::External { .. }) => unreachable!(),
@@ -796,11 +752,17 @@ fn build_factored_terminals(
                         .reachable_keys
                         .iter()
                         .map(|key| {
+                            let variable_family =
+                                if matches!(&view.kind, FactoredEndpointKind::External { .. }) {
+                                    VariableFamily::BoundaryTerminal
+                                } else {
+                                    VariableFamily::EndpointGeometry
+                                };
                             let selected = *geometry_literals
                                 .entry((view.key, *key))
                                 .or_insert_with(|| {
                                     let literal = solver.new_named_literal_for_predicate(
-                                        VariableFamily::EndpointGeometry,
+                                        variable_family,
                                         view.key.equality_predicate(*key),
                                         tag,
                                         format!(
@@ -808,7 +770,11 @@ fn build_factored_terminals(
                                             terminal.route_index()
                                         ),
                                     );
-                                    metrics.endpoint_variables += 1;
+                                    if variable_family == VariableFamily::BoundaryTerminal {
+                                        metrics.boundary_terminal_variables += 1;
+                                    } else {
+                                        metrics.endpoint_variables += 1;
+                                    }
                                     *literal.get_integer_variable().inner()
                                 });
                             let key = usize::try_from(*key)
@@ -816,11 +782,7 @@ fn build_factored_terminals(
                             let direction = DIRECTIONS[key % 4];
                             SharedRoutingOption {
                                 cell: key / 4,
-                                arm_direction: if view.reverse_direction {
-                                    opposite_direction(direction)
-                                } else {
-                                    direction
-                                },
+                                arm_direction: direction,
                                 selected,
                             }
                         })
@@ -833,10 +795,7 @@ fn build_factored_terminals(
                         routing_options,
                         endpoint: SharedTerminalEndpoint::Factored {
                             key: view.key,
-                            port_choice: view.port_choice,
-                            port_ids: view.port_ids.clone(),
                             kind: view.kind.clone(),
-                            reverse_direction: view.reverse_direction,
                         },
                     }
                 })
@@ -950,26 +909,25 @@ fn build_factored_selector(
 fn factored_facility_view(selector: &FactoredEndpointSelector) -> FactoredTerminalView {
     FactoredTerminalView {
         key: selector.facility_key,
-        port_choice: selector.port_choice,
-        port_ids: selector.port_ids.clone(),
         kind: FactoredEndpointKind::Facility {
             instance: selector.instance.clone(),
+            port_choice: selector.port_choice,
+            port_ids: selector.port_ids.clone(),
         },
         reachable_keys: selector.facility_keys.clone(),
-        reverse_direction: false,
     }
 }
 
-fn factored_external_view(selector: &FactoredEndpointSelector, node: &str) -> FactoredTerminalView {
+fn factored_boundary_view(
+    selector: &boundary_terminals::BoundaryTerminalSelector,
+    node: &str,
+) -> FactoredTerminalView {
     FactoredTerminalView {
-        key: selector.facility_key,
-        port_choice: selector.port_choice,
-        port_ids: selector.port_ids.clone(),
+        key: selector.key,
         kind: FactoredEndpointKind::External {
             node: node.to_string(),
         },
-        reachable_keys: selector.facility_keys.clone(),
-        reverse_direction: true,
+        reachable_keys: selector.reachable_keys.clone(),
     }
 }
 
@@ -1859,6 +1817,47 @@ fn same_axis(cell: usize, neighbor: usize, width: i32, horizontal: bool) -> bool
     (cell / width == neighbor / width) == horizontal
 }
 
+fn build_transport_occupancy(
+    solver: &mut RecordedModel,
+    input: &ModelInput,
+    facility_occupancy: &[DomainId],
+    internal_cells: impl Fn(TransportKind, usize) -> Option<DomainId>,
+    metrics: &mut ExactModelMetrics,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> BTreeMap<TransportKind, Vec<DomainId>> {
+    let mut layers = BTreeMap::new();
+    for transport in [TransportKind::Belt, TransportKind::Pipe] {
+        let mut cells = Vec::with_capacity(input.cell_count as usize);
+        for cell in 0..input.cell_count as usize {
+            let occupied = solver.new_variable(
+                VariableFamily::TransportOccupancy,
+                0,
+                1,
+                format!(
+                    "{}-occupancy-{cell}",
+                    format!("{transport:?}").to_lowercase()
+                ),
+            );
+            let mut definition = vec![occupied.scaled(1)];
+            if let Some(route_cell) = internal_cells(transport, cell) {
+                definition.push(route_cell.scaled(-1));
+            }
+            solver.post_equals(ConstraintFamily::OccupancyChannel, definition, 0, 1, tag);
+            solver.post_less_than_or_equals(
+                ConstraintFamily::TransportCollision,
+                vec![facility_occupancy[cell].scaled(1), occupied.scaled(1)],
+                1,
+                1,
+                tag,
+            );
+            cells.push(occupied);
+        }
+        metrics.route_cell_variables += cells.len();
+        layers.insert(transport, cells);
+    }
+    layers
+}
+
 #[allow(clippy::too_many_arguments)]
 fn build_objectives(
     solver: &mut RecordedModel,
@@ -1868,7 +1867,6 @@ fn build_objectives(
     layers: &[SharedLayer],
     branches: &[SharedBranchComponent],
     bridges: &[ModelBridge],
-    external_connectors: &[ModelExternalConnector],
     used_bounds: UsedBoundsVariables,
     metrics: &mut ExactModelMetrics,
     tag: pumpkin_solver::core::proof::ConstraintTag,
@@ -1971,7 +1969,6 @@ fn build_objectives(
             ));
         }
     }
-    turns.extend(external_connectors.iter().map(external_connectors::turn));
     let total_route_turns = post_sum_variable(solver, "total-route-turns", &turns, tag)?;
     metrics.objective_variables += 1;
 
@@ -2093,7 +2090,6 @@ fn extract_report(
     layers: &[SharedLayer],
     branches: &[SharedBranchComponent],
     bridges: &[ModelBridge],
-    model_external_connectors: &[ModelExternalConnector],
 ) -> IntegratedLayoutReport {
     let mut placements = instances
         .iter()
@@ -2272,18 +2268,13 @@ fn extract_report(
         bounds: None,
         placements,
         logistics_components,
-        external_connectors: external_connectors::extract(
-            solution,
-            input,
-            model_external_connectors,
-        ),
         transport_networks,
         phases: Vec::new(),
         exact: None,
         diagnostics: vec![
             IntegratedLayoutDiagnostic::info(
-                "experimental-shared-layer-external-connectors",
-                "facility placement, port assignment, three-template external connectors, and internal item-labelled flow were solved jointly",
+                "experimental-shared-boundary-terminals",
+                "facility placement, port assignment, external boundary terminals, and item-labelled belt and pipe flow were solved in shared commodity networks",
             ),
             IntegratedLayoutDiagnostic::info(
                 if status == IntegratedLayoutStatus::Optimal {
@@ -2325,36 +2316,32 @@ fn selected_terminal_endpoint(
                 option.cell,
             )
         }
-        SharedTerminalEndpoint::Factored {
-            key,
-            port_choice,
-            port_ids,
-            kind,
-            reverse_direction,
-        } => {
+        SharedTerminalEndpoint::Factored { key, kind } => {
             let key = usize::try_from(solution.get_integer_value(*key))
                 .expect("selected terminal geometry key is non-negative");
-            let port_index = usize::try_from(solution.get_integer_value(*port_choice))
-                .expect("selected port index is non-negative");
-            let port = port_ids
-                .get(port_index)
-                .expect("selected port index belongs to the endpoint domain")
-                .clone();
-            let direction = if *reverse_direction {
-                opposite_direction(DIRECTIONS[key % 4])
-            } else {
-                DIRECTIONS[key % 4]
-            };
+            let direction = DIRECTIONS[key % 4];
             let cell = key / 4;
             match kind {
-                FactoredEndpointKind::Facility { instance } => (
-                    instance.clone(),
-                    TransportNetworkEndpoint::Facility {
-                        instance: instance.clone(),
-                        port,
-                    },
-                    cell,
-                ),
+                FactoredEndpointKind::Facility {
+                    instance,
+                    port_choice,
+                    port_ids,
+                } => {
+                    let port_index = usize::try_from(solution.get_integer_value(*port_choice))
+                        .expect("selected port index is non-negative");
+                    let port = port_ids
+                        .get(port_index)
+                        .expect("selected port index belongs to the endpoint domain")
+                        .clone();
+                    (
+                        instance.clone(),
+                        TransportNetworkEndpoint::Facility {
+                            instance: instance.clone(),
+                            port,
+                        },
+                        cell,
+                    )
+                }
                 FactoredEndpointKind::External { node } => (
                     node.clone(),
                     TransportNetworkEndpoint::External {

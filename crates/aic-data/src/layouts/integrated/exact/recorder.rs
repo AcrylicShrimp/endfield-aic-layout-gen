@@ -19,7 +19,7 @@ pub(super) enum VariableFamily {
     TransportOccupancy,
     Endpoint,
     EndpointGeometry,
-    ExternalConnector,
+    BoundaryTerminal,
     RouteCell,
     RouteArc,
     Flow,
@@ -41,7 +41,7 @@ impl VariableFamily {
             Self::TransportOccupancy => "transport-occupancy",
             Self::Endpoint => "endpoint",
             Self::EndpointGeometry => "endpoint-geometry",
-            Self::ExternalConnector => "external-connector",
+            Self::BoundaryTerminal => "boundary-terminal",
             Self::RouteCell => "route-cell",
             Self::RouteArc => "route-arc",
             Self::Flow => "flow",
@@ -77,7 +77,7 @@ impl VariableFamily {
                 | Self::Bridge
                 | Self::BridgeRotation
                 | Self::CrossingOwner
-                | Self::ExternalConnector
+                | Self::BoundaryTerminal
         )
     }
 }
@@ -88,7 +88,7 @@ pub(super) enum ConstraintFamily {
     FacilityNonOverlap,
     EndpointLink,
     EndpointChoice,
-    ExternalConnector,
+    BoundaryTerminal,
     ArcActivation,
     FlowConservation,
     TerminalPresence,
@@ -118,7 +118,7 @@ impl ConstraintFamily {
             Self::FacilityNonOverlap => "facility-non-overlap",
             Self::EndpointLink => "endpoint-link",
             Self::EndpointChoice => "endpoint-choice",
-            Self::ExternalConnector => "external-connector",
+            Self::BoundaryTerminal => "boundary-terminal",
             Self::ArcActivation => "arc-activation",
             Self::FlowConservation => "flow-conservation",
             Self::TerminalPresence => "terminal-presence",

@@ -278,7 +278,6 @@ pub fn solve_cumulative_scc_growth_v2(
             bounds,
             placements: phase_report.placements.clone(),
             logistics_components: phase_report.logistics_components.clone(),
-            external_connectors: phase_report.external_connectors.clone(),
             transport_networks: phase_report.transport_networks.clone(),
             exact,
         });

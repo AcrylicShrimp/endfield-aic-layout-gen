@@ -18,7 +18,8 @@ use crate::recipes::{
 
 use super::{
     ExactObjectiveKind, ExactObjectiveValue, ExactProofStatus, ExactValidationStatus,
-    IntegratedLayoutStatus, solve_cumulative_scc_growth_v2, solve_integrated_layout,
+    IntegratedLayoutStatus, TransportNetworkEndpoint, solve_cumulative_scc_growth_v2,
+    solve_integrated_layout,
 };
 use std::time::Duration;
 
@@ -479,7 +480,7 @@ fn external_connector_wiring() -> FacilityInstanceWiringReport {
 }
 
 #[test]
-fn factored_shared_layer_selects_three_template_external_connectors() {
+fn factored_shared_layer_routes_external_boundary_terminals_in_the_commodity_network() {
     let (facilities, items, transports, components) = catalogs();
     let input = super::prepare_model(
         &external_connector_wiring(),
@@ -498,27 +499,64 @@ fn factored_shared_layer_selects_three_template_external_connectors() {
     let report = super::exact::shared_layer::solve_factored_endpoints(input, &components, None);
 
     assert!(report.success, "{:#?}", report.diagnostics);
-    assert_eq!(report.transport_networks.len(), 0);
-    assert_eq!(report.external_connectors.len(), 2);
+    assert_eq!(report.transport_networks.len(), 1);
     assert!(
         report
-            .external_connectors
+            .transport_networks
             .iter()
-            .all(|connector| !connector.cells.is_empty())
+            .flat_map(|network| &network.terminals)
+            .filter(|terminal| matches!(
+                terminal.endpoint,
+                TransportNetworkEndpoint::External { .. }
+            ))
+            .count()
+            == 2
     );
-    let exact = report.exact.expect("exact solve reports metrics");
+    let exact = report.exact.as_ref().expect("exact solve reports metrics");
     assert_eq!(
         exact.formulation,
-        "joint-shared-transport-layer-external-connectors-canonical-occupancy-v3"
+        "joint-shared-boundary-terminals-canonical-occupancy-v4"
     );
-    assert_eq!(exact.model.external_connector_count, 2);
-    assert_eq!(exact.model.commodity_network_count, 0);
+    assert_eq!(exact.model.boundary_terminal_count, 2);
+    assert_eq!(exact.model.commodity_network_count, 1);
     assert_eq!(exact.validation, ExactValidationStatus::Passed);
+    let serialized = serde_json::to_value(&report).expect("boundary-terminal report serializes");
+    assert!(serialized.get("external_connectors").is_none());
 }
 
 #[test]
 fn factored_endpoint_uses_one_geometry_lookup_per_compatible_port() {
     let (facilities, items, transports, components) = catalogs();
+    let request = FacilityPlacementRequest {
+        schema_version: 2,
+        max_width: 4,
+        max_height: 3,
+    };
+    let baseline_input = super::prepare_model(
+        &external_connector_wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &request,
+    )
+    .expect("single-port boundary-terminal fixture should prepare");
+    let baseline =
+        super::exact::shared_layer::solve_factored_endpoints(baseline_input, &components, None);
+    assert!(baseline.success, "{:#?}", baseline.diagnostics);
+    let baseline_exact = baseline
+        .exact
+        .expect("baseline exact solve reports metrics");
+    let baseline_endpoint_links = baseline_exact
+        .model_complexity
+        .constraints
+        .as_ref()
+        .expect("baseline records constraint families")
+        .by_family
+        .iter()
+        .filter(|family| family.family == "endpoint-link")
+        .map(|family| family.constraints)
+        .sum::<u64>();
     let mut facility_catalog = facilities.catalog().clone();
     facility_catalog
         .facilities
@@ -541,11 +579,7 @@ fn factored_endpoint_uses_one_geometry_lookup_per_compatible_port() {
         &items,
         &transports,
         &components,
-        &FacilityPlacementRequest {
-            schema_version: 2,
-            max_width: 4,
-            max_height: 3,
-        },
+        &request,
     )
     .expect("multi-port external connector fixture should prepare");
 
@@ -553,7 +587,17 @@ fn factored_endpoint_uses_one_geometry_lookup_per_compatible_port() {
 
     assert!(report.success, "{:#?}", report.diagnostics);
     let exact = report.exact.expect("exact solve reports metrics");
-    assert_eq!(exact.model.endpoint_variables, 7);
+    let endpoint_links = exact
+        .model_complexity
+        .constraints
+        .as_ref()
+        .expect("comparison records constraint families")
+        .by_family
+        .iter()
+        .filter(|family| family.family == "endpoint-link")
+        .map(|family| family.constraints)
+        .sum::<u64>();
+    assert_eq!(endpoint_links, baseline_endpoint_links + 1);
     assert_eq!(exact.validation, ExactValidationStatus::Passed);
 }
 
@@ -639,7 +683,7 @@ fn exact_solver_jointly_places_selects_ports_routes_and_validates() {
         report
             .diagnostics
             .iter()
-            .any(|diagnostic| diagnostic.code == "solver-selected-logistics-components")
+            .any(|diagnostic| diagnostic.code == "experimental-shared-boundary-terminals")
     );
     let serialized = serde_json::to_value(&report).expect("report should serialize");
     assert!(serialized.get("transport_networks").is_some());
@@ -654,7 +698,10 @@ fn exact_solver_jointly_places_selects_ports_routes_and_validates() {
     assert!(serialized_phase.get("attempts").is_none());
     assert!(serialized_phase.get("optimization").is_none());
     let exact = report.exact.expect("exact metrics should be present");
-    assert_eq!(exact.formulation, "joint-lexicographic-layout-v5");
+    assert_eq!(
+        exact.formulation,
+        "joint-shared-boundary-terminals-canonical-occupancy-v4"
+    );
     assert!(
         exact
             .model_complexity
@@ -744,7 +791,7 @@ fn v2_cumulative_growth_reuses_placement_hints_without_cutting_over_production()
             .exact
             .expect("final exact metrics")
             .formulation,
-        "joint-shared-transport-layer-external-connectors-canonical-occupancy-v3"
+        "joint-shared-boundary-terminals-canonical-occupancy-v4"
     );
 }
 

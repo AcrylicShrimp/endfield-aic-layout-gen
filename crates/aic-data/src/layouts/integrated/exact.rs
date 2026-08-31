@@ -13,7 +13,7 @@ use crate::facilities::FacilityPortDirection;
 use crate::logistics::CardinalDirection;
 use crate::logistics::LogisticsComponentKind;
 
-mod external_connectors;
+mod boundary_terminals;
 mod extract;
 mod fixation;
 mod formulation;

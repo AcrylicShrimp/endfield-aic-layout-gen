@@ -175,7 +175,6 @@ pub(in crate::layouts::integrated) fn extract_report(
         bounds: None,
         placements,
         logistics_components,
-        external_connectors: Vec::new(),
         transport_networks,
         phases: Vec::new(),
         exact: None,

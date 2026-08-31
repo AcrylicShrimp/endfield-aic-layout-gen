@@ -202,7 +202,6 @@ pub(in crate::layouts::integrated) fn solve_iterative_scc(
             bounds,
             placements: phase_report.placements.clone(),
             logistics_components: phase_report.logistics_components.clone(),
-            external_connectors: phase_report.external_connectors.clone(),
             transport_networks: phase_report.transport_networks.clone(),
             exact,
         });

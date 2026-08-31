@@ -5,16 +5,14 @@ use crate::localization::ValidatedLocalizationCatalog;
 use crate::logistics::{LogisticsComponentKind, TransportKind};
 
 use super::{
-    ExternalBoundaryConnector, FacilityPlacement, FacilityPlacementBounds,
-    IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutReport,
-    PlacedLogisticsComponent, TransportNetwork, TransportNetworkEndpoint,
+    FacilityPlacement, FacilityPlacementBounds, IntegratedLayoutDiagnostic, IntegratedLayoutPhase,
+    IntegratedLayoutReport, PlacedLogisticsComponent, TransportNetwork, TransportNetworkEndpoint,
 };
 
 struct RenderPage<'a> {
     bounds: &'a FacilityPlacementBounds,
     placements: &'a [FacilityPlacement],
     logistics_components: &'a [PlacedLogisticsComponent],
-    external_connectors: &'a [ExternalBoundaryConnector],
     transport_networks: &'a [TransportNetwork],
     introduced_facilities: BTreeSet<&'a str>,
     phase: Option<&'a IntegratedLayoutPhase>,
@@ -33,7 +31,6 @@ pub fn render_integrated_layout_html_with_localization(
     let has_direct_geometry = report.bounds.is_some()
         && (!report.placements.is_empty()
             || !report.transport_networks.is_empty()
-            || !report.external_connectors.is_empty()
             || !report.logistics_components.is_empty());
     if !report.success && report.phases.is_empty() && !has_direct_geometry {
         return Ok(render_failure_summary(report));
@@ -49,11 +46,6 @@ pub fn render_integrated_layout_html_with_localization(
                 .iter()
                 .map(|network| network.cells.len())
                 .sum::<usize>()
-                + page
-                    .external_connectors
-                    .iter()
-                    .map(|connector| connector.cells.len())
-                    .sum::<usize>()
         })
         .sum::<usize>();
     let final_metrics = page_metrics(final_page);
@@ -336,7 +328,6 @@ fn collect_pages(
             bounds,
             placements: &report.placements,
             logistics_components: &report.logistics_components,
-            external_connectors: &report.external_connectors,
             transport_networks: &report.transport_networks,
             introduced_facilities: BTreeSet::new(),
             phase: None,
@@ -349,7 +340,6 @@ fn collect_pages(
                 bounds: &phase.bounds,
                 placements: &phase.placements,
                 logistics_components: &phase.logistics_components,
-                external_connectors: &phase.external_connectors,
                 transport_networks: &phase.transport_networks,
                 introduced_facilities: phase
                     .introduced_facilities
@@ -433,24 +423,10 @@ fn render_page(
         "route-cell-belt",
         localization,
     );
-    render_external_connectors(
-        html,
-        page.external_connectors,
-        TransportKind::Belt,
-        "route-cell-belt",
-        localization,
-    );
     render_transport_networks(
         html,
         page.transport_networks,
         page.placements,
-        TransportKind::Pipe,
-        "route-cell-pipe",
-        localization,
-    );
-    render_external_connectors(
-        html,
-        page.external_connectors,
         TransportKind::Pipe,
         "route-cell-pipe",
         localization,
@@ -505,97 +481,11 @@ fn transport_cell_count(page: &RenderPage<'_>, transport: Option<TransportKind>)
         .filter(|network| transport.is_none_or(|transport| network.transport == transport))
         .map(|network| network.cells.len())
         .sum::<usize>()
-        + page
-            .external_connectors
-            .iter()
-            .filter(|connector| transport.is_none_or(|kind| connector.transport == kind))
-            .map(|connector| connector.cells.len())
-            .sum::<usize>()
 }
 
 fn transport_summary(page: &RenderPage<'_>, transport: TransportKind) -> String {
     let tiles = transport_cell_count(page, Some(transport));
     format!("{tiles} tiles")
-}
-
-fn render_external_connectors(
-    html: &mut String,
-    connectors: &[ExternalBoundaryConnector],
-    transport: TransportKind,
-    route_class: &str,
-    localization: Option<&ValidatedLocalizationCatalog>,
-) {
-    let layer_class = match transport {
-        TransportKind::Belt => "belt-layer",
-        TransportKind::Pipe => "pipe-layer",
-    };
-    writeln!(html, "        <g class=\"{layer_class}\">").expect("writing to String cannot fail");
-    for connector in connectors
-        .iter()
-        .filter(|connector| connector.transport == transport)
-    {
-        let item_name = localized_item_name(localization, &connector.item);
-        let details = xml_escape(&format!(
-            "external {:?} | {} | item {} | rate {} | {:?} template | facility {} port {} | {} occupied tiles",
-            connector.direction,
-            connector.external_node,
-            item_name,
-            rate_label(connector.rate),
-            connector.template,
-            connector.facility_instance,
-            connector.port,
-            connector.cells.len(),
-        ));
-        writeln!(
-            html,
-            "          <g class=\"route-group\" data-inspect=\"{details}\">"
-        )
-        .expect("writing to String cannot fail");
-        for cell in &connector.cells {
-            writeln!(
-                html,
-                "            <rect class=\"route-cell {route_class}\" x=\"{}\" y=\"{}\" width=\"1\" height=\"1\"/>",
-                cell.x, cell.y,
-            )
-            .expect("writing to String cannot fail");
-        }
-        for (index, pair) in connector.cells.windows(2).enumerate() {
-            if connector.cells.len() > 8 && index % 8 != 4 {
-                continue;
-            }
-            let points = flow_arrow_points(&pair[0], &pair[0], &pair[1], 0.34, 0.22);
-            writeln!(
-                html,
-                "            <polygon class=\"route-direction\" points=\"{points}\"/>"
-            )
-            .expect("writing to String cannot fail");
-        }
-        let (dx, dy) = match connector.boundary_side {
-            crate::facilities::FacilityPortEdge::North => (0.0, -1.0),
-            crate::facilities::FacilityPortEdge::East => (1.0, 0.0),
-            crate::facilities::FacilityPortEdge::South => (0.0, 1.0),
-            crate::facilities::FacilityPortEdge::West => (-1.0, 0.0),
-        };
-        let outward = if connector.direction == crate::facilities::FacilityPortDirection::Output {
-            (dx, dy)
-        } else {
-            (-dx, -dy)
-        };
-        let points = arrow_points_in_direction(&connector.exit, outward.0, outward.1, 0.48, 0.36);
-        let role_class = if connector.direction == crate::facilities::FacilityPortDirection::Output
-        {
-            "port-output"
-        } else {
-            "port-input"
-        };
-        writeln!(
-            html,
-            "            <polygon class=\"endpoint {role_class} external\" data-inspect=\"{details}\" points=\"{points}\"/>"
-        )
-        .expect("writing to String cannot fail");
-        html.push_str("          </g>\n");
-    }
-    html.push_str("        </g>\n");
 }
 
 fn render_transport_networks(
@@ -1036,7 +926,6 @@ mod tests {
                 rotation: 0,
             }],
             logistics_components: Vec::new(),
-            external_connectors: Vec::new(),
             transport_networks: vec![TransportNetwork {
                 id: "network:belt:item&one".to_string(),
                 requirement_ids: vec!["wiring-edge:test:lane:0000".to_string()],
@@ -1099,7 +988,6 @@ mod tests {
             bounds: report.bounds.clone().expect("test report has bounds"),
             placements: report.placements.clone(),
             logistics_components: report.logistics_components.clone(),
-            external_connectors: report.external_connectors.clone(),
             transport_networks: report.transport_networks.clone(),
             exact: ExactSolveReport {
                 formulation: "test",
