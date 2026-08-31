@@ -1,0 +1,5183 @@
+{
+  "schema_version": 1,
+  "workload_id": "heavy-xiranite-minimum-rate",
+  "request_bounds": {
+    "max_width": 12,
+    "max_height": 12
+  },
+  "growth": {
+    "schema_version": 1,
+    "target_phase_index": 3,
+    "total_phase_count": 41,
+    "phase_search_budget_ms": 5000,
+    "layout": {
+      "schema_version": 18,
+      "success": false,
+      "status": "unknown",
+      "bounds": null,
+      "placements": [],
+      "logistics_components": [],
+      "external_connectors": [],
+      "transport_networks": [],
+      "phases": [
+        {
+          "index": 0,
+          "introduced_components": [
+            "component:0040"
+          ],
+          "introduced_facilities": [
+            "facility-instance:recipe-occurrence:/target:0"
+          ],
+          "cumulative_facility_count": 1,
+          "cumulative_route_requirement_count": 4,
+          "bounds": {
+            "width": 7,
+            "height": 6
+          },
+          "placements": [
+            {
+              "instance": "facility-instance:recipe-occurrence:/target:0",
+              "recipe": "xiranite-oven-xiranite-enr-powder-1",
+              "facility": "xiranite-oven-1-mode-liquid",
+              "x": 1,
+              "y": 0,
+              "width": 5,
+              "height": 5,
+              "rotation": 270
+            }
+          ],
+          "logistics_components": [],
+          "external_connectors": [
+            {
+              "id": "external-connector:wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000",
+              "requirement_id": "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000",
+              "external_node": "iterative-external:wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd",
+              "facility_instance": "facility-instance:recipe-occurrence:/target:0",
+              "port": "input-pipe-5",
+              "item": "item-liquid-xiranite-poly",
+              "transport": "pipe",
+              "direction": "input",
+              "rate": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "template": "forward",
+              "cells": [
+                {
+                  "x": 3,
+                  "y": 5
+                }
+              ],
+              "turn": null,
+              "boundary_side": "south",
+              "exit": {
+                "x": 3,
+                "y": 5
+              }
+            },
+            {
+              "id": "external-connector:wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6:lane:0000",
+              "requirement_id": "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6:lane:0000",
+              "external_node": "iterative-external:wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6",
+              "facility_instance": "facility-instance:recipe-occurrence:/target:0",
+              "port": "input-belt-0",
+              "item": "item-xiranite-powder",
+              "transport": "belt",
+              "direction": "input",
+              "rate": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "template": "forward",
+              "cells": [
+                {
+                  "x": 6,
+                  "y": 4
+                }
+              ],
+              "turn": null,
+              "boundary_side": "east",
+              "exit": {
+                "x": 6,
+                "y": 4
+              }
+            },
+            {
+              "id": "external-connector:wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e:lane:0000",
+              "requirement_id": "wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e:lane:0000",
+              "external_node": "iterative-external:wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e",
+              "facility_instance": "facility-instance:recipe-occurrence:/target:0",
+              "port": "input-belt-2",
+              "item": "item-xiranite-powder",
+              "transport": "belt",
+              "direction": "input",
+              "rate": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "template": "forward",
+              "cells": [
+                {
+                  "x": 6,
+                  "y": 2
+                }
+              ],
+              "turn": null,
+              "boundary_side": "east",
+              "exit": {
+                "x": 6,
+                "y": 2
+              }
+            },
+            {
+              "id": "external-connector:wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de:lane:0000",
+              "requirement_id": "wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de:lane:0000",
+              "external_node": "target:/target-output",
+              "facility_instance": "facility-instance:recipe-occurrence:/target:0",
+              "port": "output-belt-0",
+              "item": "item-xiranite-enr-powder",
+              "transport": "belt",
+              "direction": "output",
+              "rate": {
+                "numerator": 1,
+                "denominator": 10
+              },
+              "template": "forward",
+              "cells": [
+                {
+                  "x": 0,
+                  "y": 4
+                }
+              ],
+              "turn": null,
+              "boundary_side": "west",
+              "exit": {
+                "x": 0,
+                "y": 4
+              }
+            }
+          ],
+          "transport_networks": [],
+          "exact": {
+            "formulation": "joint-shared-transport-layer-external-connectors-canonical-occupancy-v3",
+            "model": {
+              "facility_count": 1,
+              "route_requirement_count": 4,
+              "commodity_network_count": 0,
+              "commodity_item_count": 0,
+              "belt_network_count": 0,
+              "pipe_network_count": 0,
+              "network_requirement_reference_count": 0,
+              "network_terminal_count": 0,
+              "external_terminal_count": 0,
+              "external_connector_count": 4,
+              "external_connector_variables": 15336,
+              "maximum_network_flow_scale": 0,
+              "maximum_line_capacity_units": 0,
+              "total_terminal_flow_units": 0,
+              "grid_cell_count": 144,
+              "placement_variables": 545,
+              "endpoint_variables": 24,
+              "route_cell_variables": 288,
+              "route_arc_variables": 0,
+              "network_flow_variables": 0,
+              "branch_component_variables": 0,
+              "objective_variables": 153,
+              "hint_variables": 0,
+              "hinted_placements": 0,
+              "hinted_terminals": 0,
+              "hinted_networks": 0,
+              "hinted_components": 0,
+              "bridge_variables": 0,
+              "bridge_rotation_variables": 0,
+              "crossing_owner_variables": 0,
+              "crossing_constraints": 0
+            },
+            "model_complexity": {
+              "variables": {
+                "coverage": "complete",
+                "total_variables": 16346,
+                "boolean_variables": 16310,
+                "integer_variables": 36,
+                "log2_domain_volume": 16543.165840712638,
+                "by_family": [
+                  {
+                    "family": "placement",
+                    "total_variables": 257,
+                    "boolean_variables": 256,
+                    "integer_variables": 1,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 256,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 264.0
+                    }
+                  },
+                  {
+                    "family": "physical-occupancy",
+                    "total_variables": 288,
+                    "boolean_variables": 288,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 288.0
+                    }
+                  },
+                  {
+                    "family": "transport-occupancy",
+                    "total_variables": 288,
+                    "boolean_variables": 288,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 288.0
+                    }
+                  },
+                  {
+                    "family": "endpoint",
+                    "total_variables": 4,
+                    "boolean_variables": 0,
+                    "integer_variables": 4,
+                    "domains": {
+                      "minimum": 1,
+                      "maximum": 5,
+                      "p50": 5,
+                      "p95": 5,
+                      "log2_volume": 6.965784284662087
+                    }
+                  },
+                  {
+                    "family": "endpoint-geometry",
+                    "total_variables": 20,
+                    "boolean_variables": 0,
+                    "integer_variables": 20,
+                    "domains": {
+                      "minimum": 576,
+                      "maximum": 577,
+                      "p50": 577,
+                      "p95": 577,
+                      "log2_volume": 183.43854014409698
+                    }
+                  },
+                  {
+                    "family": "external-connector",
+                    "total_variables": 15336,
+                    "boolean_variables": 15332,
+                    "integer_variables": 4,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 3,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 15338.339850002885
+                    }
+                  },
+                  {
+                    "family": "objective",
+                    "total_variables": 153,
+                    "boolean_variables": 146,
+                    "integer_variables": 7,
+                    "domains": {
+                      "minimum": 1,
+                      "maximum": 289,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 174.42166628099386
+                    }
+                  }
+                ]
+              },
+              "constraints": {
+                "total_constraints": 64408,
+                "total_terms": 162945,
+                "maximum_arity": 289,
+                "p95_arity": 3,
+                "maximum_absolute_coefficient": 575,
+                "by_family": [
+                  {
+                    "family": "endpoint-link",
+                    "relation": "other",
+                    "constraints": 20,
+                    "terms": 56,
+                    "maximum_arity": 7,
+                    "p95_arity": 7,
+                    "maximum_absolute_coefficient": 575
+                  },
+                  {
+                    "family": "external-connector",
+                    "relation": "less-than-or-equal",
+                    "constraints": 49385,
+                    "terms": 118186,
+                    "maximum_arity": 59,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "external-connector",
+                    "relation": "greater-than-or-equal",
+                    "constraints": 13524,
+                    "terms": 40572,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "external-connector",
+                    "relation": "other",
+                    "constraints": 4,
+                    "terms": 8,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "transport-collision",
+                    "relation": "less-than-or-equal",
+                    "constraints": 288,
+                    "terms": 576,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "occupancy-channel",
+                    "relation": "equality",
+                    "constraints": 432,
+                    "terms": 1152,
+                    "maximum_arity": 4,
+                    "p95_arity": 4,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "occupancy-channel",
+                    "relation": "other",
+                    "constraints": 144,
+                    "terms": 288,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "used-geometry",
+                    "relation": "less-than-or-equal",
+                    "constraints": 602,
+                    "terms": 1514,
+                    "maximum_arity": 13,
+                    "p95_arity": 4,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "canonical-translation",
+                    "relation": "equality",
+                    "constraints": 2,
+                    "terms": 2,
+                    "maximum_arity": 1,
+                    "p95_arity": 1,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "bounding-box",
+                    "relation": "maximum",
+                    "constraints": 3,
+                    "terms": 293,
+                    "maximum_arity": 145,
+                    "p95_arity": 145,
+                    "maximum_absolute_coefficient": 12
+                  },
+                  {
+                    "family": "bounding-box",
+                    "relation": "multiplication",
+                    "constraints": 1,
+                    "terms": 3,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "objective-definition",
+                    "relation": "equality",
+                    "constraints": 3,
+                    "terms": 295,
+                    "maximum_arity": 289,
+                    "p95_arity": 289,
+                    "maximum_absolute_coefficient": 1
+                  }
+                ]
+              },
+              "factor_graph": {
+                "variable_vertices": 16346,
+                "constraint_vertices": 64408,
+                "incidences": 162945,
+                "mean_variable_degree": 9.968493821118317,
+                "maximum_variable_degree": 1834,
+                "p95_variable_degree": 25,
+                "mean_constraint_degree": 2.5298875916035275,
+                "maximum_constraint_degree": 289,
+                "p95_constraint_degree": 3,
+                "density": 0.0001547710505079853,
+                "connected_components": 270,
+                "articulation_points": null,
+                "retained_full_graph": false,
+                "family_incidences": [
+                  {
+                    "variable_family": "placement",
+                    "constraint_family": "endpoint-link",
+                    "incidences": 16
+                  },
+                  {
+                    "variable_family": "placement",
+                    "constraint_family": "occupancy-channel",
+                    "incidences": 144
+                  },
+                  {
+                    "variable_family": "physical-occupancy",
+                    "constraint_family": "transport-collision",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "physical-occupancy",
+                    "constraint_family": "occupancy-channel",
+                    "incidences": 432
+                  },
+                  {
+                    "variable_family": "physical-occupancy",
+                    "constraint_family": "used-geometry",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "transport-occupancy",
+                    "constraint_family": "transport-collision",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "transport-occupancy",
+                    "constraint_family": "occupancy-channel",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "transport-occupancy",
+                    "constraint_family": "used-geometry",
+                    "incidences": 576
+                  },
+                  {
+                    "variable_family": "transport-occupancy",
+                    "constraint_family": "objective-definition",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "endpoint",
+                    "constraint_family": "endpoint-link",
+                    "incidences": 4
+                  },
+                  {
+                    "variable_family": "endpoint-geometry",
+                    "constraint_family": "endpoint-link",
+                    "incidences": 36
+                  },
+                  {
+                    "variable_family": "external-connector",
+                    "constraint_family": "external-connector",
+                    "incidences": 158766
+                  },
+                  {
+                    "variable_family": "external-connector",
+                    "constraint_family": "occupancy-channel",
+                    "incidences": 576
+                  },
+                  {
+                    "variable_family": "external-connector",
+                    "constraint_family": "objective-definition",
+                    "incidences": 4
+                  },
+                  {
+                    "variable_family": "objective",
+                    "constraint_family": "used-geometry",
+                    "incidences": 650
+                  },
+                  {
+                    "variable_family": "objective",
+                    "constraint_family": "canonical-translation",
+                    "incidences": 2
+                  },
+                  {
+                    "variable_family": "objective",
+                    "constraint_family": "bounding-box",
+                    "incidences": 296
+                  },
+                  {
+                    "variable_family": "objective",
+                    "constraint_family": "objective-definition",
+                    "incidences": 3
+                  }
+                ]
+              },
+              "coupling": {
+                "facility_network_incidences": 0,
+                "shared_network_facility_pairs": 0,
+                "cross_family_constraints": 1318,
+                "placement_routing_constraints": 432,
+                "placement_routing_incidences": 1152,
+                "network_collision_constraints": 288,
+                "objective_incidences": 2107
+              },
+              "symmetry": null,
+              "estimated_bytes": null
+            },
+            "construction_ms": 66,
+            "search_ms": 1912,
+            "first_incumbent_ms": 16,
+            "incumbent_count": 22,
+            "objective": {
+              "used_bounding_box_area": 42,
+              "physical_transport_tiles": 4,
+              "total_route_turns": 0,
+              "maximum_used_side": 7,
+              "logistics_component_count": 0
+            },
+            "objective_stages": [
+              {
+                "objective": "used-bounding-box-area",
+                "incumbent": 42,
+                "best_bound": 42,
+                "search_ms": 817,
+                "proof": "proven-optimal"
+              },
+              {
+                "objective": "physical-transport-tiles",
+                "incumbent": 4,
+                "best_bound": 4,
+                "search_ms": 1007,
+                "proof": "proven-optimal"
+              },
+              {
+                "objective": "total-route-turns",
+                "incumbent": 0,
+                "best_bound": 0,
+                "search_ms": 45,
+                "proof": "proven-optimal"
+              },
+              {
+                "objective": "maximum-used-side",
+                "incumbent": 7,
+                "best_bound": 7,
+                "search_ms": 21,
+                "proof": "proven-optimal"
+              },
+              {
+                "objective": "logistics-component-count",
+                "incumbent": 0,
+                "best_bound": 0,
+                "search_ms": 14,
+                "proof": "proven-optimal"
+              }
+            ],
+            "termination": "optimal",
+            "proof": "proven-optimal",
+            "validation": "passed"
+          }
+        },
+        {
+          "index": 1,
+          "introduced_components": [
+            "component:0014"
+          ],
+          "introduced_facilities": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0"
+          ],
+          "cumulative_facility_count": 2,
+          "cumulative_route_requirement_count": 7,
+          "bounds": {
+            "width": 7,
+            "height": 11
+          },
+          "placements": [
+            {
+              "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+              "recipe": "pool-liquid-xiranite-poly-1",
+              "facility": "mix-pool-1-mode-liquid",
+              "x": 1,
+              "y": 6,
+              "width": 5,
+              "height": 5,
+              "rotation": 0
+            },
+            {
+              "instance": "facility-instance:recipe-occurrence:/target:0",
+              "recipe": "xiranite-oven-xiranite-enr-powder-1",
+              "facility": "xiranite-oven-1-mode-liquid",
+              "x": 1,
+              "y": 0,
+              "width": 5,
+              "height": 5,
+              "rotation": 270
+            }
+          ],
+          "logistics_components": [],
+          "external_connectors": [
+            {
+              "id": "external-connector:wiring-edge:f959dd05789fc16f35b1e91f011554b72379039ba540182c0003a2974fcc13e6:lane:0000",
+              "requirement_id": "wiring-edge:f959dd05789fc16f35b1e91f011554b72379039ba540182c0003a2974fcc13e6:lane:0000",
+              "external_node": "external-input:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-sewage",
+              "facility_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+              "port": "input-pipe-2",
+              "item": "item-liquid-sewage",
+              "transport": "pipe",
+              "direction": "input",
+              "rate": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "template": "forward",
+              "cells": [
+                {
+                  "x": 0,
+                  "y": 7
+                }
+              ],
+              "turn": null,
+              "boundary_side": "west",
+              "exit": {
+                "x": 0,
+                "y": 7
+              }
+            },
+            {
+              "id": "external-connector:wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143:lane:0000",
+              "requirement_id": "wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143:lane:0000",
+              "external_node": "iterative-external:wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143",
+              "facility_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+              "port": "input-pipe-3",
+              "item": "item-liquid-xiranite",
+              "transport": "pipe",
+              "direction": "input",
+              "rate": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "template": "forward",
+              "cells": [
+                {
+                  "x": 0,
+                  "y": 9
+                }
+              ],
+              "turn": null,
+              "boundary_side": "west",
+              "exit": {
+                "x": 0,
+                "y": 9
+              }
+            },
+            {
+              "id": "external-connector:wiring-edge:9cc78f5ad1c5a03a94a533fe26e35517c481fb4860303ff01217159ff2418b09:lane:0000",
+              "requirement_id": "wiring-edge:9cc78f5ad1c5a03a94a533fe26e35517c481fb4860303ff01217159ff2418b09:lane:0000",
+              "external_node": "surplus:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:item-liquid-xiranite-lowpoly",
+              "facility_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+              "port": "output-pipe-3",
+              "item": "item-liquid-xiranite-lowpoly",
+              "transport": "pipe",
+              "direction": "output",
+              "rate": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "template": "right",
+              "cells": [
+                {
+                  "x": 6,
+                  "y": 9
+                },
+                {
+                  "x": 6,
+                  "y": 10
+                }
+              ],
+              "turn": {
+                "x": 6,
+                "y": 9
+              },
+              "boundary_side": "south",
+              "exit": {
+                "x": 6,
+                "y": 10
+              }
+            },
+            {
+              "id": "external-connector:wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6:lane:0000",
+              "requirement_id": "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6:lane:0000",
+              "external_node": "iterative-external:wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6",
+              "facility_instance": "facility-instance:recipe-occurrence:/target:0",
+              "port": "input-belt-2",
+              "item": "item-xiranite-powder",
+              "transport": "belt",
+              "direction": "input",
+              "rate": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "template": "forward",
+              "cells": [
+                {
+                  "x": 6,
+                  "y": 2
+                }
+              ],
+              "turn": null,
+              "boundary_side": "east",
+              "exit": {
+                "x": 6,
+                "y": 2
+              }
+            },
+            {
+              "id": "external-connector:wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e:lane:0000",
+              "requirement_id": "wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e:lane:0000",
+              "external_node": "iterative-external:wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e",
+              "facility_instance": "facility-instance:recipe-occurrence:/target:0",
+              "port": "input-belt-1",
+              "item": "item-xiranite-powder",
+              "transport": "belt",
+              "direction": "input",
+              "rate": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "template": "forward",
+              "cells": [
+                {
+                  "x": 6,
+                  "y": 3
+                }
+              ],
+              "turn": null,
+              "boundary_side": "east",
+              "exit": {
+                "x": 6,
+                "y": 3
+              }
+            },
+            {
+              "id": "external-connector:wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de:lane:0000",
+              "requirement_id": "wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de:lane:0000",
+              "external_node": "target:/target-output",
+              "facility_instance": "facility-instance:recipe-occurrence:/target:0",
+              "port": "output-belt-0",
+              "item": "item-xiranite-enr-powder",
+              "transport": "belt",
+              "direction": "output",
+              "rate": {
+                "numerator": 1,
+                "denominator": 10
+              },
+              "template": "forward",
+              "cells": [
+                {
+                  "x": 0,
+                  "y": 4
+                }
+              ],
+              "turn": null,
+              "boundary_side": "west",
+              "exit": {
+                "x": 0,
+                "y": 4
+              }
+            }
+          ],
+          "transport_networks": [
+            {
+              "id": "network:pipe:item-liquid-xiranite-poly",
+              "requirement_ids": [
+                "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000"
+              ],
+              "item": "item-liquid-xiranite-poly",
+              "transport": "pipe",
+              "cells": [
+                {
+                  "x": 3,
+                  "y": 5
+                },
+                {
+                  "x": 4,
+                  "y": 5
+                },
+                {
+                  "x": 5,
+                  "y": 5
+                },
+                {
+                  "x": 6,
+                  "y": 5
+                },
+                {
+                  "x": 6,
+                  "y": 6
+                },
+                {
+                  "x": 6,
+                  "y": 7
+                }
+              ],
+              "segments": [
+                {
+                  "from": {
+                    "x": 4,
+                    "y": 5
+                  },
+                  "to": {
+                    "x": 3,
+                    "y": 5
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 5,
+                    "y": 5
+                  },
+                  "to": {
+                    "x": 4,
+                    "y": 5
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 6,
+                    "y": 5
+                  },
+                  "to": {
+                    "x": 5,
+                    "y": 5
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 6,
+                    "y": 6
+                  },
+                  "to": {
+                    "x": 6,
+                    "y": 5
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 6,
+                    "y": 7
+                  },
+                  "to": {
+                    "x": 6,
+                    "y": 6
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                }
+              ],
+              "terminals": [
+                {
+                  "id": "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000:supply",
+                  "node": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+                  "direction": "output",
+                  "endpoint": {
+                    "kind": "facility",
+                    "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+                    "port": "output-pipe-2"
+                  },
+                  "position": {
+                    "x": 6,
+                    "y": 7
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "id": "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000:demand",
+                  "node": "facility-instance:recipe-occurrence:/target:0",
+                  "direction": "input",
+                  "endpoint": {
+                    "kind": "facility",
+                    "instance": "facility-instance:recipe-occurrence:/target:0",
+                    "port": "input-pipe-5"
+                  },
+                  "position": {
+                    "x": 3,
+                    "y": 5
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                }
+              ],
+              "component_ids": []
+            }
+          ],
+          "exact": {
+            "formulation": "joint-shared-transport-layer-external-connectors-canonical-occupancy-v3",
+            "model": {
+              "facility_count": 2,
+              "route_requirement_count": 7,
+              "commodity_network_count": 1,
+              "commodity_item_count": 1,
+              "belt_network_count": 0,
+              "pipe_network_count": 1,
+              "network_requirement_reference_count": 1,
+              "network_terminal_count": 2,
+              "external_terminal_count": 0,
+              "external_connector_count": 6,
+              "external_connector_variables": 23339,
+              "maximum_network_flow_scale": 2,
+              "maximum_line_capacity_units": 4,
+              "total_terminal_flow_units": 2,
+              "grid_cell_count": 144,
+              "placement_variables": 946,
+              "endpoint_variables": 544,
+              "route_cell_variables": 432,
+              "route_arc_variables": 528,
+              "network_flow_variables": 528,
+              "branch_component_variables": 1152,
+              "objective_variables": 2129,
+              "hint_variables": 256,
+              "hinted_placements": 1,
+              "hinted_terminals": 0,
+              "hinted_networks": 0,
+              "hinted_components": 0,
+              "bridge_variables": 144,
+              "bridge_rotation_variables": 576,
+              "crossing_owner_variables": 0,
+              "crossing_constraints": 2376
+            },
+            "model_complexity": {
+              "variables": {
+                "coverage": "complete",
+                "total_variables": 33342,
+                "boolean_variables": 32475,
+                "integer_variables": 867,
+                "log2_domain_volume": 34707.69567828182,
+                "by_family": [
+                  {
+                    "family": "placement",
+                    "total_variables": 514,
+                    "boolean_variables": 512,
+                    "integer_variables": 2,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 256,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 528.0
+                    }
+                  },
+                  {
+                    "family": "physical-occupancy",
+                    "total_variables": 432,
+                    "boolean_variables": 432,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 432.0
+                    }
+                  },
+                  {
+                    "family": "transport-occupancy",
+                    "total_variables": 288,
+                    "boolean_variables": 288,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 288.0
+                    }
+                  },
+                  {
+                    "family": "endpoint",
+                    "total_variables": 8,
+                    "boolean_variables": 4,
+                    "integer_variables": 4,
+                    "domains": {
+                      "minimum": 1,
+                      "maximum": 5,
+                      "p50": 2,
+                      "p95": 5,
+                      "log2_volume": 10.965784284662085
+                    }
+                  },
+                  {
+                    "family": "endpoint-geometry",
+                    "total_variables": 536,
+                    "boolean_variables": 504,
+                    "integer_variables": 32,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 577,
+                      "p50": 2,
+                      "p95": 576,
+                      "log2_volume": 797.4976602190291
+                    }
+                  },
+                  {
+                    "family": "external-connector",
+                    "total_variables": 23339,
+                    "boolean_variables": 23333,
+                    "integer_variables": 6,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 3,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 23342.509775004328
+                    }
+                  },
+                  {
+                    "family": "route-cell",
+                    "total_variables": 144,
+                    "boolean_variables": 144,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 144.0
+                    }
+                  },
+                  {
+                    "family": "route-arc",
+                    "total_variables": 528,
+                    "boolean_variables": 528,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 528.0
+                    }
+                  },
+                  {
+                    "family": "flow",
+                    "total_variables": 528,
+                    "boolean_variables": 0,
+                    "integer_variables": 528,
+                    "domains": {
+                      "minimum": 5,
+                      "maximum": 5,
+                      "p50": 5,
+                      "p95": 5,
+                      "log2_volume": 1225.9780341005228
+                    }
+                  },
+                  {
+                    "family": "terminal-presence",
+                    "total_variables": 1152,
+                    "boolean_variables": 1152,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 1152.0
+                    }
+                  },
+                  {
+                    "family": "route-arm",
+                    "total_variables": 1152,
+                    "boolean_variables": 1152,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 1152.0
+                    }
+                  },
+                  {
+                    "family": "arm-item",
+                    "total_variables": 720,
+                    "boolean_variables": 720,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 720.0
+                    }
+                  },
+                  {
+                    "family": "branch-component",
+                    "total_variables": 1152,
+                    "boolean_variables": 1152,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 1152.0
+                    }
+                  },
+                  {
+                    "family": "bridge",
+                    "total_variables": 144,
+                    "boolean_variables": 144,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 144.0
+                    }
+                  },
+                  {
+                    "family": "bridge-rotation",
+                    "total_variables": 576,
+                    "boolean_variables": 576,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 576.0
+                    }
+                  },
+                  {
+                    "family": "objective",
+                    "total_variables": 2129,
+                    "boolean_variables": 1834,
+                    "integer_variables": 295,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 1297,
+                      "p50": 2,
+                      "p95": 5,
+                      "log2_volume": 2514.7444246729374
+                    }
+                  }
+                ]
+              },
+              "constraints": {
+                "total_constraints": 121656,
+                "total_terms": 322919,
+                "maximum_arity": 1297,
+                "p95_arity": 3,
+                "maximum_absolute_coefficient": 575,
+                "by_family": [
+                  {
+                    "family": "endpoint-link",
+                    "relation": "other",
+                    "constraints": 32,
+                    "terms": 88,
+                    "maximum_arity": 7,
+                    "p95_arity": 7,
+                    "maximum_absolute_coefficient": 575
+                  },
+                  {
+                    "family": "external-connector",
+                    "relation": "less-than-or-equal",
+                    "constraints": 75239,
+                    "terms": 180078,
+                    "maximum_arity": 59,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "external-connector",
+                    "relation": "greater-than-or-equal",
+                    "constraints": 20608,
+                    "terms": 61824,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "external-connector",
+                    "relation": "other",
+                    "constraints": 6,
+                    "terms": 12,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "arc-activation",
+                    "relation": "less-than-or-equal",
+                    "constraints": 528,
+                    "terms": 1056,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 4
+                  },
+                  {
+                    "family": "arc-activation",
+                    "relation": "greater-than-or-equal",
+                    "constraints": 528,
+                    "terms": 1056,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "flow-conservation",
+                    "relation": "equality",
+                    "constraints": 144,
+                    "terms": 1560,
+                    "maximum_arity": 16,
+                    "p95_arity": 14,
+                    "maximum_absolute_coefficient": 4
+                  },
+                  {
+                    "family": "terminal-presence",
+                    "relation": "less-than-or-equal",
+                    "constraints": 1656,
+                    "terms": 2664,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "route-arm",
+                    "relation": "equality",
+                    "constraints": 1152,
+                    "terms": 3360,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "item-assignment",
+                    "relation": "equality",
+                    "constraints": 1032,
+                    "terms": 2592,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "item-assignment",
+                    "relation": "less-than-or-equal",
+                    "constraints": 1152,
+                    "terms": 5760,
+                    "maximum_arity": 5,
+                    "p95_arity": 5,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "item-assignment",
+                    "relation": "other",
+                    "constraints": 720,
+                    "terms": 2160,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "opposing-arms",
+                    "relation": "less-than-or-equal",
+                    "constraints": 576,
+                    "terms": 1152,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "line-capacity",
+                    "relation": "less-than-or-equal",
+                    "constraints": 1056,
+                    "terms": 2616,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 4
+                  },
+                  {
+                    "family": "branch-topology",
+                    "relation": "less-than-or-equal",
+                    "constraints": 6192,
+                    "terms": 21872,
+                    "maximum_arity": 10,
+                    "p95_arity": 9,
+                    "maximum_absolute_coefficient": 16
+                  },
+                  {
+                    "family": "branch-topology",
+                    "relation": "greater-than-or-equal",
+                    "constraints": 576,
+                    "terms": 4608,
+                    "maximum_arity": 8,
+                    "p95_arity": 8,
+                    "maximum_absolute_coefficient": 2
+                  },
+                  {
+                    "family": "route-cell-activation",
+                    "relation": "less-than-or-equal",
+                    "constraints": 1296,
+                    "terms": 3600,
+                    "maximum_arity": 9,
+                    "p95_arity": 9,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "bridge-rotation",
+                    "relation": "equality",
+                    "constraints": 144,
+                    "terms": 720,
+                    "maximum_arity": 5,
+                    "p95_arity": 5,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "bridge-crossing",
+                    "relation": "equality",
+                    "constraints": 1152,
+                    "terms": 3840,
+                    "maximum_arity": 5,
+                    "p95_arity": 5,
+                    "maximum_absolute_coefficient": 4
+                  },
+                  {
+                    "family": "bridge-crossing",
+                    "relation": "less-than-or-equal",
+                    "constraints": 792,
+                    "terms": 2112,
+                    "maximum_arity": 4,
+                    "p95_arity": 4,
+                    "maximum_absolute_coefficient": 16
+                  },
+                  {
+                    "family": "transport-collision",
+                    "relation": "less-than-or-equal",
+                    "constraints": 288,
+                    "terms": 576,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "occupancy-channel",
+                    "relation": "equality",
+                    "constraints": 432,
+                    "terms": 1728,
+                    "maximum_arity": 5,
+                    "p95_arity": 5,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "occupancy-channel",
+                    "relation": "other",
+                    "constraints": 288,
+                    "terms": 576,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "used-geometry",
+                    "relation": "less-than-or-equal",
+                    "constraints": 602,
+                    "terms": 1514,
+                    "maximum_arity": 13,
+                    "p95_arity": 4,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "canonical-translation",
+                    "relation": "equality",
+                    "constraints": 2,
+                    "terms": 2,
+                    "maximum_arity": 1,
+                    "p95_arity": 1,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "bounding-box",
+                    "relation": "maximum",
+                    "constraints": 3,
+                    "terms": 293,
+                    "maximum_arity": 145,
+                    "p95_arity": 145,
+                    "maximum_absolute_coefficient": 12
+                  },
+                  {
+                    "family": "bounding-box",
+                    "relation": "multiplication",
+                    "constraints": 1,
+                    "terms": 3,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "objective-definition",
+                    "relation": "equality",
+                    "constraints": 3,
+                    "terms": 1737,
+                    "maximum_arity": 1297,
+                    "p95_arity": 1297,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "turn-definition",
+                    "relation": "equality",
+                    "constraints": 288,
+                    "terms": 1344,
+                    "maximum_arity": 5,
+                    "p95_arity": 5,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "turn-definition",
+                    "relation": "less-than-or-equal",
+                    "constraints": 3624,
+                    "terms": 8072,
+                    "maximum_arity": 9,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "turn-definition",
+                    "relation": "greater-than-or-equal",
+                    "constraints": 1256,
+                    "terms": 3768,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "turn-definition",
+                    "relation": "other",
+                    "constraints": 288,
+                    "terms": 576,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  }
+                ]
+              },
+              "factor_graph": {
+                "variable_vertices": 33342,
+                "constraint_vertices": 121656,
+                "incidences": 322919,
+                "mean_variable_degree": 9.685051886509507,
+                "maximum_variable_degree": 2780,
+                "p95_variable_degree": 23,
+                "mean_constraint_degree": 2.654361478266588,
+                "maximum_constraint_degree": 1297,
+                "p95_constraint_degree": 3,
+                "density": 0.00007961014571011301,
+                "connected_components": 527,
+                "articulation_points": null,
+                "retained_full_graph": false,
+                "family_incidences": [
+                  {
+                    "variable_family": "placement",
+                    "constraint_family": "endpoint-link",
+                    "incidences": 24
+                  },
+                  {
+                    "variable_family": "placement",
+                    "constraint_family": "occupancy-channel",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "physical-occupancy",
+                    "constraint_family": "transport-collision",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "physical-occupancy",
+                    "constraint_family": "occupancy-channel",
+                    "incidences": 720
+                  },
+                  {
+                    "variable_family": "physical-occupancy",
+                    "constraint_family": "used-geometry",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "transport-occupancy",
+                    "constraint_family": "transport-collision",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "transport-occupancy",
+                    "constraint_family": "occupancy-channel",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "transport-occupancy",
+                    "constraint_family": "used-geometry",
+                    "incidences": 576
+                  },
+                  {
+                    "variable_family": "transport-occupancy",
+                    "constraint_family": "objective-definition",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "endpoint",
+                    "constraint_family": "endpoint-link",
+                    "incidences": 8
+                  },
+                  {
+                    "variable_family": "endpoint-geometry",
+                    "constraint_family": "endpoint-link",
+                    "incidences": 56
+                  },
+                  {
+                    "variable_family": "endpoint-geometry",
+                    "constraint_family": "flow-conservation",
+                    "incidences": 504
+                  },
+                  {
+                    "variable_family": "endpoint-geometry",
+                    "constraint_family": "terminal-presence",
+                    "incidences": 1008
+                  },
+                  {
+                    "variable_family": "endpoint-geometry",
+                    "constraint_family": "item-assignment",
+                    "incidences": 504
+                  },
+                  {
+                    "variable_family": "endpoint-geometry",
+                    "constraint_family": "line-capacity",
+                    "incidences": 504
+                  },
+                  {
+                    "variable_family": "endpoint-geometry",
+                    "constraint_family": "branch-topology",
+                    "incidences": 2240
+                  },
+                  {
+                    "variable_family": "endpoint-geometry",
+                    "constraint_family": "bridge-crossing",
+                    "incidences": 504
+                  },
+                  {
+                    "variable_family": "external-connector",
+                    "constraint_family": "external-connector",
+                    "incidences": 241914
+                  },
+                  {
+                    "variable_family": "external-connector",
+                    "constraint_family": "occupancy-channel",
+                    "incidences": 864
+                  },
+                  {
+                    "variable_family": "external-connector",
+                    "constraint_family": "objective-definition",
+                    "incidences": 6
+                  },
+                  {
+                    "variable_family": "route-cell",
+                    "constraint_family": "item-assignment",
+                    "incidences": 144
+                  },
+                  {
+                    "variable_family": "route-cell",
+                    "constraint_family": "route-cell-activation",
+                    "incidences": 1296
+                  },
+                  {
+                    "variable_family": "route-cell",
+                    "constraint_family": "occupancy-channel",
+                    "incidences": 144
+                  },
+                  {
+                    "variable_family": "route-arc",
+                    "constraint_family": "arc-activation",
+                    "incidences": 1056
+                  },
+                  {
+                    "variable_family": "route-arc",
+                    "constraint_family": "route-arm",
+                    "incidences": 1056
+                  },
+                  {
+                    "variable_family": "route-arc",
+                    "constraint_family": "item-assignment",
+                    "incidences": 528
+                  },
+                  {
+                    "variable_family": "route-arc",
+                    "constraint_family": "bridge-crossing",
+                    "incidences": 1056
+                  },
+                  {
+                    "variable_family": "route-arc",
+                    "constraint_family": "turn-definition",
+                    "incidences": 4928
+                  },
+                  {
+                    "variable_family": "flow",
+                    "constraint_family": "arc-activation",
+                    "incidences": 1056
+                  },
+                  {
+                    "variable_family": "flow",
+                    "constraint_family": "flow-conservation",
+                    "incidences": 1056
+                  },
+                  {
+                    "variable_family": "flow",
+                    "constraint_family": "line-capacity",
+                    "incidences": 1056
+                  },
+                  {
+                    "variable_family": "flow",
+                    "constraint_family": "branch-topology",
+                    "incidences": 4224
+                  },
+                  {
+                    "variable_family": "flow",
+                    "constraint_family": "bridge-crossing",
+                    "incidences": 1584
+                  },
+                  {
+                    "variable_family": "terminal-presence",
+                    "constraint_family": "terminal-presence",
+                    "incidences": 1656
+                  },
+                  {
+                    "variable_family": "terminal-presence",
+                    "constraint_family": "route-arm",
+                    "incidences": 1152
+                  },
+                  {
+                    "variable_family": "route-arm",
+                    "constraint_family": "route-arm",
+                    "incidences": 1152
+                  },
+                  {
+                    "variable_family": "route-arm",
+                    "constraint_family": "item-assignment",
+                    "incidences": 3456
+                  },
+                  {
+                    "variable_family": "route-arm",
+                    "constraint_family": "opposing-arms",
+                    "incidences": 1152
+                  },
+                  {
+                    "variable_family": "route-arm",
+                    "constraint_family": "branch-topology",
+                    "incidences": 8064
+                  },
+                  {
+                    "variable_family": "route-arm",
+                    "constraint_family": "route-cell-activation",
+                    "incidences": 2304
+                  },
+                  {
+                    "variable_family": "arm-item",
+                    "constraint_family": "item-assignment",
+                    "incidences": 4584
+                  },
+                  {
+                    "variable_family": "arm-item",
+                    "constraint_family": "line-capacity",
+                    "incidences": 1056
+                  },
+                  {
+                    "variable_family": "arm-item",
+                    "constraint_family": "branch-topology",
+                    "incidences": 1152
+                  },
+                  {
+                    "variable_family": "arm-item",
+                    "constraint_family": "bridge-crossing",
+                    "incidences": 864
+                  },
+                  {
+                    "variable_family": "branch-component",
+                    "constraint_family": "branch-topology",
+                    "incidences": 10368
+                  },
+                  {
+                    "variable_family": "branch-component",
+                    "constraint_family": "objective-definition",
+                    "incidences": 1152
+                  },
+                  {
+                    "variable_family": "bridge",
+                    "constraint_family": "item-assignment",
+                    "incidences": 1296
+                  },
+                  {
+                    "variable_family": "bridge",
+                    "constraint_family": "branch-topology",
+                    "incidences": 432
+                  },
+                  {
+                    "variable_family": "bridge",
+                    "constraint_family": "bridge-rotation",
+                    "incidences": 144
+                  },
+                  {
+                    "variable_family": "bridge",
+                    "constraint_family": "bridge-crossing",
+                    "incidences": 1944
+                  },
+                  {
+                    "variable_family": "bridge",
+                    "constraint_family": "objective-definition",
+                    "incidences": 144
+                  },
+                  {
+                    "variable_family": "bridge-rotation",
+                    "constraint_family": "bridge-rotation",
+                    "incidences": 576
+                  },
+                  {
+                    "variable_family": "objective",
+                    "constraint_family": "used-geometry",
+                    "incidences": 650
+                  },
+                  {
+                    "variable_family": "objective",
+                    "constraint_family": "canonical-translation",
+                    "incidences": 2
+                  },
+                  {
+                    "variable_family": "objective",
+                    "constraint_family": "bounding-box",
+                    "incidences": 296
+                  },
+                  {
+                    "variable_family": "objective",
+                    "constraint_family": "objective-definition",
+                    "incidences": 147
+                  },
+                  {
+                    "variable_family": "objective",
+                    "constraint_family": "turn-definition",
+                    "incidences": 8832
+                  }
+                ]
+              },
+              "coupling": {
+                "facility_network_incidences": 2,
+                "shared_network_facility_pairs": 1,
+                "cross_family_constraints": 22135,
+                "placement_routing_constraints": 4212,
+                "placement_routing_incidences": 16880,
+                "network_collision_constraints": 2232,
+                "objective_incidences": 17309
+              },
+              "symmetry": null,
+              "estimated_bytes": null
+            },
+            "construction_ms": 142,
+            "search_ms": 5004,
+            "first_incumbent_ms": 2000,
+            "incumbent_count": 9,
+            "objective": {
+              "used_bounding_box_area": 77,
+              "physical_transport_tiles": 13,
+              "total_route_turns": 2,
+              "maximum_used_side": 11,
+              "logistics_component_count": 0
+            },
+            "objective_stages": [
+              {
+                "objective": "used-bounding-box-area",
+                "incumbent": 77,
+                "best_bound": null,
+                "search_ms": 5001,
+                "proof": "unproven"
+              }
+            ],
+            "termination": "feasible",
+            "proof": "unproven",
+            "validation": "passed"
+          }
+        },
+        {
+          "index": 2,
+          "introduced_components": [
+            "component:0038"
+          ],
+          "introduced_facilities": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0"
+          ],
+          "cumulative_facility_count": 3,
+          "cumulative_route_requirement_count": 10,
+          "bounds": {
+            "width": 12,
+            "height": 11
+          },
+          "placements": [
+            {
+              "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+              "recipe": "pool-liquid-xiranite-poly-1",
+              "facility": "mix-pool-1-mode-liquid",
+              "x": 1,
+              "y": 6,
+              "width": 5,
+              "height": 5,
+              "rotation": 0
+            },
+            {
+              "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+              "recipe": "xiranite-oven-xiranite-powder-1",
+              "facility": "xiranite-oven-1-mode-liquid",
+              "x": 7,
+              "y": 2,
+              "width": 5,
+              "height": 5,
+              "rotation": 0
+            },
+            {
+              "instance": "facility-instance:recipe-occurrence:/target:0",
+              "recipe": "xiranite-oven-xiranite-enr-powder-1",
+              "facility": "xiranite-oven-1-mode-liquid",
+              "x": 1,
+              "y": 0,
+              "width": 5,
+              "height": 5,
+              "rotation": 270
+            }
+          ],
+          "logistics_components": [
+            {
+              "id": "component:0daa093ae517f4b7649c2058778b9baddc9eb467a7bcde9b1a6a3212a2627925",
+              "component": "log-pipe-splitter",
+              "kind": "splitter",
+              "transport": "pipe",
+              "position": {
+                "x": 9,
+                "y": 0
+              },
+              "rotation": 180
+            },
+            {
+              "id": "component:839ab13fa4b7739f5b8cd3495c9e7a6cb695274e70dd00429e5efa68bfd1bcff",
+              "component": "log-pipe-converger",
+              "kind": "converger",
+              "transport": "pipe",
+              "position": {
+                "x": 9,
+                "y": 1
+              },
+              "rotation": 180
+            },
+            {
+              "id": "component:1b35e921aaec40d25e809e2440d71c2b40a0f124959fa3dfcf032f89bc1055e5",
+              "component": "log-pipe-splitter",
+              "kind": "splitter",
+              "transport": "pipe",
+              "position": {
+                "x": 8,
+                "y": 7
+              },
+              "rotation": 270
+            },
+            {
+              "id": "component:e46d0992c227cbe097894dd10e880f4fe7ff5e8a6ae8b613a558319db0e8b6d0",
+              "component": "log-pipe-converger",
+              "kind": "converger",
+              "transport": "pipe",
+              "position": {
+                "x": 9,
+                "y": 7
+              },
+              "rotation": 0
+            },
+            {
+              "id": "component:4cf81aff5f2f5052449625df2bee62279bd442a796f5927c3d9d9fe827c7245e",
+              "component": "log-pipe-splitter",
+              "kind": "splitter",
+              "transport": "pipe",
+              "position": {
+                "x": 10,
+                "y": 7
+              },
+              "rotation": 90
+            },
+            {
+              "id": "component:e4acd55892c8f5337a30b150765cd2ebe7fb91c676f3384a24a676533d6884b8",
+              "component": "log-pipe-converger",
+              "kind": "converger",
+              "transport": "pipe",
+              "position": {
+                "x": 7,
+                "y": 8
+              },
+              "rotation": 180
+            },
+            {
+              "id": "component:6a7a463db8a4085a3a3c5aac8260fd19386be236072cf39dbecde11b60a9ec0c",
+              "component": "log-pipe-converger",
+              "kind": "converger",
+              "transport": "pipe",
+              "position": {
+                "x": 11,
+                "y": 8
+              },
+              "rotation": 180
+            },
+            {
+              "id": "component:fa428a4d4a74b8f97c2f42654457f23da18297fdacadddc7c9e8112e0f5c48bf",
+              "component": "log-pipe-splitter",
+              "kind": "splitter",
+              "transport": "pipe",
+              "position": {
+                "x": 9,
+                "y": 10
+              },
+              "rotation": 0
+            }
+          ],
+          "external_connectors": [
+            {
+              "id": "external-connector:wiring-edge:f959dd05789fc16f35b1e91f011554b72379039ba540182c0003a2974fcc13e6:lane:0000",
+              "requirement_id": "wiring-edge:f959dd05789fc16f35b1e91f011554b72379039ba540182c0003a2974fcc13e6:lane:0000",
+              "external_node": "external-input:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-sewage",
+              "facility_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+              "port": "input-pipe-2",
+              "item": "item-liquid-sewage",
+              "transport": "pipe",
+              "direction": "input",
+              "rate": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "template": "right",
+              "cells": [
+                {
+                  "x": 0,
+                  "y": 0
+                },
+                {
+                  "x": 0,
+                  "y": 1
+                },
+                {
+                  "x": 0,
+                  "y": 2
+                },
+                {
+                  "x": 0,
+                  "y": 3
+                },
+                {
+                  "x": 0,
+                  "y": 4
+                },
+                {
+                  "x": 0,
+                  "y": 5
+                },
+                {
+                  "x": 0,
+                  "y": 6
+                },
+                {
+                  "x": 0,
+                  "y": 7
+                }
+              ],
+              "turn": {
+                "x": 0,
+                "y": 7
+              },
+              "boundary_side": "north",
+              "exit": {
+                "x": 0,
+                "y": 0
+              }
+            },
+            {
+              "id": "external-connector:wiring-edge:73f36e90398b68aa42387f2354fff999d50989d1bbd721fd6ffd65ba7ad03c42:lane:0000",
+              "requirement_id": "wiring-edge:73f36e90398b68aa42387f2354fff999d50989d1bbd721fd6ffd65ba7ad03c42:lane:0000",
+              "external_node": "external-input:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-liquid-water",
+              "facility_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+              "port": "input-pipe-5",
+              "item": "item-liquid-water",
+              "transport": "pipe",
+              "direction": "input",
+              "rate": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "template": "right",
+              "cells": [
+                {
+                  "x": 6,
+                  "y": 0
+                },
+                {
+                  "x": 6,
+                  "y": 1
+                },
+                {
+                  "x": 6,
+                  "y": 2
+                },
+                {
+                  "x": 6,
+                  "y": 3
+                },
+                {
+                  "x": 6,
+                  "y": 4
+                }
+              ],
+              "turn": {
+                "x": 6,
+                "y": 4
+              },
+              "boundary_side": "north",
+              "exit": {
+                "x": 6,
+                "y": 0
+              }
+            },
+            {
+              "id": "external-connector:wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143:lane:0000",
+              "requirement_id": "wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143:lane:0000",
+              "external_node": "iterative-external:wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143",
+              "facility_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+              "port": "input-pipe-3",
+              "item": "item-liquid-xiranite",
+              "transport": "pipe",
+              "direction": "input",
+              "rate": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "template": "forward",
+              "cells": [
+                {
+                  "x": 0,
+                  "y": 9
+                }
+              ],
+              "turn": null,
+              "boundary_side": "west",
+              "exit": {
+                "x": 0,
+                "y": 9
+              }
+            },
+            {
+              "id": "external-connector:wiring-edge:9cc78f5ad1c5a03a94a533fe26e35517c481fb4860303ff01217159ff2418b09:lane:0000",
+              "requirement_id": "wiring-edge:9cc78f5ad1c5a03a94a533fe26e35517c481fb4860303ff01217159ff2418b09:lane:0000",
+              "external_node": "surplus:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:item-liquid-xiranite-lowpoly",
+              "facility_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+              "port": "output-pipe-3",
+              "item": "item-liquid-xiranite-lowpoly",
+              "transport": "pipe",
+              "direction": "output",
+              "rate": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "template": "right",
+              "cells": [
+                {
+                  "x": 6,
+                  "y": 9
+                },
+                {
+                  "x": 6,
+                  "y": 10
+                }
+              ],
+              "turn": {
+                "x": 6,
+                "y": 9
+              },
+              "boundary_side": "south",
+              "exit": {
+                "x": 6,
+                "y": 10
+              }
+            },
+            {
+              "id": "external-connector:wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb:lane:0000",
+              "requirement_id": "wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb:lane:0000",
+              "external_node": "iterative-external:wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb",
+              "facility_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+              "port": "input-belt-2",
+              "item": "item-carbon-enr",
+              "transport": "belt",
+              "direction": "input",
+              "rate": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "template": "left",
+              "cells": [
+                {
+                  "x": 11,
+                  "y": 7
+                },
+                {
+                  "x": 10,
+                  "y": 7
+                },
+                {
+                  "x": 9,
+                  "y": 7
+                }
+              ],
+              "turn": {
+                "x": 9,
+                "y": 7
+              },
+              "boundary_side": "east",
+              "exit": {
+                "x": 11,
+                "y": 7
+              }
+            },
+            {
+              "id": "external-connector:wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8:lane:0000",
+              "requirement_id": "wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8:lane:0000",
+              "external_node": "iterative-external:wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8",
+              "facility_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+              "port": "input-belt-0",
+              "item": "item-carbon-enr",
+              "transport": "belt",
+              "direction": "input",
+              "rate": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "template": "forward",
+              "cells": [
+                {
+                  "x": 7,
+                  "y": 10
+                },
+                {
+                  "x": 7,
+                  "y": 9
+                },
+                {
+                  "x": 7,
+                  "y": 8
+                },
+                {
+                  "x": 7,
+                  "y": 7
+                }
+              ],
+              "turn": null,
+              "boundary_side": "south",
+              "exit": {
+                "x": 7,
+                "y": 10
+              }
+            },
+            {
+              "id": "external-connector:wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e:lane:0000",
+              "requirement_id": "wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e:lane:0000",
+              "external_node": "iterative-external:wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e",
+              "facility_instance": "facility-instance:recipe-occurrence:/target:0",
+              "port": "input-belt-0",
+              "item": "item-xiranite-powder",
+              "transport": "belt",
+              "direction": "input",
+              "rate": {
+                "numerator": 1,
+                "denominator": 2
+              },
+              "template": "right",
+              "cells": [
+                {
+                  "x": 6,
+                  "y": 10
+                },
+                {
+                  "x": 6,
+                  "y": 9
+                },
+                {
+                  "x": 6,
+                  "y": 8
+                },
+                {
+                  "x": 6,
+                  "y": 7
+                },
+                {
+                  "x": 6,
+                  "y": 6
+                },
+                {
+                  "x": 6,
+                  "y": 5
+                },
+                {
+                  "x": 6,
+                  "y": 4
+                }
+              ],
+              "turn": {
+                "x": 6,
+                "y": 4
+              },
+              "boundary_side": "south",
+              "exit": {
+                "x": 6,
+                "y": 10
+              }
+            },
+            {
+              "id": "external-connector:wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de:lane:0000",
+              "requirement_id": "wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de:lane:0000",
+              "external_node": "target:/target-output",
+              "facility_instance": "facility-instance:recipe-occurrence:/target:0",
+              "port": "output-belt-1",
+              "item": "item-xiranite-enr-powder",
+              "transport": "belt",
+              "direction": "output",
+              "rate": {
+                "numerator": 1,
+                "denominator": 10
+              },
+              "template": "left",
+              "cells": [
+                {
+                  "x": 0,
+                  "y": 3
+                },
+                {
+                  "x": 0,
+                  "y": 4
+                },
+                {
+                  "x": 0,
+                  "y": 5
+                },
+                {
+                  "x": 0,
+                  "y": 6
+                },
+                {
+                  "x": 0,
+                  "y": 7
+                },
+                {
+                  "x": 0,
+                  "y": 8
+                },
+                {
+                  "x": 0,
+                  "y": 9
+                },
+                {
+                  "x": 0,
+                  "y": 10
+                }
+              ],
+              "turn": {
+                "x": 0,
+                "y": 3
+              },
+              "boundary_side": "south",
+              "exit": {
+                "x": 0,
+                "y": 10
+              }
+            }
+          ],
+          "transport_networks": [
+            {
+              "id": "network:belt:item-xiranite-powder",
+              "requirement_ids": [
+                "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6:lane:0000"
+              ],
+              "item": "item-xiranite-powder",
+              "transport": "belt",
+              "cells": [
+                {
+                  "x": 7,
+                  "y": 0
+                },
+                {
+                  "x": 8,
+                  "y": 0
+                },
+                {
+                  "x": 9,
+                  "y": 0
+                },
+                {
+                  "x": 10,
+                  "y": 0
+                },
+                {
+                  "x": 11,
+                  "y": 0
+                },
+                {
+                  "x": 6,
+                  "y": 1
+                },
+                {
+                  "x": 7,
+                  "y": 1
+                },
+                {
+                  "x": 8,
+                  "y": 1
+                },
+                {
+                  "x": 9,
+                  "y": 1
+                },
+                {
+                  "x": 10,
+                  "y": 1
+                },
+                {
+                  "x": 11,
+                  "y": 1
+                },
+                {
+                  "x": 6,
+                  "y": 2
+                },
+                {
+                  "x": 8,
+                  "y": 8
+                },
+                {
+                  "x": 9,
+                  "y": 8
+                },
+                {
+                  "x": 10,
+                  "y": 8
+                },
+                {
+                  "x": 8,
+                  "y": 9
+                },
+                {
+                  "x": 9,
+                  "y": 9
+                },
+                {
+                  "x": 10,
+                  "y": 9
+                },
+                {
+                  "x": 8,
+                  "y": 10
+                },
+                {
+                  "x": 9,
+                  "y": 10
+                }
+              ],
+              "segments": [
+                {
+                  "from": {
+                    "x": 7,
+                    "y": 0
+                  },
+                  "to": {
+                    "x": 7,
+                    "y": 1
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 8,
+                    "y": 0
+                  },
+                  "to": {
+                    "x": 7,
+                    "y": 0
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 9,
+                    "y": 0
+                  },
+                  "to": {
+                    "x": 8,
+                    "y": 0
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 10,
+                    "y": 0
+                  },
+                  "to": {
+                    "x": 11,
+                    "y": 0
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 11,
+                    "y": 0
+                  },
+                  "to": {
+                    "x": 11,
+                    "y": 1
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 6,
+                    "y": 1
+                  },
+                  "to": {
+                    "x": 6,
+                    "y": 2
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 7,
+                    "y": 1
+                  },
+                  "to": {
+                    "x": 6,
+                    "y": 1
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 8,
+                    "y": 1
+                  },
+                  "to": {
+                    "x": 9,
+                    "y": 1
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 9,
+                    "y": 1
+                  },
+                  "to": {
+                    "x": 9,
+                    "y": 0
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 10,
+                    "y": 1
+                  },
+                  "to": {
+                    "x": 10,
+                    "y": 0
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 11,
+                    "y": 1
+                  },
+                  "to": {
+                    "x": 10,
+                    "y": 1
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 8,
+                    "y": 8
+                  },
+                  "to": {
+                    "x": 9,
+                    "y": 8
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 9,
+                    "y": 8
+                  },
+                  "to": {
+                    "x": 10,
+                    "y": 8
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 10,
+                    "y": 8
+                  },
+                  "to": {
+                    "x": 10,
+                    "y": 9
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 8,
+                    "y": 9
+                  },
+                  "to": {
+                    "x": 8,
+                    "y": 8
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 9,
+                    "y": 9
+                  },
+                  "to": {
+                    "x": 9,
+                    "y": 10
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 10,
+                    "y": 9
+                  },
+                  "to": {
+                    "x": 9,
+                    "y": 9
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 8,
+                    "y": 10
+                  },
+                  "to": {
+                    "x": 8,
+                    "y": 9
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 9,
+                    "y": 10
+                  },
+                  "to": {
+                    "x": 8,
+                    "y": 10
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                }
+              ],
+              "terminals": [
+                {
+                  "id": "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6:lane:0000:supply",
+                  "node": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+                  "direction": "output",
+                  "endpoint": {
+                    "kind": "facility",
+                    "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+                    "port": "output-belt-1"
+                  },
+                  "position": {
+                    "x": 8,
+                    "y": 1
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "id": "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6:lane:0000:demand",
+                  "node": "facility-instance:recipe-occurrence:/target:0",
+                  "direction": "input",
+                  "endpoint": {
+                    "kind": "facility",
+                    "instance": "facility-instance:recipe-occurrence:/target:0",
+                    "port": "input-belt-2"
+                  },
+                  "position": {
+                    "x": 6,
+                    "y": 2
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                }
+              ],
+              "component_ids": []
+            },
+            {
+              "id": "network:pipe:item-liquid-xiranite-poly",
+              "requirement_ids": [
+                "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000"
+              ],
+              "item": "item-liquid-xiranite-poly",
+              "transport": "pipe",
+              "cells": [
+                {
+                  "x": 7,
+                  "y": 0
+                },
+                {
+                  "x": 8,
+                  "y": 0
+                },
+                {
+                  "x": 9,
+                  "y": 0
+                },
+                {
+                  "x": 10,
+                  "y": 0
+                },
+                {
+                  "x": 7,
+                  "y": 1
+                },
+                {
+                  "x": 8,
+                  "y": 1
+                },
+                {
+                  "x": 9,
+                  "y": 1
+                },
+                {
+                  "x": 10,
+                  "y": 1
+                },
+                {
+                  "x": 3,
+                  "y": 5
+                },
+                {
+                  "x": 4,
+                  "y": 5
+                },
+                {
+                  "x": 5,
+                  "y": 5
+                },
+                {
+                  "x": 6,
+                  "y": 5
+                },
+                {
+                  "x": 6,
+                  "y": 6
+                },
+                {
+                  "x": 6,
+                  "y": 7
+                },
+                {
+                  "x": 7,
+                  "y": 7
+                },
+                {
+                  "x": 8,
+                  "y": 7
+                },
+                {
+                  "x": 9,
+                  "y": 7
+                },
+                {
+                  "x": 10,
+                  "y": 7
+                },
+                {
+                  "x": 11,
+                  "y": 7
+                },
+                {
+                  "x": 7,
+                  "y": 8
+                },
+                {
+                  "x": 8,
+                  "y": 8
+                },
+                {
+                  "x": 9,
+                  "y": 8
+                },
+                {
+                  "x": 10,
+                  "y": 8
+                },
+                {
+                  "x": 11,
+                  "y": 8
+                },
+                {
+                  "x": 7,
+                  "y": 9
+                },
+                {
+                  "x": 9,
+                  "y": 9
+                },
+                {
+                  "x": 10,
+                  "y": 9
+                },
+                {
+                  "x": 11,
+                  "y": 9
+                },
+                {
+                  "x": 7,
+                  "y": 10
+                },
+                {
+                  "x": 8,
+                  "y": 10
+                },
+                {
+                  "x": 9,
+                  "y": 10
+                },
+                {
+                  "x": 10,
+                  "y": 10
+                }
+              ],
+              "segments": [
+                {
+                  "from": {
+                    "x": 7,
+                    "y": 0
+                  },
+                  "to": {
+                    "x": 7,
+                    "y": 1
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 8,
+                    "y": 0
+                  },
+                  "to": {
+                    "x": 7,
+                    "y": 0
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 9,
+                    "y": 0
+                  },
+                  "to": {
+                    "x": 8,
+                    "y": 0
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 9,
+                    "y": 0
+                  },
+                  "to": {
+                    "x": 10,
+                    "y": 0
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 10,
+                    "y": 0
+                  },
+                  "to": {
+                    "x": 10,
+                    "y": 1
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 7,
+                    "y": 1
+                  },
+                  "to": {
+                    "x": 8,
+                    "y": 1
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 8,
+                    "y": 1
+                  },
+                  "to": {
+                    "x": 9,
+                    "y": 1
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 9,
+                    "y": 1
+                  },
+                  "to": {
+                    "x": 9,
+                    "y": 0
+                  },
+                  "rate": {
+                    "numerator": 2,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 10,
+                    "y": 1
+                  },
+                  "to": {
+                    "x": 9,
+                    "y": 1
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 4,
+                    "y": 5
+                  },
+                  "to": {
+                    "x": 3,
+                    "y": 5
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 5,
+                    "y": 5
+                  },
+                  "to": {
+                    "x": 4,
+                    "y": 5
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 6,
+                    "y": 5
+                  },
+                  "to": {
+                    "x": 5,
+                    "y": 5
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 6,
+                    "y": 6
+                  },
+                  "to": {
+                    "x": 6,
+                    "y": 5
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 6,
+                    "y": 7
+                  },
+                  "to": {
+                    "x": 6,
+                    "y": 6
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 7,
+                    "y": 7
+                  },
+                  "to": {
+                    "x": 8,
+                    "y": 7
+                  },
+                  "rate": {
+                    "numerator": 2,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 8,
+                    "y": 7
+                  },
+                  "to": {
+                    "x": 9,
+                    "y": 7
+                  },
+                  "rate": {
+                    "numerator": 3,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 8,
+                    "y": 7
+                  },
+                  "to": {
+                    "x": 8,
+                    "y": 8
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 9,
+                    "y": 7
+                  },
+                  "to": {
+                    "x": 9,
+                    "y": 8
+                  },
+                  "rate": {
+                    "numerator": 2,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 10,
+                    "y": 7
+                  },
+                  "to": {
+                    "x": 9,
+                    "y": 7
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 10,
+                    "y": 7
+                  },
+                  "to": {
+                    "x": 10,
+                    "y": 8
+                  },
+                  "rate": {
+                    "numerator": 3,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 11,
+                    "y": 7
+                  },
+                  "to": {
+                    "x": 10,
+                    "y": 7
+                  },
+                  "rate": {
+                    "numerator": 2,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 7,
+                    "y": 8
+                  },
+                  "to": {
+                    "x": 7,
+                    "y": 7
+                  },
+                  "rate": {
+                    "numerator": 2,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 8,
+                    "y": 8
+                  },
+                  "to": {
+                    "x": 7,
+                    "y": 8
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 9,
+                    "y": 8
+                  },
+                  "to": {
+                    "x": 9,
+                    "y": 9
+                  },
+                  "rate": {
+                    "numerator": 2,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 10,
+                    "y": 8
+                  },
+                  "to": {
+                    "x": 11,
+                    "y": 8
+                  },
+                  "rate": {
+                    "numerator": 3,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 11,
+                    "y": 8
+                  },
+                  "to": {
+                    "x": 11,
+                    "y": 7
+                  },
+                  "rate": {
+                    "numerator": 2,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 7,
+                    "y": 9
+                  },
+                  "to": {
+                    "x": 7,
+                    "y": 8
+                  },
+                  "rate": {
+                    "numerator": 3,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 9,
+                    "y": 9
+                  },
+                  "to": {
+                    "x": 9,
+                    "y": 10
+                  },
+                  "rate": {
+                    "numerator": 2,
+                    "denominator": 1
+                  }
+                },
+                {
+                  "from": {
+                    "x": 10,
+                    "y": 9
+                  },
+                  "to": {
+                    "x": 11,
+                    "y": 9
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 11,
+                    "y": 9
+                  },
+                  "to": {
+                    "x": 11,
+                    "y": 8
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 7,
+                    "y": 10
+                  },
+                  "to": {
+                    "x": 7,
+                    "y": 9
+                  },
+                  "rate": {
+                    "numerator": 3,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 8,
+                    "y": 10
+                  },
+                  "to": {
+                    "x": 7,
+                    "y": 10
+                  },
+                  "rate": {
+                    "numerator": 3,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 9,
+                    "y": 10
+                  },
+                  "to": {
+                    "x": 8,
+                    "y": 10
+                  },
+                  "rate": {
+                    "numerator": 3,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 9,
+                    "y": 10
+                  },
+                  "to": {
+                    "x": 10,
+                    "y": 10
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "from": {
+                    "x": 10,
+                    "y": 10
+                  },
+                  "to": {
+                    "x": 10,
+                    "y": 9
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                }
+              ],
+              "terminals": [
+                {
+                  "id": "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000:supply",
+                  "node": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+                  "direction": "output",
+                  "endpoint": {
+                    "kind": "facility",
+                    "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+                    "port": "output-pipe-2"
+                  },
+                  "position": {
+                    "x": 6,
+                    "y": 7
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                },
+                {
+                  "id": "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000:demand",
+                  "node": "facility-instance:recipe-occurrence:/target:0",
+                  "direction": "input",
+                  "endpoint": {
+                    "kind": "facility",
+                    "instance": "facility-instance:recipe-occurrence:/target:0",
+                    "port": "input-pipe-5"
+                  },
+                  "position": {
+                    "x": 3,
+                    "y": 5
+                  },
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                }
+              ],
+              "component_ids": [
+                "component:0daa093ae517f4b7649c2058778b9baddc9eb467a7bcde9b1a6a3212a2627925",
+                "component:839ab13fa4b7739f5b8cd3495c9e7a6cb695274e70dd00429e5efa68bfd1bcff",
+                "component:1b35e921aaec40d25e809e2440d71c2b40a0f124959fa3dfcf032f89bc1055e5",
+                "component:e46d0992c227cbe097894dd10e880f4fe7ff5e8a6ae8b613a558319db0e8b6d0",
+                "component:4cf81aff5f2f5052449625df2bee62279bd442a796f5927c3d9d9fe827c7245e",
+                "component:e4acd55892c8f5337a30b150765cd2ebe7fb91c676f3384a24a676533d6884b8",
+                "component:6a7a463db8a4085a3a3c5aac8260fd19386be236072cf39dbecde11b60a9ec0c",
+                "component:fa428a4d4a74b8f97c2f42654457f23da18297fdacadddc7c9e8112e0f5c48bf"
+              ]
+            }
+          ],
+          "exact": {
+            "formulation": "joint-shared-transport-layer-external-connectors-canonical-occupancy-v3",
+            "model": {
+              "facility_count": 3,
+              "route_requirement_count": 10,
+              "commodity_network_count": 2,
+              "commodity_item_count": 2,
+              "belt_network_count": 1,
+              "pipe_network_count": 1,
+              "network_requirement_reference_count": 2,
+              "network_terminal_count": 4,
+              "external_terminal_count": 0,
+              "external_connector_count": 8,
+              "external_connector_variables": 30293,
+              "maximum_network_flow_scale": 2,
+              "maximum_line_capacity_units": 4,
+              "total_terminal_flow_units": 4,
+              "grid_cell_count": 144,
+              "placement_variables": 1347,
+              "endpoint_variables": 1212,
+              "route_cell_variables": 576,
+              "route_arc_variables": 1056,
+              "network_flow_variables": 1056,
+              "branch_component_variables": 2304,
+              "objective_variables": 4105,
+              "hint_variables": 512,
+              "hinted_placements": 2,
+              "hinted_terminals": 0,
+              "hinted_networks": 0,
+              "hinted_components": 0,
+              "bridge_variables": 288,
+              "bridge_rotation_variables": 1152,
+              "crossing_owner_variables": 0,
+              "crossing_constraints": 4892
+            },
+            "model_complexity": {
+              "variables": {
+                "coverage": "complete",
+                "total_variables": 49437,
+                "boolean_variables": 48255,
+                "integer_variables": 1182,
+                "log2_domain_volume": 51328.31060480594,
+                "by_family": [
+                  {
+                    "family": "placement",
+                    "total_variables": 771,
+                    "boolean_variables": 768,
+                    "integer_variables": 3,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 256,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 792.0
+                    }
+                  },
+                  {
+                    "family": "physical-occupancy",
+                    "total_variables": 576,
+                    "boolean_variables": 576,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 576.0
+                    }
+                  },
+                  {
+                    "family": "transport-occupancy",
+                    "total_variables": 288,
+                    "boolean_variables": 288,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 288.0
+                    }
+                  },
+                  {
+                    "family": "endpoint",
+                    "total_variables": 12,
+                    "boolean_variables": 4,
+                    "integer_variables": 8,
+                    "domains": {
+                      "minimum": 1,
+                      "maximum": 5,
+                      "p50": 5,
+                      "p95": 5,
+                      "log2_volume": 17.93156856932417
+                    }
+                  },
+                  {
+                    "family": "endpoint-geometry",
+                    "total_variables": 1200,
+                    "boolean_variables": 1148,
+                    "integer_variables": 52,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 577,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 1624.9362003631313
+                    }
+                  },
+                  {
+                    "family": "external-connector",
+                    "total_variables": 30293,
+                    "boolean_variables": 30285,
+                    "integer_variables": 8,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 3,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 30297.67970000577
+                    }
+                  },
+                  {
+                    "family": "route-cell",
+                    "total_variables": 288,
+                    "boolean_variables": 288,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 288.0
+                    }
+                  },
+                  {
+                    "family": "route-arc",
+                    "total_variables": 1056,
+                    "boolean_variables": 1056,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 1056.0
+                    }
+                  },
+                  {
+                    "family": "flow",
+                    "total_variables": 1056,
+                    "boolean_variables": 528,
+                    "integer_variables": 528,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 5,
+                      "p50": 5,
+                      "p95": 5,
+                      "log2_volume": 1753.9780341005364
+                    }
+                  },
+                  {
+                    "family": "terminal-presence",
+                    "total_variables": 2304,
+                    "boolean_variables": 2304,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 2304.0
+                    }
+                  },
+                  {
+                    "family": "route-arm",
+                    "total_variables": 2304,
+                    "boolean_variables": 2304,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 2304.0
+                    }
+                  },
+                  {
+                    "family": "arm-item",
+                    "total_variables": 1440,
+                    "boolean_variables": 1440,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 1440.0
+                    }
+                  },
+                  {
+                    "family": "branch-component",
+                    "total_variables": 2304,
+                    "boolean_variables": 2304,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 2304.0
+                    }
+                  },
+                  {
+                    "family": "bridge",
+                    "total_variables": 288,
+                    "boolean_variables": 288,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 288.0
+                    }
+                  },
+                  {
+                    "family": "bridge-rotation",
+                    "total_variables": 1152,
+                    "boolean_variables": 1152,
+                    "integer_variables": 0,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2,
+                      "p50": 2,
+                      "p95": 2,
+                      "log2_volume": 1152.0
+                    }
+                  },
+                  {
+                    "family": "objective",
+                    "total_variables": 4105,
+                    "boolean_variables": 3522,
+                    "integer_variables": 583,
+                    "domains": {
+                      "minimum": 2,
+                      "maximum": 2593,
+                      "p50": 2,
+                      "p95": 5,
+                      "log2_volume": 4841.785101764135
+                    }
+                  }
+                ]
+              },
+              "constraints": {
+                "total_constraints": 174878,
+                "total_terms": 473323,
+                "maximum_arity": 2593,
+                "p95_arity": 5,
+                "maximum_absolute_coefficient": 575,
+                "by_family": [
+                  {
+                    "family": "endpoint-link",
+                    "relation": "other",
+                    "constraints": 52,
+                    "terms": 144,
+                    "maximum_arity": 7,
+                    "p95_arity": 7,
+                    "maximum_absolute_coefficient": 575
+                  },
+                  {
+                    "family": "external-connector",
+                    "relation": "less-than-or-equal",
+                    "constraints": 97605,
+                    "terms": 233566,
+                    "maximum_arity": 59,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "external-connector",
+                    "relation": "greater-than-or-equal",
+                    "constraints": 26726,
+                    "terms": 80178,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "external-connector",
+                    "relation": "other",
+                    "constraints": 8,
+                    "terms": 16,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "arc-activation",
+                    "relation": "less-than-or-equal",
+                    "constraints": 1056,
+                    "terms": 2112,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 4
+                  },
+                  {
+                    "family": "arc-activation",
+                    "relation": "greater-than-or-equal",
+                    "constraints": 1056,
+                    "terms": 2112,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "flow-conservation",
+                    "relation": "equality",
+                    "constraints": 288,
+                    "terms": 3260,
+                    "maximum_arity": 16,
+                    "p95_arity": 14,
+                    "maximum_absolute_coefficient": 4
+                  },
+                  {
+                    "family": "terminal-presence",
+                    "relation": "less-than-or-equal",
+                    "constraints": 3452,
+                    "terms": 5748,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "route-arm",
+                    "relation": "equality",
+                    "constraints": 2304,
+                    "terms": 6720,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "item-assignment",
+                    "relation": "equality",
+                    "constraints": 2204,
+                    "terms": 5464,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "item-assignment",
+                    "relation": "less-than-or-equal",
+                    "constraints": 2304,
+                    "terms": 11520,
+                    "maximum_arity": 5,
+                    "p95_arity": 5,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "item-assignment",
+                    "relation": "other",
+                    "constraints": 1440,
+                    "terms": 4320,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "opposing-arms",
+                    "relation": "less-than-or-equal",
+                    "constraints": 1152,
+                    "terms": 2304,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "line-capacity",
+                    "relation": "less-than-or-equal",
+                    "constraints": 2112,
+                    "terms": 5372,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 4
+                  },
+                  {
+                    "family": "branch-topology",
+                    "relation": "less-than-or-equal",
+                    "constraints": 12384,
+                    "terms": 44192,
+                    "maximum_arity": 10,
+                    "p95_arity": 9,
+                    "maximum_absolute_coefficient": 16
+                  },
+                  {
+                    "family": "branch-topology",
+                    "relation": "greater-than-or-equal",
+                    "constraints": 1152,
+                    "terms": 9216,
+                    "maximum_arity": 8,
+                    "p95_arity": 8,
+                    "maximum_absolute_coefficient": 2
+                  },
+                  {
+                    "family": "route-cell-activation",
+                    "relation": "less-than-or-equal",
+                    "constraints": 2592,
+                    "terms": 7200,
+                    "maximum_arity": 9,
+                    "p95_arity": 9,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "bridge-rotation",
+                    "relation": "equality",
+                    "constraints": 288,
+                    "terms": 1440,
+                    "maximum_arity": 5,
+                    "p95_arity": 5,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "bridge-crossing",
+                    "relation": "equality",
+                    "constraints": 2304,
+                    "terms": 7680,
+                    "maximum_arity": 5,
+                    "p95_arity": 5,
+                    "maximum_absolute_coefficient": 4
+                  },
+                  {
+                    "family": "bridge-crossing",
+                    "relation": "less-than-or-equal",
+                    "constraints": 1724,
+                    "terms": 4504,
+                    "maximum_arity": 4,
+                    "p95_arity": 4,
+                    "maximum_absolute_coefficient": 16
+                  },
+                  {
+                    "family": "transport-collision",
+                    "relation": "less-than-or-equal",
+                    "constraints": 288,
+                    "terms": 576,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "occupancy-channel",
+                    "relation": "equality",
+                    "constraints": 432,
+                    "terms": 2304,
+                    "maximum_arity": 6,
+                    "p95_arity": 6,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "occupancy-channel",
+                    "relation": "other",
+                    "constraints": 432,
+                    "terms": 864,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "used-geometry",
+                    "relation": "less-than-or-equal",
+                    "constraints": 602,
+                    "terms": 1514,
+                    "maximum_arity": 13,
+                    "p95_arity": 4,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "canonical-translation",
+                    "relation": "equality",
+                    "constraints": 2,
+                    "terms": 2,
+                    "maximum_arity": 1,
+                    "p95_arity": 1,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "bounding-box",
+                    "relation": "maximum",
+                    "constraints": 3,
+                    "terms": 293,
+                    "maximum_arity": 145,
+                    "p95_arity": 145,
+                    "maximum_absolute_coefficient": 12
+                  },
+                  {
+                    "family": "bounding-box",
+                    "relation": "multiplication",
+                    "constraints": 1,
+                    "terms": 3,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "objective-definition",
+                    "relation": "equality",
+                    "constraints": 3,
+                    "terms": 3179,
+                    "maximum_arity": 2593,
+                    "p95_arity": 2593,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "turn-definition",
+                    "relation": "equality",
+                    "constraints": 576,
+                    "terms": 2688,
+                    "maximum_arity": 5,
+                    "p95_arity": 5,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "turn-definition",
+                    "relation": "less-than-or-equal",
+                    "constraints": 7248,
+                    "terms": 16144,
+                    "maximum_arity": 9,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "turn-definition",
+                    "relation": "greater-than-or-equal",
+                    "constraints": 2512,
+                    "terms": 7536,
+                    "maximum_arity": 3,
+                    "p95_arity": 3,
+                    "maximum_absolute_coefficient": 1
+                  },
+                  {
+                    "family": "turn-definition",
+                    "relation": "other",
+                    "constraints": 576,
+                    "terms": 1152,
+                    "maximum_arity": 2,
+                    "p95_arity": 2,
+                    "maximum_absolute_coefficient": 1
+                  }
+                ]
+              },
+              "factor_graph": {
+                "variable_vertices": 49437,
+                "constraint_vertices": 174878,
+                "incidences": 473323,
+                "mean_variable_degree": 9.574266237838057,
+                "maximum_variable_degree": 3604,
+                "p95_variable_degree": 22,
+                "mean_constraint_degree": 2.706589736845115,
+                "maximum_constraint_degree": 2593,
+                "p95_constraint_degree": 5,
+                "density": 0.00005474826014614792,
+                "connected_components": 789,
+                "articulation_points": null,
+                "retained_full_graph": false,
+                "family_incidences": [
+                  {
+                    "variable_family": "placement",
+                    "constraint_family": "endpoint-link",
+                    "incidences": 40
+                  },
+                  {
+                    "variable_family": "placement",
+                    "constraint_family": "occupancy-channel",
+                    "incidences": 432
+                  },
+                  {
+                    "variable_family": "physical-occupancy",
+                    "constraint_family": "transport-collision",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "physical-occupancy",
+                    "constraint_family": "occupancy-channel",
+                    "incidences": 1008
+                  },
+                  {
+                    "variable_family": "physical-occupancy",
+                    "constraint_family": "used-geometry",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "transport-occupancy",
+                    "constraint_family": "transport-collision",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "transport-occupancy",
+                    "constraint_family": "occupancy-channel",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "transport-occupancy",
+                    "constraint_family": "used-geometry",
+                    "incidences": 576
+                  },
+                  {
+                    "variable_family": "transport-occupancy",
+                    "constraint_family": "objective-definition",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "endpoint",
+                    "constraint_family": "endpoint-link",
+                    "incidences": 12
+                  },
+                  {
+                    "variable_family": "endpoint-geometry",
+                    "constraint_family": "endpoint-link",
+                    "incidences": 92
+                  },
+                  {
+                    "variable_family": "endpoint-geometry",
+                    "constraint_family": "flow-conservation",
+                    "incidences": 1148
+                  },
+                  {
+                    "variable_family": "endpoint-geometry",
+                    "constraint_family": "terminal-presence",
+                    "incidences": 2296
+                  },
+                  {
+                    "variable_family": "endpoint-geometry",
+                    "constraint_family": "item-assignment",
+                    "incidences": 1148
+                  },
+                  {
+                    "variable_family": "endpoint-geometry",
+                    "constraint_family": "line-capacity",
+                    "incidences": 1148
+                  },
+                  {
+                    "variable_family": "endpoint-geometry",
+                    "constraint_family": "branch-topology",
+                    "incidences": 4928
+                  },
+                  {
+                    "variable_family": "endpoint-geometry",
+                    "constraint_family": "bridge-crossing",
+                    "incidences": 1148
+                  },
+                  {
+                    "variable_family": "external-connector",
+                    "constraint_family": "external-connector",
+                    "incidences": 313760
+                  },
+                  {
+                    "variable_family": "external-connector",
+                    "constraint_family": "occupancy-channel",
+                    "incidences": 1152
+                  },
+                  {
+                    "variable_family": "external-connector",
+                    "constraint_family": "objective-definition",
+                    "incidences": 8
+                  },
+                  {
+                    "variable_family": "route-cell",
+                    "constraint_family": "item-assignment",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "route-cell",
+                    "constraint_family": "route-cell-activation",
+                    "incidences": 2592
+                  },
+                  {
+                    "variable_family": "route-cell",
+                    "constraint_family": "occupancy-channel",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "route-arc",
+                    "constraint_family": "arc-activation",
+                    "incidences": 2112
+                  },
+                  {
+                    "variable_family": "route-arc",
+                    "constraint_family": "route-arm",
+                    "incidences": 2112
+                  },
+                  {
+                    "variable_family": "route-arc",
+                    "constraint_family": "item-assignment",
+                    "incidences": 1056
+                  },
+                  {
+                    "variable_family": "route-arc",
+                    "constraint_family": "bridge-crossing",
+                    "incidences": 2112
+                  },
+                  {
+                    "variable_family": "route-arc",
+                    "constraint_family": "turn-definition",
+                    "incidences": 9856
+                  },
+                  {
+                    "variable_family": "flow",
+                    "constraint_family": "arc-activation",
+                    "incidences": 2112
+                  },
+                  {
+                    "variable_family": "flow",
+                    "constraint_family": "flow-conservation",
+                    "incidences": 2112
+                  },
+                  {
+                    "variable_family": "flow",
+                    "constraint_family": "line-capacity",
+                    "incidences": 2112
+                  },
+                  {
+                    "variable_family": "flow",
+                    "constraint_family": "branch-topology",
+                    "incidences": 8448
+                  },
+                  {
+                    "variable_family": "flow",
+                    "constraint_family": "bridge-crossing",
+                    "incidences": 3168
+                  },
+                  {
+                    "variable_family": "terminal-presence",
+                    "constraint_family": "terminal-presence",
+                    "incidences": 3452
+                  },
+                  {
+                    "variable_family": "terminal-presence",
+                    "constraint_family": "route-arm",
+                    "incidences": 2304
+                  },
+                  {
+                    "variable_family": "route-arm",
+                    "constraint_family": "route-arm",
+                    "incidences": 2304
+                  },
+                  {
+                    "variable_family": "route-arm",
+                    "constraint_family": "item-assignment",
+                    "incidences": 6912
+                  },
+                  {
+                    "variable_family": "route-arm",
+                    "constraint_family": "opposing-arms",
+                    "incidences": 2304
+                  },
+                  {
+                    "variable_family": "route-arm",
+                    "constraint_family": "branch-topology",
+                    "incidences": 16128
+                  },
+                  {
+                    "variable_family": "route-arm",
+                    "constraint_family": "route-cell-activation",
+                    "incidences": 4608
+                  },
+                  {
+                    "variable_family": "arm-item",
+                    "constraint_family": "item-assignment",
+                    "incidences": 9308
+                  },
+                  {
+                    "variable_family": "arm-item",
+                    "constraint_family": "line-capacity",
+                    "incidences": 2112
+                  },
+                  {
+                    "variable_family": "arm-item",
+                    "constraint_family": "branch-topology",
+                    "incidences": 2304
+                  },
+                  {
+                    "variable_family": "arm-item",
+                    "constraint_family": "bridge-crossing",
+                    "incidences": 1728
+                  },
+                  {
+                    "variable_family": "branch-component",
+                    "constraint_family": "branch-topology",
+                    "incidences": 20736
+                  },
+                  {
+                    "variable_family": "branch-component",
+                    "constraint_family": "objective-definition",
+                    "incidences": 2304
+                  },
+                  {
+                    "variable_family": "bridge",
+                    "constraint_family": "item-assignment",
+                    "incidences": 2592
+                  },
+                  {
+                    "variable_family": "bridge",
+                    "constraint_family": "branch-topology",
+                    "incidences": 864
+                  },
+                  {
+                    "variable_family": "bridge",
+                    "constraint_family": "bridge-rotation",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "bridge",
+                    "constraint_family": "bridge-crossing",
+                    "incidences": 4028
+                  },
+                  {
+                    "variable_family": "bridge",
+                    "constraint_family": "objective-definition",
+                    "incidences": 288
+                  },
+                  {
+                    "variable_family": "bridge-rotation",
+                    "constraint_family": "bridge-rotation",
+                    "incidences": 1152
+                  },
+                  {
+                    "variable_family": "objective",
+                    "constraint_family": "used-geometry",
+                    "incidences": 650
+                  },
+                  {
+                    "variable_family": "objective",
+                    "constraint_family": "canonical-translation",
+                    "incidences": 2
+                  },
+                  {
+                    "variable_family": "objective",
+                    "constraint_family": "bounding-box",
+                    "incidences": 296
+                  },
+                  {
+                    "variable_family": "objective",
+                    "constraint_family": "objective-definition",
+                    "incidences": 291
+                  },
+                  {
+                    "variable_family": "objective",
+                    "constraint_family": "turn-definition",
+                    "incidences": 17664
+                  }
+                ]
+              },
+              "coupling": {
+                "facility_network_incidences": 4,
+                "shared_network_facility_pairs": 2,
+                "cross_family_constraints": 43523,
+                "placement_routing_constraints": 8728,
+                "placement_routing_incidences": 34880,
+                "network_collision_constraints": 4316,
+                "objective_incidences": 32511
+              },
+              "symmetry": null,
+              "estimated_bytes": null
+            },
+            "construction_ms": 218,
+            "search_ms": 5008,
+            "first_incumbent_ms": 3748,
+            "incumbent_count": 2,
+            "objective": {
+              "used_bounding_box_area": 132,
+              "physical_transport_tiles": 90,
+              "total_route_turns": 34,
+              "maximum_used_side": 12,
+              "logistics_component_count": 8
+            },
+            "objective_stages": [
+              {
+                "objective": "used-bounding-box-area",
+                "incumbent": 132,
+                "best_bound": null,
+                "search_ms": 5002,
+                "proof": "unproven"
+              }
+            ],
+            "termination": "feasible",
+            "proof": "unproven",
+            "validation": "passed"
+          }
+        }
+      ],
+      "exact": {
+        "formulation": "joint-shared-transport-layer-external-connectors-canonical-occupancy-v3",
+        "model": {
+          "facility_count": 4,
+          "route_requirement_count": 13,
+          "commodity_network_count": 2,
+          "commodity_item_count": 2,
+          "belt_network_count": 1,
+          "pipe_network_count": 1,
+          "network_requirement_reference_count": 3,
+          "network_terminal_count": 6,
+          "external_terminal_count": 0,
+          "external_connector_count": 10,
+          "external_connector_variables": 37247,
+          "maximum_network_flow_scale": 2,
+          "maximum_line_capacity_units": 4,
+          "total_terminal_flow_units": 6,
+          "grid_cell_count": 144,
+          "placement_variables": 1748,
+          "endpoint_variables": 1880,
+          "route_cell_variables": 576,
+          "route_arc_variables": 1056,
+          "network_flow_variables": 1056,
+          "branch_component_variables": 2304,
+          "objective_variables": 4105,
+          "hint_variables": 768,
+          "hinted_placements": 3,
+          "hinted_terminals": 0,
+          "hinted_networks": 0,
+          "hinted_components": 0,
+          "bridge_variables": 288,
+          "bridge_rotation_variables": 1152,
+          "crossing_owner_variables": 0,
+          "crossing_constraints": 5536
+        },
+        "model_complexity": {
+          "variables": {
+            "coverage": "complete",
+            "total_variables": 57460,
+            "boolean_variables": 56251,
+            "integer_variables": 1209,
+            "log2_domain_volume": 59525.894536789536,
+            "by_family": [
+              {
+                "family": "placement",
+                "total_variables": 1028,
+                "boolean_variables": 1024,
+                "integer_variables": 4,
+                "domains": {
+                  "minimum": 2,
+                  "maximum": 256,
+                  "p50": 2,
+                  "p95": 2,
+                  "log2_volume": 1056.0
+                }
+              },
+              {
+                "family": "physical-occupancy",
+                "total_variables": 720,
+                "boolean_variables": 720,
+                "integer_variables": 0,
+                "domains": {
+                  "minimum": 2,
+                  "maximum": 2,
+                  "p50": 2,
+                  "p95": 2,
+                  "log2_volume": 720.0
+                }
+              },
+              {
+                "family": "transport-occupancy",
+                "total_variables": 288,
+                "boolean_variables": 288,
+                "integer_variables": 0,
+                "domains": {
+                  "minimum": 2,
+                  "maximum": 2,
+                  "p50": 2,
+                  "p95": 2,
+                  "log2_volume": 288.0
+                }
+              },
+              {
+                "family": "endpoint",
+                "total_variables": 16,
+                "boolean_variables": 4,
+                "integer_variables": 12,
+                "domains": {
+                  "minimum": 1,
+                  "maximum": 5,
+                  "p50": 5,
+                  "p95": 5,
+                  "log2_volume": 24.897352853986256
+                }
+              },
+              {
+                "family": "endpoint-geometry",
+                "total_variables": 1864,
+                "boolean_variables": 1792,
+                "integer_variables": 72,
+                "domains": {
+                  "minimum": 2,
+                  "maximum": 577,
+                  "p50": 2,
+                  "p95": 2,
+                  "log2_volume": 2452.37474050722
+                }
+              },
+              {
+                "family": "external-connector",
+                "total_variables": 37247,
+                "boolean_variables": 37237,
+                "integer_variables": 10,
+                "domains": {
+                  "minimum": 2,
+                  "maximum": 3,
+                  "p50": 2,
+                  "p95": 2,
+                  "log2_volume": 37252.84962500718
+                }
+              },
+              {
+                "family": "route-cell",
+                "total_variables": 288,
+                "boolean_variables": 288,
+                "integer_variables": 0,
+                "domains": {
+                  "minimum": 2,
+                  "maximum": 2,
+                  "p50": 2,
+                  "p95": 2,
+                  "log2_volume": 288.0
+                }
+              },
+              {
+                "family": "route-arc",
+                "total_variables": 1056,
+                "boolean_variables": 1056,
+                "integer_variables": 0,
+                "domains": {
+                  "minimum": 2,
+                  "maximum": 2,
+                  "p50": 2,
+                  "p95": 2,
+                  "log2_volume": 1056.0
+                }
+              },
+              {
+                "family": "flow",
+                "total_variables": 1056,
+                "boolean_variables": 528,
+                "integer_variables": 528,
+                "domains": {
+                  "minimum": 2,
+                  "maximum": 5,
+                  "p50": 5,
+                  "p95": 5,
+                  "log2_volume": 1753.9780341005364
+                }
+              },
+              {
+                "family": "terminal-presence",
+                "total_variables": 2304,
+                "boolean_variables": 2304,
+                "integer_variables": 0,
+                "domains": {
+                  "minimum": 2,
+                  "maximum": 2,
+                  "p50": 2,
+                  "p95": 2,
+                  "log2_volume": 2304.0
+                }
+              },
+              {
+                "family": "route-arm",
+                "total_variables": 2304,
+                "boolean_variables": 2304,
+                "integer_variables": 0,
+                "domains": {
+                  "minimum": 2,
+                  "maximum": 2,
+                  "p50": 2,
+                  "p95": 2,
+                  "log2_volume": 2304.0
+                }
+              },
+              {
+                "family": "arm-item",
+                "total_variables": 1440,
+                "boolean_variables": 1440,
+                "integer_variables": 0,
+                "domains": {
+                  "minimum": 2,
+                  "maximum": 2,
+                  "p50": 2,
+                  "p95": 2,
+                  "log2_volume": 1440.0
+                }
+              },
+              {
+                "family": "branch-component",
+                "total_variables": 2304,
+                "boolean_variables": 2304,
+                "integer_variables": 0,
+                "domains": {
+                  "minimum": 2,
+                  "maximum": 2,
+                  "p50": 2,
+                  "p95": 2,
+                  "log2_volume": 2304.0
+                }
+              },
+              {
+                "family": "bridge",
+                "total_variables": 288,
+                "boolean_variables": 288,
+                "integer_variables": 0,
+                "domains": {
+                  "minimum": 2,
+                  "maximum": 2,
+                  "p50": 2,
+                  "p95": 2,
+                  "log2_volume": 288.0
+                }
+              },
+              {
+                "family": "bridge-rotation",
+                "total_variables": 1152,
+                "boolean_variables": 1152,
+                "integer_variables": 0,
+                "domains": {
+                  "minimum": 2,
+                  "maximum": 2,
+                  "p50": 2,
+                  "p95": 2,
+                  "log2_volume": 1152.0
+                }
+              },
+              {
+                "family": "objective",
+                "total_variables": 4105,
+                "boolean_variables": 3522,
+                "integer_variables": 583,
+                "domains": {
+                  "minimum": 2,
+                  "maximum": 2593,
+                  "p50": 2,
+                  "p95": 5,
+                  "log2_volume": 4841.7947843175325
+                }
+              }
+            ]
+          },
+          "constraints": {
+            "total_constraints": 205465,
+            "total_terms": 554441,
+            "maximum_arity": 2593,
+            "p95_arity": 5,
+            "maximum_absolute_coefficient": 575,
+            "by_family": [
+              {
+                "family": "endpoint-link",
+                "relation": "other",
+                "constraints": 72,
+                "terms": 200,
+                "maximum_arity": 7,
+                "p95_arity": 7,
+                "maximum_absolute_coefficient": 575
+              },
+              {
+                "family": "external-connector",
+                "relation": "less-than-or-equal",
+                "constraints": 119976,
+                "terms": 287064,
+                "maximum_arity": 59,
+                "p95_arity": 2,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "external-connector",
+                "relation": "greater-than-or-equal",
+                "constraints": 32844,
+                "terms": 98532,
+                "maximum_arity": 3,
+                "p95_arity": 3,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "external-connector",
+                "relation": "other",
+                "constraints": 10,
+                "terms": 20,
+                "maximum_arity": 2,
+                "p95_arity": 2,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "arc-activation",
+                "relation": "less-than-or-equal",
+                "constraints": 1056,
+                "terms": 2112,
+                "maximum_arity": 2,
+                "p95_arity": 2,
+                "maximum_absolute_coefficient": 4
+              },
+              {
+                "family": "arc-activation",
+                "relation": "greater-than-or-equal",
+                "constraints": 1056,
+                "terms": 2112,
+                "maximum_arity": 2,
+                "p95_arity": 2,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "flow-conservation",
+                "relation": "equality",
+                "constraints": 288,
+                "terms": 3904,
+                "maximum_arity": 24,
+                "p95_arity": 20,
+                "maximum_absolute_coefficient": 4
+              },
+              {
+                "family": "terminal-presence",
+                "relation": "less-than-or-equal",
+                "constraints": 4096,
+                "terms": 7680,
+                "maximum_arity": 3,
+                "p95_arity": 3,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "route-arm",
+                "relation": "equality",
+                "constraints": 2304,
+                "terms": 6720,
+                "maximum_arity": 3,
+                "p95_arity": 3,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "item-assignment",
+                "relation": "equality",
+                "constraints": 2848,
+                "terms": 6752,
+                "maximum_arity": 3,
+                "p95_arity": 3,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "item-assignment",
+                "relation": "less-than-or-equal",
+                "constraints": 2304,
+                "terms": 11520,
+                "maximum_arity": 5,
+                "p95_arity": 5,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "item-assignment",
+                "relation": "other",
+                "constraints": 1440,
+                "terms": 4320,
+                "maximum_arity": 3,
+                "p95_arity": 3,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "opposing-arms",
+                "relation": "less-than-or-equal",
+                "constraints": 1152,
+                "terms": 2304,
+                "maximum_arity": 2,
+                "p95_arity": 2,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "line-capacity",
+                "relation": "less-than-or-equal",
+                "constraints": 2112,
+                "terms": 6016,
+                "maximum_arity": 4,
+                "p95_arity": 4,
+                "maximum_absolute_coefficient": 4
+              },
+              {
+                "family": "branch-topology",
+                "relation": "less-than-or-equal",
+                "constraints": 12384,
+                "terms": 46880,
+                "maximum_arity": 14,
+                "p95_arity": 10,
+                "maximum_absolute_coefficient": 16
+              },
+              {
+                "family": "branch-topology",
+                "relation": "greater-than-or-equal",
+                "constraints": 1152,
+                "terms": 9216,
+                "maximum_arity": 8,
+                "p95_arity": 8,
+                "maximum_absolute_coefficient": 2
+              },
+              {
+                "family": "route-cell-activation",
+                "relation": "less-than-or-equal",
+                "constraints": 2592,
+                "terms": 7200,
+                "maximum_arity": 9,
+                "p95_arity": 9,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "bridge-rotation",
+                "relation": "equality",
+                "constraints": 288,
+                "terms": 1440,
+                "maximum_arity": 5,
+                "p95_arity": 5,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "bridge-crossing",
+                "relation": "equality",
+                "constraints": 2304,
+                "terms": 7680,
+                "maximum_arity": 5,
+                "p95_arity": 5,
+                "maximum_absolute_coefficient": 4
+              },
+              {
+                "family": "bridge-crossing",
+                "relation": "less-than-or-equal",
+                "constraints": 2368,
+                "terms": 5792,
+                "maximum_arity": 4,
+                "p95_arity": 4,
+                "maximum_absolute_coefficient": 16
+              },
+              {
+                "family": "transport-collision",
+                "relation": "less-than-or-equal",
+                "constraints": 288,
+                "terms": 576,
+                "maximum_arity": 2,
+                "p95_arity": 2,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "occupancy-channel",
+                "relation": "equality",
+                "constraints": 432,
+                "terms": 2736,
+                "maximum_arity": 7,
+                "p95_arity": 7,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "occupancy-channel",
+                "relation": "other",
+                "constraints": 576,
+                "terms": 1152,
+                "maximum_arity": 2,
+                "p95_arity": 2,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "used-geometry",
+                "relation": "less-than-or-equal",
+                "constraints": 602,
+                "terms": 1514,
+                "maximum_arity": 13,
+                "p95_arity": 4,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "canonical-translation",
+                "relation": "equality",
+                "constraints": 2,
+                "terms": 2,
+                "maximum_arity": 1,
+                "p95_arity": 1,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "bounding-box",
+                "relation": "maximum",
+                "constraints": 3,
+                "terms": 293,
+                "maximum_arity": 145,
+                "p95_arity": 145,
+                "maximum_absolute_coefficient": 12
+              },
+              {
+                "family": "bounding-box",
+                "relation": "multiplication",
+                "constraints": 1,
+                "terms": 3,
+                "maximum_arity": 3,
+                "p95_arity": 3,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "objective-definition",
+                "relation": "equality",
+                "constraints": 3,
+                "terms": 3181,
+                "maximum_arity": 2593,
+                "p95_arity": 2593,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "turn-definition",
+                "relation": "equality",
+                "constraints": 576,
+                "terms": 2688,
+                "maximum_arity": 5,
+                "p95_arity": 5,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "turn-definition",
+                "relation": "less-than-or-equal",
+                "constraints": 7248,
+                "terms": 16144,
+                "maximum_arity": 9,
+                "p95_arity": 2,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "turn-definition",
+                "relation": "greater-than-or-equal",
+                "constraints": 2512,
+                "terms": 7536,
+                "maximum_arity": 3,
+                "p95_arity": 3,
+                "maximum_absolute_coefficient": 1
+              },
+              {
+                "family": "turn-definition",
+                "relation": "other",
+                "constraints": 576,
+                "terms": 1152,
+                "maximum_arity": 2,
+                "p95_arity": 2,
+                "maximum_absolute_coefficient": 1
+              }
+            ]
+          },
+          "factor_graph": {
+            "variable_vertices": 57460,
+            "constraint_vertices": 205465,
+            "incidences": 554441,
+            "mean_variable_degree": 9.649164636268708,
+            "maximum_variable_degree": 4428,
+            "p95_variable_degree": 23,
+            "mean_constraint_degree": 2.698469325675906,
+            "maximum_constraint_degree": 2593,
+            "p95_constraint_degree": 5,
+            "density": 0.000046962570930663174,
+            "connected_components": 1046,
+            "articulation_points": null,
+            "retained_full_graph": false,
+            "family_incidences": [
+              {
+                "variable_family": "placement",
+                "constraint_family": "endpoint-link",
+                "incidences": 56
+              },
+              {
+                "variable_family": "placement",
+                "constraint_family": "occupancy-channel",
+                "incidences": 576
+              },
+              {
+                "variable_family": "physical-occupancy",
+                "constraint_family": "transport-collision",
+                "incidences": 288
+              },
+              {
+                "variable_family": "physical-occupancy",
+                "constraint_family": "occupancy-channel",
+                "incidences": 1296
+              },
+              {
+                "variable_family": "physical-occupancy",
+                "constraint_family": "used-geometry",
+                "incidences": 288
+              },
+              {
+                "variable_family": "transport-occupancy",
+                "constraint_family": "transport-collision",
+                "incidences": 288
+              },
+              {
+                "variable_family": "transport-occupancy",
+                "constraint_family": "occupancy-channel",
+                "incidences": 288
+              },
+              {
+                "variable_family": "transport-occupancy",
+                "constraint_family": "used-geometry",
+                "incidences": 576
+              },
+              {
+                "variable_family": "transport-occupancy",
+                "constraint_family": "objective-definition",
+                "incidences": 288
+              },
+              {
+                "variable_family": "endpoint",
+                "constraint_family": "endpoint-link",
+                "incidences": 16
+              },
+              {
+                "variable_family": "endpoint-geometry",
+                "constraint_family": "endpoint-link",
+                "incidences": 128
+              },
+              {
+                "variable_family": "endpoint-geometry",
+                "constraint_family": "flow-conservation",
+                "incidences": 1792
+              },
+              {
+                "variable_family": "endpoint-geometry",
+                "constraint_family": "terminal-presence",
+                "incidences": 3584
+              },
+              {
+                "variable_family": "endpoint-geometry",
+                "constraint_family": "item-assignment",
+                "incidences": 1792
+              },
+              {
+                "variable_family": "endpoint-geometry",
+                "constraint_family": "line-capacity",
+                "incidences": 1792
+              },
+              {
+                "variable_family": "endpoint-geometry",
+                "constraint_family": "branch-topology",
+                "incidences": 7616
+              },
+              {
+                "variable_family": "endpoint-geometry",
+                "constraint_family": "bridge-crossing",
+                "incidences": 1792
+              },
+              {
+                "variable_family": "external-connector",
+                "constraint_family": "external-connector",
+                "incidences": 385616
+              },
+              {
+                "variable_family": "external-connector",
+                "constraint_family": "occupancy-channel",
+                "incidences": 1440
+              },
+              {
+                "variable_family": "external-connector",
+                "constraint_family": "objective-definition",
+                "incidences": 10
+              },
+              {
+                "variable_family": "route-cell",
+                "constraint_family": "item-assignment",
+                "incidences": 288
+              },
+              {
+                "variable_family": "route-cell",
+                "constraint_family": "route-cell-activation",
+                "incidences": 2592
+              },
+              {
+                "variable_family": "route-cell",
+                "constraint_family": "occupancy-channel",
+                "incidences": 288
+              },
+              {
+                "variable_family": "route-arc",
+                "constraint_family": "arc-activation",
+                "incidences": 2112
+              },
+              {
+                "variable_family": "route-arc",
+                "constraint_family": "route-arm",
+                "incidences": 2112
+              },
+              {
+                "variable_family": "route-arc",
+                "constraint_family": "item-assignment",
+                "incidences": 1056
+              },
+              {
+                "variable_family": "route-arc",
+                "constraint_family": "bridge-crossing",
+                "incidences": 2112
+              },
+              {
+                "variable_family": "route-arc",
+                "constraint_family": "turn-definition",
+                "incidences": 9856
+              },
+              {
+                "variable_family": "flow",
+                "constraint_family": "arc-activation",
+                "incidences": 2112
+              },
+              {
+                "variable_family": "flow",
+                "constraint_family": "flow-conservation",
+                "incidences": 2112
+              },
+              {
+                "variable_family": "flow",
+                "constraint_family": "line-capacity",
+                "incidences": 2112
+              },
+              {
+                "variable_family": "flow",
+                "constraint_family": "branch-topology",
+                "incidences": 8448
+              },
+              {
+                "variable_family": "flow",
+                "constraint_family": "bridge-crossing",
+                "incidences": 3168
+              },
+              {
+                "variable_family": "terminal-presence",
+                "constraint_family": "terminal-presence",
+                "incidences": 4096
+              },
+              {
+                "variable_family": "terminal-presence",
+                "constraint_family": "route-arm",
+                "incidences": 2304
+              },
+              {
+                "variable_family": "route-arm",
+                "constraint_family": "route-arm",
+                "incidences": 2304
+              },
+              {
+                "variable_family": "route-arm",
+                "constraint_family": "item-assignment",
+                "incidences": 6912
+              },
+              {
+                "variable_family": "route-arm",
+                "constraint_family": "opposing-arms",
+                "incidences": 2304
+              },
+              {
+                "variable_family": "route-arm",
+                "constraint_family": "branch-topology",
+                "incidences": 16128
+              },
+              {
+                "variable_family": "route-arm",
+                "constraint_family": "route-cell-activation",
+                "incidences": 4608
+              },
+              {
+                "variable_family": "arm-item",
+                "constraint_family": "item-assignment",
+                "incidences": 9952
+              },
+              {
+                "variable_family": "arm-item",
+                "constraint_family": "line-capacity",
+                "incidences": 2112
+              },
+              {
+                "variable_family": "arm-item",
+                "constraint_family": "branch-topology",
+                "incidences": 2304
+              },
+              {
+                "variable_family": "arm-item",
+                "constraint_family": "bridge-crossing",
+                "incidences": 1728
+              },
+              {
+                "variable_family": "branch-component",
+                "constraint_family": "branch-topology",
+                "incidences": 20736
+              },
+              {
+                "variable_family": "branch-component",
+                "constraint_family": "objective-definition",
+                "incidences": 2304
+              },
+              {
+                "variable_family": "bridge",
+                "constraint_family": "item-assignment",
+                "incidences": 2592
+              },
+              {
+                "variable_family": "bridge",
+                "constraint_family": "branch-topology",
+                "incidences": 864
+              },
+              {
+                "variable_family": "bridge",
+                "constraint_family": "bridge-rotation",
+                "incidences": 288
+              },
+              {
+                "variable_family": "bridge",
+                "constraint_family": "bridge-crossing",
+                "incidences": 4672
+              },
+              {
+                "variable_family": "bridge",
+                "constraint_family": "objective-definition",
+                "incidences": 288
+              },
+              {
+                "variable_family": "bridge-rotation",
+                "constraint_family": "bridge-rotation",
+                "incidences": 1152
+              },
+              {
+                "variable_family": "objective",
+                "constraint_family": "used-geometry",
+                "incidences": 650
+              },
+              {
+                "variable_family": "objective",
+                "constraint_family": "canonical-translation",
+                "incidences": 2
+              },
+              {
+                "variable_family": "objective",
+                "constraint_family": "bounding-box",
+                "incidences": 296
+              },
+              {
+                "variable_family": "objective",
+                "constraint_family": "objective-definition",
+                "incidences": 291
+              },
+              {
+                "variable_family": "objective",
+                "constraint_family": "turn-definition",
+                "incidences": 17664
+              }
+            ]
+          },
+          "coupling": {
+            "facility_network_incidences": 5,
+            "shared_network_facility_pairs": 4,
+            "cross_family_constraints": 45619,
+            "placement_routing_constraints": 10660,
+            "placement_routing_incidences": 43364,
+            "network_collision_constraints": 4960,
+            "objective_incidences": 32513
+          },
+          "symmetry": null,
+          "estimated_bytes": null
+        },
+        "construction_ms": 255,
+        "search_ms": 5003,
+        "first_incumbent_ms": null,
+        "incumbent_count": 0,
+        "objective": null,
+        "objective_stages": [],
+        "termination": "unknown",
+        "proof": "unproven",
+        "validation": "not-attempted"
+      },
+      "diagnostics": [
+        {
+          "stage": "integrated-layout",
+          "severity": "error",
+          "code": "integrated-layout-unknown",
+          "path": "/",
+          "entity": null,
+          "message": "solver terminated without a solution or proof"
+        },
+        {
+          "stage": "integrated-layout",
+          "severity": "error",
+          "code": "research-cumulative-scc-phase-unsolved",
+          "path": "/phases/3",
+          "entity": "phase:3",
+          "message": "v2 cumulative SCC phase 3 returned without a complete validated incumbent; no fallback was attempted"
+        }
+      ]
+    }
+  }
+}

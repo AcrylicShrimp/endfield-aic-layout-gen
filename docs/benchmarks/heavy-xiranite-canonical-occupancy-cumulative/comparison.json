@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "workload": "heavy-xiranite-minimum-rate",
+  "classification": "semantics-preserving-exact-reformulation",
+  "request_bounds": {
+    "primary": {
+      "max_width": 12,
+      "max_height": 12
+    },
+    "sensitivity": {
+      "max_width": 13,
+      "max_height": 13
+    }
+  },
+  "phase_search_budget_ms": 5000,
+  "controlled_root_probe": {
+    "candidate_count": 256,
+    "target_covering_candidates": 100,
+    "legal_state_count_per_encoding": 2048,
+    "legal_state_mismatches": 0,
+    "candidate_collision": {
+      "collision_rows": 288,
+      "collision_terms": 13088,
+      "same_footprint_forbidden_belt_cells": 0,
+      "same_footprint_forbidden_pipe_cells": 0
+    },
+    "canonical_shared_occupancy": {
+      "collision_rows": 288,
+      "collision_terms": 576,
+      "same_footprint_forbidden_belt_cells": 25,
+      "same_footprint_forbidden_pipe_cells": 25
+    }
+  },
+  "cumulative_12x12": [
+    {
+      "phase": 0,
+      "facility_count": 1,
+      "route_requirement_count": 4,
+      "baseline": {
+        "construction_ms": 74,
+        "search_ms": 1914,
+        "first_incumbent_ms": 83,
+        "incumbent_count": 15,
+        "termination": "optimal",
+        "objective": [42, 4, 0],
+        "variables": 15770,
+        "constraints": 70522,
+        "terms": 201137
+      },
+      "canonical": {
+        "construction_ms": 66,
+        "search_ms": 1912,
+        "first_incumbent_ms": 16,
+        "incumbent_count": 22,
+        "termination": "optimal",
+        "objective": [42, 4, 0],
+        "variables": 16346,
+        "constraints": 64408,
+        "terms": 162945
+      }
+    },
+    {
+      "phase": 1,
+      "facility_count": 2,
+      "route_requirement_count": 7,
+      "baseline": {
+        "construction_ms": 162,
+        "search_ms": 5012,
+        "first_incumbent_ms": 1230,
+        "incumbent_count": 6,
+        "termination": "feasible",
+        "objective": [84, 39, 10],
+        "variables": 32622,
+        "constraints": 134604,
+        "terms": 414263
+      },
+      "canonical": {
+        "construction_ms": 142,
+        "search_ms": 5004,
+        "first_incumbent_ms": 2000,
+        "incumbent_count": 9,
+        "termination": "feasible",
+        "objective": [77, 13, 2],
+        "variables": 33342,
+        "constraints": 121656,
+        "terms": 322919
+      }
+    },
+    {
+      "phase": 2,
+      "facility_count": 3,
+      "route_requirement_count": 10,
+      "baseline": {
+        "construction_ms": 260,
+        "search_ms": 5009,
+        "first_incumbent_ms": 4196,
+        "incumbent_count": 1,
+        "termination": "feasible",
+        "objective": [144, 112, 47],
+        "variables": 48573,
+        "constraints": 194660,
+        "terms": 630619
+      },
+      "canonical": {
+        "construction_ms": 218,
+        "search_ms": 5008,
+        "first_incumbent_ms": 3748,
+        "incumbent_count": 2,
+        "termination": "feasible",
+        "objective": [132, 90, 34],
+        "variables": 49437,
+        "constraints": 174878,
+        "terms": 473323
+      }
+    },
+    {
+      "phase": 3,
+      "facility_count": 4,
+      "route_requirement_count": 13,
+      "baseline": {
+        "construction_ms": 311,
+        "search_ms": 5003,
+        "first_incumbent_ms": null,
+        "incumbent_count": 0,
+        "termination": "unknown",
+        "objective": null,
+        "variables": 56452,
+        "constraints": 231793,
+        "terms": 764169
+      },
+      "canonical": {
+        "construction_ms": 255,
+        "search_ms": 5003,
+        "first_incumbent_ms": null,
+        "incumbent_count": 0,
+        "termination": "unknown",
+        "objective": null,
+        "variables": 57460,
+        "constraints": 205465,
+        "terms": 554441
+      }
+    }
+  ],
+  "phase1_13x13": {
+    "baseline": {
+      "construction_ms": 210,
+      "search_ms": 5002,
+      "first_incumbent_ms": null,
+      "termination": "unknown",
+      "variables": 41777,
+      "constraints": 175024,
+      "terms": 535657,
+      "peak_rss_bytes": 179355648
+    },
+    "canonical": {
+      "construction_ms": 182,
+      "search_ms": 5000,
+      "first_incumbent_ms": null,
+      "termination": "unknown",
+      "variables": 42622,
+      "constraints": 158651,
+      "terms": 420116,
+      "peak_rss_bytes": 172457984
+    }
+  },
+  "phase3_12x12_process_peak_rss_bytes": {
+    "baseline": 288047104,
+    "canonical": 280494080
+  },
+  "canonical_phase3_dominant_family": {
+    "family": "external-connector",
+    "variables": 37247,
+    "total_variables": 57460,
+    "constraints": 152830,
+    "total_constraints": 205465,
+    "terms": 385616,
+    "total_terms": 554441
+  },
+  "verdict": {
+    "adopt_reformulation": true,
+    "restored_13x13_phase1_incumbent": false,
+    "restored_12x12_phase3_incumbent": false,
+    "next_exact_diagnosis_target": "external-connector-geometry-and-bound-coupling"
+  }
+}
