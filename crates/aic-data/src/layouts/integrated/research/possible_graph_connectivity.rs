@@ -14,7 +14,7 @@ use super::coordinate_partition::{invalid_input, millis, model_scale, prepare_ta
 use super::rotation_partition::diagnose_cumulative_facility_rotation_partitions;
 use super::{ExactDimensionCaseOutcome, ExactUsedDimensionCandidate, PartitionCaseModelScale};
 
-pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 4;
+pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 5;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -25,6 +25,7 @@ pub enum PossibleGraphConnectivityCaseKind {
     EventSelectivePossibleGraphPropagator,
     LazyTraversalPossibleGraphPropagator,
     GroupedDemandPossibleGraphPropagator,
+    DemandSilentPossibleGraphPropagator,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
@@ -48,6 +49,7 @@ pub struct PossibleGraphConnectivityRuntime {
     pub reason_builds: u64,
     pub reason_arc_scans: u64,
     pub demand_cells_checked: u64,
+    pub registered_domain_variables: u64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -177,6 +179,13 @@ pub fn diagnose_phase2_possible_graph_connectivity(
         &reference,
     );
     let (grouped, grouped_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_grouped_demand_possible_graph_connectivity(
+        input.clone(),
+        logistics_components,
+        Some(case_search_budget),
+        fixed_dimensions,
+        &reference,
+    );
+    let (demand_silent, demand_silent_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_demand_silent_possible_graph_connectivity(
         input,
         logistics_components,
         Some(case_search_budget),
@@ -222,6 +231,11 @@ pub fn diagnose_phase2_possible_graph_connectivity(
                 grouped,
                 connectivity_runtime(grouped_runtime),
             ),
+            case_report(
+                PossibleGraphConnectivityCaseKind::DemandSilentPossibleGraphPropagator,
+                demand_silent,
+                connectivity_runtime(demand_silent_runtime),
+            ),
         ],
         diagnostic_only: true,
     })
@@ -243,6 +257,7 @@ fn connectivity_runtime(
         reason_builds: statistics.reason_builds,
         reason_arc_scans: statistics.reason_arc_scans,
         demand_cells_checked: statistics.demand_cells_checked,
+        registered_domain_variables: statistics.registered_domain_variables,
     }
 }
 

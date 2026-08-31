@@ -126,6 +126,13 @@ but replaces 6.56 million option queries with 19.90 million cell checks and does
 runtime. The variant is rejected, and omission of semantically irrelevant demand-only wakeups is
 the next exact event-scheduling experiment.
 
+The thirty-eighth checkpoint,
+`heavy-xiranite-minimum-rate.thirty-eighth-demand-silent-connectivity-report.md`, proves that demand
+selection changes need not wake possible-graph propagation, but removing 2,864 registered variables
+does not remove any custom executions on the controlled workload. Its three-iteration summary
+accepts lazy traversal as a 13.3% improvement, rejects two demand-side micro-optimizations, and moves
+the next research boundary to stronger exact connectivity inference.
+
 Regenerate it from a release binary with:
 
 ```bash

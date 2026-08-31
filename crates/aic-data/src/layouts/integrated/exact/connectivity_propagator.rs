@@ -29,6 +29,7 @@ pub(super) struct PossibleRouteReachabilityCounters {
     reason_builds: AtomicU64,
     reason_arc_scans: AtomicU64,
     demand_cells_checked: AtomicU64,
+    registered_domain_variables: AtomicU64,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -45,6 +46,7 @@ pub(in crate::layouts::integrated) struct PossibleRouteReachabilityStatistics {
     pub reason_builds: u64,
     pub reason_arc_scans: u64,
     pub demand_cells_checked: u64,
+    pub registered_domain_variables: u64,
 }
 
 impl PossibleRouteReachabilityCounters {
@@ -62,6 +64,7 @@ impl PossibleRouteReachabilityCounters {
             reason_builds: self.reason_builds.load(Ordering::Relaxed),
             reason_arc_scans: self.reason_arc_scans.load(Ordering::Relaxed),
             demand_cells_checked: self.demand_cells_checked.load(Ordering::Relaxed),
+            registered_domain_variables: self.registered_domain_variables.load(Ordering::Relaxed),
         }
     }
 }
@@ -69,6 +72,7 @@ impl PossibleRouteReachabilityCounters {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum PossibleRouteReachabilityWakeMode {
     AnyDomainEvent,
+    PathAndSupplyDomainEvents,
     ExclusionPredicates,
 }
 
@@ -116,6 +120,13 @@ impl PossibleRouteReachabilityArgs {
             .chain(self.supplies.iter().map(|option| option.selected))
             .chain(self.demands.iter().map(|option| option.selected))
     }
+
+    fn path_and_supply_variables(&self) -> impl Iterator<Item = DomainId> + '_ {
+        self.arcs
+            .iter()
+            .flat_map(|arc| [arc.selected, arc.from_item, arc.to_item])
+            .chain(self.supplies.iter().map(|option| option.selected))
+    }
 }
 
 impl PropagatorConstructor for PossibleRouteReachabilityArgs {
@@ -126,8 +137,21 @@ impl PropagatorConstructor for PossibleRouteReachabilityArgs {
         mut context: PropagatorConstructorContext,
     ) -> PropagatorSpec<Self::PropagatorImpl> {
         let registration = match self.wake_mode {
-            PossibleRouteReachabilityWakeMode::AnyDomainEvent => {
-                let variables = self.variables().collect::<BTreeSet<_>>();
+            PossibleRouteReachabilityWakeMode::AnyDomainEvent
+            | PossibleRouteReachabilityWakeMode::PathAndSupplyDomainEvents => {
+                let variables = match self.wake_mode {
+                    PossibleRouteReachabilityWakeMode::AnyDomainEvent => {
+                        self.variables().collect::<BTreeSet<_>>()
+                    }
+                    PossibleRouteReachabilityWakeMode::PathAndSupplyDomainEvents => {
+                        self.path_and_supply_variables().collect::<BTreeSet<_>>()
+                    }
+                    PossibleRouteReachabilityWakeMode::ExclusionPredicates => unreachable!(),
+                };
+                self.counters.registered_domain_variables.fetch_add(
+                    variables.len().try_into().unwrap_or(u64::MAX),
+                    Ordering::Relaxed,
+                );
                 let mut variables = variables.into_iter();
                 let first = variables
                     .next()
@@ -873,5 +897,60 @@ mod tests {
         assert_eq!(blocked.demand_options_checked, 4);
         assert_eq!(solver.upper_bound(&first_demand), 0);
         assert_eq!(solver.upper_bound(&second_demand), 0);
+    }
+
+    #[test]
+    fn path_only_wakeups_ignore_demand_selection_but_detect_path_loss() {
+        let mut solver = Solver::default();
+        let supply = solver.new_bounded_integer(1, 1);
+        let demand = solver.new_bounded_integer(0, 1);
+        let selected = solver.new_bounded_integer(0, 1);
+        let item = solver.new_bounded_integer(1, 1);
+        let counters = Arc::new(PossibleRouteReachabilityCounters::default());
+        let tag = solver.new_constraint_tag();
+        let _ = solver.add_propagator(PossibleRouteReachabilityArgs {
+            name: "path-only-wakeups".to_string(),
+            cell_count: 3,
+            item_code: 1,
+            arcs: vec![PossibleRouteArc {
+                from: 0,
+                to: 2,
+                selected,
+                from_item: item,
+                to_item: item,
+            }],
+            supplies: vec![PossibleTerminalOption {
+                cell: 0,
+                selected: supply,
+            }],
+            demands: vec![PossibleTerminalOption {
+                cell: 2,
+                selected: demand,
+            }],
+            constraint_tag: tag,
+            counters: Arc::clone(&counters),
+            wake_mode: PossibleRouteReachabilityWakeMode::PathAndSupplyDomainEvents,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
+        });
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let initial = counters.snapshot();
+        solver.add_clause([demand.lower_bound_predicate(1)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let selected_demand = counters.snapshot();
+        assert_eq!(selected_demand.propagations, initial.propagations);
+
+        solver.add_clause([selected.upper_bound_predicate(0)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Infeasible
+        );
+        assert!(counters.snapshot().propagations > selected_demand.propagations);
     }
 }
