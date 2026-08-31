@@ -101,6 +101,9 @@ pub(crate) struct FacilityStateResearchArgs {
     /// Introduced-facility rotation selected by the residual ablation.
     #[arg(long, value_name = "DEGREES", requires = "prior_overlap_ablation")]
     pub(crate) facility_rotation: Option<i64>,
+    /// Exact endpoint-channel encoding used by residual ablation cases.
+    #[arg(long, value_enum, default_value = "nested-element")]
+    pub(crate) endpoint_encoding: EndpointChannelEncodingArg,
     #[arg(long, value_name = "COUNT")]
     pub(crate) worker_count: usize,
     #[arg(long, value_name = "MILLISECONDS")]
@@ -1254,6 +1257,7 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
                         .context("prior-overlap ablation requires --port-assignment-index")?,
                     args.facility_rotation
                         .context("prior-overlap ablation requires --facility-rotation")?,
+                    args.endpoint_encoding,
                     args.worker_count,
                     args.prefix_case_time_limit_ms,
                     args.state_case_time_limit_ms,

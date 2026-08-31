@@ -16,11 +16,11 @@ use super::coordinate_partition::{
     validate_inputs,
 };
 use super::{
-    ExactDimensionCaseOutcome, ExactDimensionSolverStack,
+    EndpointChannelEncoding, ExactDimensionCaseOutcome, ExactDimensionSolverStack,
     sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation,
 };
 
-pub const RESIDUAL_FACILITY_STATE_ABLATION_SCHEMA_VERSION: u32 = 1;
+pub const RESIDUAL_FACILITY_STATE_ABLATION_SCHEMA_VERSION: u32 = 2;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -49,6 +49,7 @@ pub struct ResidualFacilityStateAblationReport {
     pub schema_version: u32,
     pub target_phase_index: usize,
     pub solver_stack: ExactDimensionSolverStack,
+    pub endpoint_encoding: EndpointChannelEncoding,
     pub fixed_dimensions: [i32; 2],
     pub partitioned_facility: String,
     pub fixed_coordinate: [i32; 2],
@@ -79,6 +80,7 @@ pub fn diagnose_residual_facility_state_ablation(
     fixed_y: i32,
     port_assignment_index: usize,
     fixed_rotation: i64,
+    endpoint_encoding: EndpointChannelEncoding,
     worker_count: usize,
     prefix_search_budget: Duration,
     case_search_budget: Duration,
@@ -91,6 +93,15 @@ pub fn diagnose_residual_facility_state_ablation(
         prefix_search_budget,
         case_search_budget,
     )?;
+    if !matches!(
+        endpoint_encoding,
+        EndpointChannelEncoding::NestedElement | EndpointChannelEncoding::SparseSupport
+    ) {
+        return Err(invalid_input(
+            "/endpoint_encoding",
+            "residual facility-state ablation supports nested-element or sparse-support",
+        ));
+    }
     let growth = plan_facility_growth(instance_wiring, MAX_NEW_FACILITIES_PER_GROWTH_PHASE);
     if !growth.success || target_phase_index >= growth.phases.len() {
         return Err(invalid_input(
@@ -204,41 +215,73 @@ pub fn diagnose_residual_facility_state_ablation(
             handles.push((
                 kind,
                 scope.spawn(move || match kind {
-                    ResidualFacilityStateCaseKind::IntroducedStateOnly => {
-                        exact::shared_layer::solve_factored_endpoints_fixed_dimensions_coordinate_ports_feasibility_only_with_prior_and_local_continuation(
-                            input,
-                            logistics_components,
-                            Some(case_search_budget),
-                            dimensions,
-                            coordinate,
-                            ports,
-                            Some(prior_solution),
-                        )
-                    }
-                    ResidualFacilityStateCaseKind::PriorOverlapPlacements => {
-                        exact::shared_layer::solve_factored_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
-                            input,
-                            logistics_components,
-                            Some(case_search_budget),
-                            dimensions,
-                            coordinate,
-                            ports,
-                            prior_solution,
-                            exact::shared_layer::ReferenceAblationFixation::PriorOverlapPlacements,
-                        )
-                    }
-                    ResidualFacilityStateCaseKind::PriorOverlapPlacementsAndFacilityPorts => {
-                        exact::shared_layer::solve_factored_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
-                            input,
-                            logistics_components,
-                            Some(case_search_budget),
-                            dimensions,
-                            coordinate,
-                            ports,
-                            prior_solution,
-                            exact::shared_layer::ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPorts,
-                        )
-                    }
+                    ResidualFacilityStateCaseKind::IntroducedStateOnly => match endpoint_encoding {
+                        EndpointChannelEncoding::NestedElement => exact::shared_layer::solve_factored_endpoints_fixed_dimensions_coordinate_ports_feasibility_only_with_prior_and_local_continuation(
+                                input,
+                                logistics_components,
+                                Some(case_search_budget),
+                                dimensions,
+                                coordinate,
+                                ports,
+                                Some(prior_solution),
+                            ),
+                        EndpointChannelEncoding::SparseSupport => exact::shared_layer::solve_sparse_support_endpoints_fixed_dimensions_coordinate_ports_feasibility_only_with_prior_and_local_continuation(
+                                input,
+                                logistics_components,
+                                Some(case_search_budget),
+                                dimensions,
+                                coordinate,
+                                ports,
+                                Some(prior_solution),
+                            ),
+                        _ => unreachable!("validated residual endpoint encoding"),
+                    },
+                    ResidualFacilityStateCaseKind::PriorOverlapPlacements => match endpoint_encoding {
+                        EndpointChannelEncoding::NestedElement => exact::shared_layer::solve_factored_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+                                input,
+                                logistics_components,
+                                Some(case_search_budget),
+                                dimensions,
+                                coordinate,
+                                ports,
+                                prior_solution,
+                                exact::shared_layer::ReferenceAblationFixation::PriorOverlapPlacements,
+                            ),
+                        EndpointChannelEncoding::SparseSupport => exact::shared_layer::solve_sparse_support_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+                                input,
+                                logistics_components,
+                                Some(case_search_budget),
+                                dimensions,
+                                coordinate,
+                                ports,
+                                prior_solution,
+                                exact::shared_layer::ReferenceAblationFixation::PriorOverlapPlacements,
+                            ),
+                        _ => unreachable!("validated residual endpoint encoding"),
+                    },
+                    ResidualFacilityStateCaseKind::PriorOverlapPlacementsAndFacilityPorts => match endpoint_encoding {
+                        EndpointChannelEncoding::NestedElement => exact::shared_layer::solve_factored_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+                                input,
+                                logistics_components,
+                                Some(case_search_budget),
+                                dimensions,
+                                coordinate,
+                                ports,
+                                prior_solution,
+                                exact::shared_layer::ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPorts,
+                            ),
+                        EndpointChannelEncoding::SparseSupport => exact::shared_layer::solve_sparse_support_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+                                input,
+                                logistics_components,
+                                Some(case_search_budget),
+                                dimensions,
+                                coordinate,
+                                ports,
+                                prior_solution,
+                                exact::shared_layer::ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPorts,
+                            ),
+                        _ => unreachable!("validated residual endpoint encoding"),
+                    },
                 }),
             ));
         }
@@ -297,6 +340,7 @@ pub fn diagnose_residual_facility_state_ablation(
         schema_version: RESIDUAL_FACILITY_STATE_ABLATION_SCHEMA_VERSION,
         target_phase_index,
         solver_stack: ExactDimensionSolverStack::WatchedDemandWithLocalContinuation,
+        endpoint_encoding,
         fixed_dimensions: [fixed_width, fixed_height],
         partitioned_facility,
         fixed_coordinate: [fixed_x, fixed_y],

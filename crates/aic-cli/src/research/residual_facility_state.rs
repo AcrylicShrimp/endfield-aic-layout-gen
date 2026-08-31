@@ -3,10 +3,12 @@ use std::path::PathBuf;
 use std::time::Duration;
 
 use aic_data::layouts::{
-    ResidualFacilityStateAblationReport, diagnose_residual_facility_state_ablation,
+    EndpointChannelEncoding, ResidualFacilityStateAblationReport,
+    diagnose_residual_facility_state_ablation,
 };
 use anyhow::{Context, Result};
 
+use super::EndpointChannelEncodingArg;
 use super::dimension_sweep::{load_inputs, write_layout_html};
 use super::first_phase::{write_bytes, write_json};
 
@@ -22,6 +24,7 @@ pub(super) fn run(
     facility_y: i32,
     port_assignment_index: usize,
     facility_rotation: i64,
+    endpoint_encoding: EndpointChannelEncodingArg,
     worker_count: usize,
     prefix_case_time_limit_ms: u64,
     case_time_limit_ms: u64,
@@ -34,6 +37,13 @@ pub(super) fn run(
     let case_budget = NonZeroU64::new(case_time_limit_ms)
         .context("residual facility-state case_time_limit_ms must be positive")?;
     let loaded = load_inputs(workload_path, workspace_root, placement_request_path)?;
+    let endpoint_encoding = match endpoint_encoding {
+        EndpointChannelEncodingArg::NestedElement => EndpointChannelEncoding::NestedElement,
+        EndpointChannelEncodingArg::SparseSupport => EndpointChannelEncoding::SparseSupport,
+        EndpointChannelEncodingArg::PositiveTable => {
+            anyhow::bail!("residual facility-state diagnosis does not support positive-table")
+        }
+    };
     let report = diagnose_residual_facility_state_ablation(
         &loaded.wiring,
         &loaded.facilities,
@@ -48,6 +58,7 @@ pub(super) fn run(
         facility_y,
         port_assignment_index,
         facility_rotation,
+        endpoint_encoding,
         worker_count.get(),
         Duration::from_millis(prefix_budget.get()),
         Duration::from_millis(case_budget.get()),
@@ -97,9 +108,10 @@ fn render_summary(report: &ResidualFacilityStateAblationReport) -> Result<String
         .collect::<String>();
     let json = serde_json::to_string(report)?.replace('<', "\\u003c");
     Ok(format!(
-        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Residual facility-state ablation</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {} residual facility-state ablation</h1><div class="meta">facility=<code>{}</code> · fixed={}x{} · coordinate={},{} · assignment={} · rotation={} · prior placements={} · prior facility terminals={} · wall={}ms</div><table><thead><tr><th>case</th><th>outcome</th><th>added constraints</th><th>build ms</th><th>search ms</th><th>first witness ms</th><th>decisions</th><th>backtracks</th><th>conflicts</th><th>learned</th><th>propagations</th></tr></thead><tbody>{}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Residual facility-state ablation</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {} residual facility-state ablation</h1><div class="meta">facility=<code>{}</code> · encoding={:?} · fixed={}x{} · coordinate={},{} · assignment={} · rotation={} · prior placements={} · prior facility terminals={} · wall={}ms</div><table><thead><tr><th>case</th><th>outcome</th><th>added constraints</th><th>build ms</th><th>search ms</th><th>first witness ms</th><th>decisions</th><th>backtracks</th><th>conflicts</th><th>learned</th><th>propagations</th></tr></thead><tbody>{}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
         report.target_phase_index,
         report.partitioned_facility,
+        report.endpoint_encoding,
         report.fixed_dimensions[0],
         report.fixed_dimensions[1],
         report.fixed_coordinate[0],

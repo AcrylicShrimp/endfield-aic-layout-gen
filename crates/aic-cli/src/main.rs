@@ -2676,6 +2676,8 @@ mod tests {
             "5",
             "--facility-rotation",
             "0",
+            "--endpoint-encoding",
+            "sparse-support",
             "--worker-count",
             "12",
             "--prefix-case-time-limit-ms",
@@ -2699,6 +2701,10 @@ mod tests {
         assert!(args.prior_overlap_ablation);
         assert_eq!(args.port_assignment_index, Some(5));
         assert_eq!(args.facility_rotation, Some(0));
+        assert!(matches!(
+            args.endpoint_encoding,
+            crate::research::EndpointChannelEncodingArg::SparseSupport
+        ));
         assert_eq!(args.worker_count, 12);
         assert_eq!(args.prefix_case_time_limit_ms, 10_000);
         assert_eq!(args.state_case_time_limit_ms, 5_000);

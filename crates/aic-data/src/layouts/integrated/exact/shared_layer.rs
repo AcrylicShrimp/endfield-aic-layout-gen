@@ -727,13 +727,60 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
     fixed_ports: Vec<FixedTerminalPortChoice>,
     prior_solution: Option<&IntegratedLayoutReport>,
 ) -> IntegratedLayoutReport {
+    solve_endpoints_fixed_dimensions_coordinate_ports_feasibility_only_with_prior_and_local_continuation(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        fixed_dimensions,
+        fixed_coordinate,
+        fixed_ports,
+        prior_solution,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_fixed_dimensions_coordinate_ports_feasibility_only_with_prior_and_local_continuation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: Option<&IntegratedLayoutReport>,
+) -> IntegratedLayoutReport {
+    solve_endpoints_fixed_dimensions_coordinate_ports_feasibility_only_with_prior_and_local_continuation(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::FactoredSparseSupport(SyncArc::new(
+            EndpointSupportPropagationCounters::default(),
+        )),
+        fixed_dimensions,
+        fixed_coordinate,
+        fixed_ports,
+        prior_solution,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn solve_endpoints_fixed_dimensions_coordinate_ports_feasibility_only_with_prior_and_local_continuation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    endpoint_encoding: EndpointEncoding,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: Option<&IntegratedLayoutReport>,
+) -> IntegratedLayoutReport {
     let connectivity_counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
     let grid_counters = SyncArc::new(LayerGridAnalyzerCounters::default());
     solve_with_endpoint_encoding(
         input,
         logistics_components,
         time_limit,
-        EndpointEncoding::Factored,
+        endpoint_encoding,
         prior_solution,
         SearchMode::FeasibilityOnly,
         Some(fixed_dimensions),
@@ -765,6 +812,57 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
     prior_solution: &IntegratedLayoutReport,
     fixation: ReferenceAblationFixation,
 ) -> IntegratedLayoutReport {
+    solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        fixed_dimensions,
+        fixed_coordinate,
+        fixed_ports,
+        prior_solution,
+        fixation,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: &IntegratedLayoutReport,
+    fixation: ReferenceAblationFixation,
+) -> IntegratedLayoutReport {
+    solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::FactoredSparseSupport(SyncArc::new(
+            EndpointSupportPropagationCounters::default(),
+        )),
+        fixed_dimensions,
+        fixed_coordinate,
+        fixed_ports,
+        prior_solution,
+        fixation,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    endpoint_encoding: EndpointEncoding,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: &IntegratedLayoutReport,
+    fixation: ReferenceAblationFixation,
+) -> IntegratedLayoutReport {
     debug_assert!(matches!(
         fixation,
         ReferenceAblationFixation::PriorOverlapPlacements
@@ -776,7 +874,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         input,
         logistics_components,
         time_limit,
-        EndpointEncoding::Factored,
+        endpoint_encoding,
         Some(prior_solution),
         SearchMode::FeasibilityOnly,
         Some(fixed_dimensions),
