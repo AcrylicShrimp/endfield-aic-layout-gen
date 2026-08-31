@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "workload": "heavy-xiranite-minimum-rate",
+  "formulation": "joint-shared-boundary-terminals-canonical-occupancy-v4",
+  "classification": "diagnostic-only-search-orchestration-comparison",
+  "phase": 0,
+  "selected_network_indices": [0, 1],
+  "selected_networks": [
+    "network:belt:item-xiranite-enr-powder",
+    "network:belt:item-xiranite-powder"
+  ],
+  "request_bounds": {
+    "max_width": 12,
+    "max_height": 12
+  },
+  "search_budget_ms_per_case": 5000,
+  "model_identity": {
+    "variables": 10970,
+    "boolean_variables": 9402,
+    "integer_variables": 1568,
+    "log2_domain_volume": 12796.290876846722,
+    "constraints": 33256,
+    "terms": 109133,
+    "placement_routing_constraints": 5872,
+    "placement_routing_incidences": 23350,
+    "model_complexity_reports_identical": true
+  },
+  "cases": [
+    {
+      "id": "optimize",
+      "search_mode": "optimize",
+      "diagnostic_only": false,
+      "construction_ms": 80,
+      "search_ms": 5000,
+      "first_incumbent_ms": null,
+      "incumbent_count": 0,
+      "objective": null,
+      "objective_stage_count": 0,
+      "termination": "unknown",
+      "proof": "unproven",
+      "validation": "not-attempted",
+      "peak_rss_bytes": 91095040,
+      "instructions_retired": 87770968087,
+      "cycles_elapsed": 19125880286
+    },
+    {
+      "id": "feasibility-only",
+      "search_mode": "feasibility-only",
+      "diagnostic_only": true,
+      "construction_ms": 67,
+      "search_ms": 5001,
+      "first_incumbent_ms": null,
+      "incumbent_count": 0,
+      "objective": null,
+      "objective_stage_count": 0,
+      "termination": "unknown",
+      "proof": "unproven",
+      "validation": "not-attempted",
+      "peak_rss_bytes": 89276416,
+      "instructions_retired": 87646068187,
+      "cycles_elapsed": 19174592634
+    }
+  ],
+  "verdict": {
+    "feasibility_only_found_incumbent": false,
+    "lexicographic_tie_breakers_reached": false,
+    "objective_quality_search_explains_5s_cliff": false,
+    "cliff_side": "hard-multi-network-model-or-common-branching-propagation",
+    "next_experiment": "exact-partition-of-pair-0-1-by-used-width-and-height"
+  }
+}
