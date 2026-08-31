@@ -16,13 +16,16 @@ use super::{
 
 mod coordinate_partition;
 mod dimension_sweep;
+mod rotation_partition;
 
 pub use coordinate_partition::{
     CUMULATIVE_FACILITY_COORDINATE_PARTITION_SCHEMA_VERSION,
-    CUMULATIVE_FACILITY_PORT_PARTITION_SCHEMA_VERSION, CumulativeFacilityCoordinatePartitionReport,
-    CumulativeFacilityPortPartitionReport, FacilityCoordinateCaseDisposition,
+    CUMULATIVE_FACILITY_PORT_PARTITION_SCHEMA_VERSION,
+    CUMULATIVE_FACILITY_ROTATION_PARTITION_SCHEMA_VERSION,
+    CumulativeFacilityCoordinatePartitionReport, CumulativeFacilityPortPartitionReport,
+    CumulativeFacilityRotationPartitionReport, FacilityCoordinateCaseDisposition,
     FacilityCoordinateCaseReport, FacilityPortAssignment, FacilityPortDomainReport,
-    FacilityPortPartitionCaseReport, PartitionCaseModelScale,
+    FacilityPortPartitionCaseReport, FacilityRotationPartitionCaseReport, PartitionCaseModelScale,
     diagnose_cumulative_facility_coordinate_partitions,
     diagnose_cumulative_facility_port_partitions,
 };
@@ -33,6 +36,7 @@ pub use dimension_sweep::{
     ParallelExactDimensionSweepReport, sweep_cumulative_integrated_layout_fixed_dimensions,
     sweep_first_integrated_layout_phase_fixed_dimensions,
 };
+pub use rotation_partition::diagnose_cumulative_facility_rotation_partitions;
 
 pub const EXACT_ABLATION_MATRIX_SCHEMA_VERSION: u32 = 1;
 pub const SHARED_LAYER_COMPARISON_SCHEMA_VERSION: u32 = 1;

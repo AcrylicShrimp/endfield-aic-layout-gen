@@ -24,6 +24,7 @@ use super::{
 
 pub const CUMULATIVE_FACILITY_COORDINATE_PARTITION_SCHEMA_VERSION: u32 = 1;
 pub const CUMULATIVE_FACILITY_PORT_PARTITION_SCHEMA_VERSION: u32 = 1;
+pub const CUMULATIVE_FACILITY_ROTATION_PARTITION_SCHEMA_VERSION: u32 = 1;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -130,6 +131,40 @@ pub struct CumulativeFacilityPortPartitionReport {
     pub invalid_witness_count: usize,
     pub selected_witness: Option<IntegratedLayoutReport>,
     pub representative_layout: Option<IntegratedLayoutReport>,
+    pub diagnostic_only: bool,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct FacilityRotationPartitionCaseReport {
+    pub rotation: i64,
+    pub worker_index: usize,
+    pub completion_order: usize,
+    pub outcome: ExactDimensionCaseOutcome,
+    pub construction_ms: u64,
+    pub search_ms: u64,
+    pub first_incumbent_ms: Option<u64>,
+    pub model_scale: PartitionCaseModelScale,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct CumulativeFacilityRotationPartitionReport {
+    pub schema_version: u32,
+    pub target_phase_index: usize,
+    pub total_phase_count: usize,
+    pub fixed_dimensions: ExactUsedDimensionCandidate,
+    pub partitioned_facility: String,
+    pub fixed_coordinate: [i32; 2],
+    pub fixed_port_assignment_index: usize,
+    pub fixed_port_assignments: Vec<FacilityPortAssignment>,
+    pub legal_rotations: Vec<i64>,
+    pub search_budget_ms_per_rotation: u64,
+    pub outer_wall_ms: u64,
+    pub cases: Vec<FacilityRotationPartitionCaseReport>,
+    pub validated_witness_found: bool,
+    pub complete_infeasibility_proven: bool,
+    pub unknown_count: usize,
+    pub selected_witness: Option<IntegratedLayoutReport>,
+    pub representative_layout: IntegratedLayoutReport,
     pub diagnostic_only: bool,
 }
 
@@ -311,6 +346,7 @@ pub fn diagnose_cumulative_facility_coordinate_partitions(
                             instance: String::new(),
                             x: 0,
                             y: 0,
+                            rotation: None,
                         },
                         disposition: FacilityCoordinateCaseDisposition::Executed,
                         worker_index,
@@ -658,7 +694,7 @@ pub fn diagnose_cumulative_facility_port_partitions(
     })
 }
 
-fn enumerate_port_assignments(
+pub(super) fn enumerate_port_assignments(
     domains: &[FacilityPortDomainReport],
 ) -> Vec<Vec<FacilityPortAssignment>> {
     let mut assignments = vec![Vec::new()];
@@ -679,7 +715,7 @@ fn enumerate_port_assignments(
     assignments
 }
 
-fn model_scale(exact: &super::super::ExactSolveReport) -> PartitionCaseModelScale {
+pub(super) fn model_scale(exact: &super::super::ExactSolveReport) -> PartitionCaseModelScale {
     PartitionCaseModelScale {
         variables: exact.model_complexity.variables.total_variables,
         constraints: exact
@@ -700,7 +736,7 @@ fn model_scale(exact: &super::super::ExactSolveReport) -> PartitionCaseModelScal
     }
 }
 
-fn prepare_target_input(
+pub(super) fn prepare_target_input(
     instance_wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
@@ -848,6 +884,7 @@ fn run_port_worker(
                 instance: partitioned_facility.to_string(),
                 x: fixed_x,
                 y: fixed_y,
+                rotation: None,
             },
             fixed_ports,
             Some(prior_solution),
@@ -872,7 +909,7 @@ fn run_port_worker(
     }
 }
 
-fn classify_outcome(layout: &IntegratedLayoutReport) -> ExactDimensionCaseOutcome {
+pub(super) fn classify_outcome(layout: &IntegratedLayoutReport) -> ExactDimensionCaseOutcome {
     use super::super::{ExactProofStatus, ExactValidationStatus};
     if layout.success
         && layout
@@ -899,7 +936,7 @@ fn classify_outcome(layout: &IntegratedLayoutReport) -> ExactDimensionCaseOutcom
     }
 }
 
-fn validate_inputs(
+pub(super) fn validate_inputs(
     target_phase_index: usize,
     fixed_width: i32,
     fixed_height: i32,
@@ -934,7 +971,10 @@ fn validate_inputs(
     Ok(())
 }
 
-fn invalid_input(path: impl Into<String>, message: impl Into<String>) -> IntegratedLayoutReport {
+pub(super) fn invalid_input(
+    path: impl Into<String>,
+    message: impl Into<String>,
+) -> IntegratedLayoutReport {
     IntegratedLayoutReport::invalid(IntegratedLayoutDiagnostic::error(
         "invalid-cumulative-facility-coordinate-partition",
         path,
@@ -943,7 +983,7 @@ fn invalid_input(path: impl Into<String>, message: impl Into<String>) -> Integra
     ))
 }
 
-fn millis(duration: Duration) -> u64 {
+pub(super) fn millis(duration: Duration) -> u64 {
     duration.as_millis().try_into().unwrap_or(u64::MAX)
 }
 

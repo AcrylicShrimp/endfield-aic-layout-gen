@@ -80,6 +80,7 @@ pub(in crate::layouts::integrated) struct FixedFacilityCoordinate {
     pub instance: String,
     pub x: i32,
     pub y: i32,
+    pub rotation: Option<i64>,
 }
 
 #[derive(Debug, Clone, serde::Serialize, PartialEq, Eq)]
@@ -333,7 +334,37 @@ pub(in crate::layouts::integrated) fn facility_coordinate_partitions(
                 instance: instance_id.to_string(),
                 x,
                 y,
+                rotation: None,
             })
+            .collect(),
+    )
+}
+
+pub(in crate::layouts::integrated) fn facility_rotations_at_coordinate(
+    input: &ModelInput,
+    instance_id: &str,
+    x: i32,
+    y: i32,
+) -> Result<Vec<i64>, IntegratedLayoutDiagnostic> {
+    let instance = input
+        .instances
+        .iter()
+        .find(|instance| instance.id == instance_id)
+        .ok_or_else(|| {
+            IntegratedLayoutDiagnostic::error(
+                "unknown-rotation-partition-facility",
+                "/fixed_rotation/instance",
+                Some(instance_id.to_string()),
+                "the rotation partition facility is not present in the cumulative exact model",
+            )
+        })?;
+    Ok(
+        generate_candidate_geometries(instance, input.width, input.height)
+            .into_iter()
+            .filter(|candidate| candidate.x == x && candidate.y == y)
+            .map(|candidate| candidate.rotation)
+            .collect::<BTreeSet<_>>()
+            .into_iter()
             .collect(),
     )
 }
@@ -782,14 +813,23 @@ fn post_fixed_facility_coordinate(
     let matching = instance
         .candidates
         .iter()
-        .filter(|candidate| candidate.x == fixed.x && candidate.y == fixed.y)
+        .filter(|candidate| {
+            candidate.x == fixed.x
+                && candidate.y == fixed.y
+                && fixed
+                    .rotation
+                    .is_none_or(|rotation| candidate.rotation == rotation)
+        })
         .map(|candidate| candidate.selected.scaled(1))
         .collect::<Vec<_>>();
     if matching.is_empty() {
         return Err(IntegratedLayoutDiagnostic::error(
             "invalid-coordinate-partition",
             "/fixed_coordinate",
-            Some(format!("{}@{},{}", fixed.instance, fixed.x, fixed.y)),
+            Some(format!(
+                "{}@{},{}:{:?}",
+                fixed.instance, fixed.x, fixed.y, fixed.rotation
+            )),
             "the requested coordinate has no legal rotation within the hard layout bounds",
         ));
     }
@@ -856,6 +896,22 @@ fn validate_fixed_coordinate(
             format!(
                 "coordinate-partition witness must place '{}' at {},{}",
                 fixed.instance, fixed.x, fixed.y
+            ),
+        ));
+    }
+    if let Some(rotation) = fixed.rotation
+        && placement.rotation != rotation
+    {
+        return Err(IntegratedLayoutDiagnostic::error(
+            "invalid-coordinate-partition-witness",
+            "/placements",
+            Some(format!(
+                "{}@{},{}:{}",
+                placement.instance, placement.x, placement.y, placement.rotation
+            )),
+            format!(
+                "rotation-partition witness must rotate '{}' to {} degrees",
+                fixed.instance, rotation
             ),
         ));
     }

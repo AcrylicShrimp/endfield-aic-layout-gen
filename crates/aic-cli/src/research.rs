@@ -532,6 +532,34 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
     },
+    /// Partition one unresolved coordinate and port assignment by facility rotation.
+    DiagnoseCumulativeFacilityRotations {
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+        #[arg(long, value_name = "INDEX")]
+        target_phase: usize,
+        #[arg(long, value_name = "CELLS")]
+        used_width: i32,
+        #[arg(long, value_name = "CELLS")]
+        used_height: i32,
+        #[arg(long, value_name = "CELL")]
+        facility_x: i32,
+        #[arg(long, value_name = "CELL")]
+        facility_y: i32,
+        /// Index from the complete facility-port assignment report.
+        #[arg(long, value_name = "INDEX")]
+        port_assignment_index: usize,
+        #[arg(long, value_name = "MILLISECONDS")]
+        prefix_case_time_limit_ms: u64,
+        #[arg(long, value_name = "MILLISECONDS")]
+        rotation_case_time_limit_ms: u64,
+        #[arg(long, value_name = "DIR")]
+        output_dir: PathBuf,
+    },
     /// Rebuild one factored shared-layer network from each logical requirement subset.
     DecomposeFirstPhaseFactoredRequirements {
         /// Benchmark workload manifest JSON file to solve.
@@ -849,6 +877,33 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             worker_count,
             prefix_case_time_limit_ms,
             port_case_time_limit_ms,
+            output_dir,
+        ),
+        ResearchCommand::DiagnoseCumulativeFacilityRotations {
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            used_width,
+            used_height,
+            facility_x,
+            facility_y,
+            port_assignment_index,
+            prefix_case_time_limit_ms,
+            rotation_case_time_limit_ms,
+            output_dir,
+        } => coordinate_partition::run_rotations(
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            used_width,
+            used_height,
+            facility_x,
+            facility_y,
+            port_assignment_index,
+            prefix_case_time_limit_ms,
+            rotation_case_time_limit_ms,
             output_dir,
         ),
         ResearchCommand::DecomposeFirstPhaseFactoredRequirements {
