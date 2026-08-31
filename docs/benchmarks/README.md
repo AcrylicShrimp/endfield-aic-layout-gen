@@ -168,6 +168,15 @@ all 143,766 material passes and the complete broad-chain search tree because rou
 arm-item events dirty every material on their layer. Material-level filtering is rejected; exact
 reverse demand-chain watchers at `(material, cell)` become the next target.
 
+The forty-fourth checkpoint,
+`heavy-xiranite-minimum-rate.forty-fourth-watched-demand-chain-report.md`, records every cell read by
+each selected demand's exact backward support chain and uses reverse `(material, cell)` dependencies
+to recompute only affected demands. It preserves all 43,543 decisions, 8,577 backtracks, 361 forced
+predicates, the validated witness, and its objective while cutting grid executions by 32.1%, chain
+steps by 66.8%, and two-run first-witness midpoint by 7.5%. The deterministic scheduling work
+reduction is accepted; the elapsed values remain fixed-order host-local observations. The next
+experiment must strengthen exact semantic inference enough to remove search decisions.
+
 Regenerate it from a release binary with:
 
 ```bash

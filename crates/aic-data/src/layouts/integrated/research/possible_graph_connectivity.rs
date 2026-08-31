@@ -14,7 +14,7 @@ use super::coordinate_partition::{invalid_input, millis, model_scale, prepare_ta
 use super::rotation_partition::diagnose_cumulative_facility_rotation_partitions;
 use super::{ExactDimensionCaseOutcome, ExactUsedDimensionCandidate, PartitionCaseModelScale};
 
-pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 10;
+pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 11;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -31,6 +31,7 @@ pub enum PossibleGraphConnectivityCaseKind {
     UniqueSupportChainGridPropagator,
     SelectiveUniqueSupportChainGridPropagator,
     DirtyMaterialUniqueSupportChainGridPropagator,
+    WatchedDemandUniqueSupportChainGridPropagator,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
@@ -77,6 +78,11 @@ pub struct LayerGridAnalyzerRuntime {
     pub forced_predicate_attempts: u64,
     pub forcing_conflicts: u64,
     pub maximum_reason_predicates: u64,
+    pub frontier_notifications: u64,
+    pub frontier_watcher_hits: u64,
+    pub frontier_demand_rechecks: u64,
+    pub frontier_watched_cell_registrations: u64,
+    pub frontier_maximum_dirty_demands: u64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -249,6 +255,13 @@ pub fn diagnose_phase2_possible_graph_connectivity(
         &reference,
     );
     let (dirty_material_chain_propagated, dirty_material_chain_connectivity_runtime, dirty_material_chain_grid_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_dirty_material_unique_support_chain_grid_propagation(
+        input.clone(),
+        logistics_components,
+        Some(case_search_budget),
+        fixed_dimensions,
+        &reference,
+    );
+    let (watched_demand_chain_propagated, watched_demand_chain_connectivity_runtime, watched_demand_chain_grid_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_watched_demand_unique_support_chain_grid_propagation(
         input,
         logistics_components,
         Some(case_search_budget),
@@ -335,6 +348,12 @@ pub fn diagnose_phase2_possible_graph_connectivity(
                 connectivity_runtime(dirty_material_chain_connectivity_runtime),
                 grid_analyzer_runtime(dirty_material_chain_grid_runtime),
             ),
+            case_report(
+                PossibleGraphConnectivityCaseKind::WatchedDemandUniqueSupportChainGridPropagator,
+                watched_demand_chain_propagated,
+                connectivity_runtime(watched_demand_chain_connectivity_runtime),
+                grid_analyzer_runtime(watched_demand_chain_grid_runtime),
+            ),
         ],
         diagnostic_only: true,
     })
@@ -383,6 +402,11 @@ fn grid_analyzer_runtime(
         forced_predicate_attempts: statistics.forced_predicate_attempts,
         forcing_conflicts: statistics.forcing_conflicts,
         maximum_reason_predicates: statistics.maximum_reason_predicates,
+        frontier_notifications: statistics.frontier_notifications,
+        frontier_watcher_hits: statistics.frontier_watcher_hits,
+        frontier_demand_rechecks: statistics.frontier_demand_rechecks,
+        frontier_watched_cell_registrations: statistics.frontier_watched_cell_registrations,
+        frontier_maximum_dirty_demands: statistics.frontier_maximum_dirty_demands,
     }
 }
 

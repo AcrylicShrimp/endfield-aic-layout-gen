@@ -34,6 +34,11 @@ pub(super) struct LayerGridAnalyzerCounters {
     forced_predicate_attempts: AtomicU64,
     forcing_conflicts: AtomicU64,
     maximum_reason_predicates: AtomicU64,
+    frontier_notifications: AtomicU64,
+    frontier_watcher_hits: AtomicU64,
+    frontier_demand_rechecks: AtomicU64,
+    frontier_watched_cell_registrations: AtomicU64,
+    frontier_maximum_dirty_demands: AtomicU64,
     distinct_support_arcs: Mutex<BTreeSet<(i32, DomainId)>>,
     distinct_unresolved_predicates: Mutex<BTreeSet<(DomainId, i32)>>,
     distinct_terminal_support_arcs: Mutex<BTreeSet<(i32, DomainId)>>,
@@ -60,6 +65,11 @@ pub(in crate::layouts::integrated) struct LayerGridAnalyzerStatistics {
     pub forced_predicate_attempts: u64,
     pub forcing_conflicts: u64,
     pub maximum_reason_predicates: u64,
+    pub frontier_notifications: u64,
+    pub frontier_watcher_hits: u64,
+    pub frontier_demand_rechecks: u64,
+    pub frontier_watched_cell_registrations: u64,
+    pub frontier_maximum_dirty_demands: u64,
 }
 
 impl LayerGridAnalyzerCounters {
@@ -105,6 +115,15 @@ impl LayerGridAnalyzerCounters {
             forced_predicate_attempts: self.forced_predicate_attempts.load(Ordering::Relaxed),
             forcing_conflicts: self.forcing_conflicts.load(Ordering::Relaxed),
             maximum_reason_predicates: self.maximum_reason_predicates.load(Ordering::Relaxed),
+            frontier_notifications: self.frontier_notifications.load(Ordering::Relaxed),
+            frontier_watcher_hits: self.frontier_watcher_hits.load(Ordering::Relaxed),
+            frontier_demand_rechecks: self.frontier_demand_rechecks.load(Ordering::Relaxed),
+            frontier_watched_cell_registrations: self
+                .frontier_watched_cell_registrations
+                .load(Ordering::Relaxed),
+            frontier_maximum_dirty_demands: self
+                .frontier_maximum_dirty_demands
+                .load(Ordering::Relaxed),
         }
     }
 }
@@ -116,6 +135,7 @@ pub(super) enum LayerGridRule {
     ForceUniqueSupportChain,
     ForceUniqueSupportChainSelectiveWake,
     ForceDirtyMaterialUniqueSupportChain,
+    ForceWatchedDemandUniqueSupportChain,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -339,6 +359,97 @@ fn dirty_material_registration(args: &LayerGridRuleArgs) -> (EventsToRegister, V
     (registration, material_dependencies)
 }
 
+#[derive(Clone, Debug, Default)]
+struct WatchedDemandEventImpact {
+    direct_demands: BTreeSet<usize>,
+    watch_keys: BTreeSet<(usize, usize)>,
+}
+
+#[derive(Clone, Copy, Debug)]
+struct WatchedDemandRecord {
+    material_index: usize,
+    demand: PossibleTerminalOption,
+}
+
+fn watched_demand_records(args: &LayerGridRuleArgs) -> Vec<WatchedDemandRecord> {
+    args.materials
+        .iter()
+        .enumerate()
+        .flat_map(|(material_index, material)| {
+            material
+                .demands
+                .iter()
+                .copied()
+                .map(move |demand| WatchedDemandRecord {
+                    material_index,
+                    demand,
+                })
+        })
+        .collect()
+}
+
+fn watched_demand_registration(
+    args: &LayerGridRuleArgs,
+) -> (EventsToRegister, Vec<WatchedDemandEventImpact>) {
+    let mut variables = BTreeMap::<DomainId, (WakeFlags, WatchedDemandEventImpact)>::new();
+    for arc in &args.arcs {
+        let selected = variables.entry(arc.selected).or_default();
+        selected.0.upper = true;
+        selected
+            .1
+            .watch_keys
+            .extend((0..args.materials.len()).map(|material_index| (material_index, arc.to)));
+        for item in [arc.from_item, arc.to_item] {
+            let item = variables.entry(item).or_default();
+            item.0.any = true;
+            item.1
+                .watch_keys
+                .extend((0..args.materials.len()).map(|material_index| (material_index, arc.to)));
+        }
+    }
+    let mut demand_id = 0;
+    for (material_index, material) in args.materials.iter().enumerate() {
+        for supply in &material.supplies {
+            let entry = variables.entry(supply.selected).or_default();
+            entry.0.upper = true;
+            entry.1.watch_keys.insert((material_index, supply.cell));
+        }
+        for demand in &material.demands {
+            let entry = variables.entry(demand.selected).or_default();
+            entry.0.lower = true;
+            entry.1.direct_demands.insert(demand_id);
+            demand_id += 1;
+        }
+    }
+    let registrations = variables
+        .into_iter()
+        .map(|(variable, (flags, impact))| {
+            let events = if flags.any {
+                DomainEvents::ANY_INT
+            } else if flags.lower && flags.upper {
+                DomainEvents::BOUNDS
+            } else if flags.lower {
+                DomainEvents::LOWER_BOUND
+            } else {
+                DomainEvents::UPPER_BOUND
+            };
+            (variable, events, impact)
+        })
+        .collect::<Vec<_>>();
+    let event_impacts = registrations
+        .iter()
+        .map(|(_, _, impact)| impact.clone())
+        .collect();
+    let registration = registration(
+        &args.counters,
+        registrations
+            .into_iter()
+            .map(|(variable, events, _)| (variable, events))
+            .collect(),
+    );
+    (registration, event_impacts)
+}
+
 fn rule_state(args: LayerGridRuleArgs, inference_code: InferenceCode) -> LayerGridRuleState {
     let mut outgoing_arc_indices = vec![Vec::new(); args.cell_count];
     let mut incoming_arc_indices = vec![Vec::new(); args.cell_count];
@@ -450,6 +561,41 @@ impl PropagatorConstructor for DirtyMaterialUniqueSupportChainGridPropagatorArgs
                 state: rule_state(self.0, InferenceCode::new(tag, UniqueSupportChain)),
                 material_dependencies,
                 dirty_materials,
+            },
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct WatchedDemandUniqueSupportChainGridPropagatorArgs(pub LayerGridRuleArgs);
+
+impl PropagatorConstructor for WatchedDemandUniqueSupportChainGridPropagatorArgs {
+    type PropagatorImpl = WatchedDemandUniqueSupportChainGridPropagator;
+
+    fn create(
+        self,
+        _context: PropagatorConstructorContext,
+    ) -> PropagatorSpec<Self::PropagatorImpl> {
+        let demand_records = watched_demand_records(&self.0);
+        let dirty_demands = (0..demand_records.len()).collect::<BTreeSet<_>>();
+        let watchers = (0..self.0.materials.len())
+            .map(|_| {
+                (0..self.0.cell_count)
+                    .map(|_| BTreeSet::new())
+                    .collect::<Vec<_>>()
+            })
+            .collect();
+        let (registration, event_impacts) = watched_demand_registration(&self.0);
+        let tag = self.0.constraint_tag;
+        PropagatorSpec {
+            registration,
+            checkers: RuntimeCheckers::empty(),
+            propagator: WatchedDemandUniqueSupportChainGridPropagator {
+                state: rule_state(self.0, InferenceCode::new(tag, UniqueSupportChain)),
+                demand_records,
+                event_impacts,
+                watchers,
+                dirty_demands,
             },
         }
     }
@@ -806,129 +952,141 @@ impl LayerGridRuleState {
             .material_passes
             .fetch_add(1, Ordering::Relaxed);
         for demand in &material.demands {
-            if context.lower_bound(&demand.selected) != 1 {
-                continue;
+            self.propagate_unique_support_chain_demand(context, material, demand, None)?;
+        }
+        Ok(())
+    }
+
+    fn propagate_unique_support_chain_demand(
+        &self,
+        context: &mut PropagationContext,
+        material: &LayerGridMaterial,
+        demand: &PossibleTerminalOption,
+        mut inspected_cells: Option<&mut BTreeSet<usize>>,
+    ) -> PropagationStatusCP {
+        if context.lower_bound(&demand.selected) != 1 {
+            return Ok(());
+        }
+        self.counters
+            .selected_demand_options
+            .fetch_add(1, Ordering::Relaxed);
+        let mut required_cell = demand.cell;
+        let mut visited = vec![false; self.cell_count];
+        let mut suffix_reason = PropositionalConjunction::default();
+        let mut chain_length = 0_u64;
+        loop {
+            if let Some(cells) = inspected_cells.as_deref_mut() {
+                cells.insert(required_cell);
             }
-            self.counters
-                .selected_demand_options
-                .fetch_add(1, Ordering::Relaxed);
-            let mut required_cell = demand.cell;
-            let mut visited = vec![false; self.cell_count];
-            let mut suffix_reason = PropositionalConjunction::default();
-            let mut chain_length = 0_u64;
-            loop {
-                if visited[required_cell]
-                    || material.supplies.iter().any(|supply| {
-                        supply.cell == required_cell && context.contains(&supply.selected, 1)
-                    })
-                {
+            if visited[required_cell]
+                || material.supplies.iter().any(|supply| {
+                    supply.cell == required_cell && context.contains(&supply.selected, 1)
+                })
+            {
+                break;
+            }
+            visited[required_cell] = true;
+            let mut possible_support_count = 0_u8;
+            let mut unique_support = None;
+            for &arc_index in &self.incoming_arc_indices[required_cell] {
+                let arc = &self.arcs[arc_index];
+                if !Self::arc_is_possible(context, arc, material.item_code) {
+                    continue;
+                }
+                possible_support_count += 1;
+                if possible_support_count > 1 {
                     break;
                 }
-                visited[required_cell] = true;
-                let mut possible_support_count = 0_u8;
-                let mut unique_support = None;
-                for &arc_index in &self.incoming_arc_indices[required_cell] {
-                    let arc = &self.arcs[arc_index];
-                    if !Self::arc_is_possible(context, arc, material.item_code) {
-                        continue;
-                    }
-                    possible_support_count += 1;
-                    if possible_support_count > 1 {
-                        break;
-                    }
-                    unique_support = Some(arc_index);
-                }
-                if possible_support_count == 0 {
-                    self.extend_local_support_reason(
-                        context,
-                        material,
-                        required_cell,
-                        None,
-                        &mut suffix_reason,
-                    );
-                    self.counters
-                        .forcing_conflicts
-                        .fetch_add(1, Ordering::Relaxed);
-                    context.post(
-                        demand.selected.upper_bound_predicate(0),
-                        (suffix_reason, &self.inference_code),
-                    )?;
-                    break;
-                }
-                if possible_support_count != 1 {
-                    break;
-                }
-                let Some(arc_index) = unique_support else {
-                    break;
-                };
+                unique_support = Some(arc_index);
+            }
+            if possible_support_count == 0 {
                 self.extend_local_support_reason(
                     context,
                     material,
                     required_cell,
-                    Some(arc_index),
+                    None,
                     &mut suffix_reason,
                 );
-                let mut reason = suffix_reason.clone();
-                reason.push(demand.selected.lower_bound_predicate(1));
-                self.counters.maximum_reason_predicates.fetch_max(
-                    reason.len().try_into().unwrap_or(u64::MAX),
-                    Ordering::Relaxed,
-                );
-                chain_length += 1;
                 self.counters
-                    .unique_support_steps
+                    .forcing_conflicts
                     .fetch_add(1, Ordering::Relaxed);
-                if chain_length == 1 {
-                    self.counters
-                        .terminal_support_steps
-                        .fetch_add(1, Ordering::Relaxed);
-                }
-                let arc = &self.arcs[arc_index];
-                let unresolved = [
-                    (arc.selected, 1),
-                    (arc.from_item, material.item_code),
-                    (arc.to_item, material.item_code),
-                ]
-                .into_iter()
-                .filter(|(variable, value)| {
-                    Self::predicate_is_unresolved(context, *variable, *value)
-                })
-                .collect::<Vec<_>>();
-                if !unresolved.is_empty() {
-                    self.counters
-                        .unresolved_predicate_observations
-                        .fetch_add(unresolved.len() as u64, Ordering::Relaxed);
-                    self.counters
-                        .distinct_support_arcs
-                        .lock()
-                        .expect("grid analyzer support-arc counter is not poisoned")
-                        .insert((material.item_code, arc.selected));
-                    self.counters
-                        .distinct_unresolved_predicates
-                        .lock()
-                        .expect("grid analyzer predicate counter is not poisoned")
-                        .extend(unresolved.iter().copied());
-                }
-                for (variable, value) in unresolved {
-                    self.counters
-                        .forced_predicate_attempts
-                        .fetch_add(1, Ordering::Relaxed);
-                    if let Err(conflict) = context.post(
-                        variable.equality_predicate(value),
-                        (reason.clone(), &self.inference_code),
-                    ) {
-                        self.counters
-                            .forcing_conflicts
-                            .fetch_add(1, Ordering::Relaxed);
-                        return Err(conflict.into());
-                    }
-                }
-                required_cell = arc.from;
+                context.post(
+                    demand.selected.upper_bound_predicate(0),
+                    (suffix_reason, &self.inference_code),
+                )?;
+                break;
             }
+            if possible_support_count != 1 {
+                break;
+            }
+            let Some(arc_index) = unique_support else {
+                break;
+            };
+            self.extend_local_support_reason(
+                context,
+                material,
+                required_cell,
+                Some(arc_index),
+                &mut suffix_reason,
+            );
+            let mut reason = suffix_reason.clone();
+            reason.push(demand.selected.lower_bound_predicate(1));
+            self.counters.maximum_reason_predicates.fetch_max(
+                reason.len().try_into().unwrap_or(u64::MAX),
+                Ordering::Relaxed,
+            );
+            chain_length += 1;
             self.counters
-                .maximum_unique_support_chain
-                .fetch_max(chain_length, Ordering::Relaxed);
+                .unique_support_steps
+                .fetch_add(1, Ordering::Relaxed);
+            if chain_length == 1 {
+                self.counters
+                    .terminal_support_steps
+                    .fetch_add(1, Ordering::Relaxed);
+            }
+            let arc = &self.arcs[arc_index];
+            let unresolved = [
+                (arc.selected, 1),
+                (arc.from_item, material.item_code),
+                (arc.to_item, material.item_code),
+            ]
+            .into_iter()
+            .filter(|(variable, value)| Self::predicate_is_unresolved(context, *variable, *value))
+            .collect::<Vec<_>>();
+            if !unresolved.is_empty() {
+                self.counters
+                    .unresolved_predicate_observations
+                    .fetch_add(unresolved.len() as u64, Ordering::Relaxed);
+                self.counters
+                    .distinct_support_arcs
+                    .lock()
+                    .expect("grid analyzer support-arc counter is not poisoned")
+                    .insert((material.item_code, arc.selected));
+                self.counters
+                    .distinct_unresolved_predicates
+                    .lock()
+                    .expect("grid analyzer predicate counter is not poisoned")
+                    .extend(unresolved.iter().copied());
+            }
+            for (variable, value) in unresolved {
+                self.counters
+                    .forced_predicate_attempts
+                    .fetch_add(1, Ordering::Relaxed);
+                if let Err(conflict) = context.post(
+                    variable.equality_predicate(value),
+                    (reason.clone(), &self.inference_code),
+                ) {
+                    self.counters
+                        .forcing_conflicts
+                        .fetch_add(1, Ordering::Relaxed);
+                    return Err(conflict.into());
+                }
+            }
+            required_cell = arc.from;
         }
+        self.counters
+            .maximum_unique_support_chain
+            .fetch_max(chain_length, Ordering::Relaxed);
         Ok(())
     }
 }
@@ -1049,6 +1207,114 @@ impl Propagator for DirtyMaterialUniqueSupportChainGridPropagator {
     }
 }
 
+#[derive(Clone, Debug)]
+pub(super) struct WatchedDemandUniqueSupportChainGridPropagator {
+    state: LayerGridRuleState,
+    demand_records: Vec<WatchedDemandRecord>,
+    event_impacts: Vec<WatchedDemandEventImpact>,
+    watchers: Vec<Vec<BTreeSet<usize>>>,
+    dirty_demands: BTreeSet<usize>,
+}
+
+impl Propagator for WatchedDemandUniqueSupportChainGridPropagator {
+    fn name(&self) -> &str {
+        &self.state.name
+    }
+
+    fn priority(&self) -> Priority {
+        Priority::Low
+    }
+
+    fn notify(
+        &mut self,
+        _context: NotificationContext,
+        local_id: LocalId,
+        _event: OpaqueDomainEvent,
+    ) -> EnqueueDecision {
+        self.state
+            .counters
+            .frontier_notifications
+            .fetch_add(1, Ordering::Relaxed);
+        let impact = &self.event_impacts[local_id.unpack() as usize];
+        let mut relevant = !impact.direct_demands.is_empty();
+        self.dirty_demands
+            .extend(impact.direct_demands.iter().copied());
+        for &(material_index, cell) in &impact.watch_keys {
+            let watched = &self.watchers[material_index][cell];
+            if !watched.is_empty() {
+                relevant = true;
+                self.state
+                    .counters
+                    .frontier_watcher_hits
+                    .fetch_add(watched.len() as u64, Ordering::Relaxed);
+                self.dirty_demands.extend(watched.iter().copied());
+            }
+        }
+        self.state
+            .counters
+            .frontier_maximum_dirty_demands
+            .fetch_max(
+                self.dirty_demands.len().try_into().unwrap_or(u64::MAX),
+                Ordering::Relaxed,
+            );
+        if relevant {
+            EnqueueDecision::Enqueue
+        } else {
+            EnqueueDecision::Skip
+        }
+    }
+
+    fn propagate_from_scratch(&self, mut context: PropagationContext) -> PropagationStatusCP {
+        self.state
+            .counters
+            .executions
+            .fetch_add(1, Ordering::Relaxed);
+        for material in &self.state.materials {
+            self.state
+                .propagate_unique_support_chain(&mut context, material)?;
+        }
+        Ok(())
+    }
+
+    fn propagate(&mut self, mut context: PropagationContext) -> PropagationStatusCP {
+        self.state
+            .counters
+            .executions
+            .fetch_add(1, Ordering::Relaxed);
+        let dirty_demands = std::mem::take(&mut self.dirty_demands);
+        self.state
+            .counters
+            .frontier_maximum_dirty_demands
+            .fetch_max(
+                dirty_demands.len().try_into().unwrap_or(u64::MAX),
+                Ordering::Relaxed,
+            );
+        for demand_id in dirty_demands {
+            self.state
+                .counters
+                .frontier_demand_rechecks
+                .fetch_add(1, Ordering::Relaxed);
+            let record = self.demand_records[demand_id];
+            let mut inspected_cells = BTreeSet::new();
+            self.state.propagate_unique_support_chain_demand(
+                &mut context,
+                &self.state.materials[record.material_index],
+                &record.demand,
+                Some(&mut inspected_cells),
+            )?;
+            for cell in inspected_cells {
+                if self.watchers[record.material_index][cell].insert(demand_id) {
+                    self.state
+                        .counters
+                        .frontier_watched_cell_registrations
+                        .fetch_add(1, Ordering::Relaxed);
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
 impl Propagator for UniqueSupportChainGridPropagator {
     fn name(&self) -> &str {
         &self.state.name
@@ -1074,9 +1340,18 @@ impl Propagator for UniqueSupportChainGridPropagator {
 #[cfg(test)]
 mod tests {
     use pumpkin_solver::Solver;
+    use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
+    use pumpkin_solver::core::branching::Brancher;
+    use pumpkin_solver::core::branching::branchers::dynamic_brancher::DynamicBrancher;
+    use pumpkin_solver::core::branching::branchers::warm_start::WarmStart;
     use pumpkin_solver::core::results::CSPSolverExecutionFlag;
+    use pumpkin_solver::core::results::{ProblemSolution, SatisfactionResult};
+    use pumpkin_solver::core::termination::Indefinite;
 
     use super::*;
+    use crate::layouts::integrated::exact::search_statistics::{
+        MeteredBrancher, SearchEventCounters, capture_search_statistics,
+    };
 
     #[test]
     fn observes_but_does_not_force_a_unique_grid_support_chain() {
@@ -1581,5 +1856,516 @@ mod tests {
         assert_eq!(solver.lower_bound(&shared_item), 1);
         assert_eq!(solver.upper_bound(&shared_item), 1);
         assert_eq!(solver.lower_bound(&material_two_arc), 1);
+    }
+
+    #[test]
+    fn watched_demand_chain_rechecks_when_an_incoming_branch_disappears() {
+        let mut solver = Solver::default();
+        let first = solver.new_bounded_integer(0, 1);
+        let second = solver.new_bounded_integer(0, 1);
+        let item = solver.new_bounded_integer(1, 1);
+        let first_supply = solver.new_bounded_integer(1, 1);
+        let second_supply = solver.new_bounded_integer(1, 1);
+        let demand = solver.new_bounded_integer(1, 1);
+        let counters = Arc::new(LayerGridAnalyzerCounters::default());
+        let tag = solver.new_constraint_tag();
+        let _ = solver.add_propagator(WatchedDemandUniqueSupportChainGridPropagatorArgs(
+            LayerGridRuleArgs {
+                name: "controlled-watched-demand-branch".to_string(),
+                cell_count: 3,
+                arcs: vec![
+                    PossibleRouteArc {
+                        from: 0,
+                        to: 2,
+                        selected: first,
+                        from_item: item,
+                        to_item: item,
+                    },
+                    PossibleRouteArc {
+                        from: 1,
+                        to: 2,
+                        selected: second,
+                        from_item: item,
+                        to_item: item,
+                    },
+                ],
+                materials: vec![LayerGridMaterial {
+                    item_code: 1,
+                    supplies: vec![
+                        PossibleTerminalOption {
+                            cell: 0,
+                            selected: first_supply,
+                        },
+                        PossibleTerminalOption {
+                            cell: 1,
+                            selected: second_supply,
+                        },
+                    ],
+                    demands: vec![PossibleTerminalOption {
+                        cell: 2,
+                        selected: demand,
+                    }],
+                }],
+                counters: Arc::clone(&counters),
+                constraint_tag: tag,
+            },
+        ));
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        assert!(solver.contains(&second, 0));
+        let initial = counters.snapshot();
+        assert!(initial.frontier_watched_cell_registrations >= 1);
+
+        solver.add_clause([first.upper_bound_predicate(0)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        assert_eq!(solver.lower_bound(&second), 1);
+        let after = counters.snapshot();
+        assert!(after.frontier_watcher_hits > initial.frontier_watcher_hits);
+        assert!(after.frontier_demand_rechecks > initial.frontier_demand_rechecks);
+    }
+
+    #[test]
+    fn watched_demand_chain_rechecks_when_a_local_supply_disappears() {
+        let mut solver = Solver::default();
+        let incoming = solver.new_bounded_integer(0, 1);
+        let item = solver.new_bounded_integer(1, 1);
+        let upstream_supply = solver.new_bounded_integer(1, 1);
+        let local_supply = solver.new_bounded_integer(0, 1);
+        let demand = solver.new_bounded_integer(1, 1);
+        let counters = Arc::new(LayerGridAnalyzerCounters::default());
+        let tag = solver.new_constraint_tag();
+        let _ = solver.add_propagator(WatchedDemandUniqueSupportChainGridPropagatorArgs(
+            LayerGridRuleArgs {
+                name: "controlled-watched-demand-supply".to_string(),
+                cell_count: 2,
+                arcs: vec![PossibleRouteArc {
+                    from: 0,
+                    to: 1,
+                    selected: incoming,
+                    from_item: item,
+                    to_item: item,
+                }],
+                materials: vec![LayerGridMaterial {
+                    item_code: 1,
+                    supplies: vec![
+                        PossibleTerminalOption {
+                            cell: 0,
+                            selected: upstream_supply,
+                        },
+                        PossibleTerminalOption {
+                            cell: 1,
+                            selected: local_supply,
+                        },
+                    ],
+                    demands: vec![PossibleTerminalOption {
+                        cell: 1,
+                        selected: demand,
+                    }],
+                }],
+                counters: Arc::clone(&counters),
+                constraint_tag: tag,
+            },
+        ));
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        assert!(solver.contains(&incoming, 0));
+        solver.add_clause([local_supply.upper_bound_predicate(0)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        assert_eq!(solver.lower_bound(&incoming), 1);
+        let statistics = counters.snapshot();
+        assert!(statistics.frontier_watcher_hits >= 1);
+        assert!(statistics.frontier_demand_rechecks >= 2);
+    }
+
+    #[test]
+    fn watched_demand_chain_rechecks_cross_material_item_loss() {
+        let mut solver = Solver::default();
+        let shared_arc = solver.new_bounded_integer(1, 1);
+        let material_two_arc = solver.new_bounded_integer(0, 1);
+        let shared_item = solver.new_bounded_integer(1, 2);
+        let material_two_item = solver.new_bounded_integer(2, 2);
+        let first_supply = solver.new_bounded_integer(1, 1);
+        let second_supply = solver.new_bounded_integer(1, 1);
+        let first_demand = solver.new_bounded_integer(0, 1);
+        let second_demand = solver.new_bounded_integer(1, 1);
+        let counters = Arc::new(LayerGridAnalyzerCounters::default());
+        let tag = solver.new_constraint_tag();
+        let _ = solver.add_propagator(WatchedDemandUniqueSupportChainGridPropagatorArgs(
+            LayerGridRuleArgs {
+                name: "controlled-watched-cross-material-chain".to_string(),
+                cell_count: 3,
+                arcs: vec![
+                    PossibleRouteArc {
+                        from: 0,
+                        to: 2,
+                        selected: shared_arc,
+                        from_item: shared_item,
+                        to_item: shared_item,
+                    },
+                    PossibleRouteArc {
+                        from: 1,
+                        to: 2,
+                        selected: material_two_arc,
+                        from_item: material_two_item,
+                        to_item: material_two_item,
+                    },
+                ],
+                materials: vec![
+                    LayerGridMaterial {
+                        item_code: 1,
+                        supplies: vec![PossibleTerminalOption {
+                            cell: 0,
+                            selected: first_supply,
+                        }],
+                        demands: vec![PossibleTerminalOption {
+                            cell: 2,
+                            selected: first_demand,
+                        }],
+                    },
+                    LayerGridMaterial {
+                        item_code: 2,
+                        supplies: vec![PossibleTerminalOption {
+                            cell: 1,
+                            selected: second_supply,
+                        }],
+                        demands: vec![PossibleTerminalOption {
+                            cell: 2,
+                            selected: second_demand,
+                        }],
+                    },
+                ],
+                counters: Arc::clone(&counters),
+                constraint_tag: tag,
+            },
+        ));
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        assert!(solver.contains(&material_two_arc, 0));
+        solver.add_clause([first_demand.lower_bound_predicate(1)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        assert_eq!(solver.lower_bound(&shared_item), 1);
+        assert_eq!(solver.upper_bound(&shared_item), 1);
+        assert_eq!(solver.lower_bound(&material_two_arc), 1);
+        assert!(counters.snapshot().frontier_watcher_hits >= 1);
+    }
+
+    #[test]
+    fn watched_demand_chain_rechecks_an_interior_item_value_loss() {
+        let mut solver = Solver::default();
+        let shared_arc = solver.new_bounded_integer(1, 1);
+        let alternative_arc = solver.new_bounded_integer(0, 1);
+        let shared_item = solver.new_bounded_integer(1, 3);
+        let material_two_item = solver.new_bounded_integer(2, 2);
+        let first_supply = solver.new_bounded_integer(1, 1);
+        let second_supply = solver.new_bounded_integer(1, 1);
+        let demand = solver.new_bounded_integer(1, 1);
+        let counters = Arc::new(LayerGridAnalyzerCounters::default());
+        let tag = solver.new_constraint_tag();
+        let _ = solver.add_propagator(WatchedDemandUniqueSupportChainGridPropagatorArgs(
+            LayerGridRuleArgs {
+                name: "controlled-watched-interior-item-loss".to_string(),
+                cell_count: 3,
+                arcs: vec![
+                    PossibleRouteArc {
+                        from: 0,
+                        to: 2,
+                        selected: shared_arc,
+                        from_item: shared_item,
+                        to_item: shared_item,
+                    },
+                    PossibleRouteArc {
+                        from: 1,
+                        to: 2,
+                        selected: alternative_arc,
+                        from_item: material_two_item,
+                        to_item: material_two_item,
+                    },
+                ],
+                materials: vec![LayerGridMaterial {
+                    item_code: 2,
+                    supplies: vec![
+                        PossibleTerminalOption {
+                            cell: 0,
+                            selected: first_supply,
+                        },
+                        PossibleTerminalOption {
+                            cell: 1,
+                            selected: second_supply,
+                        },
+                    ],
+                    demands: vec![PossibleTerminalOption {
+                        cell: 2,
+                        selected: demand,
+                    }],
+                }],
+                counters: Arc::clone(&counters),
+                constraint_tag: tag,
+            },
+        ));
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        assert_eq!(solver.lower_bound(&shared_item), 1);
+        assert_eq!(solver.upper_bound(&shared_item), 3);
+        assert!(solver.contains(&alternative_arc, 0));
+
+        solver.add_clause([shared_item.disequality_predicate(2)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        assert_eq!(solver.lower_bound(&alternative_arc), 1);
+        assert!(counters.snapshot().frontier_watcher_hits >= 1);
+    }
+
+    #[test]
+    fn watched_demand_chain_stops_safely_at_a_cycle() {
+        let mut solver = Solver::default();
+        let first = solver.new_bounded_integer(0, 1);
+        let second = solver.new_bounded_integer(0, 1);
+        let item = solver.new_bounded_integer(1, 1);
+        let demand = solver.new_bounded_integer(1, 1);
+        let counters = Arc::new(LayerGridAnalyzerCounters::default());
+        let tag = solver.new_constraint_tag();
+        let _ = solver.add_propagator(WatchedDemandUniqueSupportChainGridPropagatorArgs(
+            LayerGridRuleArgs {
+                name: "controlled-watched-cycle".to_string(),
+                cell_count: 2,
+                arcs: vec![
+                    PossibleRouteArc {
+                        from: 0,
+                        to: 1,
+                        selected: first,
+                        from_item: item,
+                        to_item: item,
+                    },
+                    PossibleRouteArc {
+                        from: 1,
+                        to: 0,
+                        selected: second,
+                        from_item: item,
+                        to_item: item,
+                    },
+                ],
+                materials: vec![LayerGridMaterial {
+                    item_code: 1,
+                    supplies: vec![],
+                    demands: vec![PossibleTerminalOption {
+                        cell: 0,
+                        selected: demand,
+                    }],
+                }],
+                counters: Arc::clone(&counters),
+                constraint_tag: tag,
+            },
+        ));
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        assert_eq!(solver.lower_bound(&first), 1);
+        assert_eq!(solver.lower_bound(&second), 1);
+        let statistics = counters.snapshot();
+        assert_eq!(statistics.maximum_unique_support_chain, 2);
+        assert_eq!(statistics.frontier_watched_cell_registrations, 2);
+    }
+
+    fn solve_chain_backtracking_fixture(watched: bool) -> (i32, i32, u64) {
+        let mut solver = Solver::default();
+        let choice = solver.new_bounded_integer(0, 1);
+        let first = solver.new_bounded_integer(0, 1);
+        let second = solver.new_bounded_integer(0, 1);
+        let item = solver.new_bounded_integer(1, 1);
+        let first_supply = solver.new_bounded_integer(1, 1);
+        let second_supply = solver.new_bounded_integer(1, 1);
+        let demand = solver.new_bounded_integer(1, 1);
+        let counters = Arc::new(LayerGridAnalyzerCounters::default());
+        let tag = solver.new_constraint_tag();
+        let args = LayerGridRuleArgs {
+            name: "controlled-chain-backtracking".to_string(),
+            cell_count: 3,
+            arcs: vec![
+                PossibleRouteArc {
+                    from: 0,
+                    to: 2,
+                    selected: first,
+                    from_item: item,
+                    to_item: item,
+                },
+                PossibleRouteArc {
+                    from: 1,
+                    to: 2,
+                    selected: second,
+                    from_item: item,
+                    to_item: item,
+                },
+            ],
+            materials: vec![LayerGridMaterial {
+                item_code: 1,
+                supplies: vec![
+                    PossibleTerminalOption {
+                        cell: 0,
+                        selected: first_supply,
+                    },
+                    PossibleTerminalOption {
+                        cell: 1,
+                        selected: second_supply,
+                    },
+                ],
+                demands: vec![PossibleTerminalOption {
+                    cell: 2,
+                    selected: demand,
+                }],
+            }],
+            counters,
+            constraint_tag: tag,
+        };
+        if watched {
+            let _ = solver.add_propagator(WatchedDemandUniqueSupportChainGridPropagatorArgs(args));
+        } else {
+            let _ = solver.add_propagator(UniqueSupportChainGridPropagatorArgs {
+                rule: args,
+                wake_mode: UniqueSupportChainWakeMode::AnyDomainEvent,
+            });
+        }
+        solver.add_clause(
+            [
+                choice.upper_bound_predicate(0),
+                first.upper_bound_predicate(0),
+            ],
+            tag,
+        );
+        solver.add_clause(
+            [
+                choice.upper_bound_predicate(0),
+                second.upper_bound_predicate(0),
+            ],
+            tag,
+        );
+
+        let search_counters = Arc::new(Mutex::new(SearchEventCounters::default()));
+        let branchers: Vec<Box<dyn Brancher>> = vec![
+            Box::new(WarmStart::new(&[choice], &[1])),
+            Box::new(solver.default_brancher()),
+        ];
+        let mut brancher = MeteredBrancher::new(
+            DynamicBrancher::new(branchers),
+            Arc::clone(&search_counters),
+        );
+        let mut resolver = ResolutionResolver::default();
+        match solver.satisfy(&mut brancher, &mut Indefinite, &mut resolver) {
+            SatisfactionResult::Satisfiable(result) => {
+                let solution = result.solution();
+                let values = (
+                    solution.get_integer_value(first),
+                    solution.get_integer_value(second),
+                );
+                let statistics = capture_search_statistics(
+                    result.solver(),
+                    result.brancher(),
+                    result.conflict_resolver(),
+                    &search_counters,
+                );
+                (
+                    values.0,
+                    values.1,
+                    statistics.backtracks.unwrap_or_default(),
+                )
+            }
+            _ => panic!("controlled chain backtracking fixture must be satisfiable"),
+        }
+    }
+
+    #[test]
+    fn watched_demand_chain_matches_the_broad_chain_through_search_backtracking() {
+        let broad = solve_chain_backtracking_fixture(false);
+        let watched = solve_chain_backtracking_fixture(true);
+        assert_eq!(broad, watched);
+        assert!(watched.0 + watched.1 >= 1);
+        assert!(watched.2 >= 1);
+    }
+
+    #[cfg(not(feature = "pumpkin-debug-checks"))]
+    #[test]
+    fn watched_demand_chain_rechecks_only_the_directly_selected_demand() {
+        let mut solver = Solver::default();
+        let first_supply = solver.new_bounded_integer(1, 1);
+        let second_supply = solver.new_bounded_integer(1, 1);
+        let first_demand = solver.new_bounded_integer(0, 1);
+        let second_demand = solver.new_bounded_integer(0, 1);
+        let counters = Arc::new(LayerGridAnalyzerCounters::default());
+        let tag = solver.new_constraint_tag();
+        let _ = solver.add_propagator(WatchedDemandUniqueSupportChainGridPropagatorArgs(
+            LayerGridRuleArgs {
+                name: "controlled-watched-demand-locality".to_string(),
+                cell_count: 2,
+                arcs: vec![],
+                materials: vec![
+                    LayerGridMaterial {
+                        item_code: 1,
+                        supplies: vec![PossibleTerminalOption {
+                            cell: 0,
+                            selected: first_supply,
+                        }],
+                        demands: vec![PossibleTerminalOption {
+                            cell: 0,
+                            selected: first_demand,
+                        }],
+                    },
+                    LayerGridMaterial {
+                        item_code: 2,
+                        supplies: vec![PossibleTerminalOption {
+                            cell: 1,
+                            selected: second_supply,
+                        }],
+                        demands: vec![PossibleTerminalOption {
+                            cell: 1,
+                            selected: second_demand,
+                        }],
+                    },
+                ],
+                counters: Arc::clone(&counters),
+                constraint_tag: tag,
+            },
+        ));
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let initial = counters.snapshot();
+        solver.add_clause([first_demand.lower_bound_predicate(1)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let after = counters.snapshot();
+        assert_eq!(
+            after.frontier_demand_rechecks,
+            initial.frontier_demand_rechecks + 1
+        );
+        assert_eq!(after.material_passes, initial.material_passes);
+        assert!(solver.contains(&second_demand, 0));
     }
 }
