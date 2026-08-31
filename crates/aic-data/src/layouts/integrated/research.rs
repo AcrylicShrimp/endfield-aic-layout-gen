@@ -247,7 +247,7 @@ pub fn solve_cumulative_scc_growth_v2(
                     format!("/phases/{}", phase.index),
                     Some(format!("phase:{}", phase.index)),
                     format!(
-                        "v2 cumulative SCC phase {} returned without a complete validated incumbent; no fallback was attempted",
+                        "cumulative SCC phase {} returned without a complete validated incumbent; no fallback was attempted",
                         phase.index,
                     ),
                 ));
