@@ -61,6 +61,17 @@ use crate::logistics::{
     CardinalDirection, LogisticsComponentKind, ValidatedLogisticsComponentCatalog,
 };
 
+mod root_snapshot;
+
+pub(in crate::layouts::integrated) use root_snapshot::RootDomainSnapshotCollector;
+pub use root_snapshot::{
+    RootBooleanDomainCounts, RootDomainCardinality, RootDomainSnapshot,
+    RootExternalGeometrySnapshot, RootFacilityStateSnapshot, RootFirstDecisionSnapshot,
+    RootFlowDomainCounts, RootMaterialNetworkSnapshot, RootTerminalDomainSnapshot,
+    RootTransportLayerSnapshot, RootVariableCoverageSnapshot, RootVariableFamilySnapshot,
+};
+use root_snapshot::{RootDomainProbe, RootSnapshotBrancher};
+
 #[derive(Debug)]
 struct SharedBranchComponent {
     transport: TransportKind,
@@ -88,10 +99,11 @@ enum EndpointEncoding {
     FactoredSparseSupport(SyncArc<EndpointSupportPropagationCounters>),
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 enum SearchMode {
     Optimize,
     FeasibilityOnly,
+    FeasibilityOnlyWithRootSnapshot(RootDomainSnapshotCollector),
 }
 
 #[derive(Clone)]
@@ -186,7 +198,7 @@ enum SharedTerminalEndpoint {
     },
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 enum FactoredEndpointKind {
     Facility {
         instance: String,
@@ -926,6 +938,70 @@ fn solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
     prior_solution: &IntegratedLayoutReport,
     fixation: ReferenceAblationFixation,
 ) -> IntegratedLayoutReport {
+    solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation_with_search_mode(
+        input,
+        logistics_components,
+        time_limit,
+        endpoint_encoding,
+        fixed_dimensions,
+        fixed_coordinate,
+        fixed_ports,
+        prior_solution,
+        fixation,
+        SearchMode::FeasibilityOnly,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_root_snapshot(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: &IntegratedLayoutReport,
+    fixation: ReferenceAblationFixation,
+) -> (IntegratedLayoutReport, Option<RootDomainSnapshot>) {
+    let collector: RootDomainSnapshotCollector = SyncArc::new(Mutex::new(None));
+    let report =
+        solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation_with_search_mode(
+            input,
+            logistics_components,
+            time_limit,
+            EndpointEncoding::FactoredSparseSupport(SyncArc::new(
+                EndpointSupportPropagationCounters::default(),
+            )),
+            fixed_dimensions,
+            fixed_coordinate,
+            fixed_ports,
+            prior_solution,
+            fixation,
+            SearchMode::FeasibilityOnlyWithRootSnapshot(SyncArc::clone(&collector)),
+        );
+    let mut snapshot = collector
+        .lock()
+        .expect("root-domain snapshot collector is not poisoned")
+        .clone();
+    if snapshot.is_none() && report.status == IntegratedLayoutStatus::Infeasible {
+        snapshot = Some(RootDomainSnapshot::root_infeasible_without_brancher_call());
+    }
+    (report, snapshot)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation_with_search_mode(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    endpoint_encoding: EndpointEncoding,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: &IntegratedLayoutReport,
+    fixation: ReferenceAblationFixation,
+    search_mode: SearchMode,
+) -> IntegratedLayoutReport {
     debug_assert!(matches!(
         fixation,
         ReferenceAblationFixation::PriorOverlapPlacements
@@ -941,7 +1017,7 @@ fn solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
         time_limit,
         endpoint_encoding,
         Some(prior_solution),
-        SearchMode::FeasibilityOnly,
+        search_mode,
         Some(fixed_dimensions),
         Some(fixed_coordinate),
         Some(fixed_ports),
@@ -1999,6 +2075,31 @@ fn solve_with_endpoint_encoding(
         );
     }
 
+    let root_snapshot_setup = match &search_mode {
+        SearchMode::FeasibilityOnlyWithRootSnapshot(collector) => {
+            let explicitly_fixed_terminals = fixed_ports
+                .as_deref()
+                .unwrap_or_default()
+                .iter()
+                .map(|fixed| fixed.terminal.clone())
+                .collect::<BTreeSet<_>>();
+            Some((
+                RootDomainProbe::new(
+                    &input,
+                    &model_instances,
+                    &placement_choices,
+                    &model_terminals,
+                    &layers,
+                    &facility_occupancy,
+                    &explicitly_fixed_terminals,
+                    solver.variable_catalog(),
+                ),
+                SyncArc::clone(collector),
+            ))
+        }
+        SearchMode::Optimize | SearchMode::FeasibilityOnly => None,
+    };
+
     let (facility_network_incidences, shared_network_facility_pairs) =
         super::logical_coupling_metrics(&input);
     solver.set_logical_coupling(facility_network_incidences, shared_network_facility_pairs);
@@ -2039,7 +2140,7 @@ fn solve_with_endpoint_encoding(
                 search_statistics: result.search_statistics,
             }
         }
-        SearchMode::FeasibilityOnly => {
+        SearchMode::FeasibilityOnly | SearchMode::FeasibilityOnlyWithRootSnapshot(_) => {
             let search_started = Instant::now();
             let hint_variables = solver_hint.assignments.keys().copied().collect::<Vec<_>>();
             let hint_values = solver_hint
@@ -2055,10 +2156,10 @@ fn solve_with_endpoint_encoding(
             let search_event_counters = SyncArc::new(Mutex::new(
                 SearchEventCounters::with_row_selectors(tracked_row_selectors.iter().copied()),
             ));
-            let mut brancher = MeteredBrancher::new(
-                DynamicBrancher::new(branchers),
-                SyncArc::clone(&search_event_counters),
-            );
+            let observed_brancher =
+                RootSnapshotBrancher::new(DynamicBrancher::new(branchers), root_snapshot_setup);
+            let mut brancher =
+                MeteredBrancher::new(observed_brancher, SyncArc::clone(&search_event_counters));
             let mut resolver = ResolutionResolver::default();
             let mut termination = time_limit.map(TimeBudget::starting_now);
             let result =

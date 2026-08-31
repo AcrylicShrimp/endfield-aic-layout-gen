@@ -38,7 +38,7 @@ pub(super) enum VariableFamily {
 }
 
 impl VariableFamily {
-    fn name(self) -> &'static str {
+    pub(super) fn name(self) -> &'static str {
         match self {
             Self::Placement => "placement",
             Self::PhysicalOccupancy => "physical-occupancy",
@@ -175,10 +175,19 @@ impl ConstraintFamily {
 #[derive(Debug, Clone)]
 struct VariableRecord {
     family: VariableFamily,
+    name: String,
     cardinality: u64,
     degree: u64,
     parent: DomainId,
     rank: u8,
+}
+
+#[derive(Debug, Clone)]
+pub(super) struct RecordedVariableDescriptor {
+    pub(super) domain: DomainId,
+    pub(super) family: VariableFamily,
+    pub(super) name: String,
+    pub(super) declared_cardinality: u64,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -244,14 +253,16 @@ impl RecordedModel {
         upper_bound: i32,
         name: impl Into<String>,
     ) -> DomainId {
-        let variable = self
-            .solver
-            .new_named_bounded_integer(lower_bound, upper_bound, name.into());
+        let name = name.into();
+        let variable =
+            self.solver
+                .new_named_bounded_integer(lower_bound, upper_bound, name.clone());
         let cardinality = i64::from(upper_bound) - i64::from(lower_bound) + 1;
         self.recorder.variables.insert(
             variable,
             VariableRecord {
                 family,
+                name,
                 cardinality: u64::try_from(cardinality)
                     .expect("validated integer domain has positive cardinality"),
                 degree: 0,
@@ -269,14 +280,16 @@ impl RecordedModel {
         tag: ConstraintTag,
         name: impl Into<String>,
     ) -> Literal {
+        let name = name.into();
         let literal = self
             .solver
-            .new_named_literal_for_predicate(predicate, tag, name);
+            .new_named_literal_for_predicate(predicate, tag, name.clone());
         let variable = *literal.get_integer_variable().inner();
         self.recorder.variables.insert(
             variable,
             VariableRecord {
                 family,
+                name,
                 cardinality: 2,
                 degree: 0,
                 parent: variable,
@@ -615,6 +628,19 @@ impl RecordedModel {
 
     pub(super) fn metrics(&mut self) -> ModelComplexityMetrics {
         self.recorder.metrics()
+    }
+
+    pub(super) fn variable_catalog(&self) -> Vec<RecordedVariableDescriptor> {
+        self.recorder
+            .variables
+            .iter()
+            .map(|(domain, record)| RecordedVariableDescriptor {
+                domain: *domain,
+                family: record.family,
+                name: record.name.clone(),
+                declared_cardinality: record.cardinality,
+            })
+            .collect()
     }
 
     fn record_constraint(

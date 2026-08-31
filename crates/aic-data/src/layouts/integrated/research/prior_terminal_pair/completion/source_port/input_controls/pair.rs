@@ -11,7 +11,7 @@ use crate::logistics::{
 use crate::recipes::FacilityInstanceWiringReport;
 
 use super::super::super::super::super::super::{
-    ExactSearchStatistics, IntegratedLayoutReport, WorldGridPosition, exact,
+    ExactSearchStatistics, IntegratedLayoutReport, RootDomainSnapshot, WorldGridPosition, exact,
 };
 use super::super::super::super::super::coordinate_partition::{
     FacilityPortAssignment, PartitionCaseModelScale, classify_outcome, invalid_input, millis,
@@ -21,6 +21,7 @@ use super::super::super::super::super::{ExactDimensionCaseOutcome, ExactDimensio
 use super::{PriorInputPortControlSuiteReport, PriorInputPortControlsReport};
 
 pub const PRIOR_INPUT_PORT_PAIR_PORTFOLIO_SCHEMA_VERSION: u32 = 1;
+pub const PRIOR_INPUT_PAIR_ROOT_SNAPSHOT_SCHEMA_VERSION: u32 = 1;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -82,6 +83,26 @@ pub struct PriorInputPortPairPortfolioReport {
     pub invalid_witness_found: bool,
     pub predeclared_observation_pair_index: Option<usize>,
     pub cases: Vec<PriorInputPortPairCaseReport>,
+    pub diagnostic_only: bool,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct PriorInputPairRootSnapshotReport {
+    pub schema_version: u32,
+    pub target_phase_index: usize,
+    pub solver_stack: ExactDimensionSolverStack,
+    pub selection_rule: String,
+    pub selected_pair_index: usize,
+    pub baseline_outcome: ExactDimensionCaseOutcome,
+    pub assignments: Vec<FacilityPortAssignment>,
+    pub fixed_terminal_count: usize,
+    pub baseline_search_statistics: ExactSearchStatistics,
+    pub baseline_model_scale: PartitionCaseModelScale,
+    pub observation_search_budget_ms: u64,
+    pub observed_outcome: ExactDimensionCaseOutcome,
+    pub observed_layout: IntegratedLayoutReport,
+    pub root_snapshot: RootDomainSnapshot,
+    pub interpretation_blocked: bool,
     pub diagnostic_only: bool,
 }
 
@@ -364,6 +385,171 @@ pub fn diagnose_prior_input_port_pair_portfolio(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
+pub fn diagnose_prior_input_pair_root_snapshot(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    target_phase_index: usize,
+    fixed_width: i32,
+    fixed_height: i32,
+    fixed_x: i32,
+    fixed_y: i32,
+    port_assignment_index: usize,
+    fixed_rotation: i64,
+    prior_facility_bit_index: usize,
+    terminal_bit_indices: [usize; 2],
+    representative_source_leaf_index: usize,
+    worker_count: usize,
+    prefix_search_budget: Duration,
+    initial_pair_case_search_budget: Duration,
+    completion_case_search_budget: Duration,
+    source_case_search_budget: Duration,
+    control_case_search_budget: Duration,
+    residual_pair_case_search_budget: Duration,
+    observation_search_budget: Duration,
+) -> Result<PriorInputPairRootSnapshotReport, IntegratedLayoutReport> {
+    if observation_search_budget.is_zero() {
+        return Err(invalid_input(
+            "/observation_search_budget",
+            "root-domain observation requires a positive search budget",
+        ));
+    }
+    let portfolio = diagnose_prior_input_port_pair_portfolio(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+        target_phase_index,
+        fixed_width,
+        fixed_height,
+        fixed_x,
+        fixed_y,
+        port_assignment_index,
+        fixed_rotation,
+        prior_facility_bit_index,
+        terminal_bit_indices,
+        representative_source_leaf_index,
+        worker_count,
+        prefix_search_budget,
+        initial_pair_case_search_budget,
+        completion_case_search_budget,
+        source_case_search_budget,
+        control_case_search_budget,
+        residual_pair_case_search_budget,
+    )?;
+    let selected_pair_index = lowest_unknown_pair_index(
+        portfolio
+            .cases
+            .iter()
+            .map(|case| (case.pair_index, case.outcome)),
+    )
+    .ok_or_else(|| {
+        invalid_input(
+            "/cases",
+            "root-domain observation requires at least one completed Unknown pair case",
+        )
+    })?;
+    let selected = portfolio
+        .cases
+        .iter()
+        .find(|case| case.pair_index == selected_pair_index)
+        .expect("selected unknown pair is present")
+        .clone();
+
+    let growth = plan_facility_growth(instance_wiring, MAX_NEW_FACILITIES_PER_GROWTH_PHASE);
+    let input = prepare_target_input(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+        &growth,
+        target_phase_index,
+    )?;
+    let pair_stage = &portfolio
+        .control_stage
+        .source_stage
+        .completion_stage
+        .pair_stage;
+    let dimensions = exact::shared_layer::FixedUsedDimensions {
+        width: pair_stage.fixed_dimensions[0],
+        height: pair_stage.fixed_dimensions[1],
+    };
+    let coordinate = exact::shared_layer::FixedFacilityCoordinate {
+        instance: pair_stage.partitioned_facility.clone(),
+        x: pair_stage.fixed_coordinate[0],
+        y: pair_stage.fixed_coordinate[1],
+        rotation: Some(pair_stage.fixed_rotation),
+    };
+    let mut exact_ports = portfolio
+        .inherited_assignments
+        .iter()
+        .chain(&selected.assignments)
+        .map(|assignment| exact::shared_layer::FixedTerminalPortChoice {
+            terminal: assignment.terminal.clone(),
+            port: assignment.port.clone(),
+        })
+        .collect::<Vec<_>>();
+    exact_ports.sort_by(|left, right| left.terminal.cmp(&right.terminal));
+    let (observed_layout, root_snapshot) = exact::shared_layer::solve_sparse_support_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_root_snapshot(
+        input,
+        logistics_components,
+        Some(observation_search_budget),
+        dimensions,
+        coordinate,
+        exact_ports,
+        &pair_stage.prior_reference,
+        exact::shared_layer::ReferenceAblationFixation::PriorOverlapPlacements,
+    );
+    let root_snapshot = root_snapshot.ok_or_else(|| {
+        invalid_input(
+            "/root_snapshot",
+            "root-domain observer was not called and the solve did not prove root infeasibility",
+        )
+    })?;
+    let observed_outcome = classify_outcome(&observed_layout);
+    let interpretation_blocked = observed_outcome == ExactDimensionCaseOutcome::InvalidWitness
+        || !root_snapshot.fixed_facility_contract_satisfied
+        || !root_snapshot.fixed_terminal_contract_satisfied;
+
+    Ok(PriorInputPairRootSnapshotReport {
+        schema_version: PRIOR_INPUT_PAIR_ROOT_SNAPSHOT_SCHEMA_VERSION,
+        target_phase_index,
+        solver_stack: portfolio.solver_stack,
+        selection_rule: "minimum pair_index among completed Unknown cases".to_string(),
+        selected_pair_index,
+        baseline_outcome: selected.outcome,
+        assignments: selected.assignments,
+        fixed_terminal_count: portfolio.fixed_terminal_count_per_pair,
+        baseline_search_statistics: selected.search_statistics,
+        baseline_model_scale: selected.model_scale,
+        observation_search_budget_ms: millis(observation_search_budget),
+        observed_outcome,
+        observed_layout,
+        root_snapshot,
+        interpretation_blocked,
+        diagnostic_only: true,
+    })
+}
+
+fn lowest_unknown_pair_index(
+    cases: impl IntoIterator<Item = (usize, ExactDimensionCaseOutcome)>,
+) -> Option<usize> {
+    cases
+        .into_iter()
+        .filter_map(|(index, outcome)| {
+            (outcome == ExactDimensionCaseOutcome::Unknown).then_some(index)
+        })
+        .min()
+}
+
 fn derive_residual_domains(
     suites: &[PriorInputPortControlSuiteReport],
 ) -> Result<
@@ -553,5 +739,17 @@ mod tests {
             residual_outcome_disposition(ExactDimensionCaseOutcome::InvalidWitness),
             None
         );
+    }
+
+    #[test]
+    fn root_snapshot_selects_lowest_completed_unknown_not_predeclared_case() {
+        let selected = lowest_unknown_pair_index([
+            (0, ExactDimensionCaseOutcome::ProvenInfeasible),
+            (3, ExactDimensionCaseOutcome::Unknown),
+            (1, ExactDimensionCaseOutcome::Unknown),
+            (2, ExactDimensionCaseOutcome::ValidatedFeasible),
+        ]);
+
+        assert_eq!(selected, Some(1));
     }
 }

@@ -24,10 +24,12 @@ use super::{PriorTerminalCompletionPortfolioReport, diagnose_prior_terminal_comp
 mod input_controls;
 
 pub use input_controls::{
-    PRIOR_INPUT_PORT_CONTROLS_SCHEMA_VERSION, PRIOR_INPUT_PORT_PAIR_PORTFOLIO_SCHEMA_VERSION,
+    PRIOR_INPUT_PAIR_ROOT_SNAPSHOT_SCHEMA_VERSION, PRIOR_INPUT_PORT_CONTROLS_SCHEMA_VERSION,
+    PRIOR_INPUT_PORT_PAIR_PORTFOLIO_SCHEMA_VERSION, PriorInputPairRootSnapshotReport,
     PriorInputPortControlCaseReport, PriorInputPortControlSuiteReport,
     PriorInputPortControlsReport, PriorInputPortPairCaseReport, PriorInputPortPairPortfolioReport,
-    PriorInputPortProofExclusion, PriorInputPortResidualDomain, diagnose_prior_input_port_controls,
+    PriorInputPortProofExclusion, PriorInputPortResidualDomain,
+    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
     diagnose_prior_input_port_pair_portfolio,
 };
 

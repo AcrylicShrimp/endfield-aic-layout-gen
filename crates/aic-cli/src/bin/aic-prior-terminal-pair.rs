@@ -4,9 +4,10 @@ use std::time::Duration;
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    FacilityPlacementRequest, PriorInputPortControlsReport, PriorInputPortPairPortfolioReport,
-    PriorSourcePortPortfolioReport, PriorTerminalCompletionPortfolioReport,
-    PriorTerminalPairValuePortfolioReport, diagnose_prior_input_port_controls,
+    FacilityPlacementRequest, PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
+    PriorInputPortPairPortfolioReport, PriorSourcePortPortfolioReport,
+    PriorTerminalCompletionPortfolioReport, PriorTerminalPairValuePortfolioReport,
+    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
     diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
     diagnose_prior_terminal_completion_portfolio, diagnose_prior_terminal_pair_value_portfolio,
     render_integrated_layout_html_with_localization,
@@ -85,6 +86,11 @@ struct Args {
     pair_prior_input_ports: bool,
     #[arg(long, value_name = "MILLISECONDS")]
     input_pair_case_time_limit_ms: Option<u64>,
+    /// Reproduce the lowest-index Unknown input pair and capture root domains before branching.
+    #[arg(long)]
+    root_domain_snapshot: bool,
+    #[arg(long, value_name = "MILLISECONDS")]
+    root_snapshot_case_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -111,6 +117,14 @@ struct ResolvedWorkloadPaths {
 
 fn main() -> Result<()> {
     let args = Args::parse();
+    ensure!(
+        !args.root_domain_snapshot || args.pair_prior_input_ports,
+        "--root-domain-snapshot requires --pair-prior-input-ports"
+    );
+    ensure!(
+        args.root_domain_snapshot == args.root_snapshot_case_time_limit_ms.is_some(),
+        "--root-snapshot-case-time-limit-ms must be supplied exactly when --root-domain-snapshot is enabled"
+    );
     let terminal_bits = parse_terminal_pair(&args.terminal_pair)?;
     let worker_count = NonZeroUsize::new(args.worker_count)
         .context("prior-terminal pair worker_count must be positive")?;
@@ -538,6 +552,66 @@ fn run_input_pair(
             .context("prior-input pair requires --input-pair-case-time-limit-ms")?,
     )
     .context("prior-input pair input_pair_case_time_limit_ms must be positive")?;
+    if args.root_domain_snapshot {
+        let observation_budget = NonZeroU64::new(
+            args.root_snapshot_case_time_limit_ms
+                .context("root-domain snapshot requires --root-snapshot-case-time-limit-ms")?,
+        )
+        .context("root-domain snapshot case time limit must be positive")?;
+        let report = diagnose_prior_input_pair_root_snapshot(
+            &loaded.wiring,
+            &loaded.facilities,
+            &loaded.items,
+            &loaded.transports,
+            &loaded.components,
+            &loaded.placement_request,
+            args.target_phase,
+            args.used_width,
+            args.used_height,
+            args.facility_x,
+            args.facility_y,
+            args.port_assignment_index,
+            args.facility_rotation,
+            args.prior_facility_bit,
+            terminal_bits,
+            representative_source_leaf_index,
+            worker_count.get(),
+            Duration::from_millis(prefix_budget.get()),
+            Duration::from_millis(pair_budget.get()),
+            Duration::from_millis(completion_budget.get()),
+            Duration::from_millis(source_budget.get()),
+            Duration::from_millis(control_budget.get()),
+            Duration::from_millis(residual_pair_budget.get()),
+            Duration::from_millis(observation_budget.get()),
+        )
+        .map_err(|report| anyhow::anyhow!("root-domain snapshot diagnosis failed: {report:?}"))?;
+        write_json(&args.output_dir.join("summary.json"), &report)?;
+        write_bytes(
+            &args.output_dir.join("summary.html"),
+            render_root_snapshot_summary(&report)?.as_bytes(),
+            "root-domain snapshot summary",
+        )?;
+        let html = render_integrated_layout_html_with_localization(
+            &report.observed_layout,
+            loaded.localization.as_ref(),
+        )
+        .map_err(|diagnostic| {
+            anyhow::anyhow!(
+                "root-domain observed layout visualization failed with {}: {}",
+                diagnostic.code,
+                diagnostic.message
+            )
+        })?;
+        write_bytes(
+            &args.output_dir.join("observed-layout.html"),
+            html.as_bytes(),
+            "root-domain observed layout",
+        )?;
+        serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+            .context("failed to write root-domain snapshot report")?;
+        println!();
+        return Ok(());
+    }
     let report = diagnose_prior_input_port_pair_portfolio(
         &loaded.wiring,
         &loaded.facilities,
@@ -1102,6 +1176,156 @@ fn render_input_pair_summary(report: &PriorInputPortPairPortfolioReport) -> Resu
         report.representative_witness_found,
         report.representative_infeasibility_proven,
         rows,
+        json,
+    ))
+}
+
+fn render_root_snapshot_summary(report: &PriorInputPairRootSnapshotReport) -> Result<String> {
+    let assignment = report
+        .assignments
+        .iter()
+        .map(|value| format!("{} = {}", value.terminal, value.port))
+        .collect::<Vec<_>>()
+        .join("<br>");
+    let families = report
+        .root_snapshot
+        .variable_families
+        .iter()
+        .map(|family| {
+            format!(
+                "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td><code>{:?}</code></td><td><code>{:?}</code></td></tr>",
+                family.family,
+                family.total,
+                family.fixed,
+                family.unresolved,
+                family.root_cardinality_histogram,
+                family.root_span_histogram,
+            )
+        })
+        .collect::<String>();
+    let facilities = report
+        .root_snapshot
+        .facilities
+        .iter()
+        .map(|facility| {
+            format!(
+                "<tr><td><code>{}</code></td><td>{}</td><td><code>{:?}</code></td><td><code>{:?}</code></td><td><code>{:?}</code></td><td>{}</td></tr>",
+                facility.instance,
+                facility.placement_choice.cardinality,
+                facility.possible_x_values,
+                facility.possible_y_values,
+                facility.possible_rotations,
+                facility.fixed_contract_satisfied,
+            )
+        })
+        .collect::<String>();
+    let terminals = report
+        .root_snapshot
+        .terminals
+        .iter()
+        .map(|terminal| {
+            let port_cardinality = terminal
+                .port_choice
+                .as_ref()
+                .map_or_else(|| "-".to_string(), |domain| domain.cardinality.to_string());
+            let external = terminal.external_geometry.as_ref().map_or_else(
+                || "-".to_string(),
+                |geometry| {
+                    format!(
+                        "{:?} / {} routable cells",
+                        geometry.routable_sides, geometry.routable_unique_cells
+                    )
+                },
+            );
+            format!(
+                "<tr><td><code>{}</code></td><td>{}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{}</td><td>{}/{}/{}</td><td>{}</td><td>{}</td></tr>",
+                terminal.terminal,
+                terminal.endpoint_kind,
+                terminal.direction,
+                terminal.geometry.cardinality,
+                port_cardinality,
+                terminal.geometry_unavailable_port_count,
+                terminal.routing_options.fixed_true,
+                terminal.routing_options.fixed_false,
+                terminal.routing_options.unresolved,
+                external,
+                terminal.fixed_contract_satisfied,
+            )
+        })
+        .collect::<String>();
+    let layers = report
+        .root_snapshot
+        .layers
+        .iter()
+        .map(|layer| {
+            format!(
+                "<tr><td>{:?}</td><td>{}/{}/{}</td><td>{}/{}/{}</td><td>{}/{}/{}</td><td>{}/{}/{}</td><td><code>{:?}</code></td><td><code>{:?}</code></td></tr>",
+                layer.transport,
+                layer.route_cells.fixed_true,
+                layer.route_cells.fixed_false,
+                layer.route_cells.unresolved,
+                layer.boundary_route_cells.fixed_true,
+                layer.boundary_route_cells.fixed_false,
+                layer.boundary_route_cells.unresolved,
+                layer.interior_route_cells.fixed_true,
+                layer.interior_route_cells.fixed_false,
+                layer.interior_route_cells.unresolved,
+                layer.route_arcs.fixed_true,
+                layer.route_arcs.fixed_false,
+                layer.route_arcs.unresolved,
+                layer.arm_item_cardinality_histogram,
+                layer.flows.width_histogram,
+            )
+        })
+        .collect::<String>();
+    let networks = report
+        .root_snapshot
+        .networks
+        .iter()
+        .map(|network| {
+            format!(
+                "<tr><td>{}</td><td><code>{}</code></td><td>{:?}</td><td><code>{}</code></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
+                network.network_index,
+                network.network_id,
+                network.transport,
+                network.item,
+                network.possible_supply_options,
+                network.possible_demand_options,
+                network.material_capable_possible_arcs,
+                network.reachable_demand_options,
+                network.unreachable_demand_options,
+            )
+        })
+        .collect::<String>();
+    let first = report.root_snapshot.first_decision.as_ref().map_or_else(
+        || "none".to_string(),
+        |decision| {
+            format!(
+                "{} / <code>{}</code> / <code>{}</code>",
+                decision.semantic_family, decision.semantic_name, decision.predicate
+            )
+        },
+    );
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 3 root-domain snapshot</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.warning{{border:1px solid #ffd166;padding:10px;color:#ffd166}}table{{border-collapse:collapse;width:100%;margin-bottom:24px}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}code{{color:#ffd166}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {} prior-input pair root snapshot</h1><div class="meta">selected pair={} · baseline={:?} · observed={:?} · status={} · fixed terminals={} · blocked={}</div><p>{}</p><p>first decision: {}</p><p>domain coverage: {} registered / {} solver domains · {} unregistered</p><p class="warning">This is a root census from one deterministic Unknown pair. Family counts cover registered semantic domains only; broad domains and the first predicate are candidates, not runtime-cause proof.</p><h2>Variable families</h2><table><thead><tr><th>family</th><th>total</th><th>fixed</th><th>unresolved</th><th>cardinality histogram</th><th>span histogram</th></tr></thead><tbody>{}</tbody></table><h2>Facilities</h2><table><thead><tr><th>instance</th><th>placement cardinality</th><th>x</th><th>y</th><th>rotation</th><th>fixed assertion</th></tr></thead><tbody>{}</tbody></table><h2>Terminals</h2><table><thead><tr><th>terminal</th><th>kind</th><th>direction</th><th>geometry cardinality</th><th>port cardinality</th><th>geometry-unavailable ports</th><th>routing T/F/U</th><th>live external sides/cells</th><th>fixed assertion</th></tr></thead><tbody>{}</tbody></table><h2>Layers</h2><table><thead><tr><th>layer</th><th>route T/F/U</th><th>boundary T/F/U</th><th>interior T/F/U</th><th>arcs T/F/U</th><th>item cardinalities</th><th>flow widths</th></tr></thead><tbody>{}</tbody></table><h2>Networks</h2><table><thead><tr><th>#</th><th>network</th><th>layer</th><th>item</th><th>supply options</th><th>demand options</th><th>possible arcs</th><th>reachable demands</th><th>unreachable demands</th></tr></thead><tbody>{}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        report.target_phase_index,
+        report.selected_pair_index,
+        report.baseline_outcome,
+        report.observed_outcome,
+        report.root_snapshot.capture_status,
+        report.fixed_terminal_count,
+        report.interpretation_blocked,
+        assignment,
+        first,
+        report.root_snapshot.variable_coverage.registered_domains,
+        report.root_snapshot.variable_coverage.solver_domains,
+        report.root_snapshot.variable_coverage.unregistered_domains,
+        families,
+        facilities,
+        terminals,
+        layers,
+        networks,
         json,
     ))
 }
