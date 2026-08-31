@@ -1,0 +1,284 @@
+{
+  "schema_version": 1,
+  "workload": "heavy-xiranite-minimum-rate",
+  "formulation": "joint-shared-boundary-terminals-canonical-occupancy-v4",
+  "classification": "faithful-exact-network-composition-diagnosis",
+  "phase": 0,
+  "request_bounds": {
+    "max_width": 12,
+    "max_height": 12
+  },
+  "search_budget_ms_per_case": 5000,
+  "cases": [
+    {
+      "id": "single-0",
+      "networks": ["network:belt:item-xiranite-enr-powder"],
+      "network_count": 1,
+      "route_requirement_count": 1,
+      "external_terminal_count": 1,
+      "construction_ms": 68,
+      "search_ms": 1598,
+      "first_incumbent_ms": 1165,
+      "incumbent_count": 19,
+      "termination": "optimal",
+      "proof": "proven-optimal",
+      "validation": "passed",
+      "objective": [30, 1, 0],
+      "variables": 9714,
+      "boolean_variables": 8882,
+      "integer_variables": 832,
+      "log2_domain_volume": 11002.070045045337,
+      "constraints": 26402,
+      "terms": 82001,
+      "placement_routing_constraints": 3408,
+      "placement_routing_incidences": 15768,
+      "peak_rss_bytes": 82509824
+    },
+    {
+      "id": "single-1",
+      "networks": ["network:belt:item-xiranite-powder"],
+      "network_count": 1,
+      "route_requirement_count": 2,
+      "external_terminal_count": 2,
+      "construction_ms": 54,
+      "search_ms": 3082,
+      "first_incumbent_ms": 2533,
+      "incumbent_count": 19,
+      "termination": "optimal",
+      "proof": "proven-optimal",
+      "validation": "passed",
+      "objective": [30, 2, 0],
+      "variables": 10314,
+      "boolean_variables": 10002,
+      "integer_variables": 312,
+      "log2_domain_volume": 10823.733760305537,
+      "constraints": 28473,
+      "terms": 90227,
+      "placement_routing_constraints": 3040,
+      "placement_routing_incidences": 9300,
+      "peak_rss_bytes": 89407488
+    },
+    {
+      "id": "single-2",
+      "networks": ["network:pipe:item-liquid-xiranite-poly"],
+      "network_count": 1,
+      "route_requirement_count": 1,
+      "external_terminal_count": 1,
+      "construction_ms": 48,
+      "search_ms": 1427,
+      "first_incumbent_ms": 846,
+      "incumbent_count": 19,
+      "termination": "optimal",
+      "proof": "proven-optimal",
+      "validation": "passed",
+      "objective": [30, 1, 0],
+      "variables": 9598,
+      "boolean_variables": 8770,
+      "integer_variables": 828,
+      "log2_domain_volume": 10712.17624063563,
+      "constraints": 26062,
+      "terms": 80789,
+      "placement_routing_constraints": 1680,
+      "placement_routing_incidences": 5072,
+      "peak_rss_bytes": 84148224
+    },
+    {
+      "id": "pair-0-1",
+      "networks": [
+        "network:belt:item-xiranite-enr-powder",
+        "network:belt:item-xiranite-powder"
+      ],
+      "network_count": 2,
+      "route_requirement_count": 3,
+      "external_terminal_count": 3,
+      "construction_ms": 68,
+      "search_ms": 5000,
+      "first_incumbent_ms": null,
+      "incumbent_count": 0,
+      "termination": "unknown",
+      "proof": "unproven",
+      "validation": "not-attempted",
+      "objective": null,
+      "variables": 10970,
+      "boolean_variables": 9402,
+      "integer_variables": 1568,
+      "log2_domain_volume": 12796.290876846722,
+      "constraints": 33256,
+      "terms": 109133,
+      "placement_routing_constraints": 5872,
+      "placement_routing_incidences": 23350,
+      "peak_rss_bytes": 88932352
+    },
+    {
+      "id": "pair-0-2",
+      "networks": [
+        "network:belt:item-xiranite-enr-powder",
+        "network:pipe:item-liquid-xiranite-poly"
+      ],
+      "network_count": 2,
+      "route_requirement_count": 2,
+      "external_terminal_count": 2,
+      "construction_ms": 94,
+      "search_ms": 5000,
+      "first_incumbent_ms": null,
+      "incumbent_count": 0,
+      "termination": "unknown",
+      "proof": "unproven",
+      "validation": "not-attempted",
+      "objective": null,
+      "variables": 18326,
+      "boolean_variables": 16674,
+      "integer_variables": 1652,
+      "log2_domain_volume": 20686.620135959478,
+      "constraints": 50989,
+      "terms": 159247,
+      "placement_routing_constraints": 4656,
+      "placement_routing_incidences": 19688,
+      "peak_rss_bytes": 118931456
+    },
+    {
+      "id": "pair-1-2",
+      "networks": [
+        "network:belt:item-xiranite-powder",
+        "network:pipe:item-liquid-xiranite-poly"
+      ],
+      "network_count": 2,
+      "route_requirement_count": 3,
+      "external_terminal_count": 3,
+      "construction_ms": 102,
+      "search_ms": 5001,
+      "first_incumbent_ms": null,
+      "incumbent_count": 0,
+      "termination": "unknown",
+      "proof": "unproven",
+      "validation": "not-attempted",
+      "objective": null,
+      "variables": 18926,
+      "boolean_variables": 17794,
+      "integer_variables": 1132,
+      "log2_domain_volume": 20508.283851219643,
+      "constraints": 53060,
+      "terms": 167473,
+      "placement_routing_constraints": 4288,
+      "placement_routing_incidences": 13220,
+      "peak_rss_bytes": 121110528
+    },
+    {
+      "id": "full",
+      "networks": [
+        "network:belt:item-xiranite-enr-powder",
+        "network:belt:item-xiranite-powder",
+        "network:pipe:item-liquid-xiranite-poly"
+      ],
+      "network_count": 3,
+      "route_requirement_count": 4,
+      "external_terminal_count": 4,
+      "construction_ms": 121,
+      "search_ms": 5001,
+      "first_incumbent_ms": null,
+      "incumbent_count": 0,
+      "termination": "unknown",
+      "proof": "unproven",
+      "validation": "not-attempted",
+      "objective": null,
+      "variables": 19582,
+      "boolean_variables": 17194,
+      "integer_variables": 2388,
+      "log2_domain_volume": 22480.84096776083,
+      "constraints": 57843,
+      "terms": 186379,
+      "placement_routing_constraints": 7120,
+      "placement_routing_incidences": 27270,
+      "peak_rss_bytes": 144588800
+    }
+  ],
+  "first_cliff": {
+    "largest_successful_single": "single-1",
+    "smallest_unsolved_pair": "pair-0-1",
+    "added_network": "network:belt:item-xiranite-enr-powder",
+    "delta": {
+      "variables": 656,
+      "variable_percent": 6.36,
+      "integer_variables": 1256,
+      "integer_variable_percent": 402.56,
+      "log2_domain_volume": 1972.557116541185,
+      "log2_domain_volume_percent": 18.22,
+      "constraints": 4783,
+      "constraint_percent": 16.8,
+      "terms": 18906,
+      "term_percent": 20.95,
+      "placement_routing_constraints": 2832,
+      "placement_routing_constraint_percent": 93.16,
+      "placement_routing_incidences": 14050,
+      "placement_routing_incidence_percent": 151.08,
+      "peak_rss_bytes": -475136,
+      "peak_rss_percent": -0.53
+    },
+    "dominant_variable_changes": [
+      {
+        "family": "endpoint-geometry",
+        "variables": 342,
+        "log2_domain_volume": 391.0320625446707
+      },
+      {
+        "family": "boundary-terminal",
+        "variables": 313,
+        "log2_domain_volume": 321.1699250014423
+      },
+      {
+        "family": "flow",
+        "variables": 0,
+        "boolean_variables": -528,
+        "integer_variables": 528,
+        "log2_domain_volume": 836.8602003807646
+      },
+      {
+        "family": "arm-item",
+        "variables": 0,
+        "boolean_variables": -720,
+        "integer_variables": 720,
+        "log2_domain_volume": 421.1730005192342
+      }
+    ],
+    "dominant_constraint_changes": [
+      {
+        "family": "branch-topology",
+        "constraints": 1152,
+        "terms": 9216
+      },
+      {
+        "family": "line-capacity",
+        "constraints": 1104,
+        "terms": 2808
+      },
+      {
+        "family": "bridge-crossing",
+        "constraints": 936,
+        "terms": 2400
+      },
+      {
+        "family": "terminal-presence",
+        "constraints": 648,
+        "terms": 1944
+      },
+      {
+        "family": "item-assignment",
+        "constraints": 648,
+        "terms": 1296
+      }
+    ]
+  },
+  "best_bound_and_gap": {
+    "availability": "not-exposed-by-current-solver-report",
+    "successful_cases": "proven-optimal",
+    "unsolved_cases": "no-incumbent-and-no-reported-bound"
+  },
+  "verdict": {
+    "first_cliff_axis": "one-to-two-simultaneous-commodity-networks",
+    "raw_total_variable_count_explains_cliff": false,
+    "second-physical-transport-layer-required_for_cliff": false,
+    "same-layer-multi-item-state-required_for_cliff": false,
+    "memory_exhaustion_explains_cliff": false,
+    "next_experiment": "diagnostic-only-feasibility-search-versus-lexicographic-optimization-on-pair-0-1"
+  }
+}
