@@ -2380,6 +2380,63 @@ mod tests {
     }
 
     #[test]
+    fn parses_cumulative_transport_tile_cap_diagnosis() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "diagnose-cumulative-transport-tile-caps",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--target-phase",
+            "2",
+            "--used-width",
+            "12",
+            "--used-height",
+            "12",
+            "--transport-tile-cap",
+            "64",
+            "--transport-tile-cap",
+            "96",
+            "--prefix-worker-count",
+            "4",
+            "--prefix-case-time-limit-ms",
+            "5000",
+            "--case-time-limit-ms",
+            "30000",
+            "--output-dir",
+            "transport-tile-caps",
+        ])
+        .expect("cumulative transport tile cap diagnosis CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::DiagnoseCumulativeTransportTileCaps {
+                    target_phase,
+                    used_width,
+                    used_height,
+                    transport_tile_cap,
+                    prefix_worker_count,
+                    prefix_case_time_limit_ms,
+                    case_time_limit_ms,
+                    output_dir,
+                    ..
+                },
+        } = cli.command
+        else {
+            panic!("expected cumulative transport tile cap diagnosis command")
+        };
+        assert_eq!(target_phase, 2);
+        assert_eq!((used_width, used_height), (12, 12));
+        assert_eq!(transport_tile_cap, vec![64, 96]);
+        assert_eq!(prefix_worker_count, 4);
+        assert_eq!(prefix_case_time_limit_ms, 5_000);
+        assert_eq!(case_time_limit_ms, 30_000);
+        assert_eq!(output_dir, PathBuf::from("transport-tile-caps"));
+    }
+
+    #[test]
     fn parses_first_phase_factored_requirement_decomposition() {
         let cli = Cli::try_parse_from([
             "aic-cli",

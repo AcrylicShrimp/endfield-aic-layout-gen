@@ -31,8 +31,8 @@ use crate::facilities::{FacilityPortDirection, FacilityPortEdge};
 use crate::layouts::integrated::{
     EndpointInput, ExactModelMetrics, ExactValidationStatus, FacilityPlacement,
     INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic, IntegratedLayoutReport,
-    IntegratedLayoutStatus, ModelInput, PlacedLogisticsComponent, TransportKind, TransportNetwork,
-    TransportNetworkEndpoint, TransportNetworkSegment, TransportNetworkTerminal,
+    IntegratedLayoutStatus, LayoutScore, ModelInput, PlacedLogisticsComponent, TransportKind,
+    TransportNetwork, TransportNetworkEndpoint, TransportNetworkSegment, TransportNetworkTerminal,
     canonicalize_report_geometry, world_position,
 };
 use crate::logistics::{
@@ -188,6 +188,7 @@ pub(in crate::layouts::integrated) fn solve(
         None,
         None,
         None,
+        None,
     )
 }
 
@@ -216,6 +217,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_with_prior(
         None,
         None,
         None,
+        None,
     )
 }
 
@@ -231,6 +233,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_feasibility_only(
         EndpointEncoding::Factored,
         None,
         SearchMode::FeasibilityOnly,
+        None,
         None,
         None,
         None,
@@ -271,6 +274,30 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         None,
         None,
         None,
+        None,
+    )
+}
+
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_transport_tile_cap_feasibility_only_with_prior(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    transport_tile_upper_bound: i32,
+    prior_solution: Option<&IntegratedLayoutReport>,
+) -> IntegratedLayoutReport {
+    solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        prior_solution,
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        None,
+        None,
+        None,
+        Some(transport_tile_upper_bound),
     )
 }
 
@@ -292,6 +319,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         SearchMode::FeasibilityOnly,
         Some(fixed_dimensions),
         Some(fixed_coordinate),
+        None,
         None,
         None,
     )
@@ -318,6 +346,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         Some(fixed_coordinate),
         Some(fixed_ports),
         None,
+        None,
     )
 }
 
@@ -340,6 +369,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         None,
         None,
         Some(fixation),
+        None,
     )
 }
 
@@ -457,7 +487,16 @@ fn solve_with_endpoint_encoding(
     fixed_coordinate: Option<FixedFacilityCoordinate>,
     fixed_ports: Option<Vec<FixedTerminalPortChoice>>,
     reference_fixation: Option<ReferenceAblationFixation>,
+    transport_tile_upper_bound: Option<i32>,
 ) -> IntegratedLayoutReport {
+    if transport_tile_upper_bound.is_some_and(|upper_bound| upper_bound < 0) {
+        return IntegratedLayoutReport::invalid(IntegratedLayoutDiagnostic::error(
+            "invalid-transport-tile-upper-bound",
+            "/transport_tile_upper_bound",
+            transport_tile_upper_bound.map(|upper_bound| upper_bound.to_string()),
+            "transport tile upper bound must be non-negative",
+        ));
+    }
     let construction_started = Instant::now();
     let mut model_metrics = initial_metrics(&input);
     model_metrics.boundary_terminal_count = model_metrics.external_terminal_count;
@@ -609,6 +648,15 @@ fn solve_with_endpoint_encoding(
             );
         }
     };
+    if let Some(upper_bound) = transport_tile_upper_bound {
+        solver.post_less_than_or_equals(
+            ConstraintFamily::ResearchFixation,
+            vec![objectives.physical_transport_tiles.scaled(1)],
+            upper_bound,
+            1,
+            tag,
+        );
+    }
 
     let (facility_network_incidences, shared_network_facility_pairs) =
         super::logical_coupling_metrics(&input);
@@ -730,6 +778,7 @@ fn solve_with_endpoint_encoding(
             .and_then(|()| validate_fixed_dimensions(&report, fixed_dimensions))
             .and_then(|()| validate_fixed_coordinate(&report, fixed_coordinate.as_ref()))
             .and_then(|()| validate_fixed_terminal_ports(&report, fixed_ports.as_deref()))
+            .and_then(|()| validate_transport_tile_upper_bound(&report, transport_tile_upper_bound))
             .and_then(|()| {
                 crate::layouts::integrated::witness::validate(&input, logistics_components, &report)
             }) {
@@ -763,6 +812,9 @@ fn solve_with_endpoint_encoding(
             }
             Some(ReferenceAblationFixation::PlacementsAndAllTerminals) => {
                 "joint-shared-v4-reference-placements-all-terminals-ablation"
+            }
+            None if transport_tile_upper_bound.is_some() => {
+                "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions-transport-tile-cap"
             }
             None => match (
                 endpoint_encoding,
@@ -799,6 +851,29 @@ fn solve_with_endpoint_encoding(
         validation,
         search.stages,
     )
+}
+
+fn validate_transport_tile_upper_bound(
+    report: &IntegratedLayoutReport,
+    upper_bound: Option<i32>,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let Some(upper_bound) = upper_bound else {
+        return Ok(());
+    };
+    let observed = LayoutScore::from_report(report, &[])
+        .expect("successful exact witness has scoreable bounds")
+        .physical_transport_tiles;
+    if observed <= usize::try_from(upper_bound).expect("validated upper bound is non-negative") {
+        return Ok(());
+    }
+    Err(IntegratedLayoutDiagnostic::error(
+        "transport-tile-upper-bound-violated",
+        "/transport_networks",
+        None,
+        format!(
+            "validated witness uses {observed} physical transport tiles, exceeding cap {upper_bound}"
+        ),
+    ))
 }
 
 fn post_fixed_terminal_ports(

@@ -646,6 +646,75 @@ fn fixed_dimension_research_adds_only_two_equalities_and_validates_exact_bounds(
 }
 
 #[test]
+fn transport_tile_cap_research_adds_only_one_exact_upper_bound() {
+    let (facilities, items, transports, components) = catalogs();
+    let input = super::prepare_model(
+        &external_connector_wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 4,
+            max_height: 3,
+        },
+    )
+    .expect("transport-tile-cap fixture should prepare");
+    let dimensions = super::exact::shared_layer::FixedUsedDimensions {
+        width: 4,
+        height: 3,
+    };
+    let baseline =
+        super::exact::shared_layer::solve_factored_endpoints_fixed_dimensions_feasibility_only(
+            input.clone(),
+            &components,
+            None,
+            dimensions,
+        );
+    let capped = super::exact::shared_layer::solve_factored_endpoints_fixed_dimensions_transport_tile_cap_feasibility_only_with_prior(
+        input,
+        &components,
+        None,
+        dimensions,
+        24,
+        None,
+    );
+
+    assert!(baseline.success, "{:#?}", baseline.diagnostics);
+    assert!(capped.success, "{:#?}", capped.diagnostics);
+    let baseline_exact = baseline.exact.expect("baseline reports exact evidence");
+    let capped_exact = capped.exact.expect("capped solve reports exact evidence");
+    assert_eq!(
+        capped_exact.formulation,
+        "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions-transport-tile-cap"
+    );
+    assert_eq!(
+        capped_exact.model_complexity.variables,
+        baseline_exact.model_complexity.variables
+    );
+    assert_eq!(
+        capped_exact
+            .model_complexity
+            .constraints
+            .expect("capped constraints are recorded")
+            .total_constraints,
+        baseline_exact
+            .model_complexity
+            .constraints
+            .expect("baseline constraints are recorded")
+            .total_constraints
+            + 1
+    );
+    assert!(
+        capped_exact
+            .objective
+            .is_some_and(|objective| objective.physical_transport_tiles <= 24)
+    );
+    assert_eq!(capped_exact.validation, ExactValidationStatus::Passed);
+}
+
+#[test]
 fn parallel_dimension_sweep_never_skips_at_or_below_its_final_upper_bound() {
     let (facilities, items, transports, components) = catalogs();
     let report = super::research::sweep_first_integrated_layout_phase_fixed_dimensions(

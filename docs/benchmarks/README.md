@@ -75,6 +75,13 @@ infeasible but leaves `11x12`, `12x11`, and `12x12` unknown with no incumbent, t
 growth to placement/port endpoint geometry and boundary-terminal coupling rather than replicated
 routing grids.
 
+The thirty-first checkpoint,
+`heavy-xiranite-minimum-rate.thirty-first-phase2-transport-tile-cap-report.md`, adds only an exact
+physical transport-tile upper bound to the otherwise unchanged `12x12` Phase 2 first-witness
+problem. Caps 48, 64, 80, and 96 all remain unknown at five seconds, and the known-feasible cap 96
+remains unknown at thirty seconds. This shows that a monotone tile-budget search is logically exact
+but does not by itself break the coupled routing cliff.
+
 Regenerate it from a release binary with:
 
 ```bash
