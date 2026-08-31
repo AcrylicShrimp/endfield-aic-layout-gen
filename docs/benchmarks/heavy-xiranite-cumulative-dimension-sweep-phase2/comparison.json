@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "diagnostic_only": true,
+  "workload": "heavy-xiranite-minimum-rate",
+  "request_ceiling": {
+    "width": 12,
+    "height": 12
+  },
+  "blocking_phase_index": 2,
+  "phase_two_graph": {
+    "facility_count": 3,
+    "commodity_network_count": 8,
+    "route_requirement_count": 10,
+    "candidate_count": 26,
+    "model_per_case": {
+      "variables": 23972,
+      "constraints": 82625,
+      "incidences": 285105,
+      "log2_domain_volume": 28621.9841122704,
+      "hint_variables": 512,
+      "hinted_placements": 2
+    }
+  },
+  "five_second_cases": {
+    "worker_count": 4,
+    "search_budget_ms_per_case": 5000,
+    "phase_two_outer_wall_ms": 14134,
+    "process_wall_ms": 18410,
+    "maximum_resident_set_bytes": 966475776,
+    "validated_feasible": 0,
+    "proven_infeasible": 20,
+    "unknown": 6,
+    "unknown_dimensions": [
+      "10x12",
+      "12x10",
+      "11x11",
+      "11x12",
+      "12x11",
+      "12x12"
+    ],
+    "feasible_upper_bound_area": null,
+    "complete_infeasibility_proven": false
+  },
+  "thirty_second_cases": {
+    "worker_count": 4,
+    "search_budget_ms_per_case": 30000,
+    "phase_two_outer_wall_ms": 41451,
+    "process_wall_ms": 45850,
+    "maximum_resident_set_bytes": 1011286016,
+    "validated_feasible": 0,
+    "proven_infeasible": 23,
+    "unknown": 3,
+    "newly_proven_infeasible_dimensions": [
+      "10x12",
+      "12x10",
+      "11x11"
+    ],
+    "remaining_unknown_dimensions": [
+      "11x12",
+      "12x11",
+      "12x12"
+    ],
+    "proven_infeasible_through_area": 121,
+    "feasible_upper_bound_area": null,
+    "complete_infeasibility_proven": false
+  },
+  "phase_one_to_two_growth": {
+    "variables": {
+      "phase_one": 21745,
+      "phase_two": 23972,
+      "delta": 2227
+    },
+    "constraints": {
+      "phase_one": 71395,
+      "phase_two": 82625,
+      "delta": 11230
+    },
+    "incidences": {
+      "phase_one": 239999,
+      "phase_two": 285105,
+      "delta": 45106
+    },
+    "log2_domain_volume": {
+      "phase_one": 25717.028166157656,
+      "phase_two": 28621.9841122704,
+      "delta": 2904.9559461127437
+    },
+    "variable_family_deltas": {
+      "placement": 257,
+      "physical_occupancy": 144,
+      "endpoint": 4,
+      "endpoint_geometry": 1196,
+      "boundary_terminal": 626,
+      "route_cell": 0,
+      "route_arc": 0,
+      "flow": 0,
+      "route_arm": 0
+    },
+    "coupling": {
+      "placement_routing_constraints_phase_one": 14188,
+      "placement_routing_constraints_phase_two": 19736,
+      "placement_routing_incidences_phase_one": 58334,
+      "placement_routing_incidences_phase_two": 83454,
+      "network_collision_constraints_phase_one": 8488,
+      "network_collision_constraints_phase_two": 10864
+    }
+  },
+  "cliff": {
+    "classification": "phase-two-high-area-first-witness-and-proof-cliff",
+    "not_proven_infeasible": true,
+    "primary_suspect": "placement and port endpoint geometry coupled to boundary terminals and shared routing state",
+    "routing_grid_replication_regression": false
+  },
+  "next_experiment": "Within the remaining 11x12, 12x11, and 12x12 exact dimension cases, use completeness-preserving outer partitions to isolate newly introduced facility placement and port-choice coupling before changing solver semantics."
+}

@@ -68,6 +68,13 @@ same exact portfolio through cumulative SCC phase 1 with a non-binding prior pla
 proves minimum area 77 for the two-facility, six-network graph in 3.65 seconds and moves the next
 first-feasible cliff to phase 2 or later.
 
+The twenty-sixth checkpoint,
+`heavy-xiranite-minimum-rate.twenty-sixth-cumulative-phase2-cliff-report.md`, locates that cliff at
+cumulative SCC phase 2. A 30-second exact dimension portfolio proves every shape through `11x11`
+infeasible but leaves `11x12`, `12x11`, and `12x12` unknown with no incumbent, then traces the model
+growth to placement/port endpoint geometry and boundary-terminal coupling rather than replicated
+routing grids.
+
 Regenerate it from a release binary with:
 
 ```bash
