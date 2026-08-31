@@ -4,7 +4,8 @@ use std::time::Duration;
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    FacilityPlacementRequest, PriorTerminalPairValuePortfolioReport,
+    FacilityPlacementRequest, PriorTerminalCompletionPortfolioReport,
+    PriorTerminalPairValuePortfolioReport, diagnose_prior_terminal_completion_portfolio,
     diagnose_prior_terminal_pair_value_portfolio, render_integrated_layout_html_with_localization,
 };
 use aic_data::localization::{ValidatedLocalizationCatalog, load_localization_catalog};
@@ -59,6 +60,11 @@ struct Args {
     prefix_case_time_limit_ms: u64,
     #[arg(long, value_name = "MILLISECONDS")]
     pair_case_time_limit_ms: u64,
+    /// Expand every non-infeasible pair into complete target-facility port assignments.
+    #[arg(long)]
+    complete_target_ports: bool,
+    #[arg(long, value_name = "MILLISECONDS")]
+    child_case_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -93,6 +99,39 @@ fn main() -> Result<()> {
     let pair_budget = NonZeroU64::new(args.pair_case_time_limit_ms)
         .context("prior-terminal pair pair_case_time_limit_ms must be positive")?;
     let loaded = load_inputs(&args)?;
+    if args.complete_target_ports {
+        run_completion(
+            &args,
+            terminal_bits,
+            worker_count,
+            prefix_budget,
+            pair_budget,
+            &loaded,
+        )
+    } else {
+        run_pair(
+            &args,
+            terminal_bits,
+            worker_count,
+            prefix_budget,
+            pair_budget,
+            &loaded,
+        )
+    }
+}
+
+fn run_pair(
+    args: &Args,
+    terminal_bits: [usize; 2],
+    worker_count: NonZeroUsize,
+    prefix_budget: NonZeroU64,
+    pair_budget: NonZeroU64,
+    loaded: &LoadedInputs,
+) -> Result<()> {
+    ensure!(
+        args.child_case_time_limit_ms.is_none(),
+        "--child-case-time-limit-ms requires --complete-target-ports"
+    );
     let report = diagnose_prior_terminal_pair_value_portfolio(
         &loaded.wiring,
         &loaded.facilities,
@@ -118,7 +157,7 @@ fn main() -> Result<()> {
     write_json(&args.output_dir.join("summary.json"), &report)?;
     write_bytes(
         &args.output_dir.join("summary.html"),
-        render_summary(&report)?.as_bytes(),
+        render_pair_summary(&report)?.as_bytes(),
         "prior-terminal pair summary",
     )?;
     for case in &report.cases {
@@ -143,6 +182,74 @@ fn main() -> Result<()> {
     }
     serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
         .context("failed to write prior-terminal pair report")?;
+    println!();
+    Ok(())
+}
+
+fn run_completion(
+    args: &Args,
+    terminal_bits: [usize; 2],
+    worker_count: NonZeroUsize,
+    prefix_budget: NonZeroU64,
+    pair_budget: NonZeroU64,
+    loaded: &LoadedInputs,
+) -> Result<()> {
+    let child_budget = NonZeroU64::new(
+        args.child_case_time_limit_ms
+            .context("completion portfolio requires --child-case-time-limit-ms")?,
+    )
+    .context("prior-terminal completion child_case_time_limit_ms must be positive")?;
+    let report = diagnose_prior_terminal_completion_portfolio(
+        &loaded.wiring,
+        &loaded.facilities,
+        &loaded.items,
+        &loaded.transports,
+        &loaded.components,
+        &loaded.placement_request,
+        args.target_phase,
+        args.used_width,
+        args.used_height,
+        args.facility_x,
+        args.facility_y,
+        args.port_assignment_index,
+        args.facility_rotation,
+        args.prior_facility_bit,
+        terminal_bits,
+        worker_count.get(),
+        Duration::from_millis(prefix_budget.get()),
+        Duration::from_millis(pair_budget.get()),
+        Duration::from_millis(child_budget.get()),
+    )
+    .map_err(|report| anyhow::anyhow!("prior-terminal completion diagnosis failed: {report:?}"))?;
+
+    write_json(&args.output_dir.join("summary.json"), &report)?;
+    write_bytes(
+        &args.output_dir.join("summary.html"),
+        render_completion_summary(&report)?.as_bytes(),
+        "prior-terminal completion summary",
+    )?;
+    for case in &report.cases {
+        let html = render_integrated_layout_html_with_localization(
+            &case.layout,
+            loaded.localization.as_ref(),
+        )
+        .map_err(|diagnostic| {
+            anyhow::anyhow!(
+                "prior-terminal completion case visualization failed with {}: {}",
+                diagnostic.code,
+                diagnostic.message
+            )
+        })?;
+        write_bytes(
+            &args
+                .output_dir
+                .join(format!("case.leaf-{:03}.html", case.leaf_index)),
+            html.as_bytes(),
+            "prior-terminal completion case",
+        )?;
+    }
+    serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+        .context("failed to write prior-terminal completion report")?;
     println!();
     Ok(())
 }
@@ -279,7 +386,7 @@ fn parse_terminal_pair(value: &str) -> Result<[usize; 2]> {
     Ok([bits[0], bits[1]])
 }
 
-fn render_summary(report: &PriorTerminalPairValuePortfolioReport) -> Result<String> {
+fn render_pair_summary(report: &PriorTerminalPairValuePortfolioReport) -> Result<String> {
     let domains = report
         .terminal_domains
         .iter()
@@ -332,12 +439,81 @@ fn render_summary(report: &PriorTerminalPairValuePortfolioReport) -> Result<Stri
         report.fixed_rotation,
         report.legal_pair_count,
         report.worker_count,
-        report.outer_wall_ms,
+        report.portfolio_wall_ms,
         domains,
         report.validated_witness_found,
         report.complete_infeasibility_proven,
         report.unknown_count,
         report.invalid_witness_count,
+        rows,
+        json,
+    ))
+}
+
+fn render_completion_summary(report: &PriorTerminalCompletionPortfolioReport) -> Result<String> {
+    let domains = report
+        .completion_domains
+        .iter()
+        .map(|domain| {
+            format!(
+                "<li>bit {}: <code>{}</code><br>reference=<code>{}</code><br>domain=<code>{}</code></li>",
+                domain.terminal_bit_index,
+                domain.terminal,
+                domain.reference_port,
+                domain.ports.join(", ")
+            )
+        })
+        .collect::<String>();
+    let rows = report
+        .cases
+        .iter()
+        .map(|case| {
+            let pair = case
+                .pair_assignments
+                .iter()
+                .map(|assignment| assignment.port.clone())
+                .collect::<Vec<_>>()
+                .join(" / ");
+            let completion = case
+                .completion_assignments
+                .iter()
+                .map(|assignment| assignment.port.clone())
+                .collect::<Vec<_>>()
+                .join(" / ");
+            format!(
+                "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td></tr>",
+                case.leaf_index,
+                case.parent_pair_index,
+                pair,
+                completion,
+                case.outcome,
+                case.construction_ms,
+                case.search_ms,
+                case.search_statistics.branch_decisions,
+                case.search_statistics.backtracks,
+                case.search_statistics.conflicts,
+                case.search_statistics.learned_clauses,
+                case.search_statistics.solver_propagations,
+            )
+        })
+        .collect::<String>();
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 3 terminal completion</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}code{{color:#ffd166}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {} prior-terminal completion portfolio</h1><div class="meta">closed parents={} · expanded parents={} · completion assignments={} · coverage regions={} · workers={} · child wall={}ms · total={}ms</div><h2>Remaining terminal domains</h2><ul>{}</ul><p>feasible={} · infeasible={} · unknown={} · invalid={} · selected-state proof={}</p><table><thead><tr><th>leaf</th><th>parent</th><th>demand pair</th><th>completion</th><th>outcome</th><th>build ms</th><th>search ms</th><th>decisions</th><th>backtracks</th><th>conflicts</th><th>learned</th><th>propagations</th></tr></thead><tbody>{}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        report.target_phase_index,
+        report.closed_parent_count,
+        report.expanded_parent_count,
+        report.completion_assignment_count_per_parent,
+        report.coverage_region_count,
+        report.worker_count,
+        report.child_portfolio_wall_ms,
+        report.total_wall_ms,
+        domains,
+        report.child_validated_feasible_count,
+        report.child_proven_infeasible_count,
+        report.child_unknown_count,
+        report.child_invalid_witness_count,
+        report.selected_state_infeasibility_proven,
         rows,
         json,
     ))

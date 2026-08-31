@@ -9,7 +9,7 @@ Phase 3 five-second cliff:
 - 17 cases prove infeasible in 49--252 ms;
 - 8 cases remain unknown after 5 seconds;
 - no case produces an incumbent; and
-- the complete portfolio finishes in 12,683 ms with 12 workers.
+- the 25-case pair wave finishes in 12,683 ms with 12 workers.
 
 The residual eight cases have one exact structural signature: exactly one terminal selects
 `input-belt-4`, while the other selects one of `input-belt-0` through `input-belt-3`. Every pair that

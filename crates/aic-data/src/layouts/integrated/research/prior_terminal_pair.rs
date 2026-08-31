@@ -23,7 +23,15 @@ use super::{
     sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation,
 };
 
-pub const PRIOR_TERMINAL_PAIR_VALUE_PORTFOLIO_SCHEMA_VERSION: u32 = 1;
+mod completion;
+
+pub use completion::{
+    PRIOR_TERMINAL_COMPLETION_PORTFOLIO_SCHEMA_VERSION, PriorTerminalCompletionCaseReport,
+    PriorTerminalCompletionDomain, PriorTerminalCompletionParentReport,
+    PriorTerminalCompletionPortfolioReport, diagnose_prior_terminal_completion_portfolio,
+};
+
+pub const PRIOR_TERMINAL_PAIR_VALUE_PORTFOLIO_SCHEMA_VERSION: u32 = 2;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -61,12 +69,17 @@ pub struct PriorTerminalPairValuePortfolioReport {
     pub fixed_rotation: i64,
     pub prior_facility_bit_index: usize,
     pub prior_facility: String,
+    pub prior_reference: IntegratedLayoutReport,
     pub terminal_domains: Vec<PriorTerminalPairDomain>,
     pub legal_pair_count: usize,
     pub worker_count: usize,
     pub prefix_search_budget_ms_per_case: u64,
     pub case_search_budget_ms: u64,
-    pub outer_wall_ms: u64,
+    pub preparation_ms: u64,
+    pub portfolio_wall_ms: u64,
+    pub total_wall_ms: u64,
+    pub validated_feasible_count: usize,
+    pub proven_infeasible_count: usize,
     pub validated_witness_found: bool,
     pub complete_infeasibility_proven: bool,
     pub unknown_count: usize,
@@ -96,6 +109,7 @@ pub fn diagnose_prior_terminal_pair_value_portfolio(
     prefix_search_budget: Duration,
     case_search_budget: Duration,
 ) -> Result<PriorTerminalPairValuePortfolioReport, IntegratedLayoutReport> {
+    let total_started = Instant::now();
     validate_inputs(
         target_phase_index,
         fixed_width,
@@ -288,7 +302,8 @@ pub fn diagnose_prior_terminal_pair_value_portfolio(
         })
         .collect::<Vec<_>>();
 
-    let started = Instant::now();
+    let preparation_ms = millis(total_started.elapsed());
+    let portfolio_started = Instant::now();
     let mut completed = Vec::with_capacity(pairs.len());
     for chunk in pairs.chunks(worker_count) {
         std::thread::scope(|scope| {
@@ -358,6 +373,14 @@ pub fn diagnose_prior_terminal_pair_value_portfolio(
     let validated_witness_found = cases
         .iter()
         .any(|case| case.outcome == ExactDimensionCaseOutcome::ValidatedFeasible);
+    let validated_feasible_count = cases
+        .iter()
+        .filter(|case| case.outcome == ExactDimensionCaseOutcome::ValidatedFeasible)
+        .count();
+    let proven_infeasible_count = cases
+        .iter()
+        .filter(|case| case.outcome == ExactDimensionCaseOutcome::ProvenInfeasible)
+        .count();
     let complete_infeasibility_proven = !validated_witness_found
         && cases
             .iter()
@@ -384,12 +407,17 @@ pub fn diagnose_prior_terminal_pair_value_portfolio(
         fixed_rotation,
         prior_facility_bit_index,
         prior_facility,
+        prior_reference: prior_solution,
         legal_pair_count: pairs.len(),
         terminal_domains,
         worker_count,
         prefix_search_budget_ms_per_case: millis(prefix_search_budget),
         case_search_budget_ms: millis(case_search_budget),
-        outer_wall_ms: millis(started.elapsed()),
+        preparation_ms,
+        portfolio_wall_ms: millis(portfolio_started.elapsed()),
+        total_wall_ms: millis(total_started.elapsed()),
+        validated_feasible_count,
+        proven_infeasible_count,
         validated_witness_found,
         complete_infeasibility_proven,
         unknown_count,
