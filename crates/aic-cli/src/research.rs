@@ -151,6 +151,9 @@ pub(crate) struct IntegratedEndpointChannelResearchArgs {
     pub(crate) used_height: i32,
     #[arg(long, value_enum)]
     pub(crate) encoding: EndpointChannelEncodingArg,
+    /// Preserve positive-table row selector IDs and classify unchanged default-brancher decisions.
+    #[arg(long)]
+    pub(crate) track_row_selectors: bool,
     #[arg(long, value_name = "MILLISECONDS")]
     pub(crate) case_time_limit_ms: u64,
     #[arg(long, value_name = "DIR")]
@@ -1495,6 +1498,7 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
                 args.used_width,
                 args.used_height,
                 args.encoding,
+                args.track_row_selectors,
                 args.case_time_limit_ms,
                 args.output_dir,
             )

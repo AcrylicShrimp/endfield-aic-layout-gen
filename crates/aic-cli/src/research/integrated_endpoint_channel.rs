@@ -21,6 +21,7 @@ pub(super) fn run(
     used_width: i32,
     used_height: i32,
     encoding: EndpointChannelEncodingArg,
+    track_row_selectors: bool,
     case_time_limit_ms: u64,
     output_dir: PathBuf,
 ) -> Result<bool> {
@@ -42,6 +43,7 @@ pub(super) fn run(
         used_width,
         used_height,
         encoding,
+        track_row_selectors,
         Duration::from_millis(budget.get()),
     )
     .map_err(|layout| anyhow::anyhow!("integrated endpoint-channel case failed: {layout:?}"))?;
@@ -71,8 +73,9 @@ fn render_summary(report: &IntegratedEndpointChannelCaseReport) -> Result<String
         .expect("integrated comparison report has exact metrics");
     let json = serde_json::to_string(report)?.replace('<', "\\u003c");
     Ok(format!(
-        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Integrated endpoint-channel comparison</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}table{{border-collapse:collapse}}th,td{{border:1px solid #315066;padding:8px;text-align:left}}th{{background:#102535;color:#8fd9ff}}code{{color:#ffd166}}a{{color:#8fd9ff}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Integrated endpoint-channel comparison</h1><div class="meta">encoding=<code>{:?}</code> · fixed={}×{} · outcome={:?} · formulation=<code>{}</code></div><p><a href="layout.html">Open automatic layout/failure view</a></p><table><tr><th>endpoint relations</th><td>{}</td></tr><tr><th>legal relation rows</th><td>{}</td></tr><tr><th>encoding-specific hidden row literals</th><td>{}</td></tr><tr><th>encoding-specific generated clauses</th><td>{}</td></tr><tr><th>build ms</th><td>{}</td></tr><tr><th>search ms</th><td>{}</td></tr><tr><th>first incumbent</th><td>{}</td></tr><tr><th>decisions</th><td>{:?}</td></tr><tr><th>backtracks</th><td>{:?}</td></tr><tr><th>conflicts</th><td>{:?}</td></tr><tr><th>learned clauses</th><td>{:?}</td></tr><tr><th>registered propagator calls</th><td>{:?}</td></tr></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Integrated endpoint-channel comparison</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}table{{border-collapse:collapse}}th,td{{border:1px solid #315066;padding:8px;text-align:left}}th{{background:#102535;color:#8fd9ff}}code{{color:#ffd166}}a{{color:#8fd9ff}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Integrated endpoint-channel comparison</h1><div class="meta">encoding=<code>{:?}</code> · tracked={} · fixed={}×{} · outcome={:?} · formulation=<code>{}</code></div><p><a href="layout.html">Open automatic layout/failure view</a></p><table><tr><th>endpoint relations</th><td>{}</td></tr><tr><th>legal relation rows</th><td>{}</td></tr><tr><th>encoding-specific hidden row literals</th><td>{}</td></tr><tr><th>encoding-specific generated clauses</th><td>{}</td></tr><tr><th>build ms</th><td>{}</td></tr><tr><th>search ms</th><td>{}</td></tr><tr><th>first incumbent</th><td>{}</td></tr><tr><th>decisions</th><td>{:?}</td></tr><tr><th>backtracks</th><td>{:?}</td></tr><tr><th>conflicts</th><td>{:?}</td></tr><tr><th>learned clauses</th><td>{:?}</td></tr><tr><th>registered propagator calls</th><td>{:?}</td></tr><tr><th>row selectors (root unfixed / total)</th><td>{:?} / {:?}</td></tr><tr><th>row-selector decisions</th><td>{:?}</td></tr><tr><th>non-row decisions</th><td>{:?}</td></tr><tr><th>row decisions (true / false / unclassified)</th><td>{:?} / {:?} / {:?}</td></tr><tr><th>maximum consecutive row decisions</th><td>{:?}</td></tr><tr><th>row predicates in conflict analysis</th><td>{:?}</td></tr></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
         report.encoding,
+        report.row_selector_tracking,
         report.fixed_dimensions[0],
         report.fixed_dimensions[1],
         report.outcome,
@@ -91,6 +94,17 @@ fn render_summary(report: &IntegratedEndpointChannelCaseReport) -> Result<String
         report.search_statistics.conflicts,
         report.search_statistics.learned_clauses,
         report.search_statistics.solver_propagations,
+        report.search_statistics.row_selector_root_unfixed,
+        report.search_statistics.row_selector_total,
+        report.search_statistics.row_selector_decisions,
+        report.search_statistics.non_row_selector_decisions,
+        report.search_statistics.row_selector_true_decisions,
+        report.search_statistics.row_selector_false_decisions,
+        report.search_statistics.row_selector_unclassified_decisions,
+        report
+            .search_statistics
+            .maximum_consecutive_row_selector_decisions,
+        report.search_statistics.row_selector_conflict_appearances,
         json,
     ))
 }

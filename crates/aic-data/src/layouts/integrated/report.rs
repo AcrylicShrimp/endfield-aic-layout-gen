@@ -9,7 +9,7 @@ use crate::research::ModelComplexityMetrics;
 use super::WorldGridPosition;
 
 const STAGE: &str = "integrated-layout";
-pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 20;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 21;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -61,6 +61,17 @@ pub struct ExactSearchStatistics {
     pub solver_propagations: Option<u64>,
     pub atomic_propagations: Option<u64>,
     pub restarts: Option<u64>,
+    pub row_selector_total: Option<u64>,
+    pub row_selector_root_fixed_true: Option<u64>,
+    pub row_selector_root_fixed_false: Option<u64>,
+    pub row_selector_root_unfixed: Option<u64>,
+    pub row_selector_decisions: Option<u64>,
+    pub non_row_selector_decisions: Option<u64>,
+    pub row_selector_true_decisions: Option<u64>,
+    pub row_selector_false_decisions: Option<u64>,
+    pub row_selector_unclassified_decisions: Option<u64>,
+    pub maximum_consecutive_row_selector_decisions: Option<u64>,
+    pub row_selector_conflict_appearances: Option<u64>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]

@@ -226,3 +226,26 @@ constraints; authored and hidden state must be reported separately.
 
 The result is recorded in
 `docs/benchmarks/heavy-xiranite-minimum-rate.sixtieth-integrated-positive-table-endpoint-report.md`.
+
+## Hidden row-selector decision cliff
+
+A research-only poster copied Pumpkin's non-reified positive-table encoding while retaining all
+generated selector domain IDs. A passive wrapper around the unchanged default brancher classified
+the returned decision predicates.
+
+Across three five-second Phase 3 `16 x 16` runs, all 29,568 row selectors remained unresolved at
+root. Exactly 8,147 of approximately 11,155 decision events targeted row selectors, or 73.0%. Six
+selected a row and 8,141 chose false polarity for a row on the current branch. These are events, not
+unique selectors. The longest event sequence without an intervening non-row decision contained
+1,597 row decisions, but the counter does not reset across conflicts or backtracks. Conflict
+analysis produced 157,858 row-selector callback events per run, not unique predicate counts.
+
+This confirms that row-selector domains dominate the observed five-second branch-decision stream
+and establishes selector-branching dilution as a concrete cost of Pumpkin's standard table. It does
+not establish that selectors consume 73.0% of CPU time or that removing them alone produces an
+incumbent. The next exact endpoint candidate should maintain sparse semantic supports without one
+branchable Boolean per tuple. A brancher that defers auxiliaries would change search policy and must
+not be conflated with that formulation experiment.
+
+The result is recorded in
+`docs/benchmarks/heavy-xiranite-minimum-rate.sixty-first-row-selector-decision-provenance-report.md`.

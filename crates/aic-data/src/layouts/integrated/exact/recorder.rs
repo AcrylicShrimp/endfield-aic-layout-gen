@@ -502,6 +502,53 @@ impl RecordedModel {
             .post();
     }
 
+    /// Posts the same non-reified positive-table encoding as Pumpkin 0.5 while retaining the
+    /// generated row-selector domains for research-only search provenance measurement.
+    pub(super) fn post_tracked_table(
+        &mut self,
+        family: ConstraintFamily,
+        variables: Vec<DomainId>,
+        rows: Vec<Vec<i32>>,
+        tag: ConstraintTag,
+    ) -> Vec<DomainId> {
+        let terms = variables
+            .iter()
+            .copied()
+            .map(|variable| AffineView::new(variable, 1, 0))
+            .collect::<Vec<_>>();
+        self.record_constraint(family, ConstraintRelation::Other, &terms, 1);
+
+        let selectors = (0..rows.len())
+            .map(|_| self.solver.new_literal())
+            .collect::<Vec<_>>();
+        for (column, variable) in variables.iter().enumerate() {
+            let mut supports_by_value = BTreeMap::<i32, Vec<Literal>>::new();
+            for (row, selector) in selectors.iter().copied().enumerate() {
+                supports_by_value
+                    .entry(rows[row][column])
+                    .or_default()
+                    .push(selector);
+            }
+            for (value, supports) in supports_by_value {
+                let condition = variable.equality_predicate(value);
+                for support in &supports {
+                    self.solver
+                        .add_clause(vec![support.get_false_predicate(), condition], tag);
+                }
+                let mut clause = vec![!condition];
+                clause.extend(supports.iter().map(|support| support.get_true_predicate()));
+                self.solver.add_clause(clause, tag);
+            }
+        }
+        self.solver
+            .add_constraint(pumpkin_solver::clause(selectors.clone(), tag))
+            .post();
+        selectors
+            .iter()
+            .map(|selector| *selector.get_integer_variable().inner())
+            .collect()
+    }
+
     pub(super) fn post_constant_element(
         &mut self,
         family: ConstraintFamily,
@@ -889,6 +936,9 @@ fn connected_components(records: &mut BTreeMap<DomainId, VariableRecord>) -> u64
 
 #[cfg(test)]
 mod tests {
+    use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
+    use pumpkin_solver::core::results::SatisfactionResult;
+    use pumpkin_solver::core::termination::Indefinite;
     use pumpkin_solver::core::variables::TransformableVariable;
 
     use super::*;
@@ -923,5 +973,75 @@ mod tests {
                 .placement_routing_constraints,
             1
         );
+    }
+
+    #[test]
+    fn tracked_table_accepts_exactly_the_native_table_assignments() {
+        let rows = vec![vec![0, 1, 2], vec![1, 0, 3], vec![1, 1, 4]];
+        for placement in 0..=1 {
+            for port in 0..=1 {
+                for geometry in 2..=4 {
+                    let native = fixed_table_state_is_satisfiable(
+                        rows.clone(),
+                        [placement, port, geometry],
+                        false,
+                    );
+                    let tracked = fixed_table_state_is_satisfiable(
+                        rows.clone(),
+                        [placement, port, geometry],
+                        true,
+                    );
+                    assert_eq!(tracked, native, "state [{placement}, {port}, {geometry}]");
+                    assert_eq!(
+                        tracked,
+                        rows.contains(&vec![placement, port, geometry]),
+                        "state [{placement}, {port}, {geometry}]"
+                    );
+                }
+            }
+        }
+    }
+
+    fn fixed_table_state_is_satisfiable(
+        rows: Vec<Vec<i32>>,
+        state: [i32; 3],
+        tracked: bool,
+    ) -> bool {
+        let mut model = RecordedModel::default();
+        let tag = model.new_constraint_tag();
+        let placement = model.new_variable(VariableFamily::Placement, 0, 1, "placement");
+        let port = model.new_variable(VariableFamily::Endpoint, 0, 1, "port");
+        let geometry = model.new_variable(VariableFamily::EndpointGeometry, 2, 4, "geometry");
+        let variables = vec![placement, port, geometry];
+        if tracked {
+            let selectors = model.post_tracked_table(
+                ConstraintFamily::EndpointLink,
+                variables.clone(),
+                rows,
+                tag,
+            );
+            assert_eq!(selectors.len(), 3);
+        } else {
+            model.post_table(ConstraintFamily::EndpointLink, variables.clone(), rows, tag);
+        }
+        for (variable, value) in variables.into_iter().zip(state) {
+            model.post_equals(
+                ConstraintFamily::ResearchFixation,
+                vec![variable.scaled(1)],
+                value,
+                1,
+                tag,
+            );
+        }
+
+        let mut brancher = model.solver_mut().default_brancher();
+        let mut termination = Indefinite;
+        let mut resolver = ResolutionResolver::default();
+        matches!(
+            model
+                .solver_mut()
+                .satisfy(&mut brancher, &mut termination, &mut resolver),
+            SatisfactionResult::Satisfiable(_)
+        )
     }
 }

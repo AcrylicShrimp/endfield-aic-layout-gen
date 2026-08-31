@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::io::{self, Write};
 use std::sync::{Arc, Mutex, OnceLock};
 use std::thread::{self, ThreadId};
@@ -17,6 +17,65 @@ use crate::layouts::integrated::ExactSearchStatistics;
 pub(super) struct SearchEventCounters {
     branch_decisions: u64,
     backtracks: u64,
+    row_selector_domains: BTreeSet<DomainId>,
+    row_selector_root_recorded: bool,
+    row_selector_root_fixed_true: u64,
+    row_selector_root_fixed_false: u64,
+    row_selector_root_unfixed: u64,
+    row_selector_decisions: u64,
+    non_row_selector_decisions: u64,
+    row_selector_true_decisions: u64,
+    row_selector_false_decisions: u64,
+    row_selector_unclassified_decisions: u64,
+    consecutive_row_selector_decisions: u64,
+    maximum_consecutive_row_selector_decisions: u64,
+    row_selector_conflict_appearances: u64,
+}
+
+impl SearchEventCounters {
+    pub(super) fn with_row_selectors(
+        domains: impl IntoIterator<Item = DomainId>,
+    ) -> SearchEventCounters {
+        SearchEventCounters {
+            row_selector_domains: domains.into_iter().collect(),
+            ..SearchEventCounters::default()
+        }
+    }
+
+    fn record_root_row_selector_state(&mut self, context: &SelectionContext) {
+        if self.row_selector_root_recorded || self.row_selector_domains.is_empty() {
+            return;
+        }
+        for domain in &self.row_selector_domains {
+            if context.lower_bound(*domain) == 1 {
+                self.row_selector_root_fixed_true += 1;
+            } else if context.upper_bound(*domain) == 0 {
+                self.row_selector_root_fixed_false += 1;
+            } else {
+                self.row_selector_root_unfixed += 1;
+            }
+        }
+        self.row_selector_root_recorded = true;
+    }
+
+    fn record_decision(&mut self, decision: Predicate) {
+        self.branch_decisions += 1;
+        if self.row_selector_domains.contains(&decision.get_domain()) {
+            self.row_selector_decisions += 1;
+            self.consecutive_row_selector_decisions += 1;
+            self.maximum_consecutive_row_selector_decisions = self
+                .maximum_consecutive_row_selector_decisions
+                .max(self.consecutive_row_selector_decisions);
+            match boolean_decision_polarity(decision) {
+                Some(true) => self.row_selector_true_decisions += 1,
+                Some(false) => self.row_selector_false_decisions += 1,
+                None => self.row_selector_unclassified_decisions += 1,
+            }
+        } else {
+            self.non_row_selector_decisions += 1;
+            self.consecutive_row_selector_decisions = 0;
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -37,12 +96,16 @@ impl<B: Brancher> Brancher for MeteredBrancher<B> {
     }
 
     fn next_decision(&mut self, context: &mut SelectionContext) -> Option<Predicate> {
+        self.counters
+            .lock()
+            .expect("search event counters are not poisoned")
+            .record_root_row_selector_state(context);
         let decision = self.inner.next_decision(context);
-        if decision.is_some() {
+        if let Some(decision) = decision {
             self.counters
                 .lock()
                 .expect("search event counters are not poisoned")
-                .branch_decisions += 1;
+                .record_decision(decision);
         }
         decision
     }
@@ -68,6 +131,15 @@ impl<B: Brancher> Brancher for MeteredBrancher<B> {
     }
 
     fn on_appearance_in_conflict_predicate(&mut self, predicate: Predicate) {
+        let mut counters = self
+            .counters
+            .lock()
+            .expect("search event counters are not poisoned");
+        counters.row_selector_conflict_appearances += counters
+            .row_selector_domains
+            .contains(&predicate.get_domain())
+            as u64;
+        drop(counters);
         self.inner.on_appearance_in_conflict_predicate(predicate);
     }
 
@@ -87,6 +159,16 @@ impl<B: Brancher> Brancher for MeteredBrancher<B> {
         let mut events = self.inner.subscribe_to_events();
         if !events.contains(&BrancherEvent::Backtrack) {
             events.push(BrancherEvent::Backtrack);
+        }
+        if !self
+            .counters
+            .lock()
+            .expect("search event counters are not poisoned")
+            .row_selector_domains
+            .is_empty()
+            && !events.contains(&BrancherEvent::AppearanceInConflictPredicate)
+        {
+            events.push(BrancherEvent::AppearanceInConflictPredicate);
         }
         events
     }
@@ -173,6 +255,61 @@ pub(super) fn capture_search_statistics(
         // Pumpkin 0.5 logs this field but never increments its backing counter.
         atomic_propagations: None,
         restarts: values.get("restarts").copied(),
+        row_selector_total: (!event_counts.row_selector_domains.is_empty())
+            .then_some(event_counts.row_selector_domains.len() as u64),
+        row_selector_root_fixed_true: event_counts
+            .row_selector_root_recorded
+            .then_some(event_counts.row_selector_root_fixed_true),
+        row_selector_root_fixed_false: event_counts
+            .row_selector_root_recorded
+            .then_some(event_counts.row_selector_root_fixed_false),
+        row_selector_root_unfixed: event_counts
+            .row_selector_root_recorded
+            .then_some(event_counts.row_selector_root_unfixed),
+        row_selector_decisions: event_counts
+            .row_selector_root_recorded
+            .then_some(event_counts.row_selector_decisions),
+        non_row_selector_decisions: event_counts
+            .row_selector_root_recorded
+            .then_some(event_counts.non_row_selector_decisions),
+        row_selector_true_decisions: event_counts
+            .row_selector_root_recorded
+            .then_some(event_counts.row_selector_true_decisions),
+        row_selector_false_decisions: event_counts
+            .row_selector_root_recorded
+            .then_some(event_counts.row_selector_false_decisions),
+        row_selector_unclassified_decisions: event_counts
+            .row_selector_root_recorded
+            .then_some(event_counts.row_selector_unclassified_decisions),
+        maximum_consecutive_row_selector_decisions: event_counts
+            .row_selector_root_recorded
+            .then_some(event_counts.maximum_consecutive_row_selector_decisions),
+        row_selector_conflict_appearances: event_counts
+            .row_selector_root_recorded
+            .then_some(event_counts.row_selector_conflict_appearances),
+    }
+}
+
+fn boolean_decision_polarity(decision: Predicate) -> Option<bool> {
+    let rhs = decision.get_right_hand_side();
+    if decision.is_lower_bound_predicate() {
+        (rhs == 1).then_some(true)
+    } else if decision.is_upper_bound_predicate() {
+        (rhs == 0).then_some(false)
+    } else if decision.is_equality_predicate() {
+        match rhs {
+            0 => Some(false),
+            1 => Some(true),
+            _ => None,
+        }
+    } else if decision.is_not_equal_predicate() {
+        match rhs {
+            0 => Some(true),
+            1 => Some(false),
+            _ => None,
+        }
+    } else {
+        None
     }
 }
 
@@ -192,6 +329,7 @@ fn parse_statistics(output: &str) -> BTreeMap<String, u64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use pumpkin_solver::core::predicates::PredicateConstructor;
 
     #[test]
     fn parses_requested_native_statistics() {
@@ -202,5 +340,34 @@ mod tests {
         assert_eq!(parsed.get("nodes"), Some(&12));
         assert_eq!(parsed.get("failures"), Some(&3));
         assert_eq!(parsed.get("propagations"), Some(&99));
+    }
+
+    #[test]
+    fn classifies_boolean_decision_polarity() {
+        let row = DomainId::new(7);
+        assert_eq!(
+            boolean_decision_polarity(row.lower_bound_predicate(1)),
+            Some(true)
+        );
+        assert_eq!(
+            boolean_decision_polarity(row.upper_bound_predicate(0)),
+            Some(false)
+        );
+        assert_eq!(
+            boolean_decision_polarity(row.equality_predicate(1)),
+            Some(true)
+        );
+        assert_eq!(
+            boolean_decision_polarity(row.equality_predicate(0)),
+            Some(false)
+        );
+        assert_eq!(
+            boolean_decision_polarity(row.disequality_predicate(0)),
+            Some(true)
+        );
+        assert_eq!(
+            boolean_decision_polarity(row.disequality_predicate(1)),
+            Some(false)
+        );
     }
 }

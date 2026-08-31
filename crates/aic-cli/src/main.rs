@@ -1794,6 +1794,7 @@ mod tests {
             "16",
             "--encoding",
             "positive-table",
+            "--track-row-selectors",
             "--case-time-limit-ms",
             "5000",
             "--output-dir",
@@ -1814,6 +1815,7 @@ mod tests {
             args.encoding,
             research::EndpointChannelEncodingArg::PositiveTable
         ));
+        assert!(args.track_row_selectors);
         assert_eq!(args.output_dir, PathBuf::from("report"));
     }
 

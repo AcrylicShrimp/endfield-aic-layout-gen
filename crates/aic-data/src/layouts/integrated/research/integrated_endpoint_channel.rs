@@ -13,7 +13,7 @@ use super::coordinate_partition::{classify_outcome, invalid_input, prepare_targe
 use super::{EndpointChannelEncoding, ExactDimensionCaseOutcome};
 use crate::layouts::integrated::{ExactSearchStatistics, IntegratedLayoutReport, exact};
 
-pub const INTEGRATED_ENDPOINT_CHANNEL_COMPARISON_SCHEMA_VERSION: u32 = 1;
+pub const INTEGRATED_ENDPOINT_CHANNEL_COMPARISON_SCHEMA_VERSION: u32 = 2;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -32,6 +32,7 @@ pub struct IntegratedEndpointChannelCaseReport {
     pub outcome: ExactDimensionCaseOutcome,
     pub fixed_dimensions: [i32; 2],
     pub case_search_budget_ms: u64,
+    pub row_selector_tracking: bool,
     pub endpoint_table_scale: IntegratedEndpointTableScale,
     pub outer_wall_ms: u64,
     pub construction_ms: u64,
@@ -54,6 +55,7 @@ pub fn run_integrated_endpoint_channel_case(
     fixed_width: i32,
     fixed_height: i32,
     encoding: EndpointChannelEncoding,
+    track_row_selectors: bool,
     case_search_budget: Duration,
 ) -> Result<IntegratedEndpointChannelCaseReport, IntegratedLayoutReport> {
     if case_search_budget.is_zero() {
@@ -75,6 +77,12 @@ pub fn run_integrated_endpoint_channel_case(
         return Err(invalid_input(
             "/encoding",
             "integrated endpoint-channel comparison supports nested-element or positive-table",
+        ));
+    }
+    if track_row_selectors && encoding != EndpointChannelEncoding::PositiveTable {
+        return Err(invalid_input(
+            "/track_row_selectors",
+            "row-selector tracking requires the positive-table endpoint encoding",
         ));
     }
     let growth = plan_facility_growth(instance_wiring, MAX_NEW_FACILITIES_PER_GROWTH_PHASE);
@@ -109,8 +117,8 @@ pub fn run_integrated_endpoint_channel_case(
         height: fixed_height,
     };
     let started = Instant::now();
-    let layout = match encoding {
-        EndpointChannelEncoding::NestedElement => {
+    let layout = match (encoding, track_row_selectors) {
+        (EndpointChannelEncoding::NestedElement, false) => {
             exact::shared_layer::solve_factored_endpoints_fixed_dimensions_feasibility_only_with_prior_and_local_continuation_guarded_intersection_propagation(
                 input,
                 logistics_components,
@@ -120,7 +128,7 @@ pub fn run_integrated_endpoint_channel_case(
             )
             .0
         }
-        EndpointChannelEncoding::PositiveTable => {
+        (EndpointChannelEncoding::PositiveTable, false) => {
             exact::shared_layer::solve_positive_table_endpoints_fixed_dimensions_feasibility_only_with_local_continuation_guarded_intersection_propagation(
                 input,
                 logistics_components,
@@ -129,7 +137,16 @@ pub fn run_integrated_endpoint_channel_case(
             )
             .0
         }
-        _ => unreachable!("encoding was validated before the exact solve"),
+        (EndpointChannelEncoding::PositiveTable, true) => {
+            exact::shared_layer::solve_tracked_positive_table_endpoints_fixed_dimensions_feasibility_only_with_local_continuation_guarded_intersection_propagation(
+                input,
+                logistics_components,
+                Some(case_search_budget),
+                fixed_dimensions,
+            )
+            .0
+        }
+        _ => unreachable!("encoding and tracking mode were validated before the exact solve"),
     };
     let outer_wall_ms = started.elapsed().as_millis().min(u128::from(u64::MAX)) as u64;
     let exact = layout
@@ -143,6 +160,7 @@ pub fn run_integrated_endpoint_channel_case(
         outcome: classify_outcome(&layout),
         fixed_dimensions: [fixed_width, fixed_height],
         case_search_budget_ms: case_search_budget.as_millis().min(u128::from(u64::MAX)) as u64,
+        row_selector_tracking: track_row_selectors,
         endpoint_table_scale,
         outer_wall_ms,
         construction_ms: exact.construction_ms,
