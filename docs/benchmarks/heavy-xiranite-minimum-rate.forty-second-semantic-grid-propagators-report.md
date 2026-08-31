@@ -69,7 +69,7 @@ search.
 The per-rule propagator split is retained because it isolates those future experiments. The
 support-loss-only schedule remains diagnostic evidence but is not an accepted performance variant.
 
-## Independent Review
+## Independent Reviews
 
 An independent propagator review found no missed forward wake event, unsound inference, invalid
 recursive explanation, or semantic coupling between the three rule-specific propagator types. It
@@ -84,11 +84,17 @@ The test now requires exact execution-count stability in the normal runtime and 
 debug-checker's additional scratch execution behind an explicit Cargo feature. The report now
 states only the observed equality and treats coalescing as an unproven possible explanation.
 
-The reviewer also confirmed that the remaining cost is inside each execution: 33,376 executions
-perform 143,766 material passes and 303,473 unique-support-chain steps, with explanations growing
-to 176 predicates. The highest-ranked exact follow-up is therefore a watched-support or
+The performance reviewer also confirmed that the remaining cost is inside each execution: 33,376
+executions perform 143,766 material passes and 303,473 unique-support-chain steps, with explanations
+growing to 176 predicates. The highest-ranked exact follow-up is therefore a watched-support or
 dirty-frontier chain propagator that preserves the same deductions while revisiting only demands
 and predecessor chains touched by changed cells.
+
+A separate solver-semantics audit found no soundness defect in this propagator slice. It did find
+a pre-existing independent-witness validation gap for capacity-split terminal identity and an
+unresolved rule question about multiple logical terminals sharing one physical boundary connector.
+Those findings do not change this experiment's validated in-process search comparison, but they
+must be resolved before stronger terminal-identity or connector-distinctness propagation is sound.
 
 ## Artifacts
 

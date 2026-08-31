@@ -85,6 +85,14 @@
 - Research should focus on stronger exact formulations, propagation, redundant valid constraints, symmetry removal, incumbent bounds, and solver-native hints from prior exact solutions.
 - Preserve hard resource limits for operational safety, but never present a resource-limited `unknown` result as infeasibility or as justification for silently changing the problem.
 
+## Propagator Research Review Policy
+
+- Use `docs/designs/aic-game-rules-mathematical-model.md` as the shared semantic reference for custom propagator work. Update that model when an accepted rule changes or new evidence resolves an ambiguity.
+- Before finalizing each new or materially changed custom propagator, request multiple independent reviews that separately examine proof soundness and bugs, exact optimization opportunities, and alternative or follow-up propagator strategies.
+- Reviewers must distinguish confirmed game or solver semantics from implementation behavior and unresolved domain ambiguity. An unresolved ambiguity is not a valid pruning premise.
+- Verify every actionable review finding locally before changing code or reporting it as confirmed. Record accepted fixes, rejected or inconclusive claims, verification commands, and remaining risk in the slice report.
+- Prefer one semantic proof rule per propagator. Shared immutable indexes and reporting utilities are allowed, but unrelated inference rules should not be hidden behind one runtime mode switch.
+
 ## Layout Bound Semantics
 
 - Treat `max_width` and `max_height` as caller-supplied hard ceilings for one solve request, not as required blueprint dimensions, target dimensions, canonical game limits, or default model sizes.
