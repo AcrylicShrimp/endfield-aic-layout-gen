@@ -2174,6 +2174,53 @@ mod tests {
     }
 
     #[test]
+    fn parses_parallel_first_phase_dimension_sweep() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "sweep-first-phase-fixed-dimensions",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--network-index",
+            "0",
+            "--network-index",
+            "1",
+            "--worker-count",
+            "4",
+            "--case-time-limit-ms",
+            "5000",
+            "--output-dir",
+            "dimension-sweep",
+        ])
+        .expect("parallel first-phase dimension sweep CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::SweepFirstPhaseFixedDimensions {
+                    workload,
+                    workspace_root,
+                    placement_request,
+                    network_indices,
+                    worker_count,
+                    case_time_limit_ms,
+                    output_dir,
+                },
+        } = cli.command
+        else {
+            panic!("expected parallel first-phase dimension sweep command")
+        };
+        assert_eq!(workload, PathBuf::from("workload.json"));
+        assert_eq!(workspace_root, PathBuf::from("."));
+        assert_eq!(placement_request, PathBuf::from("bounds.json"));
+        assert_eq!(network_indices, vec![0, 1]);
+        assert_eq!(worker_count, 4);
+        assert_eq!(case_time_limit_ms, 5_000);
+        assert_eq!(output_dir, PathBuf::from("dimension-sweep"));
+    }
+
+    #[test]
     fn parses_first_phase_factored_requirement_decomposition() {
         let cli = Cli::try_parse_from([
             "aic-cli",

@@ -24,6 +24,7 @@ use clap::{Subcommand, ValueEnum};
 use sha2::{Digest, Sha256};
 
 mod cumulative_growth;
+mod dimension_sweep;
 mod external_connectors;
 mod factored_networks;
 mod first_phase;
@@ -378,6 +379,36 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "FILE")]
         visualization_output: PathBuf,
     },
+    /// Sweep exact used dimensions with multiple independent Pumpkin workers.
+    SweepFirstPhaseFixedDimensions {
+        /// Benchmark workload manifest JSON file to solve.
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+
+        /// Root used to resolve portable input paths in the workload manifest.
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Zero-based phase-zero commodity network index. Repeat for the selected subset.
+        #[arg(long = "network-index", value_name = "INDEX", required = true)]
+        network_indices: Vec<usize>,
+
+        /// Independent Pumpkin worker threads.
+        #[arg(long, value_name = "COUNT")]
+        worker_count: usize,
+
+        /// Wall-clock search budget independently given to every dimension case.
+        #[arg(long, value_name = "MILLISECONDS")]
+        case_time_limit_ms: u64,
+
+        /// Directory receiving summary and per-case JSON/HTML artifacts.
+        #[arg(long, value_name = "DIR")]
+        output_dir: PathBuf,
+    },
     /// Rebuild one factored shared-layer network from each logical requirement subset.
     DecomposeFirstPhaseFactoredRequirements {
         /// Benchmark workload manifest JSON file to solve.
@@ -612,6 +643,23 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             time_limit_ms,
             output,
             visualization_output,
+        ),
+        ResearchCommand::SweepFirstPhaseFixedDimensions {
+            workload,
+            workspace_root,
+            placement_request,
+            network_indices,
+            worker_count,
+            case_time_limit_ms,
+            output_dir,
+        } => dimension_sweep::run(
+            workload,
+            workspace_root,
+            placement_request,
+            network_indices,
+            worker_count,
+            case_time_limit_ms,
+            output_dir,
         ),
         ResearchCommand::DecomposeFirstPhaseFactoredRequirements {
             workload,
