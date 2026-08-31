@@ -4,13 +4,15 @@ use std::time::Duration;
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    FacilityPlacementRequest, PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
+    ExternalBoundaryKeyLegalSupportAbReport, FacilityPlacementRequest,
+    PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
     PriorInputPortPairPortfolioReport, PriorSourcePortPortfolioReport,
     PriorTerminalCompletionPortfolioReport, PriorTerminalPairValuePortfolioReport,
-    ResidualFacilityPortTuplePortfolioReport, diagnose_prior_input_pair_root_snapshot,
-    diagnose_prior_input_port_controls, diagnose_prior_input_port_pair_portfolio,
-    diagnose_prior_source_port_portfolio, diagnose_prior_terminal_completion_portfolio,
-    diagnose_prior_terminal_pair_value_portfolio, diagnose_residual_facility_port_tuple_portfolio,
+    ResidualFacilityPortTuplePortfolioReport, diagnose_external_boundary_key_legal_support_ab,
+    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
+    diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
+    diagnose_prior_terminal_completion_portfolio, diagnose_prior_terminal_pair_value_portfolio,
+    diagnose_residual_facility_port_tuple_portfolio,
     render_integrated_layout_html_with_localization,
 };
 use aic_data::localization::{ValidatedLocalizationCatalog, load_localization_catalog};
@@ -99,6 +101,13 @@ struct Args {
     residual_facility_port_case_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "MILLISECONDS")]
     residual_facility_port_observation_time_limit_ms: Option<u64>,
+    /// Compare bounded and sparse legal external boundary-key domains on the selected tuple.
+    #[arg(long)]
+    compare_external_boundary_key_support: bool,
+    #[arg(long, value_name = "MILLISECONDS")]
+    boundary_key_case_time_limit_ms: Option<u64>,
+    #[arg(long, value_name = "MILLISECONDS")]
+    boundary_key_observation_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -148,6 +157,20 @@ fn main() -> Result<()> {
                 .residual_facility_port_observation_time_limit_ms
                 .is_some(),
         "--residual-facility-port-observation-time-limit-ms must be supplied exactly when --partition-residual-facility-ports is enabled"
+    );
+    ensure!(
+        !args.compare_external_boundary_key_support || args.partition_residual_facility_ports,
+        "--compare-external-boundary-key-support requires --partition-residual-facility-ports"
+    );
+    ensure!(
+        args.compare_external_boundary_key_support
+            == args.boundary_key_case_time_limit_ms.is_some(),
+        "--boundary-key-case-time-limit-ms must be supplied exactly when --compare-external-boundary-key-support is enabled"
+    );
+    ensure!(
+        args.compare_external_boundary_key_support
+            == args.boundary_key_observation_time_limit_ms.is_some(),
+        "--boundary-key-observation-time-limit-ms must be supplied exactly when --compare-external-boundary-key-support is enabled"
     );
     let terminal_bits = parse_terminal_pair(&args.terminal_pair)?;
     let worker_count = NonZeroUsize::new(args.worker_count)
@@ -594,6 +617,56 @@ fn run_input_pair(
             )?,
         )
         .context("residual facility-port observation case time limit must be positive")?;
+        if args.compare_external_boundary_key_support {
+            let ab_authoritative_budget = NonZeroU64::new(
+                args.boundary_key_case_time_limit_ms
+                    .context("boundary-key A/B requires --boundary-key-case-time-limit-ms")?,
+            )
+            .context("boundary-key authoritative case time limit must be positive")?;
+            let ab_observation_budget =
+                NonZeroU64::new(args.boundary_key_observation_time_limit_ms.context(
+                    "boundary-key A/B requires --boundary-key-observation-time-limit-ms",
+                )?)
+                .context("boundary-key observation case time limit must be positive")?;
+            let report = diagnose_external_boundary_key_legal_support_ab(
+                &loaded.wiring,
+                &loaded.facilities,
+                &loaded.items,
+                &loaded.transports,
+                &loaded.components,
+                &loaded.placement_request,
+                args.target_phase,
+                args.used_width,
+                args.used_height,
+                args.facility_x,
+                args.facility_y,
+                args.port_assignment_index,
+                args.facility_rotation,
+                args.prior_facility_bit,
+                terminal_bits,
+                representative_source_leaf_index,
+                worker_count.get(),
+                Duration::from_millis(prefix_budget.get()),
+                Duration::from_millis(pair_budget.get()),
+                Duration::from_millis(completion_budget.get()),
+                Duration::from_millis(source_budget.get()),
+                Duration::from_millis(control_budget.get()),
+                Duration::from_millis(residual_pair_budget.get()),
+                Duration::from_millis(parent_observation_budget.get()),
+                Duration::from_millis(authoritative_budget.get()),
+                Duration::from_millis(observation_budget.get()),
+                Duration::from_millis(ab_authoritative_budget.get()),
+                Duration::from_millis(ab_observation_budget.get()),
+            )
+            .map_err(|report| {
+                anyhow::anyhow!("external boundary-key A/B diagnosis failed: {report:?}")
+            })?;
+            write_external_boundary_key_ab_artifacts(args, loaded, &report)?;
+            serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+                .context("failed to write external boundary-key A/B report")?;
+            println!();
+            return Ok(());
+        }
         let report = diagnose_residual_facility_port_tuple_portfolio(
             &loaded.wiring,
             &loaded.facilities,
@@ -786,6 +859,44 @@ fn write_residual_facility_port_tuple_artifacts(
                 "residual facility-port tuple case",
             )?;
         }
+    }
+    Ok(())
+}
+
+fn write_external_boundary_key_ab_artifacts(
+    args: &Args,
+    loaded: &LoadedInputs,
+    report: &ExternalBoundaryKeyLegalSupportAbReport,
+) -> Result<()> {
+    write_json(&args.output_dir.join("summary.json"), report)?;
+    write_bytes(
+        &args.output_dir.join("summary.html"),
+        render_external_boundary_key_ab_summary(report)?.as_bytes(),
+        "external boundary-key A/B summary",
+    )?;
+    for (name, layout) in [
+        (
+            "bounded.authoritative",
+            &report.bounded.authoritative_layout,
+        ),
+        ("bounded.observation", &report.bounded.observation_layout),
+        ("sparse.authoritative", &report.sparse.authoritative_layout),
+        ("sparse.observation", &report.sparse.observation_layout),
+    ] {
+        let html =
+            render_integrated_layout_html_with_localization(layout, loaded.localization.as_ref())
+                .map_err(|diagnostic| {
+                anyhow::anyhow!(
+                    "external boundary-key {name} visualization failed with {}: {}",
+                    diagnostic.code,
+                    diagnostic.message
+                )
+            })?;
+        write_bytes(
+            &args.output_dir.join(format!("{name}.html")),
+            html.as_bytes(),
+            "external boundary-key A/B layout",
+        )?;
     }
     Ok(())
 }
@@ -1520,6 +1631,100 @@ fn render_residual_facility_port_tuple_summary(
         report.selected_next_unknown_case_index,
         report.interpretation_blocked,
         rows,
+        json,
+    ))
+}
+
+fn render_external_boundary_key_ab_summary(
+    report: &ExternalBoundaryKeyLegalSupportAbReport,
+) -> Result<String> {
+    let static_rows = report
+        .static_certificates
+        .iter()
+        .map(|certificate| {
+            format!(
+                "<tr><td><code>{}</code></td><td>{}: <code>{}</code></td><td>{} ({})</td><td>{}</td><td>{}</td><td>{}/{}</td><td>{}/{}</td><td>{}</td></tr>",
+                certificate.terminal,
+                certificate.network_index,
+                certificate.network_id,
+                certificate.bounded_declared_count,
+                certificate.bounded_declared_is_full_expected_range,
+                certificate.sparse_declared_count,
+                certificate.legal_key_count,
+                certificate.bounded_table_count,
+                certificate.sparse_table_count,
+                certificate.bounded_option_count,
+                certificate.sparse_option_count,
+                certificate.exact_legal_set_equality,
+            )
+        })
+        .collect::<String>();
+    let root_rows = report
+        .root_comparisons
+        .iter()
+        .map(|comparison| {
+            format!(
+                "<tr><td><code>{}</code></td><td>{}</td><td>{} ({})</td><td>{} ({})</td><td>{}</td><td>{}</td><td>{}</td></tr>",
+                comparison.terminal,
+                comparison.legal_key_count,
+                comparison.bounded_root_observed,
+                comparison.bounded_root_values.len(),
+                comparison.sparse_root_observed,
+                comparison.sparse_root_values.len(),
+                comparison.bounded_root_absent_from_legal.len(),
+                comparison.sparse_root_absent_from_legal.len(),
+                comparison.legal_values_pruned_only_by_sparse.len(),
+            )
+        })
+        .collect::<String>();
+    let solve = |label: &str, solve: &aic_data::layouts::ExternalBoundaryKeySolveReport| {
+        format!(
+            "<tr><td>{label}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td></tr>",
+            solve.authoritative_outcome,
+            solve.observation_outcome,
+            solve.combined_outcome,
+            solve.construction_ms,
+            solve.search_ms,
+            solve.first_incumbent_ms,
+            solve.search_statistics.branch_decisions,
+            solve.search_statistics.backtracks,
+            solve.search_statistics.conflicts,
+            solve.search_statistics.learned_clauses,
+            solve.search_statistics.solver_propagations,
+        )
+    };
+    let solve_rows = format!(
+        "{}{}",
+        solve("bounded", &report.bounded),
+        solve("sparse", &report.sparse)
+    );
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 3 external boundary-key A/B</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.warning{{border:1px solid #ffd166;padding:10px;color:#ffd166}}table{{border-collapse:collapse;width:100%;margin-bottom:24px}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}code,a{{color:#ffd166}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {} external boundary-key legal-support A/B</h1><div class="meta">selected tuple={} · authoritative budget={}ms · observation budget={}ms · experiment={}ms · total={}ms</div><p class="warning">Logical evidence is combined symmetrically. Runtime classification uses authoritative cutoff crossing only; two timeouts do not establish a performance winner. Build certificates materialize declared domains, so displayed construction times are instrumented and are not a build-performance comparison.</p><p>combined={:?} · performance=<code>{}</code> · next case={:?} · blocked={}</p><p>static equality={} · model structure={} · root identity observed/satisfied={}/{} · root coverage={} · sparse root support={}</p><p>root totals: A/B observed terminals={}/{} · A/B absent legal support={}/{} · legal values pruned only by B={}</p><h2>Authoritative and observation outcomes</h2><table><thead><tr><th>encoding</th><th>authoritative</th><th>observation</th><th>combined</th><th>build ms</th><th>search ms</th><th>first</th><th>decisions</th><th>backtracks</th><th>conflicts</th><th>learned</th><th>propagations</th></tr></thead><tbody>{}</tbody></table><h2>Static build certificates</h2><table><thead><tr><th>terminal</th><th>network</th><th>A declared (full)</th><th>B declared</th><th>legal</th><th>A/B table</th><th>A/B options</th><th>exact equality</th></tr></thead><tbody>{}</tbody></table><h2>Root domains</h2><table><thead><tr><th>terminal</th><th>legal</th><th>A observed (count)</th><th>B observed (count)</th><th>A absent</th><th>B absent</th><th>supported pruned only by B</th></tr></thead><tbody>{}</tbody></table><p><a href="bounded.authoritative.html">bounded solve</a> · <a href="bounded.observation.html">bounded root</a> · <a href="sparse.authoritative.html">sparse solve</a> · <a href="sparse.observation.html">sparse root</a></p><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        report.target_phase_index,
+        report.selected_case_index,
+        report.authoritative_case_search_budget_ms,
+        report.observation_case_search_budget_ms,
+        report.experiment_ms,
+        report.total_wall_ms,
+        report.combined_outcome,
+        report.performance_classification,
+        report.selected_next_case_index,
+        report.interpretation_blocked,
+        report.static_equivalence_satisfied,
+        report.model_structure_equivalence_satisfied,
+        report.root_semantic_identity_observed,
+        report.root_semantic_identity_satisfied,
+        report.root_observation_coverage_satisfied,
+        report.sparse_root_support_satisfied,
+        report.root_totals.bounded_observed_terminal_count,
+        report.root_totals.sparse_observed_terminal_count,
+        report.root_totals.bounded_root_absent_from_legal,
+        report.root_totals.sparse_root_absent_from_legal,
+        report.root_totals.legal_values_pruned_only_by_sparse,
+        solve_rows,
+        static_rows,
+        root_rows,
         json,
     ))
 }

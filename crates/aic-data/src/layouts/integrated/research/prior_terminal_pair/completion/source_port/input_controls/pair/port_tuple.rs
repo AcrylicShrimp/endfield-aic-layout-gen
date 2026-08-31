@@ -13,6 +13,10 @@ use super::{
 };
 use crate::recipes::FacilityInstanceWiringReport;
 
+mod boundary_key;
+
+pub use boundary_key::*;
+
 pub const RESIDUAL_FACILITY_PORT_TUPLE_PORTFOLIO_SCHEMA_VERSION: u32 = 1;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 const EXPECTED_PARENT_FIXED_TERMINALS: usize = 11;

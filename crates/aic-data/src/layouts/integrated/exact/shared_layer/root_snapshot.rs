@@ -16,7 +16,7 @@ use super::{
 use crate::facilities::FacilityPortDirection;
 use crate::layouts::integrated::exact::recorder::RecordedVariableDescriptor;
 
-pub const ROOT_DOMAIN_SNAPSHOT_SCHEMA_VERSION: u32 = 2;
+pub const ROOT_DOMAIN_SNAPSHOT_SCHEMA_VERSION: u32 = 3;
 
 pub(in crate::layouts::integrated) type RootDomainSnapshotCollector =
     SyncArc<Mutex<Option<RootDomainSnapshot>>>;
@@ -90,6 +90,7 @@ pub struct RootTerminalDomainSnapshot {
     pub facility_instance: Option<String>,
     pub external_node: Option<String>,
     pub geometry: RootDomainCardinality,
+    pub root_geometry_values: Vec<i32>,
     pub port_choice: Option<RootDomainCardinality>,
     pub declared_port_count: usize,
     pub root_excluded_port_count: usize,
@@ -518,6 +519,7 @@ impl RootDomainProbe {
         self.terminals
             .iter()
             .map(|probe| {
+                let root_geometry_values = domain_values(context, probe.key);
                 let geometry = cardinality(context, probe.key);
                 let (
                     endpoint_kind,
@@ -649,6 +651,7 @@ impl RootDomainProbe {
                     facility_instance,
                     external_node,
                     geometry,
+                    root_geometry_values,
                     port_choice,
                     declared_port_count,
                     root_excluded_port_count,

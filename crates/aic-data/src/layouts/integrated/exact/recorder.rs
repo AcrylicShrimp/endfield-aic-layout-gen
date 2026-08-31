@@ -273,6 +273,36 @@ impl RecordedModel {
         variable
     }
 
+    pub(super) fn new_sparse_variable(
+        &mut self,
+        family: VariableFamily,
+        values: impl Into<Vec<i32>>,
+        name: impl Into<String>,
+    ) -> DomainId {
+        let name = name.into();
+        let mut values = values.into();
+        values.sort_unstable();
+        values.dedup();
+        assert!(
+            !values.is_empty(),
+            "sparse variable domain must be non-empty"
+        );
+        let cardinality = u64::try_from(values.len()).expect("sparse domain cardinality fits u64");
+        let variable = self.solver.new_named_sparse_integer(values, name.clone());
+        self.recorder.variables.insert(
+            variable,
+            VariableRecord {
+                family,
+                name,
+                cardinality,
+                degree: 0,
+                parent: variable,
+                rank: 0,
+            },
+        );
+        variable
+    }
+
     pub(super) fn new_named_literal_for_predicate(
         &mut self,
         family: VariableFamily,

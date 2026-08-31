@@ -11,6 +11,7 @@ use pumpkin_solver::core::predicates::PredicateConstructor;
 use pumpkin_solver::core::results::{ProblemSolution, SatisfactionResult};
 use pumpkin_solver::core::termination::TimeBudget;
 use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
+use serde::Serialize;
 
 use super::boundary_terminals::{self, UsedBoundsVariables};
 use super::connectivity_propagator::{
@@ -97,7 +98,46 @@ enum EndpointEncoding {
     FactoredPositiveTable,
     FactoredTrackedPositiveTable,
     FactoredSparseSupport(SyncArc<EndpointSupportPropagationCounters>),
+    FactoredSparseSupportBoundaryKeyAudit {
+        counters: SyncArc<EndpointSupportPropagationCounters>,
+        sparse_legal_domain: bool,
+        certificates: BoundaryKeyBuildCertificateCollector,
+    },
 }
+
+impl EndpointEncoding {
+    fn sparse_legal_boundary_keys(&self) -> bool {
+        matches!(
+            self,
+            Self::FactoredSparseSupportBoundaryKeyAudit {
+                sparse_legal_domain: true,
+                ..
+            }
+        )
+    }
+
+    fn boundary_key_certificate_collector(&self) -> Option<&BoundaryKeyBuildCertificateCollector> {
+        match self {
+            Self::FactoredSparseSupportBoundaryKeyAudit { certificates, .. } => Some(certificates),
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub(in crate::layouts::integrated) struct BoundaryKeyBuildCertificate {
+    pub terminal: String,
+    pub network_index: usize,
+    pub network_id: String,
+    pub declared_domain_kind: String,
+    pub declared_lower_bound: i32,
+    pub declared_upper_bound: i32,
+    pub declared_values: Vec<i32>,
+    pub unary_table_projection: Vec<i32>,
+    pub routing_option_keys: Vec<i32>,
+}
+
+type BoundaryKeyBuildCertificateCollector = SyncArc<Mutex<Vec<BoundaryKeyBuildCertificate>>>;
 
 #[derive(Clone)]
 enum SearchMode {
@@ -242,6 +282,7 @@ struct FactoredTerminalView {
     key: DomainId,
     kind: FactoredEndpointKind,
     reachable_keys: Vec<i32>,
+    boundary_domain: Option<boundary_terminals::BoundaryTerminalDomainCertificate>,
 }
 
 pub(in crate::layouts::integrated) fn solve(
@@ -871,6 +912,41 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_fixed_dimen
 }
 
 #[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_key_audit_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: &IntegratedLayoutReport,
+    fixation: ReferenceAblationFixation,
+    sparse_legal_domain: bool,
+) -> (IntegratedLayoutReport, Vec<BoundaryKeyBuildCertificate>) {
+    let certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let report = solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+            counters: SyncArc::new(EndpointSupportPropagationCounters::default()),
+            sparse_legal_domain,
+            certificates: SyncArc::clone(&certificates),
+        },
+        fixed_dimensions,
+        fixed_coordinate,
+        fixed_ports,
+        prior_solution,
+        fixation,
+    );
+    let captured = certificates
+        .lock()
+        .expect("boundary-key certificate collector is not poisoned")
+        .clone();
+    (report, captured)
+}
+
+#[allow(clippy::too_many_arguments)]
 pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_fixed_dimensions_coordinate_ports_prior_port_subset_ablation(
     input: ModelInput,
     logistics_components: &ValidatedLogisticsComponentCatalog,
@@ -987,6 +1063,55 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_fixed_dimen
         snapshot = Some(RootDomainSnapshot::root_infeasible_without_brancher_call());
     }
     (report, snapshot)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_key_audit_fixed_dimensions_coordinate_ports_prior_overlap_root_snapshot(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: &IntegratedLayoutReport,
+    fixation: ReferenceAblationFixation,
+    sparse_legal_domain: bool,
+) -> (
+    IntegratedLayoutReport,
+    Option<RootDomainSnapshot>,
+    Vec<BoundaryKeyBuildCertificate>,
+) {
+    let collector: RootDomainSnapshotCollector = SyncArc::new(Mutex::new(None));
+    let certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let report =
+        solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation_with_search_mode(
+            input,
+            logistics_components,
+            time_limit,
+            EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+                counters: SyncArc::new(EndpointSupportPropagationCounters::default()),
+                sparse_legal_domain,
+                certificates: SyncArc::clone(&certificates),
+            },
+            fixed_dimensions,
+            fixed_coordinate,
+            fixed_ports,
+            prior_solution,
+            fixation,
+            SearchMode::FeasibilityOnlyWithRootSnapshot(SyncArc::clone(&collector)),
+        );
+    let mut snapshot = collector
+        .lock()
+        .expect("root-domain snapshot collector is not poisoned")
+        .clone();
+    if snapshot.is_none() && report.status == IntegratedLayoutStatus::Infeasible {
+        snapshot = Some(RootDomainSnapshot::root_infeasible_without_brancher_call());
+    }
+    let captured = certificates
+        .lock()
+        .expect("boundary-key certificate collector is not poisoned")
+        .clone();
+    (report, snapshot, captured)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1919,17 +2044,20 @@ fn solve_with_endpoint_encoding(
         EndpointEncoding::Factored
         | EndpointEncoding::FactoredPositiveTable
         | EndpointEncoding::FactoredTrackedPositiveTable
-        | EndpointEncoding::FactoredSparseSupport(_) => build_factored_terminals(
-            &mut solver,
-            &input,
-            &model_instances,
-            &placement_choices,
-            &endpoint_encoding,
-            &mut tracked_row_selectors,
-            used_bounds,
-            &mut model_metrics,
-            tag,
-        ),
+        | EndpointEncoding::FactoredSparseSupport(_)
+        | EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit { .. } => {
+            build_factored_terminals(
+                &mut solver,
+                &input,
+                &model_instances,
+                &placement_choices,
+                &endpoint_encoding,
+                &mut tracked_row_selectors,
+                used_bounds,
+                &mut model_metrics,
+                tag,
+            )
+        }
     };
     if let Some(fixed) = fixed_ports.as_ref()
         && let Err(diagnostic) =
@@ -2513,6 +2641,11 @@ fn solve_with_endpoint_encoding(
                 (EndpointEncoding::FactoredSparseSupport(_), _, _, _) => {
                     unreachable!("sparse-support research does not fix coordinates or ports")
                 }
+                (EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit { .. }, _, _, _) => {
+                    unreachable!(
+                        "sparse legal-boundary-key research uses an explicit prior-overlap formulation"
+                    )
+                }
             },
         };
     let formulation = match &endpoint_encoding {
@@ -2524,6 +2657,18 @@ fn solve_with_endpoint_encoding(
         }
         EndpointEncoding::FactoredSparseSupport(_) => {
             "joint-shared-v4-sparse-support-endpoints-watched-demand-local-continuation-guarded-intersection-propagation"
+        }
+        EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+            sparse_legal_domain: true,
+            ..
+        } => {
+            "joint-shared-v4-sparse-support-endpoints-legal-boundary-keys-watched-demand-local-continuation-guarded-intersection-propagation"
+        }
+        EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+            sparse_legal_domain: false,
+            ..
+        } => {
+            "joint-shared-v4-sparse-support-endpoints-bounded-boundary-keys-watched-demand-local-continuation-guarded-intersection-propagation"
         }
         EndpointEncoding::Flattened | EndpointEncoding::Factored => formulation,
     };
@@ -4236,6 +4381,7 @@ fn build_factored_terminals(
                     edge_index,
                     "source",
                     used_bounds,
+                    endpoint_encoding.sparse_legal_boundary_keys(),
                     metrics,
                     tag,
                 );
@@ -4277,6 +4423,7 @@ fn build_factored_terminals(
                     edge_index,
                     "target",
                     used_bounds,
+                    endpoint_encoding.sparse_legal_boundary_keys(),
                     metrics,
                     tag,
                 );
@@ -4293,7 +4440,8 @@ fn build_factored_terminals(
     input
         .networks
         .iter()
-        .map(|network| {
+        .enumerate()
+        .map(|(network_index, network)| {
             network
                 .terminals()
                 .iter()
@@ -4342,7 +4490,30 @@ fn build_factored_terminals(
                                 selected,
                             }
                         })
-                        .collect();
+                        .collect::<Vec<_>>();
+                    if matches!(&view.kind, FactoredEndpointKind::External { .. })
+                        && let Some(certificates) =
+                            endpoint_encoding.boundary_key_certificate_collector()
+                    {
+                        let domain = view
+                            .boundary_domain
+                            .as_ref()
+                            .expect("external endpoint carries its built boundary domain");
+                        certificates
+                            .lock()
+                            .expect("boundary-key certificate collector is not poisoned")
+                            .push(BoundaryKeyBuildCertificate {
+                                terminal: terminal.id().to_string(),
+                                network_index,
+                                network_id: network.id().to_string(),
+                                declared_domain_kind: domain.kind.to_string(),
+                                declared_lower_bound: domain.lower_bound,
+                                declared_upper_bound: domain.upper_bound,
+                                declared_values: domain.declared_values.clone(),
+                                unary_table_projection: domain.unary_table_projection.clone(),
+                                routing_option_keys: view.reachable_keys.clone(),
+                            });
+                    }
                     SharedTerminal {
                         id: terminal.id().to_string(),
                         direction: terminal.direction(),
@@ -4512,7 +4683,8 @@ fn build_factored_selector(
                 tag,
             ));
         }
-        EndpointEncoding::FactoredSparseSupport(counters) => {
+        EndpointEncoding::FactoredSparseSupport(counters)
+        | EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit { counters, .. } => {
             let rows = facility_values_by_port
                 .iter()
                 .enumerate()
@@ -4577,6 +4749,7 @@ fn factored_facility_view(selector: &FactoredEndpointSelector) -> FactoredTermin
             port_ids: selector.port_ids.clone(),
         },
         reachable_keys: selector.facility_keys.clone(),
+        boundary_domain: None,
     }
 }
 
@@ -4590,6 +4763,7 @@ fn factored_boundary_view(
             node: node.to_string(),
         },
         reachable_keys: selector.reachable_keys.clone(),
+        boundary_domain: Some(selector.domain.clone()),
     }
 }
 

@@ -19,6 +19,16 @@ pub(super) struct UsedBoundsVariables {
 pub(super) struct BoundaryTerminalSelector {
     pub(super) key: DomainId,
     pub(super) reachable_keys: Vec<i32>,
+    pub(super) domain: BoundaryTerminalDomainCertificate,
+}
+
+#[derive(Clone)]
+pub(super) struct BoundaryTerminalDomainCertificate {
+    pub(super) kind: &'static str,
+    pub(super) lower_bound: i32,
+    pub(super) upper_bound: i32,
+    pub(super) declared_values: Vec<i32>,
+    pub(super) unary_table_projection: Vec<i32>,
 }
 
 pub(super) fn new_used_bounds(
@@ -47,6 +57,7 @@ pub(super) fn build_selector(
     edge_index: usize,
     endpoint_kind: &str,
     used_bounds: UsedBoundsVariables,
+    sparse_legal_key_domain: bool,
     metrics: &mut ExactModelMetrics,
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) -> BoundaryTerminalSelector {
@@ -56,12 +67,27 @@ pub(super) fn build_selector(
         .checked_mul(4)
         .and_then(|value| value.checked_sub(1))
         .expect("validated boundary key domain fits i32");
-    let key = solver.new_variable(
-        VariableFamily::BoundaryTerminal,
-        0,
-        key_upper,
-        format!("edge-{edge_index}-{endpoint_kind}-boundary-key"),
-    );
+    let name = format!("edge-{edge_index}-{endpoint_kind}-boundary-key");
+    let declared_values = if sparse_legal_key_domain {
+        reachable_keys.clone()
+    } else {
+        (0..=key_upper).collect()
+    };
+    let declared_lower_bound = *declared_values
+        .first()
+        .expect("boundary key domain is non-empty");
+    let declared_upper_bound = *declared_values
+        .last()
+        .expect("boundary key domain is non-empty");
+    let key = if sparse_legal_key_domain {
+        solver.new_sparse_variable(
+            VariableFamily::BoundaryTerminal,
+            declared_values.clone(),
+            name,
+        )
+    } else {
+        solver.new_variable(VariableFamily::BoundaryTerminal, 0, key_upper, name)
+    };
     metrics.boundary_terminal_variables += 1;
     solver.post_table(
         ConstraintFamily::BoundaryTerminal,
@@ -100,7 +126,18 @@ pub(super) fn build_selector(
 
     BoundaryTerminalSelector {
         key,
-        reachable_keys,
+        reachable_keys: reachable_keys.clone(),
+        domain: BoundaryTerminalDomainCertificate {
+            kind: if sparse_legal_key_domain {
+                "sparse-legal"
+            } else {
+                "bounded"
+            },
+            lower_bound: declared_lower_bound,
+            upper_bound: declared_upper_bound,
+            declared_values,
+            unary_table_projection: reachable_keys,
+        },
     }
 }
 
