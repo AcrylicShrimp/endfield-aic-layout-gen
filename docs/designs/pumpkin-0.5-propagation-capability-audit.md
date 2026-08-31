@@ -26,11 +26,42 @@ facility placement candidate
 | General linear `<=`, `>=`, or equality with at least three terms | Yes | No | Bounds support only | Bound changes on affine views, high priority | Reasons are proportional to arity |
 | Two-term affine equality without proof logging | Exact | Exact | Exact both ways | `ANY_INT`, high priority | Pumpkin selects its binary-equality propagator, tracks removed values, and synchronises after backtracking |
 | Two-term affine equality with proof logging | Yes | No | Bounds support only | Bounds | Pumpkin deliberately falls back to two linear inequalities |
+| Guarded one-term equality `L -> X = v` | Exact after `L=true` | Does not reject `L` when `v` is an interior missing value | Guard falsification uses the two inequality propagators' bounds checks | Bounds plus guard | Two reified linear propagators for one semantic value implication |
+| Guarded binary equality `L -> X = Y` without proof logging | Exact after `L=true` | Exact while active; does not reject `L` for disjoint hole sets whose bounds overlap | Guard falsification is bounds-disjoint only | `ANY_INT` plus guard | Active equality is strong, but the undecided-guard phase is weak |
+| Predicate clause `not L or X = v` | Exact | Exact for `v` | Exact both ways through predicate literals and unit propagation | SAT/domain channel | One clause plus a cached or new equality literal |
 | `maximum` | Yes | No | Bounds-consistent | Bounds | Scans all arguments; support reasoning is bounds-only |
 | Positive `table` | Exact on supported values after row propagation | Yes | Strong value support in both directions | SAT/unit propagation | One hidden Boolean per row plus row-to-value and value-to-support clauses |
 
 The checked repository tests are in
 `crates/aic-data/src/layouts/integrated/exact/propagation_capability.rs`.
+
+## Confirmed guarded-item weakness
+
+The shared-layer routing model uses guarded equalities for item compatibility:
+
+```text
+terminal option selected -> arm item = network item
+route arc selected -> source arm item = target arm item
+bridge selected -> opposite arm items are equal
+```
+
+Pumpkin's generic reified wrapper propagates an undecided guard to false only when the wrapped
+propagator's `detect_inconsistency` method finds a conflict. A one-term equality is implemented as
+two guarded linear inequalities, so a required interior value missing from the item domain is not
+detected. Reified binary equality detects only disjoint bounds while the guard is unknown, even
+though the active binary-equality propagator copies every hole after the guard becomes true.
+
+The recorded Phase 3 16x16 model contains:
+
+- 15,560 guarded single-item equalities, derived exactly from 10,120 facility endpoint-key literals
+  plus 5,440 boundary-terminal-key literals; and
+- 2,944 guarded binary item equalities: 1,920 directed route arcs plus 1,024 bridge axis links.
+
+The first class has an exact standard replacement: the predicate clause `not selected or item =
+item_code`. The micro-tests confirm that this clause immediately rejects the selected option after
+the required item value becomes an interior hole. Its integrated cost still needs measurement
+because creating an item equality predicate may allocate a Boolean view when Pumpkin cannot reuse
+an existing one.
 
 ## Confirmed endpoint weakness
 
