@@ -20,7 +20,7 @@ use aic_data::research::{
     validate_benchmark_workload_manifest,
 };
 use anyhow::{Context, Result, ensure};
-use clap::{Subcommand, ValueEnum};
+use clap::{Args, Subcommand, ValueEnum};
 use sha2::{Digest, Sha256};
 
 mod connectivity_witness;
@@ -37,6 +37,7 @@ mod physical_occupancy;
 mod possible_graph_connectivity;
 mod reference_ablation;
 mod requirement_cliff;
+mod residual_facility_state;
 mod routing_state_breakdown;
 mod search_mode;
 mod shared_layer;
@@ -58,6 +59,43 @@ pub(super) enum PhysicalOccupancyEncodingArg {
 pub(super) enum DiagnosticSearchModeArg {
     Optimize,
     FeasibilityOnly,
+}
+
+#[derive(Debug, Args)]
+pub(crate) struct FacilityStateResearchArgs {
+    #[arg(long, value_name = "FILE")]
+    pub(crate) workload: PathBuf,
+    #[arg(long, value_name = "DIR", default_value = ".")]
+    pub(crate) workspace_root: PathBuf,
+    #[arg(long, value_name = "FILE")]
+    pub(crate) placement_request: PathBuf,
+    #[arg(long, value_name = "INDEX")]
+    pub(crate) target_phase: usize,
+    #[arg(long, value_name = "CELLS")]
+    pub(crate) used_width: i32,
+    #[arg(long, value_name = "CELLS")]
+    pub(crate) used_height: i32,
+    #[arg(long, value_name = "CELL")]
+    pub(crate) facility_x: i32,
+    #[arg(long, value_name = "CELL")]
+    pub(crate) facility_y: i32,
+    /// Run the residual prior-overlap ablation instead of the full state portfolio.
+    #[arg(long)]
+    pub(crate) prior_overlap_ablation: bool,
+    /// Complete introduced-facility port assignment selected by the residual ablation.
+    #[arg(long, value_name = "INDEX", requires = "prior_overlap_ablation")]
+    pub(crate) port_assignment_index: Option<usize>,
+    /// Introduced-facility rotation selected by the residual ablation.
+    #[arg(long, value_name = "DEGREES", requires = "prior_overlap_ablation")]
+    pub(crate) facility_rotation: Option<i64>,
+    #[arg(long, value_name = "COUNT")]
+    pub(crate) worker_count: usize,
+    #[arg(long, value_name = "MILLISECONDS")]
+    pub(crate) prefix_case_time_limit_ms: u64,
+    #[arg(long, value_name = "MILLISECONDS")]
+    pub(crate) state_case_time_limit_ms: u64,
+    #[arg(long, value_name = "DIR")]
+    pub(crate) output_dir: PathBuf,
 }
 
 #[derive(Debug, Subcommand)]
@@ -581,36 +619,8 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
     },
-    /// Exhaustively partition one fixed coordinate by every compatible port and rotation state.
-    DiagnoseCumulativeFacilityStates {
-        #[arg(long, value_name = "FILE")]
-        workload: PathBuf,
-        #[arg(long, value_name = "DIR", default_value = ".")]
-        workspace_root: PathBuf,
-        #[arg(long, value_name = "FILE")]
-        placement_request: PathBuf,
-        #[arg(long, value_name = "INDEX")]
-        target_phase: usize,
-        #[arg(long, value_name = "CELLS")]
-        used_width: i32,
-        #[arg(long, value_name = "CELLS")]
-        used_height: i32,
-        #[arg(long, value_name = "CELL")]
-        facility_x: i32,
-        #[arg(long, value_name = "CELL")]
-        facility_y: i32,
-        /// Independent Pumpkin worker threads.
-        #[arg(long, value_name = "COUNT")]
-        worker_count: usize,
-        /// Per-dimension case budget used to obtain the preceding phase hint.
-        #[arg(long, value_name = "MILLISECONDS")]
-        prefix_case_time_limit_ms: u64,
-        /// Wall-clock search budget independently given to every port-and-rotation state.
-        #[arg(long, value_name = "MILLISECONDS")]
-        state_case_time_limit_ms: u64,
-        #[arg(long, value_name = "DIR")]
-        output_dir: PathBuf,
-    },
+    /// Partition facility states, or compare one state with prior-overlap fixations.
+    DiagnoseCumulativeFacilityStates(Box<FacilityStateResearchArgs>),
     /// Compare placement, facility-port, and all-terminal reference fixations.
     DiagnosePhase2ReferenceAblation {
         #[arg(long, value_name = "FILE")]
@@ -1136,33 +1146,43 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             active_local_continuation,
             output_dir,
         ),
-        ResearchCommand::DiagnoseCumulativeFacilityStates {
-            workload,
-            workspace_root,
-            placement_request,
-            target_phase,
-            used_width,
-            used_height,
-            facility_x,
-            facility_y,
-            worker_count,
-            prefix_case_time_limit_ms,
-            state_case_time_limit_ms,
-            output_dir,
-        } => facility_state_partition::run(
-            workload,
-            workspace_root,
-            placement_request,
-            target_phase,
-            used_width,
-            used_height,
-            facility_x,
-            facility_y,
-            worker_count,
-            prefix_case_time_limit_ms,
-            state_case_time_limit_ms,
-            output_dir,
-        ),
+        ResearchCommand::DiagnoseCumulativeFacilityStates(args) => {
+            if args.prior_overlap_ablation {
+                residual_facility_state::run(
+                    args.workload,
+                    args.workspace_root,
+                    args.placement_request,
+                    args.target_phase,
+                    args.used_width,
+                    args.used_height,
+                    args.facility_x,
+                    args.facility_y,
+                    args.port_assignment_index
+                        .context("prior-overlap ablation requires --port-assignment-index")?,
+                    args.facility_rotation
+                        .context("prior-overlap ablation requires --facility-rotation")?,
+                    args.worker_count,
+                    args.prefix_case_time_limit_ms,
+                    args.state_case_time_limit_ms,
+                    args.output_dir,
+                )
+            } else {
+                facility_state_partition::run(
+                    args.workload,
+                    args.workspace_root,
+                    args.placement_request,
+                    args.target_phase,
+                    args.used_width,
+                    args.used_height,
+                    args.facility_x,
+                    args.facility_y,
+                    args.worker_count,
+                    args.prefix_case_time_limit_ms,
+                    args.state_case_time_limit_ms,
+                    args.output_dir,
+                )
+            }
+        }
         ResearchCommand::DiagnosePhase2ReferenceAblation {
             workload,
             workspace_root,

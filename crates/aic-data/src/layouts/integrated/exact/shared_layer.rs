@@ -102,6 +102,8 @@ pub(in crate::layouts::integrated) enum ReferenceAblationFixation {
     Placements,
     PlacementsAndFacilityPorts,
     PlacementsAndAllTerminals,
+    PriorOverlapPlacements,
+    PriorOverlapPlacementsAndFacilityPorts,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -499,6 +501,49 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         Some(fixed_coordinate),
         Some(fixed_ports),
         None,
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters: connectivity_counters,
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
+            grid_analyzer: Some((
+                grid_counters,
+                LayerGridRule::ForceWatchedDemandUniqueSupportChainAndLocalContinuation,
+            )),
+        },
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: &IntegratedLayoutReport,
+    fixation: ReferenceAblationFixation,
+) -> IntegratedLayoutReport {
+    debug_assert!(matches!(
+        fixation,
+        ReferenceAblationFixation::PriorOverlapPlacements
+            | ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPorts
+    ));
+    let connectivity_counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    let grid_counters = SyncArc::new(LayerGridAnalyzerCounters::default());
+    solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        Some(prior_solution),
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        Some(fixed_coordinate),
+        Some(fixed_ports),
+        Some(fixation),
         None,
         None,
         ConnectivityMode::PossibleGraphPropagator {
@@ -1356,9 +1401,18 @@ fn solve_with_endpoint_encoding(
             ),
         );
     }
-    if reference_fixation.is_some()
-        && let Err(diagnostic) =
-            post_reference_placements(&mut solver, &model_instances, prior_solution, tag)
+    if let Some(fixation) = reference_fixation
+        && let Err(diagnostic) = post_reference_placements(
+            &mut solver,
+            &model_instances,
+            prior_solution,
+            matches!(
+                fixation,
+                ReferenceAblationFixation::PriorOverlapPlacements
+                    | ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPorts
+            ),
+            tag,
+        )
     {
         return IntegratedLayoutReport::invalid(diagnostic);
     }
@@ -1396,7 +1450,11 @@ fn solve_with_endpoint_encoding(
         return IntegratedLayoutReport::invalid(diagnostic);
     }
     if let Some(fixation) = reference_fixation
-        && !matches!(fixation, ReferenceAblationFixation::Placements)
+        && !matches!(
+            fixation,
+            ReferenceAblationFixation::Placements
+                | ReferenceAblationFixation::PriorOverlapPlacements
+        )
         && let Err(diagnostic) = post_reference_terminals(
             &mut solver,
             &input,
@@ -1846,6 +1904,16 @@ fn solve_with_endpoint_encoding(
                 None,
                 ConnectivityMode::None,
             ) => "joint-shared-v4-reference-placements-all-terminals-ablation",
+            (
+                Some(ReferenceAblationFixation::PriorOverlapPlacements),
+                None,
+                ConnectivityMode::None,
+            ) => "joint-shared-v4-prior-overlap-placements-ablation",
+            (
+                Some(ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPorts),
+                None,
+                ConnectivityMode::None,
+            ) => "joint-shared-v4-prior-overlap-placements-facility-ports-ablation",
             (None, None, ConnectivityMode::None) if transport_tile_upper_bound.is_some() => {
                 "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions-transport-tile-cap"
             }
@@ -1972,15 +2040,21 @@ fn post_reference_placements(
     solver: &mut RecordedModel,
     instances: &[ModelInstance],
     reference: Option<&IntegratedLayoutReport>,
+    overlap_only: bool,
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) -> Result<(), IntegratedLayoutDiagnostic> {
     let reference = successful_ablation_reference(reference)?;
     for instance in instances {
-        let placement = reference
+        let Some(placement) = reference
             .placements
             .iter()
             .find(|placement| placement.instance == instance.input.id)
-            .ok_or_else(|| reference_mismatch("placement", &instance.input.id))?;
+        else {
+            if overlap_only {
+                continue;
+            }
+            return Err(reference_mismatch("placement", &instance.input.id));
+        };
         let candidate = instance
             .candidates
             .iter()
@@ -2010,13 +2084,22 @@ fn post_reference_terminals(
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) -> Result<(), IntegratedLayoutDiagnostic> {
     let reference = successful_ablation_reference(reference)?;
+    let overlap_only = matches!(
+        fixation,
+        ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPorts
+    );
     for terminal in model_terminals.iter().flatten() {
-        let prior = reference
+        let Some(prior) = reference
             .transport_networks
             .iter()
             .flat_map(|network| network.terminals.iter())
             .find(|candidate| candidate.id == terminal.id)
-            .ok_or_else(|| reference_mismatch("terminal", &terminal.id))?;
+        else {
+            if overlap_only {
+                continue;
+            }
+            return Err(reference_mismatch("terminal", &terminal.id));
+        };
         let SharedTerminalEndpoint::Factored { key, kind } = &terminal.endpoint else {
             return Err(reference_mismatch("factored terminal", &terminal.id));
         };
@@ -2067,6 +2150,7 @@ fn post_reference_terminals(
                 );
             }
             (FactoredEndpointKind::External { .. }, TransportNetworkEndpoint::External { .. }) => {}
+            _ if overlap_only => {}
             _ => return Err(reference_mismatch("terminal endpoint", &terminal.id)),
         }
     }

@@ -20,6 +20,7 @@ mod dimension_sweep;
 mod facility_state_partition;
 mod possible_graph_connectivity;
 mod reference_ablation;
+mod residual_facility_state;
 mod rotation_partition;
 mod routing_state_breakdown;
 mod transport_tile_cap;
@@ -65,6 +66,11 @@ pub use possible_graph_connectivity::{
 pub use reference_ablation::{
     PHASE2_REFERENCE_ABLATION_SCHEMA_VERSION, Phase2ReferenceAblationCaseReport,
     Phase2ReferenceAblationKind, Phase2ReferenceAblationReport, diagnose_phase2_reference_ablation,
+};
+pub use residual_facility_state::{
+    RESIDUAL_FACILITY_STATE_ABLATION_SCHEMA_VERSION, ResidualFacilityStateAblationReport,
+    ResidualFacilityStateCaseKind, ResidualFacilityStateCaseReport,
+    diagnose_residual_facility_state_ablation,
 };
 pub use rotation_partition::diagnose_cumulative_facility_rotation_partitions;
 pub use rotation_partition::diagnose_cumulative_facility_rotation_partitions_with_local_continuation;
