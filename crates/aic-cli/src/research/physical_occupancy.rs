@@ -2,15 +2,18 @@ use std::path::PathBuf;
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    FacilityPlacementRequest, render_physical_occupancy_probe_html, run_physical_occupancy_probe,
+    FacilityPlacementRequest, PhysicalOccupancyEncoding, render_physical_occupancy_probe_html,
+    run_physical_occupancy_probe,
 };
 use anyhow::{Context, Result};
 
+use super::PhysicalOccupancyEncodingArg;
 use super::first_phase::{write_bytes, write_json};
 
 pub(super) fn run(
     facility_catalog_path: PathBuf,
     facility_id: String,
+    encoding: PhysicalOccupancyEncodingArg,
     placement_request_path: PathBuf,
     output: PathBuf,
     visualization_output: PathBuf,
@@ -31,7 +34,15 @@ pub(super) fn run(
                 placement_request_path.display()
             )
         })?;
-    let report = run_physical_occupancy_probe(&facilities, &facility_id, &request)
+    let encoding = match encoding {
+        PhysicalOccupancyEncodingArg::CandidateCollision => {
+            PhysicalOccupancyEncoding::CandidateCollision
+        }
+        PhysicalOccupancyEncodingArg::CanonicalSharedOccupancy => {
+            PhysicalOccupancyEncoding::CanonicalSharedOccupancy
+        }
+    };
+    let report = run_physical_occupancy_probe(&facilities, &facility_id, &request, encoding)
         .map_err(anyhow::Error::msg)?;
     let html = render_physical_occupancy_probe_html(&report)
         .context("failed to render physical occupancy propagation HTML")?;

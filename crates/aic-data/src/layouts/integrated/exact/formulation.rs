@@ -9,7 +9,10 @@ use super::super::{
     EndpointInput, InstanceInput, TransportNetworkEndpoint, candidate_port_connections, grid_index,
 };
 use super::recorder::{ConstraintFamily, RecordedModel, VariableFamily};
-use super::{Arc, Candidate, EndpointOption, ModelBranchComponent, ModelInstance, ModelNetwork};
+use super::{
+    Arc, Candidate, CandidateGeometry, EndpointOption, ModelBranchComponent, ModelInstance,
+    ModelNetwork,
+};
 
 pub(in crate::layouts::integrated) type FlowTerms = Vec<(DomainId, i32)>;
 
@@ -26,6 +29,34 @@ pub(in crate::layouts::integrated) fn generate_candidates(
     max_width: i32,
     max_height: i32,
 ) -> Vec<Candidate> {
+    generate_candidate_geometries(instance, max_width, max_height)
+        .into_iter()
+        .map(|geometry| Candidate {
+            rotation: geometry.rotation,
+            x: geometry.x,
+            y: geometry.y,
+            width: geometry.width,
+            height: geometry.height,
+            occupied_cells: geometry.occupied_cells,
+            port_connections: geometry.port_connections,
+            selected: solver.new_variable(
+                VariableFamily::Placement,
+                0,
+                1,
+                format!(
+                    "place-{}-{}-{}-{}",
+                    instance.id, geometry.rotation, geometry.x, geometry.y
+                ),
+            ),
+        })
+        .collect()
+}
+
+pub(in crate::layouts::integrated) fn generate_candidate_geometries(
+    instance: &InstanceInput,
+    max_width: i32,
+    max_height: i32,
+) -> Vec<CandidateGeometry> {
     let mut candidates = Vec::new();
     for rotation in &instance.definition.allowed_rotations {
         let source_width = instance.definition.footprint.width as i32;
@@ -54,7 +85,7 @@ pub(in crate::layouts::integrated) fn generate_candidates(
                             .map(move |occupied_x| grid_index(occupied_x, occupied_y, max_width))
                     })
                     .collect();
-                candidates.push(Candidate {
+                candidates.push(CandidateGeometry {
                     rotation: *rotation,
                     x,
                     y,
@@ -62,12 +93,6 @@ pub(in crate::layouts::integrated) fn generate_candidates(
                     height,
                     occupied_cells,
                     port_connections,
-                    selected: solver.new_variable(
-                        VariableFamily::Placement,
-                        0,
-                        1,
-                        format!("place-{}-{rotation}-{x}-{y}", instance.id),
-                    ),
                 });
             }
         }

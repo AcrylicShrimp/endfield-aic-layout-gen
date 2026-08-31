@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "encoding": "candidate-collision",
+  "encoding": "canonical-shared-occupancy",
   "facility_id": "xiranite-oven-1-mode-gasliquid",
   "request_bounds": {
     "max_width": 12,
@@ -21,7 +21,7 @@
   "candidate_count": 256,
   "analytically_target_covering_candidates": 100,
   "collision_rows": 288,
-  "collision_terms": 13088,
+  "collision_terms": 576,
   "cases": [
     {
       "restriction": "none",
@@ -93,7 +93,7 @@
       "fully_decided_collision_rows": 0,
       "incident_collision_rows": 0,
       "incident_collision_terms": 0,
-      "propagation_time_us": 45,
+      "propagation_time_us": 29,
       "inconsistent": false,
       "verdict": "base root fixed point"
     },
@@ -133,7 +133,7 @@
         "supported_placement_candidates": 156,
         "fixed_false_placement_candidates": 100,
         "fixed_true_placement_candidates": 0,
-        "supported_placement_choice_values": 256,
+        "supported_placement_choice_values": 156,
         "distinct_x_values": 8,
         "distinct_y_values": 8,
         "distinct_rotation_values": 4,
@@ -164,8 +164,8 @@
       "changed_collision_rows": 2,
       "fully_decided_collision_rows": 1,
       "incident_collision_rows": 1,
-      "incident_collision_terms": 101,
-      "propagation_time_us": 148,
+      "incident_collision_terms": 2,
+      "propagation_time_us": 388,
       "inconsistent": false,
       "verdict": "strong transport-to-placement propagation"
     },
@@ -205,7 +205,7 @@
         "supported_placement_candidates": 156,
         "fixed_false_placement_candidates": 100,
         "fixed_true_placement_candidates": 0,
-        "supported_placement_choice_values": 256,
+        "supported_placement_choice_values": 156,
         "distinct_x_values": 8,
         "distinct_y_values": 8,
         "distinct_rotation_values": 4,
@@ -236,8 +236,8 @@
       "changed_collision_rows": 2,
       "fully_decided_collision_rows": 1,
       "incident_collision_rows": 1,
-      "incident_collision_terms": 101,
-      "propagation_time_us": 127,
+      "incident_collision_terms": 2,
+      "propagation_time_us": 401,
       "inconsistent": false,
       "verdict": "strong transport-to-placement propagation"
     },
@@ -307,8 +307,8 @@
       "changed_collision_rows": 288,
       "fully_decided_collision_rows": 50,
       "incident_collision_rows": 50,
-      "incident_collision_terms": 3922,
-      "propagation_time_us": 480,
+      "incident_collision_terms": 100,
+      "propagation_time_us": 445,
       "inconsistent": false,
       "verdict": "strong exact-placement-to-transport propagation"
     },
@@ -348,7 +348,7 @@
         "supported_placement_candidates": 4,
         "fixed_false_placement_candidates": 252,
         "fixed_true_placement_candidates": 0,
-        "supported_placement_choice_values": 256,
+        "supported_placement_choice_values": 4,
         "distinct_x_values": 1,
         "distinct_y_values": 1,
         "distinct_rotation_values": 4,
@@ -356,18 +356,16 @@
         "facility_cells_fixed_false": 119,
         "facility_cells_free": 0,
         "belt_cells_fixed_true": 0,
-        "belt_cells_fixed_false": 0,
-        "belt_cells_free": 144,
+        "belt_cells_fixed_false": 25,
+        "belt_cells_free": 119,
         "pipe_cells_fixed_true": 0,
-        "pipe_cells_fixed_false": 0,
-        "pipe_cells_free": 144,
+        "pipe_cells_fixed_false": 25,
+        "pipe_cells_free": 119,
         "target_belt_domain": [
-          0,
-          1
+          0
         ],
         "target_pipe_domain": [
-          0,
-          1
+          0
         ],
         "target_facility_domain": [
           1
@@ -375,15 +373,15 @@
       },
       "removed_target_covering_candidates": 96,
       "removed_non_covering_candidates": 156,
-      "newly_forbidden_belt_cells_inside_selected_footprint": 0,
-      "newly_forbidden_pipe_cells_inside_selected_footprint": 0,
+      "newly_forbidden_belt_cells_inside_selected_footprint": 25,
+      "newly_forbidden_pipe_cells_inside_selected_footprint": 25,
       "changed_collision_rows": 288,
-      "fully_decided_collision_rows": 0,
+      "fully_decided_collision_rows": 50,
       "incident_collision_rows": 50,
-      "incident_collision_terms": 3922,
-      "propagation_time_us": 65,
+      "incident_collision_terms": 100,
+      "propagation_time_us": 840,
       "inconsistent": false,
-      "verdict": "partial placement domain does not propagate mandatory occupancy"
+      "verdict": "mandatory occupancy propagates from the partial placement domain"
     },
     {
       "restriction": "non-covering-control",
@@ -421,7 +419,7 @@
         "supported_placement_candidates": 4,
         "fixed_false_placement_candidates": 252,
         "fixed_true_placement_candidates": 0,
-        "supported_placement_choice_values": 256,
+        "supported_placement_choice_values": 4,
         "distinct_x_values": 1,
         "distinct_y_values": 1,
         "distinct_rotation_values": 4,
@@ -429,11 +427,11 @@
         "facility_cells_fixed_false": 119,
         "facility_cells_free": 0,
         "belt_cells_fixed_true": 0,
-        "belt_cells_fixed_false": 0,
-        "belt_cells_free": 144,
+        "belt_cells_fixed_false": 25,
+        "belt_cells_free": 119,
         "pipe_cells_fixed_true": 0,
-        "pipe_cells_fixed_false": 0,
-        "pipe_cells_free": 144,
+        "pipe_cells_fixed_false": 25,
+        "pipe_cells_free": 119,
         "target_belt_domain": [
           0,
           1
@@ -448,13 +446,13 @@
       },
       "removed_target_covering_candidates": 100,
       "removed_non_covering_candidates": 152,
-      "newly_forbidden_belt_cells_inside_selected_footprint": 0,
-      "newly_forbidden_pipe_cells_inside_selected_footprint": 0,
+      "newly_forbidden_belt_cells_inside_selected_footprint": 9,
+      "newly_forbidden_pipe_cells_inside_selected_footprint": 9,
       "changed_collision_rows": 288,
-      "fully_decided_collision_rows": 0,
+      "fully_decided_collision_rows": 50,
       "incident_collision_rows": 50,
-      "incident_collision_terms": 3922,
-      "propagation_time_us": 62,
+      "incident_collision_terms": 100,
+      "propagation_time_us": 749,
       "inconsistent": false,
       "verdict": "control target remains available"
     }

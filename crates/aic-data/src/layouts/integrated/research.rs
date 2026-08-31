@@ -22,7 +22,7 @@ pub const FACTORED_REQUIREMENT_DECOMPOSITION_SCHEMA_VERSION: u32 = 1;
 pub const EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION: u32 = 1;
 pub const EXTERNAL_CONNECTOR_PORT_DOMAIN_SCHEMA_VERSION: u32 = 1;
 pub const CUMULATIVE_SCC_GROWTH_SCHEMA_VERSION: u32 = 1;
-pub const PHYSICAL_OCCUPANCY_PROBE_SCHEMA_VERSION: u32 = 1;
+pub const PHYSICAL_OCCUPANCY_PROBE_SCHEMA_VERSION: u32 = 2;
 
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
@@ -30,6 +30,7 @@ const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 #[serde(rename_all = "kebab-case")]
 pub enum PhysicalOccupancyEncoding {
     CandidateCollision,
+    CanonicalSharedOccupancy,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -52,6 +53,9 @@ pub struct PhysicalOccupancyDomainSnapshot {
     pub distinct_x_values: usize,
     pub distinct_y_values: usize,
     pub distinct_rotation_values: usize,
+    pub facility_cells_fixed_true: usize,
+    pub facility_cells_fixed_false: usize,
+    pub facility_cells_free: usize,
     pub belt_cells_fixed_true: usize,
     pub belt_cells_fixed_false: usize,
     pub belt_cells_free: usize,
@@ -60,6 +64,7 @@ pub struct PhysicalOccupancyDomainSnapshot {
     pub pipe_cells_free: usize,
     pub target_belt_domain: Vec<i32>,
     pub target_pipe_domain: Vec<i32>,
+    pub target_facility_domain: Vec<i32>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -100,6 +105,7 @@ pub fn run_physical_occupancy_probe(
     facilities: &ValidatedFacilityCatalog,
     facility_id: &str,
     request: &FacilityPlacementRequest,
+    encoding: PhysicalOccupancyEncoding,
 ) -> Result<PhysicalOccupancyProbeReport, String> {
     let diagnostics = crate::layouts::validate_facility_placement_request(request);
     if let Some(diagnostic) = diagnostics.first() {
@@ -108,7 +114,7 @@ pub fn run_physical_occupancy_probe(
     let facility = facilities
         .facility(facility_id)
         .ok_or_else(|| format!("facility '{facility_id}' is absent from the facility catalog"))?;
-    exact::probe_candidate_collision_occupancy(facility, request)
+    exact::probe_physical_occupancy(facility, request, encoding)
 }
 
 pub fn render_physical_occupancy_probe_html(

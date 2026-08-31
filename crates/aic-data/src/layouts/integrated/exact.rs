@@ -24,7 +24,7 @@ mod occupancy_probe;
 mod recorder;
 pub(super) mod shared_layer;
 
-pub(super) use occupancy_probe::probe_candidate_collision_occupancy;
+pub(super) use occupancy_probe::probe_physical_occupancy;
 
 use extract::extract_report;
 use fixation::post_research_fixation;
@@ -47,6 +47,16 @@ struct Candidate {
     occupied_cells: Vec<usize>,
     port_connections: BTreeMap<String, usize>,
     selected: DomainId,
+}
+
+struct CandidateGeometry {
+    rotation: i64,
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+    occupied_cells: Vec<usize>,
+    port_connections: BTreeMap<String, usize>,
 }
 
 struct ModelInstance {

@@ -38,6 +38,12 @@ pub(super) enum PortDomainClassificationArg {
     DiagnosticOnly,
 }
 
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub(super) enum PhysicalOccupancyEncodingArg {
+    CandidateCollision,
+    CanonicalSharedOccupancy,
+}
+
 #[derive(Debug, Subcommand)]
 pub(crate) enum ResearchCommand {
     /// Validate a benchmark workload identity without building a solver model.
@@ -324,6 +330,10 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "ID")]
         facility_id: String,
 
+        /// Exact occupancy encoding to measure.
+        #[arg(long, value_enum)]
+        encoding: PhysicalOccupancyEncodingArg,
+
         /// Hard maximum layout bounds for this experiment only.
         #[arg(long, value_name = "FILE")]
         placement_request: PathBuf,
@@ -495,12 +505,14 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
         ResearchCommand::ProbePhysicalOccupancy {
             facility_catalog,
             facility_id,
+            encoding,
             placement_request,
             output,
             visualization_output,
         } => physical_occupancy::run(
             facility_catalog,
             facility_id,
+            encoding,
             placement_request,
             output,
             visualization_output,

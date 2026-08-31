@@ -15,6 +15,8 @@ use crate::research::{
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum VariableFamily {
     Placement,
+    PhysicalOccupancy,
+    TransportOccupancy,
     Endpoint,
     EndpointGeometry,
     ExternalConnector,
@@ -35,6 +37,8 @@ impl VariableFamily {
     fn name(self) -> &'static str {
         match self {
             Self::Placement => "placement",
+            Self::PhysicalOccupancy => "physical-occupancy",
+            Self::TransportOccupancy => "transport-occupancy",
             Self::Endpoint => "endpoint",
             Self::EndpointGeometry => "endpoint-geometry",
             Self::ExternalConnector => "external-connector",
@@ -55,7 +59,7 @@ impl VariableFamily {
     fn placement_side(self) -> bool {
         matches!(
             self,
-            Self::Placement | Self::Endpoint | Self::EndpointGeometry
+            Self::Placement | Self::PhysicalOccupancy | Self::Endpoint | Self::EndpointGeometry
         )
     }
 
@@ -63,6 +67,7 @@ impl VariableFamily {
         matches!(
             self,
             Self::RouteCell
+                | Self::TransportOccupancy
                 | Self::RouteArc
                 | Self::Flow
                 | Self::TerminalPresence
@@ -97,6 +102,7 @@ pub(super) enum ConstraintFamily {
     BridgeRotation,
     BridgeCrossing,
     TransportCollision,
+    OccupancyChannel,
     UsedGeometry,
     CanonicalTranslation,
     BoundingBox,
@@ -126,6 +132,7 @@ impl ConstraintFamily {
             Self::BridgeRotation => "bridge-rotation",
             Self::BridgeCrossing => "bridge-crossing",
             Self::TransportCollision => "transport-collision",
+            Self::OccupancyChannel => "occupancy-channel",
             Self::UsedGeometry => "used-geometry",
             Self::CanonicalTranslation => "canonical-translation",
             Self::BoundingBox => "bounding-box",
