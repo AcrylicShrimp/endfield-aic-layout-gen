@@ -14,7 +14,7 @@ use super::coordinate_partition::{invalid_input, millis, model_scale, prepare_ta
 use super::rotation_partition::diagnose_cumulative_facility_rotation_partitions;
 use super::{ExactDimensionCaseOutcome, ExactUsedDimensionCandidate, PartitionCaseModelScale};
 
-pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 12;
+pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 13;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -33,6 +33,7 @@ pub enum PossibleGraphConnectivityCaseKind {
     DirtyMaterialUniqueSupportChainGridPropagator,
     WatchedDemandUniqueSupportChainGridPropagator,
     WatchedDemandWithLocalContinuationAnalyzer,
+    WatchedDemandWithLocalContinuationPropagator,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
@@ -101,6 +102,13 @@ pub struct LayerGridAnalyzerRuntime {
     pub local_bridge_possible_cell_skips: u64,
     pub local_maximum_reason_predicates: u64,
     pub local_registered_domain_variables: u64,
+    pub local_active_executions: u64,
+    pub local_active_dirty_keys: u64,
+    pub local_active_notifications: u64,
+    pub local_active_maximum_dirty_keys: u64,
+    pub local_active_forced_predicate_attempts: u64,
+    pub local_active_conflicts: u64,
+    pub local_active_maximum_reason_predicates: u64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -287,6 +295,13 @@ pub fn diagnose_phase2_possible_graph_connectivity(
         &reference,
     );
     let (local_continuation_analyzed, local_continuation_connectivity_runtime, local_continuation_grid_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_watched_demand_with_local_continuation_analysis(
+        input.clone(),
+        logistics_components,
+        Some(case_search_budget),
+        fixed_dimensions,
+        &reference,
+    );
+    let (local_continuation_propagated, local_continuation_active_connectivity_runtime, local_continuation_active_grid_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_watched_demand_with_local_continuation_propagation(
         input,
         logistics_components,
         Some(case_search_budget),
@@ -385,6 +400,12 @@ pub fn diagnose_phase2_possible_graph_connectivity(
                 connectivity_runtime(local_continuation_connectivity_runtime),
                 grid_analyzer_runtime(local_continuation_grid_runtime),
             ),
+            case_report(
+                PossibleGraphConnectivityCaseKind::WatchedDemandWithLocalContinuationPropagator,
+                local_continuation_propagated,
+                connectivity_runtime(local_continuation_active_connectivity_runtime),
+                grid_analyzer_runtime(local_continuation_active_grid_runtime),
+            ),
         ],
         diagnostic_only: true,
     })
@@ -455,6 +476,13 @@ fn grid_analyzer_runtime(
         local_bridge_possible_cell_skips: statistics.local_bridge_possible_cell_skips,
         local_maximum_reason_predicates: statistics.local_maximum_reason_predicates,
         local_registered_domain_variables: statistics.local_registered_domain_variables,
+        local_active_executions: statistics.local_active_executions,
+        local_active_dirty_keys: statistics.local_active_dirty_keys,
+        local_active_notifications: statistics.local_active_notifications,
+        local_active_maximum_dirty_keys: statistics.local_active_maximum_dirty_keys,
+        local_active_forced_predicate_attempts: statistics.local_active_forced_predicate_attempts,
+        local_active_conflicts: statistics.local_active_conflicts,
+        local_active_maximum_reason_predicates: statistics.local_active_maximum_reason_predicates,
     }
 }
 

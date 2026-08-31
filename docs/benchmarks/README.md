@@ -186,6 +186,15 @@ unresolved forward support arcs and 94 backward arcs. The broad observer is diag
 its full rescans more than double elapsed time; an event-driven active propagator is the next exact
 experiment.
 
+The forty-sixth checkpoint,
+`heavy-xiranite-minimum-rate.forty-sixth-active-local-continuation-report.md`, activates the exact
+non-bridge forward/backward continuation rule with dirty `(material, cell)` scheduling. Against the
+watched-demand Phase 2 baseline it cuts decisions by 18.8%, backtracks by 15.3%, and solver
+propagations by 20.8% while returning a validated, lexicographically no-worse first witness. The
+local rule replaces about 21.46 million passive material/cell checks with 358,572 dirty-key checks.
+The next study grows cumulative SCC phases with this rule until a new cliff appears rather than
+continuing local micro-optimization in isolation.
+
 Regenerate it from a release binary with:
 
 ```bash

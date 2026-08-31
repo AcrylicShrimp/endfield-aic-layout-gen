@@ -16,8 +16,10 @@ use pumpkin_solver::core::variables::DomainId;
 use super::connectivity_propagator::{PossibleRouteArc, PossibleTerminalOption};
 
 mod local_continuation;
+mod local_continuation_propagator;
 
 pub(super) use local_continuation::LocalPositiveFlowContinuationAnalyzerArgs;
+pub(super) use local_continuation_propagator::LocalPositiveFlowContinuationPropagatorArgs;
 
 declare_inference_label!(TerminalGridSupport);
 declare_inference_label!(UniqueSupportChain);
@@ -58,6 +60,13 @@ pub(super) struct LayerGridAnalyzerCounters {
     local_bridge_possible_cell_skips: AtomicU64,
     local_maximum_reason_predicates: AtomicU64,
     local_registered_domain_variables: AtomicU64,
+    local_active_executions: AtomicU64,
+    local_active_dirty_keys: AtomicU64,
+    local_active_notifications: AtomicU64,
+    local_active_maximum_dirty_keys: AtomicU64,
+    local_active_forced_predicate_attempts: AtomicU64,
+    local_active_conflicts: AtomicU64,
+    local_active_maximum_reason_predicates: AtomicU64,
     distinct_support_arcs: Mutex<BTreeSet<(i32, DomainId)>>,
     distinct_unresolved_predicates: Mutex<BTreeSet<(DomainId, i32)>>,
     distinct_terminal_support_arcs: Mutex<BTreeSet<(i32, DomainId)>>,
@@ -108,6 +117,13 @@ pub(in crate::layouts::integrated) struct LayerGridAnalyzerStatistics {
     pub local_bridge_possible_cell_skips: u64,
     pub local_maximum_reason_predicates: u64,
     pub local_registered_domain_variables: u64,
+    pub local_active_executions: u64,
+    pub local_active_dirty_keys: u64,
+    pub local_active_notifications: u64,
+    pub local_active_maximum_dirty_keys: u64,
+    pub local_active_forced_predicate_attempts: u64,
+    pub local_active_conflicts: u64,
+    pub local_active_maximum_reason_predicates: u64,
 }
 
 impl LayerGridAnalyzerCounters {
@@ -209,6 +225,19 @@ impl LayerGridAnalyzerCounters {
             local_registered_domain_variables: self
                 .local_registered_domain_variables
                 .load(Ordering::Relaxed),
+            local_active_executions: self.local_active_executions.load(Ordering::Relaxed),
+            local_active_dirty_keys: self.local_active_dirty_keys.load(Ordering::Relaxed),
+            local_active_notifications: self.local_active_notifications.load(Ordering::Relaxed),
+            local_active_maximum_dirty_keys: self
+                .local_active_maximum_dirty_keys
+                .load(Ordering::Relaxed),
+            local_active_forced_predicate_attempts: self
+                .local_active_forced_predicate_attempts
+                .load(Ordering::Relaxed),
+            local_active_conflicts: self.local_active_conflicts.load(Ordering::Relaxed),
+            local_active_maximum_reason_predicates: self
+                .local_active_maximum_reason_predicates
+                .load(Ordering::Relaxed),
         }
     }
 }
@@ -222,6 +251,7 @@ pub(super) enum LayerGridRule {
     ForceDirtyMaterialUniqueSupportChain,
     ForceWatchedDemandUniqueSupportChain,
     ForceWatchedDemandUniqueSupportChainAndObserveLocalContinuation,
+    ForceWatchedDemandUniqueSupportChainAndLocalContinuation,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
