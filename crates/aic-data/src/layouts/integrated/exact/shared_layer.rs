@@ -414,6 +414,42 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
 }
 
 #[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_coordinate_feasibility_only_with_prior_and_local_continuation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    prior_solution: Option<&IntegratedLayoutReport>,
+) -> IntegratedLayoutReport {
+    let connectivity_counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    let grid_counters = SyncArc::new(LayerGridAnalyzerCounters::default());
+    solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        prior_solution,
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        Some(fixed_coordinate),
+        None,
+        None,
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters: connectivity_counters,
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
+            grid_analyzer: Some((
+                grid_counters,
+                LayerGridRule::ForceWatchedDemandUniqueSupportChainAndLocalContinuation,
+            )),
+        },
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
 pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_coordinate_ports_feasibility_only_with_prior(
     input: ModelInput,
     logistics_components: &ValidatedLogisticsComponentCatalog,
@@ -437,6 +473,43 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         None,
         None,
         ConnectivityMode::None,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_coordinate_ports_feasibility_only_with_prior_and_local_continuation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: Option<&IntegratedLayoutReport>,
+) -> IntegratedLayoutReport {
+    let connectivity_counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    let grid_counters = SyncArc::new(LayerGridAnalyzerCounters::default());
+    solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        prior_solution,
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        Some(fixed_coordinate),
+        Some(fixed_ports),
+        None,
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters: connectivity_counters,
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
+            grid_analyzer: Some((
+                grid_counters,
+                LayerGridRule::ForceWatchedDemandUniqueSupportChainAndLocalContinuation,
+            )),
+        },
     )
 }
 

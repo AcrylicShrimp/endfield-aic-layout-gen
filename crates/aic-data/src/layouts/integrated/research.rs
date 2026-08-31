@@ -37,7 +37,9 @@ pub use coordinate_partition::{
     FacilityCoordinateCaseReport, FacilityPortAssignment, FacilityPortDomainReport,
     FacilityPortPartitionCaseReport, FacilityRotationPartitionCaseReport, PartitionCaseModelScale,
     diagnose_cumulative_facility_coordinate_partitions,
+    diagnose_cumulative_facility_coordinate_partitions_with_local_continuation,
     diagnose_cumulative_facility_port_partitions,
+    diagnose_cumulative_facility_port_partitions_with_local_continuation,
 };
 pub use dimension_sweep::{
     CUMULATIVE_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION, CumulativeExactDimensionSweepReport,
@@ -59,6 +61,7 @@ pub use reference_ablation::{
     Phase2ReferenceAblationKind, Phase2ReferenceAblationReport, diagnose_phase2_reference_ablation,
 };
 pub use rotation_partition::diagnose_cumulative_facility_rotation_partitions;
+pub use rotation_partition::diagnose_cumulative_facility_rotation_partitions_with_local_continuation;
 pub use routing_state_breakdown::{
     ROUTE_CELL_BREAKDOWN_SCHEMA_VERSION, ROUTING_STATE_BREAKDOWN_SCHEMA_VERSION,
     RouteCellBreakdownCaseReport, RouteCellBreakdownReport, RouteCellLayerScope,

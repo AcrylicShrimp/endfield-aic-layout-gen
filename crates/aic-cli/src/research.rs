@@ -487,6 +487,10 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "MILLISECONDS")]
         coordinate_case_time_limit_ms: u64,
 
+        /// Enable the exact watched-demand plus event-driven local-continuation propagator stack.
+        #[arg(long)]
+        active_local_continuation: bool,
+
         /// Directory receiving summary JSON/HTML and a representative layout.
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
@@ -537,6 +541,10 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "MILLISECONDS")]
         port_case_time_limit_ms: u64,
 
+        /// Enable the exact watched-demand plus event-driven local-continuation propagator stack.
+        #[arg(long)]
+        active_local_continuation: bool,
+
         /// Directory receiving summary JSON/HTML and a representative layout.
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
@@ -566,6 +574,9 @@ pub(crate) enum ResearchCommand {
         prefix_case_time_limit_ms: u64,
         #[arg(long, value_name = "MILLISECONDS")]
         rotation_case_time_limit_ms: u64,
+        /// Enable the exact watched-demand plus event-driven local-continuation propagator stack.
+        #[arg(long)]
+        active_local_continuation: bool,
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
     },
@@ -1021,6 +1032,7 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             worker_count,
             prefix_case_time_limit_ms,
             coordinate_case_time_limit_ms,
+            active_local_continuation,
             output_dir,
         } => coordinate_partition::run(
             workload,
@@ -1032,6 +1044,7 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             worker_count,
             prefix_case_time_limit_ms,
             coordinate_case_time_limit_ms,
+            active_local_continuation,
             output_dir,
         ),
         ResearchCommand::DiagnoseCumulativeFacilityPorts {
@@ -1046,6 +1059,7 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             worker_count,
             prefix_case_time_limit_ms,
             port_case_time_limit_ms,
+            active_local_continuation,
             output_dir,
         } => coordinate_partition::run_ports(
             workload,
@@ -1059,6 +1073,7 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             worker_count,
             prefix_case_time_limit_ms,
             port_case_time_limit_ms,
+            active_local_continuation,
             output_dir,
         ),
         ResearchCommand::DiagnoseCumulativeFacilityRotations {
@@ -1073,6 +1088,7 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             port_assignment_index,
             prefix_case_time_limit_ms,
             rotation_case_time_limit_ms,
+            active_local_continuation,
             output_dir,
         } => coordinate_partition::run_rotations(
             workload,
@@ -1086,6 +1102,7 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             port_assignment_index,
             prefix_case_time_limit_ms,
             rotation_case_time_limit_ms,
+            active_local_continuation,
             output_dir,
         ),
         ResearchCommand::DiagnosePhase2ReferenceAblation {

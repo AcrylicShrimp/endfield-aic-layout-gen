@@ -18,8 +18,9 @@ use super::coordinate_partition::{
     invalid_input, millis, model_scale, prepare_target_input, validate_inputs,
 };
 use super::{
-    ExactDimensionCaseOutcome, ExactUsedDimensionCandidate,
+    ExactDimensionCaseOutcome, ExactDimensionSolverStack, ExactUsedDimensionCandidate,
     sweep_cumulative_integrated_layout_fixed_dimensions,
+    sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation,
 };
 
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
@@ -47,6 +48,79 @@ pub fn diagnose_cumulative_facility_rotation_partitions(
     prefix_search_budget: Duration,
     rotation_search_budget: Duration,
 ) -> Result<CumulativeFacilityRotationPartitionReport, IntegratedLayoutReport> {
+    diagnose_cumulative_facility_rotation_partitions_with_stack(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+        target_phase_index,
+        fixed_width,
+        fixed_height,
+        fixed_x,
+        fixed_y,
+        port_assignment_index,
+        prefix_search_budget,
+        rotation_search_budget,
+        ExactDimensionSolverStack::Baseline,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn diagnose_cumulative_facility_rotation_partitions_with_local_continuation(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    target_phase_index: usize,
+    fixed_width: i32,
+    fixed_height: i32,
+    fixed_x: i32,
+    fixed_y: i32,
+    port_assignment_index: usize,
+    prefix_search_budget: Duration,
+    rotation_search_budget: Duration,
+) -> Result<CumulativeFacilityRotationPartitionReport, IntegratedLayoutReport> {
+    diagnose_cumulative_facility_rotation_partitions_with_stack(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+        target_phase_index,
+        fixed_width,
+        fixed_height,
+        fixed_x,
+        fixed_y,
+        port_assignment_index,
+        prefix_search_budget,
+        rotation_search_budget,
+        ExactDimensionSolverStack::WatchedDemandWithLocalContinuation,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn diagnose_cumulative_facility_rotation_partitions_with_stack(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    target_phase_index: usize,
+    fixed_width: i32,
+    fixed_height: i32,
+    fixed_x: i32,
+    fixed_y: i32,
+    port_assignment_index: usize,
+    prefix_search_budget: Duration,
+    rotation_search_budget: Duration,
+    solver_stack: ExactDimensionSolverStack,
+) -> Result<CumulativeFacilityRotationPartitionReport, IntegratedLayoutReport> {
     validate_inputs(
         target_phase_index,
         fixed_width,
@@ -70,7 +144,13 @@ pub fn diagnose_cumulative_facility_rotation_partitions(
         ));
     }
     let partitioned_facility = introduced[0].clone();
-    let prefix = sweep_cumulative_integrated_layout_fixed_dimensions(
+    let sweep_prefix = match solver_stack {
+        ExactDimensionSolverStack::Baseline => sweep_cumulative_integrated_layout_fixed_dimensions,
+        ExactDimensionSolverStack::WatchedDemandWithLocalContinuation => {
+            sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation
+        }
+    };
+    let prefix = sweep_prefix(
         instance_wiring,
         facilities,
         items,
@@ -152,23 +232,36 @@ pub fn diagnose_cumulative_facility_rotation_partitions(
                             port: assignment.port.clone(),
                         })
                         .collect();
-                    let layout = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_coordinate_ports_feasibility_only_with_prior(
-                        input.clone(),
-                        logistics_components,
-                        Some(rotation_search_budget),
-                        exact::shared_layer::FixedUsedDimensions {
-                            width: fixed_width,
-                            height: fixed_height,
-                        },
-                        exact::shared_layer::FixedFacilityCoordinate {
-                            instance: partitioned_facility.clone(),
-                            x: fixed_x,
-                            y: fixed_y,
-                            rotation: Some(rotation),
-                        },
-                        fixed_ports,
-                        Some(prior_solution),
-                    );
+                    let fixed_dimensions = exact::shared_layer::FixedUsedDimensions {
+                        width: fixed_width,
+                        height: fixed_height,
+                    };
+                    let fixed_coordinate = exact::shared_layer::FixedFacilityCoordinate {
+                        instance: partitioned_facility.clone(),
+                        x: fixed_x,
+                        y: fixed_y,
+                        rotation: Some(rotation),
+                    };
+                    let layout = match solver_stack {
+                        ExactDimensionSolverStack::Baseline => exact::shared_layer::solve_factored_endpoints_fixed_dimensions_coordinate_ports_feasibility_only_with_prior(
+                            input.clone(),
+                            logistics_components,
+                            Some(rotation_search_budget),
+                            fixed_dimensions,
+                            fixed_coordinate,
+                            fixed_ports,
+                            Some(prior_solution),
+                        ),
+                        ExactDimensionSolverStack::WatchedDemandWithLocalContinuation => exact::shared_layer::solve_factored_endpoints_fixed_dimensions_coordinate_ports_feasibility_only_with_prior_and_local_continuation(
+                            input.clone(),
+                            logistics_components,
+                            Some(rotation_search_budget),
+                            fixed_dimensions,
+                            fixed_coordinate,
+                            fixed_ports,
+                            Some(prior_solution),
+                        ),
+                    };
                     let _ = sender.send(Completion {
                         rotation,
                         worker_index,
@@ -229,6 +322,7 @@ pub fn diagnose_cumulative_facility_rotation_partitions(
         schema_version: CUMULATIVE_FACILITY_ROTATION_PARTITION_SCHEMA_VERSION,
         target_phase_index,
         total_phase_count: growth.phases.len(),
+        solver_stack,
         fixed_dimensions: ExactUsedDimensionCandidate {
             width: fixed_width,
             height: fixed_height,

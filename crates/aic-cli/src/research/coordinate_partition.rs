@@ -6,7 +6,11 @@ use aic_data::layouts::{
     CumulativeFacilityCoordinatePartitionReport, CumulativeFacilityPortPartitionReport,
     CumulativeFacilityRotationPartitionReport, FacilityCoordinateCaseDisposition,
     diagnose_cumulative_facility_coordinate_partitions,
-    diagnose_cumulative_facility_port_partitions, diagnose_cumulative_facility_rotation_partitions,
+    diagnose_cumulative_facility_coordinate_partitions_with_local_continuation,
+    diagnose_cumulative_facility_port_partitions,
+    diagnose_cumulative_facility_port_partitions_with_local_continuation,
+    diagnose_cumulative_facility_rotation_partitions,
+    diagnose_cumulative_facility_rotation_partitions_with_local_continuation,
 };
 use anyhow::{Context, Result};
 
@@ -24,6 +28,7 @@ pub(super) fn run(
     worker_count: usize,
     prefix_case_time_limit_ms: u64,
     coordinate_case_time_limit_ms: u64,
+    active_local_continuation: bool,
     output_dir: PathBuf,
 ) -> Result<bool> {
     let worker_count = NonZeroUsize::new(worker_count)
@@ -33,7 +38,12 @@ pub(super) fn run(
     let coordinate_budget = NonZeroU64::new(coordinate_case_time_limit_ms)
         .context("coordinate partition coordinate_case_time_limit_ms must be positive")?;
     let loaded = load_inputs(workload_path, workspace_root, placement_request_path)?;
-    let report = diagnose_cumulative_facility_coordinate_partitions(
+    let diagnose = if active_local_continuation {
+        diagnose_cumulative_facility_coordinate_partitions_with_local_continuation
+    } else {
+        diagnose_cumulative_facility_coordinate_partitions
+    };
+    let report = diagnose(
         &loaded.wiring,
         &loaded.facilities,
         &loaded.items,
@@ -86,6 +96,7 @@ pub(super) fn run_ports(
     worker_count: usize,
     prefix_case_time_limit_ms: u64,
     port_case_time_limit_ms: u64,
+    active_local_continuation: bool,
     output_dir: PathBuf,
 ) -> Result<bool> {
     let worker_count =
@@ -95,7 +106,12 @@ pub(super) fn run_ports(
     let port_budget = NonZeroU64::new(port_case_time_limit_ms)
         .context("port partition port_case_time_limit_ms must be positive")?;
     let loaded = load_inputs(workload_path, workspace_root, placement_request_path)?;
-    let report = diagnose_cumulative_facility_port_partitions(
+    let diagnose = if active_local_continuation {
+        diagnose_cumulative_facility_port_partitions_with_local_continuation
+    } else {
+        diagnose_cumulative_facility_port_partitions
+    };
+    let report = diagnose(
         &loaded.wiring,
         &loaded.facilities,
         &loaded.items,
@@ -150,6 +166,7 @@ pub(super) fn run_rotations(
     port_assignment_index: usize,
     prefix_case_time_limit_ms: u64,
     rotation_case_time_limit_ms: u64,
+    active_local_continuation: bool,
     output_dir: PathBuf,
 ) -> Result<bool> {
     let prefix_budget = NonZeroU64::new(prefix_case_time_limit_ms)
@@ -157,7 +174,12 @@ pub(super) fn run_rotations(
     let rotation_budget = NonZeroU64::new(rotation_case_time_limit_ms)
         .context("rotation partition rotation_case_time_limit_ms must be positive")?;
     let loaded = load_inputs(workload_path, workspace_root, placement_request_path)?;
-    let report = diagnose_cumulative_facility_rotation_partitions(
+    let diagnose = if active_local_continuation {
+        diagnose_cumulative_facility_rotation_partitions_with_local_continuation
+    } else {
+        diagnose_cumulative_facility_rotation_partitions
+    };
+    let report = diagnose(
         &loaded.wiring,
         &loaded.facilities,
         &loaded.items,

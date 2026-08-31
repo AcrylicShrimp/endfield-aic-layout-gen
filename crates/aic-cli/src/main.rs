@@ -2290,6 +2290,7 @@ mod tests {
             "5000",
             "--coordinate-case-time-limit-ms",
             "1000",
+            "--active-local-continuation",
             "--output-dir",
             "coordinate-partition",
         ])
@@ -2307,6 +2308,7 @@ mod tests {
                     worker_count,
                     prefix_case_time_limit_ms,
                     coordinate_case_time_limit_ms,
+                    active_local_continuation,
                     output_dir,
                 },
         } = cli.command
@@ -2321,6 +2323,7 @@ mod tests {
         assert_eq!(worker_count, 4);
         assert_eq!(prefix_case_time_limit_ms, 5_000);
         assert_eq!(coordinate_case_time_limit_ms, 1_000);
+        assert!(active_local_continuation);
         assert_eq!(output_dir, PathBuf::from("coordinate-partition"));
     }
 
@@ -2350,6 +2353,7 @@ mod tests {
             "5000",
             "--port-case-time-limit-ms",
             "1000",
+            "--active-local-continuation",
             "--output-dir",
             "port-partition",
         ])
@@ -2366,6 +2370,7 @@ mod tests {
                     worker_count,
                     prefix_case_time_limit_ms,
                     port_case_time_limit_ms,
+                    active_local_continuation,
                     output_dir,
                     ..
                 },
@@ -2379,7 +2384,69 @@ mod tests {
         assert_eq!(worker_count, 4);
         assert_eq!(prefix_case_time_limit_ms, 5_000);
         assert_eq!(port_case_time_limit_ms, 1_000);
+        assert!(active_local_continuation);
         assert_eq!(output_dir, PathBuf::from("port-partition"));
+    }
+
+    #[test]
+    fn parses_cumulative_facility_rotation_partition_with_active_stack() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "diagnose-cumulative-facility-rotations",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--target-phase",
+            "3",
+            "--used-width",
+            "16",
+            "--used-height",
+            "16",
+            "--facility-x",
+            "5",
+            "--facility-y",
+            "5",
+            "--port-assignment-index",
+            "0",
+            "--prefix-case-time-limit-ms",
+            "10000",
+            "--rotation-case-time-limit-ms",
+            "5000",
+            "--active-local-continuation",
+            "--output-dir",
+            "rotation-partition",
+        ])
+        .expect("active cumulative facility rotation partition CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::DiagnoseCumulativeFacilityRotations {
+                    target_phase,
+                    used_width,
+                    used_height,
+                    facility_x,
+                    facility_y,
+                    port_assignment_index,
+                    prefix_case_time_limit_ms,
+                    rotation_case_time_limit_ms,
+                    active_local_continuation,
+                    output_dir,
+                    ..
+                },
+        } = cli.command
+        else {
+            panic!("expected cumulative facility rotation partition command")
+        };
+        assert_eq!(target_phase, 3);
+        assert_eq!((used_width, used_height), (16, 16));
+        assert_eq!((facility_x, facility_y), (5, 5));
+        assert_eq!(port_assignment_index, 0);
+        assert_eq!(prefix_case_time_limit_ms, 10_000);
+        assert_eq!(rotation_case_time_limit_ms, 5_000);
+        assert!(active_local_continuation);
+        assert_eq!(output_dir, PathBuf::from("rotation-partition"));
     }
 
     #[test]
