@@ -56,6 +56,7 @@ pub use facility_state_partition::{
     CUMULATIVE_FACILITY_STATE_PARTITION_SCHEMA_VERSION, CumulativeFacilityStatePartitionReport,
     FacilityStatePartitionCaseReport,
     diagnose_cumulative_facility_state_partitions_with_local_continuation,
+    diagnose_cumulative_facility_state_partitions_with_prior_overlap_facility_state,
 };
 pub use possible_graph_connectivity::{
     LayerGridAnalyzerRuntime, POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION,

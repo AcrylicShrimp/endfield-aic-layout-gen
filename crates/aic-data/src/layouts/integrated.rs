@@ -90,6 +90,7 @@ pub use research::{
     diagnose_cumulative_facility_rotation_partitions,
     diagnose_cumulative_facility_rotation_partitions_with_local_continuation,
     diagnose_cumulative_facility_state_partitions_with_local_continuation,
+    diagnose_cumulative_facility_state_partitions_with_prior_overlap_facility_state,
     diagnose_cumulative_transport_tile_caps, diagnose_phase2_connectivity_witness,
     diagnose_phase2_possible_graph_connectivity, diagnose_phase2_reference_ablation,
     diagnose_phase2_route_cell_breakdown, diagnose_phase2_routing_state_breakdown,

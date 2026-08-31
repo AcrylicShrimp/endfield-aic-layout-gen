@@ -2469,6 +2469,7 @@ mod tests {
             "5",
             "--facility-y",
             "5",
+            "--fix-prior-overlap-facility-state",
             "--worker-count",
             "12",
             "--prefix-case-time-limit-ms",
@@ -2493,6 +2494,7 @@ mod tests {
         assert_eq!(args.prefix_case_time_limit_ms, 10_000);
         assert_eq!(args.state_case_time_limit_ms, 5_000);
         assert!(!args.prior_overlap_ablation);
+        assert!(args.fix_prior_overlap_facility_state);
         assert_eq!(args.output_dir, PathBuf::from("state-partition"));
     }
 

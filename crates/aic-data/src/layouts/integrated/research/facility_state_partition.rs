@@ -23,7 +23,7 @@ use super::{
     sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation,
 };
 
-pub const CUMULATIVE_FACILITY_STATE_PARTITION_SCHEMA_VERSION: u32 = 1;
+pub const CUMULATIVE_FACILITY_STATE_PARTITION_SCHEMA_VERSION: u32 = 2;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -50,6 +50,9 @@ pub struct CumulativeFacilityStatePartitionReport {
     pub fixed_dimensions: ExactUsedDimensionCandidate,
     pub partitioned_facility: String,
     pub fixed_coordinate: [i32; 2],
+    pub prior_overlap_facility_state_fixed: bool,
+    pub prior_placement_count: usize,
+    pub prior_facility_terminal_count: usize,
     pub terminal_domains: Vec<FacilityPortDomainReport>,
     pub port_assignments: Vec<Vec<FacilityPortAssignment>>,
     pub legal_rotations: Vec<i64>,
@@ -99,6 +102,79 @@ pub fn diagnose_cumulative_facility_state_partitions_with_local_continuation(
     worker_count: usize,
     prefix_search_budget: Duration,
     state_search_budget: Duration,
+) -> Result<CumulativeFacilityStatePartitionReport, IntegratedLayoutReport> {
+    diagnose_cumulative_facility_state_partitions_impl(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+        target_phase_index,
+        fixed_width,
+        fixed_height,
+        fixed_x,
+        fixed_y,
+        worker_count,
+        prefix_search_budget,
+        state_search_budget,
+        false,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn diagnose_cumulative_facility_state_partitions_with_prior_overlap_facility_state(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    target_phase_index: usize,
+    fixed_width: i32,
+    fixed_height: i32,
+    fixed_x: i32,
+    fixed_y: i32,
+    worker_count: usize,
+    prefix_search_budget: Duration,
+    state_search_budget: Duration,
+) -> Result<CumulativeFacilityStatePartitionReport, IntegratedLayoutReport> {
+    diagnose_cumulative_facility_state_partitions_impl(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+        target_phase_index,
+        fixed_width,
+        fixed_height,
+        fixed_x,
+        fixed_y,
+        worker_count,
+        prefix_search_budget,
+        state_search_budget,
+        true,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn diagnose_cumulative_facility_state_partitions_impl(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    target_phase_index: usize,
+    fixed_width: i32,
+    fixed_height: i32,
+    fixed_x: i32,
+    fixed_y: i32,
+    worker_count: usize,
+    prefix_search_budget: Duration,
+    state_search_budget: Duration,
+    prior_overlap_facility_state_fixed: bool,
 ) -> Result<CumulativeFacilityStatePartitionReport, IntegratedLayoutReport> {
     validate_inputs(
         target_phase_index,
@@ -231,6 +307,7 @@ pub fn diagnose_cumulative_facility_state_partitions_with_local_continuation(
                         port_assignments,
                         state_search_budget,
                         prior_solution,
+                        prior_overlap_facility_state_fixed,
                         witness_found,
                     );
                 }));
@@ -327,6 +404,19 @@ pub fn diagnose_cumulative_facility_state_partitions_with_local_continuation(
         },
         partitioned_facility,
         fixed_coordinate: [fixed_x, fixed_y],
+        prior_overlap_facility_state_fixed,
+        prior_placement_count: prior_solution.placements.len(),
+        prior_facility_terminal_count: prior_solution
+            .transport_networks
+            .iter()
+            .flat_map(|network| network.terminals.iter())
+            .filter(|terminal| {
+                matches!(
+                    terminal.endpoint,
+                    super::super::TransportNetworkEndpoint::Facility { .. }
+                )
+            })
+            .count(),
         terminal_domains,
         port_assignments,
         legal_rotations,
@@ -362,6 +452,7 @@ fn run_worker(
     port_assignments: &[Vec<FacilityPortAssignment>],
     search_budget: Duration,
     prior_solution: &IntegratedLayoutReport,
+    prior_overlap_facility_state_fixed: bool,
     witness_found: &AtomicBool,
 ) {
     while let Ok(work) = work_receiver.recv() {
@@ -387,23 +478,38 @@ fn run_worker(
                 port: assignment.port.clone(),
             })
             .collect();
-        let layout = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_coordinate_ports_feasibility_only_with_prior_and_local_continuation(
-            input.clone(),
-            logistics_components,
-            Some(search_budget),
-            exact::shared_layer::FixedUsedDimensions {
-                width: fixed_width,
-                height: fixed_height,
-            },
-            exact::shared_layer::FixedFacilityCoordinate {
-                instance: partitioned_facility.to_string(),
-                x: fixed_x,
-                y: fixed_y,
-                rotation: Some(work.rotation),
-            },
-            fixed_ports,
-            Some(prior_solution),
-        );
+        let fixed_dimensions = exact::shared_layer::FixedUsedDimensions {
+            width: fixed_width,
+            height: fixed_height,
+        };
+        let fixed_coordinate = exact::shared_layer::FixedFacilityCoordinate {
+            instance: partitioned_facility.to_string(),
+            x: fixed_x,
+            y: fixed_y,
+            rotation: Some(work.rotation),
+        };
+        let layout = if prior_overlap_facility_state_fixed {
+            exact::shared_layer::solve_factored_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+                input.clone(),
+                logistics_components,
+                Some(search_budget),
+                fixed_dimensions,
+                fixed_coordinate,
+                fixed_ports,
+                prior_solution,
+                exact::shared_layer::ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPorts,
+            )
+        } else {
+            exact::shared_layer::solve_factored_endpoints_fixed_dimensions_coordinate_ports_feasibility_only_with_prior_and_local_continuation(
+                input.clone(),
+                logistics_components,
+                Some(search_budget),
+                fixed_dimensions,
+                fixed_coordinate,
+                fixed_ports,
+                Some(prior_solution),
+            )
+        };
         let outcome = classify_outcome(&layout);
         if outcome == ExactDimensionCaseOutcome::ValidatedFeasible {
             witness_found.store(true, Ordering::Release);

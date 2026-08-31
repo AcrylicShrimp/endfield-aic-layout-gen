@@ -82,6 +82,9 @@ pub(crate) struct FacilityStateResearchArgs {
     /// Run the residual prior-overlap ablation instead of the full state portfolio.
     #[arg(long)]
     pub(crate) prior_overlap_ablation: bool,
+    /// Fix preceding-phase placements and matching facility ports in every portfolio case.
+    #[arg(long, conflicts_with = "prior_overlap_ablation")]
+    pub(crate) fix_prior_overlap_facility_state: bool,
     /// Complete introduced-facility port assignment selected by the residual ablation.
     #[arg(long, value_name = "INDEX", requires = "prior_overlap_ablation")]
     pub(crate) port_assignment_index: Option<usize>,
@@ -1179,6 +1182,7 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
                     args.worker_count,
                     args.prefix_case_time_limit_ms,
                     args.state_case_time_limit_ms,
+                    args.fix_prior_overlap_facility_state,
                     args.output_dir,
                 )
             }

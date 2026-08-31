@@ -5,6 +5,7 @@ use std::time::Duration;
 use aic_data::layouts::{
     CumulativeFacilityStatePartitionReport, FacilityCoordinateCaseDisposition,
     diagnose_cumulative_facility_state_partitions_with_local_continuation,
+    diagnose_cumulative_facility_state_partitions_with_prior_overlap_facility_state,
 };
 use anyhow::{Context, Result};
 
@@ -24,6 +25,7 @@ pub(super) fn run(
     worker_count: usize,
     prefix_case_time_limit_ms: u64,
     state_case_time_limit_ms: u64,
+    fix_prior_overlap_facility_state: bool,
     output_dir: PathBuf,
 ) -> Result<bool> {
     let worker_count = NonZeroUsize::new(worker_count)
@@ -33,7 +35,12 @@ pub(super) fn run(
     let state_budget = NonZeroU64::new(state_case_time_limit_ms)
         .context("facility state partition state_case_time_limit_ms must be positive")?;
     let loaded = load_inputs(workload_path, workspace_root, placement_request_path)?;
-    let report = diagnose_cumulative_facility_state_partitions_with_local_continuation(
+    let diagnose = if fix_prior_overlap_facility_state {
+        diagnose_cumulative_facility_state_partitions_with_prior_overlap_facility_state
+    } else {
+        diagnose_cumulative_facility_state_partitions_with_local_continuation
+    };
+    let report = diagnose(
         &loaded.wiring,
         &loaded.facilities,
         &loaded.items,
@@ -98,13 +105,14 @@ fn render_summary(report: &CumulativeFacilityStatePartitionReport) -> Result<Str
         .collect::<String>();
     let json = serde_json::to_string(report)?.replace('<', "\\u003c");
     Ok(format!(
-        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Facility state partition</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.ok{{color:#78f0c0}}.bad{{color:#ff719b}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}a{{color:#8fd9ff}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {} facility-state exact portfolio</h1><div class="meta">facility=<code>{}</code> · fixed={}×{} · coordinate={},{} · assignments={} · rotations={} · cases={} · workers={} · wall={}ms</div><p class="{}">witness={} · all-infeasible-proven={} · unknown={} · invalid={}</p><p><a href="representative-layout.html">Open representative layout</a></p><table><thead><tr><th>port assignment</th><th>rotation</th><th>disposition</th><th>outcome</th><th>build ms</th><th>search ms</th><th>first witness ms</th></tr></thead><tbody>{}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Facility state partition</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.ok{{color:#78f0c0}}.bad{{color:#ff719b}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}a{{color:#8fd9ff}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {} facility-state exact portfolio</h1><div class="meta">facility=<code>{}</code> · fixed={}×{} · coordinate={},{} · prior-state-fixed={} · assignments={} · rotations={} · cases={} · workers={} · wall={}ms</div><p class="{}">witness={} · all-infeasible-proven={} · unknown={} · invalid={}</p><p><a href="representative-layout.html">Open representative layout</a></p><table><thead><tr><th>port assignment</th><th>rotation</th><th>disposition</th><th>outcome</th><th>build ms</th><th>search ms</th><th>first witness ms</th></tr></thead><tbody>{}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
         report.target_phase_index,
         report.partitioned_facility,
         report.fixed_dimensions.width,
         report.fixed_dimensions.height,
         report.fixed_coordinate[0],
         report.fixed_coordinate[1],
+        report.prior_overlap_facility_state_fixed,
         report.port_assignments.len(),
         report.legal_rotations.len(),
         report.legal_state_count,
