@@ -2035,6 +2035,8 @@ mod tests {
             "bounds.json",
             "--case-time-limit-ms",
             "5000",
+            "--case-id",
+            "pair-0-2",
             "--output-dir",
             "factored-networks",
         ])
@@ -2047,6 +2049,7 @@ mod tests {
                     workspace_root,
                     placement_request,
                     case_time_limit_ms,
+                    case_id,
                     output_dir,
                 },
         } = cli.command
@@ -2057,6 +2060,7 @@ mod tests {
         assert_eq!(workspace_root, PathBuf::from("."));
         assert_eq!(placement_request, PathBuf::from("bounds.json"));
         assert_eq!(case_time_limit_ms, 5_000);
+        assert_eq!(case_id.as_deref(), Some("pair-0-2"));
         assert_eq!(output_dir, PathBuf::from("factored-networks"));
     }
 

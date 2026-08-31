@@ -713,6 +713,7 @@ pub fn decompose_first_integrated_layout_phase_factored_networks(
     logistics_components: &ValidatedLogisticsComponentCatalog,
     request: &FacilityPlacementRequest,
     search_budget: Duration,
+    case_id: Option<&str>,
 ) -> Result<FactoredNetworkDecompositionReport, IntegratedLayoutReport> {
     let first_phase_wiring = harness::first_iterative_scc_wiring(instance_wiring)?;
     let input = prepare_exact_model(
@@ -735,6 +736,19 @@ pub fn decompose_first_integrated_layout_phase_factored_networks(
     if network_count > 2 {
         selections.push((0..network_count).collect());
     }
+    if let Some(case_id) = case_id {
+        selections.retain(|indices| factored_network_case_id(indices) == case_id);
+        if selections.is_empty() {
+            return Err(IntegratedLayoutReport::invalid(
+                super::IntegratedLayoutDiagnostic::error(
+                    "research-network-case-not-found",
+                    "/case_id",
+                    Some(case_id.to_string()),
+                    format!("research network-subset case '{case_id}' does not exist"),
+                ),
+            ));
+        }
+    }
 
     let mut cases = Vec::with_capacity(selections.len());
     for indices in selections {
@@ -742,11 +756,7 @@ pub fn decompose_first_integrated_layout_phase_factored_networks(
             .clone()
             .select_network_indices(&indices)
             .map_err(IntegratedLayoutReport::invalid)?;
-        let id = match indices.as_slice() {
-            [index] => format!("single-{index}"),
-            [first, second] => format!("pair-{first}-{second}"),
-            _ => "full".to_string(),
-        };
+        let id = factored_network_case_id(&indices);
         let layout = exact::shared_layer::solve_factored_endpoints(
             case_input,
             logistics_components,
@@ -766,6 +776,14 @@ pub fn decompose_first_integrated_layout_phase_factored_networks(
         search_budget_ms_per_case: millis(search_budget),
         cases,
     })
+}
+
+fn factored_network_case_id(indices: &[usize]) -> String {
+    match indices {
+        [index] => format!("single-{index}"),
+        [first, second] => format!("pair-{first}-{second}"),
+        _ => "full".to_string(),
+    }
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]

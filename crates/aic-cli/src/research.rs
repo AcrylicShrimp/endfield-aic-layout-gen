@@ -290,6 +290,10 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "MILLISECONDS")]
         case_time_limit_ms: u64,
 
+        /// Optional stable case ID used to run one subset in an isolated process.
+        #[arg(long, value_name = "ID")]
+        case_id: Option<String>,
+
         /// Directory receiving summary JSON and per-case JSON/HTML artifacts.
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
@@ -479,12 +483,14 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             workspace_root,
             placement_request,
             case_time_limit_ms,
+            case_id,
             output_dir,
         } => factored_networks::run(
             workload,
             workspace_root,
             placement_request,
             case_time_limit_ms,
+            case_id,
             output_dir,
         ),
         ResearchCommand::DecomposeFirstPhaseFactoredRequirements {

@@ -26,6 +26,7 @@ pub(super) fn run(
     workspace_root: PathBuf,
     placement_request_path: PathBuf,
     case_time_limit_ms: u64,
+    case_id: Option<String>,
     output_dir: PathBuf,
 ) -> Result<bool> {
     let case_time_limit = NonZeroU64::new(case_time_limit_ms)
@@ -93,6 +94,7 @@ pub(super) fn run(
         &components,
         &placement_request,
         Duration::from_millis(case_time_limit.get()),
+        case_id.as_deref(),
     )
     .map_err(|report| anyhow::anyhow!("factored-network model preparation failed: {report:?}"))?;
 
