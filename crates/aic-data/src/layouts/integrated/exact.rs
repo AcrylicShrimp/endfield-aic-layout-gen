@@ -18,6 +18,7 @@ mod connectivity_propagator;
 mod extract;
 mod fixation;
 mod formulation;
+mod grid_analyzer;
 mod hint;
 mod metrics;
 mod objective;
@@ -27,6 +28,7 @@ mod search_statistics;
 pub(super) mod shared_layer;
 
 pub(in crate::layouts::integrated) use connectivity_propagator::PossibleRouteReachabilityStatistics;
+pub(in crate::layouts::integrated) use grid_analyzer::LayerGridAnalyzerStatistics;
 pub(super) use occupancy_probe::probe_physical_occupancy;
 
 use extract::extract_report;

@@ -133,6 +133,13 @@ does not remove any custom executions on the controlled workload. Its three-iter
 accepts lazy traversal as a 13.3% improvement, rejects two demand-side micro-optimizations, and moves
 the next research boundary to stronger exact connectivity inference.
 
+The thirty-ninth checkpoint,
+`heavy-xiranite-minimum-rate.thirty-ninth-layer-grid-opportunity-report.md`, attaches a passive
+analyzer that reads each belt or pipe layer as one directed two-dimensional grid. It preserves the
+complete search tree while finding 194 distinct unresolved predicates on 66 unique-support arcs.
+The terminal-adjacent subset contains 27 predicates on nine arcs and becomes the first active exact
+grid-propagation target.
+
 Regenerate it from a release binary with:
 
 ```bash

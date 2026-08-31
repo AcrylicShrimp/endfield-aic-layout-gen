@@ -122,6 +122,7 @@ pub(super) enum ConstraintFamily {
     TurnDefinition,
     ConnectivityWitness,
     ConnectivityPropagator,
+    GridAnalyzer,
     ResearchFixation,
 }
 
@@ -154,6 +155,7 @@ impl ConstraintFamily {
             Self::TurnDefinition => "turn-definition",
             Self::ConnectivityWitness => "connectivity-witness",
             Self::ConnectivityPropagator => "connectivity-propagator",
+            Self::GridAnalyzer => "grid-analyzer",
             Self::ResearchFixation => "research-fixation",
         }
     }

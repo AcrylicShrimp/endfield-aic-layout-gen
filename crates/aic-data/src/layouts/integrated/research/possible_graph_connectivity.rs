@@ -14,7 +14,7 @@ use super::coordinate_partition::{invalid_input, millis, model_scale, prepare_ta
 use super::rotation_partition::diagnose_cumulative_facility_rotation_partitions;
 use super::{ExactDimensionCaseOutcome, ExactUsedDimensionCandidate, PartitionCaseModelScale};
 
-pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 5;
+pub const POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION: u32 = 6;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -26,6 +26,7 @@ pub enum PossibleGraphConnectivityCaseKind {
     LazyTraversalPossibleGraphPropagator,
     GroupedDemandPossibleGraphPropagator,
     DemandSilentPossibleGraphPropagator,
+    LayerGridOpportunityAnalyzer,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
@@ -52,6 +53,25 @@ pub struct PossibleGraphConnectivityRuntime {
     pub registered_domain_variables: u64,
 }
 
+#[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
+pub struct LayerGridAnalyzerRuntime {
+    pub executions: u64,
+    pub material_passes: u64,
+    pub selected_demand_options: u64,
+    pub selected_demand_cells: u64,
+    pub reachable_selected_demand_cells: u64,
+    pub unique_support_steps: u64,
+    pub unresolved_predicate_observations: u64,
+    pub terminal_support_steps: u64,
+    pub terminal_unresolved_predicate_observations: u64,
+    pub distinct_support_arcs: u64,
+    pub distinct_unresolved_predicates: u64,
+    pub distinct_terminal_support_arcs: u64,
+    pub distinct_terminal_unresolved_predicates: u64,
+    pub maximum_unique_support_chain: u64,
+    pub registered_domain_variables: u64,
+}
+
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct PossibleGraphConnectivityCaseReport {
     pub kind: PossibleGraphConnectivityCaseKind,
@@ -63,6 +83,7 @@ pub struct PossibleGraphConnectivityCaseReport {
     pub model_scale: PartitionCaseModelScale,
     pub connectivity_scale: PossibleGraphConnectivityScale,
     pub connectivity_runtime: PossibleGraphConnectivityRuntime,
+    pub grid_analyzer_runtime: LayerGridAnalyzerRuntime,
     pub observed_objective: Option<ExactObjectiveValue>,
     pub layout: IntegratedLayoutReport,
 }
@@ -186,6 +207,13 @@ pub fn diagnose_phase2_possible_graph_connectivity(
         &reference,
     );
     let (demand_silent, demand_silent_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_demand_silent_possible_graph_connectivity(
+        input.clone(),
+        logistics_components,
+        Some(case_search_budget),
+        fixed_dimensions,
+        &reference,
+    );
+    let (grid_analyzed, grid_connectivity_runtime, grid_runtime) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_reference_layer_grid_analysis(
         input,
         logistics_components,
         Some(case_search_budget),
@@ -210,31 +238,43 @@ pub fn diagnose_phase2_possible_graph_connectivity(
                 PossibleGraphConnectivityCaseKind::Baseline,
                 baseline,
                 PossibleGraphConnectivityRuntime::default(),
+                LayerGridAnalyzerRuntime::default(),
             ),
             case_report(
                 PossibleGraphConnectivityCaseKind::PossibleGraphPropagator,
                 propagated,
                 connectivity_runtime(propagated_runtime),
+                LayerGridAnalyzerRuntime::default(),
             ),
             case_report(
                 PossibleGraphConnectivityCaseKind::EventSelectivePossibleGraphPropagator,
                 event_selective,
                 connectivity_runtime(event_selective_runtime),
+                LayerGridAnalyzerRuntime::default(),
             ),
             case_report(
                 PossibleGraphConnectivityCaseKind::LazyTraversalPossibleGraphPropagator,
                 lazy,
                 connectivity_runtime(lazy_runtime),
+                LayerGridAnalyzerRuntime::default(),
             ),
             case_report(
                 PossibleGraphConnectivityCaseKind::GroupedDemandPossibleGraphPropagator,
                 grouped,
                 connectivity_runtime(grouped_runtime),
+                LayerGridAnalyzerRuntime::default(),
             ),
             case_report(
                 PossibleGraphConnectivityCaseKind::DemandSilentPossibleGraphPropagator,
                 demand_silent,
                 connectivity_runtime(demand_silent_runtime),
+                LayerGridAnalyzerRuntime::default(),
+            ),
+            case_report(
+                PossibleGraphConnectivityCaseKind::LayerGridOpportunityAnalyzer,
+                grid_analyzed,
+                connectivity_runtime(grid_connectivity_runtime),
+                grid_analyzer_runtime(grid_runtime),
             ),
         ],
         diagnostic_only: true,
@@ -261,10 +301,34 @@ fn connectivity_runtime(
     }
 }
 
+fn grid_analyzer_runtime(
+    statistics: exact::LayerGridAnalyzerStatistics,
+) -> LayerGridAnalyzerRuntime {
+    LayerGridAnalyzerRuntime {
+        executions: statistics.executions,
+        material_passes: statistics.material_passes,
+        selected_demand_options: statistics.selected_demand_options,
+        selected_demand_cells: statistics.selected_demand_cells,
+        reachable_selected_demand_cells: statistics.reachable_selected_demand_cells,
+        unique_support_steps: statistics.unique_support_steps,
+        unresolved_predicate_observations: statistics.unresolved_predicate_observations,
+        terminal_support_steps: statistics.terminal_support_steps,
+        terminal_unresolved_predicate_observations: statistics
+            .terminal_unresolved_predicate_observations,
+        distinct_support_arcs: statistics.distinct_support_arcs,
+        distinct_unresolved_predicates: statistics.distinct_unresolved_predicates,
+        distinct_terminal_support_arcs: statistics.distinct_terminal_support_arcs,
+        distinct_terminal_unresolved_predicates: statistics.distinct_terminal_unresolved_predicates,
+        maximum_unique_support_chain: statistics.maximum_unique_support_chain,
+        registered_domain_variables: statistics.registered_domain_variables,
+    }
+}
+
 fn case_report(
     kind: PossibleGraphConnectivityCaseKind,
     layout: IntegratedLayoutReport,
     connectivity_runtime: PossibleGraphConnectivityRuntime,
+    grid_analyzer_runtime: LayerGridAnalyzerRuntime,
 ) -> PossibleGraphConnectivityCaseReport {
     let outcome = super::coordinate_partition::classify_outcome(&layout);
     let exact = layout
@@ -281,6 +345,7 @@ fn case_report(
         model_scale: model_scale(exact),
         connectivity_scale: connectivity_scale(exact),
         connectivity_runtime,
+        grid_analyzer_runtime,
         observed_objective: exact.objective,
         layout,
     }

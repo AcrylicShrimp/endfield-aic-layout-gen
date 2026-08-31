@@ -47,10 +47,10 @@ pub use dimension_sweep::{
     sweep_first_integrated_layout_phase_fixed_dimensions,
 };
 pub use possible_graph_connectivity::{
-    POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION, PossibleGraphConnectivityCaseKind,
-    PossibleGraphConnectivityCaseReport, PossibleGraphConnectivityDiagnosisReport,
-    PossibleGraphConnectivityRuntime, PossibleGraphConnectivityScale,
-    diagnose_phase2_possible_graph_connectivity,
+    LayerGridAnalyzerRuntime, POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION,
+    PossibleGraphConnectivityCaseKind, PossibleGraphConnectivityCaseReport,
+    PossibleGraphConnectivityDiagnosisReport, PossibleGraphConnectivityRuntime,
+    PossibleGraphConnectivityScale, diagnose_phase2_possible_graph_connectivity,
 };
 pub use reference_ablation::{
     PHASE2_REFERENCE_ABLATION_SCHEMA_VERSION, Phase2ReferenceAblationCaseReport,
