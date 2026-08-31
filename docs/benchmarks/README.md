@@ -161,6 +161,13 @@ propagators. A support-loss-only schedule preserves the chain's exact search tre
 of its 33,376 executions, so event masks are rejected as the next optimization boundary. Future
 work must maintain incremental watched state or add a stronger exact semantic rule.
 
+The forty-third checkpoint,
+`heavy-xiranite-minimum-rate.forty-third-dirty-material-chain-report.md`, reruns the unchanged
+recursive chain rule only for materials touched by support-loss events. Both release runs reproduce
+all 143,766 material passes and the complete broad-chain search tree because route and shared
+arm-item events dirty every material on their layer. Material-level filtering is rejected; exact
+reverse demand-chain watchers at `(material, cell)` become the next target.
+
 Regenerate it from a release binary with:
 
 ```bash
