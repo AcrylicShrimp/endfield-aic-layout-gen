@@ -22,6 +22,7 @@ mod facility_state_partition;
 mod integrated_endpoint_channel;
 mod possible_graph_connectivity;
 mod prior_port_subset;
+mod prior_terminal_pair;
 mod reference_ablation;
 mod residual_facility_state;
 mod rotation_partition;
@@ -84,6 +85,11 @@ pub use prior_port_subset::{
     PRIOR_PORT_SUBSET_ABLATION_SCHEMA_VERSION, PriorPortSubsetAblationReport,
     PriorPortSubsetCaseReport, PriorPortSubsetFacility, PriorTerminalSubsetPartition,
     PriorTerminalSubsetTerminal, diagnose_prior_port_subset_ablation,
+};
+pub use prior_terminal_pair::{
+    PRIOR_TERMINAL_PAIR_VALUE_PORTFOLIO_SCHEMA_VERSION, PriorTerminalPairDomain,
+    PriorTerminalPairValueCaseReport, PriorTerminalPairValuePortfolioReport,
+    diagnose_prior_terminal_pair_value_portfolio,
 };
 pub use reference_ablation::{
     PHASE2_REFERENCE_ABLATION_SCHEMA_VERSION, Phase2ReferenceAblationCaseReport,
