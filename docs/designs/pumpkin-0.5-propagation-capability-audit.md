@@ -90,6 +90,13 @@ still produced no feasible incumbent. This is a useful exact implementation redu
 cliff breaker. See
 `docs/benchmarks/heavy-xiranite-minimum-rate.fifty-seventh-grouped-guarded-item-intersection-report.md`.
 
+A follow-up two-pass implementation avoided provisional reason allocation on supported relations
+but rescanned disjoint relations. It preserved the same 39/61 Phase 2 result and identical search
+trees in completed proof cases, while adding 27% membership checks and producing no repeatable
+runtime gain. The code was reverted. This closes guarded-item implementation polishing in favor of
+the next Phase 2 cliff diagnosis. See
+`docs/benchmarks/heavy-xiranite-minimum-rate.fifty-eighth-two-pass-guard-reason-rejection.md`.
+
 ## Confirmed endpoint weakness
 
 The current factored endpoint encoding creates one placement integer whose values are complete
