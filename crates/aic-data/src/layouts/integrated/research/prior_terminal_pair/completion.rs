@@ -23,10 +23,12 @@ use super::{PriorTerminalPairValuePortfolioReport, diagnose_prior_terminal_pair_
 mod source_port;
 
 pub use source_port::{
-    PRIOR_INPUT_PORT_CONTROLS_SCHEMA_VERSION, PRIOR_SOURCE_PORT_PORTFOLIO_SCHEMA_VERSION,
-    PriorInputPortControlCaseReport, PriorInputPortControlSuiteReport,
-    PriorInputPortControlsReport, PriorSourcePortCaseReport, PriorSourcePortParentReport,
-    PriorSourcePortPortfolioReport, diagnose_prior_input_port_controls,
+    PRIOR_INPUT_PORT_CONTROLS_SCHEMA_VERSION, PRIOR_INPUT_PORT_PAIR_PORTFOLIO_SCHEMA_VERSION,
+    PRIOR_SOURCE_PORT_PORTFOLIO_SCHEMA_VERSION, PriorInputPortControlCaseReport,
+    PriorInputPortControlSuiteReport, PriorInputPortControlsReport, PriorInputPortPairCaseReport,
+    PriorInputPortPairPortfolioReport, PriorInputPortProofExclusion, PriorInputPortResidualDomain,
+    PriorSourcePortCaseReport, PriorSourcePortParentReport, PriorSourcePortPortfolioReport,
+    diagnose_prior_input_port_controls, diagnose_prior_input_port_pair_portfolio,
     diagnose_prior_source_port_portfolio,
 };
 

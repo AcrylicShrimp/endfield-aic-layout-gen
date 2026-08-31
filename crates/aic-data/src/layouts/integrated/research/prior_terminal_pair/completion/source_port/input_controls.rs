@@ -22,6 +22,14 @@ use super::super::super::super::coordinate_partition::{
 use super::super::super::super::{ExactDimensionCaseOutcome, ExactDimensionSolverStack};
 use super::{PriorSourcePortPortfolioReport, diagnose_prior_source_port_portfolio};
 
+mod pair;
+
+pub use pair::{
+    PRIOR_INPUT_PORT_PAIR_PORTFOLIO_SCHEMA_VERSION, PriorInputPortPairCaseReport,
+    PriorInputPortPairPortfolioReport, PriorInputPortProofExclusion, PriorInputPortResidualDomain,
+    diagnose_prior_input_port_pair_portfolio,
+};
+
 pub const PRIOR_INPUT_PORT_CONTROLS_SCHEMA_VERSION: u32 = 1;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 

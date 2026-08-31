@@ -4,9 +4,10 @@ use std::time::Duration;
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    FacilityPlacementRequest, PriorInputPortControlsReport, PriorSourcePortPortfolioReport,
-    PriorTerminalCompletionPortfolioReport, PriorTerminalPairValuePortfolioReport,
-    diagnose_prior_input_port_controls, diagnose_prior_source_port_portfolio,
+    FacilityPlacementRequest, PriorInputPortControlsReport, PriorInputPortPairPortfolioReport,
+    PriorSourcePortPortfolioReport, PriorTerminalCompletionPortfolioReport,
+    PriorTerminalPairValuePortfolioReport, diagnose_prior_input_port_controls,
+    diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
     diagnose_prior_terminal_completion_portfolio, diagnose_prior_terminal_pair_value_portfolio,
     render_integrated_layout_html_with_localization,
 };
@@ -79,6 +80,11 @@ struct Args {
     representative_source_leaf_index: Option<usize>,
     #[arg(long, value_name = "MILLISECONDS")]
     input_control_case_time_limit_ms: Option<u64>,
+    /// Enumerate the proof-derived Cartesian product of both remaining old-facility inputs.
+    #[arg(long)]
+    pair_prior_input_ports: bool,
+    #[arg(long, value_name = "MILLISECONDS")]
+    input_pair_case_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -113,7 +119,16 @@ fn main() -> Result<()> {
     let pair_budget = NonZeroU64::new(args.pair_case_time_limit_ms)
         .context("prior-terminal pair pair_case_time_limit_ms must be positive")?;
     let loaded = load_inputs(&args)?;
-    if args.control_prior_input_ports {
+    if args.pair_prior_input_ports {
+        run_input_pair(
+            &args,
+            terminal_bits,
+            worker_count,
+            prefix_budget,
+            pair_budget,
+            &loaded,
+        )
+    } else if args.control_prior_input_ports {
         run_input_controls(
             &args,
             terminal_bits,
@@ -170,7 +185,8 @@ fn run_pair(
     );
     ensure!(
         args.representative_source_leaf_index.is_none()
-            && args.input_control_case_time_limit_ms.is_none(),
+            && args.input_control_case_time_limit_ms.is_none()
+            && args.input_pair_case_time_limit_ms.is_none(),
         "prior-input control arguments require --control-prior-input-ports"
     );
     let report = diagnose_prior_terminal_pair_value_portfolio(
@@ -241,7 +257,8 @@ fn run_completion(
     );
     ensure!(
         args.representative_source_leaf_index.is_none()
-            && args.input_control_case_time_limit_ms.is_none(),
+            && args.input_control_case_time_limit_ms.is_none()
+            && args.input_pair_case_time_limit_ms.is_none(),
         "prior-input control arguments require --control-prior-input-ports"
     );
     let child_budget = NonZeroU64::new(
@@ -314,7 +331,8 @@ fn run_source_port(
 ) -> Result<()> {
     ensure!(
         args.representative_source_leaf_index.is_none()
-            && args.input_control_case_time_limit_ms.is_none(),
+            && args.input_control_case_time_limit_ms.is_none()
+            && args.input_pair_case_time_limit_ms.is_none(),
         "prior-input control arguments require --control-prior-input-ports"
     );
     ensure!(
@@ -397,6 +415,10 @@ fn run_input_controls(
     loaded: &LoadedInputs,
 ) -> Result<()> {
     ensure!(
+        args.input_pair_case_time_limit_ms.is_none(),
+        "--input-pair-case-time-limit-ms requires --pair-prior-input-ports"
+    );
+    ensure!(
         args.complete_target_ports && args.split_prior_source_port,
         "--control-prior-input-ports requires --complete-target-ports and --split-prior-source-port"
     );
@@ -475,6 +497,102 @@ fn run_input_controls(
     }
     serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
         .context("failed to write prior-input control report")?;
+    println!();
+    Ok(())
+}
+
+fn run_input_pair(
+    args: &Args,
+    terminal_bits: [usize; 2],
+    worker_count: NonZeroUsize,
+    prefix_budget: NonZeroU64,
+    pair_budget: NonZeroU64,
+    loaded: &LoadedInputs,
+) -> Result<()> {
+    ensure!(
+        args.complete_target_ports
+            && args.split_prior_source_port
+            && args.control_prior_input_ports,
+        "--pair-prior-input-ports requires --complete-target-ports, --split-prior-source-port, and --control-prior-input-ports"
+    );
+    let completion_budget = NonZeroU64::new(
+        args.child_case_time_limit_ms
+            .context("prior-input pair requires --child-case-time-limit-ms")?,
+    )
+    .context("prior-input pair child_case_time_limit_ms must be positive")?;
+    let source_budget = NonZeroU64::new(
+        args.source_case_time_limit_ms
+            .context("prior-input pair requires --source-case-time-limit-ms")?,
+    )
+    .context("prior-input pair source_case_time_limit_ms must be positive")?;
+    let representative_source_leaf_index = args
+        .representative_source_leaf_index
+        .context("prior-input pair requires --representative-source-leaf-index")?;
+    let control_budget = NonZeroU64::new(
+        args.input_control_case_time_limit_ms
+            .context("prior-input pair requires --input-control-case-time-limit-ms")?,
+    )
+    .context("prior-input pair input_control_case_time_limit_ms must be positive")?;
+    let residual_pair_budget = NonZeroU64::new(
+        args.input_pair_case_time_limit_ms
+            .context("prior-input pair requires --input-pair-case-time-limit-ms")?,
+    )
+    .context("prior-input pair input_pair_case_time_limit_ms must be positive")?;
+    let report = diagnose_prior_input_port_pair_portfolio(
+        &loaded.wiring,
+        &loaded.facilities,
+        &loaded.items,
+        &loaded.transports,
+        &loaded.components,
+        &loaded.placement_request,
+        args.target_phase,
+        args.used_width,
+        args.used_height,
+        args.facility_x,
+        args.facility_y,
+        args.port_assignment_index,
+        args.facility_rotation,
+        args.prior_facility_bit,
+        terminal_bits,
+        representative_source_leaf_index,
+        worker_count.get(),
+        Duration::from_millis(prefix_budget.get()),
+        Duration::from_millis(pair_budget.get()),
+        Duration::from_millis(completion_budget.get()),
+        Duration::from_millis(source_budget.get()),
+        Duration::from_millis(control_budget.get()),
+        Duration::from_millis(residual_pair_budget.get()),
+    )
+    .map_err(|report| anyhow::anyhow!("prior-input pair diagnosis failed: {report:?}"))?;
+
+    write_json(&args.output_dir.join("summary.json"), &report)?;
+    write_bytes(
+        &args.output_dir.join("summary.html"),
+        render_input_pair_summary(&report)?.as_bytes(),
+        "prior-input pair summary",
+    )?;
+    for case in &report.cases {
+        let html = render_integrated_layout_html_with_localization(
+            &case.layout,
+            loaded.localization.as_ref(),
+        )
+        .map_err(|diagnostic| {
+            anyhow::anyhow!(
+                "prior-input pair case visualization failed with {}: {}",
+                diagnostic.code,
+                diagnostic.message
+            )
+        })?;
+        write_bytes(
+            &args
+                .output_dir
+                .join(format!("case.input-pair-{:03}.html", case.pair_index)),
+            html.as_bytes(),
+            "prior-input pair case",
+        )?;
+    }
+    serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+        .context("failed to write prior-input pair report")?;
     println!();
     Ok(())
 }
@@ -893,6 +1011,97 @@ fn render_input_controls_summary(report: &PriorInputPortControlsReport) -> Resul
         report.representative_infeasibility_proven,
         report.invalid_witness_found,
         suites,
+        json,
+    ))
+}
+
+fn render_input_pair_summary(report: &PriorInputPortPairPortfolioReport) -> Result<String> {
+    let exclusions = report
+        .proof_exclusions
+        .iter()
+        .map(|exclusion| {
+            format!(
+                "<li>suite {} · <code>{}</code> = <code>{}</code> · {:?}</li>",
+                exclusion.suite_index, exclusion.terminal, exclusion.port, exclusion.outcome
+            )
+        })
+        .collect::<String>();
+    let domains = report
+        .residual_domains
+        .iter()
+        .map(|domain| {
+            format!(
+                "<li>suite {} · <code>{}</code><br>residual=<code>{}</code></li>",
+                domain.suite_index,
+                domain.terminal,
+                domain.ports.join(", ")
+            )
+        })
+        .collect::<String>();
+    let rows = report
+        .cases
+        .iter()
+        .map(|case| {
+            let assignments = case
+                .assignments
+                .iter()
+                .map(|assignment| assignment.port.as_str())
+                .collect::<Vec<_>>()
+                .join(" / ");
+            let cells = case
+                .connection_positions
+                .iter()
+                .map(|position| {
+                    position.as_ref().map_or_else(
+                        || "out of bounds".to_string(),
+                        |position| format!("({}, {})", position.x, position.y),
+                    )
+                })
+                .collect::<Vec<_>>()
+                .join(" / ");
+            format!(
+                "<tr><td>{}</td><td>{}</td><td>{}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
+                case.pair_index,
+                assignments,
+                cells,
+                case.outcome,
+                case.construction_ms,
+                case.search_ms,
+                case.first_incumbent_ms,
+                case.search_statistics.branch_decisions,
+                case.search_statistics.backtracks,
+                case.search_statistics.conflicts,
+                case.search_statistics.learned_clauses,
+                case.search_statistics.solver_propagations,
+                case.search_statistics.restarts,
+                case.model_scale.variables,
+                case.model_scale.constraints,
+                case.model_scale.incidences,
+                case.model_scale.placement_routing_incidences,
+            )
+        })
+        .collect::<String>();
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 3 representative prior-input pair</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.warning{{border:1px solid #ffd166;padding:10px;color:#ffd166}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}code{{color:#ffd166}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {} representative prior-input pair</h1><div class="meta">source leaf={} · excluded atomic pairs={} · residual pairs={} · fixed terminals/pair={} · workers={} · budget={}ms · pair wall={}ms · total={}ms</div><p class="warning">Only control cases proven infeasible with the other terminal free are excluded. Every ordered residual pair, including equal-port assignments, is executed.</p><h2>Proof exclusions</h2><ul>{}</ul><h2>Residual domains</h2><ul>{}</ul><p>feasible={} · infeasible={} · unknown={} · invalid={} · witness={} · representative infeasibility={}</p><table><thead><tr><th>pair</th><th>ports</th><th>cells</th><th>outcome</th><th>build ms</th><th>search ms</th><th>first</th><th>decisions</th><th>backtracks</th><th>conflicts</th><th>learned</th><th>propagations</th><th>restarts</th><th>variables</th><th>constraints</th><th>incidences</th><th>placement-routing</th></tr></thead><tbody>{}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        report.target_phase_index,
+        report.representative_source_leaf_index,
+        report.excluded_atomic_pair_count,
+        report.residual_pair_count,
+        report.fixed_terminal_count_per_pair,
+        report.worker_count,
+        report.pair_case_search_budget_ms,
+        report.pair_wave_wall_ms,
+        report.total_wall_ms,
+        exclusions,
+        domains,
+        report.validated_feasible_count,
+        report.proven_infeasible_count,
+        report.unknown_count,
+        report.invalid_witness_count,
+        report.representative_witness_found,
+        report.representative_infeasibility_proven,
+        rows,
         json,
     ))
 }
