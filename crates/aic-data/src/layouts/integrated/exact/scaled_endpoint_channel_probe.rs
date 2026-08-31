@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use std::sync::Arc;
 use std::time::Instant;
 
 use pumpkin_solver::Solver;
@@ -10,12 +11,15 @@ use crate::facilities::{FacilityPortDefinition, FacilityPortEdge};
 use crate::logistics::CardinalDirection;
 
 use super::super::research::{
-    EndpointChannelEncoding, EndpointChannelRestriction,
+    EndpointChannelEncoding, EndpointChannelRestriction, EndpointSupportPropagationStatistics,
     SCALED_ENDPOINT_CHANNEL_PROBE_SCHEMA_VERSION, ScaledEndpointChannelProbeReport,
     ScaledEndpointDomainSnapshot, ScaledEndpointRestrictionReport,
     ScaledEndpointTerminalDomainSnapshot, ScaledEndpointTerminalScale,
 };
 use super::super::{EndpointInput, IntegratedLayoutDiagnostic, ModelInput};
+use super::endpoint_support_propagator::{
+    EndpointSupportPropagationCounters, SparseEndpointSupportPropagatorArgs,
+};
 use super::formulation::generate_candidate_geometries;
 
 #[derive(Clone)]
@@ -36,6 +40,7 @@ struct ProbeModel {
     solver: Solver,
     placement: DomainId,
     terminals: Vec<TerminalVariables>,
+    support_counters: Arc<EndpointSupportPropagationCounters>,
 }
 
 #[derive(Clone)]
@@ -55,12 +60,14 @@ pub(in crate::layouts::integrated) fn probe_scaled_endpoint_channels(
 ) -> Result<ScaledEndpointChannelProbeReport, IntegratedLayoutDiagnostic> {
     if !matches!(
         encoding,
-        EndpointChannelEncoding::NestedElement | EndpointChannelEncoding::PositiveTable
+        EndpointChannelEncoding::NestedElement
+            | EndpointChannelEncoding::PositiveTable
+            | EndpointChannelEncoding::SparseSupport
     ) {
         return Err(diagnostic(
             "research-scaled-endpoint-encoding-unsupported",
             Some(format!("{encoding:?}")),
-            "scaled endpoint-channel probe supports only nested-element and positive-table encodings",
+            "scaled endpoint-channel probe supports nested-element, positive-table, and sparse-support encodings",
         ));
     }
     let instance = input
@@ -134,6 +141,7 @@ pub(in crate::layouts::integrated) fn probe_scaled_endpoint_channels(
             CSPSolverExecutionFlag::Feasible
         );
         let before = snapshot(&model, &placement_values, &relations);
+        let counters_before = model.support_counters.snapshot();
         let (applicable, description) = apply_restriction(
             &mut model,
             &placement_values,
@@ -157,6 +165,10 @@ pub(in crate::layouts::integrated) fn probe_scaled_endpoint_channels(
             after: snapshot(&model, &placement_values, &relations),
             inconsistent: status == CSPSolverExecutionFlag::Infeasible,
             root_propagation_us,
+            support_propagation: statistics_delta(
+                model.support_counters.snapshot(),
+                counters_before,
+            ),
         });
     }
 
@@ -188,6 +200,7 @@ pub(in crate::layouts::integrated) fn probe_scaled_endpoint_channels(
         estimated_hidden_table_literals: scale.table_rows,
         estimated_table_clauses: scale.estimated_table_clauses,
         build_us,
+        support_propagation: representative.support_counters.snapshot(),
         search_performed: false,
         branch_decisions: 0,
         backtracks: 0,
@@ -196,6 +209,24 @@ pub(in crate::layouts::integrated) fn probe_scaled_endpoint_channels(
         solver_propagations: 0,
         cases,
     })
+}
+
+fn statistics_delta(
+    after: EndpointSupportPropagationStatistics,
+    before: EndpointSupportPropagationStatistics,
+) -> EndpointSupportPropagationStatistics {
+    EndpointSupportPropagationStatistics {
+        executions: after.executions.saturating_sub(before.executions),
+        notifications: after.notifications.saturating_sub(before.notifications),
+        values_checked: after.values_checked.saturating_sub(before.values_checked),
+        rows_scanned: after.rows_scanned.saturating_sub(before.rows_scanned),
+        support_checks: after.support_checks.saturating_sub(before.support_checks),
+        residue_hits: after.residue_hits.saturating_sub(before.residue_hits),
+        residue_misses: after.residue_misses.saturating_sub(before.residue_misses),
+        removed_values: after.removed_values.saturating_sub(before.removed_values),
+        conflicts: after.conflicts.saturating_sub(before.conflicts),
+        maximum_reason_predicates: after.maximum_reason_predicates,
+    }
 }
 
 fn project_common_placement_domain(
@@ -305,6 +336,7 @@ fn build_model(
     relations: &[TerminalRelation],
 ) -> (ProbeModel, ModelScale) {
     let mut solver = Solver::default();
+    let support_counters = Arc::new(EndpointSupportPropagationCounters::default());
     let placement = solver.new_named_sparse_integer(placement_values, "scaled-endpoint-placement");
     let mut terminals = Vec::with_capacity(relations.len());
     let mut scale = ModelScale {
@@ -383,6 +415,21 @@ fn build_model(
                     ))
                     .post();
             }
+            EndpointChannelEncoding::SparseSupport => {
+                let tag = solver.new_constraint_tag();
+                let _ = solver.add_propagator(SparseEndpointSupportPropagatorArgs {
+                    name: format!("scaled-endpoint-{}-sparse-support", relation.id),
+                    variables: [placement, port, geometry],
+                    domain_values: [
+                        placement_values.to_vec(),
+                        relation.port_values.clone(),
+                        relation.geometry_values.clone(),
+                    ],
+                    rows: relation.rows.clone(),
+                    counters: Arc::clone(&support_counters),
+                    constraint_tag: tag,
+                });
+            }
             _ => unreachable!("encoding was validated before model construction"),
         }
         terminals.push(TerminalVariables { port, geometry });
@@ -392,6 +439,7 @@ fn build_model(
             solver,
             placement,
             terminals,
+            support_counters,
         },
         scale,
     )

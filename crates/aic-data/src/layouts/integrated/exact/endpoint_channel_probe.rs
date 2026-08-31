@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::time::Instant;
 
 use pumpkin_solver::Solver;
@@ -9,6 +10,9 @@ use super::super::research::{
     ENDPOINT_CHANNEL_PROBE_SCHEMA_VERSION, EndpointChannelCaseReport,
     EndpointChannelDomainSnapshot, EndpointChannelEncoding, EndpointChannelEndpointSnapshot,
     EndpointChannelProbeReport, EndpointChannelRestriction,
+};
+use super::endpoint_support_propagator::{
+    EndpointSupportPropagationCounters, SparseEndpointSupportPropagatorArgs,
 };
 
 const PLACEMENTS: [i32; 4] = [0, 1, 2, 3];
@@ -44,6 +48,7 @@ struct ProbeModel {
     direct_clauses: usize,
     table_rows: usize,
     estimated_table_clauses: usize,
+    support_counters: Arc<EndpointSupportPropagationCounters>,
 }
 
 pub(in crate::layouts::integrated) fn probe_endpoint_channels() -> EndpointChannelProbeReport {
@@ -52,6 +57,7 @@ pub(in crate::layouts::integrated) fn probe_endpoint_channels() -> EndpointChann
         EndpointChannelEncoding::DirectTupleClauses,
         EndpointChannelEncoding::DirectionChannel,
         EndpointChannelEncoding::PositiveTable,
+        EndpointChannelEncoding::SparseSupport,
     ];
     let restrictions = [
         EndpointChannelRestriction::FixedPlacementAndPort,
@@ -96,6 +102,7 @@ pub(in crate::layouts::integrated) fn probe_endpoint_channels() -> EndpointChann
                 table_rows: model.table_rows,
                 estimated_hidden_table_literals: model.table_rows,
                 estimated_table_clauses: model.estimated_table_clauses,
+                support_propagation: model.support_counters.snapshot(),
                 matches_positive_table_oracle: false,
             });
         }
@@ -114,8 +121,8 @@ pub(in crate::layouts::integrated) fn probe_endpoint_channels() -> EndpointChann
             .iter_mut()
             .filter(|case| case.restriction == restriction)
         {
-            case.matches_positive_table_oracle =
-                case.inconsistent == oracle.inconsistent && case.after == oracle.after;
+            case.matches_positive_table_oracle = case.inconsistent == oracle.inconsistent
+                && (case.inconsistent || case.after == oracle.after);
         }
     }
 
@@ -138,6 +145,7 @@ fn build_model(encoding: EndpointChannelEncoding, endpoint_count: usize) -> Prob
     let mut direct_clauses = 0;
     let mut table_rows = 0;
     let mut estimated_table_clauses = 0;
+    let support_counters = Arc::new(EndpointSupportPropagationCounters::default());
     for endpoint_index in 0..endpoint_count {
         let port =
             solver.new_named_sparse_integer(PORTS, format!("endpoint-probe-{endpoint_index}-port"));
@@ -235,6 +243,18 @@ fn build_model(encoding: EndpointChannelEncoding, endpoint_count: usize) -> Prob
                 );
                 None
             }
+            EndpointChannelEncoding::SparseSupport => {
+                let tag = solver.new_constraint_tag();
+                let _ = solver.add_propagator(SparseEndpointSupportPropagatorArgs {
+                    name: format!("endpoint-probe-{endpoint_index}-sparse-support"),
+                    variables: [placement, port, geometry],
+                    domain_values: [PLACEMENTS.to_vec(), PORTS.to_vec(), GEOMETRIES.to_vec()],
+                    rows: RELATION.to_vec(),
+                    counters: Arc::clone(&support_counters),
+                    constraint_tag: tag,
+                });
+                None
+            }
         };
         endpoints.push(EndpointVariables {
             port,
@@ -251,6 +271,7 @@ fn build_model(encoding: EndpointChannelEncoding, endpoint_count: usize) -> Prob
         direct_clauses,
         table_rows,
         estimated_table_clauses,
+        support_counters,
     }
 }
 
@@ -493,6 +514,20 @@ mod tests {
             )
             .inconsistent
         );
+        for restriction in [
+            EndpointChannelRestriction::FixedPlacementAndPort,
+            EndpointChannelRestriction::InteriorGeometryHole,
+            EndpointChannelRestriction::DirectionClassOnly,
+            EndpointChannelRestriction::RemoveAllPlacementSupports,
+            EndpointChannelRestriction::PlacementHoleForward,
+            EndpointChannelRestriction::SharedPlacementConflict,
+        ] {
+            assert!(
+                case(restriction, EndpointChannelEncoding::SparseSupport)
+                    .matches_positive_table_oracle,
+                "sparse support differs from the positive-table oracle for {restriction:?}"
+            );
+        }
         assert!(
             !case(
                 EndpointChannelRestriction::SharedPlacementConflict,
@@ -509,6 +544,7 @@ mod tests {
             EndpointChannelEncoding::DirectTupleClauses,
             EndpointChannelEncoding::DirectionChannel,
             EndpointChannelEncoding::PositiveTable,
+            EndpointChannelEncoding::SparseSupport,
         ] {
             for placement_value in PLACEMENTS {
                 for port_value in PORTS {

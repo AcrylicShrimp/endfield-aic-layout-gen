@@ -10,10 +10,12 @@ use crate::logistics::{
 use crate::recipes::FacilityInstanceWiringReport;
 
 use super::coordinate_partition::{classify_outcome, invalid_input, prepare_target_input};
-use super::{EndpointChannelEncoding, ExactDimensionCaseOutcome};
+use super::{
+    EndpointChannelEncoding, EndpointSupportPropagationStatistics, ExactDimensionCaseOutcome,
+};
 use crate::layouts::integrated::{ExactSearchStatistics, IntegratedLayoutReport, exact};
 
-pub const INTEGRATED_ENDPOINT_CHANNEL_COMPARISON_SCHEMA_VERSION: u32 = 2;
+pub const INTEGRATED_ENDPOINT_CHANNEL_COMPARISON_SCHEMA_VERSION: u32 = 3;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -34,6 +36,7 @@ pub struct IntegratedEndpointChannelCaseReport {
     pub case_search_budget_ms: u64,
     pub row_selector_tracking: bool,
     pub endpoint_table_scale: IntegratedEndpointTableScale,
+    pub endpoint_support_propagation: EndpointSupportPropagationStatistics,
     pub outer_wall_ms: u64,
     pub construction_ms: u64,
     pub search_ms: u64,
@@ -72,11 +75,13 @@ pub fn run_integrated_endpoint_channel_case(
     }
     if !matches!(
         encoding,
-        EndpointChannelEncoding::NestedElement | EndpointChannelEncoding::PositiveTable
+        EndpointChannelEncoding::NestedElement
+            | EndpointChannelEncoding::PositiveTable
+            | EndpointChannelEncoding::SparseSupport
     ) {
         return Err(invalid_input(
             "/encoding",
-            "integrated endpoint-channel comparison supports nested-element or positive-table",
+            "integrated endpoint-channel comparison supports nested-element, positive-table, or sparse-support",
         ));
     }
     if track_row_selectors && encoding != EndpointChannelEncoding::PositiveTable {
@@ -117,34 +122,46 @@ pub fn run_integrated_endpoint_channel_case(
         height: fixed_height,
     };
     let started = Instant::now();
-    let layout = match (encoding, track_row_selectors) {
+    let (layout, endpoint_support_propagation) = match (encoding, track_row_selectors) {
         (EndpointChannelEncoding::NestedElement, false) => {
-            exact::shared_layer::solve_factored_endpoints_fixed_dimensions_feasibility_only_with_prior_and_local_continuation_guarded_intersection_propagation(
+            let layout = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_feasibility_only_with_prior_and_local_continuation_guarded_intersection_propagation(
                 input,
                 logistics_components,
                 Some(case_search_budget),
                 fixed_dimensions,
                 None,
             )
-            .0
+            .0;
+            (layout, EndpointSupportPropagationStatistics::default())
         }
         (EndpointChannelEncoding::PositiveTable, false) => {
-            exact::shared_layer::solve_positive_table_endpoints_fixed_dimensions_feasibility_only_with_local_continuation_guarded_intersection_propagation(
+            let layout = exact::shared_layer::solve_positive_table_endpoints_fixed_dimensions_feasibility_only_with_local_continuation_guarded_intersection_propagation(
                 input,
                 logistics_components,
                 Some(case_search_budget),
                 fixed_dimensions,
             )
-            .0
+            .0;
+            (layout, EndpointSupportPropagationStatistics::default())
         }
         (EndpointChannelEncoding::PositiveTable, true) => {
-            exact::shared_layer::solve_tracked_positive_table_endpoints_fixed_dimensions_feasibility_only_with_local_continuation_guarded_intersection_propagation(
+            let layout = exact::shared_layer::solve_tracked_positive_table_endpoints_fixed_dimensions_feasibility_only_with_local_continuation_guarded_intersection_propagation(
                 input,
                 logistics_components,
                 Some(case_search_budget),
                 fixed_dimensions,
             )
-            .0
+            .0;
+            (layout, EndpointSupportPropagationStatistics::default())
+        }
+        (EndpointChannelEncoding::SparseSupport, false) => {
+            let (layout, _, support) = exact::shared_layer::solve_sparse_support_endpoints_fixed_dimensions_feasibility_only_with_local_continuation_guarded_intersection_propagation(
+                input,
+                logistics_components,
+                Some(case_search_budget),
+                fixed_dimensions,
+            );
+            (layout, support)
         }
         _ => unreachable!("encoding and tracking mode were validated before the exact solve"),
     };
@@ -162,6 +179,7 @@ pub fn run_integrated_endpoint_channel_case(
         case_search_budget_ms: case_search_budget.as_millis().min(u128::from(u64::MAX)) as u64,
         row_selector_tracking: track_row_selectors,
         endpoint_table_scale,
+        endpoint_support_propagation,
         outer_wall_ms,
         construction_ms: exact.construction_ms,
         search_ms: exact.search_ms,
@@ -180,6 +198,7 @@ fn encoding_table_overhead(
     match encoding {
         EndpointChannelEncoding::NestedElement => (0, 0),
         EndpointChannelEncoding::PositiveTable => (legal_tuple_rows, estimated_table_clauses),
+        EndpointChannelEncoding::SparseSupport => (0, 0),
         _ => unreachable!("integrated comparison validates its endpoint encoding"),
     }
 }
@@ -197,6 +216,10 @@ mod tests {
         assert_eq!(
             encoding_table_overhead(EndpointChannelEncoding::PositiveTable, 29_568, 107_608),
             (29_568, 107_608)
+        );
+        assert_eq!(
+            encoding_table_overhead(EndpointChannelEncoding::SparseSupport, 29_568, 107_608),
+            (0, 0)
         );
     }
 }

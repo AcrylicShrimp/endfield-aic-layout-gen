@@ -68,6 +68,7 @@ pub(super) enum DiagnosticSearchModeArg {
 pub(super) enum EndpointChannelEncodingArg {
     NestedElement,
     PositiveTable,
+    SparseSupport,
 }
 
 #[derive(Debug, Args)]

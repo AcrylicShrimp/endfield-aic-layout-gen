@@ -7,10 +7,10 @@ use crate::logistics::{
 };
 use crate::recipes::FacilityInstanceWiringReport;
 
-use super::EndpointChannelEncoding;
+use super::{EndpointChannelEncoding, EndpointSupportPropagationStatistics};
 use crate::layouts::integrated::{IntegratedLayoutDiagnostic, exact, harness, prepare_exact_model};
 
-pub const SCALED_ENDPOINT_CHANNEL_PROBE_SCHEMA_VERSION: u32 = 1;
+pub const SCALED_ENDPOINT_CHANNEL_PROBE_SCHEMA_VERSION: u32 = 2;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -36,6 +36,7 @@ pub struct ScaledEndpointRestrictionReport {
     pub after: ScaledEndpointDomainSnapshot,
     pub inconsistent: bool,
     pub root_propagation_us: u64,
+    pub support_propagation: EndpointSupportPropagationStatistics,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -65,6 +66,7 @@ pub struct ScaledEndpointChannelProbeReport {
     pub estimated_hidden_table_literals: usize,
     pub estimated_table_clauses: usize,
     pub build_us: u64,
+    pub support_propagation: EndpointSupportPropagationStatistics,
     pub search_performed: bool,
     pub branch_decisions: u64,
     pub backtracks: u64,

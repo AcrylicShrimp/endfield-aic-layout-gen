@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use super::exact;
 
-pub const ENDPOINT_CHANNEL_PROBE_SCHEMA_VERSION: u32 = 1;
+pub const ENDPOINT_CHANNEL_PROBE_SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -11,6 +11,21 @@ pub enum EndpointChannelEncoding {
     DirectTupleClauses,
     DirectionChannel,
     PositiveTable,
+    SparseSupport,
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
+pub struct EndpointSupportPropagationStatistics {
+    pub executions: u64,
+    pub notifications: u64,
+    pub values_checked: u64,
+    pub rows_scanned: u64,
+    pub support_checks: u64,
+    pub residue_hits: u64,
+    pub residue_misses: u64,
+    pub removed_values: u64,
+    pub conflicts: u64,
+    pub maximum_reason_predicates: u64,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -51,6 +66,7 @@ pub struct EndpointChannelCaseReport {
     pub table_rows: usize,
     pub estimated_hidden_table_literals: usize,
     pub estimated_table_clauses: usize,
+    pub support_propagation: EndpointSupportPropagationStatistics,
     pub matches_positive_table_oracle: bool,
 }
 

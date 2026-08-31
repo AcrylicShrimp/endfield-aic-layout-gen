@@ -18,6 +18,9 @@ use super::connectivity_propagator::{
     PossibleRouteReachabilityStatistics, PossibleRouteReachabilityTraversalMode,
     PossibleRouteReachabilityWakeMode, PossibleTerminalOption,
 };
+use super::endpoint_support_propagator::{
+    EndpointSupportPropagationCounters, SparseEndpointSupportPropagatorArgs,
+};
 use super::extract::rate_from_flow_units;
 use super::formulation::{
     DIRECTIONS, direction_between, direction_index, external_endpoint_options,
@@ -76,12 +79,13 @@ struct SharedLayer {
     arm_items: Vec<[DomainId; 4]>,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 enum EndpointEncoding {
     Flattened,
     Factored,
     FactoredPositiveTable,
     FactoredTrackedPositiveTable,
+    FactoredSparseSupport(SyncArc<EndpointSupportPropagationCounters>),
 }
 
 #[derive(Clone, Copy)]
@@ -471,6 +475,49 @@ pub(in crate::layouts::integrated) fn solve_positive_table_endpoints_fixed_dimen
         },
     );
     (report, grid_counters.snapshot())
+}
+
+pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_fixed_dimensions_feasibility_only_with_local_continuation_guarded_intersection_propagation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+) -> (
+    IntegratedLayoutReport,
+    LayerGridAnalyzerStatistics,
+    crate::layouts::integrated::research::EndpointSupportPropagationStatistics,
+) {
+    let connectivity_counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    let grid_counters = SyncArc::new(LayerGridAnalyzerCounters::default());
+    let endpoint_counters = SyncArc::new(EndpointSupportPropagationCounters::default());
+    let report = solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::FactoredSparseSupport(SyncArc::clone(&endpoint_counters)),
+        None,
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        None,
+        None,
+        None,
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters: connectivity_counters,
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
+            grid_analyzer: Some((
+                SyncArc::clone(&grid_counters),
+                LayerGridRule::ForceWatchedDemandUniqueSupportChainAndLocalContinuationWithGuardedIntersectionPropagation,
+            )),
+        },
+    );
+    (
+        report,
+        grid_counters.snapshot(),
+        endpoint_counters.snapshot(),
+    )
 }
 
 pub(in crate::layouts::integrated) fn solve_tracked_positive_table_endpoints_fixed_dimensions_feasibility_only_with_local_continuation_guarded_intersection_propagation(
@@ -1615,7 +1662,7 @@ fn solve_with_endpoint_encoding(
     {
         return IntegratedLayoutReport::invalid(diagnostic);
     }
-    let model_terminals = match endpoint_encoding {
+    let model_terminals = match &endpoint_encoding {
         EndpointEncoding::Flattened => {
             let edge_endpoint_options = build_endpoint_options(
                 &mut solver,
@@ -1628,12 +1675,13 @@ fn solve_with_endpoint_encoding(
         }
         EndpointEncoding::Factored
         | EndpointEncoding::FactoredPositiveTable
-        | EndpointEncoding::FactoredTrackedPositiveTable => build_factored_terminals(
+        | EndpointEncoding::FactoredTrackedPositiveTable
+        | EndpointEncoding::FactoredSparseSupport(_) => build_factored_terminals(
             &mut solver,
             &input,
             &model_instances,
             &placement_choices,
-            endpoint_encoding,
+            &endpoint_encoding,
             &mut tracked_row_selectors,
             used_bounds,
             &mut model_metrics,
@@ -2137,7 +2185,7 @@ fn solve_with_endpoint_encoding(
                 "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions-transport-tile-cap"
             }
             (None, None, ConnectivityMode::None) => match (
-                endpoint_encoding,
+                &endpoint_encoding,
                 fixed_dimensions,
                 fixed_coordinate,
                 fixed_ports,
@@ -2178,14 +2226,26 @@ fn solve_with_endpoint_encoding(
                 (EndpointEncoding::FactoredTrackedPositiveTable, _, _, _) => {
                     unreachable!("tracked positive-table research does not fix coordinates or ports")
                 }
+                (EndpointEncoding::FactoredSparseSupport(_), Some(_), None, None) => {
+                    "joint-shared-boundary-terminals-sparse-support-v1-fixed-dimensions"
+                }
+                (EndpointEncoding::FactoredSparseSupport(_), None, None, None) => {
+                    "joint-shared-boundary-terminals-sparse-support-v1"
+                }
+                (EndpointEncoding::FactoredSparseSupport(_), _, _, _) => {
+                    unreachable!("sparse-support research does not fix coordinates or ports")
+                }
             },
         };
-    let formulation = match endpoint_encoding {
+    let formulation = match &endpoint_encoding {
         EndpointEncoding::FactoredPositiveTable => {
             "joint-shared-v4-positive-table-endpoints-watched-demand-local-continuation-guarded-intersection-propagation"
         }
         EndpointEncoding::FactoredTrackedPositiveTable => {
             "joint-shared-v4-tracked-positive-table-endpoints-watched-demand-local-continuation-guarded-intersection-propagation"
+        }
+        EndpointEncoding::FactoredSparseSupport(_) => {
+            "joint-shared-v4-sparse-support-endpoints-watched-demand-local-continuation-guarded-intersection-propagation"
         }
         EndpointEncoding::Flattened | EndpointEncoding::Factored => formulation,
     };
@@ -3770,7 +3830,7 @@ fn build_factored_terminals(
     input: &ModelInput,
     instances: &[ModelInstance],
     placement_choices: &BTreeMap<String, PlacementChoice>,
-    endpoint_encoding: EndpointEncoding,
+    endpoint_encoding: &EndpointEncoding,
     tracked_row_selectors: &mut Vec<DomainId>,
     used_bounds: UsedBoundsVariables,
     metrics: &mut ExactModelMetrics,
@@ -3953,7 +4013,7 @@ fn build_factored_selector(
     edge_index: usize,
     endpoint_kind: &str,
     endpoint: &EndpointInput,
-    endpoint_encoding: EndpointEncoding,
+    endpoint_encoding: &EndpointEncoding,
     tracked_row_selectors: &mut Vec<DomainId>,
     metrics: &mut ExactModelMetrics,
     tag: pumpkin_solver::core::proof::ConstraintTag,
@@ -4095,6 +4155,49 @@ fn build_factored_selector(
                 rows,
                 tag,
             ));
+        }
+        EndpointEncoding::FactoredSparseSupport(counters) => {
+            let rows = facility_values_by_port
+                .iter()
+                .enumerate()
+                .flat_map(|(port_index, values)| {
+                    values
+                        .iter()
+                        .copied()
+                        .enumerate()
+                        .filter(|(_, geometry)| *geometry >= 0)
+                        .map(move |(placement_index, geometry)| {
+                            [
+                                i32::try_from(placement_index)
+                                    .expect("placement candidate index fits i32"),
+                                i32::try_from(port_index).expect("port index fits i32"),
+                                geometry,
+                            ]
+                        })
+                })
+                .collect::<Vec<_>>();
+            solver.record_global_constraint(
+                ConstraintFamily::EndpointLink,
+                [placement.choice, port_choice, facility_key],
+            );
+            let _ = solver
+                .solver_mut()
+                .add_propagator(SparseEndpointSupportPropagatorArgs {
+                    name: format!("edge-{edge_index}-{endpoint_kind}-sparse-endpoint-support"),
+                    variables: [placement.choice, port_choice, facility_key],
+                    domain_values: [
+                        (0..instance.candidates.len())
+                            .map(|value| i32::try_from(value).expect("placement index fits i32"))
+                            .collect(),
+                        (0..ports.len())
+                            .map(|value| i32::try_from(value).expect("port index fits i32"))
+                            .collect(),
+                        (0..=key_upper).collect(),
+                    ],
+                    rows,
+                    counters: SyncArc::clone(counters),
+                    constraint_tag: tag,
+                });
         }
         EndpointEncoding::Flattened => {
             unreachable!("flattened endpoint encoding does not build factored selectors")

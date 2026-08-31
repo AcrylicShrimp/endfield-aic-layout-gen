@@ -60,8 +60,8 @@ pub use dimension_sweep::{
 pub use endpoint_channel::{
     ENDPOINT_CHANNEL_PROBE_SCHEMA_VERSION, EndpointChannelCaseReport,
     EndpointChannelDomainSnapshot, EndpointChannelEncoding, EndpointChannelEndpointSnapshot,
-    EndpointChannelProbeReport, EndpointChannelRestriction, render_endpoint_channel_probe_html,
-    run_endpoint_channel_probe,
+    EndpointChannelProbeReport, EndpointChannelRestriction, EndpointSupportPropagationStatistics,
+    render_endpoint_channel_probe_html, run_endpoint_channel_probe,
 };
 pub use facility_state_partition::{
     CUMULATIVE_FACILITY_STATE_PARTITION_SCHEMA_VERSION, CumulativeFacilityStatePartitionReport,

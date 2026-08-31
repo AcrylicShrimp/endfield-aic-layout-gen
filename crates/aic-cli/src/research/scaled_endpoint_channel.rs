@@ -24,6 +24,7 @@ pub(super) fn run(
     let encoding = match encoding {
         EndpointChannelEncodingArg::NestedElement => EndpointChannelEncoding::NestedElement,
         EndpointChannelEncodingArg::PositiveTable => EndpointChannelEncoding::PositiveTable,
+        EndpointChannelEncodingArg::SparseSupport => EndpointChannelEncoding::SparseSupport,
     };
     let report = run_scaled_endpoint_channel_probe(
         &loaded.wiring,
