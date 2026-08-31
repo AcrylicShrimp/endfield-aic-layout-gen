@@ -23,6 +23,8 @@ mod hint;
 mod metrics;
 mod objective;
 mod occupancy_probe;
+#[cfg(test)]
+mod propagation_capability;
 mod recorder;
 mod search_statistics;
 pub(super) mod shared_layer;
