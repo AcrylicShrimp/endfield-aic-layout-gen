@@ -89,6 +89,14 @@ layers, Boolean values, commodity networks, and individual physical cells. It is
 observed trigger to one occupied pipe cell immediately downstream of a facility demand terminal and
 identifies the terminal-approach/support disjunction as the next exact reformulation target.
 
+The thirty-third checkpoint,
+`heavy-xiranite-minimum-rate.thirty-third-phase2-connectivity-witness-report.md`, tests a redundant
+exact parent/depth connectivity forest on the same controlled Phase 2 routing problem. The forest
+preserves the accepted routing semantics but adds 7,680 variables and 35,920 constraints, and it
+repeatedly doubles first-witness time. The checkpoint rejects a dense declarative proof forest as a
+performance strategy and identifies global possible-graph propagation as the next connectivity
+experiment.
+
 Regenerate it from a release binary with:
 
 ```bash

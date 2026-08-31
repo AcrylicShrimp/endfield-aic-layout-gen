@@ -14,6 +14,7 @@ use super::{
     IntegratedLayoutStatus, exact, harness, prepare_exact_model,
 };
 
+mod connectivity_witness;
 mod coordinate_partition;
 mod dimension_sweep;
 mod reference_ablation;
@@ -21,6 +22,11 @@ mod rotation_partition;
 mod routing_state_breakdown;
 mod transport_tile_cap;
 
+pub use connectivity_witness::{
+    CONNECTIVITY_WITNESS_DIAGNOSIS_SCHEMA_VERSION, ConnectivityWitnessCaseKind,
+    ConnectivityWitnessCaseReport, ConnectivityWitnessDiagnosisReport,
+    ConnectivityWitnessStateScale, diagnose_phase2_connectivity_witness,
+};
 pub use coordinate_partition::{
     CUMULATIVE_FACILITY_COORDINATE_PARTITION_SCHEMA_VERSION,
     CUMULATIVE_FACILITY_PORT_PARTITION_SCHEMA_VERSION,

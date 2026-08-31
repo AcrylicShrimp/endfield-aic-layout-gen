@@ -525,6 +525,58 @@ fn factored_shared_layer_routes_external_boundary_terminals_in_the_commodity_net
 }
 
 #[test]
+fn connectivity_witness_preserves_a_controlled_external_route() {
+    let (facilities, items, transports, components) = catalogs();
+    let input = super::prepare_model(
+        &external_connector_wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 4,
+            max_height: 3,
+        },
+    )
+    .expect("connectivity witness fixture should prepare");
+
+    let baseline =
+        super::exact::shared_layer::solve_factored_endpoints(input.clone(), &components, None);
+    let witnessed = super::exact::shared_layer::solve_factored_endpoints_connectivity_witness(
+        input,
+        &components,
+        None,
+    );
+
+    assert!(baseline.success, "{:#?}", baseline.diagnostics);
+    assert!(witnessed.success, "{:#?}", witnessed.diagnostics);
+    assert_eq!(witnessed.status, IntegratedLayoutStatus::Optimal);
+    let baseline_exact = baseline.exact.expect("baseline reports exact evidence");
+    let witnessed_exact = witnessed.exact.expect("witness reports exact evidence");
+    assert_eq!(witnessed_exact.validation, ExactValidationStatus::Passed);
+    assert_eq!(witnessed_exact.objective, baseline_exact.objective);
+    assert_eq!(
+        witnessed_exact.formulation,
+        "joint-shared-v4-connectivity-witness"
+    );
+    let variable_families = &witnessed_exact.model_complexity.variables.by_family;
+    for family in [
+        "connectivity-reachability",
+        "connectivity-root",
+        "connectivity-parent",
+        "connectivity-depth",
+    ] {
+        assert!(
+            variable_families
+                .iter()
+                .any(|metrics| metrics.family == family && metrics.total_variables > 0),
+            "missing connectivity witness variable family {family}"
+        );
+    }
+}
+
+#[test]
 fn feasibility_only_search_preserves_the_exact_model_and_validates_its_witness() {
     let (facilities, items, transports, components) = catalogs();
     let input = super::prepare_model(

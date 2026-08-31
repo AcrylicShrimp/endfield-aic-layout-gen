@@ -30,6 +30,10 @@ pub(super) enum VariableFamily {
     Bridge,
     BridgeRotation,
     CrossingOwner,
+    ConnectivityReachability,
+    ConnectivityRoot,
+    ConnectivityParent,
+    ConnectivityDepth,
     Objective,
 }
 
@@ -52,6 +56,10 @@ impl VariableFamily {
             Self::Bridge => "bridge",
             Self::BridgeRotation => "bridge-rotation",
             Self::CrossingOwner => "crossing-owner",
+            Self::ConnectivityReachability => "connectivity-reachability",
+            Self::ConnectivityRoot => "connectivity-root",
+            Self::ConnectivityParent => "connectivity-parent",
+            Self::ConnectivityDepth => "connectivity-depth",
             Self::Objective => "objective",
         }
     }
@@ -77,6 +85,10 @@ impl VariableFamily {
                 | Self::Bridge
                 | Self::BridgeRotation
                 | Self::CrossingOwner
+                | Self::ConnectivityReachability
+                | Self::ConnectivityRoot
+                | Self::ConnectivityParent
+                | Self::ConnectivityDepth
                 | Self::BoundaryTerminal
         )
     }
@@ -108,6 +120,7 @@ pub(super) enum ConstraintFamily {
     BoundingBox,
     ObjectiveDefinition,
     TurnDefinition,
+    ConnectivityWitness,
     ResearchFixation,
 }
 
@@ -138,6 +151,7 @@ impl ConstraintFamily {
             Self::BoundingBox => "bounding-box",
             Self::ObjectiveDefinition => "objective-definition",
             Self::TurnDefinition => "turn-definition",
+            Self::ConnectivityWitness => "connectivity-witness",
             Self::ResearchFixation => "research-fixation",
         }
     }

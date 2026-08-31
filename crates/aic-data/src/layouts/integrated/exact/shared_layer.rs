@@ -203,6 +203,7 @@ pub(in crate::layouts::integrated) fn solve(
         None,
         None,
         None,
+        false,
     )
 }
 
@@ -233,6 +234,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_with_prior(
         None,
         None,
         None,
+        false,
     )
 }
 
@@ -254,6 +256,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_feasibility_only(
         None,
         None,
         None,
+        false,
     )
 }
 
@@ -292,6 +295,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         None,
         None,
         None,
+        false,
     )
 }
 
@@ -316,6 +320,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         None,
         Some(transport_tile_upper_bound),
         None,
+        false,
     )
 }
 
@@ -341,6 +346,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         None,
         None,
         None,
+        false,
     )
 }
 
@@ -367,6 +373,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         None,
         None,
         None,
+        false,
     )
 }
 
@@ -391,6 +398,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         Some(fixation),
         None,
         None,
+        false,
     )
 }
 
@@ -415,6 +423,54 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         Some(ReferenceAblationFixation::PlacementsAndAllTerminals),
         None,
         Some(routing_fixation),
+        false,
+    )
+}
+
+#[cfg(test)]
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_connectivity_witness(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+) -> IntegratedLayoutReport {
+    solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        None,
+        SearchMode::Optimize,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        true,
+    )
+}
+
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_reference_connectivity_witness(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    reference: &IntegratedLayoutReport,
+) -> IntegratedLayoutReport {
+    solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        Some(reference),
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        None,
+        None,
+        Some(ReferenceAblationFixation::PlacementsAndAllTerminals),
+        None,
+        None,
+        true,
     )
 }
 
@@ -534,6 +590,7 @@ fn solve_with_endpoint_encoding(
     reference_fixation: Option<ReferenceAblationFixation>,
     transport_tile_upper_bound: Option<i32>,
     reference_routing_fixation: Option<ReferenceRoutingFixation>,
+    connectivity_witness: bool,
 ) -> IntegratedLayoutReport {
     if transport_tile_upper_bound.is_some_and(|upper_bound| upper_bound < 0) {
         return IntegratedLayoutReport::invalid(IntegratedLayoutDiagnostic::error(
@@ -659,6 +716,9 @@ fn solve_with_endpoint_encoding(
             tag,
         );
         layers.push(layer);
+    }
+    if connectivity_witness {
+        post_connectivity_witness(&mut solver, &input, &layers, &model_terminals, tag);
     }
     if let Some(fixation) = reference_routing_fixation
         && let Err(diagnostic) = post_reference_routing_fixation(
@@ -863,21 +923,26 @@ fn solve_with_endpoint_encoding(
     };
     finish_report_with_formulation(
         report,
-        match (reference_fixation, reference_routing_fixation) {
-            (_, Some(_)) => "joint-shared-v4-reference-routing-state-ablation",
-            (Some(ReferenceAblationFixation::Placements), None) => {
+        match (
+            reference_fixation,
+            reference_routing_fixation,
+            connectivity_witness,
+        ) {
+            (_, _, true) => "joint-shared-v4-connectivity-witness",
+            (_, Some(_), false) => "joint-shared-v4-reference-routing-state-ablation",
+            (Some(ReferenceAblationFixation::Placements), None, false) => {
                 "joint-shared-v4-reference-placements-ablation"
             }
-            (Some(ReferenceAblationFixation::PlacementsAndFacilityPorts), None) => {
+            (Some(ReferenceAblationFixation::PlacementsAndFacilityPorts), None, false) => {
                 "joint-shared-v4-reference-placements-facility-ports-ablation"
             }
-            (Some(ReferenceAblationFixation::PlacementsAndAllTerminals), None) => {
+            (Some(ReferenceAblationFixation::PlacementsAndAllTerminals), None, false) => {
                 "joint-shared-v4-reference-placements-all-terminals-ablation"
             }
-            (None, None) if transport_tile_upper_bound.is_some() => {
+            (None, None, false) if transport_tile_upper_bound.is_some() => {
                 "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions-transport-tile-cap"
             }
-            (None, None) => match (
+            (None, None, false) => match (
                 endpoint_encoding,
                 fixed_dimensions,
                 fixed_coordinate,
@@ -1098,6 +1163,183 @@ fn post_reference_terminals(
         }
     }
     Ok(())
+}
+
+fn post_connectivity_witness(
+    solver: &mut RecordedModel,
+    input: &ModelInput,
+    layers: &[SharedLayer],
+    terminals: &[Vec<SharedTerminal>],
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) {
+    let cell_count = usize::try_from(input.cell_count).expect("validated cell count is positive");
+    let maximum_depth = input.cell_count;
+
+    for layer in layers {
+        for (local_index, network_index) in layer.network_indices.iter().copied().enumerate() {
+            let item_code = i32::try_from(local_index + 1).expect("layer item code fits i32");
+            let network_name = format!(
+                "{}-network-{network_index}",
+                match layer.transport {
+                    TransportKind::Belt => "belt",
+                    TransportKind::Pipe => "pipe",
+                }
+            );
+            let reached = (0..cell_count)
+                .map(|cell| {
+                    solver.new_variable(
+                        VariableFamily::ConnectivityReachability,
+                        0,
+                        1,
+                        format!("{network_name}-cell-{cell}-proof-reached"),
+                    )
+                })
+                .collect::<Vec<_>>();
+            let depths = (0..cell_count)
+                .map(|cell| {
+                    solver.new_variable(
+                        VariableFamily::ConnectivityDepth,
+                        0,
+                        maximum_depth,
+                        format!("{network_name}-cell-{cell}-proof-depth"),
+                    )
+                })
+                .collect::<Vec<_>>();
+            let roots = (0..cell_count)
+                .map(|cell| {
+                    post_presence(
+                        solver,
+                        VariableFamily::ConnectivityRoot,
+                        ConstraintFamily::ConnectivityWitness,
+                        format!("{network_name}-cell-{cell}-proof-root"),
+                        unique_variables(
+                            terminals[network_index]
+                                .iter()
+                                .filter(|terminal| {
+                                    terminal.direction == FacilityPortDirection::Output
+                                })
+                                .flat_map(|terminal| &terminal.routing_options)
+                                .filter(move |option| option.cell == cell)
+                                .map(|option| option.selected),
+                        )
+                        .into_iter(),
+                        tag,
+                    )
+                })
+                .collect::<Vec<_>>();
+
+            for cell in 0..cell_count {
+                solver.post_less_than_or_equals(
+                    ConstraintFamily::ConnectivityWitness,
+                    vec![depths[cell].scaled(1), reached[cell].scaled(-maximum_depth)],
+                    0,
+                    maximum_depth.unsigned_abs() as u64,
+                    tag,
+                );
+                let root_condition = solver.solver_mut().new_named_literal_for_predicate(
+                    roots[cell].equality_predicate(1),
+                    tag,
+                    format!("{network_name}-cell-{cell}-is-proof-root"),
+                );
+                solver.post_implied_equals(
+                    ConstraintFamily::ConnectivityWitness,
+                    vec![depths[cell].scaled(1)],
+                    0,
+                    maximum_depth.unsigned_abs() as u64,
+                    root_condition,
+                    roots[cell],
+                    tag,
+                );
+            }
+
+            for terminal in terminals[network_index]
+                .iter()
+                .filter(|terminal| terminal.direction == FacilityPortDirection::Input)
+            {
+                for option in &terminal.routing_options {
+                    solver.post_less_than_or_equals(
+                        ConstraintFamily::ConnectivityWitness,
+                        vec![option.selected.scaled(1), reached[option.cell].scaled(-1)],
+                        0,
+                        1,
+                        tag,
+                    );
+                }
+            }
+
+            let mut incoming_parents = vec![Vec::new(); cell_count];
+            for (arc_index, arc) in layer.arcs.iter().enumerate() {
+                let parent = solver.new_variable(
+                    VariableFamily::ConnectivityParent,
+                    0,
+                    1,
+                    format!(
+                        "{network_name}-proof-parent-{arc_index}-{}-{}",
+                        arc.from, arc.to
+                    ),
+                );
+                incoming_parents[arc.to].push(parent);
+                solver.post_less_than_or_equals(
+                    ConstraintFamily::ConnectivityWitness,
+                    vec![parent.scaled(1), arc.selected.scaled(-1)],
+                    0,
+                    1,
+                    tag,
+                );
+                for endpoint in [arc.from, arc.to] {
+                    solver.post_less_than_or_equals(
+                        ConstraintFamily::ConnectivityWitness,
+                        vec![parent.scaled(1), reached[endpoint].scaled(-1)],
+                        0,
+                        1,
+                        tag,
+                    );
+                }
+                let condition = solver.solver_mut().new_named_literal_for_predicate(
+                    parent.equality_predicate(1),
+                    tag,
+                    format!("{network_name}-proof-parent-{arc_index}-selected"),
+                );
+                let from_direction =
+                    direction_index(direction_between(arc.from, arc.to, input.width));
+                let to_direction =
+                    direction_index(direction_between(arc.to, arc.from, input.width));
+                for item in [
+                    layer.arm_items[arc.from][from_direction],
+                    layer.arm_items[arc.to][to_direction],
+                ] {
+                    solver.post_implied_equals(
+                        ConstraintFamily::ConnectivityWitness,
+                        vec![item.scaled(1)],
+                        item_code,
+                        item_code.unsigned_abs() as u64,
+                        condition,
+                        parent,
+                        tag,
+                    );
+                }
+                solver.post_implied_equals(
+                    ConstraintFamily::ConnectivityWitness,
+                    vec![depths[arc.to].scaled(1), depths[arc.from].scaled(-1)],
+                    1,
+                    maximum_depth.unsigned_abs() as u64,
+                    condition,
+                    parent,
+                    tag,
+                );
+            }
+
+            for cell in 0..cell_count {
+                let mut definition = incoming_parents[cell]
+                    .iter()
+                    .map(|parent| parent.scaled(1))
+                    .collect::<Vec<_>>();
+                definition.push(roots[cell].scaled(1));
+                definition.push(reached[cell].scaled(-1));
+                solver.post_equals(ConstraintFamily::ConnectivityWitness, definition, 0, 1, tag);
+            }
+        }
+    }
 }
 
 #[allow(clippy::too_many_arguments)]
