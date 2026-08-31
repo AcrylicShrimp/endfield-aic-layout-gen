@@ -73,6 +73,14 @@ case-local relation identities, 12,115 were bridge axes. This is a frequent meas
 and justifies an exact active guard-rejection experiment. See
 `docs/benchmarks/heavy-xiranite-minimum-rate.fifty-fifth-guarded-item-intersection-census.md`.
 
+The active exact rule subsequently converted three Phase 2 dimension cases from five-second
+unknown results into infeasibility proofs. Across the complete 100-case Phase 2 sweep it reduced
+branch decisions by 10.3%, conflicts by 18.3%, and solver propagations by 11.7%, while still finding
+no feasible incumbent. Approximately 99% of its guard-rejection attempts targeted bridge guards.
+The weakness is therefore operationally relevant but remains one part of the three-facility cliff.
+See
+`docs/benchmarks/heavy-xiranite-minimum-rate.fifty-sixth-guarded-positive-item-intersection-report.md`.
+
 ## Confirmed endpoint weakness
 
 The current factored endpoint encoding creates one placement integer whose values are complete

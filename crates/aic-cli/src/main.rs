@@ -2281,6 +2281,7 @@ mod tests {
                     case_time_limit_ms,
                     active_local_continuation,
                     observe_guarded_item_intersections,
+                    active_guarded_item_intersections,
                     output_dir,
                 },
         } = cli.command
@@ -2295,7 +2296,48 @@ mod tests {
         assert_eq!(case_time_limit_ms, 5_000);
         assert!(active_local_continuation);
         assert!(observe_guarded_item_intersections);
+        assert!(!active_guarded_item_intersections);
         assert_eq!(output_dir, PathBuf::from("cumulative-dimension-sweep"));
+    }
+
+    #[test]
+    fn parses_active_guarded_item_intersection_sweep() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "sweep-cumulative-scc-fixed-dimensions",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--target-phase",
+            "2",
+            "--worker-count",
+            "4",
+            "--case-time-limit-ms",
+            "5000",
+            "--active-local-continuation",
+            "--active-guarded-item-intersections",
+            "--output-dir",
+            "active-guarded-intersection",
+        ])
+        .expect("active guarded item intersection sweep CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::SweepCumulativeSccFixedDimensions {
+                    active_local_continuation,
+                    observe_guarded_item_intersections,
+                    active_guarded_item_intersections,
+                    ..
+                },
+        } = cli.command
+        else {
+            panic!("expected cumulative parallel dimension sweep command")
+        };
+        assert!(active_local_continuation);
+        assert!(!observe_guarded_item_intersections);
+        assert!(active_guarded_item_intersections);
     }
 
     #[test]

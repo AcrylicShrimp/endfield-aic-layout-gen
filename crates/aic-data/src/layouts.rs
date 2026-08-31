@@ -84,6 +84,7 @@ pub use integrated::{
     solve_integrated_layout_with_time_limit, sweep_cumulative_integrated_layout_fixed_dimensions,
     sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation,
     sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation_guarded_intersection_observation,
+    sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation_guarded_intersection_propagation,
     sweep_first_integrated_layout_phase_fixed_dimensions,
 };
 pub use integrated::{

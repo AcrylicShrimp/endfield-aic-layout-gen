@@ -21,8 +21,8 @@ use super::{
     enumerate_exact_dimension_candidates, exact_dimension_lower_bounds,
 };
 
-pub const PARALLEL_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION: u32 = 4;
-pub const CUMULATIVE_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION: u32 = 3;
+pub const PARALLEL_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION: u32 = 5;
+pub const CUMULATIVE_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION: u32 = 4;
 
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
@@ -76,6 +76,11 @@ pub struct GuardedItemIntersectionObservation {
     pub registered_relations: u64,
     pub registered_domain_variables: u64,
     pub maximum_dirty_relations: u64,
+    pub forced_guard_rejections: u64,
+    pub forced_route_arc_rejections: u64,
+    pub forced_bridge_rejections: u64,
+    pub active_conflicts: u64,
+    pub maximum_reason_predicates: u64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -94,6 +99,7 @@ pub struct ParallelExactDimensionSweepReport {
     pub selected_facilities: Vec<String>,
     pub solver_stack: ExactDimensionSolverStack,
     pub guarded_item_intersection_observation: bool,
+    pub guarded_item_intersection_propagation: bool,
     pub request_width: i32,
     pub request_height: i32,
     pub lower_bounds: ExactDimensionLowerBoundsReport,
@@ -197,6 +203,7 @@ pub fn sweep_first_integrated_layout_phase_fixed_dimensions(
         None,
         ExactDimensionSolverStack::Baseline,
         false,
+        false,
     )
 }
 
@@ -223,6 +230,7 @@ pub fn sweep_cumulative_integrated_layout_fixed_dimensions(
         worker_count,
         search_budget,
         ExactDimensionSolverStack::Baseline,
+        false,
         false,
     )
 }
@@ -251,6 +259,7 @@ pub fn sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuati
         search_budget,
         ExactDimensionSolverStack::WatchedDemandWithLocalContinuation,
         false,
+        false,
     )
 }
 
@@ -278,6 +287,35 @@ pub fn sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuati
         search_budget,
         ExactDimensionSolverStack::WatchedDemandWithLocalContinuation,
         true,
+        false,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation_guarded_intersection_propagation(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    target_phase_index: usize,
+    worker_count: usize,
+    search_budget: Duration,
+) -> Result<CumulativeExactDimensionSweepReport, IntegratedLayoutReport> {
+    sweep_cumulative_integrated_layout_fixed_dimensions_with_stack(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+        target_phase_index,
+        worker_count,
+        search_budget,
+        ExactDimensionSolverStack::WatchedDemandWithLocalContinuation,
+        false,
+        true,
     )
 }
 
@@ -294,6 +332,7 @@ fn sweep_cumulative_integrated_layout_fixed_dimensions_with_stack(
     search_budget: Duration,
     solver_stack: ExactDimensionSolverStack,
     observe_guarded_item_intersections: bool,
+    propagate_guarded_item_intersections: bool,
 ) -> Result<CumulativeExactDimensionSweepReport, IntegratedLayoutReport> {
     if worker_count == 0 {
         return Err(invalid_sweep_input(
@@ -394,6 +433,7 @@ fn sweep_cumulative_integrated_layout_fixed_dimensions_with_stack(
             previous_solution.as_ref(),
             solver_stack,
             observe_guarded_item_intersections,
+            propagate_guarded_item_intersections,
         )?;
 
         let Some(incumbent) = sweep.selected_incumbent.clone() else {
@@ -480,6 +520,7 @@ fn sweep_prepared_exact_model_fixed_dimensions(
     prior_solution: Option<&IntegratedLayoutReport>,
     solver_stack: ExactDimensionSolverStack,
     observe_guarded_item_intersections: bool,
+    propagate_guarded_item_intersections: bool,
 ) -> Result<ParallelExactDimensionSweepReport, IntegratedLayoutReport> {
     if worker_count == 0 {
         return Err(invalid_sweep_input(
@@ -532,6 +573,7 @@ fn sweep_prepared_exact_model_fixed_dimensions(
                         prior_solution,
                         solver_stack,
                         observe_guarded_item_intersections,
+                        propagate_guarded_item_intersections,
                     );
                 }));
                 if result.is_err() {
@@ -608,6 +650,7 @@ fn sweep_prepared_exact_model_fixed_dimensions(
         selected_facilities,
         solver_stack,
         guarded_item_intersection_observation: observe_guarded_item_intersections,
+        guarded_item_intersection_propagation: propagate_guarded_item_intersections,
         request_width: input.width,
         request_height: input.height,
         lower_bounds,
@@ -639,6 +682,7 @@ fn run_worker(
     prior_solution: Option<&IntegratedLayoutReport>,
     solver_stack: ExactDimensionSolverStack,
     observe_guarded_item_intersections: bool,
+    propagate_guarded_item_intersections: bool,
 ) {
     while let Ok(work) = work_receiver.recv() {
         if work.candidate.area > best_area.load(Ordering::Acquire) {
@@ -675,6 +719,17 @@ fn run_worker(
                     ),
                 None,
             ),
+            ExactDimensionSolverStack::WatchedDemandWithLocalContinuation
+                if propagate_guarded_item_intersections => {
+                let (layout, statistics) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_feasibility_only_with_prior_and_local_continuation_guarded_intersection_propagation(
+                    input.clone(),
+                    logistics_components,
+                    Some(search_budget),
+                    fixed_dimensions,
+                    prior_solution,
+                );
+                (layout, Some(guarded_intersection_observation(statistics)))
+            }
             ExactDimensionSolverStack::WatchedDemandWithLocalContinuation
                 if observe_guarded_item_intersections => {
                 let (layout, statistics) = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_feasibility_only_with_prior_and_local_continuation_guarded_intersection_observation(
@@ -761,6 +816,11 @@ fn guarded_intersection_observation(
         registered_relations: statistics.guarded_intersection_registered_relations,
         registered_domain_variables: statistics.guarded_intersection_registered_domain_variables,
         maximum_dirty_relations: statistics.guarded_intersection_maximum_dirty_relations,
+        forced_guard_rejections: statistics.guarded_intersection_forced_guard_rejections,
+        forced_route_arc_rejections: statistics.guarded_intersection_forced_route_arc_rejections,
+        forced_bridge_rejections: statistics.guarded_intersection_forced_bridge_rejections,
+        active_conflicts: statistics.guarded_intersection_active_conflicts,
+        maximum_reason_predicates: statistics.guarded_intersection_maximum_reason_predicates,
     }
 }
 

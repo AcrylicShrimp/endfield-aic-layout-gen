@@ -16,12 +16,14 @@ use pumpkin_solver::core::variables::DomainId;
 use super::connectivity_propagator::{PossibleRouteArc, PossibleTerminalOption};
 
 mod guarded_item_intersection;
+mod guarded_item_intersection_propagator;
 mod local_continuation;
 mod local_continuation_propagator;
 
 pub(super) use guarded_item_intersection::{
     GuardedItemEquality, GuardedItemEqualityKind, GuardedItemIntersectionObserverArgs,
 };
+pub(super) use guarded_item_intersection_propagator::GuardedPositiveItemIntersectionPropagatorArgs;
 pub(super) use local_continuation::LocalPositiveFlowContinuationAnalyzerArgs;
 pub(super) use local_continuation_propagator::LocalPositiveFlowContinuationPropagatorArgs;
 
@@ -84,6 +86,11 @@ pub(super) struct LayerGridAnalyzerCounters {
     guarded_intersection_registered_relations: AtomicU64,
     guarded_intersection_registered_domain_variables: AtomicU64,
     guarded_intersection_maximum_dirty_relations: AtomicU64,
+    guarded_intersection_forced_guard_rejections: AtomicU64,
+    guarded_intersection_forced_route_arc_rejections: AtomicU64,
+    guarded_intersection_forced_bridge_rejections: AtomicU64,
+    guarded_intersection_active_conflicts: AtomicU64,
+    guarded_intersection_maximum_reason_predicates: AtomicU64,
     distinct_support_arcs: Mutex<BTreeSet<(i32, DomainId)>>,
     distinct_unresolved_predicates: Mutex<BTreeSet<(DomainId, i32)>>,
     distinct_terminal_support_arcs: Mutex<BTreeSet<(i32, DomainId)>>,
@@ -154,6 +161,11 @@ pub(in crate::layouts::integrated) struct LayerGridAnalyzerStatistics {
     pub guarded_intersection_registered_relations: u64,
     pub guarded_intersection_registered_domain_variables: u64,
     pub guarded_intersection_maximum_dirty_relations: u64,
+    pub guarded_intersection_forced_guard_rejections: u64,
+    pub guarded_intersection_forced_route_arc_rejections: u64,
+    pub guarded_intersection_forced_bridge_rejections: u64,
+    pub guarded_intersection_active_conflicts: u64,
+    pub guarded_intersection_maximum_reason_predicates: u64,
 }
 
 impl LayerGridAnalyzerCounters {
@@ -307,6 +319,21 @@ impl LayerGridAnalyzerCounters {
             guarded_intersection_maximum_dirty_relations: self
                 .guarded_intersection_maximum_dirty_relations
                 .load(Ordering::Relaxed),
+            guarded_intersection_forced_guard_rejections: self
+                .guarded_intersection_forced_guard_rejections
+                .load(Ordering::Relaxed),
+            guarded_intersection_forced_route_arc_rejections: self
+                .guarded_intersection_forced_route_arc_rejections
+                .load(Ordering::Relaxed),
+            guarded_intersection_forced_bridge_rejections: self
+                .guarded_intersection_forced_bridge_rejections
+                .load(Ordering::Relaxed),
+            guarded_intersection_active_conflicts: self
+                .guarded_intersection_active_conflicts
+                .load(Ordering::Relaxed),
+            guarded_intersection_maximum_reason_predicates: self
+                .guarded_intersection_maximum_reason_predicates
+                .load(Ordering::Relaxed),
         }
     }
 }
@@ -322,6 +349,7 @@ pub(super) enum LayerGridRule {
     ForceWatchedDemandUniqueSupportChainAndObserveLocalContinuation,
     ForceWatchedDemandUniqueSupportChainAndLocalContinuation,
     ForceWatchedDemandUniqueSupportChainAndLocalContinuationWithGuardedIntersectionObservation,
+    ForceWatchedDemandUniqueSupportChainAndLocalContinuationWithGuardedIntersectionPropagation,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

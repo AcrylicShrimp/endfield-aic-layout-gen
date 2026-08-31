@@ -10,6 +10,7 @@ use aic_data::layouts::{
     sweep_cumulative_integrated_layout_fixed_dimensions,
     sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation,
     sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation_guarded_intersection_observation,
+    sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation_guarded_intersection_propagation,
     sweep_first_integrated_layout_phase_fixed_dimensions,
 };
 use aic_data::localization::ValidatedLocalizationCatalog;
@@ -84,6 +85,7 @@ pub(super) fn run_cumulative(
     case_time_limit_ms: u64,
     active_local_continuation: bool,
     observe_guarded_item_intersections: bool,
+    active_guarded_item_intersections: bool,
     output_dir: PathBuf,
 ) -> Result<bool> {
     let worker_count = NonZeroUsize::new(worker_count)
@@ -91,7 +93,9 @@ pub(super) fn run_cumulative(
     let case_time_limit = NonZeroU64::new(case_time_limit_ms)
         .context("cumulative dimension sweep case_time_limit_ms must be positive")?;
     let loaded = load_inputs(workload_path, workspace_root, placement_request_path)?;
-    let sweep = if observe_guarded_item_intersections {
+    let sweep = if active_guarded_item_intersections {
+        sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation_guarded_intersection_propagation
+    } else if observe_guarded_item_intersections {
         sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation_guarded_intersection_observation
     } else if active_local_continuation {
         sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation

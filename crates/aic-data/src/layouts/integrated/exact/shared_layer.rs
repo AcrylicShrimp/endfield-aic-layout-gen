@@ -26,7 +26,8 @@ use super::formulation::{
 };
 use super::grid_analyzer::{
     DirtyMaterialUniqueSupportChainGridPropagatorArgs, GuardedItemEquality,
-    GuardedItemEqualityKind, GuardedItemIntersectionObserverArgs, LayerGridAnalyzerCounters,
+    GuardedItemEqualityKind, GuardedItemIntersectionObserverArgs,
+    GuardedPositiveItemIntersectionPropagatorArgs, LayerGridAnalyzerCounters,
     LayerGridAnalyzerStatistics, LayerGridMaterial, LayerGridOpportunityAnalyzerArgs,
     LayerGridRule, LayerGridRuleArgs, LocalPositiveFlowContinuationAnalyzerArgs,
     LocalPositiveFlowContinuationPropagatorArgs, TerminalSupportGridPropagatorArgs,
@@ -394,6 +395,41 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
             grid_analyzer: Some((
                 SyncArc::clone(&grid_counters),
                 LayerGridRule::ForceWatchedDemandUniqueSupportChainAndLocalContinuationWithGuardedIntersectionObservation,
+            )),
+        },
+    );
+    (report, grid_counters.snapshot())
+}
+
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_feasibility_only_with_prior_and_local_continuation_guarded_intersection_propagation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    prior_solution: Option<&IntegratedLayoutReport>,
+) -> (IntegratedLayoutReport, LayerGridAnalyzerStatistics) {
+    let connectivity_counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    let grid_counters = SyncArc::new(LayerGridAnalyzerCounters::default());
+    let report = solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        prior_solution,
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        None,
+        None,
+        None,
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters: connectivity_counters,
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
+            grid_analyzer: Some((
+                SyncArc::clone(&grid_counters),
+                LayerGridRule::ForceWatchedDemandUniqueSupportChainAndLocalContinuationWithGuardedIntersectionPropagation,
             )),
         },
     );
@@ -1899,6 +1935,17 @@ fn solve_with_endpoint_encoding(
                 ConnectivityMode::PossibleGraphPropagator {
                     grid_analyzer: Some((
                         _,
+                        LayerGridRule::ForceWatchedDemandUniqueSupportChainAndLocalContinuationWithGuardedIntersectionPropagation,
+                    )),
+                    ..
+                },
+            ) => "joint-shared-v4-watched-demand-local-continuation-guarded-intersection-propagation",
+            (
+                _,
+                _,
+                ConnectivityMode::PossibleGraphPropagator {
+                    grid_analyzer: Some((
+                        _,
                         LayerGridRule::ForceWatchedDemandUniqueSupportChainAndLocalContinuation,
                     )),
                     ..
@@ -2449,6 +2496,67 @@ fn post_possible_graph_connectivity(
     }
 }
 
+fn guarded_item_equalities(
+    input: &ModelInput,
+    layer: &SharedLayer,
+    bridges: &[ModelBridge],
+) -> Vec<GuardedItemEquality> {
+    let maximum_item_code =
+        i32::try_from(layer.network_indices.len()).expect("shared layer item count fits i32");
+    let mut relations = layer
+        .arcs
+        .iter()
+        .map(|arc| {
+            let from_direction = direction_index(direction_between(arc.from, arc.to, input.width));
+            let to_direction = direction_index(direction_between(arc.to, arc.from, input.width));
+            GuardedItemEquality {
+                guard: arc.selected,
+                left: layer.arm_items[arc.from][from_direction],
+                right: layer.arm_items[arc.to][to_direction],
+                maximum_item_code,
+                kind: GuardedItemEqualityKind::RouteArc,
+            }
+        })
+        .collect::<Vec<_>>();
+    for bridge in bridges
+        .iter()
+        .filter(|bridge| bridge.transport == layer.transport)
+    {
+        relations.extend([
+            GuardedItemEquality {
+                guard: bridge.selected,
+                left: layer.arm_items[bridge.cell][direction_index(CardinalDirection::West)],
+                right: layer.arm_items[bridge.cell][direction_index(CardinalDirection::East)],
+                maximum_item_code,
+                kind: GuardedItemEqualityKind::BridgeAxis,
+            },
+            GuardedItemEquality {
+                guard: bridge.selected,
+                left: layer.arm_items[bridge.cell][direction_index(CardinalDirection::North)],
+                right: layer.arm_items[bridge.cell][direction_index(CardinalDirection::South)],
+                maximum_item_code,
+                kind: GuardedItemEqualityKind::BridgeAxis,
+            },
+        ]);
+    }
+    relations
+}
+
+fn bridge_selection_by_cell(
+    input: &ModelInput,
+    layer: &SharedLayer,
+    bridges: &[ModelBridge],
+) -> Vec<Option<DomainId>> {
+    let mut bridge_selected_by_cell = vec![None; input.cell_count as usize];
+    for bridge in bridges
+        .iter()
+        .filter(|bridge| bridge.transport == layer.transport)
+    {
+        bridge_selected_by_cell[bridge.cell] = Some(bridge.selected);
+    }
+    bridge_selected_by_cell
+}
+
 fn post_layer_grid_analyzer(
     solver: &mut RecordedModel,
     input: &ModelInput,
@@ -2596,62 +2704,12 @@ fn post_layer_grid_analyzer(
             }
             LayerGridRule::ForceWatchedDemandUniqueSupportChainAndLocalContinuationWithGuardedIntersectionObservation => {
                 let local_rule = args.clone();
-                let maximum_item_code = i32::try_from(layer.network_indices.len())
-                    .expect("shared layer item count fits i32");
-                let mut relations = layer
-                    .arcs
-                    .iter()
-                    .map(|arc| {
-                        let from_direction =
-                            direction_index(direction_between(arc.from, arc.to, input.width));
-                        let to_direction =
-                            direction_index(direction_between(arc.to, arc.from, input.width));
-                        GuardedItemEquality {
-                            guard: arc.selected,
-                            left: layer.arm_items[arc.from][from_direction],
-                            right: layer.arm_items[arc.to][to_direction],
-                            maximum_item_code,
-                            kind: GuardedItemEqualityKind::RouteArc,
-                        }
-                    })
-                    .collect::<Vec<_>>();
-                for bridge in bridges
-                    .iter()
-                    .filter(|bridge| bridge.transport == layer.transport)
-                {
-                    relations.extend([
-                        GuardedItemEquality {
-                            guard: bridge.selected,
-                            left: layer.arm_items[bridge.cell]
-                                [direction_index(CardinalDirection::West)],
-                            right: layer.arm_items[bridge.cell]
-                                [direction_index(CardinalDirection::East)],
-                            maximum_item_code,
-                            kind: GuardedItemEqualityKind::BridgeAxis,
-                        },
-                        GuardedItemEquality {
-                            guard: bridge.selected,
-                            left: layer.arm_items[bridge.cell]
-                                [direction_index(CardinalDirection::North)],
-                            right: layer.arm_items[bridge.cell]
-                                [direction_index(CardinalDirection::South)],
-                            maximum_item_code,
-                            kind: GuardedItemEqualityKind::BridgeAxis,
-                        },
-                    ]);
-                }
                 let observer = GuardedItemIntersectionObserverArgs {
                     name: format!("{}-guarded-item-intersection-observer", args.name),
-                    relations,
+                    relations: guarded_item_equalities(input, layer, bridges),
                     counters: SyncArc::clone(&args.counters),
                 };
-                let mut bridge_selected_by_cell = vec![None; input.cell_count as usize];
-                for bridge in bridges
-                    .iter()
-                    .filter(|bridge| bridge.transport == layer.transport)
-                {
-                    bridge_selected_by_cell[bridge.cell] = Some(bridge.selected);
-                }
+                let bridge_selected_by_cell = bridge_selection_by_cell(input, layer, bridges);
                 let _ = solver
                     .solver_mut()
                     .add_propagator(WatchedDemandUniqueSupportChainGridPropagatorArgs(args));
@@ -2664,6 +2722,28 @@ fn post_layer_grid_analyzer(
                     ),
                 );
                 let _ = solver.solver_mut().add_propagator(observer);
+            }
+            LayerGridRule::ForceWatchedDemandUniqueSupportChainAndLocalContinuationWithGuardedIntersectionPropagation => {
+                let local_rule = args.clone();
+                let propagator = GuardedPositiveItemIntersectionPropagatorArgs {
+                    name: format!("{}-guarded-positive-item-intersection", args.name),
+                    relations: guarded_item_equalities(input, layer, bridges),
+                    counters: SyncArc::clone(&args.counters),
+                    constraint_tag: tag,
+                };
+                let bridge_selected_by_cell = bridge_selection_by_cell(input, layer, bridges);
+                let _ = solver
+                    .solver_mut()
+                    .add_propagator(WatchedDemandUniqueSupportChainGridPropagatorArgs(args));
+                let _ = solver.solver_mut().add_propagator(
+                    LocalPositiveFlowContinuationPropagatorArgs(
+                        LocalPositiveFlowContinuationAnalyzerArgs {
+                            rule: local_rule,
+                            bridge_selected_by_cell,
+                        },
+                    ),
+                );
+                let _ = solver.solver_mut().add_propagator(propagator);
             }
         }
     }

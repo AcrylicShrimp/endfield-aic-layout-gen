@@ -492,6 +492,14 @@ pub(crate) enum ResearchCommand {
         #[arg(long, requires = "active_local_continuation")]
         observe_guarded_item_intersections: bool,
 
+        /// Actively reject route-arc and bridge guards with no common positive item support.
+        #[arg(
+            long,
+            requires = "active_local_continuation",
+            conflicts_with = "observe_guarded_item_intersections"
+        )]
+        active_guarded_item_intersections: bool,
+
         /// Directory receiving cumulative, phase, and per-case JSON/HTML artifacts.
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
@@ -1071,6 +1079,7 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             case_time_limit_ms,
             active_local_continuation,
             observe_guarded_item_intersections,
+            active_guarded_item_intersections,
             output_dir,
         } => dimension_sweep::run_cumulative(
             workload,
@@ -1081,6 +1090,7 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             case_time_limit_ms,
             active_local_continuation,
             observe_guarded_item_intersections,
+            active_guarded_item_intersections,
             output_dir,
         ),
         ResearchCommand::DiagnoseCumulativeFacilityCoordinates {

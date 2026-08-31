@@ -389,6 +389,18 @@ for some network item on layer `t`. Thus one side cannot be simultaneously incom
 Selected adjacent arcs equate item codes on their two incident sides. Selected terminals force
 their network's item code.
 
+Because a selected arc activates both incident arms, its guarded item equality has the stronger
+derived form
+
+```text
+y_ta = 1 -> m_left = m_right in {1, ..., N_t}.
+```
+
+Likewise, a selected bridge activates all four arms, so each of its two axis equalities requires a
+common positive item code. Therefore an empty positive-domain intersection soundly implies that
+the corresponding arc or bridge selection is false. Item code `0` is not support for either
+selected relation; it is available only to an inactive arm.
+
 At a non-bridge cell, every active arm has the same non-zero item code. For every cell, including
 terminal and component cells, scalar flow conservation is
 
