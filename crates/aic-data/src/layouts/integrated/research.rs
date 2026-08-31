@@ -16,6 +16,7 @@ use super::{
 
 mod coordinate_partition;
 mod dimension_sweep;
+mod reference_ablation;
 mod rotation_partition;
 
 pub use coordinate_partition::{
@@ -35,6 +36,10 @@ pub use dimension_sweep::{
     PARALLEL_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION, ParallelExactDimensionCaseReport,
     ParallelExactDimensionSweepReport, sweep_cumulative_integrated_layout_fixed_dimensions,
     sweep_first_integrated_layout_phase_fixed_dimensions,
+};
+pub use reference_ablation::{
+    PHASE2_REFERENCE_ABLATION_SCHEMA_VERSION, Phase2ReferenceAblationCaseReport,
+    Phase2ReferenceAblationKind, Phase2ReferenceAblationReport, diagnose_phase2_reference_ablation,
 };
 pub use rotation_partition::diagnose_cumulative_facility_rotation_partitions;
 

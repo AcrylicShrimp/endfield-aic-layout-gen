@@ -70,6 +70,13 @@ enum SearchMode {
 }
 
 #[derive(Clone, Copy)]
+pub(in crate::layouts::integrated) enum ReferenceAblationFixation {
+    Placements,
+    PlacementsAndFacilityPorts,
+    PlacementsAndAllTerminals,
+}
+
+#[derive(Clone, Copy)]
 pub(in crate::layouts::integrated) struct FixedUsedDimensions {
     pub(in crate::layouts::integrated) width: i32,
     pub(in crate::layouts::integrated) height: i32,
@@ -180,6 +187,7 @@ pub(in crate::layouts::integrated) fn solve(
         None,
         None,
         None,
+        None,
     )
 }
 
@@ -207,6 +215,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_with_prior(
         None,
         None,
         None,
+        None,
     )
 }
 
@@ -222,6 +231,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_feasibility_only(
         EndpointEncoding::Factored,
         None,
         SearchMode::FeasibilityOnly,
+        None,
         None,
         None,
         None,
@@ -260,6 +270,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         Some(fixed_dimensions),
         None,
         None,
+        None,
     )
 }
 
@@ -281,6 +292,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         SearchMode::FeasibilityOnly,
         Some(fixed_dimensions),
         Some(fixed_coordinate),
+        None,
         None,
     )
 }
@@ -305,6 +317,29 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         Some(fixed_dimensions),
         Some(fixed_coordinate),
         Some(fixed_ports),
+        None,
+    )
+}
+
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_reference_ablation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    reference: &IntegratedLayoutReport,
+    fixation: ReferenceAblationFixation,
+) -> IntegratedLayoutReport {
+    solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        Some(reference),
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        None,
+        None,
+        Some(fixation),
     )
 }
 
@@ -421,6 +456,7 @@ fn solve_with_endpoint_encoding(
     fixed_dimensions: Option<FixedUsedDimensions>,
     fixed_coordinate: Option<FixedFacilityCoordinate>,
     fixed_ports: Option<Vec<FixedTerminalPortChoice>>,
+    reference_fixation: Option<ReferenceAblationFixation>,
 ) -> IntegratedLayoutReport {
     let construction_started = Instant::now();
     let mut model_metrics = initial_metrics(&input);
@@ -459,6 +495,12 @@ fn solve_with_endpoint_encoding(
             ),
         );
     }
+    if reference_fixation.is_some()
+        && let Err(diagnostic) =
+            post_reference_placements(&mut solver, &model_instances, prior_solution, tag)
+    {
+        return IntegratedLayoutReport::invalid(diagnostic);
+    }
     if let Some(fixed) = fixed_coordinate.as_ref()
         && let Err(diagnostic) =
             post_fixed_facility_coordinate(&mut solver, &model_instances, fixed, tag)
@@ -489,6 +531,19 @@ fn solve_with_endpoint_encoding(
     if let Some(fixed) = fixed_ports.as_ref()
         && let Err(diagnostic) =
             post_fixed_terminal_ports(&mut solver, &model_terminals, fixed, tag)
+    {
+        return IntegratedLayoutReport::invalid(diagnostic);
+    }
+    if let Some(fixation) = reference_fixation
+        && !matches!(fixation, ReferenceAblationFixation::Placements)
+        && let Err(diagnostic) = post_reference_terminals(
+            &mut solver,
+            &input,
+            &model_terminals,
+            prior_solution,
+            fixation,
+            tag,
+        )
     {
         return IntegratedLayoutReport::invalid(diagnostic);
     }
@@ -699,30 +754,41 @@ fn solve_with_endpoint_encoding(
     };
     finish_report_with_formulation(
         report,
-        match (
-            endpoint_encoding,
-            fixed_dimensions,
-            fixed_coordinate,
-            fixed_ports,
-        ) {
-            (EndpointEncoding::Flattened, _, _, _) => {
-                "joint-shared-transport-layer-canonical-occupancy-v2"
+        match reference_fixation {
+            Some(ReferenceAblationFixation::Placements) => {
+                "joint-shared-v4-reference-placements-ablation"
             }
-            (EndpointEncoding::Factored, Some(_), Some(_), Some(_)) => {
-                "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions-coordinate-port-partition"
+            Some(ReferenceAblationFixation::PlacementsAndFacilityPorts) => {
+                "joint-shared-v4-reference-placements-facility-ports-ablation"
             }
-            (EndpointEncoding::Factored, Some(_), Some(_), None) => {
-                "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions-coordinate-partition"
+            Some(ReferenceAblationFixation::PlacementsAndAllTerminals) => {
+                "joint-shared-v4-reference-placements-all-terminals-ablation"
             }
-            (EndpointEncoding::Factored, Some(_), None, None) => {
-                "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions"
-            }
-            (EndpointEncoding::Factored, None, None, None) => {
-                "joint-shared-boundary-terminals-canonical-occupancy-v4"
-            }
-            (EndpointEncoding::Factored, _, _, _) => {
-                unreachable!("port and coordinate partitions always fix their parent decisions")
-            }
+            None => match (
+                endpoint_encoding,
+                fixed_dimensions,
+                fixed_coordinate,
+                fixed_ports,
+            ) {
+                (EndpointEncoding::Flattened, _, _, _) => {
+                    "joint-shared-transport-layer-canonical-occupancy-v2"
+                }
+                (EndpointEncoding::Factored, Some(_), Some(_), Some(_)) => {
+                    "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions-coordinate-port-partition"
+                }
+                (EndpointEncoding::Factored, Some(_), Some(_), None) => {
+                    "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions-coordinate-partition"
+                }
+                (EndpointEncoding::Factored, Some(_), None, None) => {
+                    "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions"
+                }
+                (EndpointEncoding::Factored, None, None, None) => {
+                    "joint-shared-boundary-terminals-canonical-occupancy-v4"
+                }
+                (EndpointEncoding::Factored, _, _, _) => {
+                    unreachable!("port and coordinate partitions always fix their parent decisions")
+                }
+            },
         },
         model_metrics,
         model_complexity,
@@ -791,6 +857,133 @@ fn post_fixed_terminal_ports(
         );
     }
     Ok(())
+}
+
+fn post_reference_placements(
+    solver: &mut RecordedModel,
+    instances: &[ModelInstance],
+    reference: Option<&IntegratedLayoutReport>,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let reference = successful_ablation_reference(reference)?;
+    for instance in instances {
+        let placement = reference
+            .placements
+            .iter()
+            .find(|placement| placement.instance == instance.input.id)
+            .ok_or_else(|| reference_mismatch("placement", &instance.input.id))?;
+        let candidate = instance
+            .candidates
+            .iter()
+            .find(|candidate| {
+                candidate.rotation == placement.rotation
+                    && i64::from(candidate.x) == placement.x
+                    && i64::from(candidate.y) == placement.y
+            })
+            .ok_or_else(|| reference_mismatch("placement candidate", &instance.input.id))?;
+        solver.post_equals(
+            ConstraintFamily::ResearchFixation,
+            vec![candidate.selected.scaled(1)],
+            1,
+            1,
+            tag,
+        );
+    }
+    Ok(())
+}
+
+fn post_reference_terminals(
+    solver: &mut RecordedModel,
+    input: &ModelInput,
+    model_terminals: &[Vec<SharedTerminal>],
+    reference: Option<&IntegratedLayoutReport>,
+    fixation: ReferenceAblationFixation,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let reference = successful_ablation_reference(reference)?;
+    for terminal in model_terminals.iter().flatten() {
+        let prior = reference
+            .transport_networks
+            .iter()
+            .flat_map(|network| network.terminals.iter())
+            .find(|candidate| candidate.id == terminal.id)
+            .ok_or_else(|| reference_mismatch("terminal", &terminal.id))?;
+        let SharedTerminalEndpoint::Factored { key, kind } = &terminal.endpoint else {
+            return Err(reference_mismatch("factored terminal", &terminal.id));
+        };
+        match (kind, &prior.endpoint) {
+            (
+                FactoredEndpointKind::Facility {
+                    port_choice,
+                    port_ids,
+                    ..
+                },
+                TransportNetworkEndpoint::Facility { port, .. },
+            ) => {
+                let port_index = port_ids
+                    .iter()
+                    .position(|candidate| candidate == port)
+                    .ok_or_else(|| reference_mismatch("facility port", port))?;
+                solver.post_equals(
+                    ConstraintFamily::ResearchFixation,
+                    vec![port_choice.scaled(1)],
+                    i32::try_from(port_index).expect("reference port index fits i32"),
+                    1,
+                    tag,
+                );
+            }
+            (
+                FactoredEndpointKind::External { .. },
+                TransportNetworkEndpoint::External { side, .. },
+            ) if matches!(
+                fixation,
+                ReferenceAblationFixation::PlacementsAndAllTerminals
+            ) =>
+            {
+                let x = i32::try_from(prior.position.x)
+                    .map_err(|_| reference_mismatch("terminal x", &terminal.id))?;
+                let y = i32::try_from(prior.position.y)
+                    .map_err(|_| reference_mismatch("terminal y", &terminal.id))?;
+                let cell = y
+                    .checked_mul(input.width)
+                    .and_then(|value| value.checked_add(x))
+                    .and_then(|value| usize::try_from(value).ok())
+                    .ok_or_else(|| reference_mismatch("terminal cell", &terminal.id))?;
+                solver.post_equals(
+                    ConstraintFamily::ResearchFixation,
+                    vec![key.scaled(1)],
+                    geometry_key(cell, edge_direction(*side)),
+                    1,
+                    tag,
+                );
+            }
+            (FactoredEndpointKind::External { .. }, TransportNetworkEndpoint::External { .. }) => {}
+            _ => return Err(reference_mismatch("terminal endpoint", &terminal.id)),
+        }
+    }
+    Ok(())
+}
+
+fn successful_ablation_reference(
+    reference: Option<&IntegratedLayoutReport>,
+) -> Result<&IntegratedLayoutReport, IntegratedLayoutDiagnostic> {
+    reference.filter(|report| report.success).ok_or_else(|| {
+        IntegratedLayoutDiagnostic::error(
+            "missing-successful-shared-reference",
+            "/reference",
+            None,
+            "shared-layer reference ablation requires a successful validated layout",
+        )
+    })
+}
+
+fn reference_mismatch(kind: &str, entity: &str) -> IntegratedLayoutDiagnostic {
+    IntegratedLayoutDiagnostic::error(
+        "shared-reference-mismatch",
+        "/reference",
+        Some(entity.to_string()),
+        format!("shared-layer reference has no matching {kind} for '{entity}'"),
+    )
 }
 
 fn post_fixed_facility_coordinate(

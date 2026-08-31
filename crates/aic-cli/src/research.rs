@@ -32,6 +32,7 @@ mod first_phase;
 mod fixed_dimensions;
 mod pair_cliff;
 mod physical_occupancy;
+mod reference_ablation;
 mod requirement_cliff;
 mod search_mode;
 mod shared_layer;
@@ -560,6 +561,35 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
     },
+    /// Compare placement, facility-port, and all-terminal reference fixations.
+    DiagnosePhase2ReferenceAblation {
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+        #[arg(long, value_name = "INDEX")]
+        target_phase: usize,
+        #[arg(long, value_name = "CELLS")]
+        used_width: i32,
+        #[arg(long, value_name = "CELLS")]
+        used_height: i32,
+        #[arg(long, value_name = "CELL")]
+        facility_x: i32,
+        #[arg(long, value_name = "CELL")]
+        facility_y: i32,
+        #[arg(long, value_name = "INDEX")]
+        port_assignment_index: usize,
+        #[arg(long, value_name = "MILLISECONDS")]
+        prefix_case_time_limit_ms: u64,
+        #[arg(long, value_name = "MILLISECONDS")]
+        reference_time_limit_ms: u64,
+        #[arg(long, value_name = "MILLISECONDS")]
+        case_time_limit_ms: u64,
+        #[arg(long, value_name = "DIR")]
+        output_dir: PathBuf,
+    },
     /// Rebuild one factored shared-layer network from each logical requirement subset.
     DecomposeFirstPhaseFactoredRequirements {
         /// Benchmark workload manifest JSON file to solve.
@@ -904,6 +934,35 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             port_assignment_index,
             prefix_case_time_limit_ms,
             rotation_case_time_limit_ms,
+            output_dir,
+        ),
+        ResearchCommand::DiagnosePhase2ReferenceAblation {
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            used_width,
+            used_height,
+            facility_x,
+            facility_y,
+            port_assignment_index,
+            prefix_case_time_limit_ms,
+            reference_time_limit_ms,
+            case_time_limit_ms,
+            output_dir,
+        } => reference_ablation::run(
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            used_width,
+            used_height,
+            facility_x,
+            facility_y,
+            port_assignment_index,
+            prefix_case_time_limit_ms,
+            reference_time_limit_ms,
+            case_time_limit_ms,
             output_dir,
         ),
         ResearchCommand::DecomposeFirstPhaseFactoredRequirements {
