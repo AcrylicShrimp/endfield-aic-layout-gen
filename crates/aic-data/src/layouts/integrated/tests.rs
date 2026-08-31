@@ -506,8 +506,53 @@ fn factored_shared_layer_selects_three_template_external_connectors() {
             .all(|connector| !connector.cells.is_empty())
     );
     let exact = report.exact.expect("exact solve reports metrics");
+    assert_eq!(
+        exact.formulation,
+        "joint-shared-transport-layer-external-connectors-v2"
+    );
     assert_eq!(exact.model.external_connector_count, 2);
     assert_eq!(exact.model.commodity_network_count, 0);
+    assert_eq!(exact.validation, ExactValidationStatus::Passed);
+}
+
+#[test]
+fn factored_endpoint_uses_one_geometry_lookup_per_compatible_port() {
+    let (facilities, items, transports, components) = catalogs();
+    let mut facility_catalog = facilities.catalog().clone();
+    facility_catalog
+        .facilities
+        .iter_mut()
+        .find(|facility| facility.id == "relay-machine")
+        .expect("relay facility exists")
+        .ports
+        .push(FacilityPortDefinition {
+            id: "input-south".to_string(),
+            direction: FacilityPortDirection::Input,
+            transport: TransportKind::Belt,
+            position: FacilityPortPosition { x: 0, y: 0 },
+            edge: FacilityPortEdge::South,
+        });
+    let facilities = ValidatedFacilityCatalog::try_from_catalog(facility_catalog)
+        .expect("multi-port fixture should validate");
+    let input = super::prepare_model(
+        &external_connector_wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 4,
+            max_height: 3,
+        },
+    )
+    .expect("multi-port external connector fixture should prepare");
+
+    let report = super::exact::shared_layer::solve_factored_endpoints(input, &components, None);
+
+    assert!(report.success, "{:#?}", report.diagnostics);
+    let exact = report.exact.expect("exact solve reports metrics");
+    assert_eq!(exact.model.endpoint_variables, 7);
     assert_eq!(exact.validation, ExactValidationStatus::Passed);
 }
 

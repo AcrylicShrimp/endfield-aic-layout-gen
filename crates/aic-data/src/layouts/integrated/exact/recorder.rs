@@ -471,6 +471,24 @@ impl RecordedModel {
             .post();
     }
 
+    pub(super) fn post_variable_element(
+        &mut self,
+        family: ConstraintFamily,
+        index: DomainId,
+        values: Vec<DomainId>,
+        result: DomainId,
+        tag: ConstraintTag,
+    ) {
+        let mut terms = Vec::with_capacity(values.len() + 2);
+        terms.push(index.scaled(1));
+        terms.extend(values.iter().copied().map(|value| value.scaled(1)));
+        terms.push(result.scaled(1));
+        self.record_constraint(family, ConstraintRelation::Other, &terms, 1);
+        self.solver
+            .add_constraint(pumpkin_solver::element(index, values, result, tag))
+            .post();
+    }
+
     pub(super) fn set_logical_coupling(
         &mut self,
         facility_network_incidences: u64,

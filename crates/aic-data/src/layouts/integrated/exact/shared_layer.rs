@@ -376,7 +376,7 @@ fn solve_with_endpoint_encoding(
         report,
         match endpoint_encoding {
             EndpointEncoding::Flattened => "joint-shared-transport-layer-v1",
-            EndpointEncoding::Factored => "joint-shared-transport-layer-external-connectors-v1",
+            EndpointEncoding::Factored => "joint-shared-transport-layer-external-connectors-v2",
         },
         model_metrics,
         model_complexity,
@@ -850,47 +850,51 @@ fn build_factored_selector(
         key_upper,
         format!("edge-{edge_index}-{endpoint_kind}-facility-geometry"),
     );
-    let combined_upper = i32::try_from(instance.candidates.len() * ports.len() - 1)
-        .expect("factored endpoint Cartesian index fits i32");
-    let combined_choice = solver.new_variable(
-        VariableFamily::Endpoint,
-        0,
-        combined_upper,
-        format!("edge-{edge_index}-{endpoint_kind}-placement-port-index"),
-    );
-    metrics.endpoint_variables += 3;
+    metrics.endpoint_variables += 2;
 
-    let mut facility_values = Vec::with_capacity(instance.candidates.len() * ports.len());
+    let mut facility_values_by_port = ports
+        .iter()
+        .map(|_| Vec::with_capacity(instance.candidates.len()))
+        .collect::<Vec<_>>();
     let mut facility_keys = BTreeSet::new();
     for candidate in &instance.candidates {
-        for port in ports {
+        for (port_index, port) in ports.iter().enumerate() {
             if let Some(cell) = candidate.port_connections.get(&port.id).copied() {
                 let outward = edge_direction(port.edge.rotated_clockwise(candidate.rotation));
                 let facility_direction = opposite_direction(outward);
                 let facility_value = geometry_key(cell, facility_direction);
                 facility_keys.insert(facility_value);
-                facility_values.push(facility_value);
+                facility_values_by_port[port_index].push(facility_value);
             } else {
-                facility_values.push(-1);
+                facility_values_by_port[port_index].push(-1);
             }
         }
     }
-    let port_count = i32::try_from(ports.len()).expect("port count fits i32");
-    solver.post_equals(
+    let port_geometry = facility_values_by_port
+        .into_iter()
+        .enumerate()
+        .map(|(port_index, facility_values)| {
+            let geometry = solver.new_variable(
+                VariableFamily::EndpointGeometry,
+                -1,
+                key_upper,
+                format!("edge-{edge_index}-{endpoint_kind}-port-{port_index}-geometry"),
+            );
+            metrics.endpoint_variables += 1;
+            solver.post_constant_element(
+                ConstraintFamily::EndpointLink,
+                placement.choice,
+                facility_values,
+                geometry,
+                tag,
+            );
+            geometry
+        })
+        .collect::<Vec<_>>();
+    solver.post_variable_element(
         ConstraintFamily::EndpointLink,
-        vec![
-            combined_choice.scaled(1),
-            placement.choice.scaled(-port_count),
-            port_choice.scaled(-1),
-        ],
-        0,
-        port_count.unsigned_abs() as u64,
-        tag,
-    );
-    solver.post_constant_element(
-        ConstraintFamily::EndpointLink,
-        combined_choice,
-        facility_values,
+        port_choice,
+        port_geometry,
         facility_key,
         tag,
     );
