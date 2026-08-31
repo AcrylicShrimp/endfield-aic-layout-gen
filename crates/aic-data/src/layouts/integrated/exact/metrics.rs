@@ -15,6 +15,7 @@ pub(super) fn finish_report(
     search_ms: u64,
     first_incumbent_ms: Option<u64>,
     observed_incumbents: usize,
+    search_statistics: super::super::ExactSearchStatistics,
     validation: ExactValidationStatus,
     objective_stages: Vec<ExactObjectiveStageReport>,
 ) -> IntegratedLayoutReport {
@@ -27,6 +28,7 @@ pub(super) fn finish_report(
         search_ms,
         first_incumbent_ms,
         observed_incumbents,
+        search_statistics,
         validation,
         objective_stages,
     )
@@ -42,6 +44,7 @@ pub(super) fn finish_report_with_formulation(
     search_ms: u64,
     first_incumbent_ms: Option<u64>,
     observed_incumbents: usize,
+    search_statistics: super::super::ExactSearchStatistics,
     validation: ExactValidationStatus,
     objective_stages: Vec<ExactObjectiveStageReport>,
 ) -> IntegratedLayoutReport {
@@ -80,6 +83,7 @@ pub(super) fn finish_report_with_formulation(
         } else {
             observed_incumbents
         },
+        search_statistics,
         objective,
         objective_stages,
         termination,

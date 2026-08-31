@@ -9,7 +9,7 @@ use crate::research::ModelComplexityMetrics;
 use super::WorldGridPosition;
 
 const STAGE: &str = "integrated-layout";
-pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 19;
+pub const INTEGRATED_LAYOUT_SCHEMA_VERSION: u32 = 20;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -44,11 +44,23 @@ pub struct ExactSolveReport {
     pub search_ms: u64,
     pub first_incumbent_ms: Option<u64>,
     pub incumbent_count: usize,
+    pub search_statistics: ExactSearchStatistics,
     pub objective: Option<ExactObjectiveValue>,
     pub objective_stages: Vec<ExactObjectiveStageReport>,
     pub termination: ExactTerminationReason,
     pub proof: ExactProofStatus,
     pub validation: ExactValidationStatus,
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
+pub struct ExactSearchStatistics {
+    pub branch_decisions: Option<u64>,
+    pub backtracks: Option<u64>,
+    pub conflicts: Option<u64>,
+    pub learned_clauses: Option<u64>,
+    pub solver_propagations: Option<u64>,
+    pub atomic_propagations: Option<u64>,
+    pub restarts: Option<u64>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]

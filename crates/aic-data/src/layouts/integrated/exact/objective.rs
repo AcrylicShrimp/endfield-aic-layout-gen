@@ -1,5 +1,6 @@
 use std::ops::ControlFlow;
 use std::sync::Arc as Shared;
+use std::sync::Mutex;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::time::{Duration, Instant};
 
@@ -19,11 +20,12 @@ use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
 use super::hint::SolverHint;
 use super::recorder::{ConstraintFamily, RecordedModel, VariableFamily};
+use super::search_statistics::{MeteredBrancher, SearchEventCounters, capture_search_statistics};
 use super::{Arc, ModelBranchComponent, ModelBridge, ModelNetwork, post_presence};
 use crate::layouts::integrated::{
     ExactModelMetrics, ExactObjectiveKind, ExactObjectiveStageReport, ExactProofStatus,
-    IntegratedLayoutDiagnostic, IntegratedLayoutReport, IntegratedLayoutStatus, ModelInput,
-    TransportKind,
+    ExactSearchStatistics, IntegratedLayoutDiagnostic, IntegratedLayoutReport,
+    IntegratedLayoutStatus, ModelInput, TransportKind,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -41,6 +43,7 @@ pub(super) struct ObjectiveSearchResult {
     pub(super) search_ms: u64,
     pub(super) first_incumbent_ms: Option<u64>,
     pub(super) incumbent_count: usize,
+    pub(super) search_statistics: ExactSearchStatistics,
 }
 
 pub(super) fn optimise_lexicographically(
@@ -82,6 +85,8 @@ pub(super) fn optimise_lexicographically(
     let mut stage_reports = Vec::with_capacity(stages.len());
     let mut last_report = None;
     let mut terminal_failure = None;
+    let search_event_counters = Shared::new(Mutex::new(SearchEventCounters::default()));
+    let mut search_statistics = ExactSearchStatistics::default();
 
     for (stage_index, (objective_kind, objective_variable)) in stages.iter().copied().enumerate() {
         let mut branchers: Vec<Box<dyn Brancher>> = Vec::new();
@@ -89,13 +94,16 @@ pub(super) fn optimise_lexicographically(
             branchers.push(Box::new(WarmStart::new(&hint_variables, &hint_values)));
         }
         branchers.push(Box::new(solver.default_brancher()));
-        let mut brancher = DynamicBrancher::new(branchers);
+        let mut brancher = MeteredBrancher::new(
+            DynamicBrancher::new(branchers),
+            Shared::clone(&search_event_counters),
+        );
         let mut resolver = ResolutionResolver::default();
         let callback_incumbent_count = Shared::clone(&incumbent_count);
         let callback_first_incumbent_ms = Shared::clone(&first_incumbent_ms);
         let callback = move |_: &Solver,
                              _: SolutionReference,
-                             _: &DynamicBrancher,
+                             _: &MeteredBrancher<DynamicBrancher>,
                              _: &ResolutionResolver|
               -> ControlFlow<()> {
             callback_incumbent_count.fetch_add(1, Ordering::Relaxed);
@@ -119,6 +127,8 @@ pub(super) fn optimise_lexicographically(
                 callback,
             ),
         );
+        search_statistics =
+            capture_search_statistics(solver, &brancher, &resolver, &search_event_counters);
         let stage_ms = super::metrics::elapsed_millis(stage_started.elapsed());
         match result {
             OptimisationResult::Optimal(solution) => {
@@ -223,6 +233,7 @@ pub(super) fn optimise_lexicographically(
             value => Some(value),
         },
         incumbent_count: incumbent_count.load(Ordering::Relaxed),
+        search_statistics,
     }
 }
 

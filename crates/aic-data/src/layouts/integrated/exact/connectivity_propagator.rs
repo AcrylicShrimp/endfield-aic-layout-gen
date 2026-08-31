@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, VecDeque};
+use std::collections::{BTreeSet, HashSet, VecDeque};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -6,9 +6,9 @@ use pumpkin_solver::core::declare_inference_label;
 use pumpkin_solver::core::predicates::{PredicateConstructor, PropositionalConjunction};
 use pumpkin_solver::core::proof::{ConstraintTag, InferenceCode};
 use pumpkin_solver::core::propagation::{
-    DomainEvents, EventsToRegister, LocalId, Priority, PropagationContext, Propagator,
-    PropagatorConstructor, PropagatorConstructorContext, PropagatorSpec, ReadDomains,
-    RuntimeCheckers,
+    DomainEvents, EnqueueDecision, EventsToRegister, LocalId, NotificationContext, PredicateId,
+    Priority, PropagationContext, Propagator, PropagatorConstructor, PropagatorConstructorContext,
+    PropagatorSpec, ReadDomains, RuntimeCheckers,
 };
 use pumpkin_solver::core::state::PropagationStatusCP;
 use pumpkin_solver::core::variables::DomainId;
@@ -23,6 +23,8 @@ pub(super) struct PossibleRouteReachabilityCounters {
     demand_pruning_attempts: AtomicU64,
     selected_demand_conflicts: AtomicU64,
     maximum_reason_predicates: AtomicU64,
+    predicate_notifications: AtomicU64,
+    registered_predicates: AtomicU64,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -33,6 +35,8 @@ pub(in crate::layouts::integrated) struct PossibleRouteReachabilityStatistics {
     pub demand_pruning_attempts: u64,
     pub selected_demand_conflicts: u64,
     pub maximum_reason_predicates: u64,
+    pub predicate_notifications: u64,
+    pub registered_predicates: u64,
 }
 
 impl PossibleRouteReachabilityCounters {
@@ -44,8 +48,16 @@ impl PossibleRouteReachabilityCounters {
             demand_pruning_attempts: self.demand_pruning_attempts.load(Ordering::Relaxed),
             selected_demand_conflicts: self.selected_demand_conflicts.load(Ordering::Relaxed),
             maximum_reason_predicates: self.maximum_reason_predicates.load(Ordering::Relaxed),
+            predicate_notifications: self.predicate_notifications.load(Ordering::Relaxed),
+            registered_predicates: self.registered_predicates.load(Ordering::Relaxed),
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum PossibleRouteReachabilityWakeMode {
+    AnyDomainEvent,
+    ExclusionPredicates,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -73,6 +85,7 @@ pub(super) struct PossibleRouteReachabilityArgs {
     pub demands: Vec<PossibleTerminalOption>,
     pub constraint_tag: ConstraintTag,
     pub counters: Arc<PossibleRouteReachabilityCounters>,
+    pub wake_mode: PossibleRouteReachabilityWakeMode,
 }
 
 impl PossibleRouteReachabilityArgs {
@@ -88,24 +101,58 @@ impl PossibleRouteReachabilityArgs {
 impl PropagatorConstructor for PossibleRouteReachabilityArgs {
     type PropagatorImpl = PossibleRouteReachabilityPropagator;
 
-    fn create(self, _: PropagatorConstructorContext) -> PropagatorSpec<Self::PropagatorImpl> {
-        let variables = self.variables().collect::<BTreeSet<_>>();
-        let mut variables = variables.into_iter();
-        let first = variables
-            .next()
-            .expect("a route reachability propagator has terminals or arcs");
-        let mut registration = EventsToRegister::builder()
-            .add(&first, DomainEvents::ANY_INT, LocalId::from(0))
-            .build();
-        for (index, variable) in variables.enumerate() {
-            registration.add(
-                &variable,
-                DomainEvents::ANY_INT,
-                LocalId::from(
-                    u32::try_from(index + 1).expect("propagator variable count fits u32"),
-                ),
-            );
-        }
+    fn create(
+        self,
+        mut context: PropagatorConstructorContext,
+    ) -> PropagatorSpec<Self::PropagatorImpl> {
+        let registration = match self.wake_mode {
+            PossibleRouteReachabilityWakeMode::AnyDomainEvent => {
+                let variables = self.variables().collect::<BTreeSet<_>>();
+                let mut variables = variables.into_iter();
+                let first = variables
+                    .next()
+                    .expect("a route reachability propagator has terminals or arcs");
+                let mut registration = EventsToRegister::builder()
+                    .add(&first, DomainEvents::ANY_INT, LocalId::from(0))
+                    .build();
+                for (index, variable) in variables.enumerate() {
+                    registration.add(
+                        &variable,
+                        DomainEvents::ANY_INT,
+                        LocalId::from(
+                            u32::try_from(index + 1).expect("propagator variable count fits u32"),
+                        ),
+                    );
+                }
+                registration
+            }
+            PossibleRouteReachabilityWakeMode::ExclusionPredicates => {
+                let predicates = self
+                    .arcs
+                    .iter()
+                    .flat_map(|arc| {
+                        [
+                            arc.selected.upper_bound_predicate(0),
+                            arc.from_item.disequality_predicate(self.item_code),
+                            arc.to_item.disequality_predicate(self.item_code),
+                        ]
+                    })
+                    .chain(
+                        self.supplies
+                            .iter()
+                            .map(|option| option.selected.upper_bound_predicate(0)),
+                    )
+                    .collect::<HashSet<_>>();
+                self.counters.registered_predicates.fetch_add(
+                    predicates.len().try_into().unwrap_or(u64::MAX),
+                    Ordering::Relaxed,
+                );
+                for predicate in predicates {
+                    context.register_predicate(predicate);
+                }
+                EventsToRegister::empty()
+            }
+        };
 
         let inference_code = InferenceCode::new(self.constraint_tag, PossibleRouteReachability);
         PropagatorSpec {
@@ -144,6 +191,17 @@ impl Propagator for PossibleRouteReachabilityPropagator {
 
     fn priority(&self) -> Priority {
         Priority::Low
+    }
+
+    fn notify_predicate_id_satisfied(
+        &mut self,
+        _context: NotificationContext,
+        _predicate_id: PredicateId,
+    ) -> EnqueueDecision {
+        self.counters
+            .predicate_notifications
+            .fetch_add(1, Ordering::Relaxed);
+        EnqueueDecision::Enqueue
     }
 
     fn propagate_from_scratch(&self, mut context: PropagationContext) -> PropagationStatusCP {
@@ -244,6 +302,7 @@ mod tests {
             }],
             constraint_tag: tag,
             counters: Arc::new(PossibleRouteReachabilityCounters::default()),
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
         });
     }
 
@@ -362,6 +421,104 @@ mod tests {
             solver.propagate_to_fixpoint(),
             CSPSolverExecutionFlag::Feasible
         );
+        assert_eq!(solver.upper_bound(&demand), 0);
+    }
+
+    #[test]
+    fn event_selective_mode_ignores_a_path_preserving_assignment() {
+        let mut solver = Solver::default();
+        let supply = solver.new_bounded_integer(1, 1);
+        let demand = solver.new_bounded_integer(0, 1);
+        let selected = solver.new_bounded_integer(0, 1);
+        let item = solver.new_bounded_integer(1, 1);
+        let counters = Arc::new(PossibleRouteReachabilityCounters::default());
+        let tag = solver.new_constraint_tag();
+        let _ = solver.add_propagator(PossibleRouteReachabilityArgs {
+            name: "event-selective-path-preserving".to_string(),
+            cell_count: 3,
+            item_code: 1,
+            arcs: vec![PossibleRouteArc {
+                from: 0,
+                to: 2,
+                selected,
+                from_item: item,
+                to_item: item,
+            }],
+            supplies: vec![PossibleTerminalOption {
+                cell: 0,
+                selected: supply,
+            }],
+            demands: vec![PossibleTerminalOption {
+                cell: 2,
+                selected: demand,
+            }],
+            constraint_tag: tag,
+            counters: Arc::clone(&counters),
+            wake_mode: PossibleRouteReachabilityWakeMode::ExclusionPredicates,
+        });
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let after_initial = counters.snapshot();
+        solver.add_clause([selected.lower_bound_predicate(1)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let after_assignment = counters.snapshot();
+
+        assert_eq!(after_assignment.propagations, after_initial.propagations);
+        assert_eq!(after_assignment.predicate_notifications, 0);
+        assert!(solver.contains(&demand, 1));
+    }
+
+    #[test]
+    fn event_selective_mode_wakes_when_the_only_path_disappears() {
+        let mut solver = Solver::default();
+        let supply = solver.new_bounded_integer(1, 1);
+        let demand = solver.new_bounded_integer(0, 1);
+        let selected = solver.new_bounded_integer(0, 1);
+        let item = solver.new_bounded_integer(1, 1);
+        let counters = Arc::new(PossibleRouteReachabilityCounters::default());
+        let tag = solver.new_constraint_tag();
+        let _ = solver.add_propagator(PossibleRouteReachabilityArgs {
+            name: "event-selective-path-removal".to_string(),
+            cell_count: 3,
+            item_code: 1,
+            arcs: vec![PossibleRouteArc {
+                from: 0,
+                to: 2,
+                selected,
+                from_item: item,
+                to_item: item,
+            }],
+            supplies: vec![PossibleTerminalOption {
+                cell: 0,
+                selected: supply,
+            }],
+            demands: vec![PossibleTerminalOption {
+                cell: 2,
+                selected: demand,
+            }],
+            constraint_tag: tag,
+            counters: Arc::clone(&counters),
+            wake_mode: PossibleRouteReachabilityWakeMode::ExclusionPredicates,
+        });
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        solver.add_clause([selected.upper_bound_predicate(0)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let statistics = counters.snapshot();
+
+        assert!(statistics.predicate_notifications >= 1);
         assert_eq!(solver.upper_bound(&demand), 0);
     }
 }

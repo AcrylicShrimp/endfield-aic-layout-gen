@@ -1000,6 +1000,7 @@ mod tests {
                 search_ms: 2,
                 first_incumbent_ms: Some(1),
                 incumbent_count: 1,
+                search_statistics: crate::layouts::integrated::ExactSearchStatistics::default(),
                 objective: Some(crate::layouts::ExactObjectiveValue {
                     used_bounding_box_area: 48,
                     physical_transport_tiles: 2,

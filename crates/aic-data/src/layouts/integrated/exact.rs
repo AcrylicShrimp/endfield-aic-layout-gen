@@ -23,6 +23,7 @@ mod metrics;
 mod objective;
 mod occupancy_probe;
 mod recorder;
+mod search_statistics;
 pub(super) mod shared_layer;
 
 pub(super) use occupancy_probe::probe_physical_occupancy;
@@ -815,6 +816,7 @@ fn solve_with_configuration(
     let search_ms = search.search_ms;
     let first_incumbent_ms = search.first_incumbent_ms;
     let observed_incumbents = search.incumbent_count;
+    let search_statistics = search.search_statistics;
     let validation = if report.success {
         match witness::validate(&input, logistics_components, &report) {
             Ok(()) => match validate_objective_witness(&report, &objective_stages) {
@@ -844,6 +846,7 @@ fn solve_with_configuration(
         search_ms,
         first_incumbent_ms,
         observed_incumbents,
+        search_statistics,
         validation,
         objective_stages,
     )

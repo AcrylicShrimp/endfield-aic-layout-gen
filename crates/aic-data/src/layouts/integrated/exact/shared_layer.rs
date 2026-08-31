@@ -1,5 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc as SyncArc;
+use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
 use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
@@ -14,7 +15,7 @@ use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 use super::boundary_terminals::{self, UsedBoundsVariables};
 use super::connectivity_propagator::{
     PossibleRouteArc, PossibleRouteReachabilityArgs, PossibleRouteReachabilityCounters,
-    PossibleRouteReachabilityStatistics, PossibleTerminalOption,
+    PossibleRouteReachabilityStatistics, PossibleRouteReachabilityWakeMode, PossibleTerminalOption,
 };
 use super::extract::rate_from_flow_units;
 use super::formulation::{
@@ -28,6 +29,7 @@ use super::objective::{
     post_sum_variable, require_canonical_origin,
 };
 use super::recorder::{ConstraintFamily, RecordedModel, VariableFamily};
+use super::search_statistics::{MeteredBrancher, SearchEventCounters, capture_search_statistics};
 use super::{
     Arc, Candidate, EdgeEndpointOptions, EndpointOption, ModelBridge, ModelInstance, post_arm,
     post_presence,
@@ -78,7 +80,10 @@ enum SearchMode {
 enum ConnectivityMode {
     None,
     DeclarativeWitness,
-    PossibleGraphPropagator(SyncArc<PossibleRouteReachabilityCounters>),
+    PossibleGraphPropagator {
+        counters: SyncArc<PossibleRouteReachabilityCounters>,
+        wake_mode: PossibleRouteReachabilityWakeMode,
+    },
 }
 
 #[derive(Clone, Copy)]
@@ -133,6 +138,7 @@ struct SharedSearchResult {
     search_ms: u64,
     first_incumbent_ms: Option<u64>,
     incumbent_count: usize,
+    search_statistics: crate::layouts::integrated::ExactSearchStatistics,
 }
 
 #[derive(Clone)]
@@ -506,7 +512,37 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_possible_graph_co
         None,
         None,
         None,
-        ConnectivityMode::PossibleGraphPropagator(counters),
+        ConnectivityMode::PossibleGraphPropagator {
+            counters,
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+        },
+    )
+}
+
+#[cfg(test)]
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_event_selective_possible_graph_connectivity(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+) -> IntegratedLayoutReport {
+    let counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        None,
+        SearchMode::Optimize,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters,
+            wake_mode: PossibleRouteReachabilityWakeMode::ExclusionPredicates,
+        },
     )
 }
 
@@ -531,7 +567,39 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         Some(ReferenceAblationFixation::PlacementsAndAllTerminals),
         None,
         None,
-        ConnectivityMode::PossibleGraphPropagator(SyncArc::clone(&counters)),
+        ConnectivityMode::PossibleGraphPropagator {
+            counters: SyncArc::clone(&counters),
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+        },
+    );
+    (report, counters.snapshot())
+}
+
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_reference_event_selective_possible_graph_connectivity(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    reference: &IntegratedLayoutReport,
+) -> (IntegratedLayoutReport, PossibleRouteReachabilityStatistics) {
+    let counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    let report = solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        Some(reference),
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        None,
+        None,
+        Some(ReferenceAblationFixation::PlacementsAndAllTerminals),
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters: SyncArc::clone(&counters),
+            wake_mode: PossibleRouteReachabilityWakeMode::ExclusionPredicates,
+        },
     );
     (report, counters.snapshot())
 }
@@ -784,13 +852,17 @@ fn solve_with_endpoint_encoding(
         ConnectivityMode::DeclarativeWitness => {
             post_connectivity_witness(&mut solver, &input, &layers, &model_terminals, tag);
         }
-        ConnectivityMode::PossibleGraphPropagator(counters) => {
+        ConnectivityMode::PossibleGraphPropagator {
+            counters,
+            wake_mode,
+        } => {
             post_possible_graph_connectivity(
                 &mut solver,
                 &input,
                 &layers,
                 &model_terminals,
                 SyncArc::clone(counters),
+                *wake_mode,
                 tag,
             );
         }
@@ -890,6 +962,7 @@ fn solve_with_endpoint_encoding(
                 search_ms: result.search_ms,
                 first_incumbent_ms: result.first_incumbent_ms,
                 incumbent_count: result.incumbent_count,
+                search_statistics: result.search_statistics,
             }
         }
         SearchMode::FeasibilityOnly => {
@@ -905,7 +978,11 @@ fn solve_with_endpoint_encoding(
                 branchers.push(Box::new(WarmStart::new(&hint_variables, &hint_values)));
             }
             branchers.push(Box::new(solver.solver_mut().default_brancher()));
-            let mut brancher = DynamicBrancher::new(branchers);
+            let search_event_counters = SyncArc::new(Mutex::new(SearchEventCounters::default()));
+            let mut brancher = MeteredBrancher::new(
+                DynamicBrancher::new(branchers),
+                SyncArc::clone(&search_event_counters),
+            );
             let mut resolver = ResolutionResolver::default();
             let mut termination = time_limit.map(TimeBudget::starting_now);
             let result =
@@ -913,9 +990,15 @@ fn solve_with_endpoint_encoding(
                     .solver_mut()
                     .satisfy(&mut brancher, &mut termination, &mut resolver);
             let search_ms = elapsed_millis(search_started.elapsed());
-            let (report, first_incumbent_ms, incumbent_count) = match result {
+            let (report, first_incumbent_ms, incumbent_count, search_statistics) = match result {
                 SatisfactionResult::Satisfiable(satisfiable) => {
                     let solution = satisfiable.solution();
+                    let search_statistics = capture_search_statistics(
+                        satisfiable.solver(),
+                        satisfiable.brancher(),
+                        satisfiable.conflict_resolver(),
+                        &search_event_counters,
+                    );
                     (
                         extract_report(
                             &solution,
@@ -929,34 +1012,53 @@ fn solve_with_endpoint_encoding(
                         ),
                         Some(search_ms),
                         1,
+                        search_statistics,
                     )
                 }
-                SatisfactionResult::Unsatisfiable(_, _, _) => (
-                    IntegratedLayoutReport::failure(
-                        IntegratedLayoutStatus::Infeasible,
-                        IntegratedLayoutDiagnostic::error(
-                            "integrated-layout-infeasible",
-                            "/",
-                            None,
-                            "facility placement, port selection, and route constraints are infeasible",
+                SatisfactionResult::Unsatisfiable(solver, brancher, resolver) => {
+                    let search_statistics = capture_search_statistics(
+                        solver,
+                        brancher,
+                        resolver,
+                        &search_event_counters,
+                    );
+                    (
+                        IntegratedLayoutReport::failure(
+                            IntegratedLayoutStatus::Infeasible,
+                            IntegratedLayoutDiagnostic::error(
+                                "integrated-layout-infeasible",
+                                "/",
+                                None,
+                                "facility placement, port selection, and route constraints are infeasible",
+                            ),
                         ),
-                    ),
-                    None,
-                    0,
-                ),
-                SatisfactionResult::Unknown(_, _, _) => (
-                    IntegratedLayoutReport::failure(
-                        IntegratedLayoutStatus::Unknown,
-                        IntegratedLayoutDiagnostic::error(
-                            "integrated-layout-unknown",
-                            "/",
-                            None,
-                            "solver terminated without a solution or proof",
+                        None,
+                        0,
+                        search_statistics,
+                    )
+                }
+                SatisfactionResult::Unknown(solver, brancher, resolver) => {
+                    let search_statistics = capture_search_statistics(
+                        solver,
+                        brancher,
+                        resolver,
+                        &search_event_counters,
+                    );
+                    (
+                        IntegratedLayoutReport::failure(
+                            IntegratedLayoutStatus::Unknown,
+                            IntegratedLayoutDiagnostic::error(
+                                "integrated-layout-unknown",
+                                "/",
+                                None,
+                                "solver terminated without a solution or proof",
+                            ),
                         ),
-                    ),
-                    None,
-                    0,
-                ),
+                        None,
+                        0,
+                        search_statistics,
+                    )
+                }
             };
             SharedSearchResult {
                 report,
@@ -964,6 +1066,7 @@ fn solve_with_endpoint_encoding(
                 search_ms,
                 first_incumbent_ms,
                 incumbent_count,
+                search_statistics,
             }
         }
     };
@@ -1004,9 +1107,22 @@ fn solve_with_endpoint_encoding(
             connectivity_mode,
         ) {
             (_, _, ConnectivityMode::DeclarativeWitness) => "joint-shared-v4-connectivity-witness",
-            (_, _, ConnectivityMode::PossibleGraphPropagator(_)) => {
-                "joint-shared-v4-possible-graph-connectivity"
-            }
+            (
+                _,
+                _,
+                ConnectivityMode::PossibleGraphPropagator {
+                    wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+                    ..
+                },
+            ) => "joint-shared-v4-possible-graph-connectivity",
+            (
+                _,
+                _,
+                ConnectivityMode::PossibleGraphPropagator {
+                    wake_mode: PossibleRouteReachabilityWakeMode::ExclusionPredicates,
+                    ..
+                },
+            ) => "joint-shared-v4-event-selective-possible-graph-connectivity",
             (_, Some(_), ConnectivityMode::None) => {
                 "joint-shared-v4-reference-routing-state-ablation"
             }
@@ -1058,6 +1174,7 @@ fn solve_with_endpoint_encoding(
         search.search_ms,
         search.first_incumbent_ms,
         search.incumbent_count,
+        search.search_statistics,
         validation,
         search.stages,
     )
@@ -1432,6 +1549,7 @@ fn post_possible_graph_connectivity(
     layers: &[SharedLayer],
     terminals: &[Vec<SharedTerminal>],
     counters: SyncArc<PossibleRouteReachabilityCounters>,
+    wake_mode: PossibleRouteReachabilityWakeMode,
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) {
     for layer in layers {
@@ -1480,6 +1598,7 @@ fn post_possible_graph_connectivity(
                 demands: terminal_options(FacilityPortDirection::Input),
                 constraint_tag: tag,
                 counters: SyncArc::clone(&counters),
+                wake_mode,
             };
             solver.record_global_constraint(
                 ConstraintFamily::ConnectivityPropagator,

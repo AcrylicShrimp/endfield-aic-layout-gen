@@ -104,6 +104,14 @@ in the current possible material graph. It adds no decision variables, repeatedl
 controlled Phase 2 first-witness time by about 20%, and identifies coarse wakeups plus full graph
 rescans as the next exact implementation bottleneck.
 
+The thirty-fifth checkpoint,
+`heavy-xiranite-minimum-rate.thirty-fifth-event-selective-connectivity-report.md`, adds structured
+native Pumpkin search statistics and tests exact exclusion-predicate subscriptions. Native counters
+show that the broad custom propagator reduces decisions, conflicts, and solver propagator calls,
+while more than one million predicate notifications make the event-selective variant slower. The
+predicate-watcher variant is rejected, and lazy graph traversal plus lazy explanations become the
+next exact optimization target.
+
 Regenerate it from a release binary with:
 
 ```bash

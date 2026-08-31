@@ -32,10 +32,11 @@ use model::{
 };
 pub use report::{
     ExactModelMetrics, ExactObjectiveKind, ExactObjectiveStageReport, ExactObjectiveValue,
-    ExactProofStatus, ExactSolveReport, ExactTerminationReason, ExactValidationStatus,
-    INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic, IntegratedLayoutPhase,
-    IntegratedLayoutReport, IntegratedLayoutStatus, PlacedLogisticsComponent, TransportNetwork,
-    TransportNetworkEndpoint, TransportNetworkSegment, TransportNetworkTerminal,
+    ExactProofStatus, ExactSearchStatistics, ExactSolveReport, ExactTerminationReason,
+    ExactValidationStatus, INTEGRATED_LAYOUT_SCHEMA_VERSION, IntegratedLayoutDiagnostic,
+    IntegratedLayoutPhase, IntegratedLayoutReport, IntegratedLayoutStatus,
+    PlacedLogisticsComponent, TransportNetwork, TransportNetworkEndpoint, TransportNetworkSegment,
+    TransportNetworkTerminal,
 };
 pub use research::{
     CONNECTIVITY_WITNESS_DIAGNOSIS_SCHEMA_VERSION, CUMULATIVE_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION,
