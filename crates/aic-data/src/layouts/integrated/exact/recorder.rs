@@ -121,6 +121,7 @@ pub(super) enum ConstraintFamily {
     ObjectiveDefinition,
     TurnDefinition,
     ConnectivityWitness,
+    ConnectivityPropagator,
     ResearchFixation,
 }
 
@@ -152,6 +153,7 @@ impl ConstraintFamily {
             Self::ObjectiveDefinition => "objective-definition",
             Self::TurnDefinition => "turn-definition",
             Self::ConnectivityWitness => "connectivity-witness",
+            Self::ConnectivityPropagator => "connectivity-propagator",
             Self::ResearchFixation => "research-fixation",
         }
     }
@@ -517,6 +519,18 @@ impl RecordedModel {
     ) {
         self.recorder.facility_network_incidences = facility_network_incidences;
         self.recorder.shared_network_facility_pairs = shared_network_facility_pairs;
+    }
+
+    pub(super) fn record_global_constraint(
+        &mut self,
+        family: ConstraintFamily,
+        variables: impl IntoIterator<Item = DomainId>,
+    ) {
+        let terms = variables
+            .into_iter()
+            .map(|variable| variable.scaled(1))
+            .collect::<Vec<_>>();
+        self.record_constraint(family, ConstraintRelation::Other, &terms, 1);
     }
 
     pub(super) fn metrics(&mut self) -> ModelComplexityMetrics {

@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc as SyncArc;
 use std::time::{Duration, Instant};
 
 use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
@@ -11,6 +12,10 @@ use pumpkin_solver::core::termination::TimeBudget;
 use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
 use super::boundary_terminals::{self, UsedBoundsVariables};
+use super::connectivity_propagator::{
+    PossibleRouteArc, PossibleRouteReachabilityArgs, PossibleRouteReachabilityCounters,
+    PossibleRouteReachabilityStatistics, PossibleTerminalOption,
+};
 use super::extract::rate_from_flow_units;
 use super::formulation::{
     DIRECTIONS, direction_between, direction_index, external_endpoint_options,
@@ -67,6 +72,13 @@ enum EndpointEncoding {
 enum SearchMode {
     Optimize,
     FeasibilityOnly,
+}
+
+#[derive(Clone)]
+enum ConnectivityMode {
+    None,
+    DeclarativeWitness,
+    PossibleGraphPropagator(SyncArc<PossibleRouteReachabilityCounters>),
 }
 
 #[derive(Clone, Copy)]
@@ -203,7 +215,7 @@ pub(in crate::layouts::integrated) fn solve(
         None,
         None,
         None,
-        false,
+        ConnectivityMode::None,
     )
 }
 
@@ -234,7 +246,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_with_prior(
         None,
         None,
         None,
-        false,
+        ConnectivityMode::None,
     )
 }
 
@@ -256,7 +268,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_feasibility_only(
         None,
         None,
         None,
-        false,
+        ConnectivityMode::None,
     )
 }
 
@@ -295,7 +307,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         None,
         None,
         None,
-        false,
+        ConnectivityMode::None,
     )
 }
 
@@ -320,7 +332,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         None,
         Some(transport_tile_upper_bound),
         None,
-        false,
+        ConnectivityMode::None,
     )
 }
 
@@ -346,7 +358,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         None,
         None,
         None,
-        false,
+        ConnectivityMode::None,
     )
 }
 
@@ -373,7 +385,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         None,
         None,
         None,
-        false,
+        ConnectivityMode::None,
     )
 }
 
@@ -398,7 +410,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         Some(fixation),
         None,
         None,
-        false,
+        ConnectivityMode::None,
     )
 }
 
@@ -423,7 +435,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         Some(ReferenceAblationFixation::PlacementsAndAllTerminals),
         None,
         Some(routing_fixation),
-        false,
+        ConnectivityMode::None,
     )
 }
 
@@ -446,7 +458,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_connectivity_witn
         None,
         None,
         None,
-        true,
+        ConnectivityMode::DeclarativeWitness,
     )
 }
 
@@ -470,8 +482,58 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         Some(ReferenceAblationFixation::PlacementsAndAllTerminals),
         None,
         None,
-        true,
+        ConnectivityMode::DeclarativeWitness,
     )
+}
+
+#[cfg(test)]
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_possible_graph_connectivity(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+) -> IntegratedLayoutReport {
+    let counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        None,
+        SearchMode::Optimize,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator(counters),
+    )
+}
+
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_reference_possible_graph_connectivity(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    reference: &IntegratedLayoutReport,
+) -> (IntegratedLayoutReport, PossibleRouteReachabilityStatistics) {
+    let counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    let report = solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        Some(reference),
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        None,
+        None,
+        Some(ReferenceAblationFixation::PlacementsAndAllTerminals),
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator(SyncArc::clone(&counters)),
+    );
+    (report, counters.snapshot())
 }
 
 pub(in crate::layouts::integrated) fn facility_coordinate_partitions(
@@ -590,7 +652,7 @@ fn solve_with_endpoint_encoding(
     reference_fixation: Option<ReferenceAblationFixation>,
     transport_tile_upper_bound: Option<i32>,
     reference_routing_fixation: Option<ReferenceRoutingFixation>,
-    connectivity_witness: bool,
+    connectivity_mode: ConnectivityMode,
 ) -> IntegratedLayoutReport {
     if transport_tile_upper_bound.is_some_and(|upper_bound| upper_bound < 0) {
         return IntegratedLayoutReport::invalid(IntegratedLayoutDiagnostic::error(
@@ -717,8 +779,21 @@ fn solve_with_endpoint_encoding(
         );
         layers.push(layer);
     }
-    if connectivity_witness {
-        post_connectivity_witness(&mut solver, &input, &layers, &model_terminals, tag);
+    match &connectivity_mode {
+        ConnectivityMode::None => {}
+        ConnectivityMode::DeclarativeWitness => {
+            post_connectivity_witness(&mut solver, &input, &layers, &model_terminals, tag);
+        }
+        ConnectivityMode::PossibleGraphPropagator(counters) => {
+            post_possible_graph_connectivity(
+                &mut solver,
+                &input,
+                &layers,
+                &model_terminals,
+                SyncArc::clone(counters),
+                tag,
+            );
+        }
     }
     if let Some(fixation) = reference_routing_fixation
         && let Err(diagnostic) = post_reference_routing_fixation(
@@ -926,23 +1001,32 @@ fn solve_with_endpoint_encoding(
         match (
             reference_fixation,
             reference_routing_fixation,
-            connectivity_witness,
+            connectivity_mode,
         ) {
-            (_, _, true) => "joint-shared-v4-connectivity-witness",
-            (_, Some(_), false) => "joint-shared-v4-reference-routing-state-ablation",
-            (Some(ReferenceAblationFixation::Placements), None, false) => {
+            (_, _, ConnectivityMode::DeclarativeWitness) => "joint-shared-v4-connectivity-witness",
+            (_, _, ConnectivityMode::PossibleGraphPropagator(_)) => {
+                "joint-shared-v4-possible-graph-connectivity"
+            }
+            (_, Some(_), ConnectivityMode::None) => {
+                "joint-shared-v4-reference-routing-state-ablation"
+            }
+            (Some(ReferenceAblationFixation::Placements), None, ConnectivityMode::None) => {
                 "joint-shared-v4-reference-placements-ablation"
             }
-            (Some(ReferenceAblationFixation::PlacementsAndFacilityPorts), None, false) => {
-                "joint-shared-v4-reference-placements-facility-ports-ablation"
-            }
-            (Some(ReferenceAblationFixation::PlacementsAndAllTerminals), None, false) => {
-                "joint-shared-v4-reference-placements-all-terminals-ablation"
-            }
-            (None, None, false) if transport_tile_upper_bound.is_some() => {
+            (
+                Some(ReferenceAblationFixation::PlacementsAndFacilityPorts),
+                None,
+                ConnectivityMode::None,
+            ) => "joint-shared-v4-reference-placements-facility-ports-ablation",
+            (
+                Some(ReferenceAblationFixation::PlacementsAndAllTerminals),
+                None,
+                ConnectivityMode::None,
+            ) => "joint-shared-v4-reference-placements-all-terminals-ablation",
+            (None, None, ConnectivityMode::None) if transport_tile_upper_bound.is_some() => {
                 "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions-transport-tile-cap"
             }
-            (None, None, false) => match (
+            (None, None, ConnectivityMode::None) => match (
                 endpoint_encoding,
                 fixed_dimensions,
                 fixed_coordinate,
@@ -1338,6 +1422,70 @@ fn post_connectivity_witness(
                 definition.push(reached[cell].scaled(-1));
                 solver.post_equals(ConstraintFamily::ConnectivityWitness, definition, 0, 1, tag);
             }
+        }
+    }
+}
+
+fn post_possible_graph_connectivity(
+    solver: &mut RecordedModel,
+    input: &ModelInput,
+    layers: &[SharedLayer],
+    terminals: &[Vec<SharedTerminal>],
+    counters: SyncArc<PossibleRouteReachabilityCounters>,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) {
+    for layer in layers {
+        for (local_index, network_index) in layer.network_indices.iter().copied().enumerate() {
+            let item_code = i32::try_from(local_index + 1).expect("layer item code fits i32");
+            let arcs = layer
+                .arcs
+                .iter()
+                .map(|arc| {
+                    let from_direction =
+                        direction_index(direction_between(arc.from, arc.to, input.width));
+                    let to_direction =
+                        direction_index(direction_between(arc.to, arc.from, input.width));
+                    PossibleRouteArc {
+                        from: arc.from,
+                        to: arc.to,
+                        selected: arc.selected,
+                        from_item: layer.arm_items[arc.from][from_direction],
+                        to_item: layer.arm_items[arc.to][to_direction],
+                    }
+                })
+                .collect::<Vec<_>>();
+            let terminal_options = |direction| {
+                terminals[network_index]
+                    .iter()
+                    .filter(move |terminal| terminal.direction == direction)
+                    .flat_map(|terminal| &terminal.routing_options)
+                    .map(|option| PossibleTerminalOption {
+                        cell: option.cell,
+                        selected: option.selected,
+                    })
+                    .collect::<Vec<_>>()
+            };
+            let args = PossibleRouteReachabilityArgs {
+                name: format!(
+                    "possible-{}-network-{network_index}-reachability",
+                    match layer.transport {
+                        TransportKind::Belt => "belt",
+                        TransportKind::Pipe => "pipe",
+                    }
+                ),
+                cell_count: input.cell_count as usize,
+                item_code,
+                arcs,
+                supplies: terminal_options(FacilityPortDirection::Output),
+                demands: terminal_options(FacilityPortDirection::Input),
+                constraint_tag: tag,
+                counters: SyncArc::clone(&counters),
+            };
+            solver.record_global_constraint(
+                ConstraintFamily::ConnectivityPropagator,
+                args.variables(),
+            );
+            let _ = solver.solver_mut().add_propagator(args);
         }
     }
 }

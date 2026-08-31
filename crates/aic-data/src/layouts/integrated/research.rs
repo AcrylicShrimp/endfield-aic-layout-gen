@@ -17,6 +17,7 @@ use super::{
 mod connectivity_witness;
 mod coordinate_partition;
 mod dimension_sweep;
+mod possible_graph_connectivity;
 mod reference_ablation;
 mod rotation_partition;
 mod routing_state_breakdown;
@@ -44,6 +45,12 @@ pub use dimension_sweep::{
     PARALLEL_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION, ParallelExactDimensionCaseReport,
     ParallelExactDimensionSweepReport, sweep_cumulative_integrated_layout_fixed_dimensions,
     sweep_first_integrated_layout_phase_fixed_dimensions,
+};
+pub use possible_graph_connectivity::{
+    POSSIBLE_GRAPH_CONNECTIVITY_DIAGNOSIS_SCHEMA_VERSION, PossibleGraphConnectivityCaseKind,
+    PossibleGraphConnectivityCaseReport, PossibleGraphConnectivityDiagnosisReport,
+    PossibleGraphConnectivityRuntime, PossibleGraphConnectivityScale,
+    diagnose_phase2_possible_graph_connectivity,
 };
 pub use reference_ablation::{
     PHASE2_REFERENCE_ABLATION_SCHEMA_VERSION, Phase2ReferenceAblationCaseReport,

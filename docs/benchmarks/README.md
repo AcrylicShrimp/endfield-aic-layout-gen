@@ -97,6 +97,13 @@ repeatedly doubles first-witness time. The checkpoint rejects a dense declarativ
 performance strategy and identifies global possible-graph propagation as the next connectivity
 experiment.
 
+The thirty-fourth checkpoint,
+`heavy-xiranite-minimum-rate.thirty-fourth-possible-graph-connectivity-propagator-report.md`, adds a
+diagnostic-only Pumpkin custom propagator that removes a demand terminal only when it is unreachable
+in the current possible material graph. It adds no decision variables, repeatedly reduces the
+controlled Phase 2 first-witness time by about 20%, and identifies coarse wakeups plus full graph
+rescans as the next exact implementation bottleneck.
+
 Regenerate it from a release binary with:
 
 ```bash

@@ -577,6 +577,59 @@ fn connectivity_witness_preserves_a_controlled_external_route() {
 }
 
 #[test]
+fn possible_graph_connectivity_preserves_a_controlled_external_route_without_new_variables() {
+    let (facilities, items, transports, components) = catalogs();
+    let input = super::prepare_model(
+        &external_connector_wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 4,
+            max_height: 3,
+        },
+    )
+    .expect("possible graph connectivity fixture should prepare");
+
+    let baseline =
+        super::exact::shared_layer::solve_factored_endpoints(input.clone(), &components, None);
+    let propagated =
+        super::exact::shared_layer::solve_factored_endpoints_possible_graph_connectivity(
+            input,
+            &components,
+            None,
+        );
+
+    assert!(baseline.success, "{:#?}", baseline.diagnostics);
+    assert!(propagated.success, "{:#?}", propagated.diagnostics);
+    assert_eq!(propagated.status, IntegratedLayoutStatus::Optimal);
+    let baseline_exact = baseline.exact.expect("baseline reports exact evidence");
+    let propagated_exact = propagated.exact.expect("propagator reports exact evidence");
+    assert_eq!(propagated_exact.validation, ExactValidationStatus::Passed);
+    assert_eq!(propagated_exact.objective, baseline_exact.objective);
+    assert_eq!(
+        propagated_exact.model_complexity.variables.total_variables,
+        baseline_exact.model_complexity.variables.total_variables
+    );
+    assert_eq!(
+        propagated_exact.formulation,
+        "joint-shared-v4-possible-graph-connectivity"
+    );
+    assert!(
+        propagated_exact
+            .model_complexity
+            .constraints
+            .as_ref()
+            .expect("propagator model records constraints")
+            .by_family
+            .iter()
+            .any(|family| family.family == "connectivity-propagator" && family.constraints > 0)
+    );
+}
+
+#[test]
 fn feasibility_only_search_preserves_the_exact_model_and_validates_its_witness() {
     let (facilities, items, transports, components) = catalogs();
     let input = super::prepare_model(

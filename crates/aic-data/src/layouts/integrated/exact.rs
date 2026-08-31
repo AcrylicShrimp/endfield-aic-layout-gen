@@ -14,6 +14,7 @@ use crate::logistics::CardinalDirection;
 use crate::logistics::LogisticsComponentKind;
 
 mod boundary_terminals;
+mod connectivity_propagator;
 mod extract;
 mod fixation;
 mod formulation;
