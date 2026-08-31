@@ -668,6 +668,36 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
     (report, counters.snapshot())
 }
 
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_reference_grouped_demand_possible_graph_connectivity(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    reference: &IntegratedLayoutReport,
+) -> (IntegratedLayoutReport, PossibleRouteReachabilityStatistics) {
+    let counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    let report = solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        Some(reference),
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        None,
+        None,
+        Some(ReferenceAblationFixation::PlacementsAndAllTerminals),
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters: SyncArc::clone(&counters),
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndGroupedDemands,
+        },
+    );
+    (report, counters.snapshot())
+}
+
 pub(in crate::layouts::integrated) fn facility_coordinate_partitions(
     input: &ModelInput,
     instance_id: &str,
@@ -1200,6 +1230,15 @@ fn solve_with_endpoint_encoding(
                     ..
                 },
             ) => "joint-shared-v4-lazy-possible-graph-connectivity",
+            (
+                _,
+                _,
+                ConnectivityMode::PossibleGraphPropagator {
+                    traversal_mode:
+                        PossibleRouteReachabilityTraversalMode::ReachableArcsAndGroupedDemands,
+                    ..
+                },
+            ) => "joint-shared-v4-grouped-demand-possible-graph-connectivity",
             (_, Some(_), ConnectivityMode::None) => {
                 "joint-shared-v4-reference-routing-state-ablation"
             }

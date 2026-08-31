@@ -101,7 +101,7 @@ fn render_summary(report: &PossibleGraphConnectivityDiagnosisReport) -> Result<S
                 value.map_or_else(|| "-".to_string(), |value| value.to_string())
             };
             format!(
-                "<tr><td><a href=\"{name}.html\">{:?}</a></td><td>{:?}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
+                "<tr><td><a href=\"{name}.html\">{:?}</a></td><td>{:?}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
                 case.kind,
                 case.outcome,
                 case.construction_ms,
@@ -119,6 +119,7 @@ fn render_summary(report: &PossibleGraphConnectivityDiagnosisReport) -> Result<S
                 runtime.predicate_notifications,
                 runtime.arcs_scanned,
                 runtime.reachability_arc_checks,
+                runtime.demand_cells_checked,
                 runtime.reason_builds,
                 runtime.reason_arc_scans,
                 runtime.demand_pruning_attempts,
@@ -130,7 +131,7 @@ fn render_summary(report: &PossibleGraphConnectivityDiagnosisReport) -> Result<S
         .collect::<String>();
     let json = serde_json::to_string(report)?.replace('<', "\\u003c");
     Ok(format!(
-        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 2 possible graph connectivity diagnosis</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:8px;text-align:left}}th{{background:#102535;color:#8fd9ff}}a{{color:#8fd9ff}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase 2 possible graph connectivity diagnosis</h1><p>exact size {}x{} · reference={}ms · per-case budget={}ms · sequential wall={}ms</p><table><thead><tr><th>case</th><th>outcome</th><th>build ms</th><th>search ms</th><th>first witness ms</th><th>decisions</th><th>backtracks</th><th>solver conflicts</th><th>learned clauses</th><th>solver propagations</th><th>custom propagators</th><th>subscriptions</th><th>custom executions</th><th>predicate notifications</th><th>arcs scanned</th><th>reachability arc checks</th><th>reason builds</th><th>reason arc scans</th><th>custom prunings</th><th>custom conflicts</th><th>total vars</th><th>objective A/T/R/S/C</th></tr></thead><tbody>{}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 2 possible graph connectivity diagnosis</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:8px;text-align:left}}th{{background:#102535;color:#8fd9ff}}a{{color:#8fd9ff}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase 2 possible graph connectivity diagnosis</h1><p>exact size {}x{} · reference={}ms · per-case budget={}ms · sequential wall={}ms</p><table><thead><tr><th>case</th><th>outcome</th><th>build ms</th><th>search ms</th><th>first witness ms</th><th>decisions</th><th>backtracks</th><th>solver conflicts</th><th>learned clauses</th><th>solver propagations</th><th>custom propagators</th><th>subscriptions</th><th>custom executions</th><th>predicate notifications</th><th>arcs scanned</th><th>reachability arc checks</th><th>demand cells checked</th><th>reason builds</th><th>reason arc scans</th><th>custom prunings</th><th>custom conflicts</th><th>total vars</th><th>objective A/T/R/S/C</th></tr></thead><tbody>{}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
         report.fixed_dimensions.width,
         report.fixed_dimensions.height,
         report.reference_search_ms,

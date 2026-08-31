@@ -28,6 +28,7 @@ pub(super) struct PossibleRouteReachabilityCounters {
     reachability_arc_checks: AtomicU64,
     reason_builds: AtomicU64,
     reason_arc_scans: AtomicU64,
+    demand_cells_checked: AtomicU64,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -43,6 +44,7 @@ pub(in crate::layouts::integrated) struct PossibleRouteReachabilityStatistics {
     pub reachability_arc_checks: u64,
     pub reason_builds: u64,
     pub reason_arc_scans: u64,
+    pub demand_cells_checked: u64,
 }
 
 impl PossibleRouteReachabilityCounters {
@@ -59,6 +61,7 @@ impl PossibleRouteReachabilityCounters {
             reachability_arc_checks: self.reachability_arc_checks.load(Ordering::Relaxed),
             reason_builds: self.reason_builds.load(Ordering::Relaxed),
             reason_arc_scans: self.reason_arc_scans.load(Ordering::Relaxed),
+            demand_cells_checked: self.demand_cells_checked.load(Ordering::Relaxed),
         }
     }
 }
@@ -73,6 +76,7 @@ pub(super) enum PossibleRouteReachabilityWakeMode {
 pub(super) enum PossibleRouteReachabilityTraversalMode {
     EagerAdjacencyAndReason,
     ReachableArcsAndLazyReason,
+    ReachableArcsAndGroupedDemands,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -175,6 +179,23 @@ impl PropagatorConstructor for PossibleRouteReachabilityArgs {
         for (index, arc) in self.arcs.iter().enumerate() {
             outgoing_arc_indices[arc.from].push(index);
         }
+        let mut demand_group_by_cell = vec![None; self.cell_count];
+        let mut demand_groups = Vec::<PossibleDemandCell>::new();
+        for demand in &self.demands {
+            let group_index = match demand_group_by_cell[demand.cell] {
+                Some(index) => index,
+                None => {
+                    let index = demand_groups.len();
+                    demand_groups.push(PossibleDemandCell {
+                        cell: demand.cell,
+                        options: Vec::new(),
+                    });
+                    demand_group_by_cell[demand.cell] = Some(index);
+                    index
+                }
+            };
+            demand_groups[group_index].options.push(*demand);
+        }
         PropagatorSpec {
             registration,
             checkers: RuntimeCheckers::empty(),
@@ -186,12 +207,19 @@ impl PropagatorConstructor for PossibleRouteReachabilityArgs {
                 outgoing_arc_indices,
                 supplies: self.supplies,
                 demands: self.demands,
+                demand_groups,
                 inference_code,
                 counters: self.counters,
                 traversal_mode: self.traversal_mode,
             },
         }
     }
+}
+
+#[derive(Clone, Debug)]
+struct PossibleDemandCell {
+    cell: usize,
+    options: Vec<PossibleTerminalOption>,
 }
 
 #[derive(Clone, Debug)]
@@ -203,6 +231,7 @@ pub(super) struct PossibleRouteReachabilityPropagator {
     outgoing_arc_indices: Vec<Vec<usize>>,
     supplies: Vec<PossibleTerminalOption>,
     demands: Vec<PossibleTerminalOption>,
+    demand_groups: Vec<PossibleDemandCell>,
     inference_code: InferenceCode,
     counters: Arc<PossibleRouteReachabilityCounters>,
     traversal_mode: PossibleRouteReachabilityTraversalMode,
@@ -255,6 +284,9 @@ impl PossibleRouteReachabilityPropagator {
         reason: &PropositionalConjunction,
     ) -> PropagationStatusCP {
         for demand in &self.demands {
+            self.counters
+                .demand_options_checked
+                .fetch_add(1, Ordering::Relaxed);
             if !reachable[demand.cell] && context.contains(&demand.selected, 1) {
                 self.counters
                     .demand_pruning_attempts
@@ -355,11 +387,13 @@ impl PossibleRouteReachabilityPropagator {
             .arcs_scanned
             .fetch_add(reachability_arc_checks, Ordering::Relaxed);
 
-        if !self
-            .demands
-            .iter()
-            .any(|demand| !reachable[demand.cell] && context.contains(&demand.selected, 1))
-        {
+        let unsupported = self.demands.iter().any(|demand| {
+            self.counters
+                .demand_options_checked
+                .fetch_add(1, Ordering::Relaxed);
+            !reachable[demand.cell] && context.contains(&demand.selected, 1)
+        });
+        if !unsupported {
             return Ok(());
         }
 
@@ -368,6 +402,71 @@ impl PossibleRouteReachabilityPropagator {
             .fetch_add(self.arcs.len() as u64, Ordering::Relaxed);
         let reason = self.build_reason(&context);
         self.post_unsupported_demands(context, &reachable, &reason)
+    }
+
+    fn propagate_grouped_demands(&self, mut context: PropagationContext) -> PropagationStatusCP {
+        let mut reachable = vec![false; self.cell_count];
+        let mut frontier = VecDeque::new();
+        for supply in &self.supplies {
+            if context.contains(&supply.selected, 1) && !reachable[supply.cell] {
+                reachable[supply.cell] = true;
+                frontier.push_back(supply.cell);
+            }
+        }
+        let mut reachability_arc_checks = 0_u64;
+        while let Some(cell) = frontier.pop_front() {
+            for &arc_index in &self.outgoing_arc_indices[cell] {
+                reachability_arc_checks += 1;
+                let arc = &self.arcs[arc_index];
+                if self.arc_is_possible(&context, arc) && !reachable[arc.to] {
+                    reachable[arc.to] = true;
+                    frontier.push_back(arc.to);
+                }
+            }
+        }
+        self.counters
+            .reachability_arc_checks
+            .fetch_add(reachability_arc_checks, Ordering::Relaxed);
+        self.counters
+            .arcs_scanned
+            .fetch_add(reachability_arc_checks, Ordering::Relaxed);
+
+        let mut reason = None;
+        for demand_group in &self.demand_groups {
+            self.counters
+                .demand_cells_checked
+                .fetch_add(1, Ordering::Relaxed);
+            if reachable[demand_group.cell] {
+                continue;
+            }
+            for demand in &demand_group.options {
+                self.counters
+                    .demand_options_checked
+                    .fetch_add(1, Ordering::Relaxed);
+                if !context.contains(&demand.selected, 1) {
+                    continue;
+                }
+                self.counters
+                    .demand_pruning_attempts
+                    .fetch_add(1, Ordering::Relaxed);
+                if context.lower_bound(&demand.selected) == 1 {
+                    self.counters
+                        .selected_demand_conflicts
+                        .fetch_add(1, Ordering::Relaxed);
+                }
+                let reason = reason.get_or_insert_with(|| {
+                    self.counters
+                        .arcs_scanned
+                        .fetch_add(self.arcs.len() as u64, Ordering::Relaxed);
+                    self.build_reason(&context)
+                });
+                context.post(
+                    demand.selected.upper_bound_predicate(0),
+                    (reason.clone(), &self.inference_code),
+                )?;
+            }
+        }
+        Ok(())
     }
 }
 
@@ -393,15 +492,15 @@ impl Propagator for PossibleRouteReachabilityPropagator {
 
     fn propagate_from_scratch(&self, context: PropagationContext) -> PropagationStatusCP {
         self.counters.propagations.fetch_add(1, Ordering::Relaxed);
-        self.counters
-            .demand_options_checked
-            .fetch_add(self.demands.len() as u64, Ordering::Relaxed);
         match self.traversal_mode {
             PossibleRouteReachabilityTraversalMode::EagerAdjacencyAndReason => {
                 self.propagate_eager(context)
             }
             PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason => {
                 self.propagate_lazy(context)
+            }
+            PossibleRouteReachabilityTraversalMode::ReachableArcsAndGroupedDemands => {
+                self.propagate_grouped_demands(context)
             }
         }
     }
@@ -711,5 +810,68 @@ mod tests {
         assert!(blocked.reason_builds >= 1);
         assert!(blocked.reason_arc_scans >= 1);
         assert_eq!(solver.upper_bound(&demand), 0);
+    }
+
+    #[test]
+    fn grouped_demands_skip_options_on_a_reachable_cell_and_prune_all_when_blocked() {
+        let mut solver = Solver::default();
+        let supply = solver.new_bounded_integer(1, 1);
+        let first_demand = solver.new_bounded_integer(0, 1);
+        let second_demand = solver.new_bounded_integer(0, 1);
+        let selected = solver.new_bounded_integer(0, 1);
+        let item = solver.new_bounded_integer(1, 1);
+        let counters = Arc::new(PossibleRouteReachabilityCounters::default());
+        let tag = solver.new_constraint_tag();
+        let _ = solver.add_propagator(PossibleRouteReachabilityArgs {
+            name: "grouped-demand-cell".to_string(),
+            cell_count: 3,
+            item_code: 1,
+            arcs: vec![PossibleRouteArc {
+                from: 0,
+                to: 2,
+                selected,
+                from_item: item,
+                to_item: item,
+            }],
+            supplies: vec![PossibleTerminalOption {
+                cell: 0,
+                selected: supply,
+            }],
+            demands: vec![
+                PossibleTerminalOption {
+                    cell: 2,
+                    selected: first_demand,
+                },
+                PossibleTerminalOption {
+                    cell: 2,
+                    selected: second_demand,
+                },
+            ],
+            constraint_tag: tag,
+            counters: Arc::clone(&counters),
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndGroupedDemands,
+        });
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let reachable = counters.snapshot();
+        assert!(reachable.demand_cells_checked >= 1);
+        assert_eq!(reachable.demand_options_checked, 0);
+        assert!(solver.contains(&first_demand, 1));
+        assert!(solver.contains(&second_demand, 1));
+
+        solver.add_clause([selected.upper_bound_predicate(0)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let blocked = counters.snapshot();
+        // The broad subscription runs once more after its own two demand exclusions.
+        assert_eq!(blocked.demand_options_checked, 4);
+        assert_eq!(solver.upper_bound(&first_demand), 0);
+        assert_eq!(solver.upper_bound(&second_demand), 0);
     }
 }

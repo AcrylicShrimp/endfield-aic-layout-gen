@@ -119,6 +119,13 @@ and constructing explanations only for unsupported demands. It cuts custom arc s
 explanation builds by 99.4%, and controlled Phase 2 first-witness time by 13.3%. Demand-option
 scanning is the next measured custom-propagator bottleneck.
 
+The thirty-seventh checkpoint,
+`heavy-xiranite-minimum-rate.thirty-seventh-grouped-demand-connectivity-report.md`, groups demand
+options by physical cell without changing exact semantics. It preserves the complete search tree
+but replaces 6.56 million option queries with 19.90 million cell checks and does not improve
+runtime. The variant is rejected, and omission of semantically irrelevant demand-only wakeups is
+the next exact event-scheduling experiment.
+
 Regenerate it from a release binary with:
 
 ```bash
