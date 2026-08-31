@@ -21,6 +21,7 @@ mod endpoint_channel;
 mod facility_state_partition;
 mod integrated_endpoint_channel;
 mod possible_graph_connectivity;
+mod prior_port_subset;
 mod reference_ablation;
 mod residual_facility_state;
 mod rotation_partition;
@@ -78,6 +79,10 @@ pub use possible_graph_connectivity::{
     PossibleGraphConnectivityCaseKind, PossibleGraphConnectivityCaseReport,
     PossibleGraphConnectivityDiagnosisReport, PossibleGraphConnectivityRuntime,
     PossibleGraphConnectivityScale, diagnose_phase2_possible_graph_connectivity,
+};
+pub use prior_port_subset::{
+    PRIOR_PORT_SUBSET_ABLATION_SCHEMA_VERSION, PriorPortSubsetAblationReport,
+    PriorPortSubsetCaseReport, PriorPortSubsetFacility, diagnose_prior_port_subset_ablation,
 };
 pub use reference_ablation::{
     PHASE2_REFERENCE_ABLATION_SCHEMA_VERSION, Phase2ReferenceAblationCaseReport,

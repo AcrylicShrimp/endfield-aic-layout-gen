@@ -2699,6 +2699,7 @@ mod tests {
         assert_eq!((args.used_width, args.used_height), (16, 16));
         assert_eq!((args.facility_x, args.facility_y), (8, 5));
         assert!(args.prior_overlap_ablation);
+        assert!(!args.prior_port_subset_ablation);
         assert_eq!(args.port_assignment_index, Some(5));
         assert_eq!(args.facility_rotation, Some(0));
         assert!(matches!(
@@ -2709,6 +2710,61 @@ mod tests {
         assert_eq!(args.prefix_case_time_limit_ms, 10_000);
         assert_eq!(args.state_case_time_limit_ms, 5_000);
         assert_eq!(args.output_dir, PathBuf::from("residual-state"));
+    }
+
+    #[test]
+    fn parses_prior_port_subset_ablation() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "diagnose-cumulative-facility-states",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--target-phase",
+            "3",
+            "--used-width",
+            "16",
+            "--used-height",
+            "16",
+            "--facility-x",
+            "8",
+            "--facility-y",
+            "5",
+            "--prior-port-subset-ablation",
+            "--port-assignment-index",
+            "5",
+            "--facility-rotation",
+            "0",
+            "--endpoint-encoding",
+            "sparse-support",
+            "--worker-count",
+            "12",
+            "--prefix-case-time-limit-ms",
+            "10000",
+            "--state-case-time-limit-ms",
+            "5000",
+            "--output-dir",
+            "prior-port-subsets",
+        ])
+        .expect("prior-port subset ablation CLI should parse");
+
+        let Command::Research {
+            command: ResearchCommand::DiagnoseCumulativeFacilityStates(args),
+        } = cli.command
+        else {
+            panic!("expected prior-port subset ablation command")
+        };
+        assert!(args.prior_port_subset_ablation);
+        assert!(!args.prior_overlap_ablation);
+        assert_eq!(args.port_assignment_index, Some(5));
+        assert_eq!(args.facility_rotation, Some(0));
+        assert!(matches!(
+            args.endpoint_encoding,
+            crate::research::EndpointChannelEncodingArg::SparseSupport
+        ));
+        assert_eq!(args.output_dir, PathBuf::from("prior-port-subsets"));
     }
 
     #[test]

@@ -37,6 +37,7 @@ mod integrated_endpoint_channel;
 mod pair_cliff;
 mod physical_occupancy;
 mod possible_graph_connectivity;
+mod prior_port_subset;
 mod reference_ablation;
 mod requirement_cliff;
 mod residual_facility_state;
@@ -90,16 +91,22 @@ pub(crate) struct FacilityStateResearchArgs {
     #[arg(long, value_name = "CELL")]
     pub(crate) facility_y: i32,
     /// Run the residual prior-overlap ablation instead of the full state portfolio.
-    #[arg(long)]
+    #[arg(long, conflicts_with = "prior_port_subset_ablation")]
     pub(crate) prior_overlap_ablation: bool,
-    /// Fix preceding-phase placements and matching facility ports in every portfolio case.
+    /// Enumerate every subset of preceding facilities whose ports are fixed.
     #[arg(long, conflicts_with = "prior_overlap_ablation")]
+    pub(crate) prior_port_subset_ablation: bool,
+    /// Fix preceding-phase placements and matching facility ports in every portfolio case.
+    #[arg(
+        long,
+        conflicts_with_all = ["prior_overlap_ablation", "prior_port_subset_ablation"]
+    )]
     pub(crate) fix_prior_overlap_facility_state: bool,
     /// Complete introduced-facility port assignment selected by the residual ablation.
-    #[arg(long, value_name = "INDEX", requires = "prior_overlap_ablation")]
+    #[arg(long, value_name = "INDEX")]
     pub(crate) port_assignment_index: Option<usize>,
     /// Introduced-facility rotation selected by the residual ablation.
-    #[arg(long, value_name = "DEGREES", requires = "prior_overlap_ablation")]
+    #[arg(long, value_name = "DEGREES")]
     pub(crate) facility_rotation: Option<i64>,
     /// Exact endpoint-channel encoding used by residual ablation cases.
     #[arg(long, value_enum, default_value = "nested-element")]
@@ -1243,7 +1250,27 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             output_dir,
         ),
         ResearchCommand::DiagnoseCumulativeFacilityStates(args) => {
-            if args.prior_overlap_ablation {
+            if args.prior_port_subset_ablation {
+                prior_port_subset::run(
+                    args.workload,
+                    args.workspace_root,
+                    args.placement_request,
+                    args.target_phase,
+                    args.used_width,
+                    args.used_height,
+                    args.facility_x,
+                    args.facility_y,
+                    args.port_assignment_index
+                        .context("prior-port subset ablation requires --port-assignment-index")?,
+                    args.facility_rotation
+                        .context("prior-port subset ablation requires --facility-rotation")?,
+                    args.endpoint_encoding,
+                    args.worker_count,
+                    args.prefix_case_time_limit_ms,
+                    args.state_case_time_limit_ms,
+                    args.output_dir,
+                )
+            } else if args.prior_overlap_ablation {
                 residual_facility_state::run(
                     args.workload,
                     args.workspace_root,
