@@ -266,14 +266,11 @@ this model. Evidence: E1, E4, E5, E6, E8, and E16.
 each machine, not which individual ore particle must follow which dedicated belt. Once identical
 material enters the factory network, the solver may combine and redistribute it legally.
 
-**Approved semantics, incomplete validation.** Capacity-split lanes remain independent terminals
+**Confirmed current semantics.** Capacity-split lanes remain independent terminals
 with stable requirement-derived IDs even when they share a node, direction, item, and rate. The
-current exact model creates one terminal decision per lane, but independent witness validation
-currently aggregates expected and observed terminal rates by `(node, direction)`. That aggregation
-can fail to detect a forged witness that changes the number or identity of same-node lane terminals
-while preserving their total rate. Propagator proofs may rely on the model's independent terminal
-variables, but an accepted production witness must not be treated as independently validated for
-lane identity until the validator keys expected terminals by terminal ID.
+exact model creates one terminal decision per lane, and independent witness validation matches each
+reported terminal to the prepared lane by its stable ID before checking node, direction, endpoint,
+and rate.
 
 ## Exact integer flow units
 

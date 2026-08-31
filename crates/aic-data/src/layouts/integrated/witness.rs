@@ -257,8 +257,11 @@ fn validate_network(
         )?;
     }
 
-    let expected_terminals = expected_terminals(input, expected.route_indices(), network_index)?;
-    let mut actual_terminal_rates = BTreeMap::<(String, bool), Rate>::new();
+    let mut expected_terminals = expected
+        .terminals()
+        .iter()
+        .map(|terminal| (terminal.id(), terminal))
+        .collect::<BTreeMap<_, _>>();
     let mut supply = BTreeMap::<usize, Rate>::new();
     let mut demand = BTreeMap::<usize, Rate>::new();
     let mut terminal_ids = BTreeSet::new();
@@ -275,16 +278,26 @@ fn validate_network(
                 "transport terminal must carry a positive rate",
             ));
         }
-        let key = (
-            terminal.node.clone(),
-            terminal.direction == FacilityPortDirection::Output,
-        );
-        let (expected_endpoint, _) = expected_terminals.get(&key).ok_or_else(|| {
-            invalid(
+        let expected_terminal =
+            expected_terminals
+                .remove(terminal.id.as_str())
+                .ok_or_else(|| {
+                    invalid(
+                        format!(
+                            "/transport_networks/{network_index}/terminals/{terminal_index}/id"
+                        ),
+                        "transport terminal ID does not match a prepared supply or demand lane",
+                    )
+                })?;
+        if terminal.node != endpoint_node(expected_terminal.endpoint())
+            || terminal.direction != expected_terminal.direction()
+            || terminal.rate != expected_terminal.rate()
+        {
+            return Err(invalid(
                 format!("/transport_networks/{network_index}/terminals/{terminal_index}"),
-                "transport terminal does not match a prepared supply or demand",
-            )
-        })?;
+                "transport terminal rates or identity do not exactly match the prepared supply or demand lane",
+            ));
+        }
         let cell = checked_cell(
             input,
             &terminal.position,
@@ -299,17 +312,11 @@ fn validate_network(
         validate_terminal_endpoint(
             input,
             placements,
-            expected_endpoint,
+            expected_terminal.endpoint(),
             &terminal.endpoint,
             cell,
             network_index,
             terminal_index,
-        )?;
-        add_named_rate(
-            &mut actual_terminal_rates,
-            key,
-            terminal.rate,
-            network_index,
         )?;
         if terminal.direction == FacilityPortDirection::Output {
             add_rate(&mut supply, cell, terminal.rate, network_index)?;
@@ -341,14 +348,10 @@ fn validate_network(
             )?;
         }
     }
-    let expected_rates = expected_terminals
-        .iter()
-        .map(|(key, (_, rate))| (key.clone(), *rate))
-        .collect::<BTreeMap<_, _>>();
-    if actual_terminal_rates != expected_rates {
+    if !expected_terminals.is_empty() {
         return Err(invalid(
             format!("/transport_networks/{network_index}/terminals"),
-            "transport terminal rates do not exactly match prepared supply and demand",
+            "transport terminals do not exactly match all prepared supply and demand lanes",
         ));
     }
 
@@ -647,51 +650,6 @@ fn rotate_direction(direction: CardinalDirection, rotation: i64) -> CardinalDire
         };
     }
     direction
-}
-
-fn expected_terminals(
-    input: &ModelInput,
-    route_indices: &[usize],
-    network_index: usize,
-) -> Result<BTreeMap<(String, bool), (EndpointInput, Rate)>, IntegratedLayoutDiagnostic> {
-    let mut terminals = BTreeMap::new();
-    for route_index in route_indices {
-        let edge = &input.edges[*route_index];
-        merge_expected_terminal(
-            &mut terminals,
-            endpoint_node(&edge.source),
-            true,
-            &edge.source,
-            edge.edge.rate,
-            network_index,
-        )?;
-        merge_expected_terminal(
-            &mut terminals,
-            endpoint_node(&edge.target),
-            false,
-            &edge.target,
-            edge.edge.rate,
-            network_index,
-        )?;
-    }
-    Ok(terminals)
-}
-
-fn merge_expected_terminal(
-    terminals: &mut BTreeMap<(String, bool), (EndpointInput, Rate)>,
-    node: &str,
-    is_output: bool,
-    endpoint: &EndpointInput,
-    rate: Rate,
-    network_index: usize,
-) -> Result<(), IntegratedLayoutDiagnostic> {
-    let (_, total) = terminals
-        .entry((node.to_string(), is_output))
-        .or_insert_with(|| (endpoint.clone(), Rate::zero()));
-    *total = total
-        .checked_add(rate)
-        .map_err(|error| arithmetic_invalid(network_index, error.message))?;
-    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1090,19 +1048,6 @@ fn add_direction_rate(
         .or_default()
         .entry(direction)
         .or_insert(Rate::zero());
-    *total = total
-        .checked_add(rate)
-        .map_err(|error| arithmetic_invalid(network_index, error.message))?;
-    Ok(())
-}
-
-fn add_named_rate(
-    rates: &mut BTreeMap<(String, bool), Rate>,
-    key: (String, bool),
-    rate: Rate,
-    network_index: usize,
-) -> Result<(), IntegratedLayoutDiagnostic> {
-    let total = rates.entry(key).or_insert(Rate::zero());
     *total = total
         .checked_add(rate)
         .map_err(|error| arithmetic_invalid(network_index, error.message))?;

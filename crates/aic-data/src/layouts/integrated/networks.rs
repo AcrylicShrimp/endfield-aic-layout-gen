@@ -102,6 +102,10 @@ impl RoutingTerminalInput {
         self.direction
     }
 
+    pub(super) fn endpoint(&self) -> &EndpointInput {
+        &self.endpoint
+    }
+
     pub(super) fn rate(&self) -> Rate {
         self.rate
     }

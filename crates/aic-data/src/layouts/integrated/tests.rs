@@ -1516,6 +1516,40 @@ fn network_witness_rejects_terminal_flow_that_does_not_match_the_logical_graph()
 }
 
 #[test]
+fn network_witness_rejects_terminal_id_that_does_not_match_the_logical_lane() {
+    let (facilities, items, transports, components) = catalogs();
+    let request = FacilityPlacementRequest {
+        schema_version: 2,
+        max_width: 4,
+        max_height: 1,
+    };
+    let input = super::prepare_model(
+        &wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &request,
+    )
+    .expect("fixture should prepare");
+    let mut report = solve_integrated_layout(
+        &wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &request,
+    );
+    report.transport_networks[0].terminals[0].id = "forged-terminal-id".to_string();
+
+    let diagnostic = super::witness::validate(&input, &components, &report)
+        .expect_err("changed terminal ID must invalidate the witness");
+
+    assert_eq!(diagnostic.code, "invalid-integrated-layout-witness");
+    assert!(diagnostic.message.contains("terminal ID"));
+}
+
+#[test]
 fn exact_solver_rejects_facility_area_above_hard_bounds_before_search() {
     let (facilities, items, transports, components) = catalogs();
     let report = solve_integrated_layout(
