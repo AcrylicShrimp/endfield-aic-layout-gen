@@ -34,9 +34,12 @@ pub use completion::{
     PriorInputPortProofExclusion, PriorInputPortResidualDomain, PriorSourcePortCaseReport,
     PriorSourcePortParentReport, PriorSourcePortPortfolioReport, PriorTerminalCompletionCaseReport,
     PriorTerminalCompletionDomain, PriorTerminalCompletionParentReport,
-    PriorTerminalCompletionPortfolioReport, diagnose_prior_input_pair_root_snapshot,
-    diagnose_prior_input_port_controls, diagnose_prior_input_port_pair_portfolio,
-    diagnose_prior_source_port_portfolio, diagnose_prior_terminal_completion_portfolio,
+    PriorTerminalCompletionPortfolioReport, RESIDUAL_FACILITY_PORT_TUPLE_PORTFOLIO_SCHEMA_VERSION,
+    ResidualFacilityPortDomain, ResidualFacilityPortFixationObservation,
+    ResidualFacilityPortTupleCaseReport, ResidualFacilityPortTuplePortfolioReport,
+    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
+    diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
+    diagnose_prior_terminal_completion_portfolio, diagnose_residual_facility_port_tuple_portfolio,
 };
 
 pub const PRIOR_TERMINAL_PAIR_VALUE_PORTFOLIO_SCHEMA_VERSION: u32 = 2;

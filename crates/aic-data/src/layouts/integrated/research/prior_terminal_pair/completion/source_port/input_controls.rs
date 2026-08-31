@@ -28,7 +28,10 @@ pub use pair::{
     PRIOR_INPUT_PAIR_ROOT_SNAPSHOT_SCHEMA_VERSION, PRIOR_INPUT_PORT_PAIR_PORTFOLIO_SCHEMA_VERSION,
     PriorInputPairRootSnapshotReport, PriorInputPortPairCaseReport,
     PriorInputPortPairPortfolioReport, PriorInputPortProofExclusion, PriorInputPortResidualDomain,
-    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_pair_portfolio,
+    RESIDUAL_FACILITY_PORT_TUPLE_PORTFOLIO_SCHEMA_VERSION, ResidualFacilityPortDomain,
+    ResidualFacilityPortFixationObservation, ResidualFacilityPortTupleCaseReport,
+    ResidualFacilityPortTuplePortfolioReport, diagnose_prior_input_pair_root_snapshot,
+    diagnose_prior_input_port_pair_portfolio, diagnose_residual_facility_port_tuple_portfolio,
 };
 
 pub const PRIOR_INPUT_PORT_CONTROLS_SCHEMA_VERSION: u32 = 1;

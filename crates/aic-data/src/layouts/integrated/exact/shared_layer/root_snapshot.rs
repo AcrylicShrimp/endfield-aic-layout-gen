@@ -10,12 +10,13 @@ use serde::Serialize;
 
 use super::{
     FactoredEndpointKind, ModelInput, ModelInstance, PlacementChoice, SharedLayer, SharedTerminal,
-    SharedTerminalEndpoint, TransportKind, direction_between, direction_index,
+    SharedTerminalEndpoint, TransportKind, direction_between, direction_index, edge_direction,
+    geometry_key, opposite_direction,
 };
 use crate::facilities::FacilityPortDirection;
 use crate::layouts::integrated::exact::recorder::RecordedVariableDescriptor;
 
-pub const ROOT_DOMAIN_SNAPSHOT_SCHEMA_VERSION: u32 = 1;
+pub const ROOT_DOMAIN_SNAPSHOT_SCHEMA_VERSION: u32 = 2;
 
 pub(in crate::layouts::integrated) type RootDomainSnapshotCollector =
     SyncArc<Mutex<Option<RootDomainSnapshot>>>;
@@ -94,8 +95,12 @@ pub struct RootTerminalDomainSnapshot {
     pub root_excluded_port_count: usize,
     pub geometry_unavailable_port_count: usize,
     pub port_ids: Vec<String>,
+    pub root_surviving_port_ids: Vec<String>,
+    pub singleton_geometry_key: Option<i32>,
+    pub expected_geometry_keys: Vec<i32>,
     pub routing_options: RootBooleanDomainCounts,
     pub external_geometry: Option<RootExternalGeometrySnapshot>,
+    pub requested_fixed_port: Option<String>,
     pub explicitly_fixed_facility_terminal: bool,
     pub fixed_contract_satisfied: bool,
 }
@@ -201,7 +206,7 @@ struct TerminalProbe {
     key: DomainId,
     kind: FactoredEndpointKind,
     routing_options: Vec<TerminalRoutingOptionProbe>,
-    explicitly_fixed: bool,
+    requested_fixed_port: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -210,6 +215,7 @@ struct FacilityCandidateProbe {
     y: i32,
     rotation: i64,
     available_ports: BTreeSet<String>,
+    port_geometry_keys: BTreeMap<String, i32>,
 }
 
 #[derive(Debug, Clone)]
@@ -251,7 +257,7 @@ impl RootDomainProbe {
         terminals: &[Vec<SharedTerminal>],
         layers: &[SharedLayer],
         facility_occupancy: &[DomainId],
-        explicitly_fixed_terminals: &BTreeSet<String>,
+        explicitly_fixed_ports: &BTreeMap<String, String>,
         variable_catalog: Vec<RecordedVariableDescriptor>,
     ) -> Self {
         let facilities = instances
@@ -267,6 +273,23 @@ impl RootDomainProbe {
                         y: candidate.y,
                         rotation: candidate.rotation,
                         available_ports: candidate.port_connections.keys().cloned().collect(),
+                        port_geometry_keys: instance
+                            .input
+                            .definition
+                            .ports
+                            .iter()
+                            .filter_map(|port| {
+                                candidate.port_connections.get(&port.id).map(|cell| {
+                                    let outward = edge_direction(
+                                        port.edge.rotated_clockwise(candidate.rotation),
+                                    );
+                                    (
+                                        port.id.clone(),
+                                        geometry_key(*cell, opposite_direction(outward)),
+                                    )
+                                })
+                            })
+                            .collect(),
                     })
                     .collect(),
             })
@@ -296,7 +319,7 @@ impl RootDomainProbe {
                                 selected: option.selected,
                             })
                             .collect(),
-                        explicitly_fixed: explicitly_fixed_terminals.contains(&terminal.id),
+                        requested_fixed_port: explicitly_fixed_ports.get(&terminal.id).cloned(),
                     })
                 })
             })
@@ -502,6 +525,8 @@ impl RootDomainProbe {
                     external_node,
                     port_choice,
                     port_ids,
+                    root_surviving_port_ids,
+                    expected_geometry_keys,
                     geometry_unavailable_port_count,
                 ) = match &probe.kind {
                     FactoredEndpointKind::Facility {
@@ -529,12 +554,33 @@ impl RootDomainProbe {
                                     .any(|candidate| candidate.available_ports.contains(*port))
                             })
                             .count();
+                        let surviving_port_indices = domain_values(context, *port_choice);
+                        let root_surviving_port_ids = surviving_port_indices
+                            .iter()
+                            .map(|index| {
+                                port_ids
+                                    [usize::try_from(*index).expect("port index is non-negative")]
+                                .clone()
+                            })
+                            .collect::<Vec<_>>();
+                        let expected_geometry_keys = surviving_candidates
+                            .iter()
+                            .flat_map(|candidate| {
+                                root_surviving_port_ids.iter().filter_map(|port| {
+                                    candidate.port_geometry_keys.get(port).copied()
+                                })
+                            })
+                            .collect::<BTreeSet<_>>()
+                            .into_iter()
+                            .collect::<Vec<_>>();
                         (
                             "facility".to_string(),
                             Some(instance.clone()),
                             None,
                             Some(cardinality(context, *port_choice)),
                             port_ids.clone(),
+                            root_surviving_port_ids,
+                            expected_geometry_keys,
                             unavailable,
                         )
                     }
@@ -543,6 +589,8 @@ impl RootDomainProbe {
                         None,
                         Some(node.clone()),
                         None,
+                        Vec::new(),
+                        Vec::new(),
                         Vec::new(),
                         0,
                     ),
@@ -579,11 +627,18 @@ impl RootDomainProbe {
                         routable_unique_cells,
                     }
                 });
-                let fixed_contract_satisfied = !probe.explicitly_fixed
-                    || (geometry.cardinality == 1
-                        && port_choice
-                            .as_ref()
-                            .is_none_or(|domain| domain.cardinality == 1));
+                let singleton_geometry_key =
+                    (geometry.cardinality == 1).then_some(geometry.lower_bound);
+                let fixed_contract_satisfied =
+                    probe
+                        .requested_fixed_port
+                        .as_ref()
+                        .is_none_or(|requested_port| {
+                            root_surviving_port_ids.len() == 1
+                                && root_surviving_port_ids[0] == *requested_port
+                                && expected_geometry_keys.len() == 1
+                                && singleton_geometry_key == expected_geometry_keys.first().copied()
+                        });
                 RootTerminalDomainSnapshot {
                     terminal: probe.terminal.clone(),
                     network_index: probe.network_index,
@@ -599,6 +654,9 @@ impl RootDomainProbe {
                     root_excluded_port_count,
                     geometry_unavailable_port_count,
                     port_ids,
+                    root_surviving_port_ids,
+                    singleton_geometry_key,
+                    expected_geometry_keys,
                     routing_options: boolean_counts(
                         context,
                         &probe
@@ -608,7 +666,8 @@ impl RootDomainProbe {
                             .collect::<Vec<_>>(),
                     ),
                     external_geometry,
-                    explicitly_fixed_facility_terminal: probe.explicitly_fixed,
+                    requested_fixed_port: probe.requested_fixed_port.clone(),
+                    explicitly_fixed_facility_terminal: probe.requested_fixed_port.is_some(),
                     fixed_contract_satisfied,
                 }
             })

@@ -2077,12 +2077,12 @@ fn solve_with_endpoint_encoding(
 
     let root_snapshot_setup = match &search_mode {
         SearchMode::FeasibilityOnlyWithRootSnapshot(collector) => {
-            let explicitly_fixed_terminals = fixed_ports
+            let explicitly_fixed_ports = fixed_ports
                 .as_deref()
                 .unwrap_or_default()
                 .iter()
-                .map(|fixed| fixed.terminal.clone())
-                .collect::<BTreeSet<_>>();
+                .map(|fixed| (fixed.terminal.clone(), fixed.port.clone()))
+                .collect::<BTreeMap<_, _>>();
             Some((
                 RootDomainProbe::new(
                     &input,
@@ -2091,7 +2091,7 @@ fn solve_with_endpoint_encoding(
                     &model_terminals,
                     &layers,
                     &facility_occupancy,
-                    &explicitly_fixed_terminals,
+                    &explicitly_fixed_ports,
                     solver.variable_catalog(),
                 ),
                 SyncArc::clone(collector),

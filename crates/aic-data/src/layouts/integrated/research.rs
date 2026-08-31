@@ -98,9 +98,12 @@ pub use prior_terminal_pair::{
     PriorTerminalCompletionDomain, PriorTerminalCompletionParentReport,
     PriorTerminalCompletionPortfolioReport, PriorTerminalPairDomain,
     PriorTerminalPairValueCaseReport, PriorTerminalPairValuePortfolioReport,
-    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
-    diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
-    diagnose_prior_terminal_completion_portfolio, diagnose_prior_terminal_pair_value_portfolio,
+    RESIDUAL_FACILITY_PORT_TUPLE_PORTFOLIO_SCHEMA_VERSION, ResidualFacilityPortDomain,
+    ResidualFacilityPortFixationObservation, ResidualFacilityPortTupleCaseReport,
+    ResidualFacilityPortTuplePortfolioReport, diagnose_prior_input_pair_root_snapshot,
+    diagnose_prior_input_port_controls, diagnose_prior_input_port_pair_portfolio,
+    diagnose_prior_source_port_portfolio, diagnose_prior_terminal_completion_portfolio,
+    diagnose_prior_terminal_pair_value_portfolio, diagnose_residual_facility_port_tuple_portfolio,
 };
 pub use reference_ablation::{
     PHASE2_REFERENCE_ABLATION_SCHEMA_VERSION, Phase2ReferenceAblationCaseReport,

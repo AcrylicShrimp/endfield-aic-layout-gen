@@ -7,9 +7,10 @@ use aic_data::layouts::{
     FacilityPlacementRequest, PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
     PriorInputPortPairPortfolioReport, PriorSourcePortPortfolioReport,
     PriorTerminalCompletionPortfolioReport, PriorTerminalPairValuePortfolioReport,
-    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
-    diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
-    diagnose_prior_terminal_completion_portfolio, diagnose_prior_terminal_pair_value_portfolio,
+    ResidualFacilityPortTuplePortfolioReport, diagnose_prior_input_pair_root_snapshot,
+    diagnose_prior_input_port_controls, diagnose_prior_input_port_pair_portfolio,
+    diagnose_prior_source_port_portfolio, diagnose_prior_terminal_completion_portfolio,
+    diagnose_prior_terminal_pair_value_portfolio, diagnose_residual_facility_port_tuple_portfolio,
     render_integrated_layout_html_with_localization,
 };
 use aic_data::localization::{ValidatedLocalizationCatalog, load_localization_catalog};
@@ -91,6 +92,13 @@ struct Args {
     root_domain_snapshot: bool,
     #[arg(long, value_name = "MILLISECONDS")]
     root_snapshot_case_time_limit_ms: Option<u64>,
+    /// Enumerate every root-surviving residual facility-port tuple exactly.
+    #[arg(long)]
+    partition_residual_facility_ports: bool,
+    #[arg(long, value_name = "MILLISECONDS")]
+    residual_facility_port_case_time_limit_ms: Option<u64>,
+    #[arg(long, value_name = "MILLISECONDS")]
+    residual_facility_port_observation_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -124,6 +132,22 @@ fn main() -> Result<()> {
     ensure!(
         args.root_domain_snapshot == args.root_snapshot_case_time_limit_ms.is_some(),
         "--root-snapshot-case-time-limit-ms must be supplied exactly when --root-domain-snapshot is enabled"
+    );
+    ensure!(
+        !args.partition_residual_facility_ports || args.root_domain_snapshot,
+        "--partition-residual-facility-ports requires --root-domain-snapshot"
+    );
+    ensure!(
+        args.partition_residual_facility_ports
+            == args.residual_facility_port_case_time_limit_ms.is_some(),
+        "--residual-facility-port-case-time-limit-ms must be supplied exactly when --partition-residual-facility-ports is enabled"
+    );
+    ensure!(
+        args.partition_residual_facility_ports
+            == args
+                .residual_facility_port_observation_time_limit_ms
+                .is_some(),
+        "--residual-facility-port-observation-time-limit-ms must be supplied exactly when --partition-residual-facility-ports is enabled"
     );
     let terminal_bits = parse_terminal_pair(&args.terminal_pair)?;
     let worker_count = NonZeroUsize::new(args.worker_count)
@@ -552,6 +576,61 @@ fn run_input_pair(
             .context("prior-input pair requires --input-pair-case-time-limit-ms")?,
     )
     .context("prior-input pair input_pair_case_time_limit_ms must be positive")?;
+    if args.partition_residual_facility_ports {
+        let parent_observation_budget =
+            NonZeroU64::new(args.root_snapshot_case_time_limit_ms.context(
+                "residual facility-port portfolio requires --root-snapshot-case-time-limit-ms",
+            )?)
+            .context("root-domain snapshot case time limit must be positive")?;
+        let authoritative_budget = NonZeroU64::new(
+            args.residual_facility_port_case_time_limit_ms.context(
+                "residual facility-port portfolio requires --residual-facility-port-case-time-limit-ms",
+            )?,
+        )
+        .context("residual facility-port authoritative case time limit must be positive")?;
+        let observation_budget = NonZeroU64::new(
+            args.residual_facility_port_observation_time_limit_ms.context(
+                "residual facility-port portfolio requires --residual-facility-port-observation-time-limit-ms",
+            )?,
+        )
+        .context("residual facility-port observation case time limit must be positive")?;
+        let report = diagnose_residual_facility_port_tuple_portfolio(
+            &loaded.wiring,
+            &loaded.facilities,
+            &loaded.items,
+            &loaded.transports,
+            &loaded.components,
+            &loaded.placement_request,
+            args.target_phase,
+            args.used_width,
+            args.used_height,
+            args.facility_x,
+            args.facility_y,
+            args.port_assignment_index,
+            args.facility_rotation,
+            args.prior_facility_bit,
+            terminal_bits,
+            representative_source_leaf_index,
+            worker_count.get(),
+            Duration::from_millis(prefix_budget.get()),
+            Duration::from_millis(pair_budget.get()),
+            Duration::from_millis(completion_budget.get()),
+            Duration::from_millis(source_budget.get()),
+            Duration::from_millis(control_budget.get()),
+            Duration::from_millis(residual_pair_budget.get()),
+            Duration::from_millis(parent_observation_budget.get()),
+            Duration::from_millis(authoritative_budget.get()),
+            Duration::from_millis(observation_budget.get()),
+        )
+        .map_err(|report| {
+            anyhow::anyhow!("residual facility-port tuple diagnosis failed: {report:?}")
+        })?;
+        write_residual_facility_port_tuple_artifacts(args, loaded, &report)?;
+        serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+            .context("failed to write residual facility-port tuple report")?;
+        println!();
+        return Ok(());
+    }
     if args.root_domain_snapshot {
         let observation_budget = NonZeroU64::new(
             args.root_snapshot_case_time_limit_ms
@@ -668,6 +747,46 @@ fn run_input_pair(
     serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
         .context("failed to write prior-input pair report")?;
     println!();
+    Ok(())
+}
+
+fn write_residual_facility_port_tuple_artifacts(
+    args: &Args,
+    loaded: &LoadedInputs,
+    report: &ResidualFacilityPortTuplePortfolioReport,
+) -> Result<()> {
+    write_json(&args.output_dir.join("summary.json"), report)?;
+    write_bytes(
+        &args.output_dir.join("summary.html"),
+        render_residual_facility_port_tuple_summary(report)?.as_bytes(),
+        "residual facility-port tuple summary",
+    )?;
+    for case in &report.cases {
+        for (kind, layout) in [
+            ("authoritative", &case.authoritative_layout),
+            ("observation", &case.observation_layout),
+        ] {
+            let html = render_integrated_layout_html_with_localization(
+                layout,
+                loaded.localization.as_ref(),
+            )
+            .map_err(|diagnostic| {
+                anyhow::anyhow!(
+                    "residual facility-port case {} {kind} visualization failed with {}: {}",
+                    case.case_index,
+                    diagnostic.code,
+                    diagnostic.message
+                )
+            })?;
+            write_bytes(
+                &args
+                    .output_dir
+                    .join(format!("case-{:02}.{kind}.html", case.case_index)),
+                html.as_bytes(),
+                "residual facility-port tuple case",
+            )?;
+        }
+    }
     Ok(())
 }
 
@@ -1326,6 +1445,81 @@ fn render_root_snapshot_summary(report: &PriorInputPairRootSnapshotReport) -> Re
         terminals,
         layers,
         networks,
+        json,
+    ))
+}
+
+fn render_residual_facility_port_tuple_summary(
+    report: &ResidualFacilityPortTuplePortfolioReport,
+) -> Result<String> {
+    let domains = report
+        .residual_domains
+        .iter()
+        .map(|domain| {
+            format!(
+                "<li><code>{}</code>: <code>{}</code></li>",
+                domain.terminal,
+                domain.ports.join(" / ")
+            )
+        })
+        .collect::<String>();
+    let rows = report
+        .cases
+        .iter()
+        .map(|case| {
+            let assignments = case
+                .assignments
+                .iter()
+                .map(|assignment| format!("{} = {}", assignment.terminal, assignment.port))
+                .collect::<Vec<_>>()
+                .join("<br>");
+            format!(
+                "<tr><td>{}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{}</td><td><a href=\"case-{:02}.authoritative.html\">solve</a> · <a href=\"case-{:02}.observation.html\">root</a></td></tr>",
+                case.case_index,
+                assignments,
+                case.authoritative_outcome,
+                case.observation_outcome,
+                case.combined_outcome,
+                case.fixation_observation.capture_status,
+                case.fixation_observation.assertion_satisfied,
+                case.construction_ms,
+                case.search_ms,
+                case.first_incumbent_ms,
+                case.search_statistics.branch_decisions,
+                case.search_statistics.backtracks,
+                case.search_statistics.conflicts,
+                case.model_scale.variables,
+                case.case_index,
+                case.case_index,
+            )
+        })
+        .collect::<String>();
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 3 residual facility-port tuples</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.warning{{border:1px solid #ffd166;padding:10px;color:#ffd166}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}code,a{{color:#ffd166}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {} residual facility-port tuple portfolio</h1><div class="meta">tuples={} · fixed terminals/case={} · workers={} · authoritative budget={}ms · observation budget={}ms · authoritative wall={}ms · observation wall={}ms · total={}ms</div><p class="warning">The authoritative 5-second solves are uninstrumented. Separate observation solves capture root propagation. Combined logical outcomes preserve either solve's witness or proof but performance counts come only from the authoritative solve.</p><h2>Exact root-surviving domains</h2><ul>{}</ul><p>authoritative feasible/infeasible/unknown/invalid = {}/{}/{}/{}<br>combined feasible/infeasible/unknown/invalid = {}/{}/{}/{}<br>parent witness={} · parent infeasibility proof={} · next unknown={:?} · blocked={}</p><table><thead><tr><th>case</th><th>fixed residual ports</th><th>authoritative</th><th>observation</th><th>combined</th><th>root status</th><th>fixation exact</th><th>build ms</th><th>search ms</th><th>first</th><th>decisions</th><th>backtracks</th><th>conflicts</th><th>variables</th><th>artifacts</th></tr></thead><tbody>{}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        report.target_phase_index,
+        report.tuple_count,
+        report.fixed_terminal_count_per_case,
+        report.worker_count,
+        report.authoritative_case_search_budget_ms,
+        report.observation_case_search_budget_ms,
+        report.authoritative_wave_wall_ms,
+        report.observation_wave_wall_ms,
+        report.total_wall_ms,
+        domains,
+        report.authoritative_validated_feasible_count,
+        report.authoritative_proven_infeasible_count,
+        report.authoritative_unknown_count,
+        report.authoritative_invalid_witness_count,
+        report.combined_validated_feasible_count,
+        report.combined_proven_infeasible_count,
+        report.combined_unknown_count,
+        report.combined_invalid_witness_count,
+        report.parent_witness_found,
+        report.parent_infeasibility_proven,
+        report.selected_next_unknown_case_index,
+        report.interpretation_blocked,
+        rows,
         json,
     ))
 }

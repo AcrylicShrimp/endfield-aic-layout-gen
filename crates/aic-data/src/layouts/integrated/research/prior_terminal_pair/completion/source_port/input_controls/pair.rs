@@ -20,8 +20,11 @@ use super::super::super::super::super::coordinate_partition::{
 use super::super::super::super::super::{ExactDimensionCaseOutcome, ExactDimensionSolverStack};
 use super::{PriorInputPortControlSuiteReport, PriorInputPortControlsReport};
 
+mod port_tuple;
+pub use port_tuple::*;
+
 pub const PRIOR_INPUT_PORT_PAIR_PORTFOLIO_SCHEMA_VERSION: u32 = 1;
-pub const PRIOR_INPUT_PAIR_ROOT_SNAPSHOT_SCHEMA_VERSION: u32 = 1;
+pub const PRIOR_INPUT_PAIR_ROOT_SNAPSHOT_SCHEMA_VERSION: u32 = 2;
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -94,6 +97,11 @@ pub struct PriorInputPairRootSnapshotReport {
     pub selection_rule: String,
     pub selected_pair_index: usize,
     pub baseline_outcome: ExactDimensionCaseOutcome,
+    pub fixed_dimensions: [i32; 2],
+    pub partitioned_facility: String,
+    pub fixed_coordinate: [i32; 2],
+    pub fixed_rotation: i64,
+    pub inherited_assignments: Vec<FacilityPortAssignment>,
     pub assignments: Vec<FacilityPortAssignment>,
     pub fixed_terminal_count: usize,
     pub baseline_search_statistics: ExactSearchStatistics,
@@ -101,6 +109,7 @@ pub struct PriorInputPairRootSnapshotReport {
     pub observation_search_budget_ms: u64,
     pub observed_outcome: ExactDimensionCaseOutcome,
     pub observed_layout: IntegratedLayoutReport,
+    pub prior_reference: IntegratedLayoutReport,
     pub root_snapshot: RootDomainSnapshot,
     pub interpretation_blocked: bool,
     pub diagnostic_only: bool,
@@ -526,6 +535,11 @@ pub fn diagnose_prior_input_pair_root_snapshot(
         selection_rule: "minimum pair_index among completed Unknown cases".to_string(),
         selected_pair_index,
         baseline_outcome: selected.outcome,
+        fixed_dimensions: pair_stage.fixed_dimensions,
+        partitioned_facility: pair_stage.partitioned_facility.clone(),
+        fixed_coordinate: pair_stage.fixed_coordinate,
+        fixed_rotation: pair_stage.fixed_rotation,
+        inherited_assignments: portfolio.inherited_assignments.clone(),
         assignments: selected.assignments,
         fixed_terminal_count: portfolio.fixed_terminal_count_per_pair,
         baseline_search_statistics: selected.search_statistics,
@@ -533,6 +547,7 @@ pub fn diagnose_prior_input_pair_root_snapshot(
         observation_search_budget_ms: millis(observation_search_budget),
         observed_outcome,
         observed_layout,
+        prior_reference: pair_stage.prior_reference.clone(),
         root_snapshot,
         interpretation_blocked,
         diagnostic_only: true,
