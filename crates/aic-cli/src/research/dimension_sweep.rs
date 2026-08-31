@@ -8,6 +8,7 @@ use aic_data::layouts::{
     ExactDimensionCaseDisposition, FacilityPlacementRequest, IntegratedLayoutReport,
     ParallelExactDimensionSweepReport, render_integrated_layout_html_with_localization,
     sweep_cumulative_integrated_layout_fixed_dimensions,
+    sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation,
     sweep_first_integrated_layout_phase_fixed_dimensions,
 };
 use aic_data::localization::ValidatedLocalizationCatalog;
@@ -80,6 +81,7 @@ pub(super) fn run_cumulative(
     target_phase: usize,
     worker_count: usize,
     case_time_limit_ms: u64,
+    active_local_continuation: bool,
     output_dir: PathBuf,
 ) -> Result<bool> {
     let worker_count = NonZeroUsize::new(worker_count)
@@ -87,7 +89,12 @@ pub(super) fn run_cumulative(
     let case_time_limit = NonZeroU64::new(case_time_limit_ms)
         .context("cumulative dimension sweep case_time_limit_ms must be positive")?;
     let loaded = load_inputs(workload_path, workspace_root, placement_request_path)?;
-    let report = sweep_cumulative_integrated_layout_fixed_dimensions(
+    let sweep = if active_local_continuation {
+        sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation
+    } else {
+        sweep_cumulative_integrated_layout_fixed_dimensions
+    };
+    let report = sweep(
         &loaded.wiring,
         &loaded.facilities,
         &loaded.items,

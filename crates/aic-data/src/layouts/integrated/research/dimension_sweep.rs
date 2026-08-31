@@ -21,10 +21,17 @@ use super::{
     enumerate_exact_dimension_candidates, exact_dimension_lower_bounds,
 };
 
-pub const PARALLEL_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION: u32 = 2;
-pub const CUMULATIVE_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION: u32 = 1;
+pub const PARALLEL_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION: u32 = 3;
+pub const CUMULATIVE_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION: u32 = 2;
 
 const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ExactDimensionSolverStack {
+    Baseline,
+    WatchedDemandWithLocalContinuation,
+}
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -66,6 +73,8 @@ pub struct ParallelExactDimensionSweepReport {
     pub phase_index: usize,
     pub selected_network_indices: Vec<usize>,
     pub selected_networks: Vec<String>,
+    pub selected_facilities: Vec<String>,
+    pub solver_stack: ExactDimensionSolverStack,
     pub request_width: i32,
     pub request_height: i32,
     pub lower_bounds: ExactDimensionLowerBoundsReport,
@@ -151,15 +160,22 @@ pub fn sweep_first_integrated_layout_phase_fixed_dimensions(
     let (input, selected_networks) = input
         .select_network_indices(network_indices)
         .map_err(IntegratedLayoutReport::invalid)?;
+    let selected_facilities = input
+        .instances
+        .iter()
+        .map(|instance| instance.id.clone())
+        .collect();
     sweep_prepared_exact_model_fixed_dimensions(
         input,
         selected_networks,
+        selected_facilities,
         network_indices.to_vec(),
         logistics_components,
         0,
         worker_count,
         search_budget,
         None,
+        ExactDimensionSolverStack::Baseline,
     )
 }
 
@@ -174,6 +190,59 @@ pub fn sweep_cumulative_integrated_layout_fixed_dimensions(
     target_phase_index: usize,
     worker_count: usize,
     search_budget: Duration,
+) -> Result<CumulativeExactDimensionSweepReport, IntegratedLayoutReport> {
+    sweep_cumulative_integrated_layout_fixed_dimensions_with_stack(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+        target_phase_index,
+        worker_count,
+        search_budget,
+        ExactDimensionSolverStack::Baseline,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    target_phase_index: usize,
+    worker_count: usize,
+    search_budget: Duration,
+) -> Result<CumulativeExactDimensionSweepReport, IntegratedLayoutReport> {
+    sweep_cumulative_integrated_layout_fixed_dimensions_with_stack(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+        target_phase_index,
+        worker_count,
+        search_budget,
+        ExactDimensionSolverStack::WatchedDemandWithLocalContinuation,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn sweep_cumulative_integrated_layout_fixed_dimensions_with_stack(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    target_phase_index: usize,
+    worker_count: usize,
+    search_budget: Duration,
+    solver_stack: ExactDimensionSolverStack,
 ) -> Result<CumulativeExactDimensionSweepReport, IntegratedLayoutReport> {
     if worker_count == 0 {
         return Err(invalid_sweep_input(
@@ -257,15 +326,22 @@ pub fn sweep_cumulative_integrated_layout_fixed_dimensions(
             .iter()
             .map(|network| network.id().to_string())
             .collect::<Vec<_>>();
+        let selected_facilities = input
+            .instances
+            .iter()
+            .map(|instance| instance.id.clone())
+            .collect::<Vec<_>>();
         let sweep = sweep_prepared_exact_model_fixed_dimensions(
             input,
             selected_networks,
+            selected_facilities,
             selected_network_indices,
             logistics_components,
             phase.index,
             worker_count,
             search_budget,
             previous_solution.as_ref(),
+            solver_stack,
         )?;
 
         let Some(incumbent) = sweep.selected_incumbent.clone() else {
@@ -343,12 +419,14 @@ pub fn sweep_cumulative_integrated_layout_fixed_dimensions(
 fn sweep_prepared_exact_model_fixed_dimensions(
     input: super::super::ModelInput,
     selected_networks: Vec<String>,
+    selected_facilities: Vec<String>,
     selected_network_indices: Vec<usize>,
     logistics_components: &ValidatedLogisticsComponentCatalog,
     phase_index: usize,
     worker_count: usize,
     search_budget: Duration,
     prior_solution: Option<&IntegratedLayoutReport>,
+    solver_stack: ExactDimensionSolverStack,
 ) -> Result<ParallelExactDimensionSweepReport, IntegratedLayoutReport> {
     if worker_count == 0 {
         return Err(invalid_sweep_input(
@@ -399,6 +477,7 @@ fn sweep_prepared_exact_model_fixed_dimensions(
                         search_budget,
                         best_area,
                         prior_solution,
+                        solver_stack,
                     );
                 }));
                 if result.is_err() {
@@ -470,6 +549,8 @@ fn sweep_prepared_exact_model_fixed_dimensions(
         phase_index,
         selected_network_indices,
         selected_networks,
+        selected_facilities,
+        solver_stack,
         request_width: input.width,
         request_height: input.height,
         lower_bounds,
@@ -499,6 +580,7 @@ fn run_worker(
     search_budget: Duration,
     best_area: &AtomicI64,
     prior_solution: Option<&IntegratedLayoutReport>,
+    solver_stack: ExactDimensionSolverStack,
 ) {
     while let Ok(work) = work_receiver.recv() {
         if work.candidate.area > best_area.load(Ordering::Acquire) {
@@ -519,16 +601,26 @@ fn run_worker(
             continue;
         }
 
-        let layout = exact::shared_layer::solve_factored_endpoints_fixed_dimensions_feasibility_only_with_prior(
-                input.clone(),
-                logistics_components,
-                Some(search_budget),
-                exact::shared_layer::FixedUsedDimensions {
-                    width: work.candidate.width,
-                    height: work.candidate.height,
-                },
-                prior_solution,
-            );
+        let fixed_dimensions = exact::shared_layer::FixedUsedDimensions {
+            width: work.candidate.width,
+            height: work.candidate.height,
+        };
+        let layout = match solver_stack {
+            ExactDimensionSolverStack::Baseline => exact::shared_layer::solve_factored_endpoints_fixed_dimensions_feasibility_only_with_prior(
+                    input.clone(),
+                    logistics_components,
+                    Some(search_budget),
+                    fixed_dimensions,
+                    prior_solution,
+                ),
+            ExactDimensionSolverStack::WatchedDemandWithLocalContinuation => exact::shared_layer::solve_factored_endpoints_fixed_dimensions_feasibility_only_with_prior_and_local_continuation(
+                    input.clone(),
+                    logistics_components,
+                    Some(search_budget),
+                    fixed_dimensions,
+                    prior_solution,
+                ),
+        };
         let outcome = classify_outcome(&layout);
         let improved_upper_bound = outcome == ExactDimensionCaseOutcome::ValidatedFeasible
             && lower_upper_bound(best_area, work.candidate.area);

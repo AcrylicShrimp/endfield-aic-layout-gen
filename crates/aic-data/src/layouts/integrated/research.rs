@@ -41,9 +41,11 @@ pub use coordinate_partition::{
 };
 pub use dimension_sweep::{
     CUMULATIVE_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION, CumulativeExactDimensionSweepReport,
-    ExactDimensionCaseDisposition, ExactDimensionCaseOutcome, ExactDimensionUpperBoundImprovement,
-    PARALLEL_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION, ParallelExactDimensionCaseReport,
-    ParallelExactDimensionSweepReport, sweep_cumulative_integrated_layout_fixed_dimensions,
+    ExactDimensionCaseDisposition, ExactDimensionCaseOutcome, ExactDimensionSolverStack,
+    ExactDimensionUpperBoundImprovement, PARALLEL_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION,
+    ParallelExactDimensionCaseReport, ParallelExactDimensionSweepReport,
+    sweep_cumulative_integrated_layout_fixed_dimensions,
+    sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation,
     sweep_first_integrated_layout_phase_fixed_dimensions,
 };
 pub use possible_graph_connectivity::{

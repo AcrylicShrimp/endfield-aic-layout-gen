@@ -17,9 +17,11 @@ use crate::recipes::{
 };
 
 use super::{
-    ExactObjectiveKind, ExactObjectiveValue, ExactProofStatus, ExactValidationStatus,
-    IntegratedLayoutStatus, TransportNetworkEndpoint, solve_cumulative_scc_growth_v2,
-    solve_integrated_layout, sweep_cumulative_integrated_layout_fixed_dimensions,
+    ExactDimensionSolverStack, ExactObjectiveKind, ExactObjectiveValue, ExactProofStatus,
+    ExactValidationStatus, IntegratedLayoutStatus, TransportNetworkEndpoint,
+    solve_cumulative_scc_growth_v2, solve_integrated_layout,
+    sweep_cumulative_integrated_layout_fixed_dimensions,
+    sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation,
 };
 use std::time::Duration;
 
@@ -949,6 +951,10 @@ fn cumulative_dimension_sweep_grows_with_non_binding_prior_hints() {
     assert_eq!(report.target_phase_index, 1);
     assert_eq!(report.phase_sweeps.len(), 2);
     assert_eq!(report.layout.phases.len(), 2);
+    assert!(report.phase_sweeps.iter().all(|phase| {
+        phase.solver_stack == ExactDimensionSolverStack::Baseline
+            && phase.selected_facilities.len() == phase.phase_index + 1
+    }));
     assert!(report.phase_sweeps[0].primary_area_optimum_proven);
     assert!(report.phase_sweeps[1].primary_area_optimum_proven);
     let phase_zero_exact = report.phase_sweeps[0]
@@ -964,6 +970,28 @@ fn cumulative_dimension_sweep_grows_with_non_binding_prior_hints() {
     assert_eq!(phase_zero_exact.model.hint_variables, 0);
     assert!(phase_one_exact.model.hint_variables > 0);
     assert_eq!(phase_one_exact.model.hinted_placements, 1);
+
+    let active_report =
+        sweep_cumulative_integrated_layout_fixed_dimensions_with_local_continuation(
+            &wiring(),
+            &facilities,
+            &items,
+            &transports,
+            &components,
+            &FacilityPlacementRequest {
+                schema_version: 2,
+                max_width: 4,
+                max_height: 1,
+            },
+            1,
+            2,
+            Duration::from_secs(1),
+        )
+        .expect("active exact cumulative dimension sweep should build");
+    assert!(active_report.completed_target_phase);
+    assert!(active_report.phase_sweeps.iter().all(|phase| {
+        phase.solver_stack == ExactDimensionSolverStack::WatchedDemandWithLocalContinuation
+    }));
 }
 
 #[test]

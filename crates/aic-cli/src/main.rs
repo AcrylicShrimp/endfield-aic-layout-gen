@@ -2236,6 +2236,7 @@ mod tests {
             "4",
             "--case-time-limit-ms",
             "5000",
+            "--active-local-continuation",
             "--output-dir",
             "cumulative-dimension-sweep",
         ])
@@ -2250,6 +2251,7 @@ mod tests {
                     target_phase,
                     worker_count,
                     case_time_limit_ms,
+                    active_local_continuation,
                     output_dir,
                 },
         } = cli.command
@@ -2262,6 +2264,7 @@ mod tests {
         assert_eq!(target_phase, 1);
         assert_eq!(worker_count, 4);
         assert_eq!(case_time_limit_ms, 5_000);
+        assert!(active_local_continuation);
         assert_eq!(output_dir, PathBuf::from("cumulative-dimension-sweep"));
     }
 

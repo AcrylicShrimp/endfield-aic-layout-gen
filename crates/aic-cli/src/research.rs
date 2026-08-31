@@ -441,6 +441,10 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "MILLISECONDS")]
         case_time_limit_ms: u64,
 
+        /// Enable the exact watched-demand plus event-driven local-continuation propagator stack.
+        #[arg(long)]
+        active_local_continuation: bool,
+
         /// Directory receiving cumulative, phase, and per-case JSON/HTML artifacts.
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
@@ -995,6 +999,7 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             target_phase,
             worker_count,
             case_time_limit_ms,
+            active_local_continuation,
             output_dir,
         } => dimension_sweep::run_cumulative(
             workload,
@@ -1003,6 +1008,7 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             target_phase,
             worker_count,
             case_time_limit_ms,
+            active_local_continuation,
             output_dir,
         ),
         ResearchCommand::DiagnoseCumulativeFacilityCoordinates {
