@@ -6,9 +6,9 @@ The exact dimension portfolio is implemented and successfully applied to Heavy X
 network pair `0,1`.
 
 Four independent Pumpkin workers obtained a validated area upper bound of 35, immediately shared it
-with the other workers, skipped 59 of 63 exact dimension candidates before they started, and proved
-the primary used-area optimum. In the warmed comparison, solver sweep wall time fell from 451 ms
-with one worker to 187 ms with four workers, a 2.41x reduction.
+with the other workers, skipped 58 of 63 exact dimension candidates in the archived run and 59 in
+the repeated run, and proved the primary used-area optimum. In the warmed comparison, solver sweep
+wall time fell from 451 ms with one worker to 187 ms with four workers, a 2.41x reduction.
 
 The result preserves the full joint placement, rotation, port, external terminal, belt routing,
 flow, topology, capacity, and collision problem inside every executed dimension case. No layout or
