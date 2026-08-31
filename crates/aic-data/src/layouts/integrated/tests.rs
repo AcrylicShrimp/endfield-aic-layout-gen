@@ -509,7 +509,7 @@ fn factored_shared_layer_selects_three_template_external_connectors() {
     let exact = report.exact.expect("exact solve reports metrics");
     assert_eq!(
         exact.formulation,
-        "joint-shared-transport-layer-external-connectors-v2"
+        "joint-shared-transport-layer-external-connectors-canonical-occupancy-v3"
     );
     assert_eq!(exact.model.external_connector_count, 2);
     assert_eq!(exact.model.commodity_network_count, 0);
@@ -744,7 +744,7 @@ fn v2_cumulative_growth_reuses_placement_hints_without_cutting_over_production()
             .exact
             .expect("final exact metrics")
             .formulation,
-        "joint-shared-transport-layer-external-connectors-v2"
+        "joint-shared-transport-layer-external-connectors-canonical-occupancy-v3"
     );
 }
 

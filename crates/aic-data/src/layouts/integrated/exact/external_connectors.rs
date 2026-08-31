@@ -376,43 +376,57 @@ fn post_connector_and(
     conjunction
 }
 
-pub(super) fn post_collisions(
+pub(super) fn build_transport_occupancy(
     solver: &mut RecordedModel,
     input: &ModelInput,
-    facility_occupancy: &[Vec<DomainId>],
+    facility_occupancy: &[DomainId],
     internal_cells: impl Fn(TransportKind, usize) -> Option<DomainId>,
     connectors: &[ModelExternalConnector],
+    metrics: &mut ExactModelMetrics,
     tag: pumpkin_solver::core::proof::ConstraintTag,
-) {
+) -> BTreeMap<TransportKind, Vec<DomainId>> {
+    let mut layers = BTreeMap::new();
     for transport in [TransportKind::Belt, TransportKind::Pipe] {
+        let mut cells = Vec::with_capacity(input.cell_count as usize);
         for cell in 0..input.cell_count as usize {
-            let terms = facility_occupancy[cell]
-                .iter()
-                .copied()
-                .chain(internal_cells(transport, cell))
+            let contributors = internal_cells(transport, cell)
+                .into_iter()
                 .chain(
                     connectors
                         .iter()
                         .filter(|connector| connector.requirement.edge.transport == transport)
                         .map(|connector| connector.cells[cell]),
                 )
-                .map(|variable| variable.scaled(1))
                 .collect::<Vec<_>>();
-            if terms.len() > 1 {
-                solver.post_less_than_or_equals(
-                    ConstraintFamily::TransportCollision,
-                    terms,
-                    1,
-                    1,
-                    tag,
-                );
-            }
+            let occupied = solver.new_variable(
+                VariableFamily::TransportOccupancy,
+                0,
+                1,
+                format!(
+                    "{}-occupancy-{cell}",
+                    format!("{transport:?}").to_lowercase()
+                ),
+            );
+            let mut definition = vec![occupied.scaled(1)];
+            definition.extend(
+                contributors
+                    .iter()
+                    .map(|contributor| contributor.scaled(-1)),
+            );
+            solver.post_equals(ConstraintFamily::OccupancyChannel, definition, 0, 1, tag);
+            solver.post_less_than_or_equals(
+                ConstraintFamily::TransportCollision,
+                vec![facility_occupancy[cell].scaled(1), occupied.scaled(1)],
+                1,
+                1,
+                tag,
+            );
+            cells.push(occupied);
         }
+        metrics.route_cell_variables += cells.len();
+        layers.insert(transport, cells);
     }
-}
-
-pub(super) fn cells(connector: &ModelExternalConnector) -> &[DomainId] {
-    &connector.cells
+    layers
 }
 
 pub(super) fn turn(connector: &ModelExternalConnector) -> DomainId {

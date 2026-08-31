@@ -10,8 +10,8 @@ use super::external_connectors::{
 };
 use super::extract::rate_from_flow_units;
 use super::formulation::{
-    DIRECTIONS, direction_between, direction_index, external_endpoint_options, generate_candidates,
-    grid_arcs, model_facility_endpoint_options, post_at_most_one, post_equals_one,
+    DIRECTIONS, direction_between, direction_index, external_endpoint_options,
+    generate_candidate_geometries, grid_arcs, model_facility_endpoint_options, post_at_most_one,
     rotate_direction,
 };
 use super::metrics::{elapsed_millis, finish_report_with_formulation};
@@ -189,7 +189,7 @@ fn solve_with_endpoint_encoding(
     let mut solver = RecordedModel::default();
     let tag = solver.new_constraint_tag();
 
-    let (model_instances, occupancy) =
+    let (model_instances, placement_choices, facility_occupancy) =
         build_placements(&mut solver, &input, &mut model_metrics, cell_count, tag);
     if model_instances.is_empty() && !input.instances.is_empty() {
         return IntegratedLayoutReport::failure(
@@ -202,8 +202,6 @@ fn solve_with_endpoint_encoding(
             ),
         );
     }
-    let placement_choices = matches!(endpoint_encoding, EndpointEncoding::Factored)
-        .then(|| build_placement_choices(&mut solver, &model_instances, &mut model_metrics, tag));
     let model_terminals = match endpoint_encoding {
         EndpointEncoding::Flattened => {
             let edge_endpoint_options = build_endpoint_options(
@@ -219,9 +217,7 @@ fn solve_with_endpoint_encoding(
             &mut solver,
             &input,
             &model_instances,
-            placement_choices
-                .as_ref()
-                .expect("factored endpoint encoding has placement choices"),
+            &placement_choices,
             &mut model_metrics,
             tag,
         ),
@@ -236,9 +232,7 @@ fn solve_with_endpoint_encoding(
                 &mut solver,
                 &input,
                 &model_instances,
-                placement_choices
-                    .as_ref()
-                    .expect("external connectors require factored placement choices"),
+                &placement_choices,
                 index,
                 "external",
                 &requirement.facility_endpoint,
@@ -287,7 +281,6 @@ fn solve_with_endpoint_encoding(
             &mut solver,
             &input,
             &model_terminals,
-            &occupancy,
             transport,
             network_indices,
             logistics_components,
@@ -298,10 +291,10 @@ fn solve_with_endpoint_encoding(
         );
         layers.push(layer);
     }
-    external_connectors::post_collisions(
+    let transport_occupancy = external_connectors::build_transport_occupancy(
         &mut solver,
         &input,
-        &occupancy,
+        &facility_occupancy,
         |transport, cell| {
             layers
                 .iter()
@@ -309,13 +302,15 @@ fn solve_with_endpoint_encoding(
                 .map(|layer| layer.route_cells[cell])
         },
         &external_connectors,
+        &mut model_metrics,
         tag,
     );
 
     let objectives = match build_objectives(
         &mut solver,
         &input,
-        &occupancy,
+        &facility_occupancy,
+        &transport_occupancy,
         &layers,
         &branch_components,
         &bridges,
@@ -391,8 +386,10 @@ fn solve_with_endpoint_encoding(
     finish_report_with_formulation(
         report,
         match endpoint_encoding {
-            EndpointEncoding::Flattened => "joint-shared-transport-layer-v1",
-            EndpointEncoding::Factored => "joint-shared-transport-layer-external-connectors-v2",
+            EndpointEncoding::Flattened => "joint-shared-transport-layer-canonical-occupancy-v2",
+            EndpointEncoding::Factored => {
+                "joint-shared-transport-layer-external-connectors-canonical-occupancy-v3"
+            }
         },
         model_metrics,
         model_complexity,
@@ -403,44 +400,6 @@ fn solve_with_endpoint_encoding(
         validation,
         search.stages,
     )
-}
-
-fn build_placement_choices(
-    solver: &mut RecordedModel,
-    instances: &[ModelInstance],
-    metrics: &mut ExactModelMetrics,
-    tag: pumpkin_solver::core::proof::ConstraintTag,
-) -> BTreeMap<String, PlacementChoice> {
-    instances
-        .iter()
-        .map(|instance| {
-            let upper_bound = i32::try_from(instance.candidates.len() - 1)
-                .expect("placement candidate count fits i32");
-            let choice = solver.new_variable(
-                VariableFamily::Placement,
-                0,
-                upper_bound,
-                format!("factored-placement-choice-{}", instance.input.id),
-            );
-            metrics.placement_variables += 1;
-            let mut definition = vec![choice.scaled(1)];
-            definition.extend(instance.candidates.iter().enumerate().skip(1).map(
-                |(index, candidate)| {
-                    candidate
-                        .selected
-                        .scaled(-i32::try_from(index).expect("placement candidate index fits i32"))
-                },
-            ));
-            solver.post_equals(
-                ConstraintFamily::PlacementChoice,
-                definition,
-                0,
-                upper_bound.unsigned_abs() as u64,
-                tag,
-            );
-            (instance.input.id.clone(), PlacementChoice { choice })
-        })
-        .collect()
 }
 
 fn initial_metrics(input: &ModelInput) -> ExactModelMetrics {
@@ -507,40 +466,105 @@ fn build_placements(
     metrics: &mut ExactModelMetrics,
     cell_count: usize,
     tag: pumpkin_solver::core::proof::ConstraintTag,
-) -> (Vec<ModelInstance>, Vec<Vec<DomainId>>) {
-    let mut occupancy = vec![Vec::new(); cell_count];
+) -> (
+    Vec<ModelInstance>,
+    BTreeMap<String, PlacementChoice>,
+    Vec<DomainId>,
+) {
+    let mut placement_choices = BTreeMap::new();
     let mut instances = Vec::with_capacity(input.instances.len());
     for instance in &input.instances {
-        let candidates = generate_candidates(solver, instance, input.width, input.height);
-        metrics.placement_variables += candidates.len();
-        if candidates.is_empty() {
-            return (Vec::new(), occupancy);
+        let geometries = generate_candidate_geometries(instance, input.width, input.height);
+        if geometries.is_empty() {
+            return (Vec::new(), BTreeMap::new(), Vec::new());
         }
-        post_equals_one(
-            solver,
-            ConstraintFamily::PlacementChoice,
-            candidates.iter().map(|candidate| candidate.selected),
-            tag,
+        let upper_bound =
+            i32::try_from(geometries.len() - 1).expect("placement candidate count fits i32");
+        let choice = solver.new_variable(
+            VariableFamily::Placement,
+            0,
+            upper_bound,
+            format!("placement-choice-{}", instance.id),
         );
-        for candidate in &candidates {
-            for cell in &candidate.occupied_cells {
-                occupancy[*cell].push(candidate.selected);
-            }
-        }
+        let candidates = geometries
+            .into_iter()
+            .enumerate()
+            .map(|(index, geometry)| {
+                let selected = solver.new_named_literal_for_predicate(
+                    VariableFamily::Placement,
+                    choice.equality_predicate(
+                        i32::try_from(index).expect("placement candidate index fits i32"),
+                    ),
+                    tag,
+                    format!(
+                        "place-{}-{}-{}-{}",
+                        instance.id, geometry.rotation, geometry.x, geometry.y
+                    ),
+                );
+                super::Candidate {
+                    rotation: geometry.rotation,
+                    x: geometry.x,
+                    y: geometry.y,
+                    width: geometry.width,
+                    height: geometry.height,
+                    occupied_cells: geometry.occupied_cells,
+                    port_connections: geometry.port_connections,
+                    selected: *selected.get_integer_variable().inner(),
+                }
+            })
+            .collect::<Vec<_>>();
+        metrics.placement_variables += candidates.len() + 1;
+        placement_choices.insert(instance.id.clone(), PlacementChoice { choice });
         instances.push(ModelInstance {
             input: instance.clone(),
             candidates,
         });
     }
-    for candidates in &occupancy {
-        post_at_most_one(
-            solver,
-            ConstraintFamily::FacilityNonOverlap,
-            candidates.iter().copied(),
-            tag,
-        );
-    }
-    (instances, occupancy)
+
+    let facility_occupancy = (0..cell_count)
+        .map(|cell| {
+            let instance_occupancy = instances
+                .iter()
+                .map(|instance| {
+                    let occupied = solver.new_variable(
+                        VariableFamily::PhysicalOccupancy,
+                        0,
+                        1,
+                        format!("facility-{}-occupies-{cell}", instance.input.id),
+                    );
+                    let values = instance
+                        .candidates
+                        .iter()
+                        .map(|candidate| i32::from(candidate.occupied_cells.contains(&cell)))
+                        .collect::<Vec<_>>();
+                    solver.post_constant_element(
+                        ConstraintFamily::OccupancyChannel,
+                        placement_choices[&instance.input.id].choice,
+                        values,
+                        occupied,
+                        tag,
+                    );
+                    occupied
+                })
+                .collect::<Vec<_>>();
+            let occupied = solver.new_variable(
+                VariableFamily::PhysicalOccupancy,
+                0,
+                1,
+                format!("facility-occupancy-{cell}"),
+            );
+            let mut definition = vec![occupied.scaled(1)];
+            definition.extend(
+                instance_occupancy
+                    .iter()
+                    .map(|instance| instance.scaled(-1)),
+            );
+            solver.post_equals(ConstraintFamily::OccupancyChannel, definition, 0, 1, tag);
+            metrics.placement_variables += instance_occupancy.len() + 1;
+            occupied
+        })
+        .collect::<Vec<_>>();
+    (instances, placement_choices, facility_occupancy)
 }
 
 fn build_endpoint_options(
@@ -978,7 +1002,6 @@ fn build_layer(
     solver: &mut RecordedModel,
     input: &ModelInput,
     terminals: &[Vec<SharedTerminal>],
-    facility_occupancy: &[Vec<DomainId>],
     transport: TransportKind,
     network_indices: Vec<usize>,
     logistics_components: &ValidatedLogisticsComponentCatalog,
@@ -1322,17 +1345,6 @@ fn build_layer(
         );
         all_branch_components.extend(branches);
         all_bridges.push(bridge);
-        solver.post_less_than_or_equals(
-            ConstraintFamily::TransportCollision,
-            facility_occupancy[cell]
-                .iter()
-                .map(|variable| variable.scaled(1))
-                .chain(std::iter::once(route_cells[cell].scaled(1)))
-                .collect(),
-            1,
-            1,
-            tag,
-        );
     }
 
     SharedLayer {
@@ -1851,7 +1863,8 @@ fn same_axis(cell: usize, neighbor: usize, width: i32, horizontal: bool) -> bool
 fn build_objectives(
     solver: &mut RecordedModel,
     input: &ModelInput,
-    facility_occupancy: &[Vec<DomainId>],
+    facility_occupancy: &[DomainId],
+    transport_occupancy: &BTreeMap<TransportKind, Vec<DomainId>>,
     layers: &[SharedLayer],
     branches: &[SharedBranchComponent],
     bridges: &[ModelBridge],
@@ -1868,15 +1881,11 @@ fn build_objectives(
                 VariableFamily::Objective,
                 ConstraintFamily::UsedGeometry,
                 format!("used-geometry-cell-{cell}"),
-                facility_occupancy[cell]
-                    .iter()
-                    .copied()
-                    .chain(layers.iter().map(|layer| layer.route_cells[cell]))
-                    .chain(
-                        external_connectors
-                            .iter()
-                            .map(|connector| external_connectors::cells(connector)[cell]),
-                    ),
+                std::iter::once(facility_occupancy[cell]).chain(
+                    [TransportKind::Belt, TransportKind::Pipe]
+                        .into_iter()
+                        .map(|transport| transport_occupancy[&transport][cell]),
+                ),
                 tag,
             )
         })
@@ -1940,14 +1949,9 @@ fn build_objectives(
     );
     metrics.objective_variables += 4;
 
-    let physical_tiles = layers
-        .iter()
-        .flat_map(|layer| layer.route_cells.iter().copied())
-        .chain(
-            external_connectors
-                .iter()
-                .flat_map(|connector| external_connectors::cells(connector).iter().copied()),
-        )
+    let physical_tiles = [TransportKind::Belt, TransportKind::Pipe]
+        .into_iter()
+        .flat_map(|transport| transport_occupancy[&transport].iter().copied())
         .collect::<Vec<_>>();
     let physical_transport_tiles =
         post_sum_variable(solver, "physical-transport-tiles", &physical_tiles, tag)?;
