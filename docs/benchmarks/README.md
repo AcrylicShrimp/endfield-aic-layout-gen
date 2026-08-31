@@ -62,6 +62,12 @@ parallel exact dimension portfolio to all three phase-zero networks. It proves m
 five seconds, and identifies the used-dimension/boundary-terminal/routing propagation cycle as the
 closed phase-zero cliff.
 
+The twenty-fifth checkpoint,
+`heavy-xiranite-minimum-rate.twenty-fifth-cumulative-dimension-growth-phase1-report.md`, grows the
+same exact portfolio through cumulative SCC phase 1 with a non-binding prior placement hint. It
+proves minimum area 77 for the two-facility, six-network graph in 3.65 seconds and moves the next
+first-feasible cliff to phase 2 or later.
+
 Regenerate it from a release binary with:
 
 ```bash

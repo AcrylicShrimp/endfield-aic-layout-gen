@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "diagnostic_only": true,
+  "workload": "heavy-xiranite-minimum-rate",
+  "request_ceiling": {
+    "width": 12,
+    "height": 12
+  },
+  "target_phase_index": 1,
+  "total_phase_count": 41,
+  "worker_count": 4,
+  "search_budget_ms_per_case": 5000,
+  "completed_target_phase": true,
+  "blocking_phase_index": null,
+  "process": {
+    "wall_ms": 4440,
+    "maximum_resident_set_bytes": 808255488,
+    "instructions_retired": 160554230513,
+    "cycles_elapsed": 52014728417
+  },
+  "phases": [
+    {
+      "phase_index": 0,
+      "cumulative_facility_count": 1,
+      "commodity_network_count": 3,
+      "route_requirement_count": 4,
+      "candidate_count": 63,
+      "executed_case_count": 11,
+      "skipped_above_upper_bound_count": 52,
+      "validated_feasible_case_count": 2,
+      "proven_infeasible_case_count": 9,
+      "unknown_case_count": 0,
+      "outer_wall_ms": 765,
+      "minimum_area": 42,
+      "primary_area_optimum_proven": true,
+      "secondary_objectives_proven": false,
+      "selected_incumbent": {
+        "width": 6,
+        "height": 7,
+        "physical_transport_tiles": 23,
+        "total_route_turns": 2
+      },
+      "hint": {
+        "variables": 0,
+        "placements": 0,
+        "terminals": 0,
+        "networks": 0
+      }
+    },
+    {
+      "phase_index": 1,
+      "cumulative_facility_count": 2,
+      "commodity_network_count": 6,
+      "route_requirement_count": 7,
+      "candidate_count": 47,
+      "executed_case_count": 23,
+      "skipped_above_upper_bound_count": 24,
+      "validated_feasible_case_count": 2,
+      "proven_infeasible_case_count": 21,
+      "unknown_case_count": 0,
+      "outer_wall_ms": 3649,
+      "minimum_area": 77,
+      "primary_area_optimum_proven": true,
+      "secondary_objectives_proven": false,
+      "selected_incumbent": {
+        "width": 7,
+        "height": 11,
+        "physical_transport_tiles": 37,
+        "total_route_turns": 16,
+        "logistics_component_count": 3
+      },
+      "hint": {
+        "variables": 256,
+        "placements": 1,
+        "terminals": 0,
+        "networks": 0
+      },
+      "representative_model": {
+        "variables": 21745,
+        "constraints": 71395,
+        "incidences": 239999
+      }
+    }
+  ],
+  "next_experiment": "Grow the same cumulative exact dimension portfolio through phase 2 and stop at the first phase without a validated incumbent or complete smaller-area proof."
+}
