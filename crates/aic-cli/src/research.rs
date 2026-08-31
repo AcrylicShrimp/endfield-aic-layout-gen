@@ -23,6 +23,7 @@ use anyhow::{Context, Result, ensure};
 use clap::{Subcommand, ValueEnum};
 use sha2::{Digest, Sha256};
 
+mod cumulative_growth;
 mod external_connectors;
 mod factored_networks;
 mod first_phase;
@@ -87,6 +88,36 @@ pub(crate) enum ResearchCommand {
         /// Optional standalone HTML result, including structured failure evidence.
         #[arg(long, value_name = "FILE")]
         visualization_output: Option<PathBuf>,
+    },
+    /// Solve cumulative SCC phases through one target with the v2 exact formulation.
+    SolveCumulativeSccGrowth {
+        /// Benchmark workload manifest JSON file to solve.
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+
+        /// Root used to resolve portable input paths in the workload manifest.
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+
+        /// Hard maximum layout bounds for this experiment only.
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+
+        /// Zero-based cumulative SCC target phase.
+        #[arg(long, value_name = "INDEX")]
+        target_phase: usize,
+
+        /// Exact solver wall-clock budget independently given to every phase.
+        #[arg(long, value_name = "MILLISECONDS")]
+        phase_time_limit_ms: u64,
+
+        /// JSON artifact path.
+        #[arg(long, value_name = "FILE")]
+        output: PathBuf,
+
+        /// Standalone HTML history or structured failure evidence.
+        #[arg(long, value_name = "FILE")]
+        visualization_output: PathBuf,
     },
     /// Solve one clean subset of phase-zero external connector requirements.
     SolveFirstPhaseExternalSubset {
@@ -305,6 +336,23 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             workspace_root,
             placement_request,
             time_limit_ms,
+            output,
+            visualization_output,
+        ),
+        ResearchCommand::SolveCumulativeSccGrowth {
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            phase_time_limit_ms,
+            output,
+            visualization_output,
+        } => cumulative_growth::solve(
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            phase_time_limit_ms,
             output,
             visualization_output,
         ),

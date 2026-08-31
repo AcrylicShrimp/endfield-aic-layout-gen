@@ -18,8 +18,9 @@ use crate::recipes::{
 
 use super::{
     ExactObjectiveKind, ExactObjectiveValue, ExactProofStatus, ExactValidationStatus,
-    IntegratedLayoutStatus, solve_integrated_layout,
+    IntegratedLayoutStatus, solve_cumulative_scc_growth_v2, solve_integrated_layout,
 };
+use std::time::Duration;
 
 fn facility(
     id: &str,
@@ -710,6 +711,41 @@ fn exact_solver_jointly_places_selects_ports_routes_and_validates() {
     }));
     assert_eq!(exact.proof, ExactProofStatus::ProvenOptimal);
     assert_eq!(exact.validation, ExactValidationStatus::Passed);
+}
+
+#[test]
+fn v2_cumulative_growth_reuses_placement_hints_without_cutting_over_production() {
+    let (facilities, items, transports, components) = catalogs();
+    let report = solve_cumulative_scc_growth_v2(
+        &wiring(),
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &FacilityPlacementRequest {
+            schema_version: 2,
+            max_width: 4,
+            max_height: 1,
+        },
+        1,
+        Duration::from_secs(1),
+    )
+    .expect("two-phase fixture should build");
+
+    assert!(report.layout.success, "{:#?}", report.layout.diagnostics);
+    assert_eq!(report.target_phase_index, 1);
+    assert_eq!(report.total_phase_count, 2);
+    assert_eq!(report.layout.phases.len(), 2);
+    assert_eq!(report.layout.phases[0].exact.model.hint_variables, 0);
+    assert!(report.layout.phases[1].exact.model.hint_variables > 0);
+    assert_eq!(
+        report
+            .layout
+            .exact
+            .expect("final exact metrics")
+            .formulation,
+        "joint-shared-transport-layer-external-connectors-v2"
+    );
 }
 
 #[test]

@@ -1753,6 +1753,51 @@ mod tests {
     }
 
     #[test]
+    fn parses_cumulative_scc_growth_target_and_per_phase_budget() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "solve-cumulative-scc-growth",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--target-phase",
+            "2",
+            "--phase-time-limit-ms",
+            "5000",
+            "--output",
+            "phase2.json",
+            "--visualization-output",
+            "phase2.html",
+        ])
+        .expect("cumulative SCC growth CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::SolveCumulativeSccGrowth {
+                    workload,
+                    workspace_root,
+                    placement_request,
+                    target_phase,
+                    phase_time_limit_ms,
+                    output,
+                    visualization_output,
+                },
+        } = cli.command
+        else {
+            panic!("expected cumulative SCC growth research command")
+        };
+        assert_eq!(workload, PathBuf::from("workload.json"));
+        assert_eq!(workspace_root, PathBuf::from("."));
+        assert_eq!(placement_request, PathBuf::from("bounds.json"));
+        assert_eq!(target_phase, 2);
+        assert_eq!(phase_time_limit_ms, 5_000);
+        assert_eq!(output, PathBuf::from("phase2.json"));
+        assert_eq!(visualization_output, PathBuf::from("phase2.html"));
+    }
+
+    #[test]
     fn parses_first_phase_external_connector_subset() {
         let cli = Cli::try_parse_from([
             "aic-cli",

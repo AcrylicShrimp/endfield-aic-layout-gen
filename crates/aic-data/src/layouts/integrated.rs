@@ -39,6 +39,7 @@ pub use report::{
     TransportNetworkSegment, TransportNetworkTerminal,
 };
 pub use research::{
+    CUMULATIVE_SCC_GROWTH_SCHEMA_VERSION, CumulativeSccGrowthReport,
     EXACT_ABLATION_MATRIX_SCHEMA_VERSION, EXTERNAL_CONNECTOR_PORT_DOMAIN_SCHEMA_VERSION,
     EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION, ExactAblationCaseReport, ExactAblationFixation,
     ExactAblationMatrixReport, ExternalConnectorPortDomainClassification,
@@ -53,7 +54,7 @@ pub use research::{
     compare_first_integrated_layout_phase_shared_layer,
     decompose_first_integrated_layout_phase_factored_networks,
     decompose_first_integrated_layout_phase_factored_requirements,
-    decompose_first_integrated_layout_phase_pair,
+    decompose_first_integrated_layout_phase_pair, solve_cumulative_scc_growth_v2,
     solve_first_integrated_layout_phase_external_connector_port_domain,
     solve_first_integrated_layout_phase_external_connector_subset,
 };

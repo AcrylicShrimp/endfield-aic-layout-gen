@@ -3,13 +3,16 @@ use std::{collections::BTreeSet, time::Duration};
 use serde::Serialize;
 
 use crate::facilities::{FacilityPortDirection, ValidatedFacilityCatalog};
-use crate::layouts::FacilityPlacementRequest;
+use crate::layouts::{FacilityPlacementRequest, plan_facility_growth};
 use crate::logistics::{
     ValidatedItemCatalog, ValidatedLogisticsComponentCatalog, ValidatedTransportCatalog,
 };
 use crate::recipes::{FacilityInstanceWiringReport, Rate};
 
-use super::{IntegratedLayoutReport, exact, harness, prepare_exact_model};
+use super::{
+    IntegratedLayoutDiagnostic, IntegratedLayoutPhase, IntegratedLayoutReport,
+    IntegratedLayoutStatus, exact, harness, prepare_exact_model,
+};
 
 pub const EXACT_ABLATION_MATRIX_SCHEMA_VERSION: u32 = 1;
 pub const SHARED_LAYER_COMPARISON_SCHEMA_VERSION: u32 = 1;
@@ -18,6 +21,169 @@ pub const FACTORED_NETWORK_DECOMPOSITION_SCHEMA_VERSION: u32 = 1;
 pub const FACTORED_REQUIREMENT_DECOMPOSITION_SCHEMA_VERSION: u32 = 1;
 pub const EXTERNAL_CONNECTOR_SUBSET_SCHEMA_VERSION: u32 = 1;
 pub const EXTERNAL_CONNECTOR_PORT_DOMAIN_SCHEMA_VERSION: u32 = 1;
+pub const CUMULATIVE_SCC_GROWTH_SCHEMA_VERSION: u32 = 1;
+
+const MAX_NEW_FACILITIES_PER_GROWTH_PHASE: usize = 1;
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct CumulativeSccGrowthReport {
+    pub schema_version: u32,
+    pub target_phase_index: usize,
+    pub total_phase_count: usize,
+    pub phase_search_budget_ms: u64,
+    pub layout: IntegratedLayoutReport,
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn solve_cumulative_scc_growth_v2(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    target_phase_index: usize,
+    phase_search_budget: Duration,
+) -> Result<CumulativeSccGrowthReport, IntegratedLayoutReport> {
+    let growth = plan_facility_growth(instance_wiring, MAX_NEW_FACILITIES_PER_GROWTH_PHASE);
+    if !growth.success {
+        let diagnostic = growth.diagnostics.into_iter().next().map_or_else(
+            || {
+                IntegratedLayoutDiagnostic::error(
+                    "research-scc-growth-planning-failed",
+                    "/",
+                    None,
+                    "SCC growth planning failed without a diagnostic",
+                )
+            },
+            |diagnostic| {
+                IntegratedLayoutDiagnostic::error(
+                    "research-scc-growth-planning-failed",
+                    diagnostic.path,
+                    diagnostic.entity,
+                    diagnostic.message,
+                )
+            },
+        );
+        return Err(IntegratedLayoutReport::invalid(diagnostic));
+    }
+    let total_phase_count = growth.phases.len();
+    if target_phase_index >= total_phase_count {
+        return Err(IntegratedLayoutReport::invalid(
+            IntegratedLayoutDiagnostic::error(
+                "research-scc-target-phase-out-of-range",
+                "/target_phase_index",
+                Some(target_phase_index.to_string()),
+                format!(
+                    "target phase {target_phase_index} is outside the cumulative SCC phase range 0..{total_phase_count}"
+                ),
+            ),
+        ));
+    }
+
+    let total_facilities = growth
+        .components
+        .iter()
+        .map(|component| component.facilities.len())
+        .sum();
+    let mut cumulative_facilities = BTreeSet::new();
+    let mut previous_solution = None;
+    let mut snapshots = Vec::with_capacity(target_phase_index + 1);
+
+    for phase in growth.phases.iter().take(target_phase_index + 1) {
+        cumulative_facilities.extend(phase.facilities.iter().cloned());
+        let partial_wiring = harness::project_cumulative_wiring(
+            instance_wiring,
+            &cumulative_facilities,
+            total_facilities,
+        )
+        .map_err(IntegratedLayoutReport::invalid)?;
+        let input = prepare_exact_model(
+            &partial_wiring,
+            facilities,
+            items,
+            transports,
+            logistics_components,
+            request,
+        )?;
+        let mut phase_report = exact::shared_layer::solve_factored_endpoints_with_prior(
+            input,
+            logistics_components,
+            Some(phase_search_budget),
+            previous_solution.as_ref(),
+        );
+        if !phase_report.success {
+            phase_report
+                .diagnostics
+                .push(IntegratedLayoutDiagnostic::error(
+                    "research-cumulative-scc-phase-unsolved",
+                    format!("/phases/{}", phase.index),
+                    Some(format!("phase:{}", phase.index)),
+                    format!(
+                        "v2 cumulative SCC phase {} returned without a complete validated incumbent; no fallback was attempted",
+                        phase.index,
+                    ),
+                ));
+            phase_report.phases = snapshots;
+            return Ok(CumulativeSccGrowthReport {
+                schema_version: CUMULATIVE_SCC_GROWTH_SCHEMA_VERSION,
+                target_phase_index,
+                total_phase_count,
+                phase_search_budget_ms: millis(phase_search_budget),
+                layout: phase_report,
+            });
+        }
+
+        let bounds = phase_report
+            .bounds
+            .clone()
+            .expect("a successful exact solve has canonical used bounds");
+        let exact = phase_report
+            .exact
+            .clone()
+            .expect("a successful exact solve has exact metrics");
+        snapshots.push(IntegratedLayoutPhase {
+            index: phase.index,
+            introduced_components: phase.components.clone(),
+            introduced_facilities: phase.facilities.clone(),
+            cumulative_facility_count: exact.model.facility_count,
+            cumulative_route_requirement_count: exact.model.route_requirement_count,
+            bounds,
+            placements: phase_report.placements.clone(),
+            logistics_components: phase_report.logistics_components.clone(),
+            external_connectors: phase_report.external_connectors.clone(),
+            transport_networks: phase_report.transport_networks.clone(),
+            exact,
+        });
+        previous_solution = Some(phase_report);
+    }
+
+    let mut layout = previous_solution.unwrap_or_else(|| {
+        IntegratedLayoutReport::failure(
+            IntegratedLayoutStatus::InvalidInput,
+            IntegratedLayoutDiagnostic::error(
+                "research-empty-scc-growth-plan",
+                "/",
+                None,
+                "the cumulative SCC growth experiment requires at least one phase",
+            ),
+        )
+    });
+    layout.phases = snapshots;
+    layout.diagnostics.push(IntegratedLayoutDiagnostic::info(
+        "research-cumulative-scc-v2-complete",
+        format!(
+            "solved cumulative SCC phases 0 through {target_phase_index} with independent per-phase budgets and placement-only non-binding hints"
+        ),
+    ));
+    Ok(CumulativeSccGrowthReport {
+        schema_version: CUMULATIVE_SCC_GROWTH_SCHEMA_VERSION,
+        target_phase_index,
+        total_phase_count,
+        phase_search_budget_ms: millis(phase_search_budget),
+        layout,
+    })
+}
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct ExternalConnectorRequirementDescriptor {
