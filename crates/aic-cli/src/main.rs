@@ -2437,6 +2437,122 @@ mod tests {
     }
 
     #[test]
+    fn parses_phase2_routing_state_breakdown() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "diagnose-phase2-routing-state-breakdown",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--target-phase",
+            "2",
+            "--used-width",
+            "12",
+            "--used-height",
+            "12",
+            "--facility-x",
+            "0",
+            "--facility-y",
+            "1",
+            "--port-assignment-index",
+            "5",
+            "--prefix-case-time-limit-ms",
+            "5000",
+            "--reference-time-limit-ms",
+            "30000",
+            "--case-time-limit-ms",
+            "5000",
+            "--output-dir",
+            "routing-state-breakdown",
+        ])
+        .expect("Phase 2 routing-state breakdown CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::DiagnosePhase2RoutingStateBreakdown {
+                    target_phase,
+                    used_width,
+                    used_height,
+                    facility_x,
+                    facility_y,
+                    port_assignment_index,
+                    case_time_limit_ms,
+                    output_dir,
+                    ..
+                },
+        } = cli.command
+        else {
+            panic!("expected Phase 2 routing-state breakdown command")
+        };
+        assert_eq!(target_phase, 2);
+        assert_eq!((used_width, used_height), (12, 12));
+        assert_eq!((facility_x, facility_y), (0, 1));
+        assert_eq!(port_assignment_index, 5);
+        assert_eq!(case_time_limit_ms, 5_000);
+        assert_eq!(output_dir, PathBuf::from("routing-state-breakdown"));
+    }
+
+    #[test]
+    fn parses_phase2_route_cell_breakdown() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "diagnose-phase2-route-cell-breakdown",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--target-phase",
+            "2",
+            "--used-width",
+            "12",
+            "--used-height",
+            "12",
+            "--facility-x",
+            "0",
+            "--facility-y",
+            "1",
+            "--port-assignment-index",
+            "5",
+            "--prefix-case-time-limit-ms",
+            "5000",
+            "--reference-time-limit-ms",
+            "30000",
+            "--case-time-limit-ms",
+            "5000",
+            "--output-dir",
+            "route-cell-breakdown",
+        ])
+        .expect("Phase 2 route-cell breakdown CLI should parse");
+
+        let Command::Research {
+            command:
+                ResearchCommand::DiagnosePhase2RouteCellBreakdown {
+                    target_phase,
+                    used_width,
+                    used_height,
+                    facility_x,
+                    facility_y,
+                    port_assignment_index,
+                    case_time_limit_ms,
+                    output_dir,
+                    ..
+                },
+        } = cli.command
+        else {
+            panic!("expected Phase 2 route-cell breakdown command")
+        };
+        assert_eq!(target_phase, 2);
+        assert_eq!((used_width, used_height), (12, 12));
+        assert_eq!((facility_x, facility_y), (0, 1));
+        assert_eq!(port_assignment_index, 5);
+        assert_eq!(case_time_limit_ms, 5_000);
+        assert_eq!(output_dir, PathBuf::from("route-cell-breakdown"));
+    }
+
+    #[test]
     fn parses_first_phase_factored_requirement_decomposition() {
         let cli = Cli::try_parse_from([
             "aic-cli",

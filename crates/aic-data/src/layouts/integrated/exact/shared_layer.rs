@@ -76,6 +76,19 @@ pub(in crate::layouts::integrated) enum ReferenceAblationFixation {
     PlacementsAndAllTerminals,
 }
 
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub(in crate::layouts::integrated) struct ReferenceRoutingFixation {
+    pub route_cells: bool,
+    pub route_cell_transport: Option<TransportKind>,
+    pub route_cell_value: Option<bool>,
+    pub route_cell_network_index: Option<usize>,
+    pub route_cell_network_cell_index: Option<usize>,
+    pub arm_items: bool,
+    pub arc_activation: bool,
+    pub arc_flow: bool,
+    pub topology_components: bool,
+}
+
 #[derive(Clone, Copy)]
 pub(in crate::layouts::integrated) struct FixedUsedDimensions {
     pub(in crate::layouts::integrated) width: i32,
@@ -189,6 +202,7 @@ pub(in crate::layouts::integrated) fn solve(
         None,
         None,
         None,
+        None,
     )
 }
 
@@ -218,6 +232,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_with_prior(
         None,
         None,
         None,
+        None,
     )
 }
 
@@ -233,6 +248,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_feasibility_only(
         EndpointEncoding::Factored,
         None,
         SearchMode::FeasibilityOnly,
+        None,
         None,
         None,
         None,
@@ -275,6 +291,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         None,
         None,
         None,
+        None,
     )
 }
 
@@ -298,6 +315,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         None,
         None,
         Some(transport_tile_upper_bound),
+        None,
     )
 }
 
@@ -319,6 +337,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         SearchMode::FeasibilityOnly,
         Some(fixed_dimensions),
         Some(fixed_coordinate),
+        None,
         None,
         None,
         None,
@@ -347,6 +366,7 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         Some(fixed_ports),
         None,
         None,
+        None,
     )
 }
 
@@ -370,6 +390,31 @@ pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_
         None,
         Some(fixation),
         None,
+        None,
+    )
+}
+
+pub(in crate::layouts::integrated) fn solve_factored_endpoints_fixed_dimensions_reference_routing_ablation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    reference: &IntegratedLayoutReport,
+    routing_fixation: ReferenceRoutingFixation,
+) -> IntegratedLayoutReport {
+    solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::Factored,
+        Some(reference),
+        SearchMode::FeasibilityOnly,
+        Some(fixed_dimensions),
+        None,
+        None,
+        Some(ReferenceAblationFixation::PlacementsAndAllTerminals),
+        None,
+        Some(routing_fixation),
     )
 }
 
@@ -488,6 +533,7 @@ fn solve_with_endpoint_encoding(
     fixed_ports: Option<Vec<FixedTerminalPortChoice>>,
     reference_fixation: Option<ReferenceAblationFixation>,
     transport_tile_upper_bound: Option<i32>,
+    reference_routing_fixation: Option<ReferenceRoutingFixation>,
 ) -> IntegratedLayoutReport {
     if transport_tile_upper_bound.is_some_and(|upper_bound| upper_bound < 0) {
         return IntegratedLayoutReport::invalid(IntegratedLayoutDiagnostic::error(
@@ -613,6 +659,20 @@ fn solve_with_endpoint_encoding(
             tag,
         );
         layers.push(layer);
+    }
+    if let Some(fixation) = reference_routing_fixation
+        && let Err(diagnostic) = post_reference_routing_fixation(
+            &mut solver,
+            &input,
+            &layers,
+            &branch_components,
+            &bridges,
+            prior_solution,
+            fixation,
+            tag,
+        )
+    {
+        return IntegratedLayoutReport::invalid(diagnostic);
     }
     let transport_occupancy = build_transport_occupancy(
         &mut solver,
@@ -803,20 +863,21 @@ fn solve_with_endpoint_encoding(
     };
     finish_report_with_formulation(
         report,
-        match reference_fixation {
-            Some(ReferenceAblationFixation::Placements) => {
+        match (reference_fixation, reference_routing_fixation) {
+            (_, Some(_)) => "joint-shared-v4-reference-routing-state-ablation",
+            (Some(ReferenceAblationFixation::Placements), None) => {
                 "joint-shared-v4-reference-placements-ablation"
             }
-            Some(ReferenceAblationFixation::PlacementsAndFacilityPorts) => {
+            (Some(ReferenceAblationFixation::PlacementsAndFacilityPorts), None) => {
                 "joint-shared-v4-reference-placements-facility-ports-ablation"
             }
-            Some(ReferenceAblationFixation::PlacementsAndAllTerminals) => {
+            (Some(ReferenceAblationFixation::PlacementsAndAllTerminals), None) => {
                 "joint-shared-v4-reference-placements-all-terminals-ablation"
             }
-            None if transport_tile_upper_bound.is_some() => {
+            (None, None) if transport_tile_upper_bound.is_some() => {
                 "joint-shared-boundary-terminals-canonical-occupancy-v4-fixed-dimensions-transport-tile-cap"
             }
-            None => match (
+            (None, None) => match (
                 endpoint_encoding,
                 fixed_dimensions,
                 fixed_coordinate,
@@ -1037,6 +1098,308 @@ fn post_reference_terminals(
         }
     }
     Ok(())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn post_reference_routing_fixation(
+    solver: &mut RecordedModel,
+    input: &ModelInput,
+    layers: &[SharedLayer],
+    branches: &[SharedBranchComponent],
+    bridges: &[ModelBridge],
+    reference: Option<&IntegratedLayoutReport>,
+    fixation: ReferenceRoutingFixation,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let reference = successful_ablation_reference(reference)?;
+    if fixation
+        .route_cell_network_index
+        .is_some_and(|index| index >= input.networks.len())
+    {
+        return Err(reference_mismatch(
+            "route-cell network index",
+            &fixation
+                .route_cell_network_index
+                .expect("checked route-cell network index")
+                .to_string(),
+        ));
+    }
+    for layer in layers {
+        let mut reference_cells = BTreeSet::new();
+        let mut selected_network_cells = BTreeSet::new();
+        let mut selected_network_is_in_layer = fixation.route_cell_network_index.is_none();
+        let mut reference_arm_items = vec![[0_i32; 4]; input.cell_count as usize];
+        let mut reference_arc_flows = BTreeMap::<(usize, usize), i32>::new();
+
+        for (local_index, network_index) in layer.network_indices.iter().copied().enumerate() {
+            let network_input = &input.networks[network_index];
+            let prior_network = reference
+                .transport_networks
+                .iter()
+                .find(|network| network.id == network_input.id())
+                .ok_or_else(|| reference_mismatch("transport network", network_input.id()))?;
+            if prior_network.transport != layer.transport
+                || prior_network.item != network_input.item()
+            {
+                return Err(reference_mismatch(
+                    "transport network identity",
+                    network_input.id(),
+                ));
+            }
+            let item_code = i32::try_from(local_index + 1).expect("layer item code fits i32");
+            for position in &prior_network.cells {
+                let cell =
+                    reference_position_cell(input, position.x, position.y, network_input.id())?;
+                reference_cells.insert(cell);
+                if fixation.route_cell_network_index == Some(network_index) {
+                    selected_network_cells.insert(cell);
+                    selected_network_is_in_layer = true;
+                }
+            }
+            for segment in &prior_network.segments {
+                let from = reference_position_cell(
+                    input,
+                    segment.from.x,
+                    segment.from.y,
+                    network_input.id(),
+                )?;
+                let to =
+                    reference_position_cell(input, segment.to.x, segment.to.y, network_input.id())?;
+                if !orthogonally_adjacent(from, to, input.width) {
+                    return Err(reference_mismatch(
+                        "orthogonal route segment",
+                        network_input.id(),
+                    ));
+                }
+                set_reference_arm_item(
+                    &mut reference_arm_items,
+                    from,
+                    direction_index(direction_between(from, to, input.width)),
+                    item_code,
+                    network_input.id(),
+                )?;
+                set_reference_arm_item(
+                    &mut reference_arm_items,
+                    to,
+                    direction_index(direction_between(to, from, input.width)),
+                    item_code,
+                    network_input.id(),
+                )?;
+                let flow = network_input
+                    .flow_units_for_hint(segment.rate)
+                    .ok_or_else(|| reference_mismatch("route segment flow", network_input.id()))?;
+                if let Some(previous) = reference_arc_flows.insert((from, to), flow)
+                    && previous != flow
+                {
+                    return Err(reference_mismatch(
+                        "unique route arc flow",
+                        network_input.id(),
+                    ));
+                }
+            }
+            for prior_terminal in &prior_network.terminals {
+                let cell = reference_position_cell(
+                    input,
+                    prior_terminal.position.x,
+                    prior_terminal.position.y,
+                    &prior_terminal.id,
+                )?;
+                let direction = reference_terminal_arm_direction(input, reference, prior_terminal)?;
+                set_reference_arm_item(
+                    &mut reference_arm_items,
+                    cell,
+                    direction_index(direction),
+                    item_code,
+                    &prior_terminal.id,
+                )?;
+            }
+        }
+
+        if fixation.route_cells {
+            if selected_network_is_in_layer {
+                let selected_network_cell = fixation
+                    .route_cell_network_cell_index
+                    .map(|index| {
+                        selected_network_cells
+                            .iter()
+                            .nth(index)
+                            .copied()
+                            .ok_or_else(|| {
+                                reference_mismatch(
+                                    "route-cell network cell index",
+                                    &index.to_string(),
+                                )
+                            })
+                    })
+                    .transpose()?;
+                for (cell, variable) in layer.route_cells.iter().copied().enumerate() {
+                    let occupied = selected_network_cell.map_or_else(
+                        || {
+                            fixation.route_cell_network_index.map_or_else(
+                                || reference_cells.contains(&cell),
+                                |_| selected_network_cells.contains(&cell),
+                            )
+                        },
+                        |selected| selected == cell,
+                    );
+                    if fixation
+                        .route_cell_transport
+                        .is_some_and(|transport| transport != layer.transport)
+                        || fixation
+                            .route_cell_value
+                            .is_some_and(|selected| selected != occupied)
+                    {
+                        continue;
+                    }
+                    fix_reference_value(solver, variable, i32::from(occupied), tag);
+                }
+            }
+        }
+        if fixation.arm_items {
+            for (cell, items) in layer.arm_items.iter().enumerate() {
+                for (direction, variable) in items.iter().copied().enumerate() {
+                    fix_reference_value(
+                        solver,
+                        variable,
+                        reference_arm_items[cell][direction],
+                        tag,
+                    );
+                }
+            }
+        }
+        if fixation.arc_activation || fixation.arc_flow {
+            for arc in &layer.arcs {
+                let flow = reference_arc_flows
+                    .get(&(arc.from, arc.to))
+                    .copied()
+                    .unwrap_or(0);
+                if fixation.arc_activation {
+                    fix_reference_value(solver, arc.selected, i32::from(flow > 0), tag);
+                }
+                if fixation.arc_flow {
+                    fix_reference_value(solver, arc.flow, flow, tag);
+                }
+            }
+        }
+    }
+
+    if fixation.topology_components {
+        for branch in branches {
+            let position = world_position(branch.cell, input.width);
+            let selected = reference.logistics_components.iter().any(|component| {
+                component.transport == branch.transport
+                    && component.kind == branch.kind
+                    && component.component == branch.component
+                    && component.position == position
+                    && component.rotation == branch.rotation
+            });
+            fix_reference_value(solver, branch.selected, i32::from(selected), tag);
+        }
+        for bridge in bridges {
+            let position = world_position(bridge.cell, input.width);
+            let prior = reference.logistics_components.iter().find(|component| {
+                component.transport == bridge.transport
+                    && component.kind == LogisticsComponentKind::Bridge
+                    && component.component == bridge.component
+                    && component.position == position
+            });
+            fix_reference_value(solver, bridge.selected, i32::from(prior.is_some()), tag);
+            for (rotation, variable) in &bridge.rotations {
+                fix_reference_value(
+                    solver,
+                    *variable,
+                    i32::from(prior.is_some_and(|component| component.rotation == *rotation)),
+                    tag,
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+fn reference_terminal_arm_direction(
+    input: &ModelInput,
+    reference: &IntegratedLayoutReport,
+    terminal: &TransportNetworkTerminal,
+) -> Result<CardinalDirection, IntegratedLayoutDiagnostic> {
+    match &terminal.endpoint {
+        TransportNetworkEndpoint::External { side, .. } => Ok(edge_direction(*side)),
+        TransportNetworkEndpoint::Facility { instance, port } => {
+            let placement = reference
+                .placements
+                .iter()
+                .find(|placement| placement.instance == *instance)
+                .ok_or_else(|| reference_mismatch("terminal placement", instance))?;
+            let instance_input = input
+                .instances
+                .iter()
+                .find(|candidate| candidate.id == *instance)
+                .ok_or_else(|| reference_mismatch("terminal facility", instance))?;
+            let port = instance_input
+                .definition
+                .ports
+                .iter()
+                .find(|candidate| candidate.id == *port)
+                .ok_or_else(|| reference_mismatch("terminal facility port", port))?;
+            Ok(opposite_direction(edge_direction(
+                port.edge.rotated_clockwise(placement.rotation),
+            )))
+        }
+    }
+}
+
+fn reference_position_cell(
+    input: &ModelInput,
+    x: i64,
+    y: i64,
+    entity: &str,
+) -> Result<usize, IntegratedLayoutDiagnostic> {
+    let x = i32::try_from(x).map_err(|_| reference_mismatch("grid x", entity))?;
+    let y = i32::try_from(y).map_err(|_| reference_mismatch("grid y", entity))?;
+    if x < 0 || y < 0 || x >= input.width || y >= input.height {
+        return Err(reference_mismatch("in-bounds grid position", entity));
+    }
+    y.checked_mul(input.width)
+        .and_then(|value| value.checked_add(x))
+        .and_then(|value| usize::try_from(value).ok())
+        .ok_or_else(|| reference_mismatch("grid cell", entity))
+}
+
+fn orthogonally_adjacent(from: usize, to: usize, width: i32) -> bool {
+    let width = usize::try_from(width).expect("validated grid width is positive");
+    let (from_x, from_y) = (from % width, from / width);
+    let (to_x, to_y) = (to % width, to / width);
+    from_x.abs_diff(to_x) + from_y.abs_diff(to_y) == 1
+}
+
+fn set_reference_arm_item(
+    arm_items: &mut [[i32; 4]],
+    cell: usize,
+    direction: usize,
+    item_code: i32,
+    entity: &str,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let previous = arm_items[cell][direction];
+    if previous != 0 && previous != item_code {
+        return Err(reference_mismatch("unique directional arm item", entity));
+    }
+    arm_items[cell][direction] = item_code;
+    Ok(())
+}
+
+fn fix_reference_value(
+    solver: &mut RecordedModel,
+    variable: DomainId,
+    value: i32,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) {
+    solver.post_equals(
+        ConstraintFamily::ResearchFixation,
+        vec![variable.scaled(1)],
+        value,
+        value.unsigned_abs() as u64,
+        tag,
+    );
 }
 
 fn successful_ablation_reference(

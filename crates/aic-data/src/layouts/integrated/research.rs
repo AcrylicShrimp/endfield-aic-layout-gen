@@ -18,6 +18,7 @@ mod coordinate_partition;
 mod dimension_sweep;
 mod reference_ablation;
 mod rotation_partition;
+mod routing_state_breakdown;
 mod transport_tile_cap;
 
 pub use coordinate_partition::{
@@ -43,6 +44,13 @@ pub use reference_ablation::{
     Phase2ReferenceAblationKind, Phase2ReferenceAblationReport, diagnose_phase2_reference_ablation,
 };
 pub use rotation_partition::diagnose_cumulative_facility_rotation_partitions;
+pub use routing_state_breakdown::{
+    ROUTE_CELL_BREAKDOWN_SCHEMA_VERSION, ROUTING_STATE_BREAKDOWN_SCHEMA_VERSION,
+    RouteCellBreakdownCaseReport, RouteCellBreakdownReport, RouteCellLayerScope,
+    RouteCellValueScope, RoutingStateBreakdownCaseReport, RoutingStateBreakdownReport,
+    RoutingStateFamily, RoutingStateMatrixKind, diagnose_phase2_route_cell_breakdown,
+    diagnose_phase2_routing_state_breakdown,
+};
 pub use transport_tile_cap::{
     TRANSPORT_TILE_CAP_DIAGNOSIS_SCHEMA_VERSION, TransportTileCapCaseReport,
     TransportTileCapDiagnosisReport, diagnose_cumulative_transport_tile_caps,

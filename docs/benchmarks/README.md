@@ -82,6 +82,13 @@ problem. Caps 48, 64, 80, and 96 all remain unknown at five seconds, and the kno
 remains unknown at thirty seconds. This shows that a monotone tile-budget search is logically exact
 but does not by itself break the coupled routing cliff.
 
+The thirty-second checkpoint,
+`heavy-xiranite-minimum-rate.thirty-second-phase2-routing-state-breakdown-report.md`, splits the
+remaining fixed-placement/fixed-terminal Phase 2 cliff across routing state families, transport
+layers, Boolean values, commodity networks, and individual physical cells. It isolates the smallest
+observed trigger to one occupied pipe cell immediately downstream of a facility demand terminal and
+identifies the terminal-approach/support disjunction as the next exact reformulation target.
+
 Regenerate it from a release binary with:
 
 ```bash

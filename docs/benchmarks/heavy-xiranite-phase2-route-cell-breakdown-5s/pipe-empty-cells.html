@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIC Layout Wireframe</title>
+<style>
+  :root { color-scheme: dark; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #071019; color: #dbeeff; overflow: hidden; }
+  #aic-layout-viewer { height: 100vh; display: grid; grid-template-rows: auto 1fr; }
+  .toolbar { display: flex; align-items: center; gap: 14px; min-height: 48px; padding: 8px 12px; border-bottom: 1px solid #294153; background: #0b1722; flex-wrap: wrap; }
+  .title { color: #f2f8ff; font-weight: 700; letter-spacing: .04em; }
+  .run-status { border: 1px solid currentColor; padding: 3px 6px; font-size: 11px; }
+  .run-status.success { color: #6ff2bd; }
+  .run-status.failure { color: #ff6b9c; }
+  .metrics { color: #8ba8bd; font-size: 12px; margin-right: auto; }
+  .phase-nav { display: inline-flex; align-items: center; gap: 7px; }
+  .phase-label { min-width: 92px; color: #cbe7f8; font-size: 12px; text-align: center; }
+  button { appearance: none; border: 1px solid #35536a; background: transparent; color: #b9cee0; padding: 5px 8px; font: inherit; font-size: 12px; cursor: pointer; }
+  button[aria-pressed="false"] { color: #567083; border-color: #253c4d; text-decoration: line-through; }
+  button:hover, button:focus-visible { border-color: #8ecbff; color: #eaf6ff; outline: none; }
+  .swatch { display: inline-block; width: 16px; height: 0; margin-right: 5px; vertical-align: middle; border-top: 2px solid currentColor; }
+  .belt-swatch { color: #f1b84b; }
+  .pipe-swatch { color: #59c7f2; border-top-style: dashed; }
+  .stage { min-height: 0; position: relative; }
+  svg { display: block; width: 100%; height: 100%; background: #071019; touch-action: none; cursor: grab; }
+  svg.dragging { cursor: grabbing; }
+  .grid-minor { stroke: #122432; stroke-width: .06; }
+  .grid-major { stroke: #1d3547; stroke-width: .12; }
+  .route-cell { shape-rendering: crispEdges; }
+  .route-cell-belt { fill: #f1b84b; fill-opacity: .58; stroke: #ffd77c; stroke-width: .05; }
+  .route-cell-pipe { fill: #59c7f2; fill-opacity: .62; stroke: #b3ebff; stroke-width: .06; }
+  .route-direction { fill: #071019; stroke: #ffffff; stroke-width: .7px; vector-effect: non-scaling-stroke; pointer-events: none; }
+  [data-inspect] { cursor: pointer; }
+  .route-group.selected .route-cell { fill-opacity: .95; stroke: #ffffff; stroke-width: .12; }
+  .endpoint.selected, .facility.selected, .component.selected { stroke: #ffffff; stroke-width: 2px; }
+  .endpoint { vector-effect: non-scaling-stroke; stroke-width: 1px; }
+  .endpoint-belt { fill: #f1b84b; stroke: #251a07; }
+  .endpoint-pipe { fill: #59c7f2; stroke: #071c26; }
+  .port-input { stroke: #6ff2bd; stroke-width: 1.6px; stroke-linejoin: round; }
+  .port-output { stroke: #ff6b9c; stroke-width: 1.6px; stroke-linejoin: round; }
+  .external { fill: #071019; stroke: #ffec99; stroke-width: 1.5px; vector-effect: non-scaling-stroke; }
+  .facility { fill: #10293a; fill-opacity: .92; stroke: #d7efff; stroke-width: 1.25px; vector-effect: non-scaling-stroke; }
+  .facility.introduced { fill: #163c34; stroke: #6ff2bd; stroke-width: 2px; }
+  .facility:hover { fill: #19415a; stroke: #ffffff; stroke-width: 2.5px; }
+  .facility-label { fill: #dff3ff; font-size: .72px; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .facility-index { fill: #7ea6bb; font-size: .62px; }
+  .component { fill: #071019; vector-effect: non-scaling-stroke; }
+  .bridge { stroke: #ff6b85; stroke-width: 1.5px; }
+  .splitter { stroke: #c4f06f; stroke-width: 1.5px; }
+  .converger { stroke: #d99cff; stroke-width: 1.5px; }
+  .hidden-layer { display: none; }
+  .hidden-phase { display: none; }
+  .help { position: absolute; right: 10px; bottom: 8px; color: #6f8b9e; font-size: 11px; pointer-events: none; }
+  .inspect-panel { position: absolute; top: 12px; right: 12px; width: min(420px, calc(100% - 24px)); max-height: calc(100% - 48px); overflow: auto; border: 1px solid #5f8198; background: rgba(7, 16, 25, .96); box-shadow: 0 12px 36px rgba(0, 0, 0, .45); padding: 12px; z-index: 3; }
+  .inspect-panel[hidden] { display: none; }
+  .inspect-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; color: #f2f8ff; }
+  .inspect-content { margin: 0; color: #bfe6fb; font: inherit; font-size: 12px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<div id="aic-layout-viewer">
+  <div class="toolbar">
+    <span class="title">AIC LAYOUT WIREFRAME</span>
+    <span class="run-status success">FEASIBLE</span>
+    <span class="phase-nav"><button type="button" data-previous>Previous</button><span class="phase-label" data-phase-label></span><button type="button" data-next>Next</button></span>
+    <span class="metrics" data-metrics>12×12 · 3 facilities · 109 occupied transport tiles (belt 54 / pipe 55) · 9 bridges</span>
+    <button type="button" data-toggle="belt-layer" aria-pressed="true"><span class="swatch belt-swatch"></span>Belt (<span data-belt-summary>54 tiles</span>)</button>
+    <button type="button" data-toggle="pipe-layer" aria-pressed="true"><span class="swatch pipe-swatch"></span>Pipe (<span data-pipe-summary>55 tiles</span>)</button>
+    <span title="Arrows follow material flow"><span style="color:#6ff2bd">➤ IN</span> · <span style="color:#ff6b9c">➤ OUT</span></span>
+    <button type="button" data-toggle="component-layer" aria-pressed="true">Components</button>
+    <button type="button" data-toggle="label-layer" aria-pressed="true">Labels</button>
+    <button type="button" data-reset>Reset view</button>
+  </div>
+  <div class="stage">
+    <svg role="img" aria-label="AIC facility and logistics layout" viewBox="-2 -2 16 16" data-base-view="-2 -2 16 16">
+      <defs>
+        <pattern id="minor-grid" width="1" height="1" patternUnits="userSpaceOnUse"><path class="grid-minor" d="M 1 0 L 0 0 0 1" fill="none"/></pattern>
+        <pattern id="major-grid" width="10" height="10" patternUnits="userSpaceOnUse"><rect width="10" height="10" fill="url(#minor-grid)"/><path class="grid-major" d="M 10 0 L 0 0 0 10" fill="none"/></pattern>
+      </defs>
+      <g class="phase-page" data-base-view="-2 -2 16 16" data-phase-label="Final layout" data-metrics="12×12 · 3 facilities · 109 occupied transport tiles (belt 54 / pipe 55) · 9 bridges" data-belt-summary="54 tiles" data-pipe-summary="55 tiles">
+        <rect x="0" y="0" width="12" height="12" fill="url(#major-grid)" stroke="#4a6a80" stroke-width=".2"/>
+        <g class="belt-layer">
+          <g class="route-group" data-inspect="Belt transport network | network:belt:item-carbon-enr | item 안정된 카본 조각 (item-carbon-enr) | 4 terminals | 10 occupied tiles | 2 logical requirements">
+            <rect class="route-cell route-cell-belt" x="3" y="0" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="4" y="0" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="9" y="9" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="10" y="9" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="11" y="9" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="9" y="10" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="11" y="10" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="9" y="11" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="10" y="11" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="11" y="11" width="1" height="1"/>
+            <polygon class="route-direction" points="9.84,9.50 9.26,9.72 9.26,9.28"/>
+            <polygon class="route-direction" points="10.84,9.50 10.26,9.72 10.26,9.28"/>
+            <polygon class="route-direction" points="11.50,9.84 11.28,9.26 11.72,9.26"/>
+            <polygon class="route-direction" points="9.50,10.16 9.72,10.74 9.28,10.74"/>
+            <polygon class="route-direction" points="11.50,10.84 11.28,10.26 11.72,10.26"/>
+            <polygon class="route-direction" points="9.50,11.16 9.72,11.74 9.28,11.74"/>
+            <polygon class="route-direction" points="10.16,11.50 10.74,11.28 10.74,11.72"/>
+            <polygon class="route-direction" points="11.16,11.50 11.74,11.28 11.74,11.72"/>
+          </g>
+          <polygon class="endpoint port-output endpoint-belt external" data-inspect="factory external input | item 안정된 카본 조각 (item-carbon-enr) | rate 1/2 per second (0.500/s) | external iterative-external:wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb beside North facility port | network network:belt:item-carbon-enr" points="4.50,0.98 4.14,0.16 4.86,0.16"/>
+          <polygon class="endpoint port-input endpoint-belt" data-inspect="facility input port | item 안정된 카본 조각 (item-carbon-enr) | rate 1/2 per second (0.500/s) | facility facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0 port input-belt-1 | network network:belt:item-carbon-enr" points="3.50,1.98 3.14,1.16 3.86,1.16"/>
+          <polygon class="endpoint port-output endpoint-belt external" data-inspect="factory external input | item 안정된 카본 조각 (item-carbon-enr) | rate 1/2 per second (0.500/s) | external iterative-external:wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8 beside North facility port | network network:belt:item-carbon-enr" points="3.50,0.98 3.14,0.16 3.86,0.16"/>
+          <polygon class="endpoint port-input endpoint-belt" data-inspect="facility input port | item 안정된 카본 조각 (item-carbon-enr) | rate 1/2 per second (0.500/s) | facility facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0 port input-belt-0 | network network:belt:item-carbon-enr" points="4.50,1.98 4.14,1.16 4.86,1.16"/>
+          <g class="route-group" data-inspect="Belt transport network | network:belt:item-xiranite-enr-powder | item 중식양 (item-xiranite-enr-powder) | 2 terminals | 14 occupied tiles | 1 logical requirements">
+            <rect class="route-cell route-cell-belt" x="5" y="0" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="6" y="0" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="7" y="0" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="8" y="0" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="5" y="1" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="6" y="1" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="5" y="2" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="6" y="2" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="5" y="3" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="6" y="3" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="5" y="4" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="6" y="4" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="5" y="5" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="6" y="5" width="1" height="1"/>
+            <polygon class="route-direction" points="6.50,1.84 6.28,1.26 6.72,1.26"/>
+            <polygon class="route-direction" points="5.50,4.84 5.28,4.26 5.72,4.26"/>
+          </g>
+          <polygon class="endpoint port-output endpoint-belt" data-inspect="facility output port | item 중식양 (item-xiranite-enr-powder) | rate 1/10 per second (0.100/s) | facility facility-instance:recipe-occurrence:/target:0 port output-belt-1 | network network:belt:item-xiranite-enr-powder" points="8.50,1.02 8.86,1.84 8.14,1.84"/>
+          <polygon class="endpoint port-input endpoint-belt external" data-inspect="factory external output | item 중식양 (item-xiranite-enr-powder) | rate 1/10 per second (0.100/s) | external target:/target-output beside North facility port | network network:belt:item-xiranite-enr-powder" points="7.50,0.02 7.86,0.84 7.14,0.84"/>
+          <g class="route-group" data-inspect="Belt transport network | network:belt:item-xiranite-powder | item 식양 (item-xiranite-powder) | 4 terminals | 30 occupied tiles | 2 logical requirements">
+            <rect class="route-cell route-cell-belt" x="4" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="5" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="6" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="7" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="8" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="9" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="10" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="11" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="6" y="7" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="7" y="7" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="8" y="7" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="9" y="7" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="10" y="7" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="11" y="7" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="6" y="8" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="7" y="8" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="8" y="8" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="10" y="8" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="11" y="8" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="6" y="9" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="7" y="9" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="8" y="9" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="10" y="9" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="6" y="10" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="7" y="10" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="8" y="10" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="9" y="10" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="10" y="10" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="7" y="11" width="1" height="1"/>
+            <rect class="route-cell route-cell-belt" x="8" y="11" width="1" height="1"/>
+            <polygon class="route-direction" points="8.84,6.50 8.26,6.72 8.26,6.28"/>
+            <polygon class="route-direction" points="6.50,8.84 6.28,8.26 6.72,8.26"/>
+            <polygon class="route-direction" points="10.50,9.16 10.72,9.74 10.28,9.74"/>
+            <polygon class="route-direction" points="7.50,11.16 7.72,11.74 7.28,11.74"/>
+          </g>
+          <polygon class="endpoint port-output endpoint-belt" data-inspect="facility output port | item 식양 (item-xiranite-powder) | rate 1/2 per second (0.500/s) | facility facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0 port output-belt-0 | network network:belt:item-xiranite-powder" points="4.50,5.98 4.14,5.16 4.86,5.16"/>
+          <polygon class="endpoint port-input endpoint-belt" data-inspect="facility input port | item 식양 (item-xiranite-powder) | rate 1/2 per second (0.500/s) | facility facility-instance:recipe-occurrence:/target:0 port input-belt-3 | network network:belt:item-xiranite-powder" points="10.50,5.02 10.86,5.84 10.14,5.84"/>
+          <polygon class="endpoint port-output endpoint-belt external" data-inspect="factory external input | item 식양 (item-xiranite-powder) | rate 1/2 per second (0.500/s) | external iterative-external:wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e beside East facility port | network network:belt:item-xiranite-powder" points="11.02,8.50 11.84,8.14 11.84,8.86"/>
+          <polygon class="endpoint port-input endpoint-belt" data-inspect="facility input port | item 식양 (item-xiranite-powder) | rate 1/2 per second (0.500/s) | facility facility-instance:recipe-occurrence:/target:0 port input-belt-2 | network network:belt:item-xiranite-powder" points="9.50,5.02 9.86,5.84 9.14,5.84"/>
+        </g>
+        <g class="pipe-layer">
+          <g class="route-group" data-inspect="Pipe transport network | network:pipe:item-liquid-sewage | item 오염수 (item-liquid-sewage) | 2 terminals | 2 occupied tiles | 1 logical requirements">
+            <rect class="route-cell route-cell-pipe" x="0" y="7" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="0" y="8" width="1" height="1"/>
+            <polygon class="route-direction" points="0.50,7.84 0.28,7.26 0.72,7.26"/>
+          </g>
+          <polygon class="endpoint port-output endpoint-pipe external" data-inspect="factory external input | item 오염수 (item-liquid-sewage) | rate 1/2 per second (0.500/s) | external external-input:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-sewage beside West facility port | network network:pipe:item-liquid-sewage" points="0.98,7.50 0.16,7.86 0.16,7.14"/>
+          <polygon class="endpoint port-input endpoint-pipe" data-inspect="facility input port | item 오염수 (item-liquid-sewage) | rate 1/2 per second (0.500/s) | facility facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0 port input-pipe-2 | network network:pipe:item-liquid-sewage" points="1.98,8.50 1.16,8.86 1.16,8.14"/>
+          <g class="route-group" data-inspect="Pipe transport network | network:pipe:item-liquid-water | item 청정수 (item-liquid-water) | 2 terminals | 9 occupied tiles | 1 logical requirements">
+            <rect class="route-cell route-cell-pipe" x="5" y="3" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="5" y="4" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="5" y="5" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="0" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="1" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="2" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="3" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="4" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="5" y="6" width="1" height="1"/>
+            <polygon class="route-direction" points="5.50,4.16 5.72,4.74 5.28,4.74"/>
+            <polygon class="route-direction" points="5.50,5.16 5.72,5.74 5.28,5.74"/>
+            <polygon class="route-direction" points="0.84,6.50 0.26,6.72 0.26,6.28"/>
+            <polygon class="route-direction" points="1.84,6.50 1.26,6.72 1.26,6.28"/>
+            <polygon class="route-direction" points="2.84,6.50 2.26,6.72 2.26,6.28"/>
+            <polygon class="route-direction" points="3.84,6.50 3.26,6.72 3.26,6.28"/>
+            <polygon class="route-direction" points="4.84,6.50 4.26,6.72 4.26,6.28"/>
+            <polygon class="route-direction" points="5.50,6.16 5.72,6.74 5.28,6.74"/>
+          </g>
+          <polygon class="endpoint port-output endpoint-pipe external" data-inspect="factory external input | item 청정수 (item-liquid-water) | rate 1/2 per second (0.500/s) | external external-input:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-liquid-water beside West facility port | network network:pipe:item-liquid-water" points="0.98,6.50 0.16,6.86 0.16,6.14"/>
+          <polygon class="endpoint port-input endpoint-pipe" data-inspect="facility input port | item 청정수 (item-liquid-water) | rate 1/2 per second (0.500/s) | facility facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0 port input-pipe-5 | network network:pipe:item-liquid-water" points="4.02,3.50 4.84,3.14 4.84,3.86"/>
+          <g class="route-group" data-inspect="Pipe transport network | network:pipe:item-liquid-xiranite | item 액화 식양 (item-liquid-xiranite) | 2 terminals | 6 occupied tiles | 1 logical requirements">
+            <rect class="route-cell route-cell-pipe" x="5" y="0" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="6" y="0" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="5" y="1" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="6" y="1" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="0" y="10" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="0" y="11" width="1" height="1"/>
+            <polygon class="route-direction" points="5.84,0.50 5.26,0.72 5.26,0.28"/>
+            <polygon class="route-direction" points="6.50,0.84 6.28,0.26 6.72,0.26"/>
+            <polygon class="route-direction" points="5.50,1.16 5.72,1.74 5.28,1.74"/>
+            <polygon class="route-direction" points="6.16,1.50 6.74,1.28 6.74,1.72"/>
+            <polygon class="route-direction" points="0.50,11.16 0.72,11.74 0.28,11.74"/>
+          </g>
+          <polygon class="endpoint port-output endpoint-pipe external" data-inspect="factory external input | item 액화 식양 (item-liquid-xiranite) | rate 1/2 per second (0.500/s) | external iterative-external:wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143 beside West facility port | network network:pipe:item-liquid-xiranite" points="0.98,11.50 0.16,11.86 0.16,11.14"/>
+          <polygon class="endpoint port-input endpoint-pipe" data-inspect="facility input port | item 액화 식양 (item-liquid-xiranite) | rate 1/2 per second (0.500/s) | facility facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0 port input-pipe-3 | network network:pipe:item-liquid-xiranite" points="1.98,10.50 1.16,10.86 1.16,10.14"/>
+          <g class="route-group" data-inspect="Pipe transport network | network:pipe:item-liquid-xiranite-lowpoly | item 불활성 양정 폐액 (item-liquid-xiranite-lowpoly) | 2 terminals | 13 occupied tiles | 1 logical requirements">
+            <rect class="route-cell route-cell-pipe" x="8" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="9" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="10" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="8" y="7" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="10" y="7" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="6" y="8" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="7" y="8" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="8" y="8" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="10" y="8" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="10" y="9" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="10" y="10" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="10" y="11" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="11" y="11" width="1" height="1"/>
+            <polygon class="route-direction" points="10.50,7.84 10.28,7.26 10.72,7.26"/>
+          </g>
+          <polygon class="endpoint port-output endpoint-pipe" data-inspect="facility output port | item 불활성 양정 폐액 (item-liquid-xiranite-lowpoly) | rate 1/2 per second (0.500/s) | facility facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0 port output-pipe-2 | network network:pipe:item-liquid-xiranite-lowpoly" points="5.98,8.50 5.16,8.86 5.16,8.14"/>
+          <polygon class="endpoint port-input endpoint-pipe external" data-inspect="factory external output | item 불활성 양정 폐액 (item-liquid-xiranite-lowpoly) | rate 1/2 per second (0.500/s) | external surplus:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:item-liquid-xiranite-lowpoly beside East facility port | network network:pipe:item-liquid-xiranite-lowpoly" points="11.98,11.50 11.16,11.86 11.16,11.14"/>
+          <g class="route-group" data-inspect="Pipe transport network | network:pipe:item-liquid-xiranite-poly | item 양정 폐액 (item-liquid-xiranite-poly) | 2 terminals | 25 occupied tiles | 1 logical requirements">
+            <rect class="route-cell route-cell-pipe" x="6" y="3" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="6" y="4" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="6" y="5" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="6" y="6" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="6" y="7" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="7" y="7" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="8" y="7" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="9" y="7" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="10" y="7" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="11" y="7" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="7" y="8" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="9" y="8" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="10" y="8" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="11" y="8" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="7" y="9" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="8" y="9" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="9" y="9" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="10" y="9" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="11" y="9" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="6" y="10" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="7" y="10" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="8" y="10" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="9" y="10" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="6" y="11" width="1" height="1"/>
+            <rect class="route-cell route-cell-pipe" x="7" y="11" width="1" height="1"/>
+            <polygon class="route-direction" points="7.16,7.50 7.74,7.28 7.74,7.72"/>
+            <polygon class="route-direction" points="10.16,8.50 10.74,8.28 10.74,8.72"/>
+            <polygon class="route-direction" points="6.84,10.50 6.26,10.72 6.26,10.28"/>
+          </g>
+          <polygon class="endpoint port-output endpoint-pipe" data-inspect="facility output port | item 양정 폐액 (item-liquid-xiranite-poly) | rate 1/2 per second (0.500/s) | facility facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0 port output-pipe-3 | network network:pipe:item-liquid-xiranite-poly" points="5.98,10.50 5.16,10.86 5.16,10.14"/>
+          <polygon class="endpoint port-input endpoint-pipe" data-inspect="facility input port | item 양정 폐액 (item-liquid-xiranite-poly) | rate 1/2 per second (0.500/s) | facility facility-instance:recipe-occurrence:/target:0 port input-pipe-5 | network network:pipe:item-liquid-xiranite-poly" points="7.98,3.50 7.16,3.86 7.16,3.14"/>
+        </g>
+      <g class="component-layer">
+        <circle class="component splitter" data-inspect="logistics component | component:984d773166c3b629505f4edfac09945a1e6d749bb4684c76b1e7fc76d733686a | log-splitter | Belt" cx="5.5" cy="2.5" r=".34"/>
+        <circle class="component converger" data-inspect="logistics component | component:c17f501ff2c144ad66b887ac4f71df24cf30d8dd43fdd6f45608fa21a54e8f79 | log-converger | Belt" cx="6.5" cy="2.5" r=".34"/>
+        <circle class="component converger" data-inspect="logistics component | component:66536c266190e7d868b248e7af001dddc475bf4e50913a76ba8ece8c0596153e | log-converger | Belt" cx="5.5" cy="3.5" r=".34"/>
+        <circle class="component splitter" data-inspect="logistics component | component:4e5b5e5367b943a516afc24da6dc492739450173cc5dc3c9ef95931aac9ade92 | log-splitter | Belt" cx="6.5" cy="3.5" r=".34"/>
+        <circle class="component splitter" data-inspect="logistics component | component:c9e1584bd433ef69a50a8cb7d31e064e7f2cf9a5a207e30e1a88cb3b217ff4ff | log-splitter | Belt" cx="5.5" cy="4.5" r=".34"/>
+        <circle class="component converger" data-inspect="logistics component | component:99e2f48a3127dc358990a7cef8d5ced15dce41aa3c6a386166040159d0999d99 | log-converger | Belt" cx="6.5" cy="4.5" r=".34"/>
+        <circle class="component splitter" data-inspect="logistics component | component:66ef23617ee41139bbbac6086332a587dd62097f3c11b1f5741a8689ac92d904 | log-pipe-splitter | Pipe" cx="7.5" cy="7.5" r=".34"/>
+        <circle class="component converger" data-inspect="logistics component | component:6a7a463db8a4085a3a3c5aac8260fd19386be236072cf39dbecde11b60a9ec0c | log-pipe-converger | Pipe" cx="11.5" cy="8.5" r=".34"/>
+        <circle class="component splitter" data-inspect="logistics component | component:87ca4d0dc0a4dedd53cb81e647ffe6da219440bc284bb720d22d1e6f83f92f18 | log-pipe-splitter | Pipe" cx="9.5" cy="9.5" r=".34"/>
+        <circle class="component converger" data-inspect="logistics component | component:f084c1794d3c26be93b8a92faba6f129b1ba5769c9b0849fb96cbe9a5021bc37 | log-pipe-converger | Pipe" cx="6.5" cy="10.5" r=".34"/>
+        <circle class="component splitter" data-inspect="logistics component | component:84febf84cc18e7561876bd38b51dcd0ddfd9bae31c7b497ae44c431f8b21bc85 | log-pipe-splitter | Pipe" cx="7.5" cy="10.5" r=".34"/>
+        <circle class="component converger" data-inspect="logistics component | component:0c647a36bf097d3d0fc511af9840adb2579d76b802d11c2604ccbfd8e4fce8b3 | log-pipe-converger | Pipe" cx="8.5" cy="10.5" r=".34"/>
+        <circle class="component bridge" data-inspect="logistics component | component:ccf829601afc1c36166a20344978b4ad8e68c477a152866798348b1ee71b6530 | log-connector | Belt" cx="10.5" cy="9.5" r=".34"/>
+        <circle class="component bridge" data-inspect="logistics component | component:c46727ef2e81ee92a943b5cf36c66fb47c5b3ac64671c66748046ac15ddb47f6 | log-connector | Belt" cx="7.5" cy="10.5" r=".34"/>
+        <circle class="component bridge" data-inspect="logistics component | component:e6bf4b59dc3746a1e3a78b7298b9bc8fd229a1e090936fdeed36bf4888603d6d | log-connector | Belt" cx="8.5" cy="10.5" r=".34"/>
+        <circle class="component bridge" data-inspect="logistics component | component:0652858f933de309923f385129df631030ced64075b2c84dd21b299305944de0 | log-connector | Belt" cx="9.5" cy="10.5" r=".34"/>
+        <circle class="component bridge" data-inspect="logistics component | component:852749b6d44b9bae7a9fcff882103dfefbae6a53d7e7335b3a7b57a875898cfb | log-pipe-connector | Pipe" cx="8.5" cy="7.5" r=".34"/>
+        <circle class="component bridge" data-inspect="logistics component | component:9c2390ab39b1386994aaf0a23f1656db5d2d2864dde497143f6eb03863291041 | log-pipe-connector | Pipe" cx="10.5" cy="7.5" r=".34"/>
+        <circle class="component bridge" data-inspect="logistics component | component:4ecef87f3fbb57beb2601c8b4a427fd6f2b26df21a46432115768f055cb4fa00 | log-pipe-connector | Pipe" cx="7.5" cy="8.5" r=".34"/>
+        <circle class="component bridge" data-inspect="logistics component | component:59420c4f63b94b16cec68399f3c480c498ffdc1b85a0798dd28b1983a66bc222 | log-pipe-connector | Pipe" cx="10.5" cy="8.5" r=".34"/>
+        <circle class="component bridge" data-inspect="logistics component | component:3a36e0ba86ddfd122a09d548a438235543d69e06cb07eba7f408261a70eaf1d2 | log-pipe-connector | Pipe" cx="10.5" cy="9.5" r=".34"/>
+      </g>
+      <g class="facility-layer">
+        <rect class="facility" data-inspect="F00 | 반응기 | mix-pool-1-mode-liquid | mode 액체 모드 | recipe pool-liquid-xiranite-poly-1 | facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0 | (1, 7) 5x5 r0" x="1" y="7" width="5" height="5"/>
+        <rect class="facility" data-inspect="F01 | 천화로 | xiranite-oven-1-mode-liquid | mode 액체 모드 | recipe xiranite-oven-xiranite-powder-1 | facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0 | (0, 1) 5x5 r180" x="0" y="1" width="5" height="5"/>
+        <rect class="facility" data-inspect="F02 | 천화로 | xiranite-oven-1-mode-liquid | mode 액체 모드 | recipe xiranite-oven-xiranite-enr-powder-1 | facility-instance:recipe-occurrence:/target:0 | (7, 1) 5x5 r0" x="7" y="1" width="5" height="5"/>
+      </g>
+      <g class="label-layer">
+        <text class="facility-label" x="3.50" y="9.05"><tspan x="3.50" style="font-size:0.720px">반응기</tspan><tspan class="facility-index" x="3.50" dy="1">F00</tspan></text>
+        <text class="facility-label" x="2.50" y="3.05"><tspan x="2.50" style="font-size:0.720px">천화로</tspan><tspan class="facility-index" x="2.50" dy="1">F01</tspan></text>
+        <text class="facility-label" x="9.50" y="3.05"><tspan x="9.50" style="font-size:0.720px">천화로</tspan><tspan class="facility-index" x="9.50" dy="1">F02</tspan></text>
+      </g>
+      </g>
+    </svg>
+    <aside class="inspect-panel" data-inspector hidden><div class="inspect-header"><strong>Layout details</strong><button type="button" data-inspector-close>Close</button></div><pre class="inspect-content" data-inspector-content></pre></aside>
+    <div class="help">wheel: zoom · drag: pan · click: inspect</div>
+  </div>
+</div>
+<script>
+(() => {
+  const root = document.getElementById('aic-layout-viewer');
+  const svg = root.querySelector('svg');
+  const pages = Array.from(root.querySelectorAll('.phase-page'));
+  let pageIndex = pages.length - 1;
+  let base = pages[pageIndex].dataset.baseView.split(' ').map(Number);
+  let view = base.slice();
+  let drag = null;
+  let pinned = null;
+  const inspector = root.querySelector('[data-inspector]');
+  const inspectorContent = root.querySelector('[data-inspector-content]');
+  const inspectTarget = (target) => target instanceof Element ? target.closest('[data-inspect]') : null;
+  const showDetails = (target) => {
+    if (!target) { inspector.hidden = true; inspectorContent.textContent = ''; return; }
+    inspector.hidden = false;
+    inspectorContent.textContent = target.dataset.inspect.split(' | ').join('\n');
+  };
+  const selectDetails = (target) => {
+    if (pinned) pinned.classList.remove('selected');
+    pinned = target;
+    if (pinned) pinned.classList.add('selected');
+    showDetails(pinned);
+  };
+  const applyView = () => svg.setAttribute('viewBox', view.join(' '));
+  const showPage = (nextIndex) => {
+    pageIndex = Math.max(0, Math.min(pages.length - 1, nextIndex));
+    pages.forEach((page, index) => page.classList.toggle('hidden-phase', index !== pageIndex));
+    const page = pages[pageIndex];
+    base = page.dataset.baseView.split(' ').map(Number);
+    view = base.slice();
+    applyView();
+    root.querySelector('[data-phase-label]').textContent = page.dataset.phaseLabel;
+    root.querySelector('[data-metrics]').textContent = page.dataset.metrics;
+    root.querySelector('[data-belt-summary]').textContent = page.dataset.beltSummary;
+    root.querySelector('[data-pipe-summary]').textContent = page.dataset.pipeSummary;
+    root.querySelector('[data-previous]').disabled = pageIndex === 0;
+    root.querySelector('[data-next]').disabled = pageIndex + 1 === pages.length;
+  };
+  root.querySelector('[data-previous]').addEventListener('click', () => showPage(pageIndex - 1));
+  root.querySelector('[data-next]').addEventListener('click', () => showPage(pageIndex + 1));
+  root.querySelectorAll('[data-toggle]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const pressed = button.getAttribute('aria-pressed') === 'true';
+      button.setAttribute('aria-pressed', String(!pressed));
+      root.querySelectorAll(`.${button.dataset.toggle}`).forEach((layer) => layer.classList.toggle('hidden-layer', pressed));
+    });
+  });
+  root.querySelector('[data-reset]').addEventListener('click', () => { view = base.slice(); applyView(); });
+  root.querySelector('[data-inspector-close]').addEventListener('click', () => selectDetails(null));
+  svg.addEventListener('wheel', (event) => {
+    event.preventDefault();
+    const rect = svg.getBoundingClientRect();
+    const px = (event.clientX - rect.left) / rect.width;
+    const py = (event.clientY - rect.top) / rect.height;
+    const factor = Math.exp(event.deltaY * 0.001);
+    const nextWidth = Math.min(base[2] * 8, Math.max(base[2] / 80, view[2] * factor));
+    const nextHeight = nextWidth * rect.height / rect.width;
+    view[0] += (view[2] - nextWidth) * px;
+    view[1] += (view[3] - nextHeight) * py;
+    view[2] = nextWidth;
+    view[3] = nextHeight;
+    applyView();
+  }, { passive: false });
+  svg.addEventListener('pointerdown', (event) => {
+    drag = { x: event.clientX, y: event.clientY, view: view.slice(), target: inspectTarget(event.target), moved: false };
+    svg.setPointerCapture(event.pointerId);
+    svg.classList.add('dragging');
+  });
+  svg.addEventListener('pointermove', (event) => {
+    if (!drag) return;
+    if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 5) return;
+    drag.moved = true;
+    const rect = svg.getBoundingClientRect();
+    view[0] = drag.view[0] - (event.clientX - drag.x) * drag.view[2] / rect.width;
+    view[1] = drag.view[1] - (event.clientY - drag.y) * drag.view[3] / rect.height;
+    applyView();
+  });
+  const stopDrag = (cancelled) => {
+    if (drag && !drag.moved && !cancelled) selectDetails(drag.target);
+    drag = null;
+    svg.classList.remove('dragging');
+  };
+  svg.addEventListener('pointerup', () => stopDrag(false));
+  svg.addEventListener('pointercancel', () => stopDrag(true));
+  showPage(pageIndex);
+})();
+</script>
+</body>
+</html>

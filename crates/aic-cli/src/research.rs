@@ -34,6 +34,7 @@ mod pair_cliff;
 mod physical_occupancy;
 mod reference_ablation;
 mod requirement_cliff;
+mod routing_state_breakdown;
 mod search_mode;
 mod shared_layer;
 mod transport_tile_cap;
@@ -591,6 +592,64 @@ pub(crate) enum ResearchCommand {
         #[arg(long, value_name = "DIR")]
         output_dir: PathBuf,
     },
+    /// Break the Phase 2 routing-only cliff into shared routing state families.
+    DiagnosePhase2RoutingStateBreakdown {
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+        #[arg(long, value_name = "INDEX")]
+        target_phase: usize,
+        #[arg(long, value_name = "CELLS")]
+        used_width: i32,
+        #[arg(long, value_name = "CELLS")]
+        used_height: i32,
+        #[arg(long, value_name = "CELL")]
+        facility_x: i32,
+        #[arg(long, value_name = "CELL")]
+        facility_y: i32,
+        #[arg(long, value_name = "INDEX")]
+        port_assignment_index: usize,
+        #[arg(long, value_name = "MILLISECONDS")]
+        prefix_case_time_limit_ms: u64,
+        #[arg(long, value_name = "MILLISECONDS")]
+        reference_time_limit_ms: u64,
+        #[arg(long, value_name = "MILLISECONDS")]
+        case_time_limit_ms: u64,
+        #[arg(long, value_name = "DIR")]
+        output_dir: PathBuf,
+    },
+    /// Split the Phase 2 route-cell support decision by layer and Boolean value.
+    DiagnosePhase2RouteCellBreakdown {
+        #[arg(long, value_name = "FILE")]
+        workload: PathBuf,
+        #[arg(long, value_name = "DIR", default_value = ".")]
+        workspace_root: PathBuf,
+        #[arg(long, value_name = "FILE")]
+        placement_request: PathBuf,
+        #[arg(long, value_name = "INDEX")]
+        target_phase: usize,
+        #[arg(long, value_name = "CELLS")]
+        used_width: i32,
+        #[arg(long, value_name = "CELLS")]
+        used_height: i32,
+        #[arg(long, value_name = "CELL")]
+        facility_x: i32,
+        #[arg(long, value_name = "CELL")]
+        facility_y: i32,
+        #[arg(long, value_name = "INDEX")]
+        port_assignment_index: usize,
+        #[arg(long, value_name = "MILLISECONDS")]
+        prefix_case_time_limit_ms: u64,
+        #[arg(long, value_name = "MILLISECONDS")]
+        reference_time_limit_ms: u64,
+        #[arg(long, value_name = "MILLISECONDS")]
+        case_time_limit_ms: u64,
+        #[arg(long, value_name = "DIR")]
+        output_dir: PathBuf,
+    },
     /// Compare the unchanged cumulative exact model against physical transport tile caps.
     DiagnoseCumulativeTransportTileCaps {
         #[arg(long, value_name = "FILE")]
@@ -978,6 +1037,64 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             case_time_limit_ms,
             output_dir,
         } => reference_ablation::run(
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            used_width,
+            used_height,
+            facility_x,
+            facility_y,
+            port_assignment_index,
+            prefix_case_time_limit_ms,
+            reference_time_limit_ms,
+            case_time_limit_ms,
+            output_dir,
+        ),
+        ResearchCommand::DiagnosePhase2RoutingStateBreakdown {
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            used_width,
+            used_height,
+            facility_x,
+            facility_y,
+            port_assignment_index,
+            prefix_case_time_limit_ms,
+            reference_time_limit_ms,
+            case_time_limit_ms,
+            output_dir,
+        } => routing_state_breakdown::run(
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            used_width,
+            used_height,
+            facility_x,
+            facility_y,
+            port_assignment_index,
+            prefix_case_time_limit_ms,
+            reference_time_limit_ms,
+            case_time_limit_ms,
+            output_dir,
+        ),
+        ResearchCommand::DiagnosePhase2RouteCellBreakdown {
+            workload,
+            workspace_root,
+            placement_request,
+            target_phase,
+            used_width,
+            used_height,
+            facility_x,
+            facility_y,
+            port_assignment_index,
+            prefix_case_time_limit_ms,
+            reference_time_limit_ms,
+            case_time_limit_ms,
+            output_dir,
+        } => routing_state_breakdown::run_route_cells(
             workload,
             workspace_root,
             placement_request,
