@@ -15,29 +15,33 @@ use super::super::{
 };
 use super::MAX_NEW_FACILITIES_PER_GROWTH_PHASE;
 
-pub const BOTTOM_UP_FACILITY_GEOMETRY_EXPERIMENT_SCHEMA_VERSION: u32 = 2;
+pub const BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION: u32 = 3;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
-pub struct BottomUpFacilityGeometryExperimentReport {
+pub struct BottomUpExperimentReport {
     pub schema_version: u32,
+    pub workload_id: Option<String>,
+    pub workload_manifest_sha256: Option<String>,
     pub target_phase_index: usize,
     pub total_phase_count: usize,
     pub cumulative_facility_count: usize,
+    pub introduced_facility_ids: Vec<String>,
     pub search_budget_ms: u64,
     pub rung: exact::ladder::BottomUpRungReport,
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn diagnose_bottom_up_facility_geometry(
+pub fn diagnose_bottom_up_rung(
     instance_wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
     transports: &ValidatedTransportCatalog,
     logistics_components: &ValidatedLogisticsComponentCatalog,
     request: &FacilityPlacementRequest,
+    rung_kind: exact::ladder::BottomUpRungKind,
     target_phase_index: usize,
     search_budget: Duration,
-) -> Result<BottomUpFacilityGeometryExperimentReport, IntegratedLayoutReport> {
+) -> Result<BottomUpExperimentReport, IntegratedLayoutReport> {
     let growth = plan_facility_growth(instance_wiring, MAX_NEW_FACILITIES_PER_GROWTH_PHASE);
     if !growth.success {
         let diagnostic = growth.diagnostics.into_iter().next().map_or_else(
@@ -79,6 +83,7 @@ pub fn diagnose_bottom_up_facility_geometry(
         .iter()
         .map(|component| component.facilities.len())
         .sum();
+    let introduced_facility_ids = growth.phases[target_phase_index].facilities.clone();
     let cumulative_facilities = growth
         .phases
         .iter()
@@ -99,12 +104,22 @@ pub fn diagnose_bottom_up_facility_geometry(
         logistics_components,
         request,
     )?;
-    let rung = exact::ladder::solve_facility_geometry_rung(input, search_budget);
-    Ok(BottomUpFacilityGeometryExperimentReport {
-        schema_version: BOTTOM_UP_FACILITY_GEOMETRY_EXPERIMENT_SCHEMA_VERSION,
+    let rung = match rung_kind {
+        exact::ladder::BottomUpRungKind::FacilityGeometry => {
+            exact::ladder::solve_facility_geometry_rung(input, search_budget)
+        }
+        exact::ladder::BottomUpRungKind::FacilityPorts => {
+            exact::ladder::solve_facility_ports_rung(input, search_budget)
+        }
+    };
+    Ok(BottomUpExperimentReport {
+        schema_version: BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION,
+        workload_id: None,
+        workload_manifest_sha256: None,
         target_phase_index,
         total_phase_count,
         cumulative_facility_count: cumulative_facilities.len(),
+        introduced_facility_ids,
         search_budget_ms: u64::try_from(search_budget.as_millis()).unwrap_or(u64::MAX),
         rung,
     })

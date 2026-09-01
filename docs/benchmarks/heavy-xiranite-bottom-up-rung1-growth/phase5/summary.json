@@ -1,0 +1,590 @@
+{
+  "schema_version": 3,
+  "workload_id": "heavy-xiranite-minimum-rate",
+  "workload_manifest_sha256": "d9018af56cfec3f7aabbfeb660617a93e9a809dccfff7294c21bfaca0d7cfa3e",
+  "target_phase_index": 5,
+  "total_phase_count": 41,
+  "cumulative_facility_count": 6,
+  "introduced_facility_ids": [
+    "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0"
+  ],
+  "search_budget_ms": 5000,
+  "rung": {
+    "schema_version": 3,
+    "rung": "facility-ports",
+    "formulation": "factorized-coordinate-geometry-rotation-port-support-v1",
+    "ceiling": [
+      50,
+      50
+    ],
+    "facility_count": 6,
+    "facility_terminal_count": 21,
+    "facility_terminal_ids": [
+      "wiring-edge:121c0d63102c8c4f409587a74e73fbc957b60f98e7976c6cc0c3ab11971344a2:lane:0000:demand",
+      "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000:demand",
+      "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000:supply",
+      "wiring-edge:477be53964427bd4f6019a2d169a428dbf72ad621333d501c9161299fe7755d4:lane:0000:demand",
+      "wiring-edge:4808abba73956e901f7b27b0bc394f7cd98a4be4a2e168da08ef924d3b708c25:lane:0000:demand",
+      "wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143:lane:0000:demand",
+      "wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143:lane:0000:supply",
+      "wiring-edge:69633717796936784c129d497cbe8656045bbefe2609ca7610fcc41f1044d548:lane:0000:demand",
+      "wiring-edge:6e7e886bb2527e399bae69e67687b6f9beb004bff7efb16be97d8673a711103f:lane:0000:demand",
+      "wiring-edge:73f36e90398b68aa42387f2354fff999d50989d1bbd721fd6ffd65ba7ad03c42:lane:0000:demand",
+      "wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de:lane:0000:supply",
+      "wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8:lane:0000:demand",
+      "wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb:lane:0000:demand",
+      "wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb:lane:0000:supply",
+      "wiring-edge:9cc78f5ad1c5a03a94a533fe26e35517c481fb4860303ff01217159ff2418b09:lane:0000:supply",
+      "wiring-edge:a563c1d10bb90b3f8ae65556cc7b5977a8dea90da3838074406d85e46967aa63:lane:0000:demand",
+      "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6:lane:0000:demand",
+      "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6:lane:0000:supply",
+      "wiring-edge:f959dd05789fc16f35b1e91f011554b72379039ba540182c0003a2974fcc13e6:lane:0000:demand",
+      "wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e:lane:0000:demand",
+      "wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e:lane:0000:supply"
+    ],
+    "semantic_certificate": {
+      "facility_geometry": true,
+      "facility_ports": true,
+      "boundary_terminals": false,
+      "pipe_routing": false,
+      "belt_routing": false,
+      "item_flow": false,
+      "logistics_components": false,
+      "objective": false,
+      "hints": false,
+      "transferred_learned_state": false
+    },
+    "construction_ms": 2,
+    "search_ms": 13,
+    "first_witness_ms": 13,
+    "outcome": "feasible",
+    "termination_reason": "first-witness",
+    "witness_count": 1,
+    "validation": "passed",
+    "search_space": {
+      "semantic_assignment_upper_bound_log2": 109.47282241744102,
+      "semantic_assignment_upper_bound_log10": 32.954603257646056,
+      "directional_rotation_upper_bound_log2": 78.40554456201245,
+      "directional_rotation_upper_bound_log10": 23.602420739534693,
+      "rotation_equivalence_reduction_log2": 0.0,
+      "facility_port_choice_upper_bound_log2": 31.067277855428568,
+      "facility_port_choice_upper_bound_log10": 9.352182518111361,
+      "facility_port_domain_histogram": {
+        "1": 3,
+        "2": 7,
+        "3": 2,
+        "5": 9
+      }
+    },
+    "model_complexity": {
+      "variables": {
+        "coverage": "complete",
+        "total_variables": 832,
+        "boolean_variables": 737,
+        "integer_variables": 95,
+        "log2_domain_volume": 1148.3862588886468,
+        "by_family": [
+          {
+            "family": "placement",
+            "total_variables": 84,
+            "boolean_variables": 66,
+            "integer_variables": 18,
+            "domains": {
+              "minimum": 2,
+              "maximum": 50,
+              "p50": 2,
+              "p95": 50,
+              "log2_volume": 145.72627427729674
+            }
+          },
+          {
+            "family": "endpoint",
+            "total_variables": 21,
+            "boolean_variables": 7,
+            "integer_variables": 14,
+            "domains": {
+              "minimum": 1,
+              "maximum": 5,
+              "p50": 3,
+              "p95": 5,
+              "log2_volume": 31.067277855428568
+            }
+          },
+          {
+            "family": "endpoint-geometry",
+            "total_variables": 727,
+            "boolean_variables": 664,
+            "integer_variables": 63,
+            "domains": {
+              "minimum": 2,
+              "maximum": 50,
+              "p50": 2,
+              "p95": 50,
+              "log2_volume": 971.5927067559221
+            }
+          }
+        ]
+      },
+      "constraints": {
+        "total_constraints": 1157,
+        "total_terms": 3690,
+        "maximum_arity": 6,
+        "p95_arity": 5,
+        "maximum_absolute_coefficient": 1,
+        "by_family": [
+          {
+            "family": "placement-choice",
+            "relation": "less-than-or-equal",
+            "constraints": 12,
+            "terms": 24,
+            "maximum_arity": 2,
+            "p95_arity": 2,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "placement-choice",
+            "relation": "other",
+            "constraints": 36,
+            "terms": 84,
+            "maximum_arity": 2,
+            "p95_arity": 2,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "facility-non-overlap",
+            "relation": "less-than-or-equal",
+            "constraints": 60,
+            "terms": 180,
+            "maximum_arity": 3,
+            "p95_arity": 3,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "facility-non-overlap",
+            "relation": "other",
+            "constraints": 15,
+            "terms": 90,
+            "maximum_arity": 6,
+            "p95_arity": 6,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "endpoint-link",
+            "relation": "equality",
+            "constraints": 488,
+            "terms": 1464,
+            "maximum_arity": 3,
+            "p95_arity": 3,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "endpoint-link",
+            "relation": "other",
+            "constraints": 21,
+            "terms": 63,
+            "maximum_arity": 3,
+            "p95_arity": 3,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "endpoint-clearance",
+            "relation": "less-than-or-equal",
+            "constraints": 420,
+            "terms": 1260,
+            "maximum_arity": 3,
+            "p95_arity": 3,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "endpoint-clearance",
+            "relation": "other",
+            "constraints": 105,
+            "terms": 525,
+            "maximum_arity": 5,
+            "p95_arity": 5,
+            "maximum_absolute_coefficient": 1
+          }
+        ]
+      },
+      "factor_graph": {
+        "variable_vertices": 832,
+        "constraint_vertices": 1157,
+        "incidences": 3672,
+        "mean_variable_degree": 4.413461538461538,
+        "maximum_variable_degree": 101,
+        "p95_variable_degree": 18,
+        "mean_constraint_degree": 3.173725151253241,
+        "maximum_constraint_degree": 6,
+        "p95_constraint_degree": 5,
+        "density": 0.0038145734991024533,
+        "connected_components": 1,
+        "articulation_points": null,
+        "retained_full_graph": false,
+        "family_incidences": [
+          {
+            "variable_family": "placement",
+            "constraint_family": "placement-choice",
+            "incidences": 90
+          },
+          {
+            "variable_family": "placement",
+            "constraint_family": "facility-non-overlap",
+            "incidences": 270
+          },
+          {
+            "variable_family": "placement",
+            "constraint_family": "endpoint-link",
+            "incidences": 509
+          },
+          {
+            "variable_family": "placement",
+            "constraint_family": "endpoint-clearance",
+            "incidences": 525
+          },
+          {
+            "variable_family": "endpoint",
+            "constraint_family": "endpoint-link",
+            "incidences": 21
+          },
+          {
+            "variable_family": "endpoint-geometry",
+            "constraint_family": "endpoint-link",
+            "incidences": 997
+          },
+          {
+            "variable_family": "endpoint-geometry",
+            "constraint_family": "endpoint-clearance",
+            "incidences": 1260
+          }
+        ]
+      },
+      "coupling": {
+        "facility_network_incidences": 0,
+        "shared_network_facility_pairs": 0,
+        "cross_family_constraints": 1034,
+        "placement_routing_constraints": 0,
+        "placement_routing_incidences": 0,
+        "network_collision_constraints": 0,
+        "objective_incidences": 0
+      },
+      "symmetry": null,
+      "estimated_bytes": null
+    },
+    "search_statistics": {
+      "branch_decisions": 895,
+      "backtracks": 180,
+      "conflicts": 180,
+      "learned_clauses": 180,
+      "solver_propagations": 40694,
+      "atomic_propagations": null,
+      "restarts": 0,
+      "row_selector_total": null,
+      "row_selector_root_fixed_true": null,
+      "row_selector_root_fixed_false": null,
+      "row_selector_root_unfixed": null,
+      "row_selector_decisions": null,
+      "non_row_selector_decisions": null,
+      "row_selector_true_decisions": null,
+      "row_selector_false_decisions": null,
+      "row_selector_unclassified_decisions": null,
+      "maximum_consecutive_row_selector_decisions": null,
+      "row_selector_conflict_appearances": null
+    },
+    "endpoint_support_statistics": {
+      "executions": 1808,
+      "notifications": 3995,
+      "values_checked": 19290,
+      "rows_scanned": 6523,
+      "support_checks": 45164,
+      "residue_hits": 15906,
+      "residue_misses": 2988,
+      "removed_values": 2078,
+      "conflicts": 0,
+      "maximum_reason_predicates": 5
+    },
+    "witness": {
+      "kind": "facility-ports",
+      "witness": {
+        "bounds": {
+          "width": 40,
+          "height": 45
+        },
+        "placements": [
+          {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite:0",
+            "recipe": "pool-liquid-liquid-xiranite-1",
+            "facility": "mix-pool-1-mode-liquid",
+            "x": 3,
+            "y": 41,
+            "width": 5,
+            "height": 5,
+            "rotation": 180
+          },
+          {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+            "recipe": "pool-liquid-xiranite-poly-1",
+            "facility": "mix-pool-1-mode-liquid",
+            "x": 1,
+            "y": 36,
+            "width": 5,
+            "height": 5,
+            "rotation": 180
+          },
+          {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+            "recipe": "furnance-carbon-enr-1",
+            "facility": "furnance-1-mode-normal",
+            "x": 6,
+            "y": 1,
+            "width": 3,
+            "height": 3,
+            "rotation": 180
+          },
+          {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+            "recipe": "xiranite-oven-xiranite-powder-1",
+            "facility": "xiranite-oven-1-mode-liquid",
+            "x": 6,
+            "y": 33,
+            "width": 5,
+            "height": 5,
+            "rotation": 270
+          },
+          {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1",
+            "recipe": "xiranite-oven-xiranite-powder-1",
+            "facility": "xiranite-oven-1-mode-liquid",
+            "x": 35,
+            "y": 24,
+            "width": 5,
+            "height": 5,
+            "rotation": 0
+          },
+          {
+            "instance": "facility-instance:recipe-occurrence:/target:0",
+            "recipe": "xiranite-oven-xiranite-enr-powder-1",
+            "facility": "xiranite-oven-1-mode-liquid",
+            "x": 2,
+            "y": 28,
+            "width": 5,
+            "height": 5,
+            "rotation": 180
+          }
+        ],
+        "endpoints": [
+          {
+            "terminal": "wiring-edge:121c0d63102c8c4f409587a74e73fbc957b60f98e7976c6cc0c3ab11971344a2:lane:0000:demand",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+            "port": "input-belt-2",
+            "direction": "input",
+            "transport": "belt",
+            "connection_x": 5,
+            "connection_y": 1,
+            "arm_direction": "east"
+          },
+          {
+            "terminal": "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000:demand",
+            "instance": "facility-instance:recipe-occurrence:/target:0",
+            "port": "input-pipe-5",
+            "direction": "input",
+            "transport": "pipe",
+            "connection_x": 7,
+            "connection_y": 30,
+            "arm_direction": "west"
+          },
+          {
+            "terminal": "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000:supply",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+            "port": "output-pipe-2",
+            "direction": "output",
+            "transport": "pipe",
+            "connection_x": 0,
+            "connection_y": 39,
+            "arm_direction": "east"
+          },
+          {
+            "terminal": "wiring-edge:477be53964427bd4f6019a2d169a428dbf72ad621333d501c9161299fe7755d4:lane:0000:demand",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite:0",
+            "port": "input-pipe-3",
+            "direction": "input",
+            "transport": "pipe",
+            "connection_x": 8,
+            "connection_y": 42,
+            "arm_direction": "west"
+          },
+          {
+            "terminal": "wiring-edge:4808abba73956e901f7b27b0bc394f7cd98a4be4a2e168da08ef924d3b708c25:lane:0000:demand",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite:0",
+            "port": "input-belt-0",
+            "direction": "input",
+            "transport": "belt",
+            "connection_x": 6,
+            "connection_y": 40,
+            "arm_direction": "south"
+          },
+          {
+            "terminal": "wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143:lane:0000:demand",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+            "port": "input-pipe-2",
+            "direction": "input",
+            "transport": "pipe",
+            "connection_x": 6,
+            "connection_y": 39,
+            "arm_direction": "west"
+          },
+          {
+            "terminal": "wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143:lane:0000:supply",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite:0",
+            "port": "output-pipe-2",
+            "direction": "output",
+            "transport": "pipe",
+            "connection_x": 2,
+            "connection_y": 44,
+            "arm_direction": "east"
+          },
+          {
+            "terminal": "wiring-edge:69633717796936784c129d497cbe8656045bbefe2609ca7610fcc41f1044d548:lane:0000:demand",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1",
+            "port": "input-pipe-5",
+            "direction": "input",
+            "transport": "pipe",
+            "connection_x": 34,
+            "connection_y": 26,
+            "arm_direction": "east"
+          },
+          {
+            "terminal": "wiring-edge:6e7e886bb2527e399bae69e67687b6f9beb004bff7efb16be97d8673a711103f:lane:0000:demand",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1",
+            "port": "input-belt-2",
+            "direction": "input",
+            "transport": "belt",
+            "connection_x": 37,
+            "connection_y": 29,
+            "arm_direction": "north"
+          },
+          {
+            "terminal": "wiring-edge:73f36e90398b68aa42387f2354fff999d50989d1bbd721fd6ffd65ba7ad03c42:lane:0000:demand",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+            "port": "input-pipe-5",
+            "direction": "input",
+            "transport": "pipe",
+            "connection_x": 8,
+            "connection_y": 38,
+            "arm_direction": "north"
+          },
+          {
+            "terminal": "wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de:lane:0000:supply",
+            "instance": "facility-instance:recipe-occurrence:/target:0",
+            "port": "output-belt-1",
+            "direction": "output",
+            "transport": "belt",
+            "connection_x": 5,
+            "connection_y": 33,
+            "arm_direction": "north"
+          },
+          {
+            "terminal": "wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8:lane:0000:demand",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+            "port": "input-belt-0",
+            "direction": "input",
+            "transport": "belt",
+            "connection_x": 11,
+            "connection_y": 37,
+            "arm_direction": "west"
+          },
+          {
+            "terminal": "wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb:lane:0000:demand",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+            "port": "input-belt-4",
+            "direction": "input",
+            "transport": "belt",
+            "connection_x": 10,
+            "connection_y": 32,
+            "arm_direction": "south"
+          },
+          {
+            "terminal": "wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb:lane:0000:supply",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+            "port": "output-belt-0",
+            "direction": "output",
+            "transport": "belt",
+            "connection_x": 8,
+            "connection_y": 4,
+            "arm_direction": "north"
+          },
+          {
+            "terminal": "wiring-edge:9cc78f5ad1c5a03a94a533fe26e35517c481fb4860303ff01217159ff2418b09:lane:0000:supply",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+            "port": "output-pipe-3",
+            "direction": "output",
+            "transport": "pipe",
+            "connection_x": 0,
+            "connection_y": 37,
+            "arm_direction": "east"
+          },
+          {
+            "terminal": "wiring-edge:a563c1d10bb90b3f8ae65556cc7b5977a8dea90da3838074406d85e46967aa63:lane:0000:demand",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1",
+            "port": "input-belt-0",
+            "direction": "input",
+            "transport": "belt",
+            "connection_x": 35,
+            "connection_y": 29,
+            "arm_direction": "north"
+          },
+          {
+            "terminal": "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6:lane:0000:demand",
+            "instance": "facility-instance:recipe-occurrence:/target:0",
+            "port": "input-belt-2",
+            "direction": "input",
+            "transport": "belt",
+            "connection_x": 4,
+            "connection_y": 27,
+            "arm_direction": "south"
+          },
+          {
+            "terminal": "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6:lane:0000:supply",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+            "port": "output-belt-2",
+            "direction": "output",
+            "transport": "belt",
+            "connection_x": 5,
+            "connection_y": 35,
+            "arm_direction": "east"
+          },
+          {
+            "terminal": "wiring-edge:f959dd05789fc16f35b1e91f011554b72379039ba540182c0003a2974fcc13e6:lane:0000:demand",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+            "port": "input-pipe-2",
+            "direction": "input",
+            "transport": "pipe",
+            "connection_x": 6,
+            "connection_y": 39,
+            "arm_direction": "west"
+          },
+          {
+            "terminal": "wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e:lane:0000:demand",
+            "instance": "facility-instance:recipe-occurrence:/target:0",
+            "port": "input-belt-0",
+            "direction": "input",
+            "transport": "belt",
+            "connection_x": 6,
+            "connection_y": 27,
+            "arm_direction": "south"
+          },
+          {
+            "terminal": "wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e:lane:0000:supply",
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1",
+            "port": "output-belt-4",
+            "direction": "output",
+            "transport": "belt",
+            "connection_x": 39,
+            "connection_y": 23,
+            "arm_direction": "south"
+          }
+        ]
+      }
+    },
+    "diagnostics": []
+  }
+}

@@ -55,7 +55,7 @@ pub(super) fn world_position(index: usize, width: i32) -> WorldGridPosition {
     }
 }
 
-fn rotate_port(
+pub(super) fn rotate_port(
     position: &FacilityPortPosition,
     edge: FacilityPortEdge,
     rotation: i64,

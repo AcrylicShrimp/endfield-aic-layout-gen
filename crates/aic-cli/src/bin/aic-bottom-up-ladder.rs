@@ -6,8 +6,8 @@ use std::time::Duration;
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    BottomUpFacilityGeometryExperimentReport, BottomUpRungOutcome, FacilityPlacementRequest,
-    diagnose_bottom_up_facility_geometry,
+    BottomUpExperimentReport, BottomUpRungKind, BottomUpRungOutcome, BottomUpRungWitness,
+    FacilityPlacementRequest, diagnose_bottom_up_rung,
 };
 use aic_data::localization::{ValidatedLocalizationCatalog, load_localization_catalog};
 use aic_data::logistics::{
@@ -22,7 +22,22 @@ use aic_data::research::{
     BenchmarkWorkloadInputs, ValidatedBenchmarkWorkloadManifest, load_benchmark_workload_manifest,
 };
 use anyhow::{Context, Result, ensure};
-use clap::Parser;
+use clap::{Parser, ValueEnum};
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+enum RungArg {
+    FacilityGeometry,
+    FacilityPorts,
+}
+
+impl From<RungArg> for BottomUpRungKind {
+    fn from(value: RungArg) -> Self {
+        match value {
+            RungArg::FacilityGeometry => Self::FacilityGeometry,
+            RungArg::FacilityPorts => Self::FacilityPorts,
+        }
+    }
+}
 
 #[derive(Debug, Parser)]
 #[command(
@@ -30,6 +45,9 @@ use clap::Parser;
     about = "Run independent bottom-up AIC solver cliff experiments."
 )]
 struct Args {
+    /// Semantic ladder rung to solve independently.
+    #[arg(long, value_enum, default_value = "facility-geometry")]
+    rung: RungArg,
     /// Benchmark workload manifest JSON file.
     #[arg(long, value_name = "FILE")]
     workload: PathBuf,
@@ -51,6 +69,8 @@ struct Args {
 }
 
 struct LoadedInputs {
+    workload_id: String,
+    workload_manifest_sha256: String,
     wiring: aic_data::recipes::FacilityInstanceWiringReport,
     facilities: ValidatedFacilityCatalog,
     items: ValidatedItemCatalog,
@@ -83,28 +103,31 @@ fn main() -> ExitCode {
 
 fn run(args: Args) -> Result<bool> {
     let time_limit = NonZeroU64::new(args.time_limit_ms)
-        .context("bottom-up facility geometry time_limit_ms must be positive")?;
+        .context("bottom-up rung time_limit_ms must be positive")?;
     let loaded = load_inputs(&args)?;
-    let report = diagnose_bottom_up_facility_geometry(
+    let mut report = diagnose_bottom_up_rung(
         &loaded.wiring,
         &loaded.facilities,
         &loaded.items,
         &loaded.transports,
         &loaded.components,
         &loaded.placement_request,
+        args.rung.into(),
         args.target_phase,
         Duration::from_millis(time_limit.get()),
     )
-    .map_err(|layout| anyhow::anyhow!("bottom-up facility geometry failed: {layout:?}"))?;
+    .map_err(|layout| anyhow::anyhow!("bottom-up rung failed: {layout:?}"))?;
+    report.workload_id = Some(loaded.workload_id.clone());
+    report.workload_manifest_sha256 = Some(loaded.workload_manifest_sha256.clone());
 
     write_json(&args.output_dir.join("summary.json"), &report)?;
     write_bytes(
         &args.output_dir.join("summary.html"),
         render_html(&report, loaded.localization.as_ref())?.as_bytes(),
-        "bottom-up facility geometry HTML evidence",
+        "bottom-up rung HTML evidence",
     )?;
     serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
-        .context("failed to write bottom-up facility geometry report")?;
+        .context("failed to write bottom-up rung report")?;
     println!();
     Ok(matches!(report.rung.outcome, BottomUpRungOutcome::Feasible))
 }
@@ -113,6 +136,8 @@ fn load_inputs(args: &Args) -> Result<LoadedInputs> {
     let manifest = load_benchmark_workload_manifest(&args.workload)?;
     let validated = ValidatedBenchmarkWorkloadManifest::try_from_manifest(manifest)
         .map_err(|report| anyhow::anyhow!("benchmark workload validation failed: {report:?}"))?;
+    let workload_id = validated.manifest().id.clone();
+    let workload_manifest_sha256 = validated.manifest_sha256().to_string();
     let manifest = validated.manifest();
     let paths = resolve_paths(&args.workspace_root, &manifest.inputs);
 
@@ -188,6 +213,8 @@ fn load_inputs(args: &Args) -> Result<LoadedInputs> {
         .transpose()?;
 
     Ok(LoadedInputs {
+        workload_id,
+        workload_manifest_sha256,
         wiring,
         facilities,
         items,
@@ -215,7 +242,7 @@ fn resolve_paths(root: &Path, inputs: &BenchmarkWorkloadInputs) -> WorkloadPaths
 
 fn write_json(path: &Path, value: &impl serde::Serialize) -> Result<()> {
     let bytes = serde_json::to_vec_pretty(value).context("failed to encode research report")?;
-    write_bytes(path, &bytes, "bottom-up facility geometry JSON report")
+    write_bytes(path, &bytes, "bottom-up rung JSON report")
 }
 
 fn write_bytes(path: &Path, bytes: &[u8], label: &str) -> Result<()> {
@@ -233,54 +260,71 @@ fn write_bytes(path: &Path, bytes: &[u8], label: &str) -> Result<()> {
 }
 
 fn render_html(
-    report: &BottomUpFacilityGeometryExperimentReport,
+    report: &BottomUpExperimentReport,
     localization: Option<&ValidatedLocalizationCatalog>,
 ) -> Result<String> {
     let rung = &report.rung;
     let mut geometry = String::new();
     if let Some(witness) = &rung.witness {
         let cell = 36_i64;
-        let width = i64::from(rung.ceiling[0]) * cell;
-        let height = i64::from(rung.ceiling[1]) * cell;
-        writeln!(
-            geometry,
-            r#"<svg viewBox="0 0 {width} {height}" role="img" aria-label="facility geometry witness">"#
-        )?;
-        for x in 0..=rung.ceiling[0] {
-            let position = i64::from(x) * cell;
-            writeln!(
-                geometry,
-                r#"<line x1="{position}" y1="0" x2="{position}" y2="{height}" class="grid"/>"#
-            )?;
-        }
-        for y in 0..=rung.ceiling[1] {
-            let position = i64::from(y) * cell;
-            writeln!(
-                geometry,
-                r#"<line x1="0" y1="{position}" x2="{width}" y2="{position}" class="grid"/>"#
-            )?;
-        }
-        for placement in &witness.placements {
-            let x = placement.x * cell;
-            let y = placement.y * cell;
-            let facility_width = placement.width * cell;
-            let facility_height = placement.height * cell;
-            let label = localization
-                .and_then(|catalog| catalog.facility(&placement.facility))
-                .map_or(placement.facility.as_str(), |entry| {
-                    entry.facility_name.as_str()
-                });
-            let orientation_label = facility_orientation_label(placement);
-            writeln!(
-                geometry,
-                r#"<g class="facility"><rect x="{x}" y="{y}" width="{facility_width}" height="{facility_height}"/><text x="{}" y="{}" class="name">{}</text><text x="{}" y="{}" class="instance">{}</text></g>"#,
-                x + facility_width / 2,
-                y + facility_height / 2 - 5,
-                escape_html(label),
-                x + facility_width / 2,
-                y + facility_height / 2 + 18,
-                escape_html(&orientation_label),
-            )?;
+        render_grid(&mut geometry, rung.ceiling, cell)?;
+        match witness {
+            BottomUpRungWitness::FacilityGeometry { witness } => {
+                for placement in &witness.placements {
+                    render_facility(
+                        &mut geometry,
+                        placement.x,
+                        placement.y,
+                        placement.width,
+                        placement.height,
+                        &placement.facility,
+                        &facility_orientation_label(placement),
+                        localization,
+                        cell,
+                    )?;
+                }
+            }
+            BottomUpRungWitness::FacilityPorts { witness } => {
+                for placement in &witness.placements {
+                    render_facility(
+                        &mut geometry,
+                        placement.x,
+                        placement.y,
+                        placement.width,
+                        placement.height,
+                        &placement.facility,
+                        &format!("rotation {}°", placement.rotation),
+                        localization,
+                        cell,
+                    )?;
+                }
+                for endpoint in &witness.endpoints {
+                    let x = endpoint.connection_x * cell;
+                    let y = endpoint.connection_y * cell;
+                    let class = match endpoint.direction {
+                        aic_data::facilities::FacilityPortDirection::Input => "input",
+                        aic_data::facilities::FacilityPortDirection::Output => "output",
+                    };
+                    let (arm_dx, arm_dy) = direction_delta(endpoint.arm_direction);
+                    let center_x = x + cell / 2;
+                    let center_y = y + cell / 2;
+                    let boundary_x = center_x + arm_dx * cell / 2;
+                    let boundary_y = center_y + arm_dy * cell / 2;
+                    let (arrow_start_x, arrow_start_y, arrow_end_x, arrow_end_y) =
+                        if class == "input" {
+                            (center_x, center_y, boundary_x, boundary_y)
+                        } else {
+                            (boundary_x, boundary_y, center_x, center_y)
+                        };
+                    writeln!(
+                        geometry,
+                        r#"<g class="endpoint {class}" data-terminal="{}" data-port="{}" data-transport="{:?}"><rect x="{x}" y="{y}" width="{cell}" height="{cell}"/><line x1="{arrow_start_x}" y1="{arrow_start_y}" x2="{arrow_end_x}" y2="{arrow_end_y}" marker-end="url(#arrow-{class})"/><circle cx="{boundary_x}" cy="{boundary_y}" r="3"/></g>"#,
+                        escape_html(&endpoint.terminal),
+                        escape_html(&endpoint.port),
+                        endpoint.transport,
+                    )?;
+                }
+            }
         }
         geometry.push_str("</svg>");
     } else {
@@ -301,12 +345,14 @@ fn render_html(
     let stats = &rung.search_statistics;
     let json = escape_html(&serde_json::to_string_pretty(report)?);
     Ok(format!(
-        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bottom-up facility geometry</title><style>body{{margin:0;background:#07131d;color:#d5e8f5;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}}header{{padding:18px 22px;border-bottom:1px solid #315066}}h1{{font-size:20px;margin:0 0 10px}}.meta{{color:#8fb2c8}}.metrics{{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px}}.metric{{padding:8px 10px;border:1px solid #315066;background:#102535}}main{{padding:22px}}svg{{display:block;max-width:100%;height:auto;border:3px solid #58758a;background:#08141f}}.grid{{stroke:#193244;stroke-width:1}}.facility rect{{fill:#173f37;stroke:#65f0bd;stroke-width:2}}.facility text{{fill:#e4f6ff;text-anchor:middle;dominant-baseline:middle}}.facility .name{{font-size:17px;font-weight:700}}.facility .instance{{fill:#8fb2c8;font-size:11px}}.empty{{padding:40px;border:1px solid #ff6b9d;color:#ff6b9d}}details{{margin-top:22px}}pre{{white-space:pre-wrap;word-break:break-word;color:#8fb2c8}}.good{{color:#65f0bd}}.bad{{color:#ff6b9d}}</style></head><body><header><h1>Bottom-up Rung 0 · facility geometry only</h1><div class="meta">Phase {phase}/{total} · ceiling {width}×{height} · {facilities} facilities · formulation {formulation}</div><div class="metrics"><div class="metric {outcome_class}">outcome {outcome:?}</div><div class="metric">build {build} ms</div><div class="metric">search {search} ms</div><div class="metric">first witness {first}</div><div class="metric">semantic log₂ upper bound {semantic_log2}</div><div class="metric">semantic decimal orders {semantic_log10}</div><div class="metric">rotation-equivalence reduction {rotation_reduction} bits</div><div class="metric">variables {variables}</div><div class="metric">model log₂ domain {domain:.2}</div><div class="metric">decisions {decisions}</div><div class="metric">backtracks {backtracks}</div><div class="metric">conflicts {conflicts}</div><div class="metric">propagations {propagations}</div></div></header><main>{geometry}<details><summary>Machine-readable report</summary><pre>{json}</pre></details></main></body></html>"#,
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bottom-up solver rung</title><style>body{{margin:0;background:#07131d;color:#d5e8f5;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}}header{{padding:18px 22px;border-bottom:1px solid #315066}}h1{{font-size:20px;margin:0 0 10px}}.meta{{color:#8fb2c8}}.metrics{{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px}}.metric{{padding:8px 10px;border:1px solid #315066;background:#102535}}main{{padding:22px}}svg{{display:block;max-width:100%;height:auto;border:3px solid #58758a;background:#08141f}}.grid{{stroke:#193244;stroke-width:1}}.facility rect{{fill:#173f37;stroke:#65f0bd;stroke-width:2}}.facility text{{fill:#e4f6ff;text-anchor:middle;dominant-baseline:middle}}.facility .name{{font-size:17px;font-weight:700}}.facility .instance{{fill:#8fb2c8;font-size:11px}}.endpoint rect{{stroke-width:3}}.endpoint line{{stroke-width:4}}.endpoint circle{{stroke:none}}.endpoint.input rect{{fill:#214d43;stroke:#65f0bd}}.endpoint.input line,.endpoint.input circle{{stroke:#65f0bd;fill:#65f0bd}}.endpoint.output rect{{fill:#51293e;stroke:#ff6b9d}}.endpoint.output line,.endpoint.output circle{{stroke:#ff6b9d;fill:#ff6b9d}}.empty{{padding:40px;border:1px solid #ff6b9d;color:#ff6b9d}}details{{margin-top:22px}}pre{{white-space:pre-wrap;word-break:break-word;color:#8fb2c8}}.good{{color:#65f0bd}}.bad{{color:#ff6b9d}}</style></head><body><header><h1>Bottom-up {rung:?}</h1><div class="meta">Phase {phase}/{total} · ceiling {width}×{height} · {facilities} facilities · {terminals} terminals · formulation {formulation}</div><div class="metrics"><div class="metric {outcome_class}">outcome {outcome:?}</div><div class="metric">termination {termination:?}</div><div class="metric">build {build} ms</div><div class="metric">search {search} ms</div><div class="metric">first witness {first}</div><div class="metric">semantic log₂ upper bound {semantic_log2}</div><div class="metric">semantic decimal orders {semantic_log10}</div><div class="metric">port-choice contribution {port_log2} bits</div><div class="metric">rotation-equivalence reduction {rotation_reduction} bits</div><div class="metric">variables {variables}</div><div class="metric">model log₂ domain {domain:.2}</div><div class="metric">decisions {decisions}</div><div class="metric">backtracks {backtracks}</div><div class="metric">conflicts {conflicts}</div><div class="metric">propagations {propagations}</div></div></header><main>{geometry}<details><summary>Machine-readable report</summary><pre>{json}</pre></details></main></body></html>"#,
+        rung = rung.rung,
         phase = report.target_phase_index,
         total = report.total_phase_count,
         width = rung.ceiling[0],
         height = rung.ceiling[1],
         facilities = rung.facility_count,
+        terminals = rung.facility_terminal_count,
         formulation = rung.formulation,
         outcome_class = if matches!(rung.outcome, BottomUpRungOutcome::Feasible) {
             "good"
@@ -314,6 +360,7 @@ fn render_html(
             "bad"
         },
         outcome = rung.outcome,
+        termination = rung.termination_reason,
         build = rung.construction_ms,
         search = rung.search_ms,
         first = rung
@@ -325,6 +372,7 @@ fn render_html(
             display_optional_float(rung.search_space.semantic_assignment_upper_bound_log10),
         rotation_reduction =
             display_optional_float(rung.search_space.rotation_equivalence_reduction_log2),
+        port_log2 = display_optional_float(rung.search_space.facility_port_choice_upper_bound_log2),
         variables = model.total_variables,
         domain = model.log2_domain_volume,
         decisions = display_optional(stats.branch_decisions),
@@ -332,6 +380,71 @@ fn render_html(
         conflicts = display_optional(stats.conflicts),
         propagations = display_optional(stats.solver_propagations),
     ))
+}
+
+fn render_grid(output: &mut String, ceiling: [i32; 2], cell: i64) -> Result<()> {
+    let width = i64::from(ceiling[0]) * cell;
+    let height = i64::from(ceiling[1]) * cell;
+    writeln!(
+        output,
+        r##"<svg viewBox="0 0 {width} {height}" role="img" aria-label="bottom-up solver witness"><defs><marker id="arrow-input" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#65f0bd"/></marker><marker id="arrow-output" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ff6b9d"/></marker></defs>"##
+    )?;
+    for x in 0..=ceiling[0] {
+        let position = i64::from(x) * cell;
+        writeln!(
+            output,
+            r#"<line x1="{position}" y1="0" x2="{position}" y2="{height}" class="grid"/>"#
+        )?;
+    }
+    for y in 0..=ceiling[1] {
+        let position = i64::from(y) * cell;
+        writeln!(
+            output,
+            r#"<line x1="0" y1="{position}" x2="{width}" y2="{position}" class="grid"/>"#
+        )?;
+    }
+    Ok(())
+}
+
+fn direction_delta(direction: aic_data::logistics::CardinalDirection) -> (i64, i64) {
+    match direction {
+        aic_data::logistics::CardinalDirection::North => (0, -1),
+        aic_data::logistics::CardinalDirection::East => (1, 0),
+        aic_data::logistics::CardinalDirection::South => (0, 1),
+        aic_data::logistics::CardinalDirection::West => (-1, 0),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn render_facility(
+    output: &mut String,
+    placement_x: i64,
+    placement_y: i64,
+    placement_width: i64,
+    placement_height: i64,
+    facility: &str,
+    orientation_label: &str,
+    localization: Option<&ValidatedLocalizationCatalog>,
+    cell: i64,
+) -> Result<()> {
+    let x = placement_x * cell;
+    let y = placement_y * cell;
+    let facility_width = placement_width * cell;
+    let facility_height = placement_height * cell;
+    let label = localization
+        .and_then(|catalog| catalog.facility(facility))
+        .map_or(facility, |entry| entry.facility_name.as_str());
+    writeln!(
+        output,
+        r#"<g class="facility"><rect x="{x}" y="{y}" width="{facility_width}" height="{facility_height}"/><text x="{}" y="{}" class="name">{}</text><text x="{}" y="{}" class="instance">{}</text></g>"#,
+        x + facility_width / 2,
+        y + facility_height / 2 - 5,
+        escape_html(label),
+        x + facility_width / 2,
+        y + facility_height / 2 + 18,
+        escape_html(orientation_label),
+    )?;
+    Ok(())
 }
 
 fn facility_orientation_label(placement: &aic_data::layouts::FacilityGeometryPlacement) -> String {
@@ -389,6 +502,28 @@ mod tests {
         assert_eq!(args.target_phase, 3);
         assert_eq!(args.time_limit_ms, 5000);
         assert_eq!(args.output_dir, PathBuf::from("artifacts"));
+    }
+
+    #[test]
+    fn parses_the_independent_facility_port_rung() {
+        let args = Args::try_parse_from([
+            "aic-bottom-up-ladder",
+            "--rung",
+            "facility-ports",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "placement.json",
+            "--target-phase",
+            "3",
+            "--time-limit-ms",
+            "5000",
+            "--output-dir",
+            "artifacts",
+        ])
+        .expect("independent facility-port rung should parse");
+
+        assert!(matches!(args.rung, RungArg::FacilityPorts));
     }
 
     #[test]

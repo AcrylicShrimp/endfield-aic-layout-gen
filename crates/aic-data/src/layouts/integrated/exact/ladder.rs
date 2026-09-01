@@ -14,14 +14,20 @@ use super::recorder::{ConstraintFamily, RecordedModel, VariableFamily};
 use super::search_statistics::{MeteredBrancher, SearchEventCounters, capture_search_statistics};
 use super::{IntegratedLayoutDiagnostic, ModelInput};
 use crate::layouts::FacilityPlacementBounds;
+use crate::logistics::{CardinalDirection, TransportKind};
 use crate::research::ModelComplexityMetrics;
 
-pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 2;
+use super::super::research::EndpointSupportPropagationStatistics;
+
+mod facility_ports;
+
+pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 3;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum BottomUpRungKind {
     FacilityGeometry,
+    FacilityPorts,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -30,6 +36,15 @@ pub enum BottomUpRungOutcome {
     Feasible,
     Infeasible,
     Unknown,
+    InvalidWitness,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum BottomUpTerminationReason {
+    FirstWitness,
+    ProvenInfeasible,
+    TimeLimit,
     InvalidWitness,
 }
 
@@ -66,17 +81,63 @@ pub struct FacilityGeometryPlacement {
     pub equivalent_rotations: Vec<i64>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum BottomUpRungWitness {
+    FacilityGeometry { witness: FacilityGeometryWitness },
+    FacilityPorts { witness: FacilityPortsWitness },
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct FacilityPortsWitness {
+    pub bounds: FacilityPlacementBounds,
+    pub placements: Vec<FacilityPortPlacement>,
+    pub endpoints: Vec<FacilityEndpointPlacement>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct FacilityPortPlacement {
+    pub instance: String,
+    pub recipe: String,
+    pub facility: String,
+    pub x: i64,
+    pub y: i64,
+    pub width: i64,
+    pub height: i64,
+    pub rotation: i64,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct FacilityEndpointPlacement {
+    pub terminal: String,
+    pub instance: String,
+    pub port: String,
+    pub direction: crate::facilities::FacilityPortDirection,
+    pub transport: TransportKind,
+    pub connection_x: i64,
+    pub connection_y: i64,
+    pub arm_direction: CardinalDirection,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct BottomUpSearchSpaceProfile {
-    /// Cartesian product of every facility's legal origin and distinct occupied-rectangle choices.
-    /// Pairwise non-overlap is deliberately not applied, so this is an upper bound on legal witnesses.
+    /// Cartesian product of every independent semantic choice enabled by this rung.
+    /// Cross-entity hard constraints are deliberately not applied, so this is an upper bound on
+    /// legal witnesses rather than a feasible-assignment count.
     pub semantic_assignment_upper_bound_log2: Option<f64>,
     pub semantic_assignment_upper_bound_log10: Option<f64>,
-    /// The same upper bound before rotations with identical occupied rectangles are projected together.
+    /// Facility origins multiplied by every fitting full directional rotation, before any Rung 0
+    /// occupied-rectangle projection and before port choices from later rungs.
     pub directional_rotation_upper_bound_log2: Option<f64>,
     pub directional_rotation_upper_bound_log10: Option<f64>,
-    /// Exact quotient between the two upper bounds, expressed as an equivalent number of binary choices.
+    /// Exact quotient between full directional facility placement and the Rung 0
+    /// occupied-rectangle projection, expressed as an equivalent number of binary choices. Later
+    /// rungs report zero because directional rotation is observable and no projection is applied.
     pub rotation_equivalence_reduction_log2: Option<f64>,
+    /// Independent compatible-port choices. `None` means this rung does not model ports.
+    pub facility_port_choice_upper_bound_log2: Option<f64>,
+    pub facility_port_choice_upper_bound_log10: Option<f64>,
+    pub facility_port_domain_histogram: Option<BTreeMap<usize, usize>>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -86,16 +147,21 @@ pub struct BottomUpRungReport {
     pub formulation: &'static str,
     pub ceiling: [i32; 2],
     pub facility_count: usize,
+    pub facility_terminal_count: usize,
+    pub facility_terminal_ids: Vec<String>,
     pub semantic_certificate: BottomUpSemanticCertificate,
     pub construction_ms: u64,
     pub search_ms: u64,
     pub first_witness_ms: Option<u64>,
     pub outcome: BottomUpRungOutcome,
+    pub termination_reason: BottomUpTerminationReason,
+    pub witness_count: u32,
     pub validation: ExactValidationStatus,
     pub search_space: BottomUpSearchSpaceProfile,
     pub model_complexity: ModelComplexityMetrics,
     pub search_statistics: ExactSearchStatistics,
-    pub witness: Option<FacilityGeometryWitness>,
+    pub endpoint_support_statistics: Option<EndpointSupportPropagationStatistics>,
+    pub witness: Option<BottomUpRungWitness>,
     pub diagnostics: Vec<IntegratedLayoutDiagnostic>,
 }
 
@@ -138,15 +204,20 @@ pub(in crate::layouts::integrated) fn solve_facility_geometry_rung(
                 formulation: "coordinate-geometry-orientation-disjunctive-non-overlap-v2",
                 ceiling,
                 facility_count,
+                facility_terminal_count: 0,
+                facility_terminal_ids: Vec::new(),
                 semantic_certificate: facility_geometry_certificate(),
                 construction_ms: elapsed_millis(construction_started.elapsed()),
                 search_ms: 0,
                 first_witness_ms: None,
                 outcome: BottomUpRungOutcome::Infeasible,
+                termination_reason: BottomUpTerminationReason::ProvenInfeasible,
+                witness_count: 0,
                 validation: ExactValidationStatus::NotAttempted,
                 search_space,
                 model_complexity: ModelComplexityMetrics::unavailable(),
                 search_statistics: ExactSearchStatistics::default(),
+                endpoint_support_statistics: None,
                 witness: None,
                 diagnostics: vec![diagnostic],
             };
@@ -168,54 +239,68 @@ pub(in crate::layouts::integrated) fn solve_facility_geometry_rung(
             .satisfy(&mut brancher, &mut termination, &mut resolver);
     let search_ms = elapsed_millis(search_started.elapsed());
 
-    let (outcome, validation, first_witness_ms, witness, diagnostics, search_statistics) =
-        match result {
-            SatisfactionResult::Satisfiable(satisfiable) => {
-                let solution = satisfiable.solution();
-                let extracted = extract_witness(&solution, &placement_model.instances);
-                let validation_diagnostics = validate_witness(&input, &extracted);
-                let validation = if validation_diagnostics.is_empty() {
-                    ExactValidationStatus::Passed
+    let (
+        outcome,
+        termination_reason,
+        validation,
+        first_witness_ms,
+        witness,
+        diagnostics,
+        search_statistics,
+    ) = match result {
+        SatisfactionResult::Satisfiable(satisfiable) => {
+            let solution = satisfiable.solution();
+            let extracted = extract_witness(&solution, &placement_model.instances);
+            let validation_diagnostics = validate_witness(&input, &extracted);
+            let validation = if validation_diagnostics.is_empty() {
+                ExactValidationStatus::Passed
+            } else {
+                ExactValidationStatus::Failed
+            };
+            let outcome = if validation == ExactValidationStatus::Passed {
+                BottomUpRungOutcome::Feasible
+            } else {
+                BottomUpRungOutcome::InvalidWitness
+            };
+            let statistics = capture_search_statistics(
+                satisfiable.solver(),
+                satisfiable.brancher(),
+                satisfiable.conflict_resolver(),
+                &search_event_counters,
+            );
+            (
+                outcome,
+                if validation == ExactValidationStatus::Passed {
+                    BottomUpTerminationReason::FirstWitness
                 } else {
-                    ExactValidationStatus::Failed
-                };
-                let outcome = if validation == ExactValidationStatus::Passed {
-                    BottomUpRungOutcome::Feasible
-                } else {
-                    BottomUpRungOutcome::InvalidWitness
-                };
-                let statistics = capture_search_statistics(
-                    satisfiable.solver(),
-                    satisfiable.brancher(),
-                    satisfiable.conflict_resolver(),
-                    &search_event_counters,
-                );
-                (
-                    outcome,
-                    validation,
-                    Some(search_ms),
-                    Some(extracted),
-                    validation_diagnostics,
-                    statistics,
-                )
-            }
-            SatisfactionResult::Unsatisfiable(solver, brancher, resolver) => (
-                BottomUpRungOutcome::Infeasible,
-                ExactValidationStatus::NotAttempted,
-                None,
-                None,
-                Vec::new(),
-                capture_search_statistics(solver, brancher, resolver, &search_event_counters),
-            ),
-            SatisfactionResult::Unknown(solver, brancher, resolver) => (
-                BottomUpRungOutcome::Unknown,
-                ExactValidationStatus::NotAttempted,
-                None,
-                None,
-                Vec::new(),
-                capture_search_statistics(solver, brancher, resolver, &search_event_counters),
-            ),
-        };
+                    BottomUpTerminationReason::InvalidWitness
+                },
+                validation,
+                Some(search_ms),
+                Some(BottomUpRungWitness::FacilityGeometry { witness: extracted }),
+                validation_diagnostics,
+                statistics,
+            )
+        }
+        SatisfactionResult::Unsatisfiable(solver, brancher, resolver) => (
+            BottomUpRungOutcome::Infeasible,
+            BottomUpTerminationReason::ProvenInfeasible,
+            ExactValidationStatus::NotAttempted,
+            None,
+            None,
+            Vec::new(),
+            capture_search_statistics(solver, brancher, resolver, &search_event_counters),
+        ),
+        SatisfactionResult::Unknown(solver, brancher, resolver) => (
+            BottomUpRungOutcome::Unknown,
+            BottomUpTerminationReason::TimeLimit,
+            ExactValidationStatus::NotAttempted,
+            None,
+            None,
+            Vec::new(),
+            capture_search_statistics(solver, brancher, resolver, &search_event_counters),
+        ),
+    };
 
     BottomUpRungReport {
         schema_version: BOTTOM_UP_RUNG_SCHEMA_VERSION,
@@ -223,18 +308,30 @@ pub(in crate::layouts::integrated) fn solve_facility_geometry_rung(
         formulation: "coordinate-geometry-orientation-disjunctive-non-overlap-v2",
         ceiling,
         facility_count,
+        facility_terminal_count: 0,
+        facility_terminal_ids: Vec::new(),
         semantic_certificate: facility_geometry_certificate(),
         construction_ms,
         search_ms,
         first_witness_ms,
         outcome,
+        termination_reason,
+        witness_count: u32::from(witness.is_some()),
         validation,
         search_space,
         model_complexity,
         search_statistics,
+        endpoint_support_statistics: None,
         witness,
         diagnostics,
     }
+}
+
+pub(in crate::layouts::integrated) fn solve_facility_ports_rung(
+    input: ModelInput,
+    time_limit: Duration,
+) -> BottomUpRungReport {
+    facility_ports::solve(input, time_limit)
 }
 
 fn facility_geometry_search_space_profile(input: &ModelInput) -> BottomUpSearchSpaceProfile {
@@ -280,6 +377,9 @@ fn facility_geometry_search_space_profile(input: &ModelInput) -> BottomUpSearchS
             directional_rotation_upper_bound_log2: None,
             directional_rotation_upper_bound_log10: None,
             rotation_equivalence_reduction_log2: None,
+            facility_port_choice_upper_bound_log2: None,
+            facility_port_choice_upper_bound_log10: None,
+            facility_port_domain_histogram: None,
         };
     }
 
@@ -289,6 +389,9 @@ fn facility_geometry_search_space_profile(input: &ModelInput) -> BottomUpSearchS
         directional_rotation_upper_bound_log2: Some(directional_log2),
         directional_rotation_upper_bound_log10: Some(directional_log2 * std::f64::consts::LOG10_2),
         rotation_equivalence_reduction_log2: Some(directional_log2 - semantic_log2),
+        facility_port_choice_upper_bound_log2: None,
+        facility_port_choice_upper_bound_log10: None,
+        facility_port_domain_histogram: None,
     }
 }
 
@@ -787,6 +890,13 @@ mod tests {
         }
     }
 
+    fn geometry_witness(report: &BottomUpRungReport) -> &FacilityGeometryWitness {
+        match report.witness.as_ref().unwrap() {
+            BottomUpRungWitness::FacilityGeometry { witness } => witness,
+            BottomUpRungWitness::FacilityPorts { .. } => panic!("expected facility geometry"),
+        }
+    }
+
     fn brute_directional_geometry_feasible(input: &ModelInput) -> bool {
         let candidates = input
             .instances
@@ -851,7 +961,7 @@ mod tests {
 
         assert_eq!(report.outcome, BottomUpRungOutcome::Feasible);
         assert_eq!(report.validation, ExactValidationStatus::Passed);
-        assert_eq!(report.witness.as_ref().unwrap().placements.len(), 2);
+        assert_eq!(geometry_witness(&report).placements.len(), 2);
         assert!(report.semantic_certificate.facility_geometry);
         assert!(!report.semantic_certificate.facility_ports);
         assert!(!report.semantic_certificate.pipe_routing);
@@ -885,7 +995,7 @@ mod tests {
         );
 
         assert_eq!(report.outcome, BottomUpRungOutcome::Feasible);
-        let placement = &report.witness.as_ref().unwrap().placements[0];
+        let placement = &geometry_witness(&report).placements[0];
         assert_eq!(placement.representative_rotation, 90);
         assert_eq!(placement.equivalent_rotations, vec![90]);
         assert_eq!([placement.width, placement.height], [2, 3]);
@@ -899,7 +1009,7 @@ mod tests {
         );
 
         assert_eq!(report.outcome, BottomUpRungOutcome::Feasible);
-        let placement = &report.witness.as_ref().unwrap().placements[0];
+        let placement = &geometry_witness(&report).placements[0];
         assert_eq!(placement.representative_rotation, 0);
         assert_eq!(placement.equivalent_rotations, vec![0, 90, 180, 270]);
         assert_eq!(report.model_complexity.variables.total_variables, 3);

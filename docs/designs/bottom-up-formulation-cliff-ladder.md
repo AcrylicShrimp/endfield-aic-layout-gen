@@ -41,10 +41,10 @@ Every rung receives the same prepared cumulative production graph, validated gam
 `max_width` and `max_height` ceilings, time budget, stable entity order, and solver build. The first
 baseline workload is Heavy Xiranite minimum-rate cumulative Phase 3.
 
-The initial comparison uses a `16 x 16` coordinate canvas and hard ceiling because that is the
-currently observed Phase 3 cliff case. It is a diagnostic request bound, not a game constant or
-required used footprint. Partial rungs must not require their partial geometry to occupy exactly
-`16 x 16`: omitted future transport may legitimately extend the final footprint.
+Every benchmark declares its own coordinate ceiling. The first full-growth ladder uses a loose
+`50 x 50` diagnostic ceiling so facility and port feasibility can be observed without conflating
+the experiment with a compact-footprint proof. This is neither a game constant nor a required used
+footprint. Partial rungs report their actual used geometry independently of unused canvas capacity.
 
 ## Cumulative Rungs
 
@@ -82,12 +82,25 @@ Adds one compatible facility-port choice and its rotated physical geometry for e
 logical endpoint. Port direction, transport kind, input/output direction, placement, rotation, and
 physical port geometry remain linked by the exact endpoint-support relation.
 
+The formulation reintroduces full directional rotation as one sparse variable per facility. That
+variable is channelled bidirectionally to the Rung 0 occupied-rectangle class. Each facility-owned
+terminal has independent port-choice and local-connection variables. A complete exact support
+relation links `(rotation, port choice, local connection)`, and guarded coordinate equalities place
+the outside-adjacent connection cell at the facility origin plus the selected local offset.
+
+Every selected connection cell must be in the request grid and outside every facility footprint.
+This is the one-cell selected-port clearance rule. The connection is known to be outside its owner
+by validated port geometry; exact disjunctions enforce clearance from every other facility. Two
+facility terminals may select the same port or connection cell because current confirmed semantics
+do not establish port exclusivity. Endpoint-to-endpoint transport collision begins with routing and
+is therefore absent from this rung.
+
 External boundary-terminal coordinates are not added. An external logical endpoint contributes only
 its facility-owned counterpart at this rung. No route, flow, item-on-grid, or topology variable may
 be present.
 
 There is no invented port-distance objective. Port assignment has no independent game-quality
-objective before routing exists. The placement geometry objective remains unchanged.
+objective before routing exists. Like Rung 0, the primary Rung 1 experiment is feasibility-only.
 
 ### Rung 2: Pipe Routing
 

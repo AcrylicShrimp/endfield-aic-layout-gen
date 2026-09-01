@@ -34,12 +34,12 @@ mod transport_tile_cap;
 
 pub use super::exact::ladder::{
     BOTTOM_UP_RUNG_SCHEMA_VERSION, BottomUpRungKind, BottomUpRungOutcome, BottomUpRungReport,
-    BottomUpSearchSpaceProfile, BottomUpSemanticCertificate, FacilityGeometryPlacement,
-    FacilityGeometryWitness,
+    BottomUpRungWitness, BottomUpSearchSpaceProfile, BottomUpSemanticCertificate,
+    BottomUpTerminationReason, FacilityEndpointPlacement, FacilityGeometryPlacement,
+    FacilityGeometryWitness, FacilityPortPlacement, FacilityPortsWitness,
 };
 pub use bottom_up_ladder::{
-    BOTTOM_UP_FACILITY_GEOMETRY_EXPERIMENT_SCHEMA_VERSION,
-    BottomUpFacilityGeometryExperimentReport, diagnose_bottom_up_facility_geometry,
+    BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION, BottomUpExperimentReport, diagnose_bottom_up_rung,
 };
 pub use connectivity_witness::{
     CONNECTIVITY_WITNESS_DIAGNOSIS_SCHEMA_VERSION, ConnectivityWitnessCaseKind,
