@@ -14,8 +14,9 @@ use pumpkin_solver::core::state::PropagationStatusCP;
 use pumpkin_solver::core::variables::{DomainId, Literal};
 
 use super::ladder::{
-    EndpointClearanceGroupStatistics, EndpointClearancePropagationStatistics,
-    EndpointClearanceRelationHotsetStatistics, EndpointClearanceRelationStatistics,
+    EndpointClearanceBatchingStatistics, EndpointClearanceGroupStatistics,
+    EndpointClearancePropagationStatistics, EndpointClearanceRelationHotsetStatistics,
+    EndpointClearanceRelationStatistics,
 };
 
 declare_inference_label!(EndpointRectangleClearance);
@@ -58,6 +59,19 @@ pub(in crate::layouts::integrated) struct EndpointClearancePropagationCounters {
     universally_entailed_executions: AtomicU64,
     entailment_episodes: AtomicU64,
     notifications_while_entailed: AtomicU64,
+    shards: AtomicU64,
+    shard_facility_coordinate_watchers: AtomicU64,
+    shard_orientation_watchers: AtomicU64,
+    shard_endpoint_coordinate_watchers: AtomicU64,
+    shard_notification_callbacks: AtomicU64,
+    shard_enqueue_requests: AtomicU64,
+    shard_executions: AtomicU64,
+    shard_scratch_executions: AtomicU64,
+    shard_full_batches: AtomicU64,
+    shard_endpoint_only_batches: AtomicU64,
+    shard_dirty_relation_checks: AtomicU64,
+    shard_total_dirty_batch_size: AtomicU64,
+    shard_maximum_dirty_batch_size: AtomicU64,
     relation_details: Mutex<Vec<Arc<EndpointClearanceRelationCounters>>>,
 }
 
@@ -106,6 +120,19 @@ impl EndpointClearancePropagationCounters {
             universally_entailed_executions: AtomicU64::default(),
             entailment_episodes: AtomicU64::default(),
             notifications_while_entailed: AtomicU64::default(),
+            shards: AtomicU64::default(),
+            shard_facility_coordinate_watchers: AtomicU64::default(),
+            shard_orientation_watchers: AtomicU64::default(),
+            shard_endpoint_coordinate_watchers: AtomicU64::default(),
+            shard_notification_callbacks: AtomicU64::default(),
+            shard_enqueue_requests: AtomicU64::default(),
+            shard_executions: AtomicU64::default(),
+            shard_scratch_executions: AtomicU64::default(),
+            shard_full_batches: AtomicU64::default(),
+            shard_endpoint_only_batches: AtomicU64::default(),
+            shard_dirty_relation_checks: AtomicU64::default(),
+            shard_total_dirty_batch_size: AtomicU64::default(),
+            shard_maximum_dirty_batch_size: AtomicU64::default(),
             relation_details: Mutex::new(Vec::new()),
         }
     }
@@ -113,6 +140,12 @@ impl EndpointClearancePropagationCounters {
     fn increment(&self, counter: &AtomicU64) {
         if self.enabled {
             counter.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    fn increment_by(&self, counter: &AtomicU64, amount: usize) {
+        if self.enabled {
+            counter.fetch_add(amount.try_into().unwrap_or(u64::MAX), Ordering::Relaxed);
         }
     }
 
@@ -181,7 +214,129 @@ impl EndpointClearancePropagationCounters {
             entailment_episodes: self.entailment_episodes.load(Ordering::Relaxed),
             notifications_while_entailed: self.notifications_while_entailed.load(Ordering::Relaxed),
             relation_hotset: self.relation_hotset(),
+            batching: EndpointClearanceBatchingStatistics {
+                shards: self.shards.load(Ordering::Relaxed),
+                facility_coordinate_watchers: self
+                    .shard_facility_coordinate_watchers
+                    .load(Ordering::Relaxed),
+                orientation_watchers: self.shard_orientation_watchers.load(Ordering::Relaxed),
+                endpoint_coordinate_watchers: self
+                    .shard_endpoint_coordinate_watchers
+                    .load(Ordering::Relaxed),
+                notification_callbacks: self.shard_notification_callbacks.load(Ordering::Relaxed),
+                enqueue_requests: self.shard_enqueue_requests.load(Ordering::Relaxed),
+                shard_executions: self.shard_executions.load(Ordering::Relaxed),
+                scratch_executions: self.shard_scratch_executions.load(Ordering::Relaxed),
+                full_shard_batches: self.shard_full_batches.load(Ordering::Relaxed),
+                endpoint_only_batches: self.shard_endpoint_only_batches.load(Ordering::Relaxed),
+                dirty_relation_checks: self.shard_dirty_relation_checks.load(Ordering::Relaxed),
+                total_dirty_batch_size: self.shard_total_dirty_batch_size.load(Ordering::Relaxed),
+                maximum_dirty_batch_size: self
+                    .shard_maximum_dirty_batch_size
+                    .load(Ordering::Relaxed),
+            },
         }
+    }
+
+    pub(super) fn enabled(&self) -> bool {
+        self.enabled
+    }
+
+    pub(super) fn note_shard_registration(
+        &self,
+        orientation_watchers: usize,
+        relation_count: usize,
+    ) {
+        if !self.enabled {
+            return;
+        }
+        self.shards.fetch_add(1, Ordering::Relaxed);
+        self.shard_facility_coordinate_watchers
+            .fetch_add(2, Ordering::Relaxed);
+        self.shard_orientation_watchers.fetch_add(
+            orientation_watchers.try_into().unwrap_or(u64::MAX),
+            Ordering::Relaxed,
+        );
+        self.shard_endpoint_coordinate_watchers.fetch_add(
+            relation_count
+                .saturating_mul(2)
+                .try_into()
+                .unwrap_or(u64::MAX),
+            Ordering::Relaxed,
+        );
+    }
+
+    pub(super) fn note_shard_notification(&self, enqueue: bool) {
+        self.increment(&self.shard_notification_callbacks);
+        if enqueue {
+            self.increment(&self.shard_enqueue_requests);
+        }
+    }
+
+    pub(super) fn note_notification_axis(
+        &self,
+        axis: EndpointClearanceNotificationAxis,
+        logical_relations: usize,
+    ) {
+        self.increment_by(&self.notifications, logical_relations);
+        match axis {
+            EndpointClearanceNotificationAxis::ConnectionX => {
+                self.increment_by(&self.coordinate_notifications, logical_relations);
+                self.increment_by(&self.connection_x_notifications, logical_relations);
+            }
+            EndpointClearanceNotificationAxis::ConnectionY => {
+                self.increment_by(&self.coordinate_notifications, logical_relations);
+                self.increment_by(&self.connection_y_notifications, logical_relations);
+            }
+            EndpointClearanceNotificationAxis::FacilityX => {
+                self.increment_by(&self.coordinate_notifications, logical_relations);
+                self.increment_by(&self.facility_x_notifications, logical_relations);
+            }
+            EndpointClearanceNotificationAxis::FacilityY => {
+                self.increment_by(&self.coordinate_notifications, logical_relations);
+                self.increment_by(&self.facility_y_notifications, logical_relations);
+            }
+            EndpointClearanceNotificationAxis::Orientation => {
+                self.increment_by(&self.orientation_notifications, logical_relations);
+            }
+        }
+    }
+
+    pub(super) fn note_enqueued_notification(&self, logical_relations: usize) {
+        self.increment_by(&self.enqueued_notifications, logical_relations);
+    }
+
+    pub(super) fn note_skipped_false_orientation_notification(&self, logical_relations: usize) {
+        self.increment_by(
+            &self.skipped_false_orientation_notifications,
+            logical_relations,
+        );
+    }
+
+    pub(super) fn note_shard_batch(&self, dirty_relations: usize, full: bool, scratch: bool) {
+        if !self.enabled {
+            return;
+        }
+        self.shard_executions.fetch_add(1, Ordering::Relaxed);
+        if scratch {
+            self.shard_scratch_executions
+                .fetch_add(1, Ordering::Relaxed);
+            return;
+        } else if full {
+            self.shard_full_batches.fetch_add(1, Ordering::Relaxed);
+        } else {
+            self.shard_endpoint_only_batches
+                .fetch_add(1, Ordering::Relaxed);
+        }
+        let dirty_relations = dirty_relations.try_into().unwrap_or(u64::MAX);
+        self.shard_total_dirty_batch_size
+            .fetch_add(dirty_relations, Ordering::Relaxed);
+        self.shard_maximum_dirty_batch_size
+            .fetch_max(dirty_relations, Ordering::Relaxed);
+    }
+
+    pub(super) fn note_shard_relation_check(&self) {
+        self.increment(&self.shard_dirty_relation_checks);
     }
 
     pub(in crate::layouts::integrated) fn register_relation(
@@ -349,6 +504,15 @@ pub(in crate::layouts::integrated) struct EndpointClearanceRelationCounters {
     executions_with_domain_effect: AtomicU64,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum EndpointClearanceNotificationAxis {
+    ConnectionX,
+    ConnectionY,
+    FacilityX,
+    FacilityY,
+    Orientation,
+}
+
 impl EndpointClearanceRelationCounters {
     fn snapshot(&self) -> EndpointClearanceRelationStatistics {
         EndpointClearanceRelationStatistics {
@@ -431,25 +595,22 @@ impl PropagatorConstructor for EndpointRectangleClearancePropagatorArgs {
                 LocalId::from(u32::try_from(index + 4).expect("orientation count fits u32")),
             );
         }
-        self.counters.increment(&self.counters.relations);
         PropagatorSpec {
             registration: registration.build(),
             checkers: RuntimeCheckers::empty(),
-            propagator: EndpointRectangleClearancePropagator {
-                name: self.name,
-                connection_x: self.connection_x,
-                connection_y: self.connection_y,
-                facility_x: self.facility_x,
-                facility_y: self.facility_y,
-                orientations: self.orientations,
-                priority: self.priority,
-                counters: self.counters,
-                false_event_filter_enabled: self.false_event_filter_enabled,
-                relation_counters: self.relation_counters,
-                pending_trigger_mask: 0,
-                entailed_observed: false,
-                inference_code: InferenceCode::new(self.constraint_tag, EndpointRectangleClearance),
-            },
+            propagator: EndpointRectangleClearancePropagator::new_relation_kernel(
+                self.name,
+                self.connection_x,
+                self.connection_y,
+                self.facility_x,
+                self.facility_y,
+                self.orientations,
+                self.priority,
+                self.counters,
+                self.false_event_filter_enabled,
+                self.relation_counters,
+                self.constraint_tag,
+            ),
         }
     }
 }
@@ -475,7 +636,7 @@ const COORDINATE_TRIGGER: u8 = 1 << 0;
 const ORIENTATION_TRIGGER: u8 = 1 << 1;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-enum ExecutionTrigger {
+pub(super) enum ExecutionTrigger {
     Scratch,
     CoordinateOnly,
     OrientationOnly,
@@ -484,7 +645,7 @@ enum ExecutionTrigger {
 }
 
 impl ExecutionTrigger {
-    fn from_mask(mask: u8) -> Self {
+    pub(super) fn from_mask(mask: u8) -> Self {
         match mask {
             COORDINATE_TRIGGER => Self::CoordinateOnly,
             ORIENTATION_TRIGGER => Self::OrientationOnly,
@@ -565,6 +726,55 @@ struct Bounds {
 }
 
 impl EndpointRectangleClearancePropagator {
+    #[allow(clippy::too_many_arguments)]
+    pub(super) fn new_relation_kernel(
+        name: String,
+        connection_x: DomainId,
+        connection_y: DomainId,
+        facility_x: DomainId,
+        facility_y: DomainId,
+        orientations: Vec<EndpointClearanceOrientation>,
+        priority: Priority,
+        counters: Arc<EndpointClearancePropagationCounters>,
+        false_event_filter_enabled: bool,
+        relation_counters: Option<Arc<EndpointClearanceRelationCounters>>,
+        constraint_tag: ConstraintTag,
+    ) -> Self {
+        counters.increment(&counters.relations);
+        Self {
+            name,
+            connection_x,
+            connection_y,
+            facility_x,
+            facility_y,
+            orientations,
+            priority,
+            counters,
+            false_event_filter_enabled,
+            relation_counters,
+            pending_trigger_mask: 0,
+            entailed_observed: false,
+            inference_code: InferenceCode::new(constraint_tag, EndpointRectangleClearance),
+        }
+    }
+
+    pub(super) fn note_logical_notification(&self) {
+        if let Some(relation_counters) = &self.relation_counters {
+            relation_counters
+                .notifications
+                .fetch_add(1, Ordering::Relaxed);
+        }
+        if self.entailed_observed {
+            self.counters
+                .increment(&self.counters.notifications_while_entailed);
+        }
+    }
+
+    pub(super) fn reset_transient_state(&mut self) {
+        self.pending_trigger_mask = 0;
+        self.entailed_observed = false;
+    }
+
     fn bounds(&self, context: &impl ReadDomains) -> Bounds {
         Bounds {
             connection_x_lower: context.lower_bound(&self.connection_x),
@@ -827,7 +1037,7 @@ impl EndpointRectangleClearancePropagator {
         Ok(())
     }
 
-    fn propagate_all(
+    pub(super) fn propagate_all(
         &mut self,
         context: &mut PropagationContext,
         trigger: ExecutionTrigger,

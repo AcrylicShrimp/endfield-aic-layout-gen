@@ -35,6 +35,7 @@ enum RungArg {
     FacilityPortGeometry,
     FacilityPorts,
     FacilityPortsPropagated,
+    FacilityPortsSharded,
 }
 
 impl From<RungArg> for BottomUpRungKind {
@@ -44,6 +45,7 @@ impl From<RungArg> for BottomUpRungKind {
             RungArg::FacilityPortGeometry => Self::FacilityPortGeometry,
             RungArg::FacilityPorts => Self::FacilityPorts,
             RungArg::FacilityPortsPropagated => Self::FacilityPortsPropagated,
+            RungArg::FacilityPortsSharded => Self::FacilityPortsSharded,
         }
     }
 }
@@ -141,6 +143,9 @@ struct Args {
     /// Exact solver wall-clock budget in milliseconds.
     #[arg(long, value_name = "MILLISECONDS")]
     time_limit_ms: u64,
+    /// Optional exact search decision budget for cost-per-decision experiments.
+    #[arg(long, value_name = "COUNT")]
+    decision_limit: Option<u64>,
     /// Directory receiving summary JSON and self-contained HTML evidence.
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
@@ -296,6 +301,7 @@ fn run(args: Args) -> Result<bool> {
         args.endpoint_clearance_priority.into(),
         !args.disable_endpoint_clearance_counters,
         args.endpoint_clearance_false_event_filter,
+        args.decision_limit,
         args.target_phase,
         Duration::from_millis(time_limit.get()),
     )
@@ -316,6 +322,21 @@ fn run(args: Args) -> Result<bool> {
 }
 
 fn validate_search_settings(args: &Args) -> Result<()> {
+    ensure!(
+        args.decision_limit != Some(0),
+        "decision limit must be positive"
+    );
+    ensure!(
+        args.decision_limit.is_none()
+            || (args.partition_facilities.is_empty()
+                && !args.partition_root_snapshot
+                && !args.partition_search_provenance
+                && matches!(
+                    args.rung,
+                    RungArg::FacilityPortsPropagated | RungArg::FacilityPortsSharded
+                )),
+        "decision limit applies only to an unpartitioned propagated or sharded facility-port rung"
+    );
     ensure!(
         !(args.partition_root_snapshot && args.partition_search_provenance),
         "partition root snapshot and search provenance are mutually exclusive"
@@ -358,11 +379,13 @@ fn validate_search_settings(args: &Args) -> Result<()> {
         );
     } else {
         ensure!(
-            matches!(args.rung, RungArg::FacilityPortsPropagated)
-                || (args.endpoint_clearance_priority == EndpointClearancePriorityArg::High
-                    && !args.disable_endpoint_clearance_counters
-                    && !args.endpoint_clearance_false_event_filter),
-            "endpoint-clearance search settings apply only to rung 'facility-ports-propagated'"
+            matches!(
+                args.rung,
+                RungArg::FacilityPortsPropagated | RungArg::FacilityPortsSharded
+            ) || (args.endpoint_clearance_priority == EndpointClearancePriorityArg::High
+                && !args.disable_endpoint_clearance_counters
+                && !args.endpoint_clearance_false_event_filter),
+            "endpoint-clearance search settings apply only to propagated or sharded facility-port rungs"
         );
     }
     Ok(())
@@ -1028,6 +1051,31 @@ mod tests {
         .expect("propagated facility-port rung should parse");
 
         assert!(matches!(args.rung, RungArg::FacilityPortsPropagated));
+    }
+
+    #[test]
+    fn parses_the_sharded_facility_port_rung() {
+        let args = Args::try_parse_from([
+            "aic-bottom-up-ladder",
+            "--rung",
+            "facility-ports-sharded",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "placement.json",
+            "--target-phase",
+            "3",
+            "--time-limit-ms",
+            "5000",
+            "--decision-limit",
+            "1000",
+            "--output-dir",
+            "artifacts",
+        ])
+        .expect("sharded facility-port rung should parse");
+
+        assert!(matches!(args.rung, RungArg::FacilityPortsSharded));
+        assert_eq!(args.decision_limit, Some(1000));
     }
 
     #[test]

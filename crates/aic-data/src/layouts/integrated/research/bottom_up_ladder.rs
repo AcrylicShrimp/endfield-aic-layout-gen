@@ -50,6 +50,7 @@ pub fn diagnose_bottom_up_rung(
     endpoint_clearance_priority: exact::ladder::EndpointClearanceSchedulingPriority,
     endpoint_clearance_counters_enabled: bool,
     endpoint_clearance_false_event_filter_enabled: bool,
+    decision_limit: Option<u64>,
     target_phase_index: usize,
     search_budget: Duration,
 ) -> Result<BottomUpExperimentReport, IntegratedLayoutReport> {
@@ -74,12 +75,23 @@ pub fn diagnose_bottom_up_rung(
             exact::ladder::solve_facility_ports_rung(input, search_budget)
         }
         exact::ladder::BottomUpRungKind::FacilityPortsPropagated => {
-            exact::ladder::solve_facility_ports_propagated_rung(
+            exact::ladder::solve_facility_ports_propagated_rung_with_decision_limit(
                 input,
                 search_budget,
                 endpoint_clearance_priority,
                 endpoint_clearance_counters_enabled,
                 endpoint_clearance_false_event_filter_enabled,
+                decision_limit,
+            )
+        }
+        exact::ladder::BottomUpRungKind::FacilityPortsSharded => {
+            exact::ladder::solve_facility_ports_sharded_rung_with_decision_limit(
+                input,
+                search_budget,
+                endpoint_clearance_priority,
+                endpoint_clearance_counters_enabled,
+                endpoint_clearance_false_event_filter_enabled,
+                decision_limit,
             )
         }
     };

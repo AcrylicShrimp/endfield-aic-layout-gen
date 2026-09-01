@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "experiment": "heavy-xiranite-bottom-up-clearance-shards-ab",
+  "workload_id": "heavy-xiranite-minimum-rate",
+  "workload_manifest_sha256": "d9018af56cfec3f7aabbfeb660617a93e9a809dccfff7294c21bfaca0d7cfa3e",
+  "ceiling": [50, 50],
+  "configuration": {
+    "priority": "high",
+    "false_event_filter_enabled": false,
+    "counterbalanced_serial_runs_per_rung": 6,
+    "time_budget_ms": 5000,
+    "decision_budget_time_guard_ms": 10000,
+    "counters_off_for_performance": true,
+    "counters_on_for_telemetry_only": true
+  },
+  "semantic_gates": {
+    "complete_assignment_equivalence": "passed",
+    "partial_domain_multi_orientation_equivalence": "passed",
+    "initial_full_execution": "passed",
+    "same_fixpoint_redirty": "passed",
+    "conflict_backtracking_sibling_recovery": "passed",
+    "false_event_filter_equivalence": "passed",
+    "pumpkin_debug_checks_scratch": "passed",
+    "independent_reviews": ["pass", "pass", "pass"]
+  },
+  "time_budget_medians": [
+    {"phase": 29, "facilities": 30, "terminals": 95, "rung": "pairwise", "outcome": "feasible", "validation": "passed", "construction_ms": 15.0, "search_ms": 215.0, "first_witness_ms": 215.0, "decisions": 13332.0, "conflicts": 344.0, "restarts": 0.0, "cpu_seconds": 0.235, "peak_rss_bytes": 33062912.0},
+    {"phase": 29, "facilities": 30, "terminals": 95, "rung": "sharded", "outcome": "feasible", "validation": "passed", "construction_ms": 13.0, "search_ms": 180.0, "first_witness_ms": 180.0, "decisions": 11830.0, "conflicts": 282.0, "restarts": 0.0, "cpu_seconds": 0.200, "peak_rss_bytes": 33308672.0},
+    {"phase": 31, "facilities": 36, "terminals": 115, "rung": "pairwise", "outcome": "unknown", "validation": "not-attempted", "construction_ms": 21.5, "search_ms": 5000.0, "first_witness_ms": null, "decisions": 252958.5, "conflicts": 11057.0, "restarts": 4.0, "cpu_seconds": 5.025, "peak_rss_bytes": 48054272.0},
+    {"phase": 31, "facilities": 36, "terminals": 115, "rung": "sharded", "outcome": "unknown", "validation": "not-attempted", "construction_ms": 17.0, "search_ms": 5000.0, "first_witness_ms": null, "decisions": 276282.0, "conflicts": 11718.0, "restarts": 0.0, "cpu_seconds": 5.025, "peak_rss_bytes": 48357376.0},
+    {"phase": 32, "facilities": 39, "terminals": 125, "rung": "pairwise", "outcome": "unknown", "validation": "not-attempted", "construction_ms": 25.0, "search_ms": 5000.0, "first_witness_ms": null, "decisions": 220275.5, "conflicts": 11045.0, "restarts": 3.0, "cpu_seconds": 5.030, "peak_rss_bytes": 53256192.0},
+    {"phase": 32, "facilities": 39, "terminals": 125, "rung": "sharded", "outcome": "unknown", "validation": "not-attempted", "construction_ms": 20.0, "search_ms": 5000.0, "first_witness_ms": null, "decisions": 240060.5, "conflicts": 11789.0, "restarts": 3.0, "cpu_seconds": 5.020, "peak_rss_bytes": 54337536.0}
+  ],
+  "decision_budget_medians": [
+    {"phase": 29, "decision_limit": 10000, "rung": "pairwise", "termination": "decision-limit", "search_ms": 156.0, "cpu_seconds": 0.170, "peak_rss_bytes": 30490624.0, "conflicts": 244.0},
+    {"phase": 29, "decision_limit": 10000, "rung": "sharded", "termination": "decision-limit", "search_ms": 146.5, "cpu_seconds": 0.160, "peak_rss_bytes": 30818304.0, "conflicts": 247.0},
+    {"phase": 31, "decision_limit": 200000, "rung": "pairwise", "termination": "decision-limit", "search_ms": 3779.5, "cpu_seconds": 3.805, "peak_rss_bytes": 44892160.0, "conflicts": 8120.0},
+    {"phase": 31, "decision_limit": 200000, "rung": "sharded", "termination": "decision-limit", "search_ms": 3418.5, "cpu_seconds": 3.440, "peak_rss_bytes": 45334528.0, "conflicts": 8017.0},
+    {"phase": 32, "decision_limit": 180000, "rung": "pairwise", "termination": "decision-limit", "search_ms": 3905.5, "cpu_seconds": 3.935, "peak_rss_bytes": 51060736.0, "conflicts": 8178.0},
+    {"phase": 32, "decision_limit": 180000, "rung": "sharded", "termination": "decision-limit", "search_ms": 3545.0, "cpu_seconds": 3.570, "peak_rss_bytes": 50388992.0, "conflicts": 7973.0}
+  ],
+  "relative_changes_percent": [
+    {"phase": 29, "first_witness_ms": -16.28, "fixed_decision_search_ms": -6.09, "fixed_decision_cpu_seconds": -5.88, "fixed_decision_peak_rss_bytes": 1.07},
+    {"phase": 31, "decisions_per_time_budget": 9.22, "fixed_decision_search_ms": -9.55, "fixed_decision_cpu_seconds": -9.59, "fixed_decision_peak_rss_bytes": 0.99},
+    {"phase": 32, "decisions_per_time_budget": 8.98, "fixed_decision_search_ms": -9.23, "fixed_decision_cpu_seconds": -9.28, "fixed_decision_peak_rss_bytes": -1.32}
+  ],
+  "telemetry": [
+    {"phase": 29, "rung": "pairwise", "relations": 2755, "logical_executions": 1543790, "logical_notifications": 1908932, "physical_callbacks": 1908932, "physical_executions": 1543790, "scheduled_relation_checks": 1543790, "actual_relation_checks": 1543790, "executions_without_domain_effect": 1542540},
+    {"phase": 29, "rung": "sharded", "relations": 2755, "shards": 30, "logical_executions": 1484588, "logical_notifications": 1777062, "physical_callbacks": 714039, "physical_executions": 317220, "scheduled_relation_checks": 1484903, "actual_relation_checks": 1484588, "executions_without_domain_effect": 1483411},
+    {"phase": 31, "rung": "pairwise", "relations": 4025, "logical_executions": 34674272, "logical_notifications": 43373491, "physical_callbacks": 43373491, "physical_executions": 34674272, "scheduled_relation_checks": 34674272, "actual_relation_checks": 34674272, "executions_without_domain_effect": 34642488},
+    {"phase": 31, "rung": "sharded", "relations": 4025, "shards": 36, "logical_executions": 36622035, "logical_notifications": 45263519, "physical_callbacks": 18042625, "physical_executions": 9271188, "scheduled_relation_checks": 36641843, "actual_relation_checks": 36622035, "executions_without_domain_effect": 36588548},
+    {"phase": 32, "rung": "pairwise", "relations": 4750, "logical_executions": 35130490, "logical_notifications": 44399761, "physical_callbacks": 44399761, "physical_executions": 35130490, "scheduled_relation_checks": 35130490, "actual_relation_checks": 35130490, "executions_without_domain_effect": 35099177},
+    {"phase": 32, "rung": "sharded", "relations": 4750, "shards": 39, "logical_executions": 39379685, "logical_notifications": 48088501, "physical_callbacks": 16768924, "physical_executions": 8626927, "scheduled_relation_checks": 39402687, "actual_relation_checks": 39379685, "executions_without_domain_effect": 39344294}
+  ],
+  "acceptance": {
+    "semantic_gate": "passed",
+    "all_phase_29_witnesses_valid": true,
+    "fixed_decision_cpu_improvement_at_least_15_percent": false,
+    "peak_rss_regression_at_most_10_percent": true,
+    "phase_29_witness_regression_at_most_10_percent": true,
+    "phase_31_or_32_first_witness_improved": false,
+    "decision": "retain-as-experimental-evidence-only",
+    "default_cutover": false
+  },
+  "finding": "Within each shard trace, batching coalesces about 60-65 percent of logical notifications and 75-78 percent of relation checks into fewer physical calls. The reformulation lowers fixed-decision CPU cost by about 6-10 percent, but sharding alone does not cross the Phase 31/32 first-witness cliff. The nearly 99.91 percent no-effect relation checks remain the next suspect rather than a proven sole cause.",
+  "next_diagnostic": "Split full-shard versus endpoint-only scheduled and effective relation checks, then test exact entailment dormancy or axis-sensitive dirtying only if the breakdown identifies a concentrated avoidable source."
+}

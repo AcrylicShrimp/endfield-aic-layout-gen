@@ -9,12 +9,15 @@ use pumpkin_solver::core::branching::Brancher;
 use pumpkin_solver::core::predicates::PredicateConstructor;
 use pumpkin_solver::core::propagation::Priority;
 use pumpkin_solver::core::results::{CSPSolverExecutionFlag, ProblemSolution, SatisfactionResult};
-use pumpkin_solver::core::termination::TimeBudget;
+use pumpkin_solver::core::termination::{Combinator, TerminationCondition, TimeBudget};
 use pumpkin_solver::core::variables::{DomainId, Literal, TransformableVariable};
 
 use super::super::endpoint_clearance_propagator::{
     EndpointClearanceOrientation, EndpointClearancePropagationCounters,
     EndpointRectangleClearancePropagatorArgs,
+};
+use super::super::endpoint_clearance_shard_propagator::{
+    EndpointClearanceShardRelationArgs, TargetFacilityEndpointClearanceShardPropagatorArgs,
 };
 use super::super::endpoint_support_propagator::{
     EndpointSupportPropagationCounters, SparseEndpointSupportPropagatorArgs,
@@ -51,12 +54,15 @@ const CLEARANCE_FORMULATION: &str =
     "factorized-coordinate-geometry-rotation-port-support-clearance-v1";
 const PROPAGATED_CLEARANCE_FORMULATION: &str =
     "factorized-coordinate-geometry-rotation-port-support-point-rectangle-clearance-v1";
+const SHARDED_CLEARANCE_FORMULATION: &str =
+    "factorized-coordinate-geometry-rotation-port-support-target-facility-sharded-clearance-v1";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum ClearanceEncoding {
     None,
     ReifiedDirections,
     PointRectanglePropagator,
+    TargetFacilityShards,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -67,6 +73,7 @@ struct RungContract {
     clearance_priority: Option<EndpointClearanceSchedulingPriority>,
     clearance_counters_enabled: Option<bool>,
     clearance_false_event_filter_enabled: Option<bool>,
+    decision_limit: Option<u64>,
 }
 
 const GEOMETRY_CONTRACT: RungContract = RungContract {
@@ -76,6 +83,7 @@ const GEOMETRY_CONTRACT: RungContract = RungContract {
     clearance_priority: None,
     clearance_counters_enabled: None,
     clearance_false_event_filter_enabled: None,
+    decision_limit: None,
 };
 
 const CLEARANCE_CONTRACT: RungContract = RungContract {
@@ -85,6 +93,7 @@ const CLEARANCE_CONTRACT: RungContract = RungContract {
     clearance_priority: None,
     clearance_counters_enabled: None,
     clearance_false_event_filter_enabled: None,
+    decision_limit: None,
 };
 
 const PROPAGATED_CLEARANCE_CONTRACT: RungContract = RungContract {
@@ -94,6 +103,17 @@ const PROPAGATED_CLEARANCE_CONTRACT: RungContract = RungContract {
     clearance_priority: Some(EndpointClearanceSchedulingPriority::High),
     clearance_counters_enabled: Some(true),
     clearance_false_event_filter_enabled: Some(false),
+    decision_limit: None,
+};
+
+const SHARDED_CLEARANCE_CONTRACT: RungContract = RungContract {
+    rung: BottomUpRungKind::FacilityPortsSharded,
+    formulation: SHARDED_CLEARANCE_FORMULATION,
+    clearance: ClearanceEncoding::TargetFacilityShards,
+    clearance_priority: Some(EndpointClearanceSchedulingPriority::High),
+    clearance_counters_enabled: Some(true),
+    clearance_false_event_filter_enabled: Some(false),
+    decision_limit: None,
 };
 
 fn pumpkin_priority(priority: EndpointClearanceSchedulingPriority) -> Priority {
@@ -109,6 +129,7 @@ fn search_profile(contract: RungContract) -> BottomUpSearchProfile {
         endpoint_clearance_counters_enabled: contract.clearance_counters_enabled,
         endpoint_clearance_false_event_filter_enabled: contract
             .clearance_false_event_filter_enabled,
+        decision_limit: contract.decision_limit,
     }
 }
 
@@ -179,6 +200,7 @@ pub(super) fn solve_with_clearance(input: ModelInput, time_limit: Duration) -> B
     solve(input, time_limit, CLEARANCE_CONTRACT, &BTreeMap::new())
 }
 
+#[cfg(test)]
 pub(super) fn solve_with_propagated_clearance(
     input: ModelInput,
     time_limit: Duration,
@@ -186,12 +208,71 @@ pub(super) fn solve_with_propagated_clearance(
     counters_enabled: bool,
     false_event_filter_enabled: bool,
 ) -> BottomUpRungReport {
+    solve_with_propagated_clearance_and_decision_limit(
+        input,
+        time_limit,
+        priority,
+        counters_enabled,
+        false_event_filter_enabled,
+        None,
+    )
+}
+
+pub(super) fn solve_with_propagated_clearance_and_decision_limit(
+    input: ModelInput,
+    time_limit: Duration,
+    priority: EndpointClearanceSchedulingPriority,
+    counters_enabled: bool,
+    false_event_filter_enabled: bool,
+    decision_limit: Option<u64>,
+) -> BottomUpRungReport {
     solve_with_propagated_clearance_and_fixed_rotations(
         input,
         time_limit,
         priority,
         counters_enabled,
         false_event_filter_enabled,
+        decision_limit,
+        &BTreeMap::new(),
+    )
+}
+
+#[cfg(test)]
+pub(super) fn solve_with_sharded_clearance(
+    input: ModelInput,
+    time_limit: Duration,
+    priority: EndpointClearanceSchedulingPriority,
+    counters_enabled: bool,
+    false_event_filter_enabled: bool,
+) -> BottomUpRungReport {
+    solve_with_sharded_clearance_and_decision_limit(
+        input,
+        time_limit,
+        priority,
+        counters_enabled,
+        false_event_filter_enabled,
+        None,
+    )
+}
+
+pub(super) fn solve_with_sharded_clearance_and_decision_limit(
+    input: ModelInput,
+    time_limit: Duration,
+    priority: EndpointClearanceSchedulingPriority,
+    counters_enabled: bool,
+    false_event_filter_enabled: bool,
+    decision_limit: Option<u64>,
+) -> BottomUpRungReport {
+    solve(
+        input,
+        time_limit,
+        RungContract {
+            clearance_priority: Some(priority),
+            clearance_counters_enabled: Some(counters_enabled),
+            clearance_false_event_filter_enabled: Some(false_event_filter_enabled),
+            decision_limit,
+            ..SHARDED_CLEARANCE_CONTRACT
+        },
         &BTreeMap::new(),
     )
 }
@@ -202,6 +283,7 @@ pub(super) fn solve_with_propagated_clearance_and_fixed_rotations(
     priority: EndpointClearanceSchedulingPriority,
     counters_enabled: bool,
     false_event_filter_enabled: bool,
+    decision_limit: Option<u64>,
     fixed_rotations: &BTreeMap<String, i64>,
 ) -> BottomUpRungReport {
     solve(
@@ -211,6 +293,7 @@ pub(super) fn solve_with_propagated_clearance_and_fixed_rotations(
             clearance_priority: Some(priority),
             clearance_counters_enabled: Some(counters_enabled),
             clearance_false_event_filter_enabled: Some(false_event_filter_enabled),
+            decision_limit,
             ..PROPAGATED_CLEARANCE_CONTRACT
         },
         fixed_rotations,
@@ -340,6 +423,21 @@ fn solve(
     )
 }
 
+struct DecisionBudget {
+    counters: Arc<Mutex<SearchEventCounters>>,
+    limit: u64,
+}
+
+impl TerminationCondition for DecisionBudget {
+    fn should_stop(&mut self) -> bool {
+        self.counters
+            .lock()
+            .expect("search event counters are not poisoned")
+            .branch_decisions()
+            >= self.limit
+    }
+}
+
 fn solve_with_brancher<B, F>(
     input: ModelInput,
     time_limit: Duration,
@@ -412,7 +510,19 @@ where
     let decorated_brancher = decorate_brancher(&port_model, default_brancher);
     let mut brancher = MeteredBrancher::new(decorated_brancher, Arc::clone(&search_event_counters));
     let mut resolver = ResolutionResolver::default();
-    let mut termination = TimeBudget::starting_now(time_limit);
+    let time_budget = TimeBudget::starting_now(time_limit);
+    let mut termination: Box<dyn TerminationCondition> =
+        if let Some(decision_limit) = contract.decision_limit {
+            Box::new(Combinator::new(
+                time_budget,
+                DecisionBudget {
+                    counters: Arc::clone(&search_event_counters),
+                    limit: decision_limit,
+                },
+            ))
+        } else {
+            Box::new(time_budget)
+        };
     let result = port_model.placement.model.solver_mut().satisfy(
         &mut brancher,
         &mut termination,
@@ -483,7 +593,17 @@ where
         ),
         SatisfactionResult::Unknown(solver, brancher, resolver) => (
             BottomUpRungOutcome::Unknown,
-            BottomUpTerminationReason::TimeLimit,
+            if contract.decision_limit.is_some_and(|limit| {
+                search_event_counters
+                    .lock()
+                    .expect("search event counters are not poisoned")
+                    .branch_decisions()
+                    >= limit
+            }) {
+                BottomUpTerminationReason::DecisionLimit
+            } else {
+                BottomUpTerminationReason::TimeLimit
+            },
             ExactValidationStatus::NotAttempted,
             None,
             None,
@@ -819,12 +939,15 @@ fn build_port_model(
     let rotations = build_rotation_channels(&mut placement, tag);
     post_fixed_rotations(&mut placement, &rotations, fixed_rotations, tag)?;
     let support_counters = Arc::new(EndpointSupportPropagationCounters::default());
-    let clearance_counters =
-        (clearance == ClearanceEncoding::PointRectanglePropagator).then(|| {
-            Arc::new(EndpointClearancePropagationCounters::new(
-                clearance_counters_enabled,
-            ))
-        });
+    let clearance_counters = matches!(
+        clearance,
+        ClearanceEncoding::PointRectanglePropagator | ClearanceEncoding::TargetFacilityShards
+    )
+    .then(|| {
+        Arc::new(EndpointClearancePropagationCounters::new(
+            clearance_counters_enabled,
+        ))
+    });
     let endpoints = build_endpoints(
         &mut placement,
         input,
@@ -836,6 +959,21 @@ fn build_port_model(
         clearance_false_event_filter_enabled,
         tag,
     )?;
+    if clearance == ClearanceEncoding::TargetFacilityShards {
+        post_sharded_connection_clearance(
+            &mut placement.model,
+            &endpoints,
+            &placement.instances,
+            clearance_priority,
+            Arc::clone(
+                clearance_counters
+                    .as_ref()
+                    .expect("sharded clearance has counters"),
+            ),
+            clearance_false_event_filter_enabled,
+            tag,
+        );
+    }
     Ok(PortModel {
         placement,
         rotations,
@@ -1100,7 +1238,7 @@ fn build_endpoints(
             );
         }
         match clearance {
-            ClearanceEncoding::None => {}
+            ClearanceEncoding::None | ClearanceEncoding::TargetFacilityShards => {}
             ClearanceEncoding::ReifiedDirections => post_connection_clearance(
                 &mut placement.model,
                 &terminal,
@@ -1264,6 +1402,68 @@ fn post_propagated_connection_clearance(
                 relation_counters: counters.register_relation(terminal, &instance.id),
                 constraint_tag: tag,
             });
+    }
+}
+
+fn post_sharded_connection_clearance(
+    model: &mut super::super::recorder::RecordedModel,
+    endpoints: &[ModelEndpoint],
+    instances: &[ModelInstance],
+    priority: Priority,
+    counters: Arc<EndpointClearancePropagationCounters>,
+    false_event_filter_enabled: bool,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) {
+    for target in instances {
+        let orientations = target
+            .orientations
+            .iter()
+            .map(|orientation| EndpointClearanceOrientation {
+                selected: orientation.selected,
+                selected_parent: orientation.selected_parent,
+                width: orientation.width,
+                height: orientation.height,
+            })
+            .collect::<Vec<_>>();
+        let relations = endpoints
+            .iter()
+            .filter(|endpoint| endpoint.instance != target.id)
+            .map(|endpoint| EndpointClearanceShardRelationArgs {
+                terminal: endpoint.terminal.clone(),
+                connection_x: endpoint.connection_x,
+                connection_y: endpoint.connection_y,
+                relation_counters: counters.register_relation(&endpoint.terminal, &target.id),
+            })
+            .collect::<Vec<_>>();
+        if relations.is_empty() {
+            continue;
+        }
+
+        let mut variables = vec![target.x, target.y];
+        variables.extend(
+            orientations
+                .iter()
+                .map(|orientation| orientation.selected_parent),
+        );
+        for relation in &relations {
+            variables.extend([relation.connection_x, relation.connection_y]);
+        }
+        model.record_global_constraint(ConstraintFamily::EndpointClearance, variables);
+        let _ =
+            model
+                .solver_mut()
+                .add_propagator(TargetFacilityEndpointClearanceShardPropagatorArgs {
+                    name: format!("facility:{}:endpoint-clearance-shard", target.id),
+                    target_facility: target.id.clone(),
+                    facility_x: target.x,
+                    facility_y: target.y,
+                    orientations,
+                    relations,
+                    priority,
+                    counters: Arc::clone(&counters),
+                    false_event_filter_enabled,
+                    constraint_tag: tag,
+                });
     }
 }
 
@@ -1816,6 +2016,27 @@ mod tests {
         );
         assert!(propagated.endpoint_clearance_statistics.is_some());
 
+        let decision_limited = solve_with_propagated_clearance_and_decision_limit(
+            input.clone(),
+            Duration::from_secs(1),
+            EndpointClearanceSchedulingPriority::High,
+            false,
+            false,
+            Some(1),
+        );
+        assert_eq!(decision_limited.outcome, BottomUpRungOutcome::Unknown);
+        assert_eq!(
+            decision_limited.termination_reason,
+            BottomUpTerminationReason::DecisionLimit
+        );
+        assert_eq!(decision_limited.search_profile.decision_limit, Some(1));
+        assert!(
+            decision_limited
+                .search_statistics
+                .branch_decisions
+                .is_some_and(|decisions| decisions >= 1)
+        );
+
         let medium = solve_with_propagated_clearance(
             input.clone(),
             Duration::from_secs(1),
@@ -1852,6 +2073,7 @@ mod tests {
             EndpointClearanceSchedulingPriority::High,
             true,
             false,
+            None,
             &fixed_rotations,
         );
         let (traced_fixed, trace) = solve_with_search_provenance(
@@ -2050,6 +2272,27 @@ mod tests {
             .endpoint_clearance_statistics
             .expect("propagated clearance should report counters");
         assert!(statistics.relations > 0);
+
+        let sharded = solve_with_sharded_clearance(
+            input.clone(),
+            Duration::from_secs(1),
+            EndpointClearanceSchedulingPriority::High,
+            true,
+            false,
+        );
+        assert_eq!(sharded.outcome, BottomUpRungOutcome::Infeasible);
+        assert_eq!(sharded.validation, ExactValidationStatus::NotAttempted);
+        assert_eq!(sharded.rung, BottomUpRungKind::FacilityPortsSharded);
+        assert!(sharded.semantic_certificate.facility_endpoint_clearance);
+        assert!(sharded.witness.is_none());
+        let statistics = sharded
+            .endpoint_clearance_statistics
+            .expect("sharded clearance should report counters");
+        assert_eq!(statistics.relations, 1);
+        assert_eq!(statistics.batching.shards, 1);
+        assert_eq!(statistics.batching.facility_coordinate_watchers, 2);
+        assert_eq!(statistics.batching.orientation_watchers, 1);
+        assert_eq!(statistics.batching.endpoint_coordinate_watchers, 2);
 
         let medium = solve_with_propagated_clearance(
             input,

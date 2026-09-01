@@ -76,6 +76,10 @@ impl SearchEventCounters {
             self.consecutive_row_selector_decisions = 0;
         }
     }
+
+    pub(super) fn branch_decisions(&self) -> u64 {
+        self.branch_decisions
+    }
 }
 
 #[derive(Debug)]

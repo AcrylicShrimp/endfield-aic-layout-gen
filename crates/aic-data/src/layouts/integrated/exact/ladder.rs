@@ -21,7 +21,7 @@ use super::super::research::EndpointSupportPropagationStatistics;
 
 mod facility_ports;
 
-pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 9;
+pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 10;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -30,6 +30,7 @@ pub enum BottomUpRungKind {
     FacilityPortGeometry,
     FacilityPorts,
     FacilityPortsPropagated,
+    FacilityPortsSharded,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -44,6 +45,7 @@ pub struct BottomUpSearchProfile {
     pub endpoint_clearance_priority: Option<EndpointClearanceSchedulingPriority>,
     pub endpoint_clearance_counters_enabled: Option<bool>,
     pub endpoint_clearance_false_event_filter_enabled: Option<bool>,
+    pub decision_limit: Option<u64>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
@@ -84,6 +86,24 @@ pub struct EndpointClearancePropagationStatistics {
     pub entailment_episodes: u64,
     pub notifications_while_entailed: u64,
     pub relation_hotset: EndpointClearanceRelationHotsetStatistics,
+    pub batching: EndpointClearanceBatchingStatistics,
+}
+
+#[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
+pub struct EndpointClearanceBatchingStatistics {
+    pub shards: u64,
+    pub facility_coordinate_watchers: u64,
+    pub orientation_watchers: u64,
+    pub endpoint_coordinate_watchers: u64,
+    pub notification_callbacks: u64,
+    pub enqueue_requests: u64,
+    pub shard_executions: u64,
+    pub scratch_executions: u64,
+    pub full_shard_batches: u64,
+    pub endpoint_only_batches: u64,
+    pub dirty_relation_checks: u64,
+    pub total_dirty_batch_size: u64,
+    pub maximum_dirty_batch_size: u64,
 }
 
 #[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
@@ -300,6 +320,7 @@ pub enum BottomUpTerminationReason {
     FirstWitness,
     ProvenInfeasible,
     TimeLimit,
+    DecisionLimit,
     InvalidWitness,
 }
 
@@ -596,19 +617,39 @@ pub(in crate::layouts::integrated) fn solve_facility_ports_rung(
     facility_ports::solve_with_clearance(input, time_limit)
 }
 
-pub(in crate::layouts::integrated) fn solve_facility_ports_propagated_rung(
+pub(in crate::layouts::integrated) fn solve_facility_ports_propagated_rung_with_decision_limit(
     input: ModelInput,
     time_limit: Duration,
     priority: EndpointClearanceSchedulingPriority,
     counters_enabled: bool,
     false_event_filter_enabled: bool,
+    decision_limit: Option<u64>,
 ) -> BottomUpRungReport {
-    facility_ports::solve_with_propagated_clearance(
+    facility_ports::solve_with_propagated_clearance_and_decision_limit(
         input,
         time_limit,
         priority,
         counters_enabled,
         false_event_filter_enabled,
+        decision_limit,
+    )
+}
+
+pub(in crate::layouts::integrated) fn solve_facility_ports_sharded_rung_with_decision_limit(
+    input: ModelInput,
+    time_limit: Duration,
+    priority: EndpointClearanceSchedulingPriority,
+    counters_enabled: bool,
+    false_event_filter_enabled: bool,
+    decision_limit: Option<u64>,
+) -> BottomUpRungReport {
+    facility_ports::solve_with_sharded_clearance_and_decision_limit(
+        input,
+        time_limit,
+        priority,
+        counters_enabled,
+        false_event_filter_enabled,
+        decision_limit,
     )
 }
 
@@ -626,6 +667,7 @@ pub(in crate::layouts::integrated) fn solve_facility_ports_propagated_rung_with_
         priority,
         counters_enabled,
         false_event_filter_enabled,
+        None,
         fixed_rotations,
     )
 }

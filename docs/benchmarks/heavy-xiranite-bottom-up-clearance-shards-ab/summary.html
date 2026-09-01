@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Endpoint-clearance shard A/B</title>
+  <style>
+    :root{color-scheme:dark;--bg:#07131d;--panel:#102535;--line:#315066;--text:#d5e8f5;--muted:#8fb2c8;--good:#65f0bd;--warn:#ffd166;--bad:#ff6b9d}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px ui-monospace,SFMono-Regular,Menlo,monospace}header,main{max-width:1180px;margin:auto;padding:24px}header{border-bottom:1px solid var(--line)}h1{font-size:24px;margin:0 0 10px}h2{font-size:18px;margin:30px 0 12px}.meta{color:var(--muted)}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:20px}.card{border:1px solid var(--line);background:var(--panel);padding:14px}.value{font-size:24px;margin:6px 0}.good{color:var(--good)}.warn{color:var(--warn)}.bad{color:var(--bad)}table{border-collapse:collapse;width:100%;margin:12px 0 24px}th,td{border:1px solid var(--line);padding:8px;text-align:left}th{background:var(--panel);color:#8fd9ff}code{color:var(--warn)}.finding{border-left:4px solid var(--warn);background:var(--panel);padding:14px 16px;line-height:1.55}small{color:var(--muted)}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Endpoint-clearance target-facility shard A/B</h1>
+    <div class="meta">Heavy Xiranite · 50×50 caller ceiling · High priority · filter off · six serial counterbalanced runs</div>
+    <div class="cards">
+      <div class="card"><div>Semantic review</div><div class="value good">3× PASS</div><small>normal + debug scratch gates passed</small></div>
+      <div class="card"><div>Phase 29 witness</div><div class="value good">−16.28%</div><small>215 ms → 180 ms</small></div>
+      <div class="card"><div>Fixed-decision CPU</div><div class="value warn">−6…10%</div><small>below the predeclared 15% gate</small></div>
+      <div class="card"><div>Phase 31/32 witness</div><div class="value bad">none</div><small>both formulations remain unknown at 5 s</small></div>
+    </div>
+  </header>
+  <main>
+    <div class="finding"><strong>Conclusion.</strong> Within each shard trace, batching coalesces about 60–65% of logical notifications and 75–78% of relation checks into fewer physical calls. The reformulation is measurably cheaper, but sharding alone does not cross the Phase 31/32 cliff. Approximately 99.91% of endpoint-clearance relation checks still have no domain effect, making relation-level work the next suspect rather than a proven sole cause. Retain as experimental evidence; do not cut over the default formulation.</div>
+
+    <h2>Five-second medians</h2>
+    <table><thead><tr><th>Phase</th><th>Formulation</th><th>Outcome</th><th>First witness</th><th>Decisions</th><th>Conflicts</th><th>CPU</th><th>Peak RSS</th></tr></thead><tbody>
+      <tr><td>29</td><td>pairwise</td><td class="good">feasible / valid</td><td>215 ms</td><td>13,332</td><td>344</td><td>0.235 s</td><td>33.06 MB</td></tr>
+      <tr><td>29</td><td>shard</td><td class="good">feasible / valid</td><td>180 ms</td><td>11,830</td><td>282</td><td>0.200 s</td><td>33.31 MB</td></tr>
+      <tr><td>31</td><td>pairwise</td><td class="bad">unknown</td><td>—</td><td>252,958.5</td><td>11,057</td><td>5.025 s</td><td>48.05 MB</td></tr>
+      <tr><td>31</td><td>shard</td><td class="bad">unknown</td><td>—</td><td>276,282</td><td>11,718</td><td>5.025 s</td><td>48.36 MB</td></tr>
+      <tr><td>32</td><td>pairwise</td><td class="bad">unknown</td><td>—</td><td>220,275.5</td><td>11,045</td><td>5.030 s</td><td>53.26 MB</td></tr>
+      <tr><td>32</td><td>shard</td><td class="bad">unknown</td><td>—</td><td>240,060.5</td><td>11,789</td><td>5.020 s</td><td>54.34 MB</td></tr>
+    </tbody></table>
+
+    <h2>Fixed-decision medians</h2>
+    <table><thead><tr><th>Phase</th><th>Decision limit</th><th>Pairwise CPU</th><th>Shard CPU</th><th>Change</th><th>RSS change</th></tr></thead><tbody>
+      <tr><td>29</td><td>10,000</td><td>0.170 s</td><td>0.160 s</td><td class="good">−5.88%</td><td>+1.07%</td></tr>
+      <tr><td>31</td><td>200,000</td><td>3.805 s</td><td>3.440 s</td><td class="good">−9.59%</td><td>+0.99%</td></tr>
+      <tr><td>32</td><td>180,000</td><td>3.935 s</td><td>3.570 s</td><td class="good">−9.28%</td><td>−1.32%</td></tr>
+    </tbody></table>
+
+    <h2>Scheduler fan-out and semantic work</h2>
+    <table><thead><tr><th>Phase</th><th>Formulation</th><th>Relations</th><th>Physical callbacks</th><th>Physical executions</th><th>Actual relation checks</th><th>No-effect checks</th></tr></thead><tbody>
+      <tr><td>29</td><td>pairwise</td><td>2,755</td><td>1,908,932</td><td>1,543,790</td><td>1,543,790</td><td>1,542,540</td></tr>
+      <tr><td>29</td><td>30 shards</td><td>2,755</td><td>714,039</td><td>317,220</td><td>1,484,588</td><td>1,483,411</td></tr>
+      <tr><td>31</td><td>pairwise</td><td>4,025</td><td>43,373,491</td><td>34,674,272</td><td>34,674,272</td><td>34,642,488</td></tr>
+      <tr><td>31</td><td>36 shards</td><td>4,025</td><td>18,042,625</td><td>9,271,188</td><td>36,622,035</td><td>36,588,548</td></tr>
+      <tr><td>32</td><td>pairwise</td><td>4,750</td><td>44,399,761</td><td>35,130,490</td><td>35,130,490</td><td>35,099,177</td></tr>
+      <tr><td>32</td><td>39 shards</td><td>4,750</td><td>16,768,924</td><td>8,626,927</td><td>39,379,685</td><td>39,344,294</td></tr>
+    </tbody></table>
+    <small>Within-shard callback coalescing: 59.82%, 60.14%, 65.13% for Phases 29/31/32. Within-shard execution coalescing: 78.63%, 74.68%, 78.09%.</small>
+
+    <h2>Next exact diagnostic</h2>
+    <p>Split full-shard and endpoint-only scheduled/actual checks and their domain effects. If full-shard wakeups dominate, test exact axis-sensitive dirtying. If repeated entailed relations dominate, test exact entailment dormancy with backtrack-safe reactivation.</p>
+    <small>Native Pumpkin solver-propagation counts are omitted because one shard invocation and one pairwise relation invocation use different accounting units.</small>
+  </main>
+</body>
+</html>

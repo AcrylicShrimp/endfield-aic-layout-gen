@@ -17,6 +17,7 @@ mod boundary_terminals;
 mod connectivity_propagator;
 mod endpoint_channel_probe;
 mod endpoint_clearance_propagator;
+mod endpoint_clearance_shard_propagator;
 mod endpoint_support_propagator;
 mod extract;
 mod fixation;
