@@ -1,0 +1,164 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bottom-up facility geometry</title><style>body{margin:0;background:#07131d;color:#d5e8f5;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}header{padding:18px 22px;border-bottom:1px solid #315066}h1{font-size:20px;margin:0 0 10px}.meta{color:#8fb2c8}.metrics{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px}.metric{padding:8px 10px;border:1px solid #315066;background:#102535}main{padding:22px}svg{display:block;max-width:100%;height:auto;border:3px solid #58758a;background:#08141f}.grid{stroke:#193244;stroke-width:1}.facility rect{fill:#173f37;stroke:#65f0bd;stroke-width:2}.facility text{fill:#e4f6ff;text-anchor:middle;dominant-baseline:middle}.facility .name{font-size:17px;font-weight:700}.facility .instance{fill:#8fb2c8;font-size:11px}.empty{padding:40px;border:1px solid #ff6b9d;color:#ff6b9d}details{margin-top:22px}pre{white-space:pre-wrap;word-break:break-word;color:#8fb2c8}.good{color:#65f0bd}.bad{color:#ff6b9d}</style></head><body><header><h1>Bottom-up Rung 0 · facility geometry only</h1><div class="meta">Phase 36/41 · ceiling 50×50 · 49 facilities · formulation coordinate-rotation-disjunctive-non-overlap-v1</div><div class="metrics"><div class="metric bad">outcome Unknown</div><div class="metric">build 243 ms</div><div class="metric">search 5005 ms</div><div class="metric">first witness —</div><div class="metric">variables 75607</div><div class="metric">log₂ domain 76111.10</div><div class="metric">decisions 29283</div><div class="metric">backtracks 5356</div><div class="metric">conflicts 5355</div><div class="metric">propagations 21696319</div></div></header><main><div class="empty">No validated facility witness was found.</div>
+<details><summary>Machine-readable report</summary><pre>{
+  &quot;schema_version&quot;: 1,
+  &quot;target_phase_index&quot;: 36,
+  &quot;total_phase_count&quot;: 41,
+  &quot;cumulative_facility_count&quot;: 49,
+  &quot;search_budget_ms&quot;: 5000,
+  &quot;rung&quot;: {
+    &quot;schema_version&quot;: 1,
+    &quot;rung&quot;: &quot;facility-geometry&quot;,
+    &quot;formulation&quot;: &quot;coordinate-rotation-disjunctive-non-overlap-v1&quot;,
+    &quot;ceiling&quot;: [
+      50,
+      50
+    ],
+    &quot;facility_count&quot;: 49,
+    &quot;semantic_certificate&quot;: {
+      &quot;facility_geometry&quot;: true,
+      &quot;facility_ports&quot;: false,
+      &quot;boundary_terminals&quot;: false,
+      &quot;pipe_routing&quot;: false,
+      &quot;belt_routing&quot;: false,
+      &quot;item_flow&quot;: false,
+      &quot;logistics_components&quot;: false,
+      &quot;objective&quot;: false,
+      &quot;hints&quot;: false,
+      &quot;transferred_learned_state&quot;: false
+    },
+    &quot;construction_ms&quot;: 243,
+    &quot;search_ms&quot;: 5005,
+    &quot;first_witness_ms&quot;: null,
+    &quot;outcome&quot;: &quot;unknown&quot;,
+    &quot;validation&quot;: &quot;not-attempted&quot;,
+    &quot;model_complexity&quot;: {
+      &quot;variables&quot;: {
+        &quot;coverage&quot;: &quot;complete&quot;,
+        &quot;total_variables&quot;: 75607,
+        &quot;boolean_variables&quot;: 75460,
+        &quot;integer_variables&quot;: 147,
+        &quot;log2_domain_volume&quot;: 76111.09790659792,
+        &quot;by_family&quot;: [
+          {
+            &quot;family&quot;: &quot;placement&quot;,
+            &quot;total_variables&quot;: 75607,
+            &quot;boolean_variables&quot;: 75460,
+            &quot;integer_variables&quot;: 147,
+            &quot;domains&quot;: {
+              &quot;minimum&quot;: 2,
+              &quot;maximum&quot;: 50,
+              &quot;p50&quot;: 2,
+              &quot;p95&quot;: 2,
+              &quot;log2_volume&quot;: 76111.09790659856
+            }
+          }
+        ]
+      },
+      &quot;constraints&quot;: {
+        &quot;total_constraints&quot;: 95011,
+        &quot;total_terms&quot;: 340648,
+        &quot;maximum_arity&quot;: 6,
+        &quot;p95_arity&quot;: 6,
+        &quot;maximum_absolute_coefficient&quot;: 1,
+        &quot;by_family&quot;: [
+          {
+            &quot;family&quot;: &quot;placement-choice&quot;,
+            &quot;relation&quot;: &quot;less-than-or-equal&quot;,
+            &quot;constraints&quot;: 392,
+            &quot;terms&quot;: 784,
+            &quot;maximum_arity&quot;: 2,
+            &quot;p95_arity&quot;: 2,
+            &quot;maximum_absolute_coefficient&quot;: 1
+          },
+          {
+            &quot;family&quot;: &quot;placement-choice&quot;,
+            &quot;relation&quot;: &quot;other&quot;,
+            &quot;constraints&quot;: 539,
+            &quot;terms&quot;: 1176,
+            &quot;maximum_arity&quot;: 4,
+            &quot;p95_arity&quot;: 4,
+            &quot;maximum_absolute_coefficient&quot;: 1
+          },
+          {
+            &quot;family&quot;: &quot;facility-non-overlap&quot;,
+            &quot;relation&quot;: &quot;less-than-or-equal&quot;,
+            &quot;constraints&quot;: 75264,
+            &quot;terms&quot;: 225792,
+            &quot;maximum_arity&quot;: 3,
+            &quot;p95_arity&quot;: 3,
+            &quot;maximum_absolute_coefficient&quot;: 1
+          },
+          {
+            &quot;family&quot;: &quot;facility-non-overlap&quot;,
+            &quot;relation&quot;: &quot;other&quot;,
+            &quot;constraints&quot;: 18816,
+            &quot;terms&quot;: 112896,
+            &quot;maximum_arity&quot;: 6,
+            &quot;p95_arity&quot;: 6,
+            &quot;maximum_absolute_coefficient&quot;: 1
+          }
+        ]
+      },
+      &quot;factor_graph&quot;: {
+        &quot;variable_vertices&quot;: 75607,
+        &quot;constraint_vertices&quot;: 95011,
+        &quot;incidences&quot;: 340648,
+        &quot;mean_variable_degree&quot;: 4.5055087491898895,
+        &quot;maximum_variable_degree&quot;: 1540,
+        &quot;p95_variable_degree&quot;: 2,
+        &quot;mean_constraint_degree&quot;: 3.585353274883961,
+        &quot;maximum_constraint_degree&quot;: 6,
+        &quot;p95_constraint_degree&quot;: 6,
+        &quot;density&quot;: 0.00004742091704318332,
+        &quot;connected_components&quot;: 1,
+        &quot;articulation_points&quot;: null,
+        &quot;retained_full_graph&quot;: false,
+        &quot;family_incidences&quot;: [
+          {
+            &quot;variable_family&quot;: &quot;placement&quot;,
+            &quot;constraint_family&quot;: &quot;placement-choice&quot;,
+            &quot;incidences&quot;: 1960
+          },
+          {
+            &quot;variable_family&quot;: &quot;placement&quot;,
+            &quot;constraint_family&quot;: &quot;facility-non-overlap&quot;,
+            &quot;incidences&quot;: 338688
+          }
+        ]
+      },
+      &quot;coupling&quot;: {
+        &quot;facility_network_incidences&quot;: 0,
+        &quot;shared_network_facility_pairs&quot;: 0,
+        &quot;cross_family_constraints&quot;: 0,
+        &quot;placement_routing_constraints&quot;: 0,
+        &quot;placement_routing_incidences&quot;: 0,
+        &quot;network_collision_constraints&quot;: 0,
+        &quot;objective_incidences&quot;: 0
+      },
+      &quot;symmetry&quot;: null,
+      &quot;estimated_bytes&quot;: null
+    },
+    &quot;search_statistics&quot;: {
+      &quot;branch_decisions&quot;: 29283,
+      &quot;backtracks&quot;: 5356,
+      &quot;conflicts&quot;: 5355,
+      &quot;learned_clauses&quot;: 5355,
+      &quot;solver_propagations&quot;: 21696319,
+      &quot;atomic_propagations&quot;: null,
+      &quot;restarts&quot;: 0,
+      &quot;row_selector_total&quot;: null,
+      &quot;row_selector_root_fixed_true&quot;: null,
+      &quot;row_selector_root_fixed_false&quot;: null,
+      &quot;row_selector_root_unfixed&quot;: null,
+      &quot;row_selector_decisions&quot;: null,
+      &quot;non_row_selector_decisions&quot;: null,
+      &quot;row_selector_true_decisions&quot;: null,
+      &quot;row_selector_false_decisions&quot;: null,
+      &quot;row_selector_unclassified_decisions&quot;: null,
+      &quot;maximum_consecutive_row_selector_decisions&quot;: null,
+      &quot;row_selector_conflict_appearances&quot;: null
+    },
+    &quot;witness&quot;: null,
+    &quot;diagnostics&quot;: []
+  }
+}</pre></details></main></body></html>

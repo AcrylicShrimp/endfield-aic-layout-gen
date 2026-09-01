@@ -1,0 +1,790 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bottom-up facility geometry</title><style>body{margin:0;background:#07131d;color:#d5e8f5;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}header{padding:18px 22px;border-bottom:1px solid #315066}h1{font-size:20px;margin:0 0 10px}.meta{color:#8fb2c8}.metrics{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px}.metric{padding:8px 10px;border:1px solid #315066;background:#102535}main{padding:22px}svg{display:block;max-width:100%;height:auto;border:3px solid #58758a;background:#08141f}.grid{stroke:#193244;stroke-width:1}.facility rect{fill:#173f37;stroke:#65f0bd;stroke-width:2}.facility text{fill:#e4f6ff;text-anchor:middle;dominant-baseline:middle}.facility .name{font-size:17px;font-weight:700}.facility .instance{fill:#8fb2c8;font-size:11px}.empty{padding:40px;border:1px solid #ff6b9d;color:#ff6b9d}details{margin-top:22px}pre{white-space:pre-wrap;word-break:break-word;color:#8fb2c8}.good{color:#65f0bd}.bad{color:#ff6b9d}</style></head><body><header><h1>Bottom-up Rung 0 · facility geometry only</h1><div class="meta">Phase 34/41 · ceiling 50×50 · 47 facilities · formulation coordinate-rotation-disjunctive-non-overlap-v1</div><div class="metrics"><div class="metric good">outcome Feasible</div><div class="metric">build 222 ms</div><div class="metric">search 3851 ms</div><div class="metric">first witness 3851 ms</div><div class="metric">variables 69513</div><div class="metric">log₂ domain 69996.52</div><div class="metric">decisions 27407</div><div class="metric">backtracks 4476</div><div class="metric">conflicts 4476</div><div class="metric">propagations 15943878</div></div></header><main><svg viewBox="0 0 1800 1800" role="img" aria-label="facility geometry witness">
+<line x1="0" y1="0" x2="0" y2="1800" class="grid"/>
+<line x1="36" y1="0" x2="36" y2="1800" class="grid"/>
+<line x1="72" y1="0" x2="72" y2="1800" class="grid"/>
+<line x1="108" y1="0" x2="108" y2="1800" class="grid"/>
+<line x1="144" y1="0" x2="144" y2="1800" class="grid"/>
+<line x1="180" y1="0" x2="180" y2="1800" class="grid"/>
+<line x1="216" y1="0" x2="216" y2="1800" class="grid"/>
+<line x1="252" y1="0" x2="252" y2="1800" class="grid"/>
+<line x1="288" y1="0" x2="288" y2="1800" class="grid"/>
+<line x1="324" y1="0" x2="324" y2="1800" class="grid"/>
+<line x1="360" y1="0" x2="360" y2="1800" class="grid"/>
+<line x1="396" y1="0" x2="396" y2="1800" class="grid"/>
+<line x1="432" y1="0" x2="432" y2="1800" class="grid"/>
+<line x1="468" y1="0" x2="468" y2="1800" class="grid"/>
+<line x1="504" y1="0" x2="504" y2="1800" class="grid"/>
+<line x1="540" y1="0" x2="540" y2="1800" class="grid"/>
+<line x1="576" y1="0" x2="576" y2="1800" class="grid"/>
+<line x1="612" y1="0" x2="612" y2="1800" class="grid"/>
+<line x1="648" y1="0" x2="648" y2="1800" class="grid"/>
+<line x1="684" y1="0" x2="684" y2="1800" class="grid"/>
+<line x1="720" y1="0" x2="720" y2="1800" class="grid"/>
+<line x1="756" y1="0" x2="756" y2="1800" class="grid"/>
+<line x1="792" y1="0" x2="792" y2="1800" class="grid"/>
+<line x1="828" y1="0" x2="828" y2="1800" class="grid"/>
+<line x1="864" y1="0" x2="864" y2="1800" class="grid"/>
+<line x1="900" y1="0" x2="900" y2="1800" class="grid"/>
+<line x1="936" y1="0" x2="936" y2="1800" class="grid"/>
+<line x1="972" y1="0" x2="972" y2="1800" class="grid"/>
+<line x1="1008" y1="0" x2="1008" y2="1800" class="grid"/>
+<line x1="1044" y1="0" x2="1044" y2="1800" class="grid"/>
+<line x1="1080" y1="0" x2="1080" y2="1800" class="grid"/>
+<line x1="1116" y1="0" x2="1116" y2="1800" class="grid"/>
+<line x1="1152" y1="0" x2="1152" y2="1800" class="grid"/>
+<line x1="1188" y1="0" x2="1188" y2="1800" class="grid"/>
+<line x1="1224" y1="0" x2="1224" y2="1800" class="grid"/>
+<line x1="1260" y1="0" x2="1260" y2="1800" class="grid"/>
+<line x1="1296" y1="0" x2="1296" y2="1800" class="grid"/>
+<line x1="1332" y1="0" x2="1332" y2="1800" class="grid"/>
+<line x1="1368" y1="0" x2="1368" y2="1800" class="grid"/>
+<line x1="1404" y1="0" x2="1404" y2="1800" class="grid"/>
+<line x1="1440" y1="0" x2="1440" y2="1800" class="grid"/>
+<line x1="1476" y1="0" x2="1476" y2="1800" class="grid"/>
+<line x1="1512" y1="0" x2="1512" y2="1800" class="grid"/>
+<line x1="1548" y1="0" x2="1548" y2="1800" class="grid"/>
+<line x1="1584" y1="0" x2="1584" y2="1800" class="grid"/>
+<line x1="1620" y1="0" x2="1620" y2="1800" class="grid"/>
+<line x1="1656" y1="0" x2="1656" y2="1800" class="grid"/>
+<line x1="1692" y1="0" x2="1692" y2="1800" class="grid"/>
+<line x1="1728" y1="0" x2="1728" y2="1800" class="grid"/>
+<line x1="1764" y1="0" x2="1764" y2="1800" class="grid"/>
+<line x1="1800" y1="0" x2="1800" y2="1800" class="grid"/>
+<line x1="0" y1="0" x2="1800" y2="0" class="grid"/>
+<line x1="0" y1="36" x2="1800" y2="36" class="grid"/>
+<line x1="0" y1="72" x2="1800" y2="72" class="grid"/>
+<line x1="0" y1="108" x2="1800" y2="108" class="grid"/>
+<line x1="0" y1="144" x2="1800" y2="144" class="grid"/>
+<line x1="0" y1="180" x2="1800" y2="180" class="grid"/>
+<line x1="0" y1="216" x2="1800" y2="216" class="grid"/>
+<line x1="0" y1="252" x2="1800" y2="252" class="grid"/>
+<line x1="0" y1="288" x2="1800" y2="288" class="grid"/>
+<line x1="0" y1="324" x2="1800" y2="324" class="grid"/>
+<line x1="0" y1="360" x2="1800" y2="360" class="grid"/>
+<line x1="0" y1="396" x2="1800" y2="396" class="grid"/>
+<line x1="0" y1="432" x2="1800" y2="432" class="grid"/>
+<line x1="0" y1="468" x2="1800" y2="468" class="grid"/>
+<line x1="0" y1="504" x2="1800" y2="504" class="grid"/>
+<line x1="0" y1="540" x2="1800" y2="540" class="grid"/>
+<line x1="0" y1="576" x2="1800" y2="576" class="grid"/>
+<line x1="0" y1="612" x2="1800" y2="612" class="grid"/>
+<line x1="0" y1="648" x2="1800" y2="648" class="grid"/>
+<line x1="0" y1="684" x2="1800" y2="684" class="grid"/>
+<line x1="0" y1="720" x2="1800" y2="720" class="grid"/>
+<line x1="0" y1="756" x2="1800" y2="756" class="grid"/>
+<line x1="0" y1="792" x2="1800" y2="792" class="grid"/>
+<line x1="0" y1="828" x2="1800" y2="828" class="grid"/>
+<line x1="0" y1="864" x2="1800" y2="864" class="grid"/>
+<line x1="0" y1="900" x2="1800" y2="900" class="grid"/>
+<line x1="0" y1="936" x2="1800" y2="936" class="grid"/>
+<line x1="0" y1="972" x2="1800" y2="972" class="grid"/>
+<line x1="0" y1="1008" x2="1800" y2="1008" class="grid"/>
+<line x1="0" y1="1044" x2="1800" y2="1044" class="grid"/>
+<line x1="0" y1="1080" x2="1800" y2="1080" class="grid"/>
+<line x1="0" y1="1116" x2="1800" y2="1116" class="grid"/>
+<line x1="0" y1="1152" x2="1800" y2="1152" class="grid"/>
+<line x1="0" y1="1188" x2="1800" y2="1188" class="grid"/>
+<line x1="0" y1="1224" x2="1800" y2="1224" class="grid"/>
+<line x1="0" y1="1260" x2="1800" y2="1260" class="grid"/>
+<line x1="0" y1="1296" x2="1800" y2="1296" class="grid"/>
+<line x1="0" y1="1332" x2="1800" y2="1332" class="grid"/>
+<line x1="0" y1="1368" x2="1800" y2="1368" class="grid"/>
+<line x1="0" y1="1404" x2="1800" y2="1404" class="grid"/>
+<line x1="0" y1="1440" x2="1800" y2="1440" class="grid"/>
+<line x1="0" y1="1476" x2="1800" y2="1476" class="grid"/>
+<line x1="0" y1="1512" x2="1800" y2="1512" class="grid"/>
+<line x1="0" y1="1548" x2="1800" y2="1548" class="grid"/>
+<line x1="0" y1="1584" x2="1800" y2="1584" class="grid"/>
+<line x1="0" y1="1620" x2="1800" y2="1620" class="grid"/>
+<line x1="0" y1="1656" x2="1800" y2="1656" class="grid"/>
+<line x1="0" y1="1692" x2="1800" y2="1692" class="grid"/>
+<line x1="0" y1="1728" x2="1800" y2="1728" class="grid"/>
+<line x1="0" y1="1764" x2="1800" y2="1764" class="grid"/>
+<line x1="0" y1="1800" x2="1800" y2="1800" class="grid"/>
+<g class="facility"><rect x="288" y="1584" width="144" height="216"/><text x="360" y="1687" class="name">연마기</text><text x="360" y="1710" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0 · 90°</text></g>
+<g class="facility"><rect x="180" y="1044" width="216" height="144"/><text x="288" y="1111" class="name">연마기</text><text x="288" y="1134" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1 · 0°</text></g>
+<g class="facility"><rect x="1044" y="684" width="108" height="108"/><text x="1098" y="733" class="name">정련로</text><text x="1098" y="756" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:0 · 180°</text></g>
+<g class="facility"><rect x="972" y="108" width="108" height="108"/><text x="1026" y="157" class="name">정련로</text><text x="1026" y="180" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:1 · 270°</text></g>
+<g class="facility"><rect x="1476" y="1584" width="108" height="108"/><text x="1530" y="1633" class="name">정련로</text><text x="1530" y="1656" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0 · 270°</text></g>
+<g class="facility"><rect x="180" y="144" width="108" height="108"/><text x="234" y="193" class="name">정련로</text><text x="234" y="216" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1 · 0°</text></g>
+<g class="facility"><rect x="360" y="648" width="180" height="180"/><text x="450" y="733" class="name">천화로</text><text x="450" y="756" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder:0 · 0°</text></g>
+<g class="facility"><rect x="1152" y="576" width="180" height="180"/><text x="1242" y="661" class="name">반응기</text><text x="1242" y="684" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite:0 · 270°</text></g>
+<g class="facility"><rect x="1548" y="468" width="180" height="180"/><text x="1638" y="553" class="name">반응기</text><text x="1638" y="576" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0 · 90°</text></g>
+<g class="facility"><rect x="252" y="468" width="180" height="180"/><text x="342" y="553" class="name">씨앗 추출기</text><text x="342" y="576" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0 · 270°</text></g>
+<g class="facility"><rect x="216" y="1188" width="180" height="180"/><text x="306" y="1273" class="name">씨앗 추출기</text><text x="306" y="1296" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:1 · 90°</text></g>
+<g class="facility"><rect x="216" y="1368" width="180" height="180"/><text x="306" y="1453" class="name">씨앗 추출기</text><text x="306" y="1476" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:2 · 180°</text></g>
+<g class="facility"><rect x="396" y="1152" width="180" height="180"/><text x="486" y="1237" class="name">씨앗 추출기</text><text x="486" y="1260" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:3 · 270°</text></g>
+<g class="facility"><rect x="0" y="36" width="180" height="180"/><text x="90" y="121" class="name">재배기</text><text x="90" y="144" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0 · 270°</text></g>
+<g class="facility"><rect x="180" y="648" width="180" height="180"/><text x="270" y="733" class="name">재배기</text><text x="270" y="756" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1 · 0°</text></g>
+<g class="facility"><rect x="1296" y="1440" width="180" height="180"/><text x="1386" y="1525" class="name">재배기</text><text x="1386" y="1548" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:2 · 0°</text></g>
+<g class="facility"><rect x="1512" y="684" width="180" height="180"/><text x="1602" y="769" class="name">재배기</text><text x="1602" y="792" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3 · 180°</text></g>
+<g class="facility"><rect x="1116" y="900" width="180" height="180"/><text x="1206" y="985" class="name">재배기</text><text x="1206" y="1008" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:4 · 90°</text></g>
+<g class="facility"><rect x="1332" y="576" width="180" height="180"/><text x="1422" y="661" class="name">재배기</text><text x="1422" y="684" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:5 · 0°</text></g>
+<g class="facility"><rect x="792" y="540" width="180" height="180"/><text x="882" y="625" class="name">재배기</text><text x="882" y="648" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:6 · 270°</text></g>
+<g class="facility"><rect x="0" y="972" width="180" height="180"/><text x="90" y="1057" class="name">재배기</text><text x="90" y="1080" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:7 · 270°</text></g>
+<g class="facility"><rect x="1116" y="1512" width="108" height="108"/><text x="1170" y="1561" class="name">분쇄기</text><text x="1170" y="1584" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:0 · 90°</text></g>
+<g class="facility"><rect x="108" y="504" width="108" height="108"/><text x="162" y="553" class="name">분쇄기</text><text x="162" y="576" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1 · 270°</text></g>
+<g class="facility"><rect x="1152" y="396" width="108" height="108"/><text x="1206" y="445" class="name">분쇄기</text><text x="1206" y="468" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:2 · 90°</text></g>
+<g class="facility"><rect x="288" y="0" width="108" height="108"/><text x="342" y="49" class="name">분쇄기</text><text x="342" y="72" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:3 · 180°</text></g>
+<g class="facility"><rect x="756" y="144" width="180" height="180"/><text x="846" y="229" class="name">씨앗 추출기</text><text x="846" y="252" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0 · 270°</text></g>
+<g class="facility"><rect x="864" y="1512" width="180" height="180"/><text x="954" y="1597" class="name">씨앗 추출기</text><text x="954" y="1620" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1 · 90°</text></g>
+<g class="facility"><rect x="540" y="720" width="180" height="180"/><text x="630" y="805" class="name">재배기</text><text x="630" y="828" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0 · 180°</text></g>
+<g class="facility"><rect x="792" y="360" width="180" height="180"/><text x="882" y="445" class="name">재배기</text><text x="882" y="468" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1 · 0°</text></g>
+<g class="facility"><rect x="504" y="1404" width="180" height="180"/><text x="594" y="1489" class="name">재배기</text><text x="594" y="1512" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2 · 0°</text></g>
+<g class="facility"><rect x="1620" y="360" width="108" height="108"/><text x="1674" y="409" class="name">분쇄기</text><text x="1674" y="432" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0 · 270°</text></g>
+<g class="facility"><rect x="1692" y="1080" width="108" height="108"/><text x="1746" y="1129" class="name">분쇄기</text><text x="1746" y="1152" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1 · 90°</text></g>
+<g class="facility"><rect x="864" y="1368" width="216" height="144"/><text x="972" y="1435" class="name">연마기</text><text x="972" y="1458" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0 · 180°</text></g>
+<g class="facility"><rect x="0" y="720" width="144" height="216"/><text x="72" y="823" class="name">연마기</text><text x="72" y="846" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1 · 90°</text></g>
+<g class="facility"><rect x="288" y="108" width="216" height="144"/><text x="396" y="175" class="name">연마기</text><text x="396" y="198" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2 · 0°</text></g>
+<g class="facility"><rect x="396" y="1008" width="216" height="144"/><text x="504" y="1075" class="name">연마기</text><text x="504" y="1098" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:3 · 180°</text></g>
+<g class="facility"><rect x="1440" y="216" width="108" height="108"/><text x="1494" y="265" class="name">정련로</text><text x="1494" y="288" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:0 · 90°</text></g>
+<g class="facility"><rect x="396" y="1440" width="108" height="108"/><text x="450" y="1489" class="name">정련로</text><text x="450" y="1512" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:1 · 0°</text></g>
+<g class="facility"><rect x="828" y="1692" width="108" height="108"/><text x="882" y="1741" class="name">정련로</text><text x="882" y="1764" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:2 · 270°</text></g>
+<g class="facility"><rect x="396" y="1332" width="108" height="108"/><text x="450" y="1381" class="name">정련로</text><text x="450" y="1404" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:3 · 270°</text></g>
+<g class="facility"><rect x="1260" y="1332" width="108" height="108"/><text x="1314" y="1381" class="name">정련로</text><text x="1314" y="1404" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0 · 180°</text></g>
+<g class="facility"><rect x="756" y="1152" width="108" height="108"/><text x="810" y="1201" class="name">정련로</text><text x="810" y="1224" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1 · 90°</text></g>
+<g class="facility"><rect x="432" y="504" width="108" height="108"/><text x="486" y="553" class="name">정련로</text><text x="486" y="576" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:2 · 180°</text></g>
+<g class="facility"><rect x="1476" y="1692" width="108" height="108"/><text x="1530" y="1741" class="name">정련로</text><text x="1530" y="1764" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:3 · 0°</text></g>
+<g class="facility"><rect x="864" y="1116" width="180" height="180"/><text x="954" y="1201" class="name">천화로</text><text x="954" y="1224" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0 · 180°</text></g>
+<g class="facility"><rect x="720" y="864" width="180" height="180"/><text x="810" y="949" class="name">천화로</text><text x="810" y="972" class="instance">facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1 · 90°</text></g>
+<g class="facility"><rect x="144" y="252" width="180" height="180"/><text x="234" y="337" class="name">천화로</text><text x="234" y="360" class="instance">facility-instance:recipe-occurrence:/target:0 · 270°</text></g>
+</svg><details><summary>Machine-readable report</summary><pre>{
+  &quot;schema_version&quot;: 1,
+  &quot;target_phase_index&quot;: 34,
+  &quot;total_phase_count&quot;: 41,
+  &quot;cumulative_facility_count&quot;: 47,
+  &quot;search_budget_ms&quot;: 5000,
+  &quot;rung&quot;: {
+    &quot;schema_version&quot;: 1,
+    &quot;rung&quot;: &quot;facility-geometry&quot;,
+    &quot;formulation&quot;: &quot;coordinate-rotation-disjunctive-non-overlap-v1&quot;,
+    &quot;ceiling&quot;: [
+      50,
+      50
+    ],
+    &quot;facility_count&quot;: 47,
+    &quot;semantic_certificate&quot;: {
+      &quot;facility_geometry&quot;: true,
+      &quot;facility_ports&quot;: false,
+      &quot;boundary_terminals&quot;: false,
+      &quot;pipe_routing&quot;: false,
+      &quot;belt_routing&quot;: false,
+      &quot;item_flow&quot;: false,
+      &quot;logistics_components&quot;: false,
+      &quot;objective&quot;: false,
+      &quot;hints&quot;: false,
+      &quot;transferred_learned_state&quot;: false
+    },
+    &quot;construction_ms&quot;: 222,
+    &quot;search_ms&quot;: 3851,
+    &quot;first_witness_ms&quot;: 3851,
+    &quot;outcome&quot;: &quot;feasible&quot;,
+    &quot;validation&quot;: &quot;passed&quot;,
+    &quot;model_complexity&quot;: {
+      &quot;variables&quot;: {
+        &quot;coverage&quot;: &quot;complete&quot;,
+        &quot;total_variables&quot;: 69513,
+        &quot;boolean_variables&quot;: 69372,
+        &quot;integer_variables&quot;: 141,
+        &quot;log2_domain_volume&quot;: 69996.52248183882,
+        &quot;by_family&quot;: [
+          {
+            &quot;family&quot;: &quot;placement&quot;,
+            &quot;total_variables&quot;: 69513,
+            &quot;boolean_variables&quot;: 69372,
+            &quot;integer_variables&quot;: 141,
+            &quot;domains&quot;: {
+              &quot;minimum&quot;: 2,
+              &quot;maximum&quot;: 50,
+              &quot;p50&quot;: 2,
+              &quot;p95&quot;: 2,
+              &quot;log2_volume&quot;: 69996.52248183943
+            }
+          }
+        ]
+      },
+      &quot;constraints&quot;: {
+        &quot;total_constraints&quot;: 87373,
+        &quot;total_terms&quot;: 313208,
+        &quot;maximum_arity&quot;: 6,
+        &quot;p95_arity&quot;: 6,
+        &quot;maximum_absolute_coefficient&quot;: 1,
+        &quot;by_family&quot;: [
+          {
+            &quot;family&quot;: &quot;placement-choice&quot;,
+            &quot;relation&quot;: &quot;less-than-or-equal&quot;,
+            &quot;constraints&quot;: 376,
+            &quot;terms&quot;: 752,
+            &quot;maximum_arity&quot;: 2,
+            &quot;p95_arity&quot;: 2,
+            &quot;maximum_absolute_coefficient&quot;: 1
+          },
+          {
+            &quot;family&quot;: &quot;placement-choice&quot;,
+            &quot;relation&quot;: &quot;other&quot;,
+            &quot;constraints&quot;: 517,
+            &quot;terms&quot;: 1128,
+            &quot;maximum_arity&quot;: 4,
+            &quot;p95_arity&quot;: 4,
+            &quot;maximum_absolute_coefficient&quot;: 1
+          },
+          {
+            &quot;family&quot;: &quot;facility-non-overlap&quot;,
+            &quot;relation&quot;: &quot;less-than-or-equal&quot;,
+            &quot;constraints&quot;: 69184,
+            &quot;terms&quot;: 207552,
+            &quot;maximum_arity&quot;: 3,
+            &quot;p95_arity&quot;: 3,
+            &quot;maximum_absolute_coefficient&quot;: 1
+          },
+          {
+            &quot;family&quot;: &quot;facility-non-overlap&quot;,
+            &quot;relation&quot;: &quot;other&quot;,
+            &quot;constraints&quot;: 17296,
+            &quot;terms&quot;: 103776,
+            &quot;maximum_arity&quot;: 6,
+            &quot;p95_arity&quot;: 6,
+            &quot;maximum_absolute_coefficient&quot;: 1
+          }
+        ]
+      },
+      &quot;factor_graph&quot;: {
+        &quot;variable_vertices&quot;: 69513,
+        &quot;constraint_vertices&quot;: 87373,
+        &quot;incidences&quot;: 313208,
+        &quot;mean_variable_degree&quot;: 4.505747126436781,
+        &quot;maximum_variable_degree&quot;: 1476,
+        &quot;p95_variable_degree&quot;: 2,
+        &quot;mean_constraint_degree&quot;: 3.5847229693383538,
+        &quot;maximum_constraint_degree&quot;: 6,
+        &quot;p95_constraint_degree&quot;: 6,
+        &quot;density&quot;: 0.00005156910174123335,
+        &quot;connected_components&quot;: 1,
+        &quot;articulation_points&quot;: null,
+        &quot;retained_full_graph&quot;: false,
+        &quot;family_incidences&quot;: [
+          {
+            &quot;variable_family&quot;: &quot;placement&quot;,
+            &quot;constraint_family&quot;: &quot;placement-choice&quot;,
+            &quot;incidences&quot;: 1880
+          },
+          {
+            &quot;variable_family&quot;: &quot;placement&quot;,
+            &quot;constraint_family&quot;: &quot;facility-non-overlap&quot;,
+            &quot;incidences&quot;: 311328
+          }
+        ]
+      },
+      &quot;coupling&quot;: {
+        &quot;facility_network_incidences&quot;: 0,
+        &quot;shared_network_facility_pairs&quot;: 0,
+        &quot;cross_family_constraints&quot;: 0,
+        &quot;placement_routing_constraints&quot;: 0,
+        &quot;placement_routing_incidences&quot;: 0,
+        &quot;network_collision_constraints&quot;: 0,
+        &quot;objective_incidences&quot;: 0
+      },
+      &quot;symmetry&quot;: null,
+      &quot;estimated_bytes&quot;: null
+    },
+    &quot;search_statistics&quot;: {
+      &quot;branch_decisions&quot;: 27407,
+      &quot;backtracks&quot;: 4476,
+      &quot;conflicts&quot;: 4476,
+      &quot;learned_clauses&quot;: 4476,
+      &quot;solver_propagations&quot;: 15943878,
+      &quot;atomic_propagations&quot;: null,
+      &quot;restarts&quot;: 0,
+      &quot;row_selector_total&quot;: null,
+      &quot;row_selector_root_fixed_true&quot;: null,
+      &quot;row_selector_root_fixed_false&quot;: null,
+      &quot;row_selector_root_unfixed&quot;: null,
+      &quot;row_selector_decisions&quot;: null,
+      &quot;non_row_selector_decisions&quot;: null,
+      &quot;row_selector_true_decisions&quot;: null,
+      &quot;row_selector_false_decisions&quot;: null,
+      &quot;row_selector_unclassified_decisions&quot;: null,
+      &quot;maximum_consecutive_row_selector_decisions&quot;: null,
+      &quot;row_selector_conflict_appearances&quot;: null
+    },
+    &quot;witness&quot;: {
+      &quot;bounds&quot;: {
+        &quot;width&quot;: 50,
+        &quot;height&quot;: 50
+      },
+      &quot;placements&quot;: [
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0&quot;,
+          &quot;recipe&quot;: &quot;thickener-plant-moss-enr-powder-2-1&quot;,
+          &quot;facility&quot;: &quot;thickener-1-mode-normal&quot;,
+          &quot;x&quot;: 8,
+          &quot;y&quot;: 44,
+          &quot;width&quot;: 4,
+          &quot;height&quot;: 6,
+          &quot;rotation&quot;: 90
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1&quot;,
+          &quot;recipe&quot;: &quot;thickener-plant-moss-enr-powder-2-1&quot;,
+          &quot;facility&quot;: &quot;thickener-1-mode-normal&quot;,
+          &quot;x&quot;: 5,
+          &quot;y&quot;: 29,
+          &quot;width&quot;: 6,
+          &quot;height&quot;: 4,
+          &quot;rotation&quot;: 0
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:0&quot;,
+          &quot;recipe&quot;: &quot;furnance-carbon-enr-powder-2&quot;,
+          &quot;facility&quot;: &quot;furnance-1-mode-normal&quot;,
+          &quot;x&quot;: 29,
+          &quot;y&quot;: 19,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 180
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:1&quot;,
+          &quot;recipe&quot;: &quot;furnance-carbon-enr-powder-2&quot;,
+          &quot;facility&quot;: &quot;furnance-1-mode-normal&quot;,
+          &quot;x&quot;: 27,
+          &quot;y&quot;: 3,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 270
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0&quot;,
+          &quot;recipe&quot;: &quot;furnance-carbon-enr-1&quot;,
+          &quot;facility&quot;: &quot;furnance-1-mode-normal&quot;,
+          &quot;x&quot;: 41,
+          &quot;y&quot;: 44,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 270
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1&quot;,
+          &quot;recipe&quot;: &quot;furnance-carbon-enr-1&quot;,
+          &quot;facility&quot;: &quot;furnance-1-mode-normal&quot;,
+          &quot;x&quot;: 5,
+          &quot;y&quot;: 4,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 0
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder:0&quot;,
+          &quot;recipe&quot;: &quot;xiranite-oven-xiranite-powder-1&quot;,
+          &quot;facility&quot;: &quot;xiranite-oven-1-mode-liquid&quot;,
+          &quot;x&quot;: 10,
+          &quot;y&quot;: 18,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 0
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite:0&quot;,
+          &quot;recipe&quot;: &quot;pool-liquid-liquid-xiranite-1&quot;,
+          &quot;facility&quot;: &quot;mix-pool-1-mode-liquid&quot;,
+          &quot;x&quot;: 32,
+          &quot;y&quot;: 16,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 270
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0&quot;,
+          &quot;recipe&quot;: &quot;pool-liquid-xiranite-poly-1&quot;,
+          &quot;facility&quot;: &quot;mix-pool-1-mode-liquid&quot;,
+          &quot;x&quot;: 43,
+          &quot;y&quot;: 13,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 90
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0&quot;,
+          &quot;recipe&quot;: &quot;seedcollector-plant-moss-2-1&quot;,
+          &quot;facility&quot;: &quot;seedcollector-1-mode-normal&quot;,
+          &quot;x&quot;: 7,
+          &quot;y&quot;: 13,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 270
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:1&quot;,
+          &quot;recipe&quot;: &quot;seedcollector-plant-moss-2-1&quot;,
+          &quot;facility&quot;: &quot;seedcollector-1-mode-normal&quot;,
+          &quot;x&quot;: 6,
+          &quot;y&quot;: 33,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 90
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:2&quot;,
+          &quot;recipe&quot;: &quot;seedcollector-plant-moss-2-1&quot;,
+          &quot;facility&quot;: &quot;seedcollector-1-mode-normal&quot;,
+          &quot;x&quot;: 6,
+          &quot;y&quot;: 38,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 180
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:3&quot;,
+          &quot;recipe&quot;: &quot;seedcollector-plant-moss-2-1&quot;,
+          &quot;facility&quot;: &quot;seedcollector-1-mode-normal&quot;,
+          &quot;x&quot;: 11,
+          &quot;y&quot;: 32,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 270
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0&quot;,
+          &quot;recipe&quot;: &quot;planter-plant-moss-2-1&quot;,
+          &quot;facility&quot;: &quot;planter-1-mode-normal&quot;,
+          &quot;x&quot;: 0,
+          &quot;y&quot;: 1,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 270
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1&quot;,
+          &quot;recipe&quot;: &quot;planter-plant-moss-2-1&quot;,
+          &quot;facility&quot;: &quot;planter-1-mode-normal&quot;,
+          &quot;x&quot;: 5,
+          &quot;y&quot;: 18,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 0
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:2&quot;,
+          &quot;recipe&quot;: &quot;planter-plant-moss-2-1&quot;,
+          &quot;facility&quot;: &quot;planter-1-mode-normal&quot;,
+          &quot;x&quot;: 36,
+          &quot;y&quot;: 40,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 0
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3&quot;,
+          &quot;recipe&quot;: &quot;planter-plant-moss-2-1&quot;,
+          &quot;facility&quot;: &quot;planter-1-mode-normal&quot;,
+          &quot;x&quot;: 42,
+          &quot;y&quot;: 19,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 180
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:4&quot;,
+          &quot;recipe&quot;: &quot;planter-plant-moss-2-1&quot;,
+          &quot;facility&quot;: &quot;planter-1-mode-normal&quot;,
+          &quot;x&quot;: 31,
+          &quot;y&quot;: 25,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 90
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:5&quot;,
+          &quot;recipe&quot;: &quot;planter-plant-moss-2-1&quot;,
+          &quot;facility&quot;: &quot;planter-1-mode-normal&quot;,
+          &quot;x&quot;: 37,
+          &quot;y&quot;: 16,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 0
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:6&quot;,
+          &quot;recipe&quot;: &quot;planter-plant-moss-2-1&quot;,
+          &quot;facility&quot;: &quot;planter-1-mode-normal&quot;,
+          &quot;x&quot;: 22,
+          &quot;y&quot;: 15,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 270
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:7&quot;,
+          &quot;recipe&quot;: &quot;planter-plant-moss-2-1&quot;,
+          &quot;facility&quot;: &quot;planter-1-mode-normal&quot;,
+          &quot;x&quot;: 0,
+          &quot;y&quot;: 27,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 270
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:0&quot;,
+          &quot;recipe&quot;: &quot;grinder-plant-moss-powder-2-1&quot;,
+          &quot;facility&quot;: &quot;grinder-1-mode-normal&quot;,
+          &quot;x&quot;: 31,
+          &quot;y&quot;: 42,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 90
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1&quot;,
+          &quot;recipe&quot;: &quot;grinder-plant-moss-powder-2-1&quot;,
+          &quot;facility&quot;: &quot;grinder-1-mode-normal&quot;,
+          &quot;x&quot;: 3,
+          &quot;y&quot;: 14,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 270
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:2&quot;,
+          &quot;recipe&quot;: &quot;grinder-plant-moss-powder-2-1&quot;,
+          &quot;facility&quot;: &quot;grinder-1-mode-normal&quot;,
+          &quot;x&quot;: 32,
+          &quot;y&quot;: 11,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 90
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:3&quot;,
+          &quot;recipe&quot;: &quot;grinder-plant-moss-powder-2-1&quot;,
+          &quot;facility&quot;: &quot;grinder-1-mode-normal&quot;,
+          &quot;x&quot;: 8,
+          &quot;y&quot;: 0,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 180
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0&quot;,
+          &quot;recipe&quot;: &quot;seedcollector-plant-moss-3-1&quot;,
+          &quot;facility&quot;: &quot;seedcollector-1-mode-normal&quot;,
+          &quot;x&quot;: 21,
+          &quot;y&quot;: 4,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 270
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1&quot;,
+          &quot;recipe&quot;: &quot;seedcollector-plant-moss-3-1&quot;,
+          &quot;facility&quot;: &quot;seedcollector-1-mode-normal&quot;,
+          &quot;x&quot;: 24,
+          &quot;y&quot;: 42,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 90
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0&quot;,
+          &quot;recipe&quot;: &quot;planter-plant-moss-3-1&quot;,
+          &quot;facility&quot;: &quot;planter-1-mode-normal&quot;,
+          &quot;x&quot;: 15,
+          &quot;y&quot;: 20,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 180
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1&quot;,
+          &quot;recipe&quot;: &quot;planter-plant-moss-3-1&quot;,
+          &quot;facility&quot;: &quot;planter-1-mode-normal&quot;,
+          &quot;x&quot;: 22,
+          &quot;y&quot;: 10,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 0
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2&quot;,
+          &quot;recipe&quot;: &quot;planter-plant-moss-3-1&quot;,
+          &quot;facility&quot;: &quot;planter-1-mode-normal&quot;,
+          &quot;x&quot;: 14,
+          &quot;y&quot;: 39,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 0
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0&quot;,
+          &quot;recipe&quot;: &quot;grinder-plant-moss-powder-3-1&quot;,
+          &quot;facility&quot;: &quot;grinder-1-mode-normal&quot;,
+          &quot;x&quot;: 45,
+          &quot;y&quot;: 10,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 270
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1&quot;,
+          &quot;recipe&quot;: &quot;grinder-plant-moss-powder-3-1&quot;,
+          &quot;facility&quot;: &quot;grinder-1-mode-normal&quot;,
+          &quot;x&quot;: 47,
+          &quot;y&quot;: 30,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 90
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0&quot;,
+          &quot;recipe&quot;: &quot;thickener-plant-moss-enr-powder-2-1&quot;,
+          &quot;facility&quot;: &quot;thickener-1-mode-normal&quot;,
+          &quot;x&quot;: 24,
+          &quot;y&quot;: 38,
+          &quot;width&quot;: 6,
+          &quot;height&quot;: 4,
+          &quot;rotation&quot;: 180
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1&quot;,
+          &quot;recipe&quot;: &quot;thickener-plant-moss-enr-powder-2-1&quot;,
+          &quot;facility&quot;: &quot;thickener-1-mode-normal&quot;,
+          &quot;x&quot;: 0,
+          &quot;y&quot;: 20,
+          &quot;width&quot;: 4,
+          &quot;height&quot;: 6,
+          &quot;rotation&quot;: 90
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2&quot;,
+          &quot;recipe&quot;: &quot;thickener-plant-moss-enr-powder-2-1&quot;,
+          &quot;facility&quot;: &quot;thickener-1-mode-normal&quot;,
+          &quot;x&quot;: 8,
+          &quot;y&quot;: 3,
+          &quot;width&quot;: 6,
+          &quot;height&quot;: 4,
+          &quot;rotation&quot;: 0
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:3&quot;,
+          &quot;recipe&quot;: &quot;thickener-plant-moss-enr-powder-2-1&quot;,
+          &quot;facility&quot;: &quot;thickener-1-mode-normal&quot;,
+          &quot;x&quot;: 11,
+          &quot;y&quot;: 28,
+          &quot;width&quot;: 6,
+          &quot;height&quot;: 4,
+          &quot;rotation&quot;: 180
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:0&quot;,
+          &quot;recipe&quot;: &quot;furnance-carbon-enr-powder-2&quot;,
+          &quot;facility&quot;: &quot;furnance-1-mode-normal&quot;,
+          &quot;x&quot;: 40,
+          &quot;y&quot;: 6,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 90
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:1&quot;,
+          &quot;recipe&quot;: &quot;furnance-carbon-enr-powder-2&quot;,
+          &quot;facility&quot;: &quot;furnance-1-mode-normal&quot;,
+          &quot;x&quot;: 11,
+          &quot;y&quot;: 40,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 0
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:2&quot;,
+          &quot;recipe&quot;: &quot;furnance-carbon-enr-powder-2&quot;,
+          &quot;facility&quot;: &quot;furnance-1-mode-normal&quot;,
+          &quot;x&quot;: 23,
+          &quot;y&quot;: 47,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 270
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:3&quot;,
+          &quot;recipe&quot;: &quot;furnance-carbon-enr-powder-2&quot;,
+          &quot;facility&quot;: &quot;furnance-1-mode-normal&quot;,
+          &quot;x&quot;: 11,
+          &quot;y&quot;: 37,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 270
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0&quot;,
+          &quot;recipe&quot;: &quot;furnance-carbon-enr-1&quot;,
+          &quot;facility&quot;: &quot;furnance-1-mode-normal&quot;,
+          &quot;x&quot;: 35,
+          &quot;y&quot;: 37,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 180
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1&quot;,
+          &quot;recipe&quot;: &quot;furnance-carbon-enr-1&quot;,
+          &quot;facility&quot;: &quot;furnance-1-mode-normal&quot;,
+          &quot;x&quot;: 21,
+          &quot;y&quot;: 32,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 90
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:2&quot;,
+          &quot;recipe&quot;: &quot;furnance-carbon-enr-1&quot;,
+          &quot;facility&quot;: &quot;furnance-1-mode-normal&quot;,
+          &quot;x&quot;: 12,
+          &quot;y&quot;: 14,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 180
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:3&quot;,
+          &quot;recipe&quot;: &quot;furnance-carbon-enr-1&quot;,
+          &quot;facility&quot;: &quot;furnance-1-mode-normal&quot;,
+          &quot;x&quot;: 41,
+          &quot;y&quot;: 47,
+          &quot;width&quot;: 3,
+          &quot;height&quot;: 3,
+          &quot;rotation&quot;: 0
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0&quot;,
+          &quot;recipe&quot;: &quot;xiranite-oven-xiranite-powder-1&quot;,
+          &quot;facility&quot;: &quot;xiranite-oven-1-mode-liquid&quot;,
+          &quot;x&quot;: 24,
+          &quot;y&quot;: 31,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 180
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1&quot;,
+          &quot;recipe&quot;: &quot;xiranite-oven-xiranite-powder-1&quot;,
+          &quot;facility&quot;: &quot;xiranite-oven-1-mode-liquid&quot;,
+          &quot;x&quot;: 20,
+          &quot;y&quot;: 24,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 90
+        },
+        {
+          &quot;instance&quot;: &quot;facility-instance:recipe-occurrence:/target:0&quot;,
+          &quot;recipe&quot;: &quot;xiranite-oven-xiranite-enr-powder-1&quot;,
+          &quot;facility&quot;: &quot;xiranite-oven-1-mode-liquid&quot;,
+          &quot;x&quot;: 4,
+          &quot;y&quot;: 7,
+          &quot;width&quot;: 5,
+          &quot;height&quot;: 5,
+          &quot;rotation&quot;: 270
+        }
+      ]
+    },
+    &quot;diagnostics&quot;: []
+  }
+}</pre></details></main></body></html>

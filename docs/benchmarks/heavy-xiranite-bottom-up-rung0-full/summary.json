@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "target_phase_index": 40,
+  "total_phase_count": 41,
+  "cumulative_facility_count": 59,
+  "search_budget_ms": 5000,
+  "rung": {
+    "schema_version": 1,
+    "rung": "facility-geometry",
+    "formulation": "coordinate-rotation-disjunctive-non-overlap-v1",
+    "ceiling": [
+      50,
+      50
+    ],
+    "facility_count": 59,
+    "semantic_certificate": {
+      "facility_geometry": true,
+      "facility_ports": false,
+      "boundary_terminals": false,
+      "pipe_routing": false,
+      "belt_routing": false,
+      "item_flow": false,
+      "logistics_components": false,
+      "objective": false,
+      "hints": false,
+      "transferred_learned_state": false
+    },
+    "construction_ms": 393,
+    "search_ms": 5005,
+    "first_witness_ms": null,
+    "outcome": "unknown",
+    "validation": "not-attempted",
+    "model_complexity": {
+      "variables": {
+        "coverage": "complete",
+        "total_variables": 109917,
+        "boolean_variables": 109740,
+        "integer_variables": 177,
+        "log2_domain_volume": 110523.97503039343,
+        "by_family": [
+          {
+            "family": "placement",
+            "total_variables": 109917,
+            "boolean_variables": 109740,
+            "integer_variables": 177,
+            "domains": {
+              "minimum": 2,
+              "maximum": 50,
+              "p50": 2,
+              "p95": 2,
+              "log2_volume": 110523.97503039418
+            }
+          }
+        ]
+      },
+      "constraints": {
+        "total_constraints": 138001,
+        "total_terms": 495128,
+        "maximum_arity": 6,
+        "p95_arity": 6,
+        "maximum_absolute_coefficient": 1,
+        "by_family": [
+          {
+            "family": "placement-choice",
+            "relation": "less-than-or-equal",
+            "constraints": 472,
+            "terms": 944,
+            "maximum_arity": 2,
+            "p95_arity": 2,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "placement-choice",
+            "relation": "other",
+            "constraints": 649,
+            "terms": 1416,
+            "maximum_arity": 4,
+            "p95_arity": 4,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "facility-non-overlap",
+            "relation": "less-than-or-equal",
+            "constraints": 109504,
+            "terms": 328512,
+            "maximum_arity": 3,
+            "p95_arity": 3,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "facility-non-overlap",
+            "relation": "other",
+            "constraints": 27376,
+            "terms": 164256,
+            "maximum_arity": 6,
+            "p95_arity": 6,
+            "maximum_absolute_coefficient": 1
+          }
+        ]
+      },
+      "factor_graph": {
+        "variable_vertices": 109917,
+        "constraint_vertices": 138001,
+        "incidences": 495128,
+        "mean_variable_degree": 4.50456253354804,
+        "maximum_variable_degree": 1860,
+        "p95_variable_degree": 2,
+        "mean_constraint_degree": 3.5878580589995726,
+        "maximum_constraint_degree": 6,
+        "p95_constraint_degree": 6,
+        "density": 0.000032641520956718,
+        "connected_components": 1,
+        "articulation_points": null,
+        "retained_full_graph": false,
+        "family_incidences": [
+          {
+            "variable_family": "placement",
+            "constraint_family": "placement-choice",
+            "incidences": 2360
+          },
+          {
+            "variable_family": "placement",
+            "constraint_family": "facility-non-overlap",
+            "incidences": 492768
+          }
+        ]
+      },
+      "coupling": {
+        "facility_network_incidences": 0,
+        "shared_network_facility_pairs": 0,
+        "cross_family_constraints": 0,
+        "placement_routing_constraints": 0,
+        "placement_routing_incidences": 0,
+        "network_collision_constraints": 0,
+        "objective_incidences": 0
+      },
+      "symmetry": null,
+      "estimated_bytes": null
+    },
+    "search_statistics": {
+      "branch_decisions": 25645,
+      "backtracks": 3689,
+      "conflicts": 3688,
+      "learned_clauses": 3688,
+      "solver_propagations": 18783847,
+      "atomic_propagations": null,
+      "restarts": 0,
+      "row_selector_total": null,
+      "row_selector_root_fixed_true": null,
+      "row_selector_root_fixed_false": null,
+      "row_selector_root_unfixed": null,
+      "row_selector_decisions": null,
+      "non_row_selector_decisions": null,
+      "row_selector_true_decisions": null,
+      "row_selector_false_decisions": null,
+      "row_selector_unclassified_decisions": null,
+      "maximum_consecutive_row_selector_decisions": null,
+      "row_selector_conflict_appearances": null
+    },
+    "witness": null,
+    "diagnostics": []
+  }
+}
