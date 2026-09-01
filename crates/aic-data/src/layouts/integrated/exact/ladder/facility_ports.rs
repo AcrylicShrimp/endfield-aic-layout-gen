@@ -57,6 +57,7 @@ struct RungContract {
     formulation: &'static str,
     clearance: ClearanceEncoding,
     clearance_priority: Option<EndpointClearanceSchedulingPriority>,
+    clearance_counters_enabled: Option<bool>,
 }
 
 const GEOMETRY_CONTRACT: RungContract = RungContract {
@@ -64,6 +65,7 @@ const GEOMETRY_CONTRACT: RungContract = RungContract {
     formulation: GEOMETRY_FORMULATION,
     clearance: ClearanceEncoding::None,
     clearance_priority: None,
+    clearance_counters_enabled: None,
 };
 
 const CLEARANCE_CONTRACT: RungContract = RungContract {
@@ -71,6 +73,7 @@ const CLEARANCE_CONTRACT: RungContract = RungContract {
     formulation: CLEARANCE_FORMULATION,
     clearance: ClearanceEncoding::ReifiedDirections,
     clearance_priority: None,
+    clearance_counters_enabled: None,
 };
 
 const PROPAGATED_CLEARANCE_CONTRACT: RungContract = RungContract {
@@ -78,6 +81,7 @@ const PROPAGATED_CLEARANCE_CONTRACT: RungContract = RungContract {
     formulation: PROPAGATED_CLEARANCE_FORMULATION,
     clearance: ClearanceEncoding::PointRectanglePropagator,
     clearance_priority: Some(EndpointClearanceSchedulingPriority::High),
+    clearance_counters_enabled: Some(true),
 };
 
 fn pumpkin_priority(priority: EndpointClearanceSchedulingPriority) -> Priority {
@@ -90,6 +94,7 @@ fn pumpkin_priority(priority: EndpointClearanceSchedulingPriority) -> Priority {
 fn search_profile(contract: RungContract) -> BottomUpSearchProfile {
     BottomUpSearchProfile {
         endpoint_clearance_priority: contract.clearance_priority,
+        endpoint_clearance_counters_enabled: contract.clearance_counters_enabled,
     }
 }
 
@@ -133,12 +138,14 @@ pub(super) fn solve_with_propagated_clearance(
     input: ModelInput,
     time_limit: Duration,
     priority: EndpointClearanceSchedulingPriority,
+    counters_enabled: bool,
 ) -> BottomUpRungReport {
     solve(
         input,
         time_limit,
         RungContract {
             clearance_priority: Some(priority),
+            clearance_counters_enabled: Some(counters_enabled),
             ..PROPAGATED_CLEARANCE_CONTRACT
         },
     )
@@ -162,6 +169,7 @@ fn solve(input: ModelInput, time_limit: Duration, contract: RungContract) -> Bot
             .clearance_priority
             .map(pumpkin_priority)
             .unwrap_or(Priority::High),
+        contract.clearance_counters_enabled.unwrap_or(true),
     ) {
         Ok(model) => model,
         Err(diagnostic) => {
@@ -369,13 +377,18 @@ fn build_port_model(
     input: &ModelInput,
     clearance: ClearanceEncoding,
     clearance_priority: Priority,
+    clearance_counters_enabled: bool,
 ) -> Result<PortModel, IntegratedLayoutDiagnostic> {
     let mut placement = build_model(input)?;
     let tag = placement.model.new_constraint_tag();
     let rotations = build_rotation_channels(&mut placement, tag);
     let support_counters = Arc::new(EndpointSupportPropagationCounters::default());
-    let clearance_counters = (clearance == ClearanceEncoding::PointRectanglePropagator)
-        .then(|| Arc::new(EndpointClearancePropagationCounters::default()));
+    let clearance_counters =
+        (clearance == ClearanceEncoding::PointRectanglePropagator).then(|| {
+            Arc::new(EndpointClearancePropagationCounters::new(
+                clearance_counters_enabled,
+            ))
+        });
     let endpoints = build_endpoints(
         &mut placement,
         input,
@@ -1294,6 +1307,7 @@ mod tests {
             input.clone(),
             Duration::from_secs(1),
             EndpointClearanceSchedulingPriority::High,
+            true,
         );
         assert_eq!(propagated.outcome, BottomUpRungOutcome::Feasible);
         assert_eq!(propagated.validation, ExactValidationStatus::Passed);
@@ -1301,9 +1315,10 @@ mod tests {
         assert!(propagated.endpoint_clearance_statistics.is_some());
 
         let medium = solve_with_propagated_clearance(
-            input,
+            input.clone(),
             Duration::from_secs(1),
             EndpointClearanceSchedulingPriority::Medium,
+            true,
         );
         assert_eq!(medium.outcome, BottomUpRungOutcome::Feasible);
         assert_eq!(medium.validation, ExactValidationStatus::Passed);
@@ -1313,6 +1328,25 @@ mod tests {
             Some(EndpointClearanceSchedulingPriority::Medium)
         );
         assert!(medium.endpoint_clearance_statistics.is_some());
+
+        let counters_disabled = solve_with_propagated_clearance(
+            input,
+            Duration::from_secs(1),
+            EndpointClearanceSchedulingPriority::High,
+            false,
+        );
+        assert_eq!(counters_disabled.outcome, BottomUpRungOutcome::Feasible);
+        assert_eq!(counters_disabled.validation, ExactValidationStatus::Passed);
+        assert_eq!(
+            counters_disabled
+                .search_profile
+                .endpoint_clearance_counters_enabled,
+            Some(false)
+        );
+        assert_eq!(
+            counters_disabled.endpoint_clearance_statistics,
+            Some(Default::default())
+        );
     }
 
     #[test]
@@ -1398,6 +1432,7 @@ mod tests {
             input.clone(),
             Duration::from_secs(1),
             EndpointClearanceSchedulingPriority::High,
+            true,
         );
         assert_eq!(propagated.outcome, BottomUpRungOutcome::Infeasible);
         assert_eq!(propagated.validation, ExactValidationStatus::NotAttempted);
@@ -1412,6 +1447,7 @@ mod tests {
             input,
             Duration::from_secs(1),
             EndpointClearanceSchedulingPriority::Medium,
+            true,
         );
         assert_eq!(medium.outcome, BottomUpRungOutcome::Infeasible);
         assert_eq!(medium.validation, ExactValidationStatus::NotAttempted);

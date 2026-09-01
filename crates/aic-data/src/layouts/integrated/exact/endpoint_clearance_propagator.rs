@@ -16,8 +16,9 @@ use super::ladder::EndpointClearancePropagationStatistics;
 
 declare_inference_label!(EndpointRectangleClearance);
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(in crate::layouts::integrated) struct EndpointClearancePropagationCounters {
+    enabled: bool,
     relations: AtomicU64,
     executions: AtomicU64,
     notifications: AtomicU64,
@@ -29,7 +30,41 @@ pub(in crate::layouts::integrated) struct EndpointClearancePropagationCounters {
     maximum_reason_predicates: AtomicU64,
 }
 
+impl Default for EndpointClearancePropagationCounters {
+    fn default() -> Self {
+        Self::new(true)
+    }
+}
+
 impl EndpointClearancePropagationCounters {
+    pub(in crate::layouts::integrated) fn new(enabled: bool) -> Self {
+        Self {
+            enabled,
+            relations: AtomicU64::default(),
+            executions: AtomicU64::default(),
+            notifications: AtomicU64::default(),
+            orientation_checks: AtomicU64::default(),
+            rejected_orientations: AtomicU64::default(),
+            forced_separation_detections: AtomicU64::default(),
+            bound_updates: AtomicU64::default(),
+            conflicts: AtomicU64::default(),
+            maximum_reason_predicates: AtomicU64::default(),
+        }
+    }
+
+    fn increment(&self, counter: &AtomicU64) {
+        if self.enabled {
+            counter.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    fn note_maximum_reason_predicates(&self, predicates: u64) {
+        if self.enabled {
+            self.maximum_reason_predicates
+                .fetch_max(predicates, Ordering::Relaxed);
+        }
+    }
+
     pub(in crate::layouts::integrated) fn snapshot(
         &self,
     ) -> EndpointClearancePropagationStatistics {
@@ -92,7 +127,7 @@ impl PropagatorConstructor for EndpointRectangleClearancePropagatorArgs {
                 LocalId::from(u32::try_from(index + 4).expect("orientation count fits u32")),
             );
         }
-        self.counters.relations.fetch_add(1, Ordering::Relaxed);
+        self.counters.increment(&self.counters.relations);
         PropagatorSpec {
             registration: registration.build(),
             checkers: RuntimeCheckers::empty(),
@@ -269,10 +304,8 @@ impl EndpointRectangleClearancePropagator {
     }
 
     fn note_reason(&self, reason: &PropositionalConjunction) {
-        self.counters.maximum_reason_predicates.fetch_max(
-            reason.len().try_into().unwrap_or(u64::MAX),
-            Ordering::Relaxed,
-        );
+        self.counters
+            .note_maximum_reason_predicates(reason.len().try_into().unwrap_or(u64::MAX));
     }
 
     fn post(
@@ -282,9 +315,9 @@ impl EndpointRectangleClearancePropagator {
         reason: PropositionalConjunction,
     ) -> PropagationStatusCP {
         self.note_reason(&reason);
-        self.counters.bound_updates.fetch_add(1, Ordering::Relaxed);
+        self.counters.increment(&self.counters.bound_updates);
         if let Err(conflict) = context.post(conclusion, (reason, &self.inference_code)) {
-            self.counters.conflicts.fetch_add(1, Ordering::Relaxed);
+            self.counters.increment(&self.counters.conflicts);
             return Err(conflict.into());
         }
         Ok(())
@@ -298,8 +331,7 @@ impl EndpointRectangleClearancePropagator {
         separation: Separation,
     ) -> PropagationStatusCP {
         self.counters
-            .forced_separation_detections
-            .fetch_add(1, Ordering::Relaxed);
+            .increment(&self.counters.forced_separation_detections);
         match separation {
             Separation::Left => {
                 let connection_upper = bounds.facility_x_upper - 1;
@@ -426,28 +458,25 @@ impl EndpointRectangleClearancePropagator {
     }
 
     fn propagate_all(&self, context: &mut PropagationContext) -> PropagationStatusCP {
-        self.counters.executions.fetch_add(1, Ordering::Relaxed);
+        self.counters.increment(&self.counters.executions);
         let bounds = self.bounds(context);
         for orientation in &self.orientations {
             if context.evaluate_predicate(orientation.selected.get_false_predicate()) == Some(true)
             {
                 continue;
             }
-            self.counters
-                .orientation_checks
-                .fetch_add(1, Ordering::Relaxed);
+            self.counters.increment(&self.counters.orientation_checks);
             let possible = Self::possible_separations(bounds, *orientation);
             if possible.is_empty() {
                 let reason = self.all_impossible_reason(bounds);
                 self.note_reason(&reason);
                 self.counters
-                    .rejected_orientations
-                    .fetch_add(1, Ordering::Relaxed);
+                    .increment(&self.counters.rejected_orientations);
                 if let Err(conflict) = context.post(
                     orientation.selected.get_false_predicate(),
                     (reason, &self.inference_code),
                 ) {
-                    self.counters.conflicts.fetch_add(1, Ordering::Relaxed);
+                    self.counters.increment(&self.counters.conflicts);
                     return Err(conflict.into());
                 }
             } else if context.evaluate_predicate(orientation.selected.get_true_predicate())
@@ -476,7 +505,7 @@ impl Propagator for EndpointRectangleClearancePropagator {
         _local_id: LocalId,
         _event: OpaqueDomainEvent,
     ) -> EnqueueDecision {
-        self.counters.notifications.fetch_add(1, Ordering::Relaxed);
+        self.counters.increment(&self.counters.notifications);
         EnqueueDecision::Enqueue
     }
 

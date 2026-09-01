@@ -70,6 +70,9 @@ struct Args {
     /// Scheduling priority for the propagated endpoint-clearance rung.
     #[arg(long, value_enum, default_value = "high")]
     endpoint_clearance_priority: EndpointClearancePriorityArg,
+    /// Disable endpoint-clearance diagnostic counters for instrumentation-cost experiments.
+    #[arg(long)]
+    disable_endpoint_clearance_counters: bool,
     /// Benchmark workload manifest JSON file.
     #[arg(long, value_name = "FILE")]
     workload: PathBuf,
@@ -129,8 +132,9 @@ fn run(args: Args) -> Result<bool> {
     let loaded = load_inputs(&args)?;
     ensure!(
         matches!(args.rung, RungArg::FacilityPortsPropagated)
-            || args.endpoint_clearance_priority == EndpointClearancePriorityArg::High,
-        "endpoint_clearance_priority applies only to rung 'facility-ports-propagated'"
+            || (args.endpoint_clearance_priority == EndpointClearancePriorityArg::High
+                && !args.disable_endpoint_clearance_counters),
+        "endpoint-clearance search settings apply only to rung 'facility-ports-propagated'"
     );
     let mut report = diagnose_bottom_up_rung(
         &loaded.wiring,
@@ -141,6 +145,7 @@ fn run(args: Args) -> Result<bool> {
         &loaded.placement_request,
         args.rung.into(),
         args.endpoint_clearance_priority.into(),
+        !args.disable_endpoint_clearance_counters,
         args.target_phase,
         Duration::from_millis(time_limit.get()),
     )
@@ -606,6 +611,7 @@ mod tests {
             "facility-ports-propagated",
             "--endpoint-clearance-priority",
             "medium",
+            "--disable-endpoint-clearance-counters",
             "--workload",
             "workload.json",
             "--placement-request",
@@ -624,6 +630,7 @@ mod tests {
             args.endpoint_clearance_priority,
             EndpointClearancePriorityArg::Medium
         );
+        assert!(args.disable_endpoint_clearance_counters);
     }
 
     #[test]

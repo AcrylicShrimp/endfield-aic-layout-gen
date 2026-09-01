@@ -21,7 +21,7 @@ use super::super::research::EndpointSupportPropagationStatistics;
 
 mod facility_ports;
 
-pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 6;
+pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 7;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -42,6 +42,7 @@ pub enum EndpointClearanceSchedulingPriority {
 #[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
 pub struct BottomUpSearchProfile {
     pub endpoint_clearance_priority: Option<EndpointClearanceSchedulingPriority>,
+    pub endpoint_clearance_counters_enabled: Option<bool>,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
@@ -372,8 +373,9 @@ pub(in crate::layouts::integrated) fn solve_facility_ports_propagated_rung(
     input: ModelInput,
     time_limit: Duration,
     priority: EndpointClearanceSchedulingPriority,
+    counters_enabled: bool,
 ) -> BottomUpRungReport {
-    facility_ports::solve_with_propagated_clearance(input, time_limit, priority)
+    facility_ports::solve_with_propagated_clearance(input, time_limit, priority, counters_enabled)
 }
 
 pub(in crate::layouts::integrated) fn solve_facility_port_geometry_rung(

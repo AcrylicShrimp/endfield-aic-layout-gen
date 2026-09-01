@@ -132,6 +132,10 @@ constraints, reasons, accepted assignments, and validation remain identical. Pri
 separately from the rung and formulation so scheduling effects can be reproduced without labeling
 the same semantic problem as a different ladder rung.
 
+The same search profile records whether endpoint-clearance diagnostic counters are enabled. This
+flag changes instrumentation only; it must not change the propagated relation, event registration,
+search policy, or accepted assignments. Counters remain enabled by default.
+
 ### Rung 2: Pipe Routing
 
 Adds the complete pipe semantic block:

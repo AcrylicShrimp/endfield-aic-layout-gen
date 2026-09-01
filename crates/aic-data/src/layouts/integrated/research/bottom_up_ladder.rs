@@ -15,7 +15,7 @@ use super::super::{
 };
 use super::MAX_NEW_FACILITIES_PER_GROWTH_PHASE;
 
-pub const BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION: u32 = 6;
+pub const BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION: u32 = 7;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct BottomUpExperimentReport {
@@ -40,6 +40,7 @@ pub fn diagnose_bottom_up_rung(
     request: &FacilityPlacementRequest,
     rung_kind: exact::ladder::BottomUpRungKind,
     endpoint_clearance_priority: exact::ladder::EndpointClearanceSchedulingPriority,
+    endpoint_clearance_counters_enabled: bool,
     target_phase_index: usize,
     search_budget: Duration,
 ) -> Result<BottomUpExperimentReport, IntegratedLayoutReport> {
@@ -120,6 +121,7 @@ pub fn diagnose_bottom_up_rung(
                 input,
                 search_budget,
                 endpoint_clearance_priority,
+                endpoint_clearance_counters_enabled,
             )
         }
     };
