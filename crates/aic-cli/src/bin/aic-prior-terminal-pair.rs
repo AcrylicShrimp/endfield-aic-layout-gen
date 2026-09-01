@@ -5,18 +5,18 @@ use std::time::Duration;
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
     BoundaryCellWidthSensitivityReport, EndpointContinuationPartitionReport,
-    ExternalBoundaryCellPartitionReport, ExternalBoundaryKeyLegalSupportAbReport,
-    ExternalBoundarySidePartitionReport, FacilityPlacementRequest,
-    PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
+    EndpointSourceOnlyControlReport, ExternalBoundaryCellPartitionReport,
+    ExternalBoundaryKeyLegalSupportAbReport, ExternalBoundarySidePartitionReport,
+    FacilityPlacementRequest, PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
     PriorInputPortPairPortfolioReport, PriorSourcePortPortfolioReport,
     PriorTerminalCompletionPortfolioReport, PriorTerminalPairValuePortfolioReport,
     ResidualFacilityPortTuplePortfolioReport, diagnose_boundary_cell_width_sensitivity,
-    diagnose_endpoint_continuation_partition, diagnose_external_boundary_cell_partition,
-    diagnose_external_boundary_key_legal_support_ab, diagnose_external_boundary_side_partition,
-    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
-    diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
-    diagnose_prior_terminal_completion_portfolio, diagnose_prior_terminal_pair_value_portfolio,
-    diagnose_residual_facility_port_tuple_portfolio,
+    diagnose_endpoint_continuation_partition, diagnose_endpoint_source_only_control,
+    diagnose_external_boundary_cell_partition, diagnose_external_boundary_key_legal_support_ab,
+    diagnose_external_boundary_side_partition, diagnose_prior_input_pair_root_snapshot,
+    diagnose_prior_input_port_controls, diagnose_prior_input_port_pair_portfolio,
+    diagnose_prior_source_port_portfolio, diagnose_prior_terminal_completion_portfolio,
+    diagnose_prior_terminal_pair_value_portfolio, diagnose_residual_facility_port_tuple_portfolio,
     render_integrated_layout_html_with_localization,
 };
 use aic_data::localization::{ValidatedLocalizationCatalog, load_localization_catalog};
@@ -145,6 +145,13 @@ struct Args {
     endpoint_continuation_case_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "MILLISECONDS")]
     endpoint_continuation_observation_time_limit_ms: Option<u64>,
+    /// Control whether source continuation alone exposes the endpoint contradiction.
+    #[arg(long)]
+    control_endpoint_source_only: bool,
+    #[arg(long, value_name = "MILLISECONDS")]
+    endpoint_source_only_case_time_limit_ms: Option<u64>,
+    #[arg(long, value_name = "MILLISECONDS")]
+    endpoint_source_only_observation_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -275,6 +282,21 @@ fn main() -> Result<()> {
                 .endpoint_continuation_observation_time_limit_ms
                 .is_some(),
         "--endpoint-continuation-observation-time-limit-ms must be supplied exactly when --partition-endpoint-continuation is enabled"
+    );
+    ensure!(
+        !args.control_endpoint_source_only || args.partition_endpoint_continuation,
+        "--control-endpoint-source-only requires --partition-endpoint-continuation"
+    );
+    ensure!(
+        args.control_endpoint_source_only == args.endpoint_source_only_case_time_limit_ms.is_some(),
+        "--endpoint-source-only-case-time-limit-ms must be supplied exactly when --control-endpoint-source-only is enabled"
+    );
+    ensure!(
+        args.control_endpoint_source_only
+            == args
+                .endpoint_source_only_observation_time_limit_ms
+                .is_some(),
+        "--endpoint-source-only-observation-time-limit-ms must be supplied exactly when --control-endpoint-source-only is enabled"
     );
     let terminal_bits = parse_terminal_pair(&args.terminal_pair)?;
     let worker_count = NonZeroUsize::new(args.worker_count)
@@ -773,6 +795,73 @@ fn run_input_pair(
                         .context(
                             "endpoint-continuation observation case time limit must be positive",
                         )?;
+                        if args.control_endpoint_source_only {
+                            let source_only_authoritative_budget = NonZeroU64::new(
+                                args.endpoint_source_only_case_time_limit_ms.context(
+                                    "source-only control requires --endpoint-source-only-case-time-limit-ms",
+                                )?,
+                            )
+                            .context(
+                                "source-only authoritative case time limit must be positive",
+                            )?;
+                            let source_only_observation_budget = NonZeroU64::new(
+                                args.endpoint_source_only_observation_time_limit_ms.context(
+                                    "source-only control requires --endpoint-source-only-observation-time-limit-ms",
+                                )?,
+                            )
+                            .context(
+                                "source-only observation case time limit must be positive",
+                            )?;
+                            let report = diagnose_endpoint_source_only_control(
+                                &loaded.wiring,
+                                &loaded.facilities,
+                                &loaded.items,
+                                &loaded.transports,
+                                &loaded.components,
+                                &loaded.placement_request,
+                                args.target_phase,
+                                args.used_width,
+                                args.used_height,
+                                args.facility_x,
+                                args.facility_y,
+                                args.port_assignment_index,
+                                args.facility_rotation,
+                                args.prior_facility_bit,
+                                terminal_bits,
+                                representative_source_leaf_index,
+                                worker_count.get(),
+                                Duration::from_millis(prefix_budget.get()),
+                                Duration::from_millis(pair_budget.get()),
+                                Duration::from_millis(completion_budget.get()),
+                                Duration::from_millis(source_budget.get()),
+                                Duration::from_millis(control_budget.get()),
+                                Duration::from_millis(residual_pair_budget.get()),
+                                Duration::from_millis(parent_observation_budget.get()),
+                                Duration::from_millis(authoritative_budget.get()),
+                                Duration::from_millis(observation_budget.get()),
+                                Duration::from_millis(ab_authoritative_budget.get()),
+                                Duration::from_millis(ab_observation_budget.get()),
+                                Duration::from_millis(side_authoritative_budget.get()),
+                                Duration::from_millis(side_observation_budget.get()),
+                                Duration::from_millis(cell_authoritative_budget.get()),
+                                Duration::from_millis(cell_observation_budget.get()),
+                                args.endpoint_continuation_network
+                                    .clone()
+                                    .context("endpoint-continuation network is required")?,
+                                Duration::from_millis(continuation_authoritative_budget.get()),
+                                Duration::from_millis(continuation_observation_budget.get()),
+                                Duration::from_millis(source_only_authoritative_budget.get()),
+                                Duration::from_millis(source_only_observation_budget.get()),
+                            )
+                            .map_err(|report| {
+                                anyhow::anyhow!("endpoint source-only control failed: {report:?}")
+                            })?;
+                            write_endpoint_source_only_artifacts(args, loaded, &report)?;
+                            serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+                                .context("failed to write endpoint source-only report")?;
+                            println!();
+                            return Ok(());
+                        }
                         let report = diagnose_endpoint_continuation_partition(
                             &loaded.wiring,
                             &loaded.facilities,
@@ -1399,6 +1488,46 @@ fn write_endpoint_continuation_artifacts(
                     .join(format!("case-{}.{kind}.html", case.case_index)),
                 html.as_bytes(),
                 "endpoint-continuation layout",
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn write_endpoint_source_only_artifacts(
+    args: &Args,
+    loaded: &LoadedInputs,
+    report: &EndpointSourceOnlyControlReport,
+) -> Result<()> {
+    write_json(&args.output_dir.join("summary.json"), report)?;
+    write_bytes(
+        &args.output_dir.join("summary.html"),
+        render_endpoint_source_only_summary(report)?.as_bytes(),
+        "endpoint source-only summary",
+    )?;
+    for case in &report.cases {
+        for (kind, layout) in [
+            ("authoritative", &case.solve.authoritative_layout),
+            ("observation", &case.solve.observation_layout),
+        ] {
+            let html = render_integrated_layout_html_with_localization(
+                layout,
+                loaded.localization.as_ref(),
+            )
+            .map_err(|diagnostic| {
+                anyhow::anyhow!(
+                    "endpoint source-only case {} {kind} visualization failed with {}: {}",
+                    case.case_index,
+                    diagnostic.code,
+                    diagnostic.message
+                )
+            })?;
+            write_bytes(
+                &args
+                    .output_dir
+                    .join(format!("case-{}.{kind}.html", case.case_index)),
+                html.as_bytes(),
+                "endpoint source-only layout",
             )?;
         }
     }
@@ -2556,6 +2685,103 @@ fn render_endpoint_continuation_summary(
     ))
 }
 
+fn render_endpoint_source_only_summary(report: &EndpointSourceOnlyControlReport) -> Result<String> {
+    let region_rows = report
+        .parent_source_regions
+        .iter()
+        .map(|region| {
+            format!(
+                "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{:?}</td><td>{}</td></tr>",
+                region.source_case_index,
+                region.parent_case_count,
+                region.parent_validated_feasible_count,
+                region.parent_proven_infeasible_count,
+                region.parent_unknown_count,
+                region.parent_invalid_witness_count,
+                region.source_only_outcome,
+                region.logical_evidence_compatible,
+            )
+        })
+        .collect::<String>();
+    let candidate_rows = report
+        .source_candidates
+        .iter()
+        .map(|candidate| {
+            format!(
+                "<tr><td>{}</td><td>{}</td><td>{}→{}</td><td><code>{:?}</code></td></tr>",
+                candidate.case_index,
+                candidate.terminal_cell,
+                candidate.from,
+                candidate.to,
+                candidate.preceding,
+            )
+        })
+        .collect::<String>();
+    let case_rows = report
+        .cases
+        .iter()
+        .map(|case| {
+            format!(
+                "<tr><td>{}</td><td>{}→{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td><a href=\"case-{}.authoritative.html\">solve</a> · <a href=\"case-{}.observation.html\">root</a></td></tr>",
+                case.case_index,
+                case.source_selected[0],
+                case.source_selected[1],
+                case.solve.authoritative_outcome,
+                case.solve.observation_outcome,
+                case.solve.combined_outcome,
+                case.solve.construction_ms,
+                case.solve.search_ms,
+                case.solve.first_incumbent_ms,
+                case.solve.search_statistics.branch_decisions,
+                case.solve.search_statistics.conflicts,
+                case.solve.search_statistics.solver_propagations,
+                case.root_infeasible,
+                case.root_source_restriction_satisfied,
+                case.source_only_certificate_satisfied,
+                case.facility_fixation_satisfied,
+                case.semantic_model_contract_satisfied,
+                case.controlled_axis_model_satisfied,
+                case.case_index,
+                case.case_index,
+            )
+        })
+        .collect::<String>();
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 3 endpoint source-only control</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.warning{{border:1px solid #ffd166;padding:10px;color:#ffd166}}table{{border-collapse:collapse;width:100%;margin-bottom:24px}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}code,a{{color:#ffd166}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {phase} endpoint source-only exact control</h1><div class="meta">network=<code>{network}</code> · item=<code>{item}</code> · boundary key={key} · source={source} (cell {source_cell}, flow {source_flow}) · demand={demand} (cell {demand_cell}, flow {demand_flow}) · workers={workers} · authoritative wave={auth_wave}ms · observation wave={obs_wave}ms · total={total}ms</div><p class="warning">Each child fixes only one canonical source continuation. Demand continuation, route interior, branches, bridges, cycles, placements, ports, and unrelated terminals retain the parent solver freedom.</p><p>source non-empty={non_empty} · disjoint={disjoint} · exact cover={exact_cover} · demand unrestricted={demand_free} · parent evidence complete={parent_complete} · cross evidence compatible={cross_compatible} · root infeasible={root_infeasible} · feasible/infeasible/unknown/invalid={feasible}/{infeasible}/{unknown}/{invalid} · blocked={blocked}</p><h2>Parent source regions</h2><table><thead><tr><th>source case</th><th>parent children</th><th>feasible</th><th>infeasible</th><th>unknown</th><th>invalid</th><th>source-only outcome</th><th>compatible</th></tr></thead><tbody>{region_rows}</tbody></table><h2>Canonical source cases</h2><table><thead><tr><th>case</th><th>cell</th><th>selected arc</th><th>earlier arcs fixed to zero</th></tr></thead><tbody>{candidate_rows}</tbody></table><h2>Source-only outcomes</h2><table><thead><tr><th>case</th><th>source arc</th><th>authoritative</th><th>observation</th><th>combined</th><th>build ms</th><th>search ms</th><th>first</th><th>decisions</th><th>conflicts</th><th>propagations</th><th>root infeasible</th><th>root restriction</th><th>source-only certificate</th><th>facility/port fixation</th><th>within-case identity</th><th>controlled-axis model</th><th>artifacts</th></tr></thead><tbody>{case_rows}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={json};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        phase = report.target_phase_index,
+        network = report.selected_network_id,
+        item = report.selected_item,
+        key = report.selected_boundary_key,
+        source = report.source_terminal,
+        source_cell = report.source_cell,
+        source_flow = report.source_flow_units,
+        demand = report.demand_terminal,
+        demand_cell = report.demand_cell,
+        demand_flow = report.demand_flow_units,
+        workers = report.worker_count,
+        auth_wave = report.authoritative_wave_wall_ms,
+        obs_wave = report.observation_wave_wall_ms,
+        total = report.total_wall_ms,
+        non_empty = report.source_partition_non_empty,
+        disjoint = report.source_partition_pairwise_disjoint,
+        exact_cover = report.source_partition_exact_cover,
+        demand_free = report.demand_continuation_unrestricted,
+        parent_complete = report.parent_region_evidence_complete,
+        cross_compatible = report.cross_experiment_evidence_compatible,
+        root_infeasible = report.root_infeasible_count,
+        feasible = report.validated_feasible_count,
+        infeasible = report.proven_infeasible_count,
+        unknown = report.unknown_count,
+        invalid = report.invalid_witness_count,
+        blocked = report.interpretation_blocked,
+        region_rows = region_rows,
+        candidate_rows = candidate_rows,
+        case_rows = case_rows,
+        json = json,
+    ))
+}
+
 fn write_json(path: &Path, report: &impl serde::Serialize) -> Result<()> {
     let encoded = serde_json::to_vec_pretty(report).context("failed to serialize report")?;
     write_bytes(path, &encoded, "prior-terminal pair report")
@@ -2580,6 +2806,7 @@ fn write_bytes(path: &Path, bytes: &[u8], kind: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use clap::Parser;
 
     #[test]
     fn parses_two_distinct_terminal_bits() {
@@ -2587,5 +2814,102 @@ mod tests {
         assert!(parse_terminal_pair("2").is_err());
         assert!(parse_terminal_pair("2,2").is_err());
         assert!(parse_terminal_pair("two,3").is_err());
+    }
+
+    #[test]
+    fn parses_endpoint_source_only_control_stack() {
+        let args = Args::try_parse_from([
+            "aic-prior-terminal-pair",
+            "--workload",
+            "workload.json",
+            "--workspace-root",
+            ".",
+            "--placement-request",
+            "placement.json",
+            "--target-phase",
+            "3",
+            "--used-width",
+            "16",
+            "--used-height",
+            "16",
+            "--facility-x",
+            "8",
+            "--facility-y",
+            "5",
+            "--port-assignment-index",
+            "5",
+            "--facility-rotation",
+            "0",
+            "--prior-facility-bit",
+            "2",
+            "--terminal-pair",
+            "2,3",
+            "--worker-count",
+            "12",
+            "--prefix-case-time-limit-ms",
+            "10000",
+            "--pair-case-time-limit-ms",
+            "5000",
+            "--complete-target-ports",
+            "--child-case-time-limit-ms",
+            "5000",
+            "--split-prior-source-port",
+            "--source-case-time-limit-ms",
+            "5000",
+            "--control-prior-input-ports",
+            "--representative-source-leaf-index",
+            "0",
+            "--input-control-case-time-limit-ms",
+            "5000",
+            "--pair-prior-input-ports",
+            "--input-pair-case-time-limit-ms",
+            "5000",
+            "--root-domain-snapshot",
+            "--root-snapshot-case-time-limit-ms",
+            "5000",
+            "--partition-residual-facility-ports",
+            "--residual-facility-port-case-time-limit-ms",
+            "5000",
+            "--residual-facility-port-observation-time-limit-ms",
+            "5000",
+            "--compare-external-boundary-key-support",
+            "--boundary-key-case-time-limit-ms",
+            "5000",
+            "--boundary-key-observation-time-limit-ms",
+            "5000",
+            "--partition-external-boundary-side",
+            "--boundary-side-case-time-limit-ms",
+            "5000",
+            "--boundary-side-observation-time-limit-ms",
+            "5000",
+            "--partition-external-boundary-cell",
+            "--boundary-cell-case-time-limit-ms",
+            "5000",
+            "--boundary-cell-observation-time-limit-ms",
+            "5000",
+            "--partition-endpoint-continuation",
+            "--endpoint-continuation-network",
+            "network:pipe:item-liquid-xiranite-poly",
+            "--endpoint-continuation-case-time-limit-ms",
+            "5000",
+            "--endpoint-continuation-observation-time-limit-ms",
+            "5000",
+            "--control-endpoint-source-only",
+            "--endpoint-source-only-case-time-limit-ms",
+            "5000",
+            "--endpoint-source-only-observation-time-limit-ms",
+            "5000",
+            "--output-dir",
+            "out",
+        ])
+        .expect("source-only control stack should parse");
+
+        assert!(args.partition_endpoint_continuation);
+        assert!(args.control_endpoint_source_only);
+        assert_eq!(args.endpoint_source_only_case_time_limit_ms, Some(5000));
+        assert_eq!(
+            args.endpoint_source_only_observation_time_limit_ms,
+            Some(5000)
+        );
     }
 }

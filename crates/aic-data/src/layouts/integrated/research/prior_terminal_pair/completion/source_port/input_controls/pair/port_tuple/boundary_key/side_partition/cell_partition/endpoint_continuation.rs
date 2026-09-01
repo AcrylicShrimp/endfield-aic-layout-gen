@@ -6,6 +6,10 @@ use serde::Serialize;
 use super::*;
 use crate::facilities::FacilityPortDirection;
 
+mod source_only;
+
+pub use source_only::*;
+
 pub const ENDPOINT_CONTINUATION_PARTITION_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -657,7 +661,7 @@ fn continuation_restriction(
         demand_terminal: demand_terminal.to_string(),
         source_selected: convert([case.source.from, case.source.to]),
         source_preceding: case.source.preceding.iter().copied().map(convert).collect(),
-        demand_selected: convert([case.demand.from, case.demand.to]),
+        demand_selected: Some(convert([case.demand.from, case.demand.to])),
         demand_preceding: case.demand.preceding.iter().copied().map(convert).collect(),
     }
 }
@@ -820,6 +824,10 @@ mod tests {
         assert_eq!(
             restriction.source_preceding,
             vec![exact::shared_layer::DirectedGridArcRestriction { from: 10, to: 9 }]
+        );
+        assert_eq!(
+            restriction.demand_selected,
+            Some(exact::shared_layer::DirectedGridArcRestriction { from: 6, to: 7 })
         );
         assert_eq!(
             restriction.demand_preceding,

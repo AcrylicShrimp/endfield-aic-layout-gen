@@ -128,7 +128,7 @@ pub(in crate::layouts::integrated) struct EndpointContinuationRestriction {
     pub demand_terminal: String,
     pub source_selected: DirectedGridArcRestriction,
     pub source_preceding: Vec<DirectedGridArcRestriction>,
-    pub demand_selected: DirectedGridArcRestriction,
+    pub demand_selected: Option<DirectedGridArcRestriction>,
     pub demand_preceding: Vec<DirectedGridArcRestriction>,
 }
 
@@ -144,7 +144,7 @@ pub(in crate::layouts::integrated) struct EndpointContinuationBuildCertificate {
     pub source_preceding: Vec<DirectedGridArcRestriction>,
     pub demand_terminal: String,
     pub demand_flow_units: i32,
-    pub demand_selected: DirectedGridArcRestriction,
+    pub demand_selected: Option<DirectedGridArcRestriction>,
     pub demand_preceding: Vec<DirectedGridArcRestriction>,
 }
 
@@ -2997,6 +2997,13 @@ fn solve_with_endpoint_encoding(
         }
         EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
             sparse_legal_domain: true,
+            endpoint_continuation_restriction: Some(restriction),
+            ..
+        } if restriction.demand_selected.is_none() => {
+            "joint-shared-v4-sparse-support-endpoints-legal-boundary-key-source-continuation-control-watched-demand-local-continuation-guarded-intersection-propagation"
+        }
+        EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+            sparse_legal_domain: true,
             endpoint_continuation_restriction: Some(_),
             ..
         } => {
@@ -5662,11 +5669,13 @@ fn post_endpoint_continuation_restriction(
         &restriction.source_preceding,
         "source",
     )?;
-    post_arc(
-        &restriction.demand_selected,
-        &restriction.demand_preceding,
-        "demand",
-    )?;
+    if let Some(selected) = &restriction.demand_selected {
+        post_arc(selected, &restriction.demand_preceding, "demand")?;
+    } else if !restriction.demand_preceding.is_empty() {
+        return Err(invalid(
+            "source-only restriction cannot contain preceding demand arcs".to_string(),
+        ));
+    }
 
     if let Some(certificates) = certificates {
         certificates
