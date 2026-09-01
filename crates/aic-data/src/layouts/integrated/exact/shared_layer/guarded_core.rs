@@ -165,10 +165,7 @@ pub(in crate::layouts::integrated) struct GuardedCoreClauseCertificate {
 #[serde(rename_all = "kebab-case")]
 pub(in crate::layouts::integrated) enum GuardedCorePosting {
     Assumptions,
-    #[allow(
-        dead_code,
-        reason = "wired by the guarded replay slice after the initial proof gate"
-    )]
+    ObserveOnly,
     ReplayClause,
 }
 
@@ -587,6 +584,7 @@ pub(super) fn post_request(
             post_assumptions(solver, &atoms, tag);
             None
         }
+        GuardedCorePosting::ObserveOnly => None,
         GuardedCorePosting::ReplayClause => Some(post_guarded_clause(solver, &atoms, tag)?),
     };
     request
@@ -603,10 +601,13 @@ pub(super) fn post_request(
 
 #[cfg(test)]
 mod tests {
+    use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
     use pumpkin_solver::core::predicates::PredicateConstructor;
-    use pumpkin_solver::core::variables::DomainId;
+    use pumpkin_solver::core::results::SatisfactionResult;
+    use pumpkin_solver::core::termination::Indefinite;
+    use pumpkin_solver::core::variables::{DomainId, TransformableVariable};
 
-    use super::NativePredicateRelation;
+    use super::*;
 
     #[test]
     fn exact_predicate_complements_match_pumpkin() {
@@ -644,5 +645,80 @@ mod tests {
                 .complement(i32::MAX)
                 .is_err()
         );
+    }
+
+    #[test]
+    fn nine_literal_replay_clause_rejects_exactly_the_proven_conjunction() {
+        assert!(!fixed_replay_state_is_satisfiable(None));
+        for false_atom in 0..9 {
+            assert!(
+                fixed_replay_state_is_satisfiable(Some(false_atom)),
+                "atom {false_atom} false must satisfy the replay clause"
+            );
+        }
+    }
+
+    fn fixed_replay_state_is_satisfiable(false_atom: Option<usize>) -> bool {
+        let mut model = RecordedModel::default();
+        let tag = model.new_constraint_tag();
+        let atoms = (0..9)
+            .map(|atom_index| {
+                let domain = model.new_variable(
+                    VariableFamily::Placement,
+                    0,
+                    1,
+                    format!("atom-{atom_index}"),
+                );
+                ResolvedGuardedCoreAtom {
+                    domain,
+                    relation: NativePredicateRelation::Equal,
+                    value: 1,
+                    certificate: GuardedCoreAtomCertificate {
+                        atom_index,
+                        stable_id: format!("atom:{atom_index}"),
+                        domain_id: domain.id(),
+                        variable_family: "placement".to_string(),
+                        variable_name: format!("atom-{atom_index}"),
+                        declared_lower_bound: 0,
+                        declared_upper_bound: 1,
+                        declared_cardinality: 2,
+                        relation: NativePredicateRelation::Equal,
+                        value: 1,
+                        complement_relation: NativePredicateRelation::NotEqual,
+                        complement_value: 1,
+                    },
+                }
+            })
+            .collect::<Vec<_>>();
+        let certificate = post_guarded_clause(&mut model, &atoms, tag)
+            .expect("non-empty replay clause should post");
+        assert_eq!(certificate.variable_count_delta, 0);
+        assert_eq!(certificate.clause_count_delta, 1);
+        assert_eq!(certificate.clause_arity, 9);
+        assert_eq!(certificate.atoms.len(), 9);
+        let metrics = model.metrics();
+        assert_eq!(metrics.variables.total_variables, 9);
+        let constraints = metrics.constraints.as_ref().unwrap();
+        assert_eq!(constraints.total_constraints, 1);
+        assert_eq!(constraints.total_terms, 9);
+
+        for (atom_index, atom) in atoms.iter().enumerate() {
+            model.post_equals(
+                ConstraintFamily::ResearchFixation,
+                vec![atom.domain.scaled(1)],
+                i32::from(false_atom != Some(atom_index)),
+                1,
+                tag,
+            );
+        }
+        let mut brancher = model.solver_mut().default_brancher();
+        let mut termination = Indefinite;
+        let mut resolver = ResolutionResolver::default();
+        matches!(
+            model
+                .solver_mut()
+                .satisfy(&mut brancher, &mut termination, &mut resolver),
+            SatisfactionResult::Satisfiable(_)
+        )
     }
 }

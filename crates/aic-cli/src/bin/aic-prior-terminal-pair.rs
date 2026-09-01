@@ -7,15 +7,16 @@ use aic_data::layouts::{
     BoundaryCellWidthSensitivityReport, EndpointContinuationPartitionReport,
     EndpointSourceOnlyControlReport, ExternalBoundaryCellPartitionReport,
     ExternalBoundaryKeyLegalSupportAbReport, ExternalBoundarySidePartitionReport,
-    FacilityPlacementRequest, GuardedCoreInitialGateReport, GuardedCoreSequentialShrinkReport,
-    MaterialJunctionContinuationReport, MaterialRow5SeparatorReport, MaterialSeparatorCutReport,
-    PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
-    PriorInputPortPairPortfolioReport, PriorSourcePortPortfolioReport,
-    PriorTerminalCompletionPortfolioReport, PriorTerminalPairValuePortfolioReport,
-    ResidualFacilityPortTuplePortfolioReport, diagnose_boundary_cell_width_sensitivity,
-    diagnose_endpoint_continuation_partition, diagnose_endpoint_source_only_control,
-    diagnose_external_boundary_cell_partition, diagnose_external_boundary_key_legal_support_ab,
-    diagnose_external_boundary_side_partition, diagnose_guarded_core_initial_gate,
+    FacilityPlacementRequest, GuardedCoreInitialGateReport, GuardedCoreReplayReport,
+    GuardedCoreSequentialShrinkReport, MaterialJunctionContinuationReport,
+    MaterialRow5SeparatorReport, MaterialSeparatorCutReport, PriorInputPairRootSnapshotReport,
+    PriorInputPortControlsReport, PriorInputPortPairPortfolioReport,
+    PriorSourcePortPortfolioReport, PriorTerminalCompletionPortfolioReport,
+    PriorTerminalPairValuePortfolioReport, ResidualFacilityPortTuplePortfolioReport,
+    diagnose_boundary_cell_width_sensitivity, diagnose_endpoint_continuation_partition,
+    diagnose_endpoint_source_only_control, diagnose_external_boundary_cell_partition,
+    diagnose_external_boundary_key_legal_support_ab, diagnose_external_boundary_side_partition,
+    diagnose_guarded_core_initial_gate, diagnose_guarded_core_replay,
     diagnose_guarded_core_sequential_shrinking, diagnose_material_junction_continuation,
     diagnose_material_row5_separator, diagnose_material_separator_cut,
     diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
@@ -190,6 +191,11 @@ struct Args {
     shrink_guarded_core: bool,
     #[arg(long, value_name = "MILLISECONDS")]
     guarded_core_shrink_time_limit_ms: Option<u64>,
+    /// Compare the unrestricted base against one exact clause derived from the proven core.
+    #[arg(long)]
+    replay_guarded_core: bool,
+    #[arg(long, value_name = "MILLISECONDS")]
+    guarded_core_replay_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -401,6 +407,14 @@ fn main() -> Result<()> {
     ensure!(
         args.shrink_guarded_core == args.guarded_core_shrink_time_limit_ms.is_some(),
         "--guarded-core-shrink-time-limit-ms must be supplied exactly when --shrink-guarded-core is enabled"
+    );
+    ensure!(
+        !args.replay_guarded_core || args.shrink_guarded_core,
+        "--replay-guarded-core requires --shrink-guarded-core"
+    );
+    ensure!(
+        args.replay_guarded_core == args.guarded_core_replay_time_limit_ms.is_some(),
+        "--guarded-core-replay-time-limit-ms must be supplied exactly when --replay-guarded-core is enabled"
     );
     let terminal_bits = parse_terminal_pair(&args.terminal_pair)?;
     let worker_count = NonZeroUsize::new(args.worker_count)
@@ -1107,6 +1121,47 @@ fn run_input_pair(
                                                     loaded,
                                                     &shrink_report,
                                                 )?;
+                                                if args.replay_guarded_core {
+                                                    let replay_budget = NonZeroU64::new(
+                                                        args.guarded_core_replay_time_limit_ms
+                                                            .context(
+                                                                "guarded-core replay requires --guarded-core-replay-time-limit-ms",
+                                                            )?,
+                                                    )
+                                                    .context(
+                                                        "guarded-core replay time limit must be positive",
+                                                    )?;
+                                                    let replay_report = diagnose_guarded_core_replay(
+                                                        &loaded.wiring,
+                                                        &loaded.facilities,
+                                                        &loaded.items,
+                                                        &loaded.transports,
+                                                        &loaded.components,
+                                                        &loaded.placement_request,
+                                                        args.target_phase,
+                                                        shrink_report,
+                                                        Duration::from_millis(replay_budget.get()),
+                                                    )
+                                                    .map_err(|report| {
+                                                        anyhow::anyhow!(
+                                                            "guarded-core replay failed: {report:?}"
+                                                        )
+                                                    })?;
+                                                    write_guarded_core_replay_artifacts(
+                                                        args,
+                                                        loaded,
+                                                        &replay_report,
+                                                    )?;
+                                                    serde_json::to_writer_pretty(
+                                                        std::io::stdout().lock(),
+                                                        &replay_report,
+                                                    )
+                                                    .context(
+                                                        "failed to write guarded-core replay report",
+                                                    )?;
+                                                    println!();
+                                                    return Ok(());
+                                                }
                                                 serde_json::to_writer_pretty(
                                                     std::io::stdout().lock(),
                                                     &shrink_report,
@@ -2321,6 +2376,43 @@ fn write_guarded_core_shrinking_artifacts(
             &args.output_dir.join(name),
             html.as_bytes(),
             "guarded-core final layout",
+        )?;
+    }
+    Ok(())
+}
+
+fn write_guarded_core_replay_artifacts(
+    args: &Args,
+    loaded: &LoadedInputs,
+    report: &GuardedCoreReplayReport,
+) -> Result<()> {
+    write_json(&args.output_dir.join("summary.json"), report)?;
+    write_bytes(
+        &args.output_dir.join("summary.html"),
+        render_guarded_core_replay_summary(report)?.as_bytes(),
+        "guarded-core replay summary",
+    )?;
+    for (name, layout) in guarded_core_replay_artifact_names().into_iter().zip([
+        &report.baseline_authoritative_layout,
+        &report.replay_authoritative_layout,
+        &report.reverse_replay_authoritative_layout,
+        &report.reverse_baseline_authoritative_layout,
+        &report.baseline_observation_layout,
+        &report.replay_observation_layout,
+    ]) {
+        let html =
+            render_integrated_layout_html_with_localization(layout, loaded.localization.as_ref())
+                .map_err(|diagnostic| {
+                anyhow::anyhow!(
+                    "guarded-core replay visualization failed with {}: {}",
+                    diagnostic.code,
+                    diagnostic.message
+                )
+            })?;
+        write_bytes(
+            &args.output_dir.join(name),
+            html.as_bytes(),
+            "guarded-core replay layout",
         )?;
     }
     Ok(())
@@ -3883,8 +3975,116 @@ fn render_guarded_core_shrinking_summary(
     ))
 }
 
+fn render_guarded_core_replay_summary(report: &GuardedCoreReplayReport) -> Result<String> {
+    let row = |label: &str,
+               outcome: aic_data::layouts::ExactDimensionCaseOutcome,
+               layout: &aic_data::layouts::IntegratedLayoutReport,
+               artifact: &str| {
+        let exact = layout.exact.as_ref();
+        format!(
+            "<tr><td>{label}</td><td>{outcome:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td><a href=\"{artifact}\">evidence</a></td></tr>",
+            exact.map(|exact| exact.construction_ms),
+            exact.map(|exact| exact.search_ms),
+            exact.and_then(|exact| exact.search_statistics.branch_decisions),
+            exact.and_then(|exact| exact.search_statistics.backtracks),
+            exact.and_then(|exact| exact.search_statistics.conflicts),
+            exact.and_then(|exact| exact.search_statistics.solver_propagations),
+        )
+    };
+    let rows = [
+        row(
+            "AB baseline authoritative",
+            report.baseline_authoritative_outcome,
+            &report.baseline_authoritative_layout,
+            "ab-0.baseline.authoritative.html",
+        ),
+        row(
+            "AB replay authoritative",
+            report.replay_authoritative_outcome,
+            &report.replay_authoritative_layout,
+            "ab-1.replay.authoritative.html",
+        ),
+        row(
+            "BA replay authoritative",
+            report.reverse_replay_authoritative_outcome,
+            &report.reverse_replay_authoritative_layout,
+            "ba-0.replay.authoritative.html",
+        ),
+        row(
+            "BA baseline authoritative",
+            report.reverse_baseline_authoritative_outcome,
+            &report.reverse_baseline_authoritative_layout,
+            "ba-1.baseline.authoritative.html",
+        ),
+        row(
+            "baseline observation",
+            report.baseline_observation_outcome,
+            &report.baseline_observation_layout,
+            "baseline.observation.html",
+        ),
+        row(
+            "replay observation",
+            report.replay_observation_outcome,
+            &report.replay_observation_layout,
+            "replay.observation.html",
+        ),
+    ]
+    .join("");
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Guarded core replay A/B</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.gate{{border:1px solid #315066;padding:12px}}.pass{{color:#65f0bd}}.block{{color:#ff6b9d}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left}}th{{background:#102535;color:#8fd9ff}}code,a{{color:#ffd166}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase 3 guarded-core replay A/B</h1><div class="meta">status={status:?} · performance={performance:?} · comparison allowed={comparison_allowed} · atoms={atoms} · budget={budget}ms/run · order=ABBA then observations · experiment={experiment}ms · total={total}ms</div><div class="gate {class}">source proof={source} · baseline certificate={baseline_certificate} · replay clause certificate={replay_certificate} · unrestricted boundary={boundary} · baseline model={baseline_model} · accepted control={accepted_control} · replay model={replay_model} · exact +1 clause/+9 incidence delta={delta} · root contract={root} · root baseline/replay infeasible={baseline_root_infeasible}/{replay_root_infeasible} · newly eliminated={newly_eliminated} · changed core domains={root_changes} · evidence valid={evidence} · repeated outcomes consistent={consistent} · blocked={blocked}</div><p>hint=<code>{hint}</code> · complete forbidden-conjunction match={hint_match:?} · os={os}/{arch} · pid={pid}</p><table><thead><tr><th>run</th><th>outcome</th><th>build ms</th><th>search ms</th><th>decisions</th><th>backtracks</th><th>conflicts</th><th>propagations</th><th>artifact</th></tr></thead><tbody>{rows}</tbody></table><details><summary>Retained replay atoms</summary><pre>{atom_list}</pre></details><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={json};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        status = report.status,
+        performance = report.performance_classification,
+        comparison_allowed = report.performance_comparison_allowed,
+        atoms = report.replay_atom_ids.len(),
+        budget = report.search_budget_ms,
+        experiment = report.experiment_ms,
+        total = report.total_wall_ms,
+        class = if report.interpretation_blocked {
+            "block"
+        } else {
+            "pass"
+        },
+        source = report.source_proof_satisfied,
+        baseline_certificate = report.baseline_certificate_satisfied,
+        replay_certificate = report.replay_clause_certificate_satisfied,
+        boundary = report.unrestricted_boundary_satisfied,
+        baseline_model = report.baseline_model_identity_satisfied,
+        accepted_control = report.baseline_matches_accepted_control,
+        replay_model = report.replay_model_identity_satisfied,
+        delta = report.exact_clause_delta_satisfied,
+        root = report.root_snapshot_contract_satisfied,
+        baseline_root_infeasible = report.baseline_root_infeasible,
+        replay_root_infeasible = report.replay_root_infeasible,
+        newly_eliminated = report.replay_newly_root_eliminated,
+        root_changes = report.root_changed_atom_count,
+        evidence = report.evidence_valid,
+        consistent = report.repeated_outcomes_consistent,
+        blocked = report.interpretation_blocked,
+        hint = report.hint_sha256,
+        hint_match = report.hint_matches_complete_replay_conjunction,
+        os = report.operating_system,
+        arch = report.architecture,
+        pid = report.process_id,
+        rows = rows,
+        atom_list = report.replay_atom_ids.join("\n"),
+        json = json,
+    ))
+}
+
 fn guarded_core_attempt_artifact_name(attempt_index: usize) -> String {
     format!("attempt-{attempt_index:02}.authoritative.html")
+}
+
+fn guarded_core_replay_artifact_names() -> [&'static str; 6] {
+    [
+        "ab-0.baseline.authoritative.html",
+        "ab-1.replay.authoritative.html",
+        "ba-0.replay.authoritative.html",
+        "ba-1.baseline.authoritative.html",
+        "baseline.observation.html",
+        "replay.observation.html",
+    ]
 }
 
 fn write_json(path: &Path, report: &impl serde::Serialize) -> Result<()> {
@@ -3930,6 +4130,21 @@ mod tests {
         assert_eq!(
             guarded_core_attempt_artifact_name(29),
             "attempt-29.authoritative.html"
+        );
+    }
+
+    #[test]
+    fn guarded_core_replay_emits_all_six_declared_layout_artifacts() {
+        assert_eq!(
+            guarded_core_replay_artifact_names(),
+            [
+                "ab-0.baseline.authoritative.html",
+                "ab-1.replay.authoritative.html",
+                "ba-0.replay.authoritative.html",
+                "ba-1.baseline.authoritative.html",
+                "baseline.observation.html",
+                "replay.observation.html",
+            ]
         );
     }
 
@@ -4052,6 +4267,9 @@ mod tests {
             "--shrink-guarded-core",
             "--guarded-core-shrink-time-limit-ms",
             "5000",
+            "--replay-guarded-core",
+            "--guarded-core-replay-time-limit-ms",
+            "5000",
             "--output-dir",
             "out",
         ])
@@ -4084,5 +4302,7 @@ mod tests {
         assert_eq!(args.guarded_core_full_time_limit_ms, Some(5000));
         assert!(args.shrink_guarded_core);
         assert_eq!(args.guarded_core_shrink_time_limit_ms, Some(5000));
+        assert!(args.replay_guarded_core);
+        assert_eq!(args.guarded_core_replay_time_limit_ms, Some(5000));
     }
 }

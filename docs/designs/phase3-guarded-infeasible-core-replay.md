@@ -272,36 +272,58 @@ The A/B records:
 - guarded clause arity;
 - how many root placement, port, boundary, and material domains it prunes.
 
-## Exact High-Level Breadth Portfolio
+## Exact High-Level Breadth Census And Portfolio
 
 Core size alone does not show that the cut is reusable. Breadth is measured against a finite exact
-portfolio already enumerated by the accepted chain:
+predecessor subspace. The accepted chain already certifies 16 residual facility-port tuples. It
+observed 54 root-supported boundary keys only for one selected tuple, while the unrestricted sparse
+legal domain contains 544 keys. Port fixation may change boundary-key root propagation, so the
+selected tuple's 54 keys cannot be multiplied across all tuples without another proof.
+
+The experiment first runs a control root-domain census. For every certified residual tuple `t`, it
+builds a fresh unrestricted sparse model, fixes only the accepted predecessor state and tuple, and
+records the selected external terminal's exact root-live key set `K_t`. Each census case retains the
+accepted four placements, inherited eleven port assignments, `16 x 16` used dimensions, workload,
+and model ceiling.
+
+Root capture is interpreted fail-closed:
+
+- a normal captured root defines `K_t` as the complete observed key domain;
+- a root conflict certified before the first decision defines `K_t` as the empty set and preserves
+  the raw infeasibility status/proof plus complete fixation, model, and boundary certificates;
+- a missing snapshot without certified root infeasibility, invalid witness, timeout before valid
+  capture, proof conflict, or incomplete certificate blocks the complete census.
+
+The implementation must not fabricate a normal domain snapshot for a root-infeasible tuple, omit
+that tuple from the census, or silently interpret missing evidence as an empty domain.
+
+The finite exact portfolio is then:
 
 ```text
-16 residual facility-port tuples
-x 54 root-supported boundary keys for the selected external terminal
-= 864 high-level assignments
+U = { (t, k) | t is one of the 16 certified tuples and k is in K_t }
+|U| = sum over t of |K_t|
 ```
 
-All 864 assignments retain the accepted four placements, inherited eleven port assignments,
-`16 x 16` used dimensions, workload, and model ceiling. The Cartesian product is constructed from
-the exact port domains and legal sparse boundary-key domain, not from a heuristic sample. A control
-root solve records which assignments remain live before the cut. This portfolio is exact only
-inside the finite predecessor subspace defined by those four residual port domains and selected
-external terminal. It is not claimed to enumerate every port tuple in the unrestricted Phase 3
-model.
+If every census independently certifies the same 54-key set, `|U| = 864`. Otherwise the exact case
+count is data-dependent. This portfolio is exact only inside the finite predecessor subspace
+defined by the four residual port domains, accepted fixed state, and selected external terminal. It
+is not claimed to enumerate every port tuple in the unrestricted Phase 3 model.
 
 The breadth run has this fail-closed execution contract:
 
-1. generate exactly 864 distinct `(port tuple, boundary key)` pairs and certify Cartesian-product
-   completeness and uniqueness;
-2. build every case from the unrestricted replay base with all row-separator, junction,
+1. generate exactly 16 distinct residual tuples from the four certified binary port domains;
+2. run a fresh root-only control census for each tuple and certify the unrestricted 544-key sparse
+   domain, fixed tuple, model identity, root status, and complete root-live set `K_t`, using the
+   explicit empty-set branch only for certified root infeasibility;
+3. generate exactly the distinct union `U`, certifying that every member uses one enumerated tuple
+   and one key from that tuple's captured `K_t`, with no missing or duplicate pair;
+4. build every portfolio case from the unrestricted replay base with all row-separator, junction,
    continuation, and other route-leaf restrictions removed;
-3. execute a fresh control root-only build and propagation for every case with no search;
-4. finish that wave before executing a fresh cut root-only build and propagation for every case;
-5. use one predeclared worker count per wave, record it, and forbid solver/model reuse, incumbent
+5. execute a fresh control root-only build and propagation for every case with no search;
+6. finish that wave before executing a fresh cut root-only build and propagation for every case;
+7. use one predeclared worker count per wave, record it, and forbid solver/model reuse, incumbent
    exchange, observer feedback, or overlap between the control and cut waves;
-6. require each paired model to differ by exactly the one certified guarded clause and its expected
+8. require each paired model to differ by exactly the one certified guarded clause and its expected
    incidences.
 
 Breadth root outcomes are reported separately from the 5-second replay search. Any missing,
@@ -327,7 +349,7 @@ The experiment is successful enough to justify a two- or three-iteration decompo
 only if all of the following hold:
 
 1. the final core is certificate-valid and has an independent authoritative infeasibility proof;
-2. at least two distinct control-root-live assignments in the 864-case portfolio are matched;
+2. at least two distinct control-root-live assignments in the certified portfolio `U` are matched;
 3. replay additionally achieves at least one of these exact effects:
    - the authoritative 5-second outcome improves from `Unknown` to validated feasible or
      `ProvenInfeasible`;
@@ -337,7 +359,8 @@ only if all of the following hold:
 4. no legal witness or objective quality is lost.
 
 Classification order is fail-closed: any proof, model-identity, certificate, or breadth-interpretation
-failure is **BLOCKED** first. Breadth blockers include a case count other than 864, a missing or
+failure is **BLOCKED** first. Breadth blockers include a tuple census other than 16 cases, an
+uncertified root-live key set, a generated case count different from `sum |K_t|`, a missing or
 duplicate pair, an invalid case, wave overlap or model reuse, and any paired-model delta failure.
 If no block exists, satisfying every numbered success gate above is **GO**. Every other complete
 and valid result is **STOP**.

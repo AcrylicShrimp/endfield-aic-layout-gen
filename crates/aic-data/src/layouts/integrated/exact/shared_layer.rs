@@ -790,7 +790,7 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_guarded_core_root_sna
     Option<RootDomainSnapshot>,
 ) {
     let collector: RootDomainSnapshotCollector = SyncArc::new(Mutex::new(None));
-    let result = solve_sparse_support_guarded_core_with_search_mode(
+    let mut result = solve_sparse_support_guarded_core_with_search_mode(
         input,
         logistics_components,
         time_limit,
@@ -799,6 +799,9 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_guarded_core_root_sna
         posting,
         Some(SyncArc::clone(&collector)),
     );
+    if result.5.is_none() && result.0.status == IntegratedLayoutStatus::Infeasible {
+        result.5 = Some(RootDomainSnapshot::root_infeasible_without_brancher_call());
+    }
     result
 }
 
@@ -3647,6 +3650,9 @@ fn solve_with_endpoint_encoding(
         } => match request.posting {
             GuardedCorePosting::Assumptions => {
                 "joint-shared-v4-unrestricted-sparse-boundary-guarded-core-assumptions"
+            }
+            GuardedCorePosting::ObserveOnly => {
+                "joint-shared-v4-unrestricted-sparse-boundary-guarded-core-observe"
             }
             GuardedCorePosting::ReplayClause => {
                 "joint-shared-v4-unrestricted-sparse-boundary-guarded-core-replay"
