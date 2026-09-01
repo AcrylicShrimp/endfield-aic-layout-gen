@@ -62,9 +62,17 @@ use crate::logistics::{
     CardinalDirection, LogisticsComponentKind, ValidatedLogisticsComponentCatalog,
 };
 
+mod material_junction;
 mod material_separator;
 mod root_snapshot;
 
+use material_junction::{
+    MaterialJunctionArcProbe, MaterialJunctionBuildCertificateCollector, MaterialJunctionProbe,
+    post_material_junction_restriction,
+};
+pub(in crate::layouts::integrated) use material_junction::{
+    MaterialJunctionBuildCertificate, MaterialJunctionRestriction,
+};
 pub(in crate::layouts::integrated) use material_separator::{
     MaterialSeparatorBuildCertificate, MaterialSeparatorRestriction,
 };
@@ -76,9 +84,10 @@ pub(in crate::layouts::integrated) use root_snapshot::RootDomainSnapshotCollecto
 pub use root_snapshot::{
     RootBooleanDomainCounts, RootDomainCardinality, RootDomainSnapshot,
     RootEndpointContinuationArcSnapshot, RootExternalGeometrySnapshot, RootFacilityStateSnapshot,
-    RootFirstDecisionSnapshot, RootFlowDomainCounts, RootMaterialNetworkSnapshot,
-    RootMaterialSeparatorArcSnapshot, RootMaterialSeparatorSnapshot, RootTerminalDomainSnapshot,
-    RootTransportLayerSnapshot, RootVariableCoverageSnapshot, RootVariableFamilySnapshot,
+    RootFirstDecisionSnapshot, RootFlowDomainCounts, RootMaterialJunctionArcSnapshot,
+    RootMaterialJunctionSnapshot, RootMaterialNetworkSnapshot, RootMaterialSeparatorArcSnapshot,
+    RootMaterialSeparatorSnapshot, RootTerminalDomainSnapshot, RootTransportLayerSnapshot,
+    RootVariableCoverageSnapshot, RootVariableFamilySnapshot,
 };
 use root_snapshot::{RootDomainProbe, RootSnapshotBrancher};
 
@@ -118,6 +127,8 @@ enum EndpointEncoding {
         endpoint_continuation_certificates: Option<EndpointContinuationBuildCertificateCollector>,
         material_separator_restriction: Option<MaterialSeparatorRestriction>,
         material_separator_certificates: Option<MaterialSeparatorBuildCertificateCollector>,
+        material_junction_restriction: Option<MaterialJunctionRestriction>,
+        material_junction_certificates: Option<MaterialJunctionBuildCertificateCollector>,
     },
 }
 
@@ -231,6 +242,28 @@ impl EndpointEncoding {
                 material_separator_certificates,
                 ..
             } => material_separator_certificates.as_ref(),
+            _ => None,
+        }
+    }
+
+    fn material_junction_restriction(&self) -> Option<&MaterialJunctionRestriction> {
+        match self {
+            Self::FactoredSparseSupportBoundaryKeyAudit {
+                material_junction_restriction,
+                ..
+            } => material_junction_restriction.as_ref(),
+            _ => None,
+        }
+    }
+
+    fn material_junction_certificate_collector(
+        &self,
+    ) -> Option<&MaterialJunctionBuildCertificateCollector> {
+        match self {
+            Self::FactoredSparseSupportBoundaryKeyAudit {
+                material_junction_certificates,
+                ..
+            } => material_junction_certificates.as_ref(),
             _ => None,
         }
     }
@@ -1050,6 +1083,8 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
             endpoint_continuation_certificates: None,
             material_separator_restriction: None,
             material_separator_certificates: None,
+            material_junction_restriction: None,
+            material_junction_certificates: None,
         },
         fixed_dimensions,
         fixed_coordinate,
@@ -1100,6 +1135,8 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
             endpoint_continuation_certificates: None,
             material_separator_restriction: None,
             material_separator_certificates: None,
+            material_junction_restriction: None,
+            material_junction_certificates: None,
         },
         fixed_dimensions,
         fixed_coordinate,
@@ -1265,6 +1302,8 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
                 endpoint_continuation_certificates: None,
                 material_separator_restriction: None,
                 material_separator_certificates: None,
+                material_junction_restriction: None,
+                material_junction_certificates: None,
             },
             fixed_dimensions,
             fixed_coordinate,
@@ -1329,6 +1368,8 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
                 endpoint_continuation_certificates: None,
                 material_separator_restriction: None,
                 material_separator_certificates: None,
+                material_junction_restriction: None,
+                material_junction_certificates: None,
             },
             fixed_dimensions,
             fixed_coordinate,
@@ -1393,6 +1434,8 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
             endpoint_continuation_certificates: Some(SyncArc::clone(&continuation_certificates)),
             material_separator_restriction: None,
             material_separator_certificates: None,
+            material_junction_restriction: None,
+            material_junction_certificates: None,
         },
         fixed_dimensions,
         fixed_coordinate,
@@ -1458,6 +1501,8 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
                 )),
                 material_separator_restriction: None,
                 material_separator_certificates: None,
+                material_junction_restriction: None,
+                material_junction_certificates: None,
             },
             fixed_dimensions,
             fixed_coordinate,
@@ -1529,6 +1574,8 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
             endpoint_continuation_certificates: Some(SyncArc::clone(&continuation_certificates)),
             material_separator_restriction: Some(separator),
             material_separator_certificates: Some(SyncArc::clone(&separator_certificates)),
+            material_junction_restriction: None,
+            material_junction_certificates: None,
         },
         fixed_dimensions,
         fixed_coordinate,
@@ -1601,6 +1648,8 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
                 )),
                 material_separator_restriction: Some(separator),
                 material_separator_certificates: Some(SyncArc::clone(&separator_certificates)),
+                material_junction_restriction: None,
+                material_junction_certificates: None,
             },
             fixed_dimensions,
             fixed_coordinate,
@@ -1629,6 +1678,178 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
         .expect("material-separator certificate collector is not poisoned")
         .clone();
     (report, snapshot, boundary, continuation, separator)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_key_continuation_material_separator_and_junction_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: &IntegratedLayoutReport,
+    fixation: ReferenceAblationFixation,
+    terminal: String,
+    mut allowed_keys: Vec<i32>,
+    continuation: EndpointContinuationRestriction,
+    separator: MaterialSeparatorRestriction,
+    junction: MaterialJunctionRestriction,
+) -> (
+    IntegratedLayoutReport,
+    Vec<BoundaryKeyBuildCertificate>,
+    Vec<EndpointContinuationBuildCertificate>,
+    Vec<MaterialSeparatorBuildCertificate>,
+    Vec<MaterialJunctionBuildCertificate>,
+) {
+    allowed_keys.sort_unstable();
+    allowed_keys.dedup();
+    assert!(
+        !allowed_keys.is_empty(),
+        "boundary-key restriction must contain at least one value"
+    );
+    let boundary_certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let continuation_certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let separator_certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let junction_certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let report = solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+            counters: SyncArc::new(EndpointSupportPropagationCounters::default()),
+            sparse_legal_domain: true,
+            certificates: SyncArc::clone(&boundary_certificates),
+            boundary_key_restriction: Some(BoundaryKeyRestriction {
+                terminal,
+                allowed_keys,
+            }),
+            endpoint_continuation_restriction: Some(continuation),
+            endpoint_continuation_certificates: Some(SyncArc::clone(&continuation_certificates)),
+            material_separator_restriction: Some(separator),
+            material_separator_certificates: Some(SyncArc::clone(&separator_certificates)),
+            material_junction_restriction: Some(junction),
+            material_junction_certificates: Some(SyncArc::clone(&junction_certificates)),
+        },
+        fixed_dimensions,
+        fixed_coordinate,
+        fixed_ports,
+        prior_solution,
+        fixation,
+    );
+    let boundary = boundary_certificates
+        .lock()
+        .expect("boundary-key certificate collector is not poisoned")
+        .clone();
+    let continuation = continuation_certificates
+        .lock()
+        .expect("endpoint-continuation certificate collector is not poisoned")
+        .clone();
+    let separator = separator_certificates
+        .lock()
+        .expect("material-separator certificate collector is not poisoned")
+        .clone();
+    let junction = junction_certificates
+        .lock()
+        .expect("material-junction certificate collector is not poisoned")
+        .clone();
+    (report, boundary, continuation, separator, junction)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_key_continuation_material_separator_and_junction_fixed_dimensions_coordinate_ports_prior_overlap_root_snapshot(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: &IntegratedLayoutReport,
+    fixation: ReferenceAblationFixation,
+    terminal: String,
+    mut allowed_keys: Vec<i32>,
+    continuation: EndpointContinuationRestriction,
+    separator: MaterialSeparatorRestriction,
+    junction: MaterialJunctionRestriction,
+) -> (
+    IntegratedLayoutReport,
+    Option<RootDomainSnapshot>,
+    Vec<BoundaryKeyBuildCertificate>,
+    Vec<EndpointContinuationBuildCertificate>,
+    Vec<MaterialSeparatorBuildCertificate>,
+    Vec<MaterialJunctionBuildCertificate>,
+) {
+    allowed_keys.sort_unstable();
+    allowed_keys.dedup();
+    assert!(
+        !allowed_keys.is_empty(),
+        "boundary-key restriction must contain at least one value"
+    );
+    let collector: RootDomainSnapshotCollector = SyncArc::new(Mutex::new(None));
+    let boundary_certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let continuation_certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let separator_certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let junction_certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let report =
+        solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation_with_search_mode(
+            input,
+            logistics_components,
+            time_limit,
+            EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+                counters: SyncArc::new(EndpointSupportPropagationCounters::default()),
+                sparse_legal_domain: true,
+                certificates: SyncArc::clone(&boundary_certificates),
+                boundary_key_restriction: Some(BoundaryKeyRestriction {
+                    terminal,
+                    allowed_keys,
+                }),
+                endpoint_continuation_restriction: Some(continuation),
+                endpoint_continuation_certificates: Some(SyncArc::clone(
+                    &continuation_certificates,
+                )),
+                material_separator_restriction: Some(separator),
+                material_separator_certificates: Some(SyncArc::clone(&separator_certificates)),
+                material_junction_restriction: Some(junction),
+                material_junction_certificates: Some(SyncArc::clone(&junction_certificates)),
+            },
+            fixed_dimensions,
+            fixed_coordinate,
+            fixed_ports,
+            prior_solution,
+            fixation,
+            SearchMode::FeasibilityOnlyWithRootSnapshot(SyncArc::clone(&collector)),
+        );
+    let mut snapshot = collector
+        .lock()
+        .expect("root-domain snapshot collector is not poisoned")
+        .clone();
+    if snapshot.is_none() && report.status == IntegratedLayoutStatus::Infeasible {
+        snapshot = Some(RootDomainSnapshot::root_infeasible_without_brancher_call());
+    }
+    let boundary = boundary_certificates
+        .lock()
+        .expect("boundary-key certificate collector is not poisoned")
+        .clone();
+    let continuation = continuation_certificates
+        .lock()
+        .expect("endpoint-continuation certificate collector is not poisoned")
+        .clone();
+    let separator = separator_certificates
+        .lock()
+        .expect("material-separator certificate collector is not poisoned")
+        .clone();
+    let junction = junction_certificates
+        .lock()
+        .expect("material-junction certificate collector is not poisoned")
+        .clone();
+    (
+        report,
+        snapshot,
+        boundary,
+        continuation,
+        separator,
+        junction,
+    )
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -2657,6 +2878,23 @@ fn solve_with_endpoint_encoding(
         } else {
             None
         };
+    let material_junction_probe =
+        if let Some(restriction) = endpoint_encoding.material_junction_restriction() {
+            match post_material_junction_restriction(
+                &mut solver,
+                &input,
+                &model_terminals,
+                &layers,
+                restriction,
+                endpoint_encoding.material_junction_certificate_collector(),
+                tag,
+            ) {
+                Ok(probe) => Some(probe),
+                Err(diagnostic) => return IntegratedLayoutReport::invalid(diagnostic),
+            }
+        } else {
+            None
+        };
     match &connectivity_mode {
         ConnectivityMode::None => {}
         ConnectivityMode::DeclarativeWitness => {
@@ -2768,6 +3006,7 @@ fn solve_with_endpoint_encoding(
                     &facility_occupancy,
                     &explicitly_fixed_ports,
                     material_separator_probe.as_ref(),
+                    material_junction_probe.as_ref(),
                     solver.variable_catalog(),
                 ),
                 SyncArc::clone(collector),
@@ -3205,6 +3444,20 @@ fn solve_with_endpoint_encoding(
         }
         EndpointEncoding::FactoredSparseSupport(_) => {
             "joint-shared-v4-sparse-support-endpoints-watched-demand-local-continuation-guarded-intersection-propagation"
+        }
+        EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+            sparse_legal_domain: true,
+            material_junction_restriction: Some(restriction),
+            ..
+        } if restriction.selected_case_index.is_none() => {
+            "joint-shared-v4-sparse-support-endpoints-legal-boundary-key-source-continuation-material-separator-material-junction-control-watched-demand-local-continuation-guarded-intersection-propagation"
+        }
+        EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+            sparse_legal_domain: true,
+            material_junction_restriction: Some(_),
+            ..
+        } => {
+            "joint-shared-v4-sparse-support-endpoints-legal-boundary-key-source-continuation-material-separator-material-junction-partition-watched-demand-local-continuation-guarded-intersection-propagation"
         }
         EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
             sparse_legal_domain: true,

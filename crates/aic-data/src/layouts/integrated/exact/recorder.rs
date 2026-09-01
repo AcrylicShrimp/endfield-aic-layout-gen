@@ -124,6 +124,7 @@ pub(super) enum ConstraintFamily {
     ConnectivityPropagator,
     GridAnalyzer,
     MaterialSeparator,
+    MaterialJunction,
     ResearchFixation,
 }
 
@@ -158,6 +159,7 @@ impl ConstraintFamily {
             Self::ConnectivityPropagator => "connectivity-propagator",
             Self::GridAnalyzer => "grid-analyzer",
             Self::MaterialSeparator => "material-separator",
+            Self::MaterialJunction => "material-junction",
             Self::ResearchFixation => "research-fixation",
         }
     }

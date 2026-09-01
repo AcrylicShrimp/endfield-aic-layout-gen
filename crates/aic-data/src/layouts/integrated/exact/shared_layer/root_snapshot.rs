@@ -9,14 +9,15 @@ use pumpkin_solver::core::variables::DomainId;
 use serde::Serialize;
 
 use super::{
-    FactoredEndpointKind, MaterialSeparatorProbe, ModelInput, ModelInstance, PlacementChoice,
-    SharedLayer, SharedTerminal, SharedTerminalEndpoint, TransportKind, direction_between,
-    direction_index, edge_direction, geometry_key, opposite_direction,
+    FactoredEndpointKind, MaterialJunctionArcProbe, MaterialJunctionProbe, MaterialSeparatorProbe,
+    ModelInput, ModelInstance, PlacementChoice, SharedLayer, SharedTerminal,
+    SharedTerminalEndpoint, TransportKind, direction_between, direction_index, edge_direction,
+    geometry_key, opposite_direction,
 };
 use crate::facilities::FacilityPortDirection;
 use crate::layouts::integrated::exact::recorder::RecordedVariableDescriptor;
 
-pub const ROOT_DOMAIN_SNAPSHOT_SCHEMA_VERSION: u32 = 5;
+pub const ROOT_DOMAIN_SNAPSHOT_SCHEMA_VERSION: u32 = 6;
 
 pub(in crate::layouts::integrated) type RootDomainSnapshotCollector =
     SyncArc<Mutex<Option<RootDomainSnapshot>>>;
@@ -172,6 +173,33 @@ pub struct RootMaterialSeparatorSnapshot {
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct RootMaterialJunctionArcSnapshot {
+    pub case_index: Option<usize>,
+    pub from: usize,
+    pub to: usize,
+    pub direction: String,
+    pub route_selected: RootDomainCardinality,
+    pub flow: RootDomainCardinality,
+    pub from_item: RootDomainCardinality,
+    pub from_item_values: Vec<i32>,
+    pub selected_item_code: i32,
+    pub selected_item_possible: bool,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct RootMaterialJunctionSnapshot {
+    pub network_id: String,
+    pub network_index: usize,
+    pub transport: TransportKind,
+    pub item: String,
+    pub selected_item_code: i32,
+    pub junction_cell: usize,
+    pub selected_case_index: Option<usize>,
+    pub incoming: RootMaterialJunctionArcSnapshot,
+    pub candidates: Vec<RootMaterialJunctionArcSnapshot>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct RootFirstDecisionSnapshot {
     pub domain_id: u32,
     pub semantic_family: String,
@@ -198,6 +226,7 @@ pub struct RootDomainSnapshot {
     pub layers: Vec<RootTransportLayerSnapshot>,
     pub networks: Vec<RootMaterialNetworkSnapshot>,
     pub material_separator: Option<RootMaterialSeparatorSnapshot>,
+    pub material_junction: Option<RootMaterialJunctionSnapshot>,
     pub first_decision: Option<RootFirstDecisionSnapshot>,
 }
 
@@ -224,6 +253,7 @@ impl RootDomainSnapshot {
             layers: Vec::new(),
             networks: Vec::new(),
             material_separator: None,
+            material_junction: None,
             first_decision: None,
         }
     }
@@ -288,6 +318,7 @@ pub(super) struct RootDomainProbe {
     network_ids: Vec<String>,
     network_items: Vec<String>,
     material_separator: Option<MaterialSeparatorProbe>,
+    material_junction: Option<MaterialJunctionProbe>,
 }
 
 impl RootDomainProbe {
@@ -301,6 +332,7 @@ impl RootDomainProbe {
         facility_occupancy: &[DomainId],
         explicitly_fixed_ports: &BTreeMap<String, String>,
         material_separator: Option<&MaterialSeparatorProbe>,
+        material_junction: Option<&MaterialJunctionProbe>,
         variable_catalog: Vec<RecordedVariableDescriptor>,
     ) -> Self {
         let facilities = instances
@@ -403,6 +435,7 @@ impl RootDomainProbe {
                 .map(|network| network.item().to_string())
                 .collect(),
             material_separator: material_separator.cloned(),
+            material_junction: material_junction.cloned(),
         }
     }
 
@@ -420,6 +453,7 @@ impl RootDomainProbe {
         let layers = self.capture_layers(context);
         let networks = self.capture_networks(context);
         let material_separator = self.capture_material_separator(context);
+        let material_junction = self.capture_material_junction(context);
         let boundary_cells = (0..self.facility_occupancy.len())
             .filter(|cell| self.is_boundary_cell(*cell))
             .collect::<BTreeSet<_>>();
@@ -478,6 +512,7 @@ impl RootDomainProbe {
             layers,
             networks,
             material_separator,
+            material_junction,
             first_decision: None,
         }
     }
@@ -515,6 +550,41 @@ impl RootDomainProbe {
                 separator_after_row: probe.separator_after_row,
                 selected_case_index: probe.selected_case_index,
                 candidates,
+            }
+        })
+    }
+
+    fn capture_material_junction(
+        &self,
+        context: &SelectionContext,
+    ) -> Option<RootMaterialJunctionSnapshot> {
+        self.material_junction.as_ref().map(|probe| {
+            let capture = |candidate: &MaterialJunctionArcProbe| {
+                let from_item_values = domain_values(context, candidate.from_item);
+                RootMaterialJunctionArcSnapshot {
+                    case_index: candidate.case_index,
+                    from: candidate.from,
+                    to: candidate.to,
+                    direction: candidate.direction.clone(),
+                    route_selected: cardinality(context, candidate.route_selected),
+                    flow: cardinality(context, candidate.flow),
+                    from_item: cardinality(context, candidate.from_item),
+                    selected_item_possible: from_item_values
+                        .contains(&candidate.selected_item_code),
+                    from_item_values,
+                    selected_item_code: candidate.selected_item_code,
+                }
+            };
+            RootMaterialJunctionSnapshot {
+                network_id: probe.network_id.clone(),
+                network_index: probe.network_index,
+                transport: probe.transport,
+                item: probe.item.clone(),
+                selected_item_code: probe.selected_item_code,
+                junction_cell: probe.junction_cell,
+                selected_case_index: probe.selected_case_index,
+                incoming: capture(&probe.incoming),
+                candidates: probe.candidates.iter().map(capture).collect(),
             }
         })
     }
