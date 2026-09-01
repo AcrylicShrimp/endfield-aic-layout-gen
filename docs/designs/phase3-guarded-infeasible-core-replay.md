@@ -297,6 +297,14 @@ Root capture is interpreted fail-closed:
 The implementation must not fabricate a normal domain snapshot for a root-infeasible tuple, omit
 that tuple from the census, or silently interpret missing evidence as an empty domain.
 
+Every case also carries a build-time certificate independent of root capture. It serializes the
+exact used dimensions, fixed coordinate and rotation, all fifteen sorted terminal-port requests,
+the three inherited placements, the prior-overlap fixation mode, the sparse legal-boundary mode,
+and whether model construction reached a complete exact model. A root-infeasible case may use the
+empty `K_t` branch only when this certificate matches the accepted predecessor contract exactly.
+The selected predecessor's normalized formulation, model metrics, and complexity metrics anchor
+all sixteen census builds and are serialized with every observed model identity.
+
 The finite exact portfolio is then:
 
 ```text
@@ -312,9 +320,11 @@ is not claimed to enumerate every port tuple in the unrestricted Phase 3 model.
 The breadth run has this fail-closed execution contract:
 
 1. generate exactly 16 distinct residual tuples from the four certified binary port domains;
-2. run a fresh root-only control census for each tuple and certify the unrestricted 544-key sparse
-   domain, fixed tuple, model identity, root status, and complete root-live set `K_t`, using the
-   explicit empty-set branch only for certified root infeasibility;
+2. run a fresh control census for each tuple and capture the complete root domain before the first
+   search decision; certify the unrestricted 544-key sparse domain, all fifteen fixed terminal
+   requests, model identity, root status, and complete root-live set `K_t`, using the explicit
+   empty-set branch only for certified root infeasibility; any bounded search that follows capture
+   is advisory and cannot change `K_t` or authorize a census case;
 3. generate exactly the distinct union `U`, certifying that every member uses one enumerated tuple
    and one key from that tuple's captured `K_t`, with no missing or duplicate pair;
 4. build every portfolio case from the unrestricted replay base with all row-separator, junction,
@@ -398,7 +408,12 @@ replay-control.authoritative.html
 replay-control.observation.html
 replay-cut.authoritative.html
 replay-cut.observation.html
+census-case-00.observation.html
+...
+census-case-15.observation.html
 ```
 
 The HTML summary must show the ordered deletion history, final core, proof/certificate gates, model
-deltas, and replay A/B statistics. It must not describe `Unknown` as infeasible.
+deltas, replay A/B statistics, and the tuple-specific root-live boundary-key census. It must not
+describe `Unknown` as infeasible or claim a fixed 864-case breadth unless every tuple independently
+reproduces the same certified 54-key set.

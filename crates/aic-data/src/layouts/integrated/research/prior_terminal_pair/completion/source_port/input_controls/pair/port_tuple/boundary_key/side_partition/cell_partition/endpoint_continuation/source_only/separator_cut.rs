@@ -8,13 +8,16 @@ use crate::logistics::TransportKind;
 mod continuation;
 
 pub use continuation::{
-    GUARDED_CORE_INITIAL_GATE_SCHEMA_VERSION, GuardedCoreAcceptedFixture,
+    GUARDED_CORE_BOUNDARY_CENSUS_SCHEMA_VERSION, GUARDED_CORE_INITIAL_GATE_SCHEMA_VERSION,
+    GuardedCoreAcceptedFixture, GuardedCoreBoundaryCensusCase, GuardedCoreBoundaryCensusReport,
+    GuardedCoreBoundaryCensusRootStatus, GuardedCoreBoundaryCensusStatus,
     GuardedCoreInitialGateReport, GuardedCoreInitialGateStatus, GuardedCoreReplayReport,
     GuardedCoreReplayStatus, GuardedCoreSequentialShrinkReport, GuardedCoreSequentialShrinkStatus,
     GuardedCoreShrinkAttempt, MATERIAL_JUNCTION_CONTINUATION_SCHEMA_VERSION,
     MATERIAL_ROW5_SEPARATOR_SCHEMA_VERSION, MaterialJunctionCaseReport,
     MaterialJunctionContinuationReport, MaterialRow5SeparatorCaseReport,
-    MaterialRow5SeparatorReport, diagnose_guarded_core_initial_gate, diagnose_guarded_core_replay,
+    MaterialRow5SeparatorReport, diagnose_guarded_core_boundary_census,
+    diagnose_guarded_core_initial_gate, diagnose_guarded_core_replay,
     diagnose_guarded_core_sequential_shrinking, diagnose_material_junction_continuation,
     diagnose_material_row5_separator,
 };

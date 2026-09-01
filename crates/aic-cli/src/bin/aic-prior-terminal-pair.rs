@@ -7,8 +7,8 @@ use aic_data::layouts::{
     BoundaryCellWidthSensitivityReport, EndpointContinuationPartitionReport,
     EndpointSourceOnlyControlReport, ExternalBoundaryCellPartitionReport,
     ExternalBoundaryKeyLegalSupportAbReport, ExternalBoundarySidePartitionReport,
-    FacilityPlacementRequest, GuardedCoreInitialGateReport, GuardedCoreReplayReport,
-    GuardedCoreSequentialShrinkReport, MaterialJunctionContinuationReport,
+    FacilityPlacementRequest, GuardedCoreBoundaryCensusReport, GuardedCoreInitialGateReport,
+    GuardedCoreReplayReport, GuardedCoreSequentialShrinkReport, MaterialJunctionContinuationReport,
     MaterialRow5SeparatorReport, MaterialSeparatorCutReport, PriorInputPairRootSnapshotReport,
     PriorInputPortControlsReport, PriorInputPortPairPortfolioReport,
     PriorSourcePortPortfolioReport, PriorTerminalCompletionPortfolioReport,
@@ -16,13 +16,13 @@ use aic_data::layouts::{
     diagnose_boundary_cell_width_sensitivity, diagnose_endpoint_continuation_partition,
     diagnose_endpoint_source_only_control, diagnose_external_boundary_cell_partition,
     diagnose_external_boundary_key_legal_support_ab, diagnose_external_boundary_side_partition,
-    diagnose_guarded_core_initial_gate, diagnose_guarded_core_replay,
-    diagnose_guarded_core_sequential_shrinking, diagnose_material_junction_continuation,
-    diagnose_material_row5_separator, diagnose_material_separator_cut,
-    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
-    diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
-    diagnose_prior_terminal_completion_portfolio, diagnose_prior_terminal_pair_value_portfolio,
-    diagnose_residual_facility_port_tuple_portfolio,
+    diagnose_guarded_core_boundary_census, diagnose_guarded_core_initial_gate,
+    diagnose_guarded_core_replay, diagnose_guarded_core_sequential_shrinking,
+    diagnose_material_junction_continuation, diagnose_material_row5_separator,
+    diagnose_material_separator_cut, diagnose_prior_input_pair_root_snapshot,
+    diagnose_prior_input_port_controls, diagnose_prior_input_port_pair_portfolio,
+    diagnose_prior_source_port_portfolio, diagnose_prior_terminal_completion_portfolio,
+    diagnose_prior_terminal_pair_value_portfolio, diagnose_residual_facility_port_tuple_portfolio,
     render_integrated_layout_html_with_localization,
 };
 use aic_data::localization::{ValidatedLocalizationCatalog, load_localization_catalog};
@@ -196,6 +196,11 @@ struct Args {
     replay_guarded_core: bool,
     #[arg(long, value_name = "MILLISECONDS")]
     guarded_core_replay_time_limit_ms: Option<u64>,
+    /// Enumerate the target external terminal's root-live boundary keys for every residual port tuple.
+    #[arg(long)]
+    census_guarded_core_boundary_keys: bool,
+    #[arg(long, value_name = "MILLISECONDS")]
+    guarded_core_boundary_census_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -415,6 +420,15 @@ fn main() -> Result<()> {
     ensure!(
         args.replay_guarded_core == args.guarded_core_replay_time_limit_ms.is_some(),
         "--guarded-core-replay-time-limit-ms must be supplied exactly when --replay-guarded-core is enabled"
+    );
+    ensure!(
+        !args.census_guarded_core_boundary_keys || args.replay_guarded_core,
+        "--census-guarded-core-boundary-keys requires --replay-guarded-core"
+    );
+    ensure!(
+        args.census_guarded_core_boundary_keys
+            == args.guarded_core_boundary_census_time_limit_ms.is_some(),
+        "--guarded-core-boundary-census-time-limit-ms must be supplied exactly when --census-guarded-core-boundary-keys is enabled"
     );
     let terminal_bits = parse_terminal_pair(&args.terminal_pair)?;
     let worker_count = NonZeroUsize::new(args.worker_count)
@@ -1152,6 +1166,51 @@ fn run_input_pair(
                                                         loaded,
                                                         &replay_report,
                                                     )?;
+                                                    if args.census_guarded_core_boundary_keys {
+                                                        let census_budget = NonZeroU64::new(
+                                                            args.guarded_core_boundary_census_time_limit_ms
+                                                                .context(
+                                                                    "guarded-core boundary census requires --guarded-core-boundary-census-time-limit-ms",
+                                                                )?,
+                                                        )
+                                                        .context(
+                                                            "guarded-core boundary census time limit must be positive",
+                                                        )?;
+                                                        let census_report =
+                                                            diagnose_guarded_core_boundary_census(
+                                                                &loaded.wiring,
+                                                                &loaded.facilities,
+                                                                &loaded.items,
+                                                                &loaded.transports,
+                                                                &loaded.components,
+                                                                &loaded.placement_request,
+                                                                args.target_phase,
+                                                                replay_report,
+                                                                worker_count.get(),
+                                                                Duration::from_millis(
+                                                                    census_budget.get(),
+                                                                ),
+                                                            )
+                                                            .map_err(|report| {
+                                                                anyhow::anyhow!(
+                                                                    "guarded-core boundary census failed: {report:?}"
+                                                                )
+                                                            })?;
+                                                        write_guarded_core_boundary_census_artifacts(
+                                                            args,
+                                                            loaded,
+                                                            &census_report,
+                                                        )?;
+                                                        serde_json::to_writer_pretty(
+                                                            std::io::stdout().lock(),
+                                                            &census_report,
+                                                        )
+                                                        .context(
+                                                            "failed to write guarded-core boundary census report",
+                                                        )?;
+                                                        println!();
+                                                        return Ok(());
+                                                    }
                                                     serde_json::to_writer_pretty(
                                                         std::io::stdout().lock(),
                                                         &replay_report,
@@ -2413,6 +2472,40 @@ fn write_guarded_core_replay_artifacts(
             &args.output_dir.join(name),
             html.as_bytes(),
             "guarded-core replay layout",
+        )?;
+    }
+    Ok(())
+}
+
+fn write_guarded_core_boundary_census_artifacts(
+    args: &Args,
+    loaded: &LoadedInputs,
+    report: &GuardedCoreBoundaryCensusReport,
+) -> Result<()> {
+    write_json(&args.output_dir.join("summary.json"), report)?;
+    write_bytes(
+        &args.output_dir.join("summary.html"),
+        render_guarded_core_boundary_census_summary(report)?.as_bytes(),
+        "guarded-core boundary census summary",
+    )?;
+    for case in &report.cases {
+        let html = render_integrated_layout_html_with_localization(
+            &case.layout,
+            loaded.localization.as_ref(),
+        )
+        .map_err(|diagnostic| {
+            anyhow::anyhow!(
+                "guarded-core boundary census visualization failed with {}: {}",
+                diagnostic.code,
+                diagnostic.message
+            )
+        })?;
+        write_bytes(
+            &args
+                .output_dir
+                .join(guarded_core_boundary_census_artifact_name(case.case_index)),
+            html.as_bytes(),
+            "guarded-core boundary census layout",
         )?;
     }
     Ok(())
@@ -4072,6 +4165,85 @@ fn render_guarded_core_replay_summary(report: &GuardedCoreReplayReport) -> Resul
     ))
 }
 
+fn render_guarded_core_boundary_census_summary(
+    report: &GuardedCoreBoundaryCensusReport,
+) -> Result<String> {
+    let rows = report
+        .cases
+        .iter()
+        .map(|case| {
+            let assignments = case
+                .assignments
+                .iter()
+                .map(|assignment| format!("{}={}", assignment.terminal, assignment.port))
+                .collect::<Vec<_>>()
+                .join("\n");
+            let artifact = guarded_core_boundary_census_artifact_name(case.case_index);
+            format!(
+                "<tr><td>{}</td><td><pre>{}</pre></td><td>{:?}</td><td>{:?}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{}</td><td><a href=\"{}\">evidence</a></td></tr>",
+                case.case_index,
+                escape_html_text(&assignments),
+                case.root_status,
+                case.outcome,
+                case.root_live_key_count,
+                case.search_ms,
+                case.branch_decisions,
+                case.backtracks,
+                case.conflicts,
+                case.solver_propagations,
+                !case.interpretation_blocked,
+                artifact,
+            )
+        })
+        .collect::<String>();
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Guarded core boundary census</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.gate{{border:1px solid #315066;padding:12px}}.pass{{color:#65f0bd}}.block{{color:#ff6b9d}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}code,a{{color:#ffd166}}pre{{white-space:pre-wrap;margin:0}}</style></head><body><h1>Phase 3 guarded-core boundary-key root census</h1><div class="meta">status={status:?} · tuples={tuples} · exact (tuple,key) pairs={pairs} · distinct keys={distinct} · selected tuple keys={selected} · legal sparse keys={legal} · budget={budget}ms/tuple · workers={workers} · census={census}ms · total chain={total}ms</div><div class="gate {class}">source replay={source} · exact tuple enumeration={enumeration} · 15-terminal request composition={fixation} · build certificates={build_certificates} · selected tuple reproduced={reproduced} · census complete={complete} · model identity={model} · unrestricted boundary={boundary} · evidence valid={evidence} · fixed 864 certified={fixed_864} · blocked={blocked}</div><p>captured={captured} · proven root-infeasible={root_infeasible} · invalid/missing={blocked_cases} · all root-live sets equal={sets_equal} · all equal selected tuple={selected_equal}</p><table><thead><tr><th>#</th><th>residual port tuple</th><th>root</th><th>outcome</th><th>|K_t|</th><th>search ms</th><th>decisions</th><th>backtracks</th><th>conflicts</th><th>propagations</th><th>valid</th><th>artifact</th></tr></thead><tbody>{rows}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={json};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        status = report.status,
+        tuples = report.tuple_count,
+        pairs = report.exact_portfolio_pair_count,
+        distinct = report.distinct_root_live_key_count,
+        selected = report.selected_parent_root_key_count,
+        legal = report.unrestricted_legal_key_count,
+        budget = report.observation_budget_ms,
+        workers = report.worker_count,
+        census = report.census_ms,
+        total = report.total_wall_ms,
+        class = if report.interpretation_blocked {
+            "block"
+        } else {
+            "pass"
+        },
+        source = report.source_replay_satisfied,
+        enumeration = report.tuple_enumeration_satisfied,
+        fixation = report.complete_fixation_request_satisfied,
+        build_certificates = report.build_certificates_satisfied,
+        reproduced = report.selected_parent_root_set_reproduced,
+        complete = report.census_complete,
+        model = report.model_identity_satisfied,
+        boundary = report.unrestricted_boundary_satisfied,
+        evidence = report.evidence_valid,
+        fixed_864 = report.fixed_864_case_count_certified,
+        blocked = report.interpretation_blocked,
+        captured = report.captured_case_count,
+        root_infeasible = report.proven_root_infeasible_case_count,
+        blocked_cases = report.blocked_case_count,
+        sets_equal = report.all_root_live_sets_equal,
+        selected_equal = report.all_sets_equal_selected_parent,
+        rows = rows,
+        json = json,
+    ))
+}
+
+fn escape_html_text(value: &str) -> String {
+    value
+        .replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
+}
+
 fn guarded_core_attempt_artifact_name(attempt_index: usize) -> String {
     format!("attempt-{attempt_index:02}.authoritative.html")
 }
@@ -4085,6 +4257,10 @@ fn guarded_core_replay_artifact_names() -> [&'static str; 6] {
         "baseline.observation.html",
         "replay.observation.html",
     ]
+}
+
+fn guarded_core_boundary_census_artifact_name(case_index: usize) -> String {
+    format!("census-case-{case_index:02}.observation.html")
 }
 
 fn write_json(path: &Path, report: &impl serde::Serialize) -> Result<()> {
@@ -4145,6 +4321,23 @@ mod tests {
                 "baseline.observation.html",
                 "replay.observation.html",
             ]
+        );
+    }
+
+    #[test]
+    fn guarded_core_boundary_census_artifacts_are_stable_and_complete() {
+        let names = (0..16)
+            .map(guarded_core_boundary_census_artifact_name)
+            .collect::<Vec<_>>();
+        assert_eq!(names.len(), 16);
+        assert_eq!(names.first().unwrap(), "census-case-00.observation.html");
+        assert_eq!(names.last().unwrap(), "census-case-15.observation.html");
+        assert_eq!(
+            names
+                .iter()
+                .collect::<std::collections::BTreeSet<_>>()
+                .len(),
+            16
         );
     }
 
@@ -4270,6 +4463,9 @@ mod tests {
             "--replay-guarded-core",
             "--guarded-core-replay-time-limit-ms",
             "5000",
+            "--census-guarded-core-boundary-keys",
+            "--guarded-core-boundary-census-time-limit-ms",
+            "5000",
             "--output-dir",
             "out",
         ])
@@ -4304,5 +4500,7 @@ mod tests {
         assert_eq!(args.guarded_core_shrink_time_limit_ms, Some(5000));
         assert!(args.replay_guarded_core);
         assert_eq!(args.guarded_core_replay_time_limit_ms, Some(5000));
+        assert!(args.census_guarded_core_boundary_keys);
+        assert_eq!(args.guarded_core_boundary_census_time_limit_ms, Some(5000));
     }
 }

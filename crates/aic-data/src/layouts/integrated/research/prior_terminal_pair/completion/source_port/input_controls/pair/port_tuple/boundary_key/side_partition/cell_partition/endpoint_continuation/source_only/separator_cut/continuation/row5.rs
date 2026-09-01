@@ -7,10 +7,13 @@ use super::*;
 mod guarded_core;
 
 pub use guarded_core::{
-    GUARDED_CORE_INITIAL_GATE_SCHEMA_VERSION, GuardedCoreAcceptedFixture,
+    GUARDED_CORE_BOUNDARY_CENSUS_SCHEMA_VERSION, GUARDED_CORE_INITIAL_GATE_SCHEMA_VERSION,
+    GuardedCoreAcceptedFixture, GuardedCoreBoundaryCensusCase, GuardedCoreBoundaryCensusReport,
+    GuardedCoreBoundaryCensusRootStatus, GuardedCoreBoundaryCensusStatus,
     GuardedCoreInitialGateReport, GuardedCoreInitialGateStatus, GuardedCoreReplayReport,
     GuardedCoreReplayStatus, GuardedCoreSequentialShrinkReport, GuardedCoreSequentialShrinkStatus,
-    GuardedCoreShrinkAttempt, diagnose_guarded_core_initial_gate, diagnose_guarded_core_replay,
+    GuardedCoreShrinkAttempt, diagnose_guarded_core_boundary_census,
+    diagnose_guarded_core_initial_gate, diagnose_guarded_core_replay,
     diagnose_guarded_core_sequential_shrinking,
 };
 

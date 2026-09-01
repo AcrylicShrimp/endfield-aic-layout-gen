@@ -380,6 +380,19 @@ pub(in crate::layouts::integrated) struct FixedTerminalPortChoice {
     pub port: String,
 }
 
+#[derive(Debug, Clone, serde::Serialize, PartialEq, Eq)]
+pub(in crate::layouts::integrated) struct FixedSolveBuildCertificate {
+    pub fixed_dimensions: [i32; 2],
+    pub fixed_coordinate_instance: String,
+    pub fixed_coordinate: [i32; 2],
+    pub fixed_rotation: Option<i64>,
+    pub fixed_terminal_ports: Vec<(String, String)>,
+    pub prior_placements: Vec<FacilityPlacement>,
+    pub reference_fixation: String,
+    pub sparse_legal_boundary_domain: bool,
+    pub model_build_completed: bool,
+}
+
 struct SharedSearchResult {
     report: IntegratedLayoutReport,
     stages: Vec<crate::layouts::integrated::ExactObjectiveStageReport>,
@@ -1457,9 +1470,35 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
     IntegratedLayoutReport,
     Option<RootDomainSnapshot>,
     Vec<BoundaryKeyBuildCertificate>,
+    FixedSolveBuildCertificate,
 ) {
     let collector: RootDomainSnapshotCollector = SyncArc::new(Mutex::new(None));
     let certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let mut certified_fixed_ports = fixed_ports
+        .iter()
+        .map(|fixed| (fixed.terminal.clone(), fixed.port.clone()))
+        .collect::<Vec<_>>();
+    certified_fixed_ports.sort();
+    let mut certified_prior_placements = prior_solution.placements.clone();
+    certified_prior_placements.sort_by(|left, right| left.instance.cmp(&right.instance));
+    let certified_fixed_coordinate_instance = fixed_coordinate.instance.clone();
+    let certified_fixed_coordinate = [fixed_coordinate.x, fixed_coordinate.y];
+    let certified_fixed_rotation = fixed_coordinate.rotation;
+    let reference_fixation = match fixation {
+        ReferenceAblationFixation::PriorOverlapPlacements => "prior-overlap-placements",
+        ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPorts => {
+            "prior-overlap-placements-and-facility-ports"
+        }
+        ReferenceAblationFixation::PriorOverlapPlacementsAndFacilityPortSubset(_) => {
+            "prior-overlap-placements-and-facility-port-subset"
+        }
+        ReferenceAblationFixation::PriorOverlapPlacementsAndTerminalSubset { .. } => {
+            "prior-overlap-placements-and-terminal-subset"
+        }
+        ReferenceAblationFixation::Placements => "placements",
+        ReferenceAblationFixation::PlacementsAndFacilityPorts => "placements-and-facility-ports",
+        ReferenceAblationFixation::PlacementsAndAllTerminals => "placements-and-all-terminals",
+    };
     let report =
         solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation_with_search_mode(
             input,
@@ -1496,7 +1535,18 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
         .lock()
         .expect("boundary-key certificate collector is not poisoned")
         .clone();
-    (report, snapshot, captured)
+    let build_certificate = FixedSolveBuildCertificate {
+        fixed_dimensions: [fixed_dimensions.width, fixed_dimensions.height],
+        fixed_coordinate_instance: certified_fixed_coordinate_instance,
+        fixed_coordinate: certified_fixed_coordinate,
+        fixed_rotation: certified_fixed_rotation,
+        fixed_terminal_ports: certified_fixed_ports,
+        prior_placements: certified_prior_placements,
+        reference_fixation: reference_fixation.to_string(),
+        sparse_legal_boundary_domain: sparse_legal_domain,
+        model_build_completed: report.exact.is_some(),
+    };
+    (report, snapshot, captured, build_certificate)
 }
 
 #[allow(clippy::too_many_arguments)]

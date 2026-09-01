@@ -299,7 +299,12 @@ pub fn diagnose_external_boundary_key_legal_support_ab(
             fixation,
             true,
         );
-    let (bounded_observation, bounded_snapshot, bounded_observation_certificates) =
+    let (
+        bounded_observation,
+        bounded_snapshot,
+        bounded_observation_certificates,
+        _bounded_build_certificate,
+    ) =
         exact::shared_layer::solve_sparse_support_endpoints_boundary_key_audit_fixed_dimensions_coordinate_ports_prior_overlap_root_snapshot(
             input.clone(),
             logistics_components,
@@ -311,7 +316,12 @@ pub fn diagnose_external_boundary_key_legal_support_ab(
             fixation,
             false,
         );
-    let (sparse_observation, sparse_snapshot, sparse_observation_certificates) =
+    let (
+        sparse_observation,
+        sparse_snapshot,
+        sparse_observation_certificates,
+        _sparse_build_certificate,
+    ) =
         exact::shared_layer::solve_sparse_support_endpoints_boundary_key_audit_fixed_dimensions_coordinate_ports_prior_overlap_root_snapshot(
             input,
             logistics_components,

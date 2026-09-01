@@ -8,6 +8,10 @@ use sha2::{Digest, Sha256};
 use super::*;
 use crate::layouts::{TransportNetworkEndpoint, WorldGridPosition};
 
+mod breadth;
+
+pub use breadth::*;
+
 pub const GUARDED_CORE_INITIAL_GATE_SCHEMA_VERSION: u32 = 1;
 const EXPECTED_ATOM_COUNT: usize = 30;
 const EXPECTED_FORMULATION: &str =
