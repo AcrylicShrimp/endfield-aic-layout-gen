@@ -77,57 +77,11 @@ pub fn diagnose_bottom_up_rotation_partition(
         request,
         target_phase_index,
     )?;
-    let introduced = prepared
-        .introduced_facility_ids
-        .iter()
-        .cloned()
-        .collect::<BTreeSet<_>>();
-    validate_introduced_selection(partition_facility_ids, &introduced)
+    let domains = validated_rotation_domains(&prepared, partition_facility_ids)
         .map_err(IntegratedLayoutReport::invalid)?;
-    let mut domains = BTreeMap::new();
-    for instance_id in partition_facility_ids {
-        let Some(instance) = prepared
-            .input
-            .instances
-            .iter()
-            .find(|instance| instance.id == *instance_id)
-        else {
-            return Err(IntegratedLayoutReport::invalid(
-                IntegratedLayoutDiagnostic::error(
-                    "bottom-up-rotation-partition-facility-missing",
-                    "/partition_facility_ids",
-                    Some(instance_id.clone()),
-                    "rotation partition facility is absent from the cumulative model",
-                ),
-            ));
-        };
-        let mut rotations = instance.definition.allowed_rotations.clone();
-        rotations.sort_unstable();
-        rotations.dedup();
-        if rotations.is_empty() {
-            return Err(IntegratedLayoutReport::invalid(
-                IntegratedLayoutDiagnostic::error(
-                    "bottom-up-rotation-partition-empty-domain",
-                    "/partition_facility_ids",
-                    Some(instance_id.clone()),
-                    "rotation partition facility has no validated directional rotation",
-                ),
-            ));
-        }
-        domains.insert(instance_id.clone(), rotations);
-    }
 
-    let expected_case_count = domains
-        .values()
-        .try_fold(1_usize, |product, values| product.checked_mul(values.len()))
-        .ok_or_else(|| {
-            IntegratedLayoutReport::invalid(IntegratedLayoutDiagnostic::error(
-                "bottom-up-rotation-partition-case-count-overflow",
-                "/partition_facility_ids",
-                None,
-                "rotation partition case count exceeds the platform range",
-            ))
-        })?;
+    let expected_case_count =
+        checked_rotation_case_count(&domains).map_err(IntegratedLayoutReport::invalid)?;
 
     let started = Instant::now();
     let next_case = AtomicUsize::new(0);
@@ -253,7 +207,7 @@ pub fn diagnose_bottom_up_rotation_partition(
     })
 }
 
-fn validate_partition_selection(
+pub(super) fn validate_partition_selection(
     facility_ids: &[String],
     worker_count: usize,
 ) -> Result<(), IntegratedLayoutDiagnostic> {
@@ -303,6 +257,94 @@ fn validate_introduced_selection(
     Ok(())
 }
 
+pub(super) fn validated_rotation_domains(
+    prepared: &super::bottom_up_ladder::PreparedBottomUpPhase,
+    facility_ids: &[String],
+) -> Result<BTreeMap<String, Vec<i64>>, IntegratedLayoutDiagnostic> {
+    let introduced = prepared
+        .introduced_facility_ids
+        .iter()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    validate_introduced_selection(facility_ids, &introduced)?;
+    let mut domains = BTreeMap::new();
+    for instance_id in facility_ids {
+        let Some(instance) = prepared
+            .input
+            .instances
+            .iter()
+            .find(|instance| instance.id == *instance_id)
+        else {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "bottom-up-rotation-partition-facility-missing",
+                "/partition_facility_ids",
+                Some(instance_id.clone()),
+                "rotation partition facility is absent from the cumulative model",
+            ));
+        };
+        let mut rotations = instance
+            .definition
+            .allowed_rotations
+            .iter()
+            .copied()
+            .filter(|rotation| {
+                rotation_fits_ceiling(
+                    instance,
+                    *rotation,
+                    prepared.input.width,
+                    prepared.input.height,
+                )
+            })
+            .collect::<Vec<_>>();
+        rotations.sort_unstable();
+        rotations.dedup();
+        if rotations.is_empty() {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "bottom-up-rotation-partition-empty-domain",
+                "/partition_facility_ids",
+                Some(instance_id.clone()),
+                "rotation partition facility has no validated directional rotation",
+            ));
+        }
+        domains.insert(instance_id.clone(), rotations);
+    }
+    Ok(domains)
+}
+
+fn rotation_fits_ceiling(
+    instance: &super::super::InstanceInput,
+    rotation: i64,
+    ceiling_width: i32,
+    ceiling_height: i32,
+) -> bool {
+    let base_width = i32::try_from(instance.definition.footprint.width)
+        .expect("validated facility width fits the solver domain");
+    let base_height = i32::try_from(instance.definition.footprint.height)
+        .expect("validated facility height fits the solver domain");
+    let (width, height) = match rotation {
+        0 | 180 => (base_width, base_height),
+        90 | 270 => (base_height, base_width),
+        _ => unreachable!("validated rotations are quarter turns"),
+    };
+    width <= ceiling_width && height <= ceiling_height
+}
+
+pub(super) fn checked_rotation_case_count(
+    domains: &BTreeMap<String, Vec<i64>>,
+) -> Result<usize, IntegratedLayoutDiagnostic> {
+    domains
+        .values()
+        .try_fold(1_usize, |product, values| product.checked_mul(values.len()))
+        .ok_or_else(|| {
+            IntegratedLayoutDiagnostic::error(
+                "bottom-up-rotation-partition-case-count-overflow",
+                "/partition_facility_ids",
+                None,
+                "rotation partition case count exceeds the platform range",
+            )
+        })
+}
+
 fn combine_partition_outcomes(
     expected_case_count: usize,
     feasible_cases: usize,
@@ -320,7 +362,7 @@ fn combine_partition_outcomes(
     }
 }
 
-fn rotation_case_at(
+pub(super) fn rotation_case_at(
     case_index: usize,
     facility_ids: &[String],
     domains: &BTreeMap<String, Vec<i64>>,
@@ -350,6 +392,8 @@ fn count_outcome(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::facilities::{FacilityDefinition, FacilityFootprint};
+    use crate::layouts::integrated::{InstanceInput, ModelInput};
 
     #[test]
     fn rotation_cases_are_the_complete_ordered_cartesian_product() {
@@ -407,6 +451,43 @@ mod tests {
             "bottom-up-rotation-partition-facility-not-introduced"
         );
         assert_eq!(diagnostic.entity.as_deref(), Some("planter"));
+    }
+
+    #[test]
+    fn rotation_partition_uses_only_rotations_present_in_the_parent_model() {
+        let instance = InstanceInput {
+            id: "asymmetric".to_string(),
+            recipe: "test-recipe".to_string(),
+            facility: "test-facility".to_string(),
+            definition: FacilityDefinition {
+                id: "test-facility".to_string(),
+                footprint: FacilityFootprint {
+                    width: 2,
+                    height: 4,
+                },
+                allowed_rotations: vec![0, 90],
+                ports: Vec::new(),
+            },
+        };
+
+        let prepared = super::super::bottom_up_ladder::PreparedBottomUpPhase {
+            input: ModelInput {
+                width: 3,
+                height: 4,
+                cell_count: 12,
+                instances: vec![instance],
+                edges: Vec::new(),
+                networks: Vec::new(),
+            },
+            target_phase_index: 0,
+            total_phase_count: 1,
+            cumulative_facility_count: 1,
+            introduced_facility_ids: vec!["asymmetric".to_string()],
+        };
+
+        let domains = validated_rotation_domains(&prepared, &["asymmetric".to_string()])
+            .expect("the fitting parent rotation domain should partition");
+        assert_eq!(domains["asymmetric"], [0]);
     }
 
     #[test]

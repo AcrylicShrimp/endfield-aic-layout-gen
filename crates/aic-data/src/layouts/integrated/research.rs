@@ -16,6 +16,7 @@ use super::{
 
 mod bottom_up_ladder;
 mod bottom_up_rotation_partition;
+mod bottom_up_rotation_root;
 mod connectivity_witness;
 mod coordinate_partition;
 mod crossing_free;
@@ -34,11 +35,14 @@ mod scaled_endpoint_channel;
 mod transport_tile_cap;
 
 pub use super::exact::ladder::{
-    BOTTOM_UP_RUNG_SCHEMA_VERSION, BottomUpRungKind, BottomUpRungOutcome, BottomUpRungReport,
-    BottomUpRungWitness, BottomUpSearchProfile, BottomUpSearchSpaceProfile,
-    BottomUpSemanticCertificate, BottomUpTerminationReason, EndpointClearancePropagationStatistics,
-    EndpointClearanceSchedulingPriority, FacilityEndpointPlacement, FacilityGeometryPlacement,
-    FacilityGeometryWitness, FacilityPortPlacement, FacilityPortsWitness,
+    BOTTOM_UP_RUNG_SCHEMA_VERSION, BottomUpRootClearanceOpportunity, BottomUpRootDomainSnapshot,
+    BottomUpRootEndpointDomain, BottomUpRootFacilityDomain, BottomUpRootIntegerDomain,
+    BottomUpRootLocalConnectionDomain, BottomUpRootOrientationDomain, BottomUpRungKind,
+    BottomUpRungOutcome, BottomUpRungReport, BottomUpRungWitness, BottomUpSearchProfile,
+    BottomUpSearchSpaceProfile, BottomUpSemanticCertificate, BottomUpTerminationReason,
+    EndpointClearancePropagationStatistics, EndpointClearanceSchedulingPriority,
+    FacilityEndpointPlacement, FacilityGeometryPlacement, FacilityGeometryWitness,
+    FacilityPortPlacement, FacilityPortsWitness,
 };
 pub use bottom_up_ladder::{
     BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION, BottomUpExperimentReport, diagnose_bottom_up_rung,
@@ -46,6 +50,10 @@ pub use bottom_up_ladder::{
 pub use bottom_up_rotation_partition::{
     BOTTOM_UP_ROTATION_PARTITION_SCHEMA_VERSION, BottomUpRotationPartitionCaseReport,
     BottomUpRotationPartitionReport, diagnose_bottom_up_rotation_partition,
+};
+pub use bottom_up_rotation_root::{
+    BOTTOM_UP_ROTATION_ROOT_COMPARISON_SCHEMA_VERSION, BottomUpRotationRootCaseReport,
+    BottomUpRotationRootComparisonReport, diagnose_bottom_up_rotation_root_comparison,
 };
 pub use connectivity_witness::{
     CONNECTIVITY_WITNESS_DIAGNOSIS_SCHEMA_VERSION, ConnectivityWitnessCaseKind,

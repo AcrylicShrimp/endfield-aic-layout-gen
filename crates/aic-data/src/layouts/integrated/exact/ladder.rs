@@ -63,6 +63,82 @@ pub struct EndpointClearancePropagationStatistics {
     pub maximum_reason_predicates: u64,
 }
 
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BottomUpRootIntegerDomain {
+    pub lower_bound: i32,
+    pub upper_bound: i32,
+    pub cardinality: usize,
+    pub ranges: Vec<[i32; 2]>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BottomUpRootOrientationDomain {
+    pub width: i32,
+    pub height: i32,
+    pub equivalent_rotations: Vec<i64>,
+    pub can_be_selected: bool,
+    pub can_be_rejected: bool,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BottomUpRootFacilityDomain {
+    pub instance: String,
+    pub x: BottomUpRootIntegerDomain,
+    pub y: BottomUpRootIntegerDomain,
+    pub rotation: BottomUpRootIntegerDomain,
+    pub orientations: Vec<BottomUpRootOrientationDomain>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BottomUpRootLocalConnectionDomain {
+    pub key: i32,
+    pub dx: i32,
+    pub dy: i32,
+    pub arm_direction: CardinalDirection,
+    pub supported: bool,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BottomUpRootEndpointDomain {
+    pub terminal: String,
+    pub instance: String,
+    pub direction: crate::facilities::FacilityPortDirection,
+    pub transport: TransportKind,
+    pub port_ids: Vec<String>,
+    pub port_choice: BottomUpRootIntegerDomain,
+    pub local_key: BottomUpRootIntegerDomain,
+    pub local_connections: Vec<BottomUpRootLocalConnectionDomain>,
+    pub connection_x: BottomUpRootIntegerDomain,
+    pub connection_y: BottomUpRootIntegerDomain,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BottomUpRootClearanceOpportunity {
+    pub terminal: String,
+    pub owner_instance: String,
+    pub local_key: i32,
+    pub dx: i32,
+    pub dy: i32,
+    pub target_instance: String,
+    pub target_width: i32,
+    pub target_height: i32,
+    pub target_equivalent_rotations: Vec<i64>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct BottomUpRootDomainSnapshot {
+    pub root_status: &'static str,
+    pub model_construction_us: u64,
+    pub root_propagation_us: u64,
+    pub fixed_rotations: BTreeMap<String, i64>,
+    pub facilities: Vec<BottomUpRootFacilityDomain>,
+    pub endpoints: Vec<BottomUpRootEndpointDomain>,
+    pub clearance_opportunities: Vec<BottomUpRootClearanceOpportunity>,
+    pub model_complexity: ModelComplexityMetrics,
+    pub endpoint_support_statistics: EndpointSupportPropagationStatistics,
+    pub endpoint_clearance_statistics: EndpointClearancePropagationStatistics,
+}
+
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum BottomUpRungOutcome {
@@ -401,6 +477,22 @@ pub(in crate::layouts::integrated) fn solve_facility_ports_propagated_rung_with_
     facility_ports::solve_with_propagated_clearance_and_fixed_rotations(
         input,
         time_limit,
+        priority,
+        counters_enabled,
+        false_event_filter_enabled,
+        fixed_rotations,
+    )
+}
+
+pub(in crate::layouts::integrated) fn snapshot_facility_ports_propagated_root(
+    input: ModelInput,
+    priority: EndpointClearanceSchedulingPriority,
+    counters_enabled: bool,
+    false_event_filter_enabled: bool,
+    fixed_rotations: &BTreeMap<String, i64>,
+) -> Result<BottomUpRootDomainSnapshot, IntegratedLayoutDiagnostic> {
+    facility_ports::snapshot_propagated_root(
+        input,
         priority,
         counters_enabled,
         false_event_filter_enabled,

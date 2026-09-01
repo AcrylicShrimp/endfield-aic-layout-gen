@@ -153,6 +153,23 @@ connection keys, endpoint coordinates, and clearance decisions remain solver var
 feasible child proves the parent feasible; only proven infeasibility of every child proves the
 parent infeasible. Unknown children never become infeasibility evidence.
 
+The next causal diagnostic compares the unpartitioned parent with every child at the root
+propagation fixpoint through Pumpkin's no-decision root path, before any search decision. It
+records the surviving values of facility
+coordinates and directional rotations, endpoint port and local-connection choices, and endpoint
+connection coordinates. The comparison changes no solver decision and runs the same propagated
+facility-port formulation with either zero or one research-fixation equality per selected
+facility.
+
+The same diagnostic performs a conservative local-key clearance opportunity census. For every
+still-supported endpoint local key and every still-possible non-owner facility orientation, it
+checks the Cartesian product of the current root coordinate domains. A pair is reported as a
+missed opportunity only when no coordinate tuple can place `owner + local_offset` outside the
+target rectangle. Because this Cartesian product is a superset of the correlated solver states,
+absence of support is a sound reason to reject the pair; presence of support is not a feasibility
+claim. The census observes the current model only. It must not prune domains until a separately
+reviewed exact propagator is implemented.
+
 ### Rung 2: Pipe Routing
 
 Adds the complete pipe semantic block:

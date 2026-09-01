@@ -2,10 +2,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use pumpkin_solver::Solver;
 use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
 use pumpkin_solver::core::predicates::PredicateConstructor;
 use pumpkin_solver::core::propagation::Priority;
-use pumpkin_solver::core::results::{ProblemSolution, SatisfactionResult};
+use pumpkin_solver::core::results::{CSPSolverExecutionFlag, ProblemSolution, SatisfactionResult};
 use pumpkin_solver::core::termination::TimeBudget;
 use pumpkin_solver::core::variables::{DomainId, Literal, TransformableVariable};
 
@@ -22,11 +23,14 @@ use super::super::search_statistics::{
     MeteredBrancher, SearchEventCounters, capture_search_statistics,
 };
 use super::{
-    BOTTOM_UP_RUNG_SCHEMA_VERSION, BottomUpRungKind, BottomUpRungOutcome, BottomUpRungReport,
-    BottomUpRungWitness, BottomUpSearchProfile, BottomUpSearchSpaceProfile,
-    BottomUpSemanticCertificate, BottomUpTerminationReason, EndpointClearanceSchedulingPriority,
-    FacilityEndpointPlacement, FacilityPortPlacement, FacilityPortsWitness, ModelInstance,
-    PlacementModel, build_model, facility_geometry_search_space_profile, oriented_dimensions_i64,
+    BOTTOM_UP_RUNG_SCHEMA_VERSION, BottomUpRootClearanceOpportunity, BottomUpRootDomainSnapshot,
+    BottomUpRootEndpointDomain, BottomUpRootFacilityDomain, BottomUpRootIntegerDomain,
+    BottomUpRootLocalConnectionDomain, BottomUpRootOrientationDomain, BottomUpRungKind,
+    BottomUpRungOutcome, BottomUpRungReport, BottomUpRungWitness, BottomUpSearchProfile,
+    BottomUpSearchSpaceProfile, BottomUpSemanticCertificate, BottomUpTerminationReason,
+    EndpointClearanceSchedulingPriority, FacilityEndpointPlacement, FacilityPortPlacement,
+    FacilityPortsWitness, ModelInstance, PlacementModel, build_model,
+    facility_geometry_search_space_profile, oriented_dimensions_i64,
 };
 use crate::facilities::{FacilityPortDefinition, FacilityPortDirection, FacilityPortEdge};
 use crate::layouts::FacilityPlacementBounds;
@@ -132,6 +136,37 @@ struct LocalConnection {
     arm_direction: CardinalDirection,
 }
 
+#[derive(Clone)]
+struct RootFacilityProbe {
+    instance: String,
+    x: DomainId,
+    y: DomainId,
+    rotation: DomainId,
+    orientations: Vec<RootOrientationProbe>,
+}
+
+#[derive(Clone)]
+struct RootOrientationProbe {
+    width: i32,
+    height: i32,
+    equivalent_rotations: Vec<i64>,
+    selected: Literal,
+}
+
+#[derive(Clone)]
+struct RootEndpointProbe {
+    terminal: String,
+    instance: String,
+    direction: FacilityPortDirection,
+    transport: TransportKind,
+    port_ids: Vec<String>,
+    port_choice: DomainId,
+    local_key: DomainId,
+    local_connections: Vec<LocalConnection>,
+    connection_x: DomainId,
+    connection_y: DomainId,
+}
+
 pub(super) fn solve_geometry(input: ModelInput, time_limit: Duration) -> BottomUpRungReport {
     solve(input, time_limit, GEOMETRY_CONTRACT, &BTreeMap::new())
 }
@@ -176,6 +211,79 @@ pub(super) fn solve_with_propagated_clearance_and_fixed_rotations(
         },
         fixed_rotations,
     )
+}
+
+pub(super) fn snapshot_propagated_root(
+    input: ModelInput,
+    priority: EndpointClearanceSchedulingPriority,
+    counters_enabled: bool,
+    false_event_filter_enabled: bool,
+    fixed_rotations: &BTreeMap<String, i64>,
+) -> Result<BottomUpRootDomainSnapshot, IntegratedLayoutDiagnostic> {
+    let construction_started = Instant::now();
+    let mut port_model = build_port_model(
+        &input,
+        ClearanceEncoding::PointRectanglePropagator,
+        pumpkin_priority(priority),
+        counters_enabled,
+        false_event_filter_enabled,
+        fixed_rotations,
+    )?;
+    let model_construction_us = construction_started
+        .elapsed()
+        .as_micros()
+        .min(u128::from(u64::MAX)) as u64;
+    let model_complexity = port_model.placement.model.metrics();
+    let facility_probes = root_facility_probes(&port_model);
+    let endpoint_probes = root_endpoint_probes(&port_model);
+    let support_counters = Arc::clone(&port_model.support_counters);
+    let clearance_counters = Arc::clone(
+        port_model
+            .clearance_counters
+            .as_ref()
+            .expect("propagated root snapshot has clearance counters"),
+    );
+    let started = Instant::now();
+    let status = port_model
+        .placement
+        .model
+        .solver_mut()
+        .propagate_to_fixpoint();
+    let root_propagation_us = started.elapsed().as_micros().min(u128::from(u64::MAX)) as u64;
+    Ok(match status {
+        CSPSolverExecutionFlag::Infeasible => BottomUpRootDomainSnapshot {
+            root_status: "root-infeasible",
+            model_construction_us,
+            root_propagation_us,
+            fixed_rotations: fixed_rotations.clone(),
+            facilities: Vec::new(),
+            endpoints: Vec::new(),
+            clearance_opportunities: Vec::new(),
+            model_complexity,
+            endpoint_support_statistics: support_counters.snapshot(),
+            endpoint_clearance_statistics: clearance_counters.snapshot(),
+        },
+        CSPSolverExecutionFlag::Feasible => capture_root_snapshot(
+            &port_model.placement.model,
+            "root-fixpoint",
+            model_construction_us,
+            root_propagation_us,
+            fixed_rotations,
+            &facility_probes,
+            &endpoint_probes,
+            model_complexity,
+            support_counters.snapshot(),
+            clearance_counters.snapshot(),
+        ),
+        CSPSolverExecutionFlag::Timeout => {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "bottom-up-root-propagation-timeout",
+                "/root_propagation",
+                None,
+                "Pumpkin returned timeout while running the unbounded root fixpoint API",
+            ));
+        }
+    })
 }
 
 fn solve(
@@ -352,6 +460,235 @@ fn solve(
         witness,
         diagnostics,
     }
+}
+
+fn root_facility_probes(model: &PortModel) -> Vec<RootFacilityProbe> {
+    model
+        .placement
+        .instances
+        .iter()
+        .map(|instance| RootFacilityProbe {
+            instance: instance.id.clone(),
+            x: instance.x,
+            y: instance.y,
+            rotation: model.rotations[&instance.id],
+            orientations: instance
+                .orientations
+                .iter()
+                .map(|orientation| RootOrientationProbe {
+                    width: orientation.width,
+                    height: orientation.height,
+                    equivalent_rotations: orientation.equivalent_rotations.clone(),
+                    selected: orientation.selected,
+                })
+                .collect(),
+        })
+        .collect()
+}
+
+fn root_endpoint_probes(model: &PortModel) -> Vec<RootEndpointProbe> {
+    model
+        .endpoints
+        .iter()
+        .map(|endpoint| RootEndpointProbe {
+            terminal: endpoint.terminal.clone(),
+            instance: endpoint.instance.clone(),
+            direction: endpoint.direction,
+            transport: endpoint.transport,
+            port_ids: endpoint.ports.iter().map(|port| port.id.clone()).collect(),
+            port_choice: endpoint.port_choice,
+            local_key: endpoint.local_key,
+            local_connections: endpoint.local_connections.clone(),
+            connection_x: endpoint.connection_x,
+            connection_y: endpoint.connection_y,
+        })
+        .collect()
+}
+
+#[allow(clippy::too_many_arguments)]
+fn capture_root_snapshot(
+    solver: &Solver,
+    root_status: &'static str,
+    model_construction_us: u64,
+    root_propagation_us: u64,
+    fixed_rotations: &BTreeMap<String, i64>,
+    facility_probes: &[RootFacilityProbe],
+    endpoint_probes: &[RootEndpointProbe],
+    model_complexity: ModelComplexityMetrics,
+    endpoint_support_statistics: super::super::super::research::EndpointSupportPropagationStatistics,
+    endpoint_clearance_statistics: super::EndpointClearancePropagationStatistics,
+) -> BottomUpRootDomainSnapshot {
+    let facilities = facility_probes
+        .iter()
+        .map(|probe| BottomUpRootFacilityDomain {
+            instance: probe.instance.clone(),
+            x: root_domain(solver, probe.x),
+            y: root_domain(solver, probe.y),
+            rotation: root_domain(solver, probe.rotation),
+            orientations: probe
+                .orientations
+                .iter()
+                .map(|orientation| BottomUpRootOrientationDomain {
+                    width: orientation.width,
+                    height: orientation.height,
+                    equivalent_rotations: orientation.equivalent_rotations.clone(),
+                    can_be_selected: solver.contains(&orientation.selected, 1),
+                    can_be_rejected: solver.contains(&orientation.selected, 0),
+                })
+                .collect(),
+        })
+        .collect::<Vec<_>>();
+    let endpoints = endpoint_probes
+        .iter()
+        .map(|probe| {
+            let local_key = root_domain(solver, probe.local_key);
+            BottomUpRootEndpointDomain {
+                terminal: probe.terminal.clone(),
+                instance: probe.instance.clone(),
+                direction: probe.direction,
+                transport: probe.transport,
+                port_ids: probe.port_ids.clone(),
+                port_choice: root_domain(solver, probe.port_choice),
+                local_connections: probe
+                    .local_connections
+                    .iter()
+                    .enumerate()
+                    .map(|(key, connection)| BottomUpRootLocalConnectionDomain {
+                        key: i32::try_from(key).expect("local connection key fits i32"),
+                        dx: connection.dx,
+                        dy: connection.dy,
+                        arm_direction: connection.arm_direction,
+                        supported: root_domain_contains(
+                            &local_key,
+                            i32::try_from(key).expect("local connection key fits i32"),
+                        ),
+                    })
+                    .collect(),
+                local_key,
+                connection_x: root_domain(solver, probe.connection_x),
+                connection_y: root_domain(solver, probe.connection_y),
+            }
+        })
+        .collect::<Vec<_>>();
+    let clearance_opportunities = clearance_opportunities(&facilities, &endpoints);
+    BottomUpRootDomainSnapshot {
+        root_status,
+        model_construction_us,
+        root_propagation_us,
+        fixed_rotations: fixed_rotations.clone(),
+        facilities,
+        endpoints,
+        clearance_opportunities,
+        model_complexity,
+        endpoint_support_statistics,
+        endpoint_clearance_statistics,
+    }
+}
+
+fn root_domain(solver: &Solver, variable: DomainId) -> BottomUpRootIntegerDomain {
+    let lower_bound = solver.lower_bound(&variable);
+    let upper_bound = solver.upper_bound(&variable);
+    let mut cardinality = 0;
+    let mut ranges = Vec::<[i32; 2]>::new();
+    for value in lower_bound..=upper_bound {
+        if !solver.contains(&variable, value) {
+            continue;
+        }
+        cardinality += 1;
+        if let Some(range) = ranges.last_mut()
+            && range[1].checked_add(1) == Some(value)
+        {
+            range[1] = value;
+        } else {
+            ranges.push([value, value]);
+        }
+    }
+    BottomUpRootIntegerDomain {
+        lower_bound,
+        upper_bound,
+        cardinality,
+        ranges,
+    }
+}
+
+fn root_domain_contains(domain: &BottomUpRootIntegerDomain, value: i32) -> bool {
+    domain
+        .ranges
+        .iter()
+        .any(|range| range[0] <= value && value <= range[1])
+}
+
+fn clearance_opportunities(
+    facilities: &[BottomUpRootFacilityDomain],
+    endpoints: &[BottomUpRootEndpointDomain],
+) -> Vec<BottomUpRootClearanceOpportunity> {
+    let by_instance = facilities
+        .iter()
+        .map(|facility| (facility.instance.as_str(), facility))
+        .collect::<BTreeMap<_, _>>();
+    let mut opportunities = Vec::new();
+    for endpoint in endpoints {
+        let owner = by_instance[endpoint.instance.as_str()];
+        for connection in endpoint
+            .local_connections
+            .iter()
+            .filter(|connection| connection.supported)
+        {
+            for target in facilities
+                .iter()
+                .filter(|target| target.instance != endpoint.instance)
+            {
+                for orientation in target
+                    .orientations
+                    .iter()
+                    .filter(|orientation| orientation.can_be_selected)
+                {
+                    if !cartesian_domains_can_clear_rectangle(
+                        &owner.x,
+                        &owner.y,
+                        connection.dx,
+                        connection.dy,
+                        &target.x,
+                        &target.y,
+                        orientation.width,
+                        orientation.height,
+                    ) {
+                        opportunities.push(BottomUpRootClearanceOpportunity {
+                            terminal: endpoint.terminal.clone(),
+                            owner_instance: endpoint.instance.clone(),
+                            local_key: connection.key,
+                            dx: connection.dx,
+                            dy: connection.dy,
+                            target_instance: target.instance.clone(),
+                            target_width: orientation.width,
+                            target_height: orientation.height,
+                            target_equivalent_rotations: orientation.equivalent_rotations.clone(),
+                        });
+                    }
+                }
+            }
+        }
+    }
+    opportunities
+}
+
+#[allow(clippy::too_many_arguments)]
+fn cartesian_domains_can_clear_rectangle(
+    owner_x: &BottomUpRootIntegerDomain,
+    owner_y: &BottomUpRootIntegerDomain,
+    dx: i32,
+    dy: i32,
+    target_x: &BottomUpRootIntegerDomain,
+    target_y: &BottomUpRootIntegerDomain,
+    target_width: i32,
+    target_height: i32,
+) -> bool {
+    i64::from(owner_x.lower_bound) + i64::from(dx) < i64::from(target_x.upper_bound)
+        || i64::from(owner_x.upper_bound) + i64::from(dx)
+            >= i64::from(target_x.lower_bound) + i64::from(target_width)
+        || i64::from(owner_y.lower_bound) + i64::from(dy) < i64::from(target_y.upper_bound)
+        || i64::from(owner_y.upper_bound) + i64::from(dy)
+            >= i64::from(target_y.lower_bound) + i64::from(target_height)
 }
 
 fn semantic_certificate(clearance: ClearanceEncoding) -> BottomUpSemanticCertificate {
@@ -1435,6 +1772,19 @@ mod tests {
         assert!(medium.endpoint_clearance_statistics.is_some());
 
         let fixed_rotations = BTreeMap::from([("fixture-instance".to_string(), 90)]);
+        let root = snapshot_propagated_root(
+            input.clone(),
+            EndpointClearanceSchedulingPriority::High,
+            true,
+            false,
+            &fixed_rotations,
+        )
+        .expect("fixed-rotation root snapshot should build");
+        assert_eq!(root.root_status, "root-fixpoint");
+        assert_eq!(root.facilities[0].rotation.ranges, [[90, 90]]);
+        assert_eq!(root.endpoints.len(), 1);
+        assert!(root.clearance_opportunities.is_empty());
+
         let fixed = solve_with_propagated_clearance_and_fixed_rotations(
             input.clone(),
             Duration::from_secs(1),
@@ -1481,6 +1831,37 @@ mod tests {
             counters_disabled.endpoint_clearance_statistics,
             Some(Default::default())
         );
+    }
+
+    #[test]
+    fn cartesian_clearance_oracle_rejects_only_a_point_forced_inside() {
+        let domain = |lower_bound, upper_bound| BottomUpRootIntegerDomain {
+            lower_bound,
+            upper_bound,
+            cardinality: usize::try_from(upper_bound - lower_bound + 1).unwrap(),
+            ranges: vec![[lower_bound, upper_bound]],
+        };
+
+        assert!(!cartesian_domains_can_clear_rectangle(
+            &domain(5, 5),
+            &domain(5, 5),
+            0,
+            0,
+            &domain(4, 4),
+            &domain(4, 4),
+            3,
+            3,
+        ));
+        assert!(cartesian_domains_can_clear_rectangle(
+            &domain(0, 5),
+            &domain(5, 5),
+            0,
+            0,
+            &domain(4, 4),
+            &domain(4, 4),
+            3,
+            3,
+        ));
     }
 
     #[test]

@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::fmt::Write as _;
 use std::num::NonZeroU64;
 use std::path::{Path, PathBuf};
@@ -6,9 +7,11 @@ use std::time::Duration;
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    BottomUpExperimentReport, BottomUpRotationPartitionReport, BottomUpRungKind,
-    BottomUpRungOutcome, BottomUpRungWitness, EndpointClearanceSchedulingPriority,
-    FacilityPlacementRequest, diagnose_bottom_up_rotation_partition, diagnose_bottom_up_rung,
+    BottomUpExperimentReport, BottomUpRootDomainSnapshot, BottomUpRotationPartitionReport,
+    BottomUpRotationRootComparisonReport, BottomUpRungKind, BottomUpRungOutcome,
+    BottomUpRungWitness, EndpointClearanceSchedulingPriority, FacilityPlacementRequest,
+    diagnose_bottom_up_rotation_partition, diagnose_bottom_up_rotation_root_comparison,
+    diagnose_bottom_up_rung,
 };
 use aic_data::localization::{ValidatedLocalizationCatalog, load_localization_catalog};
 use aic_data::logistics::{
@@ -83,6 +86,9 @@ struct Args {
     /// Parallel solver instances used by an exact rotation partition.
     #[arg(long, value_name = "COUNT", default_value_t = 4)]
     partition_workers: usize,
+    /// Observe parent and exact rotation children after root propagation without search decisions.
+    #[arg(long)]
+    partition_root_snapshot: bool,
     /// Benchmark workload manifest JSON file.
     #[arg(long, value_name = "FILE")]
     workload: PathBuf,
@@ -141,6 +147,36 @@ fn run(args: Args) -> Result<bool> {
         .context("bottom-up rung time_limit_ms must be positive")?;
     validate_search_settings(&args)?;
     let loaded = load_inputs(&args)?;
+    if args.partition_root_snapshot {
+        let mut report = diagnose_bottom_up_rotation_root_comparison(
+            &loaded.wiring,
+            &loaded.facilities,
+            &loaded.items,
+            &loaded.transports,
+            &loaded.components,
+            &loaded.placement_request,
+            args.target_phase,
+            &args.partition_facilities,
+            args.endpoint_clearance_priority.into(),
+            !args.disable_endpoint_clearance_counters,
+            args.endpoint_clearance_false_event_filter,
+        )
+        .map_err(|layout| {
+            anyhow::anyhow!("bottom-up rotation root comparison failed: {layout:?}")
+        })?;
+        report.workload_id = Some(loaded.workload_id.clone());
+        report.workload_manifest_sha256 = Some(loaded.workload_manifest_sha256.clone());
+        write_json(&args.output_dir.join("summary.json"), &report)?;
+        write_bytes(
+            &args.output_dir.join("summary.html"),
+            render_rotation_root_html(&report)?.as_bytes(),
+            "bottom-up rotation root comparison HTML evidence",
+        )?;
+        serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+            .context("failed to write bottom-up rotation root comparison report")?;
+        println!();
+        return Ok(report.partition_complete && report.cases_pairwise_disjoint);
+    }
     if !args.partition_facilities.is_empty() {
         let mut report = diagnose_bottom_up_rotation_partition(
             &loaded.wiring,
@@ -205,6 +241,10 @@ fn run(args: Args) -> Result<bool> {
 }
 
 fn validate_search_settings(args: &Args) -> Result<()> {
+    ensure!(
+        !args.partition_root_snapshot || !args.partition_facilities.is_empty(),
+        "partition root snapshot requires at least one --partition-facility"
+    );
     if !args.partition_facilities.is_empty() {
         ensure!(
             matches!(args.rung, RungArg::FacilityPortsPropagated),
@@ -522,6 +562,102 @@ fn render_rotation_partition_html(report: &BottomUpRotationPartitionReport) -> R
     ))
 }
 
+fn render_rotation_root_html(report: &BottomUpRotationRootComparisonReport) -> Result<String> {
+    let selected = report
+        .partitioned_rotation_domains
+        .keys()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let mut rows = String::new();
+    write_rotation_root_row(&mut rows, "parent", "—", &report.parent, &selected)?;
+    for case in &report.cases {
+        let fixed = case
+            .fixed_rotations
+            .iter()
+            .map(|(facility, rotation)| format!("{}={rotation}°", escape_html(facility)))
+            .collect::<Vec<_>>()
+            .join("<br>");
+        write_rotation_root_row(
+            &mut rows,
+            &format!("case {}", case.case_index),
+            &fixed,
+            &case.snapshot,
+            &selected,
+        )?;
+    }
+    let json = escape_html(&serde_json::to_string_pretty(report)?);
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bottom-up rotation root comparison</title><style>body{{margin:24px;background:#07131d;color:#d5e8f5;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:16px}}.certificate{{padding:10px;border:1px solid #65f0bd;color:#65f0bd;margin-bottom:18px}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}details{{margin-top:20px}}pre{{white-space:pre-wrap;word-break:break-word;color:#8fb2c8}}</style></head><body><h1>Bottom-up exact rotation root comparison</h1><div class="meta">Phase {phase}/{total} · {facilities} cumulative facilities · parent + {cases} exact children · clearance={priority:?}, counters={counters}, false-event-filter={filter}</div><div class="certificate">complete={complete} · pairwise-disjoint={disjoint}</div><table><thead><tr><th>model</th><th>fixed rotations</th><th>root status</th><th>root μs</th><th>selected rotation domains</th><th>owned endpoint domains</th><th>clearance opportunities</th><th>current clearance effects</th></tr></thead><tbody>{rows}</tbody></table><details><summary>Machine-readable report</summary><pre>{json}</pre></details></body></html>"#,
+        phase = report.target_phase_index,
+        total = report.total_phase_count,
+        facilities = report.cumulative_facility_count,
+        cases = report.expected_case_count,
+        priority = report.endpoint_clearance_priority,
+        counters = report.endpoint_clearance_counters_enabled,
+        filter = report.endpoint_clearance_false_event_filter_enabled,
+        complete = report.partition_complete,
+        disjoint = report.cases_pairwise_disjoint,
+    ))
+}
+
+fn write_rotation_root_row(
+    rows: &mut String,
+    label: &str,
+    fixed: &str,
+    snapshot: &BottomUpRootDomainSnapshot,
+    selected: &BTreeSet<String>,
+) -> Result<()> {
+    let rotations = snapshot
+        .facilities
+        .iter()
+        .filter(|facility| selected.contains(&facility.instance))
+        .map(|facility| {
+            format!(
+                "{}={:?}",
+                escape_html(&facility.instance),
+                facility.rotation.ranges
+            )
+        })
+        .collect::<Vec<_>>()
+        .join("<br>");
+    let owned = snapshot
+        .endpoints
+        .iter()
+        .filter(|endpoint| selected.contains(&endpoint.instance))
+        .collect::<Vec<_>>();
+    let owned_summary = format!(
+        "{} endpoints · Σport={} · Σlocal={} · Σx={} · Σy={}",
+        owned.len(),
+        owned
+            .iter()
+            .map(|endpoint| endpoint.port_choice.cardinality)
+            .sum::<usize>(),
+        owned
+            .iter()
+            .map(|endpoint| endpoint.local_key.cardinality)
+            .sum::<usize>(),
+        owned
+            .iter()
+            .map(|endpoint| endpoint.connection_x.cardinality)
+            .sum::<usize>(),
+        owned
+            .iter()
+            .map(|endpoint| endpoint.connection_y.cardinality)
+            .sum::<usize>(),
+    );
+    writeln!(
+        rows,
+        "<tr><td>{}</td><td>{fixed}</td><td>{}</td><td>{}</td><td>{rotations}</td><td>{owned_summary}</td><td>{}</td><td>rejected orientations={} · bound updates={}</td></tr>",
+        escape_html(label),
+        snapshot.root_status,
+        snapshot.root_propagation_us,
+        snapshot.clearance_opportunities.len(),
+        snapshot.endpoint_clearance_statistics.rejected_orientations,
+        snapshot.endpoint_clearance_statistics.bound_updates,
+    )?;
+    Ok(())
+}
+
 fn render_grid(output: &mut String, ceiling: [i32; 2], cell: i64) -> Result<()> {
     let width = i64::from(ceiling[0]) * cell;
     let height = i64::from(ceiling[1]) * cell;
@@ -802,6 +938,32 @@ mod tests {
                 .to_string()
                 .contains("rotation partition applies only to rung")
         );
+    }
+
+    #[test]
+    fn parses_a_rotation_root_snapshot_without_a_search_budget_change() {
+        let args = Args::try_parse_from([
+            "aic-bottom-up-ladder",
+            "--rung",
+            "facility-ports-propagated",
+            "--partition-facility",
+            "seed-collector",
+            "--partition-root-snapshot",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "placement.json",
+            "--target-phase",
+            "30",
+            "--time-limit-ms",
+            "5000",
+            "--output-dir",
+            "artifacts",
+        ])
+        .expect("rotation root snapshot should parse");
+
+        assert!(args.partition_root_snapshot);
+        validate_search_settings(&args).expect("root snapshot settings should be accepted");
     }
 
     #[test]
