@@ -22,6 +22,7 @@ mod fixation;
 mod formulation;
 mod grid_analyzer;
 mod hint;
+pub(super) mod ladder;
 mod metrics;
 mod objective;
 mod occupancy_probe;

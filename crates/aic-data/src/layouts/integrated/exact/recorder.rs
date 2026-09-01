@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::ops::{Deref, DerefMut};
 
 use pumpkin_solver::Solver;
+use pumpkin_solver::core::constraints::NegatableConstraint;
 use pumpkin_solver::core::predicates::{Predicate, PredicateConstructor};
 use pumpkin_solver::core::proof::ConstraintTag;
 use pumpkin_solver::core::variables::{AffineView, DomainId, Literal, TransformableVariable};
@@ -321,6 +322,30 @@ impl RecordedModel {
         variable
     }
 
+    pub(super) fn new_named_literal(
+        &mut self,
+        family: VariableFamily,
+        name: impl Into<String>,
+    ) -> Literal {
+        let name = name.into();
+        let literal = self.solver.new_named_literal(name.clone());
+        let variable = *literal.get_integer_variable().inner();
+        self.recorder.variables.insert(
+            variable,
+            VariableRecord {
+                family,
+                name,
+                lower_bound: 0,
+                upper_bound: 1,
+                cardinality: 2,
+                degree: 0,
+                parent: variable,
+                rank: 0,
+            },
+        );
+        literal
+    }
+
     pub(super) fn new_named_literal_for_predicate(
         &mut self,
         family: VariableFamily,
@@ -427,6 +452,27 @@ impl RecordedModel {
         self.solver
             .add_constraint(pumpkin_solver::less_than_or_equals(terms, rhs, tag))
             .implied_by(condition);
+    }
+
+    pub(super) fn post_reified_less_than_or_equals(
+        &mut self,
+        family: ConstraintFamily,
+        terms: Vec<AffineView<DomainId>>,
+        rhs: i32,
+        maximum_absolute_coefficient: u64,
+        result: Literal,
+        result_parent: DomainId,
+        tag: ConstraintTag,
+    ) {
+        let mut recorded_terms = terms.clone();
+        recorded_terms.push(result_parent.scaled(1));
+        self.record_constraint(
+            family,
+            ConstraintRelation::LessThanOrEqual,
+            &recorded_terms,
+            maximum_absolute_coefficient,
+        );
+        pumpkin_solver::less_than_or_equals(terms, rhs, tag).reify(&mut self.solver, result);
     }
 
     pub(super) fn post_implied_equals(

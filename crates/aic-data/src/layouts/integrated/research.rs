@@ -14,6 +14,7 @@ use super::{
     IntegratedLayoutStatus, exact, harness, prepare_exact_model,
 };
 
+mod bottom_up_ladder;
 mod connectivity_witness;
 mod coordinate_partition;
 mod crossing_free;
@@ -31,6 +32,14 @@ mod routing_state_breakdown;
 mod scaled_endpoint_channel;
 mod transport_tile_cap;
 
+pub use super::exact::ladder::{
+    BOTTOM_UP_RUNG_SCHEMA_VERSION, BottomUpRungKind, BottomUpRungOutcome, BottomUpRungReport,
+    BottomUpSemanticCertificate, FacilityGeometryWitness,
+};
+pub use bottom_up_ladder::{
+    BOTTOM_UP_FACILITY_GEOMETRY_EXPERIMENT_SCHEMA_VERSION,
+    BottomUpFacilityGeometryExperimentReport, diagnose_bottom_up_facility_geometry,
+};
 pub use connectivity_witness::{
     CONNECTIVITY_WITNESS_DIAGNOSIS_SCHEMA_VERSION, ConnectivityWitnessCaseKind,
     ConnectivityWitnessCaseReport, ConnectivityWitnessDiagnosisReport,
