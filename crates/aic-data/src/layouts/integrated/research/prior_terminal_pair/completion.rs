@@ -36,6 +36,8 @@ pub use source_port::{
     ExternalBoundaryKeyRootTotals, ExternalBoundaryKeySolveReport,
     ExternalBoundaryKeyStaticCertificate, ExternalBoundarySideCaseReport,
     ExternalBoundarySideDomain, ExternalBoundarySidePartitionReport,
+    GUARDED_CORE_INITIAL_GATE_SCHEMA_VERSION, GuardedCoreAcceptedFixture,
+    GuardedCoreInitialGateReport, GuardedCoreInitialGateStatus,
     MATERIAL_JUNCTION_CONTINUATION_SCHEMA_VERSION, MATERIAL_ROW5_SEPARATOR_SCHEMA_VERSION,
     MATERIAL_SEPARATOR_CUT_SCHEMA_VERSION, MaterialJunctionCaseReport,
     MaterialJunctionContinuationReport, MaterialRow5SeparatorCaseReport,
@@ -51,11 +53,11 @@ pub use source_port::{
     ResidualFacilityPortTuplePortfolioReport, diagnose_boundary_cell_width_sensitivity,
     diagnose_endpoint_continuation_partition, diagnose_endpoint_source_only_control,
     diagnose_external_boundary_cell_partition, diagnose_external_boundary_key_legal_support_ab,
-    diagnose_external_boundary_side_partition, diagnose_material_junction_continuation,
-    diagnose_material_row5_separator, diagnose_material_separator_cut,
-    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
-    diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
-    diagnose_residual_facility_port_tuple_portfolio,
+    diagnose_external_boundary_side_partition, diagnose_guarded_core_initial_gate,
+    diagnose_material_junction_continuation, diagnose_material_row5_separator,
+    diagnose_material_separator_cut, diagnose_prior_input_pair_root_snapshot,
+    diagnose_prior_input_port_controls, diagnose_prior_input_port_pair_portfolio,
+    diagnose_prior_source_port_portfolio, diagnose_residual_facility_port_tuple_portfolio,
 };
 
 pub const PRIOR_TERMINAL_COMPLETION_PORTFOLIO_SCHEMA_VERSION: u32 = 1;

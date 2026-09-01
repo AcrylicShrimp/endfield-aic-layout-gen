@@ -8,10 +8,13 @@ use crate::logistics::TransportKind;
 mod continuation;
 
 pub use continuation::{
+    GUARDED_CORE_INITIAL_GATE_SCHEMA_VERSION, GuardedCoreAcceptedFixture,
+    GuardedCoreInitialGateReport, GuardedCoreInitialGateStatus,
     MATERIAL_JUNCTION_CONTINUATION_SCHEMA_VERSION, MATERIAL_ROW5_SEPARATOR_SCHEMA_VERSION,
     MaterialJunctionCaseReport, MaterialJunctionContinuationReport,
     MaterialRow5SeparatorCaseReport, MaterialRow5SeparatorReport,
-    diagnose_material_junction_continuation, diagnose_material_row5_separator,
+    diagnose_guarded_core_initial_gate, diagnose_material_junction_continuation,
+    diagnose_material_row5_separator,
 };
 
 pub const MATERIAL_SEPARATOR_CUT_SCHEMA_VERSION: u32 = 1;

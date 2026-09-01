@@ -4,6 +4,13 @@ use serde::Serialize;
 
 use super::*;
 
+mod guarded_core;
+
+pub use guarded_core::{
+    GUARDED_CORE_INITIAL_GATE_SCHEMA_VERSION, GuardedCoreAcceptedFixture,
+    GuardedCoreInitialGateReport, GuardedCoreInitialGateStatus, diagnose_guarded_core_initial_gate,
+};
+
 pub const MATERIAL_ROW5_SEPARATOR_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]

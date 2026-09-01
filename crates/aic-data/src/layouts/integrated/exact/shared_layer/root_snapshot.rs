@@ -8,6 +8,7 @@ use pumpkin_solver::core::statistics::StatisticLogger;
 use pumpkin_solver::core::variables::DomainId;
 use serde::Serialize;
 
+use super::guarded_core::{NativePredicateRelation, ResolvedGuardedCoreAtom};
 use super::{
     FactoredEndpointKind, MaterialJunctionArcProbe, MaterialJunctionProbe, MaterialSeparatorProbe,
     ModelInput, ModelInstance, PlacementChoice, SharedLayer, SharedTerminal,
@@ -200,6 +201,16 @@ pub struct RootMaterialJunctionSnapshot {
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct RootGuardedCoreAtomSnapshot {
+    pub stable_id: String,
+    pub domain_id: u32,
+    pub relation: String,
+    pub value: i32,
+    pub domain: RootDomainCardinality,
+    pub predicate_forced_true: bool,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct RootFirstDecisionSnapshot {
     pub domain_id: u32,
     pub semantic_family: String,
@@ -227,6 +238,7 @@ pub struct RootDomainSnapshot {
     pub networks: Vec<RootMaterialNetworkSnapshot>,
     pub material_separators: Vec<RootMaterialSeparatorSnapshot>,
     pub material_junction: Option<RootMaterialJunctionSnapshot>,
+    pub guarded_core_atoms: Vec<RootGuardedCoreAtomSnapshot>,
     pub first_decision: Option<RootFirstDecisionSnapshot>,
 }
 
@@ -254,6 +266,7 @@ impl RootDomainSnapshot {
             networks: Vec::new(),
             material_separators: Vec::new(),
             material_junction: None,
+            guarded_core_atoms: Vec::new(),
             first_decision: None,
         }
     }
@@ -319,6 +332,7 @@ pub(super) struct RootDomainProbe {
     network_items: Vec<String>,
     material_separators: Vec<MaterialSeparatorProbe>,
     material_junction: Option<MaterialJunctionProbe>,
+    guarded_core_atoms: Vec<ResolvedGuardedCoreAtom>,
 }
 
 impl RootDomainProbe {
@@ -333,6 +347,7 @@ impl RootDomainProbe {
         explicitly_fixed_ports: &BTreeMap<String, String>,
         material_separators: &[MaterialSeparatorProbe],
         material_junction: Option<&MaterialJunctionProbe>,
+        guarded_core_atoms: &[ResolvedGuardedCoreAtom],
         variable_catalog: Vec<RecordedVariableDescriptor>,
     ) -> Self {
         let facilities = instances
@@ -436,6 +451,7 @@ impl RootDomainProbe {
                 .collect(),
             material_separators: material_separators.to_vec(),
             material_junction: material_junction.cloned(),
+            guarded_core_atoms: guarded_core_atoms.to_vec(),
         }
     }
 
@@ -454,6 +470,7 @@ impl RootDomainProbe {
         let networks = self.capture_networks(context);
         let material_separators = self.capture_material_separators(context);
         let material_junction = self.capture_material_junction(context);
+        let guarded_core_atoms = self.capture_guarded_core_atoms(context);
         let boundary_cells = (0..self.facility_occupancy.len())
             .filter(|cell| self.is_boundary_cell(*cell))
             .collect::<BTreeSet<_>>();
@@ -513,8 +530,41 @@ impl RootDomainProbe {
             networks,
             material_separators,
             material_junction,
+            guarded_core_atoms,
             first_decision: None,
         }
+    }
+
+    fn capture_guarded_core_atoms(
+        &self,
+        context: &SelectionContext,
+    ) -> Vec<RootGuardedCoreAtomSnapshot> {
+        self.guarded_core_atoms
+            .iter()
+            .map(|atom| {
+                let predicate_forced_true = match atom.relation {
+                    NativePredicateRelation::Equal => {
+                        context.lower_bound(atom.domain) == atom.value
+                            && context.upper_bound(atom.domain) == atom.value
+                    }
+                    NativePredicateRelation::NotEqual => !context.contains(atom.domain, atom.value),
+                    NativePredicateRelation::GreaterThanOrEqual => {
+                        context.lower_bound(atom.domain) >= atom.value
+                    }
+                    NativePredicateRelation::LessThanOrEqual => {
+                        context.upper_bound(atom.domain) <= atom.value
+                    }
+                };
+                RootGuardedCoreAtomSnapshot {
+                    stable_id: atom.certificate.stable_id.clone(),
+                    domain_id: atom.domain.id(),
+                    relation: format!("{:?}", atom.relation),
+                    value: atom.value,
+                    domain: cardinality(context, atom.domain),
+                    predicate_forced_true,
+                }
+            })
+            .collect()
     }
 
     fn capture_material_separators(

@@ -62,9 +62,17 @@ use crate::logistics::{
     CardinalDirection, LogisticsComponentKind, ValidatedLogisticsComponentCatalog,
 };
 
+mod guarded_core;
 mod material_junction;
 mod material_separator;
 mod root_snapshot;
+
+pub(in crate::layouts::integrated) use guarded_core::{
+    GuardedCoreAtom, GuardedCoreBuildCertificate, GuardedCorePosting,
+};
+use guarded_core::{
+    GuardedCoreBuildCertificateCollector, GuardedCoreRequest, GuardedCoreResolutionContext,
+};
 
 use material_junction::{
     MaterialJunctionArcProbe, MaterialJunctionBuildCertificateCollector, MaterialJunctionProbe,
@@ -129,6 +137,7 @@ enum EndpointEncoding {
         material_separator_certificates: Option<MaterialSeparatorBuildCertificateCollector>,
         material_junction_restriction: Option<MaterialJunctionRestriction>,
         material_junction_certificates: Option<MaterialJunctionBuildCertificateCollector>,
+        guarded_core_request: Option<GuardedCoreRequest>,
     },
 }
 
@@ -264,6 +273,16 @@ impl EndpointEncoding {
                 material_junction_certificates,
                 ..
             } => material_junction_certificates.as_ref(),
+            _ => None,
+        }
+    }
+
+    fn guarded_core_request(&self) -> Option<&GuardedCoreRequest> {
+        match self {
+            Self::FactoredSparseSupportBoundaryKeyAudit {
+                guarded_core_request,
+                ..
+            } => guarded_core_request.as_ref(),
             _ => None,
         }
     }
@@ -726,6 +745,152 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_fixed_dimen
     )
 }
 
+pub(in crate::layouts::integrated) fn solve_sparse_support_guarded_core_feasibility(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    prior_solution: Option<&IntegratedLayoutReport>,
+    atoms: Vec<GuardedCoreAtom>,
+    posting: GuardedCorePosting,
+) -> (
+    IntegratedLayoutReport,
+    Vec<GuardedCoreBuildCertificate>,
+    Vec<BoundaryKeyBuildCertificate>,
+    LayerGridAnalyzerStatistics,
+    crate::layouts::integrated::research::EndpointSupportPropagationStatistics,
+) {
+    let (report, guarded, boundary, grid, endpoint, _) =
+        solve_sparse_support_guarded_core_with_search_mode(
+            input,
+            logistics_components,
+            time_limit,
+            prior_solution,
+            atoms,
+            posting,
+            None,
+        );
+    (report, guarded, boundary, grid, endpoint)
+}
+
+pub(in crate::layouts::integrated) fn solve_sparse_support_guarded_core_root_snapshot(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    prior_solution: Option<&IntegratedLayoutReport>,
+    atoms: Vec<GuardedCoreAtom>,
+    posting: GuardedCorePosting,
+) -> (
+    IntegratedLayoutReport,
+    Vec<GuardedCoreBuildCertificate>,
+    Vec<BoundaryKeyBuildCertificate>,
+    LayerGridAnalyzerStatistics,
+    crate::layouts::integrated::research::EndpointSupportPropagationStatistics,
+    Option<RootDomainSnapshot>,
+) {
+    let collector: RootDomainSnapshotCollector = SyncArc::new(Mutex::new(None));
+    let result = solve_sparse_support_guarded_core_with_search_mode(
+        input,
+        logistics_components,
+        time_limit,
+        prior_solution,
+        atoms,
+        posting,
+        Some(SyncArc::clone(&collector)),
+    );
+    result
+}
+
+#[allow(clippy::too_many_arguments)]
+fn solve_sparse_support_guarded_core_with_search_mode(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    prior_solution: Option<&IntegratedLayoutReport>,
+    atoms: Vec<GuardedCoreAtom>,
+    posting: GuardedCorePosting,
+    root_snapshot: Option<RootDomainSnapshotCollector>,
+) -> (
+    IntegratedLayoutReport,
+    Vec<GuardedCoreBuildCertificate>,
+    Vec<BoundaryKeyBuildCertificate>,
+    LayerGridAnalyzerStatistics,
+    crate::layouts::integrated::research::EndpointSupportPropagationStatistics,
+    Option<RootDomainSnapshot>,
+) {
+    let connectivity_counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    let grid_counters = SyncArc::new(LayerGridAnalyzerCounters::default());
+    let endpoint_counters = SyncArc::new(EndpointSupportPropagationCounters::default());
+    let boundary_certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let guarded_core_certificates: GuardedCoreBuildCertificateCollector =
+        SyncArc::new(Mutex::new(Vec::new()));
+    let search_mode = root_snapshot
+        .as_ref()
+        .map_or(SearchMode::FeasibilityOnly, |collector| {
+            SearchMode::FeasibilityOnlyWithRootSnapshot(SyncArc::clone(collector))
+        });
+    let report = solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+            counters: SyncArc::clone(&endpoint_counters),
+            sparse_legal_domain: true,
+            certificates: SyncArc::clone(&boundary_certificates),
+            boundary_key_restriction: None,
+            endpoint_continuation_restriction: None,
+            endpoint_continuation_certificates: None,
+            material_separator_restrictions: Vec::new(),
+            material_separator_certificates: None,
+            material_junction_restriction: None,
+            material_junction_certificates: None,
+            guarded_core_request: Some(GuardedCoreRequest {
+                atoms,
+                posting,
+                certificates: SyncArc::clone(&guarded_core_certificates),
+            }),
+        },
+        prior_solution,
+        search_mode,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters: connectivity_counters,
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
+            grid_analyzer: Some((
+                SyncArc::clone(&grid_counters),
+                LayerGridRule::ForceWatchedDemandUniqueSupportChainAndLocalContinuationWithGuardedIntersectionPropagation,
+            )),
+        },
+    );
+    let guarded_core_certificates = guarded_core_certificates
+        .lock()
+        .expect("guarded-core certificate collector is not poisoned")
+        .clone();
+    let boundary_certificates = boundary_certificates
+        .lock()
+        .expect("boundary-key certificate collector is not poisoned")
+        .clone();
+    let root_snapshot = root_snapshot.and_then(|collector| {
+        collector
+            .lock()
+            .expect("root-domain snapshot collector is not poisoned")
+            .clone()
+    });
+    (
+        report,
+        guarded_core_certificates,
+        boundary_certificates,
+        grid_counters.snapshot(),
+        endpoint_counters.snapshot(),
+        root_snapshot,
+    )
+}
+
 pub(in crate::layouts::integrated) fn solve_tracked_positive_table_endpoints_fixed_dimensions_feasibility_only_with_local_continuation_guarded_intersection_propagation(
     input: ModelInput,
     logistics_components: &ValidatedLogisticsComponentCatalog,
@@ -1085,6 +1250,7 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
             material_separator_certificates: None,
             material_junction_restriction: None,
             material_junction_certificates: None,
+            guarded_core_request: None,
         },
         fixed_dimensions,
         fixed_coordinate,
@@ -1137,6 +1303,7 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
             material_separator_certificates: None,
             material_junction_restriction: None,
             material_junction_certificates: None,
+            guarded_core_request: None,
         },
         fixed_dimensions,
         fixed_coordinate,
@@ -1304,6 +1471,7 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
                 material_separator_certificates: None,
                 material_junction_restriction: None,
                 material_junction_certificates: None,
+                guarded_core_request: None,
             },
             fixed_dimensions,
             fixed_coordinate,
@@ -1370,6 +1538,7 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
                 material_separator_certificates: None,
                 material_junction_restriction: None,
                 material_junction_certificates: None,
+                guarded_core_request: None,
             },
             fixed_dimensions,
             fixed_coordinate,
@@ -1436,6 +1605,7 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
             material_separator_certificates: None,
             material_junction_restriction: None,
             material_junction_certificates: None,
+            guarded_core_request: None,
         },
         fixed_dimensions,
         fixed_coordinate,
@@ -1503,6 +1673,7 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
                 material_separator_certificates: None,
                 material_junction_restriction: None,
                 material_junction_certificates: None,
+                guarded_core_request: None,
             },
             fixed_dimensions,
             fixed_coordinate,
@@ -1576,6 +1747,7 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
             material_separator_certificates: Some(SyncArc::clone(&separator_certificates)),
             material_junction_restriction: None,
             material_junction_certificates: None,
+            guarded_core_request: None,
         },
         fixed_dimensions,
         fixed_coordinate,
@@ -1650,6 +1822,7 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
                 material_separator_certificates: Some(SyncArc::clone(&separator_certificates)),
                 material_junction_restriction: None,
                 material_junction_certificates: None,
+                guarded_core_request: None,
             },
             fixed_dimensions,
             fixed_coordinate,
@@ -1730,6 +1903,7 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
             material_separator_certificates: Some(SyncArc::clone(&separator_certificates)),
             material_junction_restriction: Some(junction),
             material_junction_certificates: Some(SyncArc::clone(&junction_certificates)),
+            guarded_core_request: None,
         },
         fixed_dimensions,
         fixed_coordinate,
@@ -1811,6 +1985,7 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
                 material_separator_certificates: Some(SyncArc::clone(&separator_certificates)),
                 material_junction_restriction: Some(junction),
                 material_junction_certificates: Some(SyncArc::clone(&junction_certificates)),
+                guarded_core_request: None,
             },
             fixed_dimensions,
             fixed_coordinate,
@@ -2893,6 +3068,25 @@ fn solve_with_endpoint_encoding(
         } else {
             None
         };
+    let guarded_core_probes = if let Some(request) = endpoint_encoding.guarded_core_request() {
+        match guarded_core::post_request(
+            &mut solver,
+            GuardedCoreResolutionContext {
+                input: &input,
+                used_bounds,
+                instances: &model_instances,
+                terminals: &model_terminals,
+                layers: &layers,
+            },
+            request,
+            tag,
+        ) {
+            Ok(probes) => probes,
+            Err(diagnostic) => return IntegratedLayoutReport::invalid(diagnostic),
+        }
+    } else {
+        Vec::new()
+    };
     match &connectivity_mode {
         ConnectivityMode::None => {}
         ConnectivityMode::DeclarativeWitness => {
@@ -3005,6 +3199,7 @@ fn solve_with_endpoint_encoding(
                     &explicitly_fixed_ports,
                     &material_separator_probes,
                     material_junction_probe.as_ref(),
+                    &guarded_core_probes,
                     solver.variable_catalog(),
                 ),
                 SyncArc::clone(collector),
@@ -3443,6 +3638,18 @@ fn solve_with_endpoint_encoding(
         EndpointEncoding::FactoredSparseSupport(_) => {
             "joint-shared-v4-sparse-support-endpoints-watched-demand-local-continuation-guarded-intersection-propagation"
         }
+        EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+            sparse_legal_domain: true,
+            guarded_core_request: Some(request),
+            ..
+        } => match request.posting {
+            GuardedCorePosting::Assumptions => {
+                "joint-shared-v4-unrestricted-sparse-boundary-guarded-core-assumptions"
+            }
+            GuardedCorePosting::ReplayClause => {
+                "joint-shared-v4-unrestricted-sparse-boundary-guarded-core-replay"
+            }
+        },
         EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
             sparse_legal_domain: true,
             material_separator_restrictions,

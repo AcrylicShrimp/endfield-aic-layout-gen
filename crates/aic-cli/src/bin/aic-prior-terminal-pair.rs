@@ -7,14 +7,15 @@ use aic_data::layouts::{
     BoundaryCellWidthSensitivityReport, EndpointContinuationPartitionReport,
     EndpointSourceOnlyControlReport, ExternalBoundaryCellPartitionReport,
     ExternalBoundaryKeyLegalSupportAbReport, ExternalBoundarySidePartitionReport,
-    FacilityPlacementRequest, MaterialJunctionContinuationReport, MaterialRow5SeparatorReport,
-    MaterialSeparatorCutReport, PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
-    PriorInputPortPairPortfolioReport, PriorSourcePortPortfolioReport,
-    PriorTerminalCompletionPortfolioReport, PriorTerminalPairValuePortfolioReport,
-    ResidualFacilityPortTuplePortfolioReport, diagnose_boundary_cell_width_sensitivity,
-    diagnose_endpoint_continuation_partition, diagnose_endpoint_source_only_control,
-    diagnose_external_boundary_cell_partition, diagnose_external_boundary_key_legal_support_ab,
-    diagnose_external_boundary_side_partition, diagnose_material_junction_continuation,
+    FacilityPlacementRequest, GuardedCoreInitialGateReport, MaterialJunctionContinuationReport,
+    MaterialRow5SeparatorReport, MaterialSeparatorCutReport, PriorInputPairRootSnapshotReport,
+    PriorInputPortControlsReport, PriorInputPortPairPortfolioReport,
+    PriorSourcePortPortfolioReport, PriorTerminalCompletionPortfolioReport,
+    PriorTerminalPairValuePortfolioReport, ResidualFacilityPortTuplePortfolioReport,
+    diagnose_boundary_cell_width_sensitivity, diagnose_endpoint_continuation_partition,
+    diagnose_endpoint_source_only_control, diagnose_external_boundary_cell_partition,
+    diagnose_external_boundary_key_legal_support_ab, diagnose_external_boundary_side_partition,
+    diagnose_guarded_core_initial_gate, diagnose_material_junction_continuation,
     diagnose_material_row5_separator, diagnose_material_separator_cut,
     diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
     diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
@@ -178,6 +179,11 @@ struct Args {
     material_row5_separator_case_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "MILLISECONDS")]
     material_row5_separator_observation_time_limit_ms: Option<u64>,
+    /// Rebuild the accepted row-5 case-zero premises as native predicates in the unrestricted base.
+    #[arg(long)]
+    guarded_core_initial_gate: bool,
+    #[arg(long, value_name = "MILLISECONDS")]
+    guarded_core_full_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -373,6 +379,14 @@ fn main() -> Result<()> {
                 .material_row5_separator_observation_time_limit_ms
                 .is_some(),
         "--material-row5-separator-observation-time-limit-ms must be supplied exactly when --partition-material-row5-separator is enabled"
+    );
+    ensure!(
+        !args.guarded_core_initial_gate || args.partition_material_row5_separator,
+        "--guarded-core-initial-gate requires --partition-material-row5-separator"
+    );
+    ensure!(
+        args.guarded_core_initial_gate == args.guarded_core_full_time_limit_ms.is_some(),
+        "--guarded-core-full-time-limit-ms must be supplied exactly when --guarded-core-initial-gate is enabled"
     );
     let terminal_bits = parse_terminal_pair(&args.terminal_pair)?;
     let worker_count = NonZeroUsize::new(args.worker_count)
@@ -949,6 +963,115 @@ fn run_input_pair(
                                         .context(
                                             "row-5 separator observation case time limit must be positive",
                                         )?;
+                                        if args.guarded_core_initial_gate {
+                                            let full_core_budget = NonZeroU64::new(
+                                                args.guarded_core_full_time_limit_ms.context(
+                                                    "guarded-core initial gate requires --guarded-core-full-time-limit-ms",
+                                                )?,
+                                            )
+                                            .context(
+                                                "guarded-core full-model time limit must be positive",
+                                            )?;
+                                            let report = diagnose_guarded_core_initial_gate(
+                                                &loaded.wiring,
+                                                &loaded.facilities,
+                                                &loaded.items,
+                                                &loaded.transports,
+                                                &loaded.components,
+                                                &loaded.placement_request,
+                                                args.target_phase,
+                                                args.used_width,
+                                                args.used_height,
+                                                args.facility_x,
+                                                args.facility_y,
+                                                args.port_assignment_index,
+                                                args.facility_rotation,
+                                                args.prior_facility_bit,
+                                                terminal_bits,
+                                                representative_source_leaf_index,
+                                                worker_count.get(),
+                                                Duration::from_millis(prefix_budget.get()),
+                                                Duration::from_millis(pair_budget.get()),
+                                                Duration::from_millis(completion_budget.get()),
+                                                Duration::from_millis(source_budget.get()),
+                                                Duration::from_millis(control_budget.get()),
+                                                Duration::from_millis(residual_pair_budget.get()),
+                                                Duration::from_millis(
+                                                    parent_observation_budget.get(),
+                                                ),
+                                                Duration::from_millis(authoritative_budget.get()),
+                                                Duration::from_millis(observation_budget.get()),
+                                                Duration::from_millis(
+                                                    ab_authoritative_budget.get(),
+                                                ),
+                                                Duration::from_millis(ab_observation_budget.get()),
+                                                Duration::from_millis(
+                                                    side_authoritative_budget.get(),
+                                                ),
+                                                Duration::from_millis(
+                                                    side_observation_budget.get(),
+                                                ),
+                                                Duration::from_millis(
+                                                    cell_authoritative_budget.get(),
+                                                ),
+                                                Duration::from_millis(
+                                                    cell_observation_budget.get(),
+                                                ),
+                                                args.endpoint_continuation_network
+                                                    .clone()
+                                                    .context(
+                                                        "endpoint-continuation network is required",
+                                                    )?,
+                                                Duration::from_millis(
+                                                    continuation_authoritative_budget.get(),
+                                                ),
+                                                Duration::from_millis(
+                                                    continuation_observation_budget.get(),
+                                                ),
+                                                Duration::from_millis(
+                                                    source_only_authoritative_budget.get(),
+                                                ),
+                                                Duration::from_millis(
+                                                    source_only_observation_budget.get(),
+                                                ),
+                                                Duration::from_millis(
+                                                    separator_authoritative_budget.get(),
+                                                ),
+                                                Duration::from_millis(
+                                                    separator_observation_budget.get(),
+                                                ),
+                                                Duration::from_millis(
+                                                    junction_authoritative_budget.get(),
+                                                ),
+                                                Duration::from_millis(
+                                                    junction_observation_budget.get(),
+                                                ),
+                                                Duration::from_millis(
+                                                    row5_authoritative_budget.get(),
+                                                ),
+                                                Duration::from_millis(
+                                                    row5_observation_budget.get(),
+                                                ),
+                                                Duration::from_millis(full_core_budget.get()),
+                                            )
+                                            .map_err(|report| {
+                                                anyhow::anyhow!(
+                                                    "guarded-core initial gate failed: {report:?}"
+                                                )
+                                            })?;
+                                            write_guarded_core_initial_gate_artifacts(
+                                                args, loaded, &report,
+                                            )?;
+                                            serde_json::to_writer_pretty(
+                                                std::io::stdout().lock(),
+                                                &report,
+                                            )
+                                            .context(
+                                                "failed to write guarded-core initial-gate report",
+                                            )?;
+                                            println!();
+                                            return Ok(());
+                                        }
                                         let report = diagnose_material_row5_separator(
                                             &loaded.wiring,
                                             &loaded.facilities,
@@ -2018,6 +2141,70 @@ fn write_material_row5_artifacts(
             )?;
         }
     }
+    Ok(())
+}
+
+fn write_guarded_core_initial_gate_artifacts(
+    args: &Args,
+    loaded: &LoadedInputs,
+    report: &GuardedCoreInitialGateReport,
+) -> Result<()> {
+    write_json(&args.output_dir.join("summary.json"), report)?;
+    write_bytes(
+        &args.output_dir.join("summary.html"),
+        render_guarded_core_initial_gate_summary(report)?.as_bytes(),
+        "guarded-core initial-gate summary",
+    )?;
+    let html = render_integrated_layout_html_with_localization(
+        &report.full_core_layout,
+        loaded.localization.as_ref(),
+    )
+    .map_err(|diagnostic| {
+        anyhow::anyhow!(
+            "guarded-core full-model visualization failed with {}: {}",
+            diagnostic.code,
+            diagnostic.message
+        )
+    })?;
+    write_bytes(
+        &args.output_dir.join("initial-full-core.authoritative.html"),
+        html.as_bytes(),
+        "guarded-core full-model layout",
+    )?;
+    let observation_html = render_integrated_layout_html_with_localization(
+        &report.observation_layout,
+        loaded.localization.as_ref(),
+    )
+    .map_err(|diagnostic| {
+        anyhow::anyhow!(
+            "guarded-core observation visualization failed with {}: {}",
+            diagnostic.code,
+            diagnostic.message
+        )
+    })?;
+    write_bytes(
+        &args.output_dir.join("initial-full-core.observation.html"),
+        observation_html.as_bytes(),
+        "guarded-core observation layout",
+    )?;
+    let control_html = render_integrated_layout_html_with_localization(
+        &report.control_layout,
+        loaded.localization.as_ref(),
+    )
+    .map_err(|diagnostic| {
+        anyhow::anyhow!(
+            "guarded-core unrestricted-control visualization failed with {}: {}",
+            diagnostic.code,
+            diagnostic.message
+        )
+    })?;
+    write_bytes(
+        &args
+            .output_dir
+            .join("unrestricted-control.observation.html"),
+        control_html.as_bytes(),
+        "guarded-core unrestricted-control layout",
+    )?;
     Ok(())
 }
 
@@ -3479,6 +3666,53 @@ fn render_material_row5_summary(report: &MaterialRow5SeparatorReport) -> Result<
     ))
 }
 
+fn render_guarded_core_initial_gate_summary(
+    report: &GuardedCoreInitialGateReport,
+) -> Result<String> {
+    let atoms = report
+        .atom_ids
+        .iter()
+        .enumerate()
+        .map(|(index, atom)| format!("<tr><td>{index}</td><td><code>{atom}</code></td></tr>"))
+        .collect::<String>();
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Guarded core initial gate</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.gate{{border:1px solid #315066;padding:12px}}.pass{{color:#65f0bd}}.block{{color:#ff6b9d}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left}}th{{background:#102535;color:#8fd9ff}}code,a{{color:#ffd166}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {phase} guarded-core initial proof gate</h1><div class="meta">fixture=<code>{fixture}</code> · ceiling={width}×{height} · budget={budget}ms · authoritative={outcome:?} · observation={observation:?} · atom-free control={control:?} · status={status:?} · total={total}ms</div><div class="gate {class}">accepted fixture={fixture_ok} · atom contract={atoms_ok} · unique={unique} · categories=placement {placements} / ports {ports} / route {routes} · native certificate={certificate} · unrestricted boundary={boundary} · root predicates={root} · model identity={identity} · exact 30-clause delta={delta} · observation compatible={compatible} · control valid={control_valid} · proven infeasible={proven} · blocked={blocked}</div><p><a href="initial-full-core.authoritative.html">Authoritative</a> · <a href="initial-full-core.observation.html">Root observation</a> · <a href="unrestricted-control.observation.html">Atom-free control</a></p><table><thead><tr><th>#</th><th>native premise</th></tr></thead><tbody>{atom_rows}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={json};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        phase = report.target_phase_index,
+        fixture = report.fixture_id,
+        width = report.search_ceiling[0],
+        height = report.search_ceiling[1],
+        budget = report.search_budget_ms,
+        outcome = report.full_core_outcome,
+        observation = report.observation_outcome,
+        control = report.control_outcome,
+        status = report.gate_status,
+        total = report.total_wall_ms,
+        class = if report.interpretation_blocked {
+            "block"
+        } else {
+            "pass"
+        },
+        atoms_ok = report.atom_count_satisfied,
+        fixture_ok = report.accepted_semantic_fixture_satisfied,
+        unique = report.atom_ids_unique,
+        placements = report.placement_atom_count,
+        ports = report.facility_port_atom_count,
+        routes = report.route_atom_count,
+        certificate = report.guarded_core_certificate_satisfied,
+        boundary = report.unrestricted_boundary_certificate_satisfied,
+        root = report.root_predicates_satisfied,
+        identity = report.model_identity_satisfied,
+        delta = report.guarded_core_delta_satisfied,
+        compatible = report.observation_evidence_compatible,
+        control_valid = report.control_evidence_valid,
+        proven = report.full_core_proven_infeasible,
+        blocked = report.interpretation_blocked,
+        atom_rows = atoms,
+        json = json,
+    ))
+}
+
 fn write_json(path: &Path, report: &impl serde::Serialize) -> Result<()> {
     let encoded = serde_json::to_vec_pretty(report).context("failed to serialize report")?;
     write_bytes(path, &encoded, "prior-terminal pair report")
@@ -3626,6 +3860,9 @@ mod tests {
             "5000",
             "--material-row5-separator-observation-time-limit-ms",
             "5000",
+            "--guarded-core-initial-gate",
+            "--guarded-core-full-time-limit-ms",
+            "5000",
             "--output-dir",
             "out",
         ])
@@ -3654,5 +3891,7 @@ mod tests {
             args.material_row5_separator_observation_time_limit_ms,
             Some(5000)
         );
+        assert!(args.guarded_core_initial_gate);
+        assert_eq!(args.guarded_core_full_time_limit_ms, Some(5000));
     }
 }

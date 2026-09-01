@@ -7,8 +7,11 @@ use super::*;
 mod row5;
 
 pub use row5::{
+    GUARDED_CORE_INITIAL_GATE_SCHEMA_VERSION, GuardedCoreAcceptedFixture,
+    GuardedCoreInitialGateReport, GuardedCoreInitialGateStatus,
     MATERIAL_ROW5_SEPARATOR_SCHEMA_VERSION, MaterialRow5SeparatorCaseReport,
-    MaterialRow5SeparatorReport, diagnose_material_row5_separator,
+    MaterialRow5SeparatorReport, diagnose_guarded_core_initial_gate,
+    diagnose_material_row5_separator,
 };
 
 pub const MATERIAL_JUNCTION_CONTINUATION_SCHEMA_VERSION: u32 = 1;
