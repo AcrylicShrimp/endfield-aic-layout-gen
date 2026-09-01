@@ -129,6 +129,41 @@ enum Separation {
     Below,
 }
 
+impl Separation {
+    const ALL: [Self; 4] = [Self::Left, Self::Right, Self::Above, Self::Below];
+
+    const fn bit(self) -> u8 {
+        match self {
+            Self::Left => 1 << 0,
+            Self::Right => 1 << 1,
+            Self::Above => 1 << 2,
+            Self::Below => 1 << 3,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct SeparationMask(u8);
+
+impl SeparationMask {
+    fn insert(&mut self, separation: Separation) {
+        self.0 |= separation.bit();
+    }
+
+    const fn is_empty(self) -> bool {
+        self.0 == 0
+    }
+
+    fn unique(self) -> Option<Separation> {
+        if self.0.count_ones() != 1 {
+            return None;
+        }
+        Separation::ALL
+            .into_iter()
+            .find(|separation| self.0 == separation.bit())
+    }
+}
+
 #[derive(Clone, Copy)]
 struct Bounds {
     connection_x_lower: i32,
@@ -158,19 +193,19 @@ impl EndpointRectangleClearancePropagator {
     fn possible_separations(
         bounds: Bounds,
         orientation: EndpointClearanceOrientation,
-    ) -> Vec<Separation> {
-        let mut possible = Vec::with_capacity(4);
+    ) -> SeparationMask {
+        let mut possible = SeparationMask::default();
         if bounds.connection_x_lower < bounds.facility_x_upper {
-            possible.push(Separation::Left);
+            possible.insert(Separation::Left);
         }
         if bounds.connection_x_upper >= bounds.facility_x_lower + orientation.width {
-            possible.push(Separation::Right);
+            possible.insert(Separation::Right);
         }
         if bounds.connection_y_lower < bounds.facility_y_upper {
-            possible.push(Separation::Above);
+            possible.insert(Separation::Above);
         }
         if bounds.connection_y_upper >= bounds.facility_y_lower + orientation.height {
-            possible.push(Separation::Below);
+            possible.insert(Separation::Below);
         }
         possible
     }
@@ -205,15 +240,10 @@ impl EndpointRectangleClearancePropagator {
     }
 
     fn all_impossible_reason(&self, bounds: Bounds) -> PropositionalConjunction {
-        let predicates = [
-            Separation::Left,
-            Separation::Right,
-            Separation::Above,
-            Separation::Below,
-        ]
-        .into_iter()
-        .flat_map(|separation| self.impossible_reason(bounds, separation))
-        .collect();
+        let predicates = Separation::ALL
+            .into_iter()
+            .flat_map(|separation| self.impossible_reason(bounds, separation))
+            .collect();
         PropositionalConjunction::new(predicates)
     }
 
@@ -225,12 +255,7 @@ impl EndpointRectangleClearancePropagator {
         supporting_bound: Predicate,
     ) -> PropositionalConjunction {
         let mut predicates = vec![orientation.selected.get_true_predicate(), supporting_bound];
-        for separation in [
-            Separation::Left,
-            Separation::Right,
-            Separation::Above,
-            Separation::Below,
-        ] {
+        for separation in Separation::ALL {
             if separation != forced {
                 predicates.extend(self.impossible_reason(bounds, separation));
             }
@@ -399,6 +424,7 @@ impl EndpointRectangleClearancePropagator {
 
     fn propagate_all(&self, context: &mut PropagationContext) -> PropagationStatusCP {
         self.counters.executions.fetch_add(1, Ordering::Relaxed);
+        let bounds = self.bounds(context);
         for orientation in &self.orientations {
             if context.evaluate_predicate(orientation.selected.get_false_predicate()) == Some(true)
             {
@@ -407,7 +433,6 @@ impl EndpointRectangleClearancePropagator {
             self.counters
                 .orientation_checks
                 .fetch_add(1, Ordering::Relaxed);
-            let bounds = self.bounds(context);
             let possible = Self::possible_separations(bounds, *orientation);
             if possible.is_empty() {
                 let reason = self.all_impossible_reason(bounds);
@@ -422,11 +447,11 @@ impl EndpointRectangleClearancePropagator {
                     self.counters.conflicts.fetch_add(1, Ordering::Relaxed);
                     return Err(conflict.into());
                 }
-            } else if possible.len() == 1
-                && context.evaluate_predicate(orientation.selected.get_true_predicate())
-                    == Some(true)
+            } else if context.evaluate_predicate(orientation.selected.get_true_predicate())
+                == Some(true)
+                && let Some(forced) = possible.unique()
             {
-                self.force_separation(context, bounds, *orientation, possible[0])?;
+                self.force_separation(context, bounds, *orientation, forced)?;
             }
         }
         Ok(())
