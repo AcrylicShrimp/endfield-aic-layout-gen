@@ -4,6 +4,10 @@ use serde::Serialize;
 
 use super::*;
 
+mod separator_cut;
+
+pub use separator_cut::*;
+
 pub const ENDPOINT_SOURCE_ONLY_CONTROL_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]

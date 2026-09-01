@@ -38,6 +38,7 @@ pub use pair::{
     ExternalBoundaryKeyRootTotals, ExternalBoundaryKeySolveReport,
     ExternalBoundaryKeyStaticCertificate, ExternalBoundarySideCaseReport,
     ExternalBoundarySideDomain, ExternalBoundarySidePartitionReport,
+    MATERIAL_SEPARATOR_CUT_SCHEMA_VERSION, MaterialSeparatorCaseReport, MaterialSeparatorCutReport,
     PRIOR_INPUT_PAIR_ROOT_SNAPSHOT_SCHEMA_VERSION, PRIOR_INPUT_PORT_PAIR_PORTFOLIO_SCHEMA_VERSION,
     PriorInputPairRootSnapshotReport, PriorInputPortPairCaseReport,
     PriorInputPortPairPortfolioReport, PriorInputPortProofExclusion, PriorInputPortResidualDomain,
@@ -46,8 +47,9 @@ pub use pair::{
     ResidualFacilityPortTuplePortfolioReport, diagnose_boundary_cell_width_sensitivity,
     diagnose_endpoint_continuation_partition, diagnose_endpoint_source_only_control,
     diagnose_external_boundary_cell_partition, diagnose_external_boundary_key_legal_support_ab,
-    diagnose_external_boundary_side_partition, diagnose_prior_input_pair_root_snapshot,
-    diagnose_prior_input_port_pair_portfolio, diagnose_residual_facility_port_tuple_portfolio,
+    diagnose_external_boundary_side_partition, diagnose_material_separator_cut,
+    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_pair_portfolio,
+    diagnose_residual_facility_port_tuple_portfolio,
 };
 
 pub const PRIOR_INPUT_PORT_CONTROLS_SCHEMA_VERSION: u32 = 1;

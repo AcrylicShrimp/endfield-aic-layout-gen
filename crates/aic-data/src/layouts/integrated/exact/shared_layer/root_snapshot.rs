@@ -9,14 +9,14 @@ use pumpkin_solver::core::variables::DomainId;
 use serde::Serialize;
 
 use super::{
-    FactoredEndpointKind, ModelInput, ModelInstance, PlacementChoice, SharedLayer, SharedTerminal,
-    SharedTerminalEndpoint, TransportKind, direction_between, direction_index, edge_direction,
-    geometry_key, opposite_direction,
+    FactoredEndpointKind, MaterialSeparatorProbe, ModelInput, ModelInstance, PlacementChoice,
+    SharedLayer, SharedTerminal, SharedTerminalEndpoint, TransportKind, direction_between,
+    direction_index, edge_direction, geometry_key, opposite_direction,
 };
 use crate::facilities::FacilityPortDirection;
 use crate::layouts::integrated::exact::recorder::RecordedVariableDescriptor;
 
-pub const ROOT_DOMAIN_SNAPSHOT_SCHEMA_VERSION: u32 = 4;
+pub const ROOT_DOMAIN_SNAPSHOT_SCHEMA_VERSION: u32 = 5;
 
 pub(in crate::layouts::integrated) type RootDomainSnapshotCollector =
     SyncArc<Mutex<Option<RootDomainSnapshot>>>;
@@ -147,6 +147,31 @@ pub struct RootMaterialNetworkSnapshot {
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct RootMaterialSeparatorArcSnapshot {
+    pub case_index: usize,
+    pub from: usize,
+    pub to: usize,
+    pub route_selected: RootDomainCardinality,
+    pub flow: RootDomainCardinality,
+    pub from_item: RootDomainCardinality,
+    pub from_item_values: Vec<i32>,
+    pub selected_item_code: i32,
+    pub selected_item_possible: bool,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct RootMaterialSeparatorSnapshot {
+    pub network_id: String,
+    pub network_index: usize,
+    pub transport: TransportKind,
+    pub item: String,
+    pub selected_item_code: i32,
+    pub separator_after_row: usize,
+    pub selected_case_index: Option<usize>,
+    pub candidates: Vec<RootMaterialSeparatorArcSnapshot>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct RootFirstDecisionSnapshot {
     pub domain_id: u32,
     pub semantic_family: String,
@@ -172,6 +197,7 @@ pub struct RootDomainSnapshot {
     pub terminals: Vec<RootTerminalDomainSnapshot>,
     pub layers: Vec<RootTransportLayerSnapshot>,
     pub networks: Vec<RootMaterialNetworkSnapshot>,
+    pub material_separator: Option<RootMaterialSeparatorSnapshot>,
     pub first_decision: Option<RootFirstDecisionSnapshot>,
 }
 
@@ -197,6 +223,7 @@ impl RootDomainSnapshot {
             terminals: Vec::new(),
             layers: Vec::new(),
             networks: Vec::new(),
+            material_separator: None,
             first_decision: None,
         }
     }
@@ -260,6 +287,7 @@ pub(super) struct RootDomainProbe {
     variable_descriptors: BTreeMap<DomainId, RecordedVariableDescriptor>,
     network_ids: Vec<String>,
     network_items: Vec<String>,
+    material_separator: Option<MaterialSeparatorProbe>,
 }
 
 impl RootDomainProbe {
@@ -272,6 +300,7 @@ impl RootDomainProbe {
         layers: &[SharedLayer],
         facility_occupancy: &[DomainId],
         explicitly_fixed_ports: &BTreeMap<String, String>,
+        material_separator: Option<&MaterialSeparatorProbe>,
         variable_catalog: Vec<RecordedVariableDescriptor>,
     ) -> Self {
         let facilities = instances
@@ -373,6 +402,7 @@ impl RootDomainProbe {
                 .iter()
                 .map(|network| network.item().to_string())
                 .collect(),
+            material_separator: material_separator.cloned(),
         }
     }
 
@@ -389,6 +419,7 @@ impl RootDomainProbe {
         let terminals = self.capture_terminals(context);
         let layers = self.capture_layers(context);
         let networks = self.capture_networks(context);
+        let material_separator = self.capture_material_separator(context);
         let boundary_cells = (0..self.facility_occupancy.len())
             .filter(|cell| self.is_boundary_cell(*cell))
             .collect::<BTreeSet<_>>();
@@ -446,8 +477,46 @@ impl RootDomainProbe {
             terminals,
             layers,
             networks,
+            material_separator,
             first_decision: None,
         }
+    }
+
+    fn capture_material_separator(
+        &self,
+        context: &SelectionContext,
+    ) -> Option<RootMaterialSeparatorSnapshot> {
+        self.material_separator.as_ref().map(|probe| {
+            let candidates = probe
+                .candidates
+                .iter()
+                .map(|candidate| {
+                    let from_item_values = domain_values(context, candidate.from_item);
+                    RootMaterialSeparatorArcSnapshot {
+                        case_index: candidate.case_index,
+                        from: candidate.from,
+                        to: candidate.to,
+                        route_selected: cardinality(context, candidate.route_selected),
+                        flow: cardinality(context, candidate.flow),
+                        from_item: cardinality(context, candidate.from_item),
+                        selected_item_possible: from_item_values
+                            .contains(&candidate.selected_item_code),
+                        from_item_values,
+                        selected_item_code: candidate.selected_item_code,
+                    }
+                })
+                .collect();
+            RootMaterialSeparatorSnapshot {
+                network_id: probe.network_id.clone(),
+                network_index: probe.network_index,
+                transport: probe.transport,
+                item: probe.item.clone(),
+                selected_item_code: probe.selected_item_code,
+                separator_after_row: probe.separator_after_row,
+                selected_case_index: probe.selected_case_index,
+                candidates,
+            }
+        })
     }
 
     fn capture_variable_families(

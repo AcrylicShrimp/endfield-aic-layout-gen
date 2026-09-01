@@ -7,13 +7,14 @@ use aic_data::layouts::{
     BoundaryCellWidthSensitivityReport, EndpointContinuationPartitionReport,
     EndpointSourceOnlyControlReport, ExternalBoundaryCellPartitionReport,
     ExternalBoundaryKeyLegalSupportAbReport, ExternalBoundarySidePartitionReport,
-    FacilityPlacementRequest, PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
-    PriorInputPortPairPortfolioReport, PriorSourcePortPortfolioReport,
-    PriorTerminalCompletionPortfolioReport, PriorTerminalPairValuePortfolioReport,
-    ResidualFacilityPortTuplePortfolioReport, diagnose_boundary_cell_width_sensitivity,
-    diagnose_endpoint_continuation_partition, diagnose_endpoint_source_only_control,
-    diagnose_external_boundary_cell_partition, diagnose_external_boundary_key_legal_support_ab,
-    diagnose_external_boundary_side_partition, diagnose_prior_input_pair_root_snapshot,
+    FacilityPlacementRequest, MaterialSeparatorCutReport, PriorInputPairRootSnapshotReport,
+    PriorInputPortControlsReport, PriorInputPortPairPortfolioReport,
+    PriorSourcePortPortfolioReport, PriorTerminalCompletionPortfolioReport,
+    PriorTerminalPairValuePortfolioReport, ResidualFacilityPortTuplePortfolioReport,
+    diagnose_boundary_cell_width_sensitivity, diagnose_endpoint_continuation_partition,
+    diagnose_endpoint_source_only_control, diagnose_external_boundary_cell_partition,
+    diagnose_external_boundary_key_legal_support_ab, diagnose_external_boundary_side_partition,
+    diagnose_material_separator_cut, diagnose_prior_input_pair_root_snapshot,
     diagnose_prior_input_port_controls, diagnose_prior_input_port_pair_portfolio,
     diagnose_prior_source_port_portfolio, diagnose_prior_terminal_completion_portfolio,
     diagnose_prior_terminal_pair_value_portfolio, diagnose_residual_facility_port_tuple_portfolio,
@@ -152,6 +153,15 @@ struct Args {
     endpoint_source_only_case_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "MILLISECONDS")]
     endpoint_source_only_observation_time_limit_ms: Option<u64>,
+    /// Partition the first selected-material crossing of a complete horizontal separator exactly.
+    #[arg(long)]
+    partition_material_separator: bool,
+    #[arg(long, value_name = "ROW")]
+    material_separator_after_row: Option<usize>,
+    #[arg(long, value_name = "MILLISECONDS")]
+    material_separator_case_time_limit_ms: Option<u64>,
+    #[arg(long, value_name = "MILLISECONDS")]
+    material_separator_observation_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -297,6 +307,23 @@ fn main() -> Result<()> {
                 .endpoint_source_only_observation_time_limit_ms
                 .is_some(),
         "--endpoint-source-only-observation-time-limit-ms must be supplied exactly when --control-endpoint-source-only is enabled"
+    );
+    ensure!(
+        !args.partition_material_separator || args.control_endpoint_source_only,
+        "--partition-material-separator requires --control-endpoint-source-only"
+    );
+    ensure!(
+        args.partition_material_separator == args.material_separator_after_row.is_some(),
+        "--material-separator-after-row must be supplied exactly when --partition-material-separator is enabled"
+    );
+    ensure!(
+        args.partition_material_separator == args.material_separator_case_time_limit_ms.is_some(),
+        "--material-separator-case-time-limit-ms must be supplied exactly when --partition-material-separator is enabled"
+    );
+    ensure!(
+        args.partition_material_separator
+            == args.material_separator_observation_time_limit_ms.is_some(),
+        "--material-separator-observation-time-limit-ms must be supplied exactly when --partition-material-separator is enabled"
     );
     let terminal_bits = parse_terminal_pair(&args.terminal_pair)?;
     let worker_count = NonZeroUsize::new(args.worker_count)
@@ -812,6 +839,88 @@ fn run_input_pair(
                             .context(
                                 "source-only observation case time limit must be positive",
                             )?;
+                            if args.partition_material_separator {
+                                let separator_authoritative_budget = NonZeroU64::new(
+                                    args.material_separator_case_time_limit_ms.context(
+                                        "material-separator partition requires --material-separator-case-time-limit-ms",
+                                    )?,
+                                )
+                                .context(
+                                    "material-separator authoritative case time limit must be positive",
+                                )?;
+                                let separator_observation_budget = NonZeroU64::new(
+                                    args.material_separator_observation_time_limit_ms.context(
+                                        "material-separator partition requires --material-separator-observation-time-limit-ms",
+                                    )?,
+                                )
+                                .context(
+                                    "material-separator observation case time limit must be positive",
+                                )?;
+                                let report = diagnose_material_separator_cut(
+                                    &loaded.wiring,
+                                    &loaded.facilities,
+                                    &loaded.items,
+                                    &loaded.transports,
+                                    &loaded.components,
+                                    &loaded.placement_request,
+                                    args.target_phase,
+                                    args.used_width,
+                                    args.used_height,
+                                    args.facility_x,
+                                    args.facility_y,
+                                    args.port_assignment_index,
+                                    args.facility_rotation,
+                                    args.prior_facility_bit,
+                                    terminal_bits,
+                                    representative_source_leaf_index,
+                                    worker_count.get(),
+                                    Duration::from_millis(prefix_budget.get()),
+                                    Duration::from_millis(pair_budget.get()),
+                                    Duration::from_millis(completion_budget.get()),
+                                    Duration::from_millis(source_budget.get()),
+                                    Duration::from_millis(control_budget.get()),
+                                    Duration::from_millis(residual_pair_budget.get()),
+                                    Duration::from_millis(parent_observation_budget.get()),
+                                    Duration::from_millis(authoritative_budget.get()),
+                                    Duration::from_millis(observation_budget.get()),
+                                    Duration::from_millis(ab_authoritative_budget.get()),
+                                    Duration::from_millis(ab_observation_budget.get()),
+                                    Duration::from_millis(side_authoritative_budget.get()),
+                                    Duration::from_millis(side_observation_budget.get()),
+                                    Duration::from_millis(cell_authoritative_budget.get()),
+                                    Duration::from_millis(cell_observation_budget.get()),
+                                    args.endpoint_continuation_network
+                                        .clone()
+                                        .context("endpoint-continuation network is required")?,
+                                    Duration::from_millis(
+                                        continuation_authoritative_budget.get(),
+                                    ),
+                                    Duration::from_millis(
+                                        continuation_observation_budget.get(),
+                                    ),
+                                    Duration::from_millis(
+                                        source_only_authoritative_budget.get(),
+                                    ),
+                                    Duration::from_millis(
+                                        source_only_observation_budget.get(),
+                                    ),
+                                    args.material_separator_after_row.context(
+                                        "material-separator partition requires --material-separator-after-row",
+                                    )?,
+                                    Duration::from_millis(separator_authoritative_budget.get()),
+                                    Duration::from_millis(separator_observation_budget.get()),
+                                )
+                                .map_err(|report| {
+                                    anyhow::anyhow!(
+                                        "material-separator partition failed: {report:?}"
+                                    )
+                                })?;
+                                write_material_separator_artifacts(args, loaded, &report)?;
+                                serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+                                    .context("failed to write material-separator report")?;
+                                println!();
+                                return Ok(());
+                            }
                             let report = diagnose_endpoint_source_only_control(
                                 &loaded.wiring,
                                 &loaded.facilities,
@@ -1528,6 +1637,51 @@ fn write_endpoint_source_only_artifacts(
                     .join(format!("case-{}.{kind}.html", case.case_index)),
                 html.as_bytes(),
                 "endpoint source-only layout",
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn write_material_separator_artifacts(
+    args: &Args,
+    loaded: &LoadedInputs,
+    report: &MaterialSeparatorCutReport,
+) -> Result<()> {
+    write_json(&args.output_dir.join("summary.json"), report)?;
+    write_bytes(
+        &args.output_dir.join("summary.html"),
+        render_material_separator_summary(report)?.as_bytes(),
+        "material-separator summary",
+    )?;
+    let cases = std::iter::once((&report.control, "control".to_string())).chain(
+        report.cases.iter().map(|case| {
+            (
+                case,
+                format!("case-{}", case.case_index.expect("child case index")),
+            )
+        }),
+    );
+    for (case, stem) in cases {
+        for (kind, layout) in [
+            ("authoritative", &case.solve.authoritative_layout),
+            ("observation", &case.solve.observation_layout),
+        ] {
+            let html = render_integrated_layout_html_with_localization(
+                layout,
+                loaded.localization.as_ref(),
+            )
+            .map_err(|diagnostic| {
+                anyhow::anyhow!(
+                    "material-separator {stem} {kind} visualization failed with {}: {}",
+                    diagnostic.code,
+                    diagnostic.message
+                )
+            })?;
+            write_bytes(
+                &args.output_dir.join(format!("{stem}.{kind}.html")),
+                html.as_bytes(),
+                "material-separator layout",
             )?;
         }
     }
@@ -2782,6 +2936,86 @@ fn render_endpoint_source_only_summary(report: &EndpointSourceOnlyControlReport)
     ))
 }
 
+fn render_material_separator_summary(report: &MaterialSeparatorCutReport) -> Result<String> {
+    let candidate_rows = report
+        .candidates
+        .iter()
+        .enumerate()
+        .map(|(index, arc)| {
+            format!(
+                "<tr><td>{index}</td><td>{}→{}</td><td>{}</td></tr>",
+                arc[0], arc[1], index
+            )
+        })
+        .collect::<String>();
+    let control_row = format!(
+        "<tr><td>control</td><td>unrestricted</td><td>{:?}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td><a href=\"control.authoritative.html\">solve</a> · <a href=\"control.observation.html\">root</a></td></tr>",
+        report.control.solve.combined_outcome,
+        report.control.solve.search_ms,
+        report.control.solve.search_statistics.branch_decisions,
+        report.control.solve.search_statistics.conflicts,
+        report.control.solve.search_statistics.solver_propagations,
+        report.control.separator_certificate_satisfied,
+        report.control.root_separator_restriction_satisfied,
+        report.control.controlled_axis_model_satisfied,
+        report.control.interpretation_blocked,
+    );
+    let child_rows = report
+        .cases
+        .iter()
+        .map(|case| {
+            let index = case.case_index.expect("child index");
+            let arc = case.selected_arc.expect("child selected arc");
+            format!(
+                "<tr><td>{index}</td><td>{}→{}</td><td>{:?}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td><a href=\"case-{index}.authoritative.html\">solve</a> · <a href=\"case-{index}.observation.html\">root</a></td></tr>",
+                arc[0],
+                arc[1],
+                case.solve.combined_outcome,
+                case.solve.search_ms,
+                case.solve.search_statistics.branch_decisions,
+                case.solve.search_statistics.conflicts,
+                case.solve.search_statistics.solver_propagations,
+                case.separator_certificate_satisfied,
+                case.root_separator_restriction_satisfied,
+                case.controlled_axis_model_satisfied,
+                case.interpretation_blocked,
+            )
+        })
+        .collect::<String>();
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 3 material separator cut</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.warning{{border:1px solid #ffd166;padding:10px;color:#ffd166}}table{{border-collapse:collapse;width:100%;margin-bottom:24px}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}code,a{{color:#ffd166}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {phase} exact material-separator cut</h1><div class="meta">network=<code>{network}</code> · item=<code>{item}</code> (code {item_code}) · dimensions={width}×{height} · separator=row {row}/{next_row} · source={source_cell}→{source_continuation} · demand={demand_cell} · workers={workers} · total={total}ms</div><p class="warning">The control leaves the cut unrestricted. Child i selects the first south cut arc carrying this material and excludes only earlier same-material crossings. Later crossings, reverse recrossings, branches, cycles, bridges, demand continuation, and all other route state remain free.</p><p>non-empty={non_empty} · disjoint={disjoint} · exact cover={exact_cover} · parent/control compatible={parent_compatible} · children/control compatible={child_compatible} · feasible/infeasible/unknown/invalid={feasible}/{infeasible}/{unknown}/{invalid} · all children infeasible={all_infeasible} · blocked={blocked}</p><h2>Canonical crossings</h2><table><thead><tr><th>case</th><th>south arc</th><th>earlier same-material cases excluded</th></tr></thead><tbody>{candidate_rows}</tbody></table><h2>Outcomes</h2><table><thead><tr><th>case</th><th>selected crossing</th><th>combined</th><th>search ms</th><th>decisions</th><th>conflicts</th><th>propagations</th><th>certificate</th><th>root audit</th><th>model delta</th><th>blocked</th><th>artifacts</th></tr></thead><tbody>{control_row}{child_rows}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={json};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        phase = report.target_phase_index,
+        network = report.selected_network_id,
+        item = report.selected_item,
+        item_code = report.selected_item_code,
+        width = report.fixed_dimensions[0],
+        height = report.fixed_dimensions[1],
+        row = report.separator_after_row,
+        next_row = report.separator_after_row + 1,
+        source_cell = report.source_cell,
+        source_continuation = report.source_continuation_cell,
+        demand_cell = report.demand_cell,
+        workers = report.worker_count,
+        total = report.total_wall_ms,
+        non_empty = report.partition_non_empty,
+        disjoint = report.partition_pairwise_disjoint,
+        exact_cover = report.partition_exact_cover,
+        parent_compatible = report.control_parent_evidence_compatible,
+        child_compatible = report.child_control_evidence_compatible,
+        feasible = report.validated_feasible_count,
+        infeasible = report.proven_infeasible_count,
+        unknown = report.unknown_count,
+        invalid = report.invalid_witness_count,
+        all_infeasible = report.all_children_proven_infeasible,
+        blocked = report.interpretation_blocked,
+        candidate_rows = candidate_rows,
+        control_row = control_row,
+        child_rows = child_rows,
+        json = json,
+    ))
+}
+
 fn write_json(path: &Path, report: &impl serde::Serialize) -> Result<()> {
     let encoded = serde_json::to_vec_pretty(report).context("failed to serialize report")?;
     write_bytes(path, &encoded, "prior-terminal pair report")
@@ -2899,6 +3133,13 @@ mod tests {
             "5000",
             "--endpoint-source-only-observation-time-limit-ms",
             "5000",
+            "--partition-material-separator",
+            "--material-separator-after-row",
+            "4",
+            "--material-separator-case-time-limit-ms",
+            "5000",
+            "--material-separator-observation-time-limit-ms",
+            "5000",
             "--output-dir",
             "out",
         ])
@@ -2909,6 +3150,13 @@ mod tests {
         assert_eq!(args.endpoint_source_only_case_time_limit_ms, Some(5000));
         assert_eq!(
             args.endpoint_source_only_observation_time_limit_ms,
+            Some(5000)
+        );
+        assert!(args.partition_material_separator);
+        assert_eq!(args.material_separator_after_row, Some(4));
+        assert_eq!(args.material_separator_case_time_limit_ms, Some(5000));
+        assert_eq!(
+            args.material_separator_observation_time_limit_ms,
             Some(5000)
         );
     }

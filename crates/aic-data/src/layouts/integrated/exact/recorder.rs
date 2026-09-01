@@ -123,6 +123,7 @@ pub(super) enum ConstraintFamily {
     ConnectivityWitness,
     ConnectivityPropagator,
     GridAnalyzer,
+    MaterialSeparator,
     ResearchFixation,
 }
 
@@ -156,6 +157,7 @@ impl ConstraintFamily {
             Self::ConnectivityWitness => "connectivity-witness",
             Self::ConnectivityPropagator => "connectivity-propagator",
             Self::GridAnalyzer => "grid-analyzer",
+            Self::MaterialSeparator => "material-separator",
             Self::ResearchFixation => "research-fixation",
         }
     }
@@ -176,6 +178,8 @@ impl ConstraintFamily {
 struct VariableRecord {
     family: VariableFamily,
     name: String,
+    lower_bound: i32,
+    upper_bound: i32,
     cardinality: u64,
     degree: u64,
     parent: DomainId,
@@ -187,6 +191,8 @@ pub(super) struct RecordedVariableDescriptor {
     pub(super) domain: DomainId,
     pub(super) family: VariableFamily,
     pub(super) name: String,
+    pub(super) declared_lower_bound: i32,
+    pub(super) declared_upper_bound: i32,
     pub(super) declared_cardinality: u64,
 }
 
@@ -263,6 +269,8 @@ impl RecordedModel {
             VariableRecord {
                 family,
                 name,
+                lower_bound,
+                upper_bound,
                 cardinality: u64::try_from(cardinality)
                     .expect("validated integer domain has positive cardinality"),
                 degree: 0,
@@ -288,12 +296,16 @@ impl RecordedModel {
             "sparse variable domain must be non-empty"
         );
         let cardinality = u64::try_from(values.len()).expect("sparse domain cardinality fits u64");
+        let lower_bound = values[0];
+        let upper_bound = *values.last().expect("sparse domain is non-empty");
         let variable = self.solver.new_named_sparse_integer(values, name.clone());
         self.recorder.variables.insert(
             variable,
             VariableRecord {
                 family,
                 name,
+                lower_bound,
+                upper_bound,
                 cardinality,
                 degree: 0,
                 parent: variable,
@@ -320,6 +332,8 @@ impl RecordedModel {
             VariableRecord {
                 family,
                 name,
+                lower_bound: 0,
+                upper_bound: 1,
                 cardinality: 2,
                 degree: 0,
                 parent: variable,
@@ -545,6 +559,27 @@ impl RecordedModel {
             .post();
     }
 
+    pub(super) fn post_predicate_clause(
+        &mut self,
+        family: ConstraintFamily,
+        variables: &[DomainId],
+        predicates: Vec<Predicate>,
+        tag: ConstraintTag,
+    ) {
+        assert_eq!(
+            variables.len(),
+            predicates.len(),
+            "recorded predicate clause variables must match its predicates"
+        );
+        let terms = variables
+            .iter()
+            .copied()
+            .map(|variable| variable.scaled(1))
+            .collect::<Vec<_>>();
+        self.record_constraint(family, ConstraintRelation::Other, &terms, 1);
+        self.solver.add_clause(predicates, tag);
+    }
+
     /// Posts the same non-reified positive-table encoding as Pumpkin 0.5 while retaining the
     /// generated row-selector domains for research-only search provenance measurement.
     pub(super) fn post_tracked_table(
@@ -668,9 +703,27 @@ impl RecordedModel {
                 domain: *domain,
                 family: record.family,
                 name: record.name.clone(),
+                declared_lower_bound: record.lower_bound,
+                declared_upper_bound: record.upper_bound,
                 declared_cardinality: record.cardinality,
             })
             .collect()
+    }
+
+    pub(super) fn variable_descriptor(&self, domain: DomainId) -> RecordedVariableDescriptor {
+        let record = self
+            .recorder
+            .variables
+            .get(&domain)
+            .unwrap_or_else(|| panic!("unrecorded model variable {}", domain.id()));
+        RecordedVariableDescriptor {
+            domain,
+            family: record.family,
+            name: record.name.clone(),
+            declared_lower_bound: record.lower_bound,
+            declared_upper_bound: record.upper_bound,
+            declared_cardinality: record.cardinality,
+        }
     }
 
     fn record_constraint(
@@ -1032,6 +1085,48 @@ mod tests {
     }
 
     #[test]
+    fn records_native_predicate_clause_without_auxiliary_model_variable() {
+        let mut model = RecordedModel::default();
+        let tag = model.new_constraint_tag();
+        let selected = model.new_variable(VariableFamily::RouteArc, 0, 1, "selected");
+        let item = model.new_variable(VariableFamily::ArmItem, 0, 3, "item");
+        let variables_before = model.variable_catalog().len();
+
+        model.post_predicate_clause(
+            ConstraintFamily::MaterialSeparator,
+            &[selected, item],
+            vec![
+                selected.equality_predicate(0),
+                item.disequality_predicate(2),
+            ],
+            tag,
+        );
+
+        assert_eq!(model.variable_catalog().len(), variables_before);
+        let metrics = model.metrics();
+        assert_eq!(metrics.variables.total_variables, 2);
+        let constraints = metrics.constraints.unwrap();
+        assert_eq!(constraints.total_constraints, 1);
+        assert_eq!(constraints.total_terms, 2);
+        assert!(constraints.by_family.iter().any(|family| {
+            family.family == "material-separator" && family.constraints == 1 && family.terms == 2
+        }));
+    }
+
+    #[test]
+    fn material_separator_exclusion_clause_preserves_every_state_except_selected_item_flow() {
+        for selected in 0..=1 {
+            for item in 0..=3 {
+                assert_eq!(
+                    fixed_material_separator_clause_is_satisfiable(selected, item),
+                    selected == 0 || item != 2,
+                    "state selected={selected}, item={item}",
+                );
+            }
+        }
+    }
+
+    #[test]
     fn tracked_table_accepts_exactly_the_native_table_assignments() {
         let rows = vec![vec![0, 1, 2], vec![1, 0, 3], vec![1, 1, 4]];
         for placement in 0..=1 {
@@ -1089,6 +1184,49 @@ mod tests {
                 tag,
             );
         }
+
+        let mut brancher = model.solver_mut().default_brancher();
+        let mut termination = Indefinite;
+        let mut resolver = ResolutionResolver::default();
+        matches!(
+            model
+                .solver_mut()
+                .satisfy(&mut brancher, &mut termination, &mut resolver),
+            SatisfactionResult::Satisfiable(_)
+        )
+    }
+
+    fn fixed_material_separator_clause_is_satisfiable(
+        selected_value: i32,
+        item_value: i32,
+    ) -> bool {
+        let mut model = RecordedModel::default();
+        let tag = model.new_constraint_tag();
+        let selected = model.new_variable(VariableFamily::RouteArc, 0, 1, "selected");
+        let item = model.new_variable(VariableFamily::ArmItem, 0, 3, "item");
+        model.post_predicate_clause(
+            ConstraintFamily::MaterialSeparator,
+            &[selected, item],
+            vec![
+                selected.equality_predicate(0),
+                item.disequality_predicate(2),
+            ],
+            tag,
+        );
+        model.post_equals(
+            ConstraintFamily::ResearchFixation,
+            vec![selected.scaled(1)],
+            selected_value,
+            1,
+            tag,
+        );
+        model.post_equals(
+            ConstraintFamily::ResearchFixation,
+            vec![item.scaled(1)],
+            item_value,
+            1,
+            tag,
+        );
 
         let mut brancher = model.solver_mut().default_brancher();
         let mut termination = Indefinite;
