@@ -6,8 +6,9 @@ use std::time::Duration;
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    BottomUpExperimentReport, BottomUpRungKind, BottomUpRungOutcome, BottomUpRungWitness,
-    EndpointClearanceSchedulingPriority, FacilityPlacementRequest, diagnose_bottom_up_rung,
+    BottomUpExperimentReport, BottomUpRotationPartitionReport, BottomUpRungKind,
+    BottomUpRungOutcome, BottomUpRungWitness, EndpointClearanceSchedulingPriority,
+    FacilityPlacementRequest, diagnose_bottom_up_rotation_partition, diagnose_bottom_up_rung,
 };
 use aic_data::localization::{ValidatedLocalizationCatalog, load_localization_catalog};
 use aic_data::logistics::{
@@ -76,6 +77,12 @@ struct Args {
     /// Skip scheduling when an orientation event only proves that orientation false.
     #[arg(long)]
     endpoint_clearance_false_event_filter: bool,
+    /// Introduced facility ID whose directional rotations form an exact partition dimension.
+    #[arg(long = "partition-facility", value_name = "INSTANCE", action = clap::ArgAction::Append)]
+    partition_facilities: Vec<String>,
+    /// Parallel solver instances used by an exact rotation partition.
+    #[arg(long, value_name = "COUNT", default_value_t = 4)]
+    partition_workers: usize,
     /// Benchmark workload manifest JSON file.
     #[arg(long, value_name = "FILE")]
     workload: PathBuf,
@@ -132,14 +139,41 @@ fn main() -> ExitCode {
 fn run(args: Args) -> Result<bool> {
     let time_limit = NonZeroU64::new(args.time_limit_ms)
         .context("bottom-up rung time_limit_ms must be positive")?;
+    validate_search_settings(&args)?;
     let loaded = load_inputs(&args)?;
-    ensure!(
-        matches!(args.rung, RungArg::FacilityPortsPropagated)
-            || (args.endpoint_clearance_priority == EndpointClearancePriorityArg::High
-                && !args.disable_endpoint_clearance_counters
-                && !args.endpoint_clearance_false_event_filter),
-        "endpoint-clearance search settings apply only to rung 'facility-ports-propagated'"
-    );
+    if !args.partition_facilities.is_empty() {
+        let mut report = diagnose_bottom_up_rotation_partition(
+            &loaded.wiring,
+            &loaded.facilities,
+            &loaded.items,
+            &loaded.transports,
+            &loaded.components,
+            &loaded.placement_request,
+            args.target_phase,
+            &args.partition_facilities,
+            args.endpoint_clearance_priority.into(),
+            !args.disable_endpoint_clearance_counters,
+            args.endpoint_clearance_false_event_filter,
+            Duration::from_millis(time_limit.get()),
+            args.partition_workers,
+        )
+        .map_err(|layout| anyhow::anyhow!("bottom-up rotation partition failed: {layout:?}"))?;
+        report.workload_id = Some(loaded.workload_id.clone());
+        report.workload_manifest_sha256 = Some(loaded.workload_manifest_sha256.clone());
+        write_json(&args.output_dir.join("summary.json"), &report)?;
+        write_bytes(
+            &args.output_dir.join("summary.html"),
+            render_rotation_partition_html(&report)?.as_bytes(),
+            "bottom-up rotation partition HTML evidence",
+        )?;
+        serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+            .context("failed to write bottom-up rotation partition report")?;
+        println!();
+        return Ok(matches!(
+            report.combined_outcome,
+            BottomUpRungOutcome::Feasible
+        ));
+    }
     let mut report = diagnose_bottom_up_rung(
         &loaded.wiring,
         &loaded.facilities,
@@ -168,6 +202,24 @@ fn run(args: Args) -> Result<bool> {
         .context("failed to write bottom-up rung report")?;
     println!();
     Ok(matches!(report.rung.outcome, BottomUpRungOutcome::Feasible))
+}
+
+fn validate_search_settings(args: &Args) -> Result<()> {
+    if !args.partition_facilities.is_empty() {
+        ensure!(
+            matches!(args.rung, RungArg::FacilityPortsPropagated),
+            "rotation partition applies only to rung 'facility-ports-propagated'"
+        );
+    } else {
+        ensure!(
+            matches!(args.rung, RungArg::FacilityPortsPropagated)
+                || (args.endpoint_clearance_priority == EndpointClearancePriorityArg::High
+                    && !args.disable_endpoint_clearance_counters
+                    && !args.endpoint_clearance_false_event_filter),
+            "endpoint-clearance search settings apply only to rung 'facility-ports-propagated'"
+        );
+    }
+    Ok(())
 }
 
 fn load_inputs(args: &Args) -> Result<LoadedInputs> {
@@ -420,6 +472,56 @@ fn render_html(
     ))
 }
 
+fn render_rotation_partition_html(report: &BottomUpRotationPartitionReport) -> Result<String> {
+    let mut rows = String::new();
+    for case in &report.cases {
+        let fixed = case
+            .fixed_rotations
+            .iter()
+            .map(|(facility, rotation)| format!("{}={rotation}°", escape_html(facility)))
+            .collect::<Vec<_>>()
+            .join("<br>");
+        writeln!(
+            rows,
+            "<tr><td>{}</td><td>{fixed}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>",
+            case.case_index,
+            case.rung.outcome,
+            case.rung.search_ms,
+            display_optional(case.rung.search_statistics.branch_decisions),
+            display_optional(case.rung.search_statistics.conflicts),
+            display_optional(case.rung.search_statistics.solver_propagations),
+        )?;
+    }
+    let domains = report
+        .partitioned_rotation_domains
+        .iter()
+        .map(|(facility, rotations)| format!("{}={rotations:?}", escape_html(facility)))
+        .collect::<Vec<_>>()
+        .join("<br>");
+    let json = escape_html(&serde_json::to_string_pretty(report)?);
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bottom-up rotation partition</title><style>body{{margin:24px;background:#07131d;color:#d5e8f5;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:16px}}.certificate{{padding:10px;border:1px solid #65f0bd;color:#65f0bd;margin-bottom:18px}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}details{{margin-top:20px}}pre{{white-space:pre-wrap;word-break:break-word;color:#8fb2c8}}</style></head><body><h1>Bottom-up exact rotation partition</h1><div class="meta">Phase {phase}/{total} · {facilities} cumulative facilities · {cases} cases · {workers} workers · {budget} ms/case · first feasible {first_feasible} · full wall {wall} ms</div><div class="certificate">complete={complete} · pairwise-disjoint={disjoint} · combined={combined:?} · feasible/infeasible/unknown/invalid={feasible}/{infeasible}/{unknown}/{invalid}<br>{domains}</div><table><thead><tr><th>case</th><th>fixed directional rotations</th><th>outcome</th><th>search ms</th><th>decisions</th><th>conflicts</th><th>propagations</th></tr></thead><tbody>{rows}</tbody></table><details><summary>Machine-readable report</summary><pre>{json}</pre></details></body></html>"#,
+        phase = report.target_phase_index,
+        total = report.total_phase_count,
+        facilities = report.cumulative_facility_count,
+        cases = report.expected_case_count,
+        workers = report.worker_count,
+        budget = report.case_search_budget_ms,
+        first_feasible = report.first_feasible_wall_ms.map_or_else(
+            || "—".to_string(),
+            |milliseconds| format!("{milliseconds} ms")
+        ),
+        wall = report.wall_time_ms,
+        complete = report.partition_complete,
+        disjoint = report.cases_pairwise_disjoint,
+        combined = report.combined_outcome,
+        feasible = report.feasible_cases,
+        infeasible = report.infeasible_cases,
+        unknown = report.unknown_cases,
+        invalid = report.invalid_cases,
+    ))
+}
+
 fn render_grid(output: &mut String, ceiling: [i32; 2], cell: i64) -> Result<()> {
     let width = i64::from(ceiling[0]) * cell;
     let height = i64::from(ceiling[1]) * cell;
@@ -638,6 +740,68 @@ mod tests {
         );
         assert!(args.disable_endpoint_clearance_counters);
         assert!(args.endpoint_clearance_false_event_filter);
+    }
+
+    #[test]
+    fn parses_an_exact_rotation_partition() {
+        let args = Args::try_parse_from([
+            "aic-bottom-up-ladder",
+            "--rung",
+            "facility-ports-propagated",
+            "--partition-facility",
+            "seed-collector",
+            "--partition-facility",
+            "planter-0",
+            "--partition-workers",
+            "3",
+            "--disable-endpoint-clearance-counters",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "placement.json",
+            "--target-phase",
+            "30",
+            "--time-limit-ms",
+            "5000",
+            "--output-dir",
+            "artifacts",
+        ])
+        .expect("rotation partition should parse");
+
+        assert_eq!(args.partition_facilities, ["seed-collector", "planter-0"]);
+        assert_eq!(args.partition_workers, 3);
+        assert!(args.disable_endpoint_clearance_counters);
+        validate_search_settings(&args).expect("partition settings should be accepted");
+    }
+
+    #[test]
+    fn rejects_a_rotation_partition_on_the_wrong_rung_with_its_specific_error() {
+        let args = Args::try_parse_from([
+            "aic-bottom-up-ladder",
+            "--rung",
+            "facility-geometry",
+            "--partition-facility",
+            "seed-collector",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "placement.json",
+            "--target-phase",
+            "30",
+            "--time-limit-ms",
+            "5000",
+            "--output-dir",
+            "artifacts",
+        ])
+        .expect("CLI syntax should parse before semantic validation");
+
+        let error = validate_search_settings(&args)
+            .expect_err("partition must require the propagated facility-port rung");
+        assert!(
+            error
+                .to_string()
+                .contains("rotation partition applies only to rung")
+        );
     }
 
     #[test]

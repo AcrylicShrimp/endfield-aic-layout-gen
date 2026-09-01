@@ -144,6 +144,15 @@ unresolved orientations still enqueue. The flag is disabled by default because i
 scheduling effect is phase- and priority-dependent even though the accepted assignments are
 identical.
 
+The propagated rung also supports an exact directional-rotation partition diagnostic. The caller
+selects one or more facilities introduced in the target growth phase. The harness enumerates the
+complete Cartesian product of their validated directional-rotation domains and adds one
+`research-fixation` equality per selected facility in each child. The children are pairwise
+disjoint and their union is the unpartitioned rung. Facility coordinates, port choices, local
+connection keys, endpoint coordinates, and clearance decisions remain solver variables. A
+feasible child proves the parent feasible; only proven infeasibility of every child proves the
+parent infeasible. Unknown children never become infeasibility evidence.
+
 ### Rung 2: Pipe Routing
 
 Adds the complete pipe semantic block:

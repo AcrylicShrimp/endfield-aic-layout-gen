@@ -15,6 +15,7 @@ use super::{
 };
 
 mod bottom_up_ladder;
+mod bottom_up_rotation_partition;
 mod connectivity_witness;
 mod coordinate_partition;
 mod crossing_free;
@@ -41,6 +42,10 @@ pub use super::exact::ladder::{
 };
 pub use bottom_up_ladder::{
     BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION, BottomUpExperimentReport, diagnose_bottom_up_rung,
+};
+pub use bottom_up_rotation_partition::{
+    BOTTOM_UP_ROTATION_PARTITION_SCHEMA_VERSION, BottomUpRotationPartitionCaseReport,
+    BottomUpRotationPartitionReport, diagnose_bottom_up_rotation_partition,
 };
 pub use connectivity_witness::{
     CONNECTIVITY_WITNESS_DIAGNOSIS_SCHEMA_VERSION, ConnectivityWitnessCaseKind,

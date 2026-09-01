@@ -30,6 +30,14 @@ pub struct BottomUpExperimentReport {
     pub rung: exact::ladder::BottomUpRungReport,
 }
 
+pub(super) struct PreparedBottomUpPhase {
+    pub(super) input: super::super::ModelInput,
+    pub(super) target_phase_index: usize,
+    pub(super) total_phase_count: usize,
+    pub(super) cumulative_facility_count: usize,
+    pub(super) introduced_facility_ids: Vec<String>,
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn diagnose_bottom_up_rung(
     instance_wiring: &FacilityInstanceWiringReport,
@@ -45,6 +53,59 @@ pub fn diagnose_bottom_up_rung(
     target_phase_index: usize,
     search_budget: Duration,
 ) -> Result<BottomUpExperimentReport, IntegratedLayoutReport> {
+    let prepared = prepare_bottom_up_phase(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+        target_phase_index,
+    )?;
+    let input = prepared.input;
+    let rung = match rung_kind {
+        exact::ladder::BottomUpRungKind::FacilityGeometry => {
+            exact::ladder::solve_facility_geometry_rung(input, search_budget)
+        }
+        exact::ladder::BottomUpRungKind::FacilityPortGeometry => {
+            exact::ladder::solve_facility_port_geometry_rung(input, search_budget)
+        }
+        exact::ladder::BottomUpRungKind::FacilityPorts => {
+            exact::ladder::solve_facility_ports_rung(input, search_budget)
+        }
+        exact::ladder::BottomUpRungKind::FacilityPortsPropagated => {
+            exact::ladder::solve_facility_ports_propagated_rung(
+                input,
+                search_budget,
+                endpoint_clearance_priority,
+                endpoint_clearance_counters_enabled,
+                endpoint_clearance_false_event_filter_enabled,
+            )
+        }
+    };
+    Ok(BottomUpExperimentReport {
+        schema_version: BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION,
+        workload_id: None,
+        workload_manifest_sha256: None,
+        target_phase_index: prepared.target_phase_index,
+        total_phase_count: prepared.total_phase_count,
+        cumulative_facility_count: prepared.cumulative_facility_count,
+        introduced_facility_ids: prepared.introduced_facility_ids,
+        search_budget_ms: u64::try_from(search_budget.as_millis()).unwrap_or(u64::MAX),
+        rung,
+    })
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(super) fn prepare_bottom_up_phase(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    target_phase_index: usize,
+) -> Result<PreparedBottomUpPhase, IntegratedLayoutReport> {
     let growth = plan_facility_growth(instance_wiring, MAX_NEW_FACILITIES_PER_GROWTH_PHASE);
     if !growth.success {
         let diagnostic = growth.diagnostics.into_iter().next().map_or_else(
@@ -107,35 +168,11 @@ pub fn diagnose_bottom_up_rung(
         logistics_components,
         request,
     )?;
-    let rung = match rung_kind {
-        exact::ladder::BottomUpRungKind::FacilityGeometry => {
-            exact::ladder::solve_facility_geometry_rung(input, search_budget)
-        }
-        exact::ladder::BottomUpRungKind::FacilityPortGeometry => {
-            exact::ladder::solve_facility_port_geometry_rung(input, search_budget)
-        }
-        exact::ladder::BottomUpRungKind::FacilityPorts => {
-            exact::ladder::solve_facility_ports_rung(input, search_budget)
-        }
-        exact::ladder::BottomUpRungKind::FacilityPortsPropagated => {
-            exact::ladder::solve_facility_ports_propagated_rung(
-                input,
-                search_budget,
-                endpoint_clearance_priority,
-                endpoint_clearance_counters_enabled,
-                endpoint_clearance_false_event_filter_enabled,
-            )
-        }
-    };
-    Ok(BottomUpExperimentReport {
-        schema_version: BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION,
-        workload_id: None,
-        workload_manifest_sha256: None,
+    Ok(PreparedBottomUpPhase {
+        input,
         target_phase_index,
         total_phase_count,
         cumulative_facility_count: cumulative_facilities.len(),
         introduced_facility_ids,
-        search_budget_ms: u64::try_from(search_budget.as_millis()).unwrap_or(u64::MAX),
-        rung,
     })
 }

@@ -390,6 +390,24 @@ pub(in crate::layouts::integrated) fn solve_facility_ports_propagated_rung(
     )
 }
 
+pub(in crate::layouts::integrated) fn solve_facility_ports_propagated_rung_with_fixed_rotations(
+    input: ModelInput,
+    time_limit: Duration,
+    priority: EndpointClearanceSchedulingPriority,
+    counters_enabled: bool,
+    false_event_filter_enabled: bool,
+    fixed_rotations: &BTreeMap<String, i64>,
+) -> BottomUpRungReport {
+    facility_ports::solve_with_propagated_clearance_and_fixed_rotations(
+        input,
+        time_limit,
+        priority,
+        counters_enabled,
+        false_event_filter_enabled,
+        fixed_rotations,
+    )
+}
+
 pub(in crate::layouts::integrated) fn solve_facility_port_geometry_rung(
     input: ModelInput,
     time_limit: Duration,

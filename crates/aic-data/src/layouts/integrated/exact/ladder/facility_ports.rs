@@ -133,11 +133,11 @@ struct LocalConnection {
 }
 
 pub(super) fn solve_geometry(input: ModelInput, time_limit: Duration) -> BottomUpRungReport {
-    solve(input, time_limit, GEOMETRY_CONTRACT)
+    solve(input, time_limit, GEOMETRY_CONTRACT, &BTreeMap::new())
 }
 
 pub(super) fn solve_with_clearance(input: ModelInput, time_limit: Duration) -> BottomUpRungReport {
-    solve(input, time_limit, CLEARANCE_CONTRACT)
+    solve(input, time_limit, CLEARANCE_CONTRACT, &BTreeMap::new())
 }
 
 pub(super) fn solve_with_propagated_clearance(
@@ -146,6 +146,24 @@ pub(super) fn solve_with_propagated_clearance(
     priority: EndpointClearanceSchedulingPriority,
     counters_enabled: bool,
     false_event_filter_enabled: bool,
+) -> BottomUpRungReport {
+    solve_with_propagated_clearance_and_fixed_rotations(
+        input,
+        time_limit,
+        priority,
+        counters_enabled,
+        false_event_filter_enabled,
+        &BTreeMap::new(),
+    )
+}
+
+pub(super) fn solve_with_propagated_clearance_and_fixed_rotations(
+    input: ModelInput,
+    time_limit: Duration,
+    priority: EndpointClearanceSchedulingPriority,
+    counters_enabled: bool,
+    false_event_filter_enabled: bool,
+    fixed_rotations: &BTreeMap<String, i64>,
 ) -> BottomUpRungReport {
     solve(
         input,
@@ -156,10 +174,16 @@ pub(super) fn solve_with_propagated_clearance(
             clearance_false_event_filter_enabled: Some(false_event_filter_enabled),
             ..PROPAGATED_CLEARANCE_CONTRACT
         },
+        fixed_rotations,
     )
 }
 
-fn solve(input: ModelInput, time_limit: Duration, contract: RungContract) -> BottomUpRungReport {
+fn solve(
+    input: ModelInput,
+    time_limit: Duration,
+    contract: RungContract,
+    fixed_rotations: &BTreeMap<String, i64>,
+) -> BottomUpRungReport {
     let ceiling = [input.width, input.height];
     let facility_count = input.instances.len();
     let endpoint_descriptors = facility_endpoint_descriptors(&input);
@@ -181,6 +205,7 @@ fn solve(input: ModelInput, time_limit: Duration, contract: RungContract) -> Bot
         contract
             .clearance_false_event_filter_enabled
             .unwrap_or(false),
+        fixed_rotations,
     ) {
         Ok(model) => model,
         Err(diagnostic) => {
@@ -390,10 +415,12 @@ fn build_port_model(
     clearance_priority: Priority,
     clearance_counters_enabled: bool,
     clearance_false_event_filter_enabled: bool,
+    fixed_rotations: &BTreeMap<String, i64>,
 ) -> Result<PortModel, IntegratedLayoutDiagnostic> {
     let mut placement = build_model(input)?;
     let tag = placement.model.new_constraint_tag();
     let rotations = build_rotation_channels(&mut placement, tag);
+    post_fixed_rotations(&mut placement, &rotations, fixed_rotations, tag)?;
     let support_counters = Arc::new(EndpointSupportPropagationCounters::default());
     let clearance_counters =
         (clearance == ClearanceEncoding::PointRectanglePropagator).then(|| {
@@ -419,6 +446,59 @@ fn build_port_model(
         support_counters,
         clearance_counters,
     })
+}
+
+fn post_fixed_rotations(
+    placement: &mut PlacementModel,
+    rotations: &BTreeMap<String, DomainId>,
+    fixed_rotations: &BTreeMap<String, i64>,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    for (instance_id, fixed_rotation) in fixed_rotations {
+        let Some(rotation) = rotations.get(instance_id) else {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "bottom-up-fixed-rotation-unknown-facility",
+                "/fixed_rotations",
+                Some(instance_id.clone()),
+                "fixed directional rotation refers to a facility outside the cumulative phase",
+            ));
+        };
+        let legal = placement
+            .instances
+            .iter()
+            .find(|instance| instance.id == *instance_id)
+            .is_some_and(|instance| {
+                instance
+                    .orientations
+                    .iter()
+                    .any(|orientation| orientation.equivalent_rotations.contains(fixed_rotation))
+            });
+        if !legal {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "bottom-up-fixed-rotation-illegal",
+                "/fixed_rotations",
+                Some(instance_id.clone()),
+                format!(
+                    "directional rotation {fixed_rotation} is not legal for the selected facility"
+                ),
+            ));
+        }
+        let fixed_rotation = i32::try_from(*fixed_rotation).map_err(|_| {
+            IntegratedLayoutDiagnostic::error(
+                "bottom-up-fixed-rotation-out-of-range",
+                "/fixed_rotations",
+                Some(instance_id.clone()),
+                "fixed directional rotation does not fit the solver integer range",
+            )
+        })?;
+        placement.model.post_predicate_clause(
+            ConstraintFamily::ResearchFixation,
+            &[*rotation],
+            vec![rotation.equality_predicate(fixed_rotation)],
+            tag,
+        );
+    }
+    Ok(())
 }
 
 fn build_rotation_channels(
@@ -1294,8 +1374,8 @@ mod tests {
         let edges = vec![edge];
         let input = ModelInput {
             width: 4,
-            height: 3,
-            cell_count: 12,
+            height: 4,
+            cell_count: 16,
             instances: vec![InstanceInput {
                 id: "fixture-instance".to_string(),
                 recipe: "fixture-recipe".to_string(),
@@ -1353,6 +1433,34 @@ mod tests {
             Some(EndpointClearanceSchedulingPriority::Medium)
         );
         assert!(medium.endpoint_clearance_statistics.is_some());
+
+        let fixed_rotations = BTreeMap::from([("fixture-instance".to_string(), 90)]);
+        let fixed = solve_with_propagated_clearance_and_fixed_rotations(
+            input.clone(),
+            Duration::from_secs(1),
+            EndpointClearanceSchedulingPriority::High,
+            true,
+            false,
+            &fixed_rotations,
+        );
+        assert_eq!(fixed.outcome, BottomUpRungOutcome::Feasible);
+        assert_eq!(fixed.validation, ExactValidationStatus::Passed);
+        let Some(BottomUpRungWitness::FacilityPorts { witness }) = fixed.witness else {
+            panic!("fixed-rotation rung should return its dedicated witness");
+        };
+        assert_eq!(witness.placements[0].rotation, 90);
+        assert_eq!(
+            fixed
+                .model_complexity
+                .constraints
+                .as_ref()
+                .expect("complete ladder metrics include constraints")
+                .by_family
+                .iter()
+                .find(|family| family.family == "research-fixation")
+                .map(|family| family.constraints),
+            Some(1)
+        );
 
         let counters_disabled = solve_with_propagated_clearance(
             input,

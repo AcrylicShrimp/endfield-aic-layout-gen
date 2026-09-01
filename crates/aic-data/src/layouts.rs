@@ -9,12 +9,14 @@ pub use growth::{
 };
 
 pub use integrated::{
-    BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION, BOTTOM_UP_RUNG_SCHEMA_VERSION, BottomUpExperimentReport,
-    BottomUpRungKind, BottomUpRungOutcome, BottomUpRungReport, BottomUpRungWitness,
-    BottomUpSearchProfile, BottomUpSearchSpaceProfile, BottomUpSemanticCertificate,
-    BottomUpTerminationReason, EndpointClearancePropagationStatistics,
+    BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION, BOTTOM_UP_ROTATION_PARTITION_SCHEMA_VERSION,
+    BOTTOM_UP_RUNG_SCHEMA_VERSION, BottomUpExperimentReport, BottomUpRotationPartitionCaseReport,
+    BottomUpRotationPartitionReport, BottomUpRungKind, BottomUpRungOutcome, BottomUpRungReport,
+    BottomUpRungWitness, BottomUpSearchProfile, BottomUpSearchSpaceProfile,
+    BottomUpSemanticCertificate, BottomUpTerminationReason, EndpointClearancePropagationStatistics,
     EndpointClearanceSchedulingPriority, FacilityEndpointPlacement, FacilityGeometryPlacement,
-    FacilityGeometryWitness, FacilityPortPlacement, FacilityPortsWitness, diagnose_bottom_up_rung,
+    FacilityGeometryWitness, FacilityPortPlacement, FacilityPortsWitness,
+    diagnose_bottom_up_rotation_partition, diagnose_bottom_up_rung,
 };
 pub use integrated::{
     BOUNDARY_CELL_WIDTH_SENSITIVITY_SCHEMA_VERSION, BoundaryCellWidthCaseReport,
