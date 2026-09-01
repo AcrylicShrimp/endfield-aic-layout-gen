@@ -21,7 +21,7 @@ use super::super::research::EndpointSupportPropagationStatistics;
 
 mod facility_ports;
 
-pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 8;
+pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 9;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -46,12 +46,16 @@ pub struct BottomUpSearchProfile {
     pub endpoint_clearance_false_event_filter_enabled: Option<bool>,
 }
 
-#[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
 pub struct EndpointClearancePropagationStatistics {
     pub relations: u64,
     pub executions: u64,
     pub notifications: u64,
     pub coordinate_notifications: u64,
+    pub connection_x_notifications: u64,
+    pub connection_y_notifications: u64,
+    pub facility_x_notifications: u64,
+    pub facility_y_notifications: u64,
     pub orientation_notifications: u64,
     pub skipped_false_orientation_notifications: u64,
     pub enqueued_notifications: u64,
@@ -61,6 +65,58 @@ pub struct EndpointClearancePropagationStatistics {
     pub bound_updates: u64,
     pub conflicts: u64,
     pub maximum_reason_predicates: u64,
+    pub scratch_executions: u64,
+    pub coordinate_only_executions: u64,
+    pub orientation_only_executions: u64,
+    pub mixed_event_executions: u64,
+    pub unclassified_executions: u64,
+    pub executions_with_rejection: u64,
+    pub executions_with_forced_separation: u64,
+    pub executions_with_bound_update: u64,
+    pub executions_with_conflict: u64,
+    pub executions_without_domain_effect: u64,
+    pub scratch_executions_without_domain_effect: u64,
+    pub coordinate_only_executions_without_domain_effect: u64,
+    pub orientation_only_executions_without_domain_effect: u64,
+    pub mixed_event_executions_without_domain_effect: u64,
+    pub unclassified_executions_without_domain_effect: u64,
+    pub universally_entailed_executions: u64,
+    pub entailment_episodes: u64,
+    pub notifications_while_entailed: u64,
+    pub relation_hotset: EndpointClearanceRelationHotsetStatistics,
+}
+
+#[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
+pub struct EndpointClearanceRelationHotsetStatistics {
+    pub collected_relations: u64,
+    pub zero_execution_relations: u64,
+    pub execution_p50: u64,
+    pub execution_p95: u64,
+    pub maximum_executions: u64,
+    pub top_1_execution_share_ppm: u64,
+    pub top_10_execution_share_ppm: u64,
+    pub top_100_execution_share_ppm: u64,
+    pub top_relations_by_execution: Vec<EndpointClearanceRelationStatistics>,
+    pub top_terminals_by_execution: Vec<EndpointClearanceGroupStatistics>,
+    pub top_target_facilities_by_execution: Vec<EndpointClearanceGroupStatistics>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct EndpointClearanceGroupStatistics {
+    pub entity: String,
+    pub executions: u64,
+    pub execution_share_ppm: u64,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct EndpointClearanceRelationStatistics {
+    pub terminal: String,
+    pub target_facility: String,
+    pub executions: u64,
+    pub notifications: u64,
+    pub executions_without_domain_effect: u64,
+    pub universally_entailed_executions: u64,
+    pub executions_with_domain_effect: u64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]

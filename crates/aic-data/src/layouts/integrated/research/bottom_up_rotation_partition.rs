@@ -15,7 +15,7 @@ use crate::recipes::FacilityInstanceWiringReport;
 use super::super::{IntegratedLayoutDiagnostic, IntegratedLayoutReport, exact};
 use super::bottom_up_ladder::prepare_bottom_up_phase;
 
-pub const BOTTOM_UP_ROTATION_PARTITION_SCHEMA_VERSION: u32 = 2;
+pub const BOTTOM_UP_ROTATION_PARTITION_SCHEMA_VERSION: u32 = 3;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct BottomUpRotationPartitionReport {
@@ -26,6 +26,9 @@ pub struct BottomUpRotationPartitionReport {
     pub total_phase_count: usize,
     pub cumulative_facility_count: usize,
     pub introduced_facility_ids: Vec<String>,
+    pub conditioned_rotations: BTreeMap<String, i64>,
+    pub partition_scope: &'static str,
+    pub all_infeasible_cases_prove_original_parent_infeasible: bool,
     pub partitioned_rotation_domains: BTreeMap<String, Vec<i64>>,
     pub expected_case_count: usize,
     pub partition_complete: bool,
@@ -59,6 +62,7 @@ pub fn diagnose_bottom_up_rotation_partition(
     request: &FacilityPlacementRequest,
     target_phase_index: usize,
     partition_facility_ids: &[String],
+    conditioned_rotations: &BTreeMap<String, i64>,
     endpoint_clearance_priority: exact::ladder::EndpointClearanceSchedulingPriority,
     endpoint_clearance_counters_enabled: bool,
     endpoint_clearance_false_event_filter_enabled: bool,
@@ -78,6 +82,8 @@ pub fn diagnose_bottom_up_rotation_partition(
         target_phase_index,
     )?;
     let domains = validated_rotation_domains(&prepared, partition_facility_ids)
+        .map_err(IntegratedLayoutReport::invalid)?;
+    validate_conditioned_rotations(&prepared, partition_facility_ids, conditioned_rotations)
         .map_err(IntegratedLayoutReport::invalid)?;
 
     let expected_case_count =
@@ -111,8 +117,12 @@ pub fn diagnose_bottom_up_rotation_partition(
                     if case_index >= expected_case_count {
                         break;
                     }
-                    let fixed_rotations =
-                        rotation_case_at(case_index, partition_facility_ids, &domains);
+                    let fixed_rotations = conditioned_rotation_case_at(
+                        case_index,
+                        partition_facility_ids,
+                        &domains,
+                        conditioned_rotations,
+                    );
                     let rung =
                         exact::ladder::solve_facility_ports_propagated_rung_with_fixed_rotations(
                             input.clone(),
@@ -149,7 +159,12 @@ pub fn diagnose_bottom_up_rotation_partition(
         && cases.iter().enumerate().all(|(case_index, case)| {
             case.case_index == case_index
                 && case.fixed_rotations
-                    == rotation_case_at(case_index, partition_facility_ids, &domains)
+                    == conditioned_rotation_case_at(
+                        case_index,
+                        partition_facility_ids,
+                        &domains,
+                        conditioned_rotations,
+                    )
         });
     let cases_pairwise_disjoint = cases
         .iter()
@@ -187,6 +202,13 @@ pub fn diagnose_bottom_up_rotation_partition(
         total_phase_count: prepared.total_phase_count,
         cumulative_facility_count: prepared.cumulative_facility_count,
         introduced_facility_ids: prepared.introduced_facility_ids,
+        conditioned_rotations: conditioned_rotations.clone(),
+        partition_scope: if conditioned_rotations.is_empty() {
+            "original-parent"
+        } else {
+            "conditioned-subproblem"
+        },
+        all_infeasible_cases_prove_original_parent_infeasible: conditioned_rotations.is_empty(),
         partitioned_rotation_domains: domains,
         expected_case_count,
         partition_complete,
@@ -239,34 +261,10 @@ pub(super) fn validate_partition_selection(
     Ok(())
 }
 
-fn validate_introduced_selection(
-    facility_ids: &[String],
-    introduced: &BTreeSet<String>,
-) -> Result<(), IntegratedLayoutDiagnostic> {
-    if let Some(instance_id) = facility_ids
-        .iter()
-        .find(|instance_id| !introduced.contains(*instance_id))
-    {
-        return Err(IntegratedLayoutDiagnostic::error(
-            "bottom-up-rotation-partition-facility-not-introduced",
-            "/partition_facility_ids",
-            Some(instance_id.clone()),
-            "rotation partition facilities must be introduced by the selected phase",
-        ));
-    }
-    Ok(())
-}
-
 pub(super) fn validated_rotation_domains(
     prepared: &super::bottom_up_ladder::PreparedBottomUpPhase,
     facility_ids: &[String],
 ) -> Result<BTreeMap<String, Vec<i64>>, IntegratedLayoutDiagnostic> {
-    let introduced = prepared
-        .introduced_facility_ids
-        .iter()
-        .cloned()
-        .collect::<BTreeSet<_>>();
-    validate_introduced_selection(facility_ids, &introduced)?;
     let mut domains = BTreeMap::new();
     for instance_id in facility_ids {
         let Some(instance) = prepared
@@ -309,6 +307,39 @@ pub(super) fn validated_rotation_domains(
         domains.insert(instance_id.clone(), rotations);
     }
     Ok(domains)
+}
+
+fn validate_conditioned_rotations(
+    prepared: &super::bottom_up_ladder::PreparedBottomUpPhase,
+    partition_facility_ids: &[String],
+    conditioned_rotations: &BTreeMap<String, i64>,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    if let Some(instance_id) = conditioned_rotations
+        .keys()
+        .find(|instance_id| partition_facility_ids.contains(instance_id))
+    {
+        return Err(IntegratedLayoutDiagnostic::error(
+            "bottom-up-rotation-partition-condition-overlap",
+            "/conditioned_rotations",
+            Some(instance_id.clone()),
+            "a facility cannot be both conditioned and partitioned",
+        ));
+    }
+    let condition_ids = conditioned_rotations.keys().cloned().collect::<Vec<_>>();
+    let domains = validated_rotation_domains(prepared, &condition_ids)?;
+    for (instance_id, rotation) in conditioned_rotations {
+        if !domains[instance_id].contains(rotation) {
+            return Err(IntegratedLayoutDiagnostic::error(
+                "bottom-up-rotation-partition-condition-outside-domain",
+                "/conditioned_rotations",
+                Some(instance_id.clone()),
+                format!(
+                    "conditioned rotation {rotation} is absent from the facility's fitting parent domain"
+                ),
+            ));
+        }
+    }
+    Ok(())
 }
 
 fn rotation_fits_ceiling(
@@ -379,6 +410,17 @@ pub(super) fn rotation_case_at(
     case
 }
 
+fn conditioned_rotation_case_at(
+    case_index: usize,
+    facility_ids: &[String],
+    domains: &BTreeMap<String, Vec<i64>>,
+    conditioned_rotations: &BTreeMap<String, i64>,
+) -> BTreeMap<String, i64> {
+    let mut case = conditioned_rotations.clone();
+    case.extend(rotation_case_at(case_index, facility_ids, domains));
+    case
+}
+
 fn count_outcome(
     cases: &[BottomUpRotationPartitionCaseReport],
     outcome: exact::ladder::BottomUpRungOutcome,
@@ -416,6 +458,25 @@ mod tests {
     }
 
     #[test]
+    fn conditioned_rotation_is_present_in_every_residual_partition_case() {
+        let facilities = vec!["new".to_string()];
+        let domains = BTreeMap::from([("new".to_string(), vec![0, 90])]);
+        let conditioned = BTreeMap::from([("prior".to_string(), 180)]);
+
+        let first = conditioned_rotation_case_at(0, &facilities, &domains, &conditioned);
+        let second = conditioned_rotation_case_at(1, &facilities, &domains, &conditioned);
+
+        assert_eq!(
+            first,
+            BTreeMap::from([("new".to_string(), 0), ("prior".to_string(), 180)])
+        );
+        assert_eq!(
+            second,
+            BTreeMap::from([("new".to_string(), 90), ("prior".to_string(), 180)])
+        );
+    }
+
+    #[test]
     fn partition_selection_rejects_empty_duplicate_and_zero_worker_requests() {
         assert_eq!(
             validate_partition_selection(&[], 1)
@@ -438,23 +499,36 @@ mod tests {
     }
 
     #[test]
-    fn partition_selection_rejects_a_facility_outside_the_phase_frontier() {
-        let introduced = BTreeSet::from(["seed".to_string()]);
-        let diagnostic = validate_introduced_selection(
-            &["seed".to_string(), "planter".to_string()],
-            &introduced,
+    fn rotation_condition_cannot_overlap_a_partition_dimension() {
+        let prepared = super::super::bottom_up_ladder::PreparedBottomUpPhase {
+            input: ModelInput {
+                width: 1,
+                height: 1,
+                cell_count: 1,
+                instances: Vec::new(),
+                edges: Vec::new(),
+                networks: Vec::new(),
+            },
+            target_phase_index: 0,
+            total_phase_count: 1,
+            cumulative_facility_count: 0,
+            introduced_facility_ids: Vec::new(),
+        };
+        let diagnostic = validate_conditioned_rotations(
+            &prepared,
+            &["same".to_string()],
+            &BTreeMap::from([("same".to_string(), 0)]),
         )
-        .expect_err("non-introduced facility must fail");
+        .expect_err("one facility cannot be conditioned and partitioned");
 
         assert_eq!(
             diagnostic.code,
-            "bottom-up-rotation-partition-facility-not-introduced"
+            "bottom-up-rotation-partition-condition-overlap"
         );
-        assert_eq!(diagnostic.entity.as_deref(), Some("planter"));
     }
 
     #[test]
-    fn rotation_partition_uses_only_rotations_present_in_the_parent_model() {
+    fn rotation_partition_accepts_a_prior_cumulative_facility_and_uses_the_parent_domain() {
         let instance = InstanceInput {
             id: "asymmetric".to_string(),
             recipe: "test-recipe".to_string(),
@@ -482,12 +556,38 @@ mod tests {
             target_phase_index: 0,
             total_phase_count: 1,
             cumulative_facility_count: 1,
-            introduced_facility_ids: vec!["asymmetric".to_string()],
+            introduced_facility_ids: Vec::new(),
         };
 
         let domains = validated_rotation_domains(&prepared, &["asymmetric".to_string()])
-            .expect("the fitting parent rotation domain should partition");
+            .expect("a prior cumulative facility should retain its fitting parent domain");
         assert_eq!(domains["asymmetric"], [0]);
+    }
+
+    #[test]
+    fn rotation_partition_rejects_a_facility_absent_from_the_cumulative_model() {
+        let prepared = super::super::bottom_up_ladder::PreparedBottomUpPhase {
+            input: ModelInput {
+                width: 3,
+                height: 4,
+                cell_count: 12,
+                instances: Vec::new(),
+                edges: Vec::new(),
+                networks: Vec::new(),
+            },
+            target_phase_index: 0,
+            total_phase_count: 1,
+            cumulative_facility_count: 0,
+            introduced_facility_ids: Vec::new(),
+        };
+
+        let diagnostic = validated_rotation_domains(&prepared, &["missing".to_string()])
+            .expect_err("an absent cumulative facility must fail");
+        assert_eq!(
+            diagnostic.code,
+            "bottom-up-rotation-partition-facility-missing"
+        );
+        assert_eq!(diagnostic.entity.as_deref(), Some("missing"));
     }
 
     #[test]

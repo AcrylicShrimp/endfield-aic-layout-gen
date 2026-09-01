@@ -1,5 +1,6 @@
-use std::sync::Arc;
+use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::{Arc, Mutex};
 
 use pumpkin_solver::core::declare_inference_label;
 use pumpkin_solver::core::predicates::{Predicate, PredicateConstructor, PropositionalConjunction};
@@ -12,7 +13,10 @@ use pumpkin_solver::core::propagation::{
 use pumpkin_solver::core::state::PropagationStatusCP;
 use pumpkin_solver::core::variables::{DomainId, Literal};
 
-use super::ladder::EndpointClearancePropagationStatistics;
+use super::ladder::{
+    EndpointClearanceGroupStatistics, EndpointClearancePropagationStatistics,
+    EndpointClearanceRelationHotsetStatistics, EndpointClearanceRelationStatistics,
+};
 
 declare_inference_label!(EndpointRectangleClearance);
 
@@ -23,6 +27,10 @@ pub(in crate::layouts::integrated) struct EndpointClearancePropagationCounters {
     executions: AtomicU64,
     notifications: AtomicU64,
     coordinate_notifications: AtomicU64,
+    connection_x_notifications: AtomicU64,
+    connection_y_notifications: AtomicU64,
+    facility_x_notifications: AtomicU64,
+    facility_y_notifications: AtomicU64,
     orientation_notifications: AtomicU64,
     skipped_false_orientation_notifications: AtomicU64,
     enqueued_notifications: AtomicU64,
@@ -32,6 +40,25 @@ pub(in crate::layouts::integrated) struct EndpointClearancePropagationCounters {
     bound_updates: AtomicU64,
     conflicts: AtomicU64,
     maximum_reason_predicates: AtomicU64,
+    scratch_executions: AtomicU64,
+    coordinate_only_executions: AtomicU64,
+    orientation_only_executions: AtomicU64,
+    mixed_event_executions: AtomicU64,
+    unclassified_executions: AtomicU64,
+    executions_with_rejection: AtomicU64,
+    executions_with_forced_separation: AtomicU64,
+    executions_with_bound_update: AtomicU64,
+    executions_with_conflict: AtomicU64,
+    executions_without_domain_effect: AtomicU64,
+    scratch_executions_without_domain_effect: AtomicU64,
+    coordinate_only_executions_without_domain_effect: AtomicU64,
+    orientation_only_executions_without_domain_effect: AtomicU64,
+    mixed_event_executions_without_domain_effect: AtomicU64,
+    unclassified_executions_without_domain_effect: AtomicU64,
+    universally_entailed_executions: AtomicU64,
+    entailment_episodes: AtomicU64,
+    notifications_while_entailed: AtomicU64,
+    relation_details: Mutex<Vec<Arc<EndpointClearanceRelationCounters>>>,
 }
 
 impl Default for EndpointClearancePropagationCounters {
@@ -48,6 +75,10 @@ impl EndpointClearancePropagationCounters {
             executions: AtomicU64::default(),
             notifications: AtomicU64::default(),
             coordinate_notifications: AtomicU64::default(),
+            connection_x_notifications: AtomicU64::default(),
+            connection_y_notifications: AtomicU64::default(),
+            facility_x_notifications: AtomicU64::default(),
+            facility_y_notifications: AtomicU64::default(),
             orientation_notifications: AtomicU64::default(),
             skipped_false_orientation_notifications: AtomicU64::default(),
             enqueued_notifications: AtomicU64::default(),
@@ -57,6 +88,25 @@ impl EndpointClearancePropagationCounters {
             bound_updates: AtomicU64::default(),
             conflicts: AtomicU64::default(),
             maximum_reason_predicates: AtomicU64::default(),
+            scratch_executions: AtomicU64::default(),
+            coordinate_only_executions: AtomicU64::default(),
+            orientation_only_executions: AtomicU64::default(),
+            mixed_event_executions: AtomicU64::default(),
+            unclassified_executions: AtomicU64::default(),
+            executions_with_rejection: AtomicU64::default(),
+            executions_with_forced_separation: AtomicU64::default(),
+            executions_with_bound_update: AtomicU64::default(),
+            executions_with_conflict: AtomicU64::default(),
+            executions_without_domain_effect: AtomicU64::default(),
+            scratch_executions_without_domain_effect: AtomicU64::default(),
+            coordinate_only_executions_without_domain_effect: AtomicU64::default(),
+            orientation_only_executions_without_domain_effect: AtomicU64::default(),
+            mixed_event_executions_without_domain_effect: AtomicU64::default(),
+            unclassified_executions_without_domain_effect: AtomicU64::default(),
+            universally_entailed_executions: AtomicU64::default(),
+            entailment_episodes: AtomicU64::default(),
+            notifications_while_entailed: AtomicU64::default(),
+            relation_details: Mutex::new(Vec::new()),
         }
     }
 
@@ -81,6 +131,10 @@ impl EndpointClearancePropagationCounters {
             executions: self.executions.load(Ordering::Relaxed),
             notifications: self.notifications.load(Ordering::Relaxed),
             coordinate_notifications: self.coordinate_notifications.load(Ordering::Relaxed),
+            connection_x_notifications: self.connection_x_notifications.load(Ordering::Relaxed),
+            connection_y_notifications: self.connection_y_notifications.load(Ordering::Relaxed),
+            facility_x_notifications: self.facility_x_notifications.load(Ordering::Relaxed),
+            facility_y_notifications: self.facility_y_notifications.load(Ordering::Relaxed),
             orientation_notifications: self.orientation_notifications.load(Ordering::Relaxed),
             skipped_false_orientation_notifications: self
                 .skipped_false_orientation_notifications
@@ -92,6 +146,240 @@ impl EndpointClearancePropagationCounters {
             bound_updates: self.bound_updates.load(Ordering::Relaxed),
             conflicts: self.conflicts.load(Ordering::Relaxed),
             maximum_reason_predicates: self.maximum_reason_predicates.load(Ordering::Relaxed),
+            scratch_executions: self.scratch_executions.load(Ordering::Relaxed),
+            coordinate_only_executions: self.coordinate_only_executions.load(Ordering::Relaxed),
+            orientation_only_executions: self.orientation_only_executions.load(Ordering::Relaxed),
+            mixed_event_executions: self.mixed_event_executions.load(Ordering::Relaxed),
+            unclassified_executions: self.unclassified_executions.load(Ordering::Relaxed),
+            executions_with_rejection: self.executions_with_rejection.load(Ordering::Relaxed),
+            executions_with_forced_separation: self
+                .executions_with_forced_separation
+                .load(Ordering::Relaxed),
+            executions_with_bound_update: self.executions_with_bound_update.load(Ordering::Relaxed),
+            executions_with_conflict: self.executions_with_conflict.load(Ordering::Relaxed),
+            executions_without_domain_effect: self
+                .executions_without_domain_effect
+                .load(Ordering::Relaxed),
+            scratch_executions_without_domain_effect: self
+                .scratch_executions_without_domain_effect
+                .load(Ordering::Relaxed),
+            coordinate_only_executions_without_domain_effect: self
+                .coordinate_only_executions_without_domain_effect
+                .load(Ordering::Relaxed),
+            orientation_only_executions_without_domain_effect: self
+                .orientation_only_executions_without_domain_effect
+                .load(Ordering::Relaxed),
+            mixed_event_executions_without_domain_effect: self
+                .mixed_event_executions_without_domain_effect
+                .load(Ordering::Relaxed),
+            unclassified_executions_without_domain_effect: self
+                .unclassified_executions_without_domain_effect
+                .load(Ordering::Relaxed),
+            universally_entailed_executions: self
+                .universally_entailed_executions
+                .load(Ordering::Relaxed),
+            entailment_episodes: self.entailment_episodes.load(Ordering::Relaxed),
+            notifications_while_entailed: self.notifications_while_entailed.load(Ordering::Relaxed),
+            relation_hotset: self.relation_hotset(),
+        }
+    }
+
+    pub(in crate::layouts::integrated) fn register_relation(
+        &self,
+        terminal: &str,
+        target_facility: &str,
+    ) -> Option<Arc<EndpointClearanceRelationCounters>> {
+        if !self.enabled {
+            return None;
+        }
+        let relation = Arc::new(EndpointClearanceRelationCounters {
+            terminal: terminal.to_string(),
+            target_facility: target_facility.to_string(),
+            executions: AtomicU64::default(),
+            notifications: AtomicU64::default(),
+            executions_without_domain_effect: AtomicU64::default(),
+            universally_entailed_executions: AtomicU64::default(),
+            executions_with_domain_effect: AtomicU64::default(),
+        });
+        self.relation_details
+            .lock()
+            .expect("endpoint-clearance relation registry is not poisoned")
+            .push(Arc::clone(&relation));
+        Some(relation)
+    }
+
+    fn relation_hotset(&self) -> EndpointClearanceRelationHotsetStatistics {
+        let details = self
+            .relation_details
+            .lock()
+            .expect("endpoint-clearance relation registry is not poisoned");
+        if details.is_empty() {
+            return EndpointClearanceRelationHotsetStatistics::default();
+        }
+        let mut relations = details
+            .iter()
+            .map(|relation| relation.snapshot())
+            .collect::<Vec<_>>();
+        relations.sort_by(|left, right| {
+            right
+                .executions
+                .cmp(&left.executions)
+                .then_with(|| left.terminal.cmp(&right.terminal))
+                .then_with(|| left.target_facility.cmp(&right.target_facility))
+        });
+        let mut executions = relations
+            .iter()
+            .map(|relation| relation.executions)
+            .collect::<Vec<_>>();
+        executions.sort_unstable();
+        let percentile = |percent: usize| executions[(executions.len() - 1) * percent / 100];
+        let total = executions.iter().copied().map(u128::from).sum::<u128>();
+        let share_ppm = |count: usize| {
+            if total == 0 {
+                return 0;
+            }
+            let top = relations
+                .iter()
+                .take(count)
+                .map(|relation| u128::from(relation.executions))
+                .sum::<u128>();
+            u64::try_from(top * 1_000_000 / total).unwrap_or(u64::MAX)
+        };
+        let aggregate_groups = |select: fn(&EndpointClearanceRelationStatistics) -> &str| {
+            let mut groups = BTreeMap::<String, u64>::new();
+            for relation in &relations {
+                *groups.entry(select(relation).to_string()).or_default() += relation.executions;
+            }
+            let mut groups = groups
+                .into_iter()
+                .map(|(entity, executions)| EndpointClearanceGroupStatistics {
+                    entity,
+                    executions,
+                    execution_share_ppm: if total == 0 {
+                        0
+                    } else {
+                        u64::try_from(u128::from(executions) * 1_000_000 / total)
+                            .unwrap_or(u64::MAX)
+                    },
+                })
+                .collect::<Vec<_>>();
+            groups.sort_by(|left, right| {
+                right
+                    .executions
+                    .cmp(&left.executions)
+                    .then_with(|| left.entity.cmp(&right.entity))
+            });
+            groups.truncate(20);
+            groups
+        };
+        let top_terminals_by_execution = aggregate_groups(|relation| &relation.terminal);
+        let top_target_facilities_by_execution =
+            aggregate_groups(|relation| &relation.target_facility);
+        EndpointClearanceRelationHotsetStatistics {
+            collected_relations: relations.len().try_into().unwrap_or(u64::MAX),
+            zero_execution_relations: executions
+                .iter()
+                .filter(|executions| **executions == 0)
+                .count()
+                .try_into()
+                .unwrap_or(u64::MAX),
+            execution_p50: percentile(50),
+            execution_p95: percentile(95),
+            maximum_executions: *executions.last().expect("relation list is non-empty"),
+            top_1_execution_share_ppm: share_ppm(1),
+            top_10_execution_share_ppm: share_ppm(10),
+            top_100_execution_share_ppm: share_ppm(100),
+            top_relations_by_execution: relations.into_iter().take(20).collect(),
+            top_terminals_by_execution,
+            top_target_facilities_by_execution,
+        }
+    }
+
+    fn note_execution(&self, trigger: ExecutionTrigger, effects: ExecutionEffects) {
+        match trigger {
+            ExecutionTrigger::Scratch => self.increment(&self.scratch_executions),
+            ExecutionTrigger::CoordinateOnly => self.increment(&self.coordinate_only_executions),
+            ExecutionTrigger::OrientationOnly => self.increment(&self.orientation_only_executions),
+            ExecutionTrigger::Mixed => self.increment(&self.mixed_event_executions),
+            ExecutionTrigger::Unclassified => self.increment(&self.unclassified_executions),
+        }
+        if effects.rejection {
+            self.increment(&self.executions_with_rejection);
+        }
+        if effects.forced_separation {
+            self.increment(&self.executions_with_forced_separation);
+        }
+        if effects.bound_update {
+            self.increment(&self.executions_with_bound_update);
+        }
+        if effects.conflict {
+            self.increment(&self.executions_with_conflict);
+        }
+        if !effects.has_domain_effect() {
+            self.increment(&self.executions_without_domain_effect);
+            match trigger {
+                ExecutionTrigger::Scratch => {
+                    self.increment(&self.scratch_executions_without_domain_effect)
+                }
+                ExecutionTrigger::CoordinateOnly => {
+                    self.increment(&self.coordinate_only_executions_without_domain_effect)
+                }
+                ExecutionTrigger::OrientationOnly => {
+                    self.increment(&self.orientation_only_executions_without_domain_effect)
+                }
+                ExecutionTrigger::Mixed => {
+                    self.increment(&self.mixed_event_executions_without_domain_effect)
+                }
+                ExecutionTrigger::Unclassified => {
+                    self.increment(&self.unclassified_executions_without_domain_effect)
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+pub(in crate::layouts::integrated) struct EndpointClearanceRelationCounters {
+    terminal: String,
+    target_facility: String,
+    executions: AtomicU64,
+    notifications: AtomicU64,
+    executions_without_domain_effect: AtomicU64,
+    universally_entailed_executions: AtomicU64,
+    executions_with_domain_effect: AtomicU64,
+}
+
+impl EndpointClearanceRelationCounters {
+    fn snapshot(&self) -> EndpointClearanceRelationStatistics {
+        EndpointClearanceRelationStatistics {
+            terminal: self.terminal.clone(),
+            target_facility: self.target_facility.clone(),
+            executions: self.executions.load(Ordering::Relaxed),
+            notifications: self.notifications.load(Ordering::Relaxed),
+            executions_without_domain_effect: self
+                .executions_without_domain_effect
+                .load(Ordering::Relaxed),
+            universally_entailed_executions: self
+                .universally_entailed_executions
+                .load(Ordering::Relaxed),
+            executions_with_domain_effect: self
+                .executions_with_domain_effect
+                .load(Ordering::Relaxed),
+        }
+    }
+
+    fn note_execution(&self, effects: ExecutionEffects) {
+        self.executions.fetch_add(1, Ordering::Relaxed);
+        if effects.has_domain_effect() {
+            self.executions_with_domain_effect
+                .fetch_add(1, Ordering::Relaxed);
+        } else {
+            self.executions_without_domain_effect
+                .fetch_add(1, Ordering::Relaxed);
+        }
+        if effects.universally_entailed {
+            self.universally_entailed_executions
+                .fetch_add(1, Ordering::Relaxed);
         }
     }
 }
@@ -115,6 +403,7 @@ pub(in crate::layouts::integrated) struct EndpointRectangleClearancePropagatorAr
     pub priority: Priority,
     pub counters: Arc<EndpointClearancePropagationCounters>,
     pub false_event_filter_enabled: bool,
+    pub relation_counters: Option<Arc<EndpointClearanceRelationCounters>>,
     pub constraint_tag: ConstraintTag,
 }
 
@@ -156,6 +445,9 @@ impl PropagatorConstructor for EndpointRectangleClearancePropagatorArgs {
                 priority: self.priority,
                 counters: self.counters,
                 false_event_filter_enabled: self.false_event_filter_enabled,
+                relation_counters: self.relation_counters,
+                pending_trigger_mask: 0,
+                entailed_observed: false,
                 inference_code: InferenceCode::new(self.constraint_tag, EndpointRectangleClearance),
             },
         }
@@ -173,7 +465,48 @@ pub(in crate::layouts::integrated) struct EndpointRectangleClearancePropagator {
     priority: Priority,
     counters: Arc<EndpointClearancePropagationCounters>,
     false_event_filter_enabled: bool,
+    relation_counters: Option<Arc<EndpointClearanceRelationCounters>>,
+    pending_trigger_mask: u8,
+    entailed_observed: bool,
     inference_code: InferenceCode,
+}
+
+const COORDINATE_TRIGGER: u8 = 1 << 0;
+const ORIENTATION_TRIGGER: u8 = 1 << 1;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ExecutionTrigger {
+    Scratch,
+    CoordinateOnly,
+    OrientationOnly,
+    Mixed,
+    Unclassified,
+}
+
+impl ExecutionTrigger {
+    fn from_mask(mask: u8) -> Self {
+        match mask {
+            COORDINATE_TRIGGER => Self::CoordinateOnly,
+            ORIENTATION_TRIGGER => Self::OrientationOnly,
+            mask if mask == COORDINATE_TRIGGER | ORIENTATION_TRIGGER => Self::Mixed,
+            _ => Self::Unclassified,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+struct ExecutionEffects {
+    rejection: bool,
+    forced_separation: bool,
+    bound_update: bool,
+    conflict: bool,
+    universally_entailed: bool,
+}
+
+impl ExecutionEffects {
+    fn has_domain_effect(self) -> bool {
+        self.rejection || self.bound_update || self.conflict
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -265,6 +598,13 @@ impl EndpointRectangleClearancePropagator {
         possible
     }
 
+    fn guaranteed_outside(bounds: Bounds, orientation: EndpointClearanceOrientation) -> bool {
+        bounds.connection_x_upper < bounds.facility_x_lower
+            || bounds.connection_x_lower >= bounds.facility_x_upper + orientation.width
+            || bounds.connection_y_upper < bounds.facility_y_lower
+            || bounds.connection_y_lower >= bounds.facility_y_upper + orientation.height
+    }
+
     fn impossible_reason(&self, bounds: Bounds, separation: Separation) -> [Predicate; 2] {
         match separation {
             Separation::Left => [
@@ -330,11 +670,14 @@ impl EndpointRectangleClearancePropagator {
         context: &mut PropagationContext,
         conclusion: Predicate,
         reason: PropositionalConjunction,
+        effects: &mut ExecutionEffects,
     ) -> PropagationStatusCP {
         self.note_reason(&reason);
         self.counters.increment(&self.counters.bound_updates);
+        effects.bound_update = true;
         if let Err(conflict) = context.post(conclusion, (reason, &self.inference_code)) {
             self.counters.increment(&self.counters.conflicts);
+            effects.conflict = true;
             return Err(conflict.into());
         }
         Ok(())
@@ -346,9 +689,11 @@ impl EndpointRectangleClearancePropagator {
         bounds: Bounds,
         orientation: EndpointClearanceOrientation,
         separation: Separation,
+        effects: &mut ExecutionEffects,
     ) -> PropagationStatusCP {
         self.counters
             .increment(&self.counters.forced_separation_detections);
+        effects.forced_separation = true;
         match separation {
             Separation::Left => {
                 let connection_upper = bounds.facility_x_upper - 1;
@@ -363,6 +708,7 @@ impl EndpointRectangleClearancePropagator {
                             self.facility_x
                                 .upper_bound_predicate(bounds.facility_x_upper),
                         ),
+                        effects,
                     )?;
                 }
                 let facility_lower = bounds.connection_x_lower + 1;
@@ -377,6 +723,7 @@ impl EndpointRectangleClearancePropagator {
                             self.connection_x
                                 .lower_bound_predicate(bounds.connection_x_lower),
                         ),
+                        effects,
                     )?;
                 }
             }
@@ -393,6 +740,7 @@ impl EndpointRectangleClearancePropagator {
                             self.facility_x
                                 .lower_bound_predicate(bounds.facility_x_lower),
                         ),
+                        effects,
                     )?;
                 }
                 let facility_upper = bounds.connection_x_upper - orientation.width;
@@ -407,6 +755,7 @@ impl EndpointRectangleClearancePropagator {
                             self.connection_x
                                 .upper_bound_predicate(bounds.connection_x_upper),
                         ),
+                        effects,
                     )?;
                 }
             }
@@ -423,6 +772,7 @@ impl EndpointRectangleClearancePropagator {
                             self.facility_y
                                 .upper_bound_predicate(bounds.facility_y_upper),
                         ),
+                        effects,
                     )?;
                 }
                 let facility_lower = bounds.connection_y_lower + 1;
@@ -437,6 +787,7 @@ impl EndpointRectangleClearancePropagator {
                             self.connection_y
                                 .lower_bound_predicate(bounds.connection_y_lower),
                         ),
+                        effects,
                     )?;
                 }
             }
@@ -453,6 +804,7 @@ impl EndpointRectangleClearancePropagator {
                             self.facility_y
                                 .lower_bound_predicate(bounds.facility_y_lower),
                         ),
+                        effects,
                     )?;
                 }
                 let facility_upper = bounds.connection_y_upper - orientation.height;
@@ -467,6 +819,7 @@ impl EndpointRectangleClearancePropagator {
                             self.connection_y
                                 .upper_bound_predicate(bounds.connection_y_upper),
                         ),
+                        effects,
                     )?;
                 }
             }
@@ -474,36 +827,65 @@ impl EndpointRectangleClearancePropagator {
         Ok(())
     }
 
-    fn propagate_all(&self, context: &mut PropagationContext) -> PropagationStatusCP {
+    fn propagate_all(
+        &mut self,
+        context: &mut PropagationContext,
+        trigger: ExecutionTrigger,
+    ) -> PropagationStatusCP {
         self.counters.increment(&self.counters.executions);
-        let bounds = self.bounds(context);
-        for orientation in &self.orientations {
-            if context.evaluate_predicate(orientation.selected.get_false_predicate()) == Some(true)
-            {
-                continue;
-            }
-            self.counters.increment(&self.counters.orientation_checks);
-            let possible = Self::possible_separations(bounds, *orientation);
-            if possible.is_empty() {
-                let reason = self.all_impossible_reason(bounds);
-                self.note_reason(&reason);
-                self.counters
-                    .increment(&self.counters.rejected_orientations);
-                if let Err(conflict) = context.post(
-                    orientation.selected.get_false_predicate(),
-                    (reason, &self.inference_code),
-                ) {
-                    self.counters.increment(&self.counters.conflicts);
-                    return Err(conflict.into());
+        let mut effects = ExecutionEffects::default();
+        let result = (|| {
+            let bounds = self.bounds(context);
+            let mut any_surviving_orientation = false;
+            let mut all_surviving_orientations_are_entailed = true;
+            for orientation in &self.orientations {
+                if context.evaluate_predicate(orientation.selected.get_false_predicate())
+                    == Some(true)
+                {
+                    continue;
                 }
-            } else if context.evaluate_predicate(orientation.selected.get_true_predicate())
-                == Some(true)
-                && let Some(forced) = possible.unique()
-            {
-                self.force_separation(context, bounds, *orientation, forced)?;
+                any_surviving_orientation = true;
+                all_surviving_orientations_are_entailed &=
+                    Self::guaranteed_outside(bounds, *orientation);
+                self.counters.increment(&self.counters.orientation_checks);
+                let possible = Self::possible_separations(bounds, *orientation);
+                if possible.is_empty() {
+                    let reason = self.all_impossible_reason(bounds);
+                    self.note_reason(&reason);
+                    self.counters
+                        .increment(&self.counters.rejected_orientations);
+                    effects.rejection = true;
+                    if let Err(conflict) = context.post(
+                        orientation.selected.get_false_predicate(),
+                        (reason, &self.inference_code),
+                    ) {
+                        self.counters.increment(&self.counters.conflicts);
+                        effects.conflict = true;
+                        return Err(conflict.into());
+                    }
+                } else if context.evaluate_predicate(orientation.selected.get_true_predicate())
+                    == Some(true)
+                    && let Some(forced) = possible.unique()
+                {
+                    self.force_separation(context, bounds, *orientation, forced, &mut effects)?;
+                }
             }
+            if any_surviving_orientation && all_surviving_orientations_are_entailed {
+                effects.universally_entailed = true;
+                self.counters
+                    .increment(&self.counters.universally_entailed_executions);
+                if !self.entailed_observed {
+                    self.entailed_observed = true;
+                    self.counters.increment(&self.counters.entailment_episodes);
+                }
+            }
+            Ok(())
+        })();
+        self.counters.note_execution(trigger, effects);
+        if let Some(relation_counters) = &self.relation_counters {
+            relation_counters.note_execution(effects);
         }
-        Ok(())
+        result
     }
 }
 
@@ -523,12 +905,37 @@ impl Propagator for EndpointRectangleClearancePropagator {
         _event: OpaqueDomainEvent,
     ) -> EnqueueDecision {
         self.counters.increment(&self.counters.notifications);
+        if let Some(relation_counters) = &self.relation_counters {
+            relation_counters
+                .notifications
+                .fetch_add(1, Ordering::Relaxed);
+        }
+        if self.entailed_observed {
+            self.counters
+                .increment(&self.counters.notifications_while_entailed);
+        }
         let local_index = local_id.unpack() as usize;
         if local_index < 4 {
             self.counters
                 .increment(&self.counters.coordinate_notifications);
+            match local_index {
+                0 => self
+                    .counters
+                    .increment(&self.counters.connection_x_notifications),
+                1 => self
+                    .counters
+                    .increment(&self.counters.connection_y_notifications),
+                2 => self
+                    .counters
+                    .increment(&self.counters.facility_x_notifications),
+                3 => self
+                    .counters
+                    .increment(&self.counters.facility_y_notifications),
+                _ => unreachable!("coordinate notification local id is in 0..4"),
+            }
             self.counters
                 .increment(&self.counters.enqueued_notifications);
+            self.pending_trigger_mask |= COORDINATE_TRIGGER;
             return EnqueueDecision::Enqueue;
         }
 
@@ -548,15 +955,23 @@ impl Propagator for EndpointRectangleClearancePropagator {
 
         self.counters
             .increment(&self.counters.enqueued_notifications);
+        self.pending_trigger_mask |= ORIENTATION_TRIGGER;
         EnqueueDecision::Enqueue
     }
 
     fn propagate(&mut self, mut context: PropagationContext) -> PropagationStatusCP {
-        self.propagate_all(&mut context)
+        let trigger = ExecutionTrigger::from_mask(std::mem::take(&mut self.pending_trigger_mask));
+        self.propagate_all(&mut context, trigger)
     }
 
     fn propagate_from_scratch(&self, mut context: PropagationContext) -> PropagationStatusCP {
-        self.propagate_all(&mut context)
+        let mut scratch = self.clone();
+        scratch.propagate_all(&mut context, ExecutionTrigger::Scratch)
+    }
+
+    fn synchronise(&mut self, _context: NotificationContext<'_>) {
+        self.pending_trigger_mask = 0;
+        self.entailed_observed = false;
     }
 }
 
@@ -603,6 +1018,7 @@ mod tests {
             priority: Priority::High,
             counters: Arc::default(),
             false_event_filter_enabled: false,
+            relation_counters: None,
             constraint_tag: tag,
         });
         solver.add_clause([selected.get_true_predicate()], tag);
@@ -691,6 +1107,7 @@ mod tests {
                 priority: Priority::High,
                 counters: Arc::default(),
                 false_event_filter_enabled,
+                relation_counters: None,
                 constraint_tag: tag,
             });
         } else {
@@ -800,6 +1217,106 @@ mod tests {
     }
 
     #[test]
+    fn guaranteed_outside_matches_every_assignment_in_small_bound_domains() {
+        let mut solver = Solver::default();
+        let selected = solver.new_named_literal("entailed-orientation");
+        let orientation = EndpointClearanceOrientation {
+            selected,
+            selected_parent: *selected.get_integer_variable().inner(),
+            width: 2,
+            height: 2,
+        };
+        let ranges = (0..=2)
+            .flat_map(|lower| (lower..=2).map(move |upper| (lower, upper)))
+            .collect::<Vec<_>>();
+        for connection_x in &ranges {
+            for connection_y in &ranges {
+                for facility_x in &ranges {
+                    for facility_y in &ranges {
+                        let bounds = Bounds {
+                            connection_x_lower: connection_x.0,
+                            connection_x_upper: connection_x.1,
+                            connection_y_lower: connection_y.0,
+                            connection_y_upper: connection_y.1,
+                            facility_x_lower: facility_x.0,
+                            facility_x_upper: facility_x.1,
+                            facility_y_lower: facility_y.0,
+                            facility_y_upper: facility_y.1,
+                        };
+                        let expected = (connection_x.0..=connection_x.1).all(|cx| {
+                            (connection_y.0..=connection_y.1).all(|cy| {
+                                (facility_x.0..=facility_x.1).all(|fx| {
+                                    (facility_y.0..=facility_y.1).all(|fy| {
+                                        cx < fx
+                                            || cx >= fx + orientation.width
+                                            || cy < fy
+                                            || cy >= fy + orientation.height
+                                    })
+                                })
+                            })
+                        });
+                        assert_eq!(
+                            EndpointRectangleClearancePropagator::guaranteed_outside(
+                                bounds,
+                                orientation,
+                            ),
+                            expected,
+                            "connection_x={connection_x:?} connection_y={connection_y:?} facility_x={facility_x:?} facility_y={facility_y:?}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn relation_hotset_is_sorted_and_reports_execution_concentration() {
+        let counters = EndpointClearancePropagationCounters::default();
+        let hot = counters
+            .register_relation("terminal-hot", "facility-a")
+            .expect("enabled counters retain relation details");
+        let same_terminal = counters
+            .register_relation("terminal-hot", "facility-b")
+            .expect("enabled counters retain relation details");
+        let same_facility = counters
+            .register_relation("terminal-cold", "facility-a")
+            .expect("enabled counters retain relation details");
+        let cold = counters
+            .register_relation("terminal-cold", "facility-b")
+            .expect("enabled counters retain relation details");
+        for _ in 0..3 {
+            hot.note_execution(ExecutionEffects::default());
+        }
+        for _ in 0..2 {
+            same_terminal.note_execution(ExecutionEffects::default());
+        }
+        same_facility.note_execution(ExecutionEffects::default());
+        cold.note_execution(ExecutionEffects {
+            universally_entailed: true,
+            ..ExecutionEffects::default()
+        });
+
+        let hotset = counters.snapshot().relation_hotset;
+        assert_eq!(hotset.collected_relations, 4);
+        assert_eq!(hotset.zero_execution_relations, 0);
+        assert_eq!(hotset.execution_p50, 1);
+        assert_eq!(hotset.execution_p95, 2);
+        assert_eq!(hotset.maximum_executions, 3);
+        assert_eq!(hotset.top_1_execution_share_ppm, 428_571);
+        assert_eq!(
+            hotset.top_relations_by_execution[0].terminal,
+            "terminal-hot"
+        );
+        assert_eq!(hotset.top_terminals_by_execution[0].entity, "terminal-hot");
+        assert_eq!(hotset.top_terminals_by_execution[0].executions, 5);
+        assert_eq!(
+            hotset.top_target_facilities_by_execution[0].entity,
+            "facility-a"
+        );
+        assert_eq!(hotset.top_target_facilities_by_execution[0].executions, 4);
+    }
+
+    #[test]
     fn half_open_rectangle_boundaries_are_exact() {
         for (connection, expected) in [
             ((0, 1), true),
@@ -867,6 +1384,7 @@ mod tests {
             priority: Priority::High,
             counters: Arc::default(),
             false_event_filter_enabled: false,
+            relation_counters: None,
             constraint_tag: tag,
         });
         assert_eq!(
@@ -907,6 +1425,7 @@ mod tests {
             priority: Priority::High,
             counters: Arc::default(),
             false_event_filter_enabled: false,
+            relation_counters: None,
             constraint_tag: tag,
         });
         solver.add_clause([selected.get_false_predicate()], tag);
@@ -950,6 +1469,7 @@ mod tests {
             priority: Priority::High,
             counters: Arc::clone(&counters),
             false_event_filter_enabled: true,
+            relation_counters: None,
             constraint_tag: tag,
         });
         solver.add_clause(
@@ -983,6 +1503,22 @@ mod tests {
             statistics.notifications,
             statistics.skipped_false_orientation_notifications + statistics.enqueued_notifications
         );
+        assert_eq!(
+            statistics.coordinate_notifications,
+            statistics.connection_x_notifications
+                + statistics.connection_y_notifications
+                + statistics.facility_x_notifications
+                + statistics.facility_y_notifications
+        );
+        assert_eq!(
+            statistics.executions,
+            statistics.scratch_executions
+                + statistics.coordinate_only_executions
+                + statistics.orientation_only_executions
+                + statistics.mixed_event_executions
+                + statistics.unclassified_executions
+        );
+        assert!(statistics.executions_without_domain_effect <= statistics.executions);
     }
 
     #[test]
@@ -1010,6 +1546,7 @@ mod tests {
             priority: Priority::High,
             counters: Arc::clone(&counters),
             false_event_filter_enabled: false,
+            relation_counters: None,
             constraint_tag: tag,
         });
         solver.add_clause([selected.get_false_predicate()], tag);
@@ -1108,6 +1645,7 @@ mod tests {
             priority: Priority::High,
             counters: Arc::clone(&counters),
             false_event_filter_enabled: true,
+            relation_counters: None,
             constraint_tag: tag,
         });
         solver.add_clause(

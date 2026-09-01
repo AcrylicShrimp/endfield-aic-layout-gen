@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write as _;
 use std::num::NonZeroU64;
 use std::path::{Path, PathBuf};
@@ -63,6 +63,28 @@ impl From<EndpointClearancePriorityArg> for EndpointClearanceSchedulingPriority 
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct RotationConditionArg {
+    instance: String,
+    rotation: i64,
+}
+
+fn parse_rotation_condition(value: &str) -> Result<RotationConditionArg, String> {
+    let Some((instance, rotation)) = value.rsplit_once('=') else {
+        return Err("expected INSTANCE=DEGREES".to_string());
+    };
+    if instance.is_empty() {
+        return Err("conditioned rotation instance must not be empty".to_string());
+    }
+    let rotation = rotation
+        .parse::<i64>()
+        .map_err(|_| format!("conditioned rotation '{rotation}' is not an integer"))?;
+    Ok(RotationConditionArg {
+        instance: instance.to_string(),
+        rotation,
+    })
+}
+
 #[derive(Debug, Parser)]
 #[command(
     name = "aic-bottom-up-ladder",
@@ -81,9 +103,17 @@ struct Args {
     /// Skip scheduling when an orientation event only proves that orientation false.
     #[arg(long)]
     endpoint_clearance_false_event_filter: bool,
-    /// Introduced facility ID whose directional rotations form an exact partition dimension.
+    /// Cumulative facility ID whose directional rotations form an exact partition dimension.
     #[arg(long = "partition-facility", value_name = "INSTANCE", action = clap::ArgAction::Append)]
     partition_facilities: Vec<String>,
+    /// Diagnostic-only exact rotation equality applied before partitioning a residual subproblem.
+    #[arg(
+        long = "condition-rotation",
+        value_name = "INSTANCE=DEGREES",
+        value_parser = parse_rotation_condition,
+        action = clap::ArgAction::Append
+    )]
+    conditioned_rotations: Vec<RotationConditionArg>,
     /// Parallel solver instances used by an exact rotation partition.
     #[arg(long, value_name = "COUNT", default_value_t = 4)]
     partition_workers: usize,
@@ -217,6 +247,11 @@ fn run(args: Args) -> Result<bool> {
         return Ok(report.partition_complete && report.cases_pairwise_disjoint);
     }
     if !args.partition_facilities.is_empty() {
+        let conditioned_rotations = args
+            .conditioned_rotations
+            .iter()
+            .map(|condition| (condition.instance.clone(), condition.rotation))
+            .collect::<BTreeMap<_, _>>();
         let mut report = diagnose_bottom_up_rotation_partition(
             &loaded.wiring,
             &loaded.facilities,
@@ -226,6 +261,7 @@ fn run(args: Args) -> Result<bool> {
             &loaded.placement_request,
             args.target_phase,
             &args.partition_facilities,
+            &conditioned_rotations,
             args.endpoint_clearance_priority.into(),
             !args.disable_endpoint_clearance_counters,
             args.endpoint_clearance_false_event_filter,
@@ -292,6 +328,28 @@ fn validate_search_settings(args: &Args) -> Result<()> {
     ensure!(
         !args.partition_search_provenance || args.partition_facilities.len() == 1,
         "partition search provenance currently requires exactly one --partition-facility"
+    );
+    ensure!(
+        args.conditioned_rotations.is_empty()
+            || (!args.partition_facilities.is_empty()
+                && !args.partition_root_snapshot
+                && !args.partition_search_provenance),
+        "conditioned rotations require an exact search partition and cannot be used by root or provenance diagnostics"
+    );
+    let conditioned_instances = args
+        .conditioned_rotations
+        .iter()
+        .map(|condition| condition.instance.as_str())
+        .collect::<BTreeSet<_>>();
+    ensure!(
+        conditioned_instances.len() == args.conditioned_rotations.len(),
+        "conditioned rotation facility IDs must be unique"
+    );
+    ensure!(
+        args.partition_facilities
+            .iter()
+            .all(|instance| !conditioned_instances.contains(instance.as_str())),
+        "a facility cannot be both conditioned and partitioned"
     );
     if !args.partition_facilities.is_empty() {
         ensure!(
@@ -586,9 +644,19 @@ fn render_rotation_partition_html(report: &BottomUpRotationPartitionReport) -> R
         .map(|(facility, rotations)| format!("{}={rotations:?}", escape_html(facility)))
         .collect::<Vec<_>>()
         .join("<br>");
+    let conditions = if report.conditioned_rotations.is_empty() {
+        "none".to_string()
+    } else {
+        report
+            .conditioned_rotations
+            .iter()
+            .map(|(facility, rotation)| format!("{}={rotation}°", escape_html(facility)))
+            .collect::<Vec<_>>()
+            .join("<br>")
+    };
     let json = escape_html(&serde_json::to_string_pretty(report)?);
     Ok(format!(
-        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bottom-up rotation partition</title><style>body{{margin:24px;background:#07131d;color:#d5e8f5;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:16px}}.certificate{{padding:10px;border:1px solid #65f0bd;color:#65f0bd;margin-bottom:18px}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}details{{margin-top:20px}}pre{{white-space:pre-wrap;word-break:break-word;color:#8fb2c8}}</style></head><body><h1>Bottom-up exact rotation partition</h1><div class="meta">Phase {phase}/{total} · {facilities} cumulative facilities · {cases} cases · {workers} workers · {budget} ms/case · first feasible {first_feasible} · full wall {wall} ms</div><div class="certificate">complete={complete} · pairwise-disjoint={disjoint} · combined={combined:?} · feasible/infeasible/unknown/invalid={feasible}/{infeasible}/{unknown}/{invalid}<br>{domains}</div><table><thead><tr><th>case</th><th>fixed directional rotations</th><th>outcome</th><th>search ms</th><th>decisions</th><th>conflicts</th><th>propagations</th></tr></thead><tbody>{rows}</tbody></table><details><summary>Machine-readable report</summary><pre>{json}</pre></details></body></html>"#,
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bottom-up rotation partition</title><style>body{{margin:24px;background:#07131d;color:#d5e8f5;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:16px}}.certificate{{padding:10px;border:1px solid #65f0bd;color:#65f0bd;margin-bottom:18px}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}details{{margin-top:20px}}pre{{white-space:pre-wrap;word-break:break-word;color:#8fb2c8}}</style></head><body><h1>Bottom-up exact rotation partition</h1><div class="meta">Phase {phase}/{total} · {facilities} cumulative facilities · {cases} cases · {workers} workers · {budget} ms/case · first feasible {first_feasible} · full wall {wall} ms</div><div class="certificate">scope={scope} · complete={complete} · pairwise-disjoint={disjoint} · all-infeasible-proves-original={infeasible_proof} · combined={combined:?} · feasible/infeasible/unknown/invalid={feasible}/{infeasible}/{unknown}/{invalid}<br>conditions: {conditions}<br>partition domains: {domains}</div><table><thead><tr><th>case</th><th>fixed directional rotations</th><th>outcome</th><th>search ms</th><th>decisions</th><th>conflicts</th><th>propagations</th></tr></thead><tbody>{rows}</tbody></table><details><summary>Machine-readable report</summary><pre>{json}</pre></details></body></html>"#,
         phase = report.target_phase_index,
         total = report.total_phase_count,
         facilities = report.cumulative_facility_count,
@@ -600,13 +668,16 @@ fn render_rotation_partition_html(report: &BottomUpRotationPartitionReport) -> R
             |milliseconds| format!("{milliseconds} ms")
         ),
         wall = report.wall_time_ms,
+        scope = report.partition_scope,
         complete = report.partition_complete,
         disjoint = report.cases_pairwise_disjoint,
+        infeasible_proof = report.all_infeasible_cases_prove_original_parent_infeasible,
         combined = report.combined_outcome,
         feasible = report.feasible_cases,
         infeasible = report.infeasible_cases,
         unknown = report.unknown_cases,
         invalid = report.invalid_cases,
+        conditions = conditions,
     ))
 }
 
@@ -1001,6 +1072,8 @@ mod tests {
             "seed-collector",
             "--partition-facility",
             "planter-0",
+            "--condition-rotation",
+            "prior-seed=180",
             "--partition-workers",
             "3",
             "--disable-endpoint-clearance-counters",
@@ -1018,6 +1091,13 @@ mod tests {
         .expect("rotation partition should parse");
 
         assert_eq!(args.partition_facilities, ["seed-collector", "planter-0"]);
+        assert_eq!(
+            args.conditioned_rotations,
+            [RotationConditionArg {
+                instance: "prior-seed".to_string(),
+                rotation: 180,
+            }]
+        );
         assert_eq!(args.partition_workers, 3);
         assert!(args.disable_endpoint_clearance_counters);
         validate_search_settings(&args).expect("partition settings should be accepted");

@@ -1,0 +1,835 @@
+{
+  "schema_version": 8,
+  "workload_id": "heavy-xiranite-minimum-rate",
+  "workload_manifest_sha256": "d9018af56cfec3f7aabbfeb660617a93e9a809dccfff7294c21bfaca0d7cfa3e",
+  "target_phase_index": 31,
+  "total_phase_count": 41,
+  "cumulative_facility_count": 36,
+  "introduced_facility_ids": [
+    "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:1",
+    "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:2",
+    "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3"
+  ],
+  "search_budget_ms": 5000,
+  "rung": {
+    "schema_version": 9,
+    "rung": "facility-ports-propagated",
+    "formulation": "factorized-coordinate-geometry-rotation-port-support-point-rectangle-clearance-v1",
+    "search_profile": {
+      "endpoint_clearance_priority": "high",
+      "endpoint_clearance_counters_enabled": true,
+      "endpoint_clearance_false_event_filter_enabled": false
+    },
+    "ceiling": [
+      50,
+      50
+    ],
+    "facility_count": 36,
+    "facility_terminal_count": 115,
+    "facility_terminal_ids": [
+      "wiring-edge:037fa5b7aa8741db140fa41b381ee7f3dcc7fdbb9f88a57d76ff638f65de1acc:lane:0000:demand",
+      "wiring-edge:037fa5b7aa8741db140fa41b381ee7f3dcc7fdbb9f88a57d76ff638f65de1acc:lane:0000:supply",
+      "wiring-edge:05e089285ba40fa7965113fad2d6e3c58db56ee47bade60deef31023d6c6a1e8:lane:0000:demand",
+      "wiring-edge:08f6e8c977535a8ac16c6a33077ddcac41d1030d31043546e1a345036dc06da3:lane:0000:demand",
+      "wiring-edge:08f6e8c977535a8ac16c6a33077ddcac41d1030d31043546e1a345036dc06da3:lane:0000:supply",
+      "wiring-edge:091c5a06bf6f7deebb33f108bd8c9f6235f5b2b88776f594d711e491bba96133:lane:0000:demand",
+      "wiring-edge:0be201325caeabf1683782a12d2d3660403a476b17a357123e8865b659e71d69:lane:0000:demand",
+      "wiring-edge:0be201325caeabf1683782a12d2d3660403a476b17a357123e8865b659e71d69:lane:0000:supply",
+      "wiring-edge:121c0d63102c8c4f409587a74e73fbc957b60f98e7976c6cc0c3ab11971344a2:lane:0000:demand",
+      "wiring-edge:121c0d63102c8c4f409587a74e73fbc957b60f98e7976c6cc0c3ab11971344a2:lane:0000:supply",
+      "wiring-edge:15d6ce06d7ea0fef8004f44de714fa58df799033df2fea749cf4c29dded2e64f:lane:0000:demand",
+      "wiring-edge:15d6ce06d7ea0fef8004f44de714fa58df799033df2fea749cf4c29dded2e64f:lane:0000:supply",
+      "wiring-edge:1770726fc972d47bbfb77284fd3ce39582a2fea43bdf58f8f5a4c00150b5a2d3:lane:0000:demand",
+      "wiring-edge:1770726fc972d47bbfb77284fd3ce39582a2fea43bdf58f8f5a4c00150b5a2d3:lane:0000:supply",
+      "wiring-edge:1c3388567cd48974f7170595086002b57ec96fdde0e92e65ab539fbaee613881:lane:0000:demand",
+      "wiring-edge:1c3388567cd48974f7170595086002b57ec96fdde0e92e65ab539fbaee613881:lane:0000:supply",
+      "wiring-edge:21c5b34ce05a1a6145f4451f9000d03a9184f3301407bb9ecb356b9339b77043:lane:0000:demand",
+      "wiring-edge:21c5b34ce05a1a6145f4451f9000d03a9184f3301407bb9ecb356b9339b77043:lane:0000:supply",
+      "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000:demand",
+      "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000:supply",
+      "wiring-edge:2c69b95684e822f9b56e5dea7340ea10ad030c8966ce79f4e266ef8c53ef7c03:lane:0000:demand",
+      "wiring-edge:2c69b95684e822f9b56e5dea7340ea10ad030c8966ce79f4e266ef8c53ef7c03:lane:0001:demand",
+      "wiring-edge:2eba72009a6db0c65081acfd1fc6085ba1c4d9ebe5600bd06cffbcc8ed53f4b6:lane:0000:demand",
+      "wiring-edge:393a80829cefeb5ea19b1dde68cfc79a48e35d4ed5a062a0bff67ee99f16d3ca:lane:0000:demand",
+      "wiring-edge:393a80829cefeb5ea19b1dde68cfc79a48e35d4ed5a062a0bff67ee99f16d3ca:lane:0000:supply",
+      "wiring-edge:3983a3f0da829b97c5d3c106f0351691e80e0230f280e9f65743f23a1dad2e2d:lane:0000:demand",
+      "wiring-edge:3983a3f0da829b97c5d3c106f0351691e80e0230f280e9f65743f23a1dad2e2d:lane:0000:supply",
+      "wiring-edge:3983a3f0da829b97c5d3c106f0351691e80e0230f280e9f65743f23a1dad2e2d:lane:0001:demand",
+      "wiring-edge:3983a3f0da829b97c5d3c106f0351691e80e0230f280e9f65743f23a1dad2e2d:lane:0001:supply",
+      "wiring-edge:3d2504ee25f64ffb790dd3830de2021227476c0368e9bc09fc95e39b817823f5:lane:0000:demand",
+      "wiring-edge:477be53964427bd4f6019a2d169a428dbf72ad621333d501c9161299fe7755d4:lane:0000:demand",
+      "wiring-edge:4808abba73956e901f7b27b0bc394f7cd98a4be4a2e168da08ef924d3b708c25:lane:0000:demand",
+      "wiring-edge:4808abba73956e901f7b27b0bc394f7cd98a4be4a2e168da08ef924d3b708c25:lane:0000:supply",
+      "wiring-edge:4cb849fc215cd655bf6c54a772c7fb48066d7ad879d4abc0c971f43749d5a231:lane:0000:demand",
+      "wiring-edge:4cb849fc215cd655bf6c54a772c7fb48066d7ad879d4abc0c971f43749d5a231:lane:0000:supply",
+      "wiring-edge:4cb849fc215cd655bf6c54a772c7fb48066d7ad879d4abc0c971f43749d5a231:lane:0001:demand",
+      "wiring-edge:4cb849fc215cd655bf6c54a772c7fb48066d7ad879d4abc0c971f43749d5a231:lane:0001:supply",
+      "wiring-edge:4d2d96e80fe684a2fd6bbca955963306c0ca06348fa1a237af5e7b79b2df7149:lane:0000:demand",
+      "wiring-edge:4d2d96e80fe684a2fd6bbca955963306c0ca06348fa1a237af5e7b79b2df7149:lane:0000:supply",
+      "wiring-edge:4d9ccfb1daa16ab3c0c04940d8d77efe9046168c5461254a61e689fda6839580:lane:0000:demand",
+      "wiring-edge:4d9ccfb1daa16ab3c0c04940d8d77efe9046168c5461254a61e689fda6839580:lane:0000:supply",
+      "wiring-edge:52f906ed850f95209b3253222fd38f53f004b2da6fea328c4625bca9b3dd4058:lane:0000:demand",
+      "wiring-edge:52f906ed850f95209b3253222fd38f53f004b2da6fea328c4625bca9b3dd4058:lane:0000:supply",
+      "wiring-edge:5a9af8f3d1163bafe7f49e2f839343e277ff30c7f49398ac71aaf47de6fc823f:lane:0000:demand",
+      "wiring-edge:5a9af8f3d1163bafe7f49e2f839343e277ff30c7f49398ac71aaf47de6fc823f:lane:0000:supply",
+      "wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143:lane:0000:demand",
+      "wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143:lane:0000:supply",
+      "wiring-edge:61ec62214a08362a0a8b358c464d7945f804d1e3244f495a9fafcde49c1ff38c:lane:0000:demand",
+      "wiring-edge:61ec62214a08362a0a8b358c464d7945f804d1e3244f495a9fafcde49c1ff38c:lane:0000:supply",
+      "wiring-edge:69633717796936784c129d497cbe8656045bbefe2609ca7610fcc41f1044d548:lane:0000:demand",
+      "wiring-edge:6a3c9cb8b6801d699a1752f09f622e035b42f899651f3a50feb4530a02eb319a:lane:0000:demand",
+      "wiring-edge:6a3c9cb8b6801d699a1752f09f622e035b42f899651f3a50feb4530a02eb319a:lane:0000:supply",
+      "wiring-edge:6b0699f3bc1d6ad293cc3181cfca4608a125014b88fd40d09247a414e7aa06ea:lane:0000:demand",
+      "wiring-edge:6b0699f3bc1d6ad293cc3181cfca4608a125014b88fd40d09247a414e7aa06ea:lane:0001:demand",
+      "wiring-edge:6e7e886bb2527e399bae69e67687b6f9beb004bff7efb16be97d8673a711103f:lane:0000:demand",
+      "wiring-edge:6e7e886bb2527e399bae69e67687b6f9beb004bff7efb16be97d8673a711103f:lane:0000:supply",
+      "wiring-edge:731a02b8decf07cf1135f46b391405ce1e0465727cc8e9ed834b915addcbebb7:lane:0000:demand",
+      "wiring-edge:731a02b8decf07cf1135f46b391405ce1e0465727cc8e9ed834b915addcbebb7:lane:0000:supply",
+      "wiring-edge:73f36e90398b68aa42387f2354fff999d50989d1bbd721fd6ffd65ba7ad03c42:lane:0000:demand",
+      "wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de:lane:0000:supply",
+      "wiring-edge:768e8574c4dec25251756b1502ab15e61f022a994234a7648172e749666ae204:lane:0000:demand",
+      "wiring-edge:7d145257ade5f632eff06b73d3926770da6d64210ef7ebb0b169749103c32bfb:lane:0000:demand",
+      "wiring-edge:7fc77ee8775d9ef812755ee30c15cafee5c07b9143518c8957979e01218f5966:lane:0000:demand",
+      "wiring-edge:833307cbcd65b4b77a2d7ed1240b029edef6467bcd988efd99f99887d5900e5b:lane:0000:demand",
+      "wiring-edge:833307cbcd65b4b77a2d7ed1240b029edef6467bcd988efd99f99887d5900e5b:lane:0000:supply",
+      "wiring-edge:83991942665a713b812f1f152e6c7eff67fdc93c2b73c285ae55a236d466a0cb:lane:0000:demand",
+      "wiring-edge:83991942665a713b812f1f152e6c7eff67fdc93c2b73c285ae55a236d466a0cb:lane:0000:supply",
+      "wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8:lane:0000:demand",
+      "wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8:lane:0000:supply",
+      "wiring-edge:8b27a55417191cb52ee2607ade8688babcf32aa5ffe0478269256232d620761d:lane:0000:demand",
+      "wiring-edge:8b27a55417191cb52ee2607ade8688babcf32aa5ffe0478269256232d620761d:lane:0000:supply",
+      "wiring-edge:8c3d3a80e7c0e9aaa21f2a8d2c1450783462f7ec68f2161cde8a774ebca5cee8:lane:0000:demand",
+      "wiring-edge:8c3d3a80e7c0e9aaa21f2a8d2c1450783462f7ec68f2161cde8a774ebca5cee8:lane:0000:supply",
+      "wiring-edge:8dee9d24d17b98cf3cc8798a9c28a04499b0a77a3d7dea14045c6e199831aee7:lane:0000:demand",
+      "wiring-edge:8dee9d24d17b98cf3cc8798a9c28a04499b0a77a3d7dea14045c6e199831aee7:lane:0000:supply",
+      "wiring-edge:8f8d2ba860a8626044f5319f11ed5d50ea21278802bcf35a5c7312197647a7c9:lane:0000:demand",
+      "wiring-edge:8f8d2ba860a8626044f5319f11ed5d50ea21278802bcf35a5c7312197647a7c9:lane:0000:supply",
+      "wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb:lane:0000:demand",
+      "wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb:lane:0000:supply",
+      "wiring-edge:91a73c19364287329744ef050fd41643c1c2e5b90810c181bb7f847f49586f2d:lane:0000:demand",
+      "wiring-edge:91a73c19364287329744ef050fd41643c1c2e5b90810c181bb7f847f49586f2d:lane:0000:supply",
+      "wiring-edge:91a73c19364287329744ef050fd41643c1c2e5b90810c181bb7f847f49586f2d:lane:0001:demand",
+      "wiring-edge:91a73c19364287329744ef050fd41643c1c2e5b90810c181bb7f847f49586f2d:lane:0001:supply",
+      "wiring-edge:9cc78f5ad1c5a03a94a533fe26e35517c481fb4860303ff01217159ff2418b09:lane:0000:supply",
+      "wiring-edge:a50ef86cef9c91323da65e81aa7da6b4196616d2b7341a88277b554bd579d254:lane:0000:demand",
+      "wiring-edge:a563c1d10bb90b3f8ae65556cc7b5977a8dea90da3838074406d85e46967aa63:lane:0000:demand",
+      "wiring-edge:a563c1d10bb90b3f8ae65556cc7b5977a8dea90da3838074406d85e46967aa63:lane:0000:supply",
+      "wiring-edge:a9f18ba528e2f61bcb2d6a90a5d8822f8fefb1752757551a25c23056a3fed78f:lane:0000:demand",
+      "wiring-edge:a9f18ba528e2f61bcb2d6a90a5d8822f8fefb1752757551a25c23056a3fed78f:lane:0000:supply",
+      "wiring-edge:aa4b306421503217f491f121e8d3dfb57aa6ac4d4d7512e8e7064aa58a7e233c:lane:0000:demand",
+      "wiring-edge:aa4b306421503217f491f121e8d3dfb57aa6ac4d4d7512e8e7064aa58a7e233c:lane:0000:supply",
+      "wiring-edge:b29b99f922b4bd62d909c888f5e91be5c9be2528ff6c97709741f4633a3ef9a1:lane:0000:demand",
+      "wiring-edge:b29b99f922b4bd62d909c888f5e91be5c9be2528ff6c97709741f4633a3ef9a1:lane:0000:supply",
+      "wiring-edge:b29b99f922b4bd62d909c888f5e91be5c9be2528ff6c97709741f4633a3ef9a1:lane:0001:demand",
+      "wiring-edge:b29b99f922b4bd62d909c888f5e91be5c9be2528ff6c97709741f4633a3ef9a1:lane:0001:supply",
+      "wiring-edge:b65b2f33f0ed666ff22c3c2dd875a38620d66269690f8b1e1bc3f900e4c226e9:lane:0000:demand",
+      "wiring-edge:b65b2f33f0ed666ff22c3c2dd875a38620d66269690f8b1e1bc3f900e4c226e9:lane:0000:supply",
+      "wiring-edge:be409b83dcda429b63d3cff74e39303d606c18592119e62b47d57d7296e7e698:lane:0000:demand",
+      "wiring-edge:be409b83dcda429b63d3cff74e39303d606c18592119e62b47d57d7296e7e698:lane:0000:supply",
+      "wiring-edge:c0e6db51beefe6b35bf7c1e765925ffe562f12700cd77ffb549410051417cd66:lane:0000:demand",
+      "wiring-edge:c0e6db51beefe6b35bf7c1e765925ffe562f12700cd77ffb549410051417cd66:lane:0000:supply",
+      "wiring-edge:cf8f3e6b04090971387f188d40562f59d36fac41b7d4be7f1d1c4170f4727482:lane:0000:demand",
+      "wiring-edge:cf8f3e6b04090971387f188d40562f59d36fac41b7d4be7f1d1c4170f4727482:lane:0000:supply",
+      "wiring-edge:d710dd2e30425cb0223acf030178bee2757ecb030a2580b0a68b57ebb5320528:lane:0000:demand",
+      "wiring-edge:d72810c0fad84b45bdb10aa34a5d8c7fee14b9097d1ff4431705762aeba3ae35:lane:0000:demand",
+      "wiring-edge:d72810c0fad84b45bdb10aa34a5d8c7fee14b9097d1ff4431705762aeba3ae35:lane:0000:supply",
+      "wiring-edge:d99c6bb230d20783d0bad99d0d0a5ba34943863858d5eff76f5d428e02727fd3:lane:0000:demand",
+      "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6:lane:0000:demand",
+      "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6:lane:0000:supply",
+      "wiring-edge:e7d807fb9603209ce1ea47fb0eebc0c48e8f4805b26e77d4bc822b3c3484ed46:lane:0000:demand",
+      "wiring-edge:e7d807fb9603209ce1ea47fb0eebc0c48e8f4805b26e77d4bc822b3c3484ed46:lane:0000:supply",
+      "wiring-edge:e9fc130bf5b1870946d736f205f920d602f372e315321255e3341e05aa2339cc:lane:0000:demand",
+      "wiring-edge:f959dd05789fc16f35b1e91f011554b72379039ba540182c0003a2974fcc13e6:lane:0000:demand",
+      "wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e:lane:0000:demand",
+      "wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e:lane:0000:supply"
+    ],
+    "semantic_certificate": {
+      "facility_geometry": true,
+      "facility_ports": true,
+      "facility_endpoint_clearance": true,
+      "boundary_terminals": false,
+      "pipe_routing": false,
+      "belt_routing": false,
+      "item_flow": false,
+      "logistics_components": false,
+      "objective": false,
+      "hints": false,
+      "transferred_learned_state": false
+    },
+    "construction_ms": 22,
+    "search_ms": 5000,
+    "first_witness_ms": null,
+    "outcome": "unknown",
+    "termination_reason": "time-limit",
+    "witness_count": 0,
+    "validation": "not-attempted",
+    "search_space": {
+      "semantic_assignment_upper_bound_log2": 691.3217877476933,
+      "semantic_assignment_upper_bound_log10": 208.10859476810384,
+      "directional_rotation_upper_bound_log2": 471.90278865937404,
+      "directional_rotation_upper_bound_log10": 142.056894423952,
+      "rotation_equivalence_reduction_log2": 0.0,
+      "facility_port_choice_upper_bound_log2": 219.41899908831923,
+      "facility_port_choice_upper_bound_log10": 66.05170034415183,
+      "facility_port_domain_histogram": {
+        "1": 4,
+        "2": 7,
+        "3": 48,
+        "5": 32,
+        "6": 24
+      }
+    },
+    "model_complexity": {
+      "variables": {
+        "coverage": "complete",
+        "total_variables": 5698,
+        "boolean_variables": 5137,
+        "integer_variables": 561,
+        "log2_domain_volume": 7553.833062075621,
+        "by_family": [
+          {
+            "family": "placement",
+            "total_variables": 3570,
+            "boolean_variables": 3462,
+            "integer_variables": 108,
+            "domains": {
+              "minimum": 2,
+              "maximum": 50,
+              "p50": 2,
+              "p95": 2,
+              "log2_volume": 3940.3576456637893
+            }
+          },
+          {
+            "family": "endpoint",
+            "total_variables": 115,
+            "boolean_variables": 7,
+            "integer_variables": 108,
+            "domains": {
+              "minimum": 1,
+              "maximum": 6,
+              "p50": 3,
+              "p95": 6,
+              "log2_volume": 219.41899908831917
+            }
+          },
+          {
+            "family": "endpoint-geometry",
+            "total_variables": 2013,
+            "boolean_variables": 1668,
+            "integer_variables": 345,
+            "domains": {
+              "minimum": 2,
+              "maximum": 50,
+              "p50": 2,
+              "p95": 50,
+              "log2_volume": 3394.0564173235202
+            }
+          }
+        ]
+      },
+      "constraints": {
+        "total_constraints": 12063,
+        "total_terms": 47230,
+        "maximum_arity": 6,
+        "p95_arity": 6,
+        "maximum_absolute_coefficient": 1,
+        "by_family": [
+          {
+            "family": "placement-choice",
+            "relation": "less-than-or-equal",
+            "constraints": 84,
+            "terms": 168,
+            "maximum_arity": 2,
+            "p95_arity": 2,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "placement-choice",
+            "relation": "other",
+            "constraints": 228,
+            "terms": 528,
+            "maximum_arity": 2,
+            "p95_arity": 2,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "facility-non-overlap",
+            "relation": "less-than-or-equal",
+            "constraints": 3420,
+            "terms": 10260,
+            "maximum_arity": 3,
+            "p95_arity": 3,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "facility-non-overlap",
+            "relation": "other",
+            "constraints": 855,
+            "terms": 5130,
+            "maximum_arity": 6,
+            "p95_arity": 6,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "endpoint-link",
+            "relation": "equality",
+            "constraints": 3336,
+            "terms": 10008,
+            "maximum_arity": 3,
+            "p95_arity": 3,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "endpoint-link",
+            "relation": "other",
+            "constraints": 115,
+            "terms": 345,
+            "maximum_arity": 3,
+            "p95_arity": 3,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "endpoint-clearance",
+            "relation": "other",
+            "constraints": 4025,
+            "terms": 20791,
+            "maximum_arity": 6,
+            "p95_arity": 6,
+            "maximum_absolute_coefficient": 1
+          }
+        ]
+      },
+      "factor_graph": {
+        "variable_vertices": 5698,
+        "constraint_vertices": 12063,
+        "incidences": 47128,
+        "mean_variable_degree": 8.27097227097227,
+        "maximum_variable_degree": 363,
+        "p95_variable_degree": 43,
+        "mean_constraint_degree": 3.9068225151289067,
+        "maximum_constraint_degree": 6,
+        "p95_constraint_degree": 6,
+        "density": 0.0006856480370531602,
+        "connected_components": 1,
+        "articulation_points": null,
+        "retained_full_graph": false,
+        "family_incidences": [
+          {
+            "variable_family": "placement",
+            "constraint_family": "placement-choice",
+            "incidences": 594
+          },
+          {
+            "variable_family": "placement",
+            "constraint_family": "facility-non-overlap",
+            "incidences": 15390
+          },
+          {
+            "variable_family": "placement",
+            "constraint_family": "endpoint-link",
+            "incidences": 3451
+          },
+          {
+            "variable_family": "placement",
+            "constraint_family": "endpoint-clearance",
+            "incidences": 12741
+          },
+          {
+            "variable_family": "endpoint",
+            "constraint_family": "endpoint-link",
+            "incidences": 115
+          },
+          {
+            "variable_family": "endpoint-geometry",
+            "constraint_family": "endpoint-link",
+            "incidences": 6787
+          },
+          {
+            "variable_family": "endpoint-geometry",
+            "constraint_family": "endpoint-clearance",
+            "incidences": 8050
+          }
+        ]
+      },
+      "coupling": {
+        "facility_network_incidences": 0,
+        "shared_network_facility_pairs": 0,
+        "cross_family_constraints": 7476,
+        "placement_routing_constraints": 0,
+        "placement_routing_incidences": 0,
+        "network_collision_constraints": 0,
+        "objective_incidences": 0
+      },
+      "symmetry": null,
+      "estimated_bytes": null
+    },
+    "search_statistics": {
+      "branch_decisions": 240582,
+      "backtracks": 10350,
+      "conflicts": 10347,
+      "learned_clauses": 10347,
+      "solver_propagations": 44845013,
+      "atomic_propagations": null,
+      "restarts": 2,
+      "row_selector_total": null,
+      "row_selector_root_fixed_true": null,
+      "row_selector_root_fixed_false": null,
+      "row_selector_root_unfixed": null,
+      "row_selector_decisions": null,
+      "non_row_selector_decisions": null,
+      "row_selector_true_decisions": null,
+      "row_selector_false_decisions": null,
+      "row_selector_unclassified_decisions": null,
+      "maximum_consecutive_row_selector_decisions": null,
+      "row_selector_conflict_appearances": null
+    },
+    "endpoint_support_statistics": {
+      "executions": 391181,
+      "notifications": 848635,
+      "values_checked": 4481471,
+      "rows_scanned": 1582555,
+      "support_checks": 10456530,
+      "residue_hits": 3683433,
+      "residue_misses": 795444,
+      "removed_values": 650043,
+      "conflicts": 140,
+      "maximum_reason_predicates": 6
+    },
+    "endpoint_clearance_statistics": {
+      "relations": 4025,
+      "executions": 33932252,
+      "notifications": 42411491,
+      "coordinate_notifications": 41097415,
+      "connection_x_notifications": 8201375,
+      "connection_y_notifications": 7906360,
+      "facility_x_notifications": 12669627,
+      "facility_y_notifications": 12320053,
+      "orientation_notifications": 1314076,
+      "skipped_false_orientation_notifications": 0,
+      "enqueued_notifications": 42411491,
+      "orientation_checks": 35161748,
+      "rejected_orientations": 1196,
+      "forced_separation_detections": 457708,
+      "bound_updates": 30724,
+      "conflicts": 1133,
+      "maximum_reason_predicates": 8,
+      "scratch_executions": 0,
+      "coordinate_only_executions": 33480125,
+      "orientation_only_executions": 351951,
+      "mixed_event_executions": 99510,
+      "unclassified_executions": 666,
+      "executions_with_rejection": 1187,
+      "executions_with_forced_separation": 457708,
+      "executions_with_bound_update": 29760,
+      "executions_with_conflict": 1133,
+      "executions_without_domain_effect": 33901305,
+      "scratch_executions_without_domain_effect": 0,
+      "coordinate_only_executions_without_domain_effect": 33449471,
+      "orientation_only_executions_without_domain_effect": 351758,
+      "mixed_event_executions_without_domain_effect": 99410,
+      "unclassified_executions_without_domain_effect": 666,
+      "universally_entailed_executions": 8964213,
+      "entailment_episodes": 3568879,
+      "notifications_while_entailed": 6850933,
+      "relation_hotset": {
+        "collected_relations": 4025,
+        "zero_execution_relations": 0,
+        "execution_p50": 8494,
+        "execution_p95": 15174,
+        "maximum_executions": 19112,
+        "top_1_execution_share_ppm": 563,
+        "top_10_execution_share_ppm": 5423,
+        "top_100_execution_share_ppm": 49814,
+        "top_relations_by_execution": [
+          {
+            "terminal": "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000:demand",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 19112,
+            "notifications": 26602,
+            "executions_without_domain_effect": 19068,
+            "universally_entailed_executions": 11367,
+            "executions_with_domain_effect": 44
+          },
+          {
+            "terminal": "wiring-edge:0be201325caeabf1683782a12d2d3660403a476b17a357123e8865b659e71d69:lane:0000:supply",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 18699,
+            "notifications": 25086,
+            "executions_without_domain_effect": 18656,
+            "universally_entailed_executions": 7676,
+            "executions_with_domain_effect": 43
+          },
+          {
+            "terminal": "wiring-edge:1770726fc972d47bbfb77284fd3ce39582a2fea43bdf58f8f5a4c00150b5a2d3:lane:0000:supply",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 18549,
+            "notifications": 25419,
+            "executions_without_domain_effect": 18497,
+            "universally_entailed_executions": 8934,
+            "executions_with_domain_effect": 52
+          },
+          {
+            "terminal": "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000:supply",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 18415,
+            "notifications": 25317,
+            "executions_without_domain_effect": 18370,
+            "universally_entailed_executions": 8810,
+            "executions_with_domain_effect": 45
+          },
+          {
+            "terminal": "wiring-edge:121c0d63102c8c4f409587a74e73fbc957b60f98e7976c6cc0c3ab11971344a2:lane:0000:demand",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 18394,
+            "notifications": 24962,
+            "executions_without_domain_effect": 18345,
+            "universally_entailed_executions": 8277,
+            "executions_with_domain_effect": 49
+          },
+          {
+            "terminal": "wiring-edge:d99c6bb230d20783d0bad99d0d0a5ba34943863858d5eff76f5d428e02727fd3:lane:0000:demand",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 18291,
+            "notifications": 26037,
+            "executions_without_domain_effect": 18197,
+            "universally_entailed_executions": 9166,
+            "executions_with_domain_effect": 94
+          },
+          {
+            "terminal": "wiring-edge:6b0699f3bc1d6ad293cc3181cfca4608a125014b88fd40d09247a414e7aa06ea:lane:0001:demand",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 18190,
+            "notifications": 25247,
+            "executions_without_domain_effect": 18145,
+            "universally_entailed_executions": 8928,
+            "executions_with_domain_effect": 45
+          },
+          {
+            "terminal": "wiring-edge:73f36e90398b68aa42387f2354fff999d50989d1bbd721fd6ffd65ba7ad03c42:lane:0000:demand",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 18186,
+            "notifications": 25962,
+            "executions_without_domain_effect": 18150,
+            "universally_entailed_executions": 9364,
+            "executions_with_domain_effect": 36
+          },
+          {
+            "terminal": "wiring-edge:08f6e8c977535a8ac16c6a33077ddcac41d1030d31043546e1a345036dc06da3:lane:0000:supply",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 18143,
+            "notifications": 24829,
+            "executions_without_domain_effect": 18121,
+            "universally_entailed_executions": 8765,
+            "executions_with_domain_effect": 22
+          },
+          {
+            "terminal": "wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de:lane:0000:supply",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 18044,
+            "notifications": 25048,
+            "executions_without_domain_effect": 17976,
+            "universally_entailed_executions": 9716,
+            "executions_with_domain_effect": 68
+          },
+          {
+            "terminal": "wiring-edge:b29b99f922b4bd62d909c888f5e91be5c9be2528ff6c97709741f4633a3ef9a1:lane:0001:demand",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 17960,
+            "notifications": 25628,
+            "executions_without_domain_effect": 17903,
+            "universally_entailed_executions": 9708,
+            "executions_with_domain_effect": 57
+          },
+          {
+            "terminal": "wiring-edge:393a80829cefeb5ea19b1dde68cfc79a48e35d4ed5a062a0bff67ee99f16d3ca:lane:0000:demand",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 17951,
+            "notifications": 24760,
+            "executions_without_domain_effect": 17914,
+            "universally_entailed_executions": 7419,
+            "executions_with_domain_effect": 37
+          },
+          {
+            "terminal": "wiring-edge:15d6ce06d7ea0fef8004f44de714fa58df799033df2fea749cf4c29dded2e64f:lane:0000:demand",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 17864,
+            "notifications": 24079,
+            "executions_without_domain_effect": 17826,
+            "universally_entailed_executions": 7832,
+            "executions_with_domain_effect": 38
+          },
+          {
+            "terminal": "wiring-edge:037fa5b7aa8741db140fa41b381ee7f3dcc7fdbb9f88a57d76ff638f65de1acc:lane:0000:demand",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+            "executions": 17857,
+            "notifications": 23992,
+            "executions_without_domain_effect": 17819,
+            "universally_entailed_executions": 9044,
+            "executions_with_domain_effect": 38
+          },
+          {
+            "terminal": "wiring-edge:3983a3f0da829b97c5d3c106f0351691e80e0230f280e9f65743f23a1dad2e2d:lane:0000:demand",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 17822,
+            "notifications": 25059,
+            "executions_without_domain_effect": 17749,
+            "universally_entailed_executions": 9487,
+            "executions_with_domain_effect": 73
+          },
+          {
+            "terminal": "wiring-edge:121c0d63102c8c4f409587a74e73fbc957b60f98e7976c6cc0c3ab11971344a2:lane:0000:supply",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 17743,
+            "notifications": 23992,
+            "executions_without_domain_effect": 17692,
+            "universally_entailed_executions": 6701,
+            "executions_with_domain_effect": 51
+          },
+          {
+            "terminal": "wiring-edge:731a02b8decf07cf1135f46b391405ce1e0465727cc8e9ed834b915addcbebb7:lane:0000:supply",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 17722,
+            "notifications": 24328,
+            "executions_without_domain_effect": 17654,
+            "universally_entailed_executions": 7370,
+            "executions_with_domain_effect": 68
+          },
+          {
+            "terminal": "wiring-edge:3983a3f0da829b97c5d3c106f0351691e80e0230f280e9f65743f23a1dad2e2d:lane:0001:demand",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 17680,
+            "notifications": 24696,
+            "executions_without_domain_effect": 17618,
+            "universally_entailed_executions": 9318,
+            "executions_with_domain_effect": 62
+          },
+          {
+            "terminal": "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000:demand",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+            "executions": 17677,
+            "notifications": 24183,
+            "executions_without_domain_effect": 17616,
+            "universally_entailed_executions": 10891,
+            "executions_with_domain_effect": 61
+          },
+          {
+            "terminal": "wiring-edge:8dee9d24d17b98cf3cc8798a9c28a04499b0a77a3d7dea14045c6e199831aee7:lane:0000:demand",
+            "target_facility": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 17576,
+            "notifications": 24251,
+            "executions_without_domain_effect": 17547,
+            "universally_entailed_executions": 6504,
+            "executions_with_domain_effect": 29
+          }
+        ],
+        "top_terminals_by_execution": [
+          {
+            "entity": "wiring-edge:037fa5b7aa8741db140fa41b381ee7f3dcc7fdbb9f88a57d76ff638f65de1acc:lane:0000:demand",
+            "executions": 450350,
+            "execution_share_ppm": 13272
+          },
+          {
+            "entity": "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000:demand",
+            "executions": 448376,
+            "execution_share_ppm": 13213
+          },
+          {
+            "entity": "wiring-edge:0be201325caeabf1683782a12d2d3660403a476b17a357123e8865b659e71d69:lane:0000:supply",
+            "executions": 432711,
+            "execution_share_ppm": 12752
+          },
+          {
+            "entity": "wiring-edge:d99c6bb230d20783d0bad99d0d0a5ba34943863858d5eff76f5d428e02727fd3:lane:0000:demand",
+            "executions": 431186,
+            "execution_share_ppm": 12707
+          },
+          {
+            "entity": "wiring-edge:1770726fc972d47bbfb77284fd3ce39582a2fea43bdf58f8f5a4c00150b5a2d3:lane:0000:supply",
+            "executions": 428141,
+            "execution_share_ppm": 12617
+          },
+          {
+            "entity": "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd:lane:0000:supply",
+            "executions": 424855,
+            "execution_share_ppm": 12520
+          },
+          {
+            "entity": "wiring-edge:121c0d63102c8c4f409587a74e73fbc957b60f98e7976c6cc0c3ab11971344a2:lane:0000:demand",
+            "executions": 422802,
+            "execution_share_ppm": 12460
+          },
+          {
+            "entity": "wiring-edge:73f36e90398b68aa42387f2354fff999d50989d1bbd721fd6ffd65ba7ad03c42:lane:0000:demand",
+            "executions": 419006,
+            "execution_share_ppm": 12348
+          },
+          {
+            "entity": "wiring-edge:6b0699f3bc1d6ad293cc3181cfca4608a125014b88fd40d09247a414e7aa06ea:lane:0001:demand",
+            "executions": 416938,
+            "execution_share_ppm": 12287
+          },
+          {
+            "entity": "wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de:lane:0000:supply",
+            "executions": 414620,
+            "execution_share_ppm": 12219
+          },
+          {
+            "entity": "wiring-edge:b29b99f922b4bd62d909c888f5e91be5c9be2528ff6c97709741f4633a3ef9a1:lane:0001:demand",
+            "executions": 413592,
+            "execution_share_ppm": 12188
+          },
+          {
+            "entity": "wiring-edge:08f6e8c977535a8ac16c6a33077ddcac41d1030d31043546e1a345036dc06da3:lane:0000:supply",
+            "executions": 411226,
+            "execution_share_ppm": 12119
+          },
+          {
+            "entity": "wiring-edge:21c5b34ce05a1a6145f4451f9000d03a9184f3301407bb9ecb356b9339b77043:lane:0000:supply",
+            "executions": 408609,
+            "execution_share_ppm": 12041
+          },
+          {
+            "entity": "wiring-edge:393a80829cefeb5ea19b1dde68cfc79a48e35d4ed5a062a0bff67ee99f16d3ca:lane:0000:demand",
+            "executions": 405050,
+            "execution_share_ppm": 11937
+          },
+          {
+            "entity": "wiring-edge:3983a3f0da829b97c5d3c106f0351691e80e0230f280e9f65743f23a1dad2e2d:lane:0000:demand",
+            "executions": 404713,
+            "execution_share_ppm": 11927
+          },
+          {
+            "entity": "wiring-edge:731a02b8decf07cf1135f46b391405ce1e0465727cc8e9ed834b915addcbebb7:lane:0000:supply",
+            "executions": 402085,
+            "execution_share_ppm": 11849
+          },
+          {
+            "entity": "wiring-edge:15d6ce06d7ea0fef8004f44de714fa58df799033df2fea749cf4c29dded2e64f:lane:0000:demand",
+            "executions": 401881,
+            "execution_share_ppm": 11843
+          },
+          {
+            "entity": "wiring-edge:3983a3f0da829b97c5d3c106f0351691e80e0230f280e9f65743f23a1dad2e2d:lane:0001:demand",
+            "executions": 399671,
+            "execution_share_ppm": 11778
+          },
+          {
+            "entity": "wiring-edge:8dee9d24d17b98cf3cc8798a9c28a04499b0a77a3d7dea14045c6e199831aee7:lane:0000:demand",
+            "executions": 398496,
+            "execution_share_ppm": 11743
+          },
+          {
+            "entity": "wiring-edge:121c0d63102c8c4f409587a74e73fbc957b60f98e7976c6cc0c3ab11971344a2:lane:0000:supply",
+            "executions": 397398,
+            "execution_share_ppm": 11711
+          }
+        ],
+        "top_target_facilities_by_execution": [
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+            "executions": 1613965,
+            "execution_share_ppm": 47564
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+            "executions": 1453809,
+            "execution_share_ppm": 42844
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+            "executions": 1406909,
+            "execution_share_ppm": 41462
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+            "executions": 1406270,
+            "execution_share_ppm": 41443
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder:0",
+            "executions": 1323689,
+            "execution_share_ppm": 39009
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+            "executions": 1304651,
+            "execution_share_ppm": 38448
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+            "executions": 1300489,
+            "execution_share_ppm": 38326
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+            "executions": 1277043,
+            "execution_share_ppm": 37635
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:0",
+            "executions": 1274251,
+            "execution_share_ppm": 37552
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+            "executions": 1255165,
+            "execution_share_ppm": 36990
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target:0",
+            "executions": 1249124,
+            "execution_share_ppm": 36812
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+            "executions": 1241571,
+            "execution_share_ppm": 36589
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+            "executions": 1214720,
+            "execution_share_ppm": 35798
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:3",
+            "executions": 1197926,
+            "execution_share_ppm": 35303
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3",
+            "executions": 1194832,
+            "execution_share_ppm": 35212
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1",
+            "executions": 1141289,
+            "execution_share_ppm": 33634
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:2",
+            "executions": 1127801,
+            "execution_share_ppm": 33236
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:0",
+            "executions": 1033122,
+            "execution_share_ppm": 30446
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+            "executions": 976463,
+            "execution_share_ppm": 28776
+          },
+          {
+            "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+            "executions": 917842,
+            "execution_share_ppm": 27049
+          }
+        ]
+      }
+    },
+    "witness": null,
+    "diagnostics": []
+  }
+}

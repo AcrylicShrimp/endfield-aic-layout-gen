@@ -1261,6 +1261,7 @@ fn post_propagated_connection_clearance(
                 priority,
                 counters: Arc::clone(&counters),
                 false_event_filter_enabled,
+                relation_counters: counters.register_relation(terminal, &instance.id),
                 constraint_tag: tag,
             });
     }

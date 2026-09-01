@@ -144,14 +144,36 @@ unresolved orientations still enqueue. The flag is disabled by default because i
 scheduling effect is phase- and priority-dependent even though the accepted assignments are
 identical.
 
+Rung report schema 9 additionally classifies propagated-clearance executions by the coordinate and
+orientation event families coalesced before each execution, and by whether that execution rejects
+an orientation, tightens a bound, or reports a conflict. The transient diagnostic trigger mask is
+cleared during solver synchronisation. These counters do not alter the exact relation, event
+registration, enqueue decision, inference reason, or branch order. They exist to distinguish
+necessary repeated propagation from executions that reach a fixpoint without changing a domain.
+Schema 9 also records subtree-local universal-entailment episodes and relation, endpoint, and target
+facility execution distributions. Universal entailment requires every surviving target orientation
+to be outside for every remaining coordinate assignment. This state is diagnostic only and is
+discarded on synchronisation. The relation hot set retains every exact relation and only measures
+its runtime activity.
+
 The propagated rung also supports an exact directional-rotation partition diagnostic. The caller
-selects one or more facilities introduced in the target growth phase. The harness enumerates the
-complete Cartesian product of their validated directional-rotation domains and adds one
+selects one or more facilities present in the target cumulative graph. This permits the same exact
+cut to remain stable while later growth phases add unrelated facilities. The harness enumerates the
+complete Cartesian product of the selected facilities' validated directional-rotation domains and adds one
 `research-fixation` equality per selected facility in each child. The children are pairwise
 disjoint and their union is the unpartitioned rung. Facility coordinates, port choices, local
 connection keys, endpoint coordinates, and clearance decisions remain solver variables. A
 feasible child proves the parent feasible; only proven infeasibility of every child proves the
 parent infeasible. Unknown children never become infeasibility evidence.
+
+After a complete growth partition finds a witness and the next cumulative phase becomes unknown,
+the diagnostic may retain selected rotations from that validated child as explicit
+`conditioned_rotations` while partitioning a different residual rotation domain. This is an exact
+partition of the conditioned subproblem, not of the original parent. Any feasible conditioned child
+is a valid witness for the original parent. Even if every conditioned child proves infeasible, that
+does not prove the original parent infeasible. Reports must expose the condition map, label the
+scope `conditioned-subproblem`, and set the original-parent infeasibility certificate false. A
+condition must never become an authoritative search restriction or a hidden production fallback.
 
 The next causal diagnostic compares the unpartitioned parent with every child at the root
 propagation fixpoint through Pumpkin's no-decision root path, before any search decision. It

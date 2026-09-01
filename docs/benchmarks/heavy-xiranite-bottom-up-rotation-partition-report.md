@@ -25,7 +25,9 @@ rotation. It does not fix or restrict:
 - any local connection key or outside connection cell; or
 - any point-versus-rectangle clearance choice.
 
-The diagnostic rejects unknown, illegal, duplicated, or non-introduced partition facilities.
+The diagnostic rejects unknown, illegal, or duplicated partition facilities. A selected facility
+may come from any earlier phase as long as it remains present in the target cumulative model; this
+allows the same exact cut to be measured while the production graph grows.
 The report certifies the enumerated case count, complete Cartesian coverage, and pairwise
 disjointness. A feasible child proves parent feasibility. All children would need to prove
 infeasible before the parent could be reported infeasible.
