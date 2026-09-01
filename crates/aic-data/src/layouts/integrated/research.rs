@@ -16,6 +16,7 @@ use super::{
 
 mod connectivity_witness;
 mod coordinate_partition;
+mod crossing_free;
 mod dimension_sweep;
 mod endpoint_channel;
 mod facility_state_partition;
@@ -47,6 +48,10 @@ pub use coordinate_partition::{
     diagnose_cumulative_facility_coordinate_partitions_with_local_continuation,
     diagnose_cumulative_facility_port_partitions,
     diagnose_cumulative_facility_port_partitions_with_local_continuation,
+};
+pub use crossing_free::{
+    CROSSING_FREE_RESTRICTION_EXPERIMENT_SCHEMA_VERSION, CrossingFreeRestrictionExperimentReport,
+    CrossingRestrictionCaseKind, CrossingRestrictionCaseReport, diagnose_crossing_free_restriction,
 };
 pub use dimension_sweep::{
     CUMULATIVE_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION, CumulativeExactDimensionSweepReport,

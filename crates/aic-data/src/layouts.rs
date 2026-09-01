@@ -143,6 +143,10 @@ pub use integrated::{
     sweep_first_integrated_layout_phase_fixed_dimensions,
 };
 pub use integrated::{
+    CROSSING_FREE_RESTRICTION_EXPERIMENT_SCHEMA_VERSION, CrossingFreeRestrictionExperimentReport,
+    CrossingRestrictionCaseKind, CrossingRestrictionCaseReport, diagnose_crossing_free_restriction,
+};
+pub use integrated::{
     ENDPOINT_CHANNEL_PROBE_SCHEMA_VERSION, EndpointChannelCaseReport,
     EndpointChannelDomainSnapshot, EndpointChannelEncoding, EndpointChannelEndpointSnapshot,
     EndpointChannelProbeReport, EndpointChannelRestriction, render_endpoint_channel_probe_html,

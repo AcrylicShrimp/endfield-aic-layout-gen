@@ -25,6 +25,7 @@ use sha2::{Digest, Sha256};
 
 mod connectivity_witness;
 mod coordinate_partition;
+mod crossing_free;
 mod cumulative_growth;
 mod dimension_sweep;
 mod endpoint_channel;
@@ -167,6 +168,12 @@ pub(crate) struct IntegratedEndpointChannelResearchArgs {
     pub(crate) track_row_selectors: bool,
     #[arg(long, value_name = "MILLISECONDS")]
     pub(crate) case_time_limit_ms: u64,
+    /// Run the counterbalanced unrestricted versus no-same-layer-crossing experiment.
+    #[arg(long)]
+    pub(crate) crossing_free_restriction_experiment: bool,
+    /// One longer crossing-free observation, used only when every primary B run is Unknown.
+    #[arg(long, value_name = "MILLISECONDS", default_value_t = 30000)]
+    pub(crate) observation_time_limit_ms: u64,
     #[arg(long, value_name = "DIR")]
     pub(crate) output_dir: PathBuf,
 }
@@ -1530,18 +1537,37 @@ pub(crate) fn run(command: ResearchCommand) -> Result<bool> {
             args.visualization_output,
         ),
         ResearchCommand::CompareIntegratedEndpointChannel(args) => {
-            integrated_endpoint_channel::run(
-                args.workload,
-                args.workspace_root,
-                args.placement_request,
-                args.target_phase,
-                args.used_width,
-                args.used_height,
-                args.encoding,
-                args.track_row_selectors,
-                args.case_time_limit_ms,
-                args.output_dir,
-            )
+            if args.crossing_free_restriction_experiment {
+                ensure!(
+                    matches!(args.encoding, EndpointChannelEncodingArg::SparseSupport)
+                        && !args.track_row_selectors,
+                    "crossing-free restriction experiment requires --encoding sparse-support without --track-row-selectors"
+                );
+                crossing_free::run(
+                    args.workload,
+                    args.workspace_root,
+                    args.placement_request,
+                    args.target_phase,
+                    args.used_width,
+                    args.used_height,
+                    args.case_time_limit_ms,
+                    args.observation_time_limit_ms,
+                    args.output_dir,
+                )
+            } else {
+                integrated_endpoint_channel::run(
+                    args.workload,
+                    args.workspace_root,
+                    args.placement_request,
+                    args.target_phase,
+                    args.used_width,
+                    args.used_height,
+                    args.encoding,
+                    args.track_row_selectors,
+                    args.case_time_limit_ms,
+                    args.output_dir,
+                )
+            }
         }
     }
 }

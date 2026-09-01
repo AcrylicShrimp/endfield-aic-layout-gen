@@ -1820,6 +1820,48 @@ mod tests {
     }
 
     #[test]
+    fn parses_crossing_free_restriction_comparison() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "research",
+            "compare-integrated-endpoint-channel",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "bounds.json",
+            "--target-phase",
+            "3",
+            "--used-width",
+            "16",
+            "--used-height",
+            "16",
+            "--encoding",
+            "sparse-support",
+            "--case-time-limit-ms",
+            "5000",
+            "--crossing-free-restriction-experiment",
+            "--observation-time-limit-ms",
+            "30000",
+            "--output-dir",
+            "report",
+        ])
+        .expect("crossing-free restriction comparison CLI should parse");
+
+        let Command::Research {
+            command: ResearchCommand::CompareIntegratedEndpointChannel(args),
+        } = cli.command
+        else {
+            panic!("expected crossing-free restriction comparison command")
+        };
+        assert_eq!(args.target_phase, 3);
+        assert_eq!((args.used_width, args.used_height), (16, 16));
+        assert_eq!(args.case_time_limit_ms, 5000);
+        assert!(args.crossing_free_restriction_experiment);
+        assert_eq!(args.observation_time_limit_ms, 30000);
+        assert_eq!(args.output_dir, PathBuf::from("report"));
+    }
+
+    #[test]
     fn parses_first_phase_research_solve_with_explicit_budget() {
         let cli = Cli::try_parse_from([
             "aic-cli",

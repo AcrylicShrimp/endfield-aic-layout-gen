@@ -126,6 +126,7 @@ pub(super) enum ConstraintFamily {
     MaterialSeparator,
     MaterialJunction,
     GuardedCore,
+    CrossingRestriction,
     ResearchFixation,
 }
 
@@ -162,6 +163,7 @@ impl ConstraintFamily {
             Self::MaterialSeparator => "material-separator",
             Self::MaterialJunction => "material-junction",
             Self::GuardedCore => "guarded-core",
+            Self::CrossingRestriction => "crossing-restriction",
             Self::ResearchFixation => "research-fixation",
         }
     }

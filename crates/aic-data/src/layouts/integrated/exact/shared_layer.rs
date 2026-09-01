@@ -101,6 +101,31 @@ pub use root_snapshot::{
 };
 use root_snapshot::{RootDomainProbe, RootSnapshotBrancher};
 
+pub const CROSSING_FREE_BUILD_CERTIFICATE_SCHEMA_VERSION: u32 = 1;
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct CrossingFreeBridgeCertificate {
+    pub transport: TransportKind,
+    pub cell: usize,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct CrossingFreeBuildCertificate {
+    pub schema_version: u32,
+    pub mode: String,
+    pub bridges: Vec<CrossingFreeBridgeCertificate>,
+    pub bridge_count: usize,
+    pub expected_bridge_count: usize,
+    pub active_transport_layer_count: usize,
+    pub grid_cell_count: usize,
+    pub posted_constraint_count: usize,
+    pub posted_term_count: usize,
+    pub new_variable_count: usize,
+    pub complete: bool,
+}
+
+type CrossingFreeBuildCertificateCollector = SyncArc<Mutex<Option<CrossingFreeBuildCertificate>>>;
+
 #[derive(Debug)]
 struct SharedBranchComponent {
     transport: TransportKind,
@@ -310,6 +335,7 @@ type BoundaryKeyBuildCertificateCollector = SyncArc<Mutex<Vec<BoundaryKeyBuildCe
 enum SearchMode {
     Optimize,
     FeasibilityOnly,
+    FeasibilityOnlyCrossingFree(CrossingFreeBuildCertificateCollector),
     FeasibilityOnlyWithRootSnapshot(RootDomainSnapshotCollector),
 }
 
@@ -757,6 +783,56 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_fixed_dimen
         report,
         grid_counters.snapshot(),
         endpoint_counters.snapshot(),
+    )
+}
+
+pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_fixed_dimensions_crossing_free_feasibility_only_with_local_continuation_guarded_intersection_propagation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+) -> (
+    IntegratedLayoutReport,
+    LayerGridAnalyzerStatistics,
+    crate::layouts::integrated::research::EndpointSupportPropagationStatistics,
+    Option<CrossingFreeBuildCertificate>,
+) {
+    let connectivity_counters = SyncArc::new(PossibleRouteReachabilityCounters::default());
+    let grid_counters = SyncArc::new(LayerGridAnalyzerCounters::default());
+    let endpoint_counters = SyncArc::new(EndpointSupportPropagationCounters::default());
+    let certificate: CrossingFreeBuildCertificateCollector = SyncArc::new(Mutex::new(None));
+    let report = solve_with_endpoint_encoding(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::FactoredSparseSupport(SyncArc::clone(&endpoint_counters)),
+        None,
+        SearchMode::FeasibilityOnlyCrossingFree(SyncArc::clone(&certificate)),
+        Some(fixed_dimensions),
+        None,
+        None,
+        None,
+        None,
+        None,
+        ConnectivityMode::PossibleGraphPropagator {
+            counters: connectivity_counters,
+            wake_mode: PossibleRouteReachabilityWakeMode::AnyDomainEvent,
+            traversal_mode: PossibleRouteReachabilityTraversalMode::ReachableArcsAndLazyReason,
+            grid_analyzer: Some((
+                SyncArc::clone(&grid_counters),
+                LayerGridRule::ForceWatchedDemandUniqueSupportChainAndLocalContinuationWithGuardedIntersectionPropagation,
+            )),
+        },
+    );
+    let certificate = certificate
+        .lock()
+        .expect("crossing-free build certificate collector is not poisoned")
+        .clone();
+    (
+        report,
+        grid_counters.snapshot(),
+        endpoint_counters.snapshot(),
+        certificate,
     )
 }
 
@@ -3078,6 +3154,12 @@ fn solve_with_endpoint_encoding(
         );
         layers.push(layer);
     }
+    if let SearchMode::FeasibilityOnlyCrossingFree(collector) = &search_mode
+        && let Err(diagnostic) =
+            post_crossing_free_restriction(&mut solver, &input, &layers, &bridges, collector, tag)
+    {
+        return IntegratedLayoutReport::invalid(diagnostic);
+    }
     if let Some(restriction) = endpoint_encoding.endpoint_continuation_restriction()
         && let Err(diagnostic) = post_endpoint_continuation_restriction(
             &mut solver,
@@ -3235,6 +3317,8 @@ fn solve_with_endpoint_encoding(
         );
     }
 
+    let crossing_free_requested =
+        matches!(&search_mode, SearchMode::FeasibilityOnlyCrossingFree(_));
     let root_snapshot_setup = match &search_mode {
         SearchMode::FeasibilityOnlyWithRootSnapshot(collector) => {
             let explicitly_fixed_ports = fixed_ports
@@ -3260,7 +3344,9 @@ fn solve_with_endpoint_encoding(
                 SyncArc::clone(collector),
             ))
         }
-        SearchMode::Optimize | SearchMode::FeasibilityOnly => None,
+        SearchMode::Optimize
+        | SearchMode::FeasibilityOnly
+        | SearchMode::FeasibilityOnlyCrossingFree(_) => None,
     };
 
     let (facility_network_incidences, shared_network_facility_pairs) =
@@ -3303,7 +3389,9 @@ fn solve_with_endpoint_encoding(
                 search_statistics: result.search_statistics,
             }
         }
-        SearchMode::FeasibilityOnly | SearchMode::FeasibilityOnlyWithRootSnapshot(_) => {
+        SearchMode::FeasibilityOnly
+        | SearchMode::FeasibilityOnlyCrossingFree(_)
+        | SearchMode::FeasibilityOnlyWithRootSnapshot(_) => {
             let search_started = Instant::now();
             let hint_variables = solver_hint.assignments.keys().copied().collect::<Vec<_>>();
             let hint_values = solver_hint
@@ -3417,6 +3505,7 @@ fn solve_with_endpoint_encoding(
             .and_then(|()| validate_fixed_coordinate(&report, fixed_coordinate.as_ref()))
             .and_then(|()| validate_fixed_terminal_ports(&report, fixed_ports.as_deref()))
             .and_then(|()| validate_transport_tile_upper_bound(&report, transport_tile_upper_bound))
+            .and_then(|()| validate_crossing_free_witness(&report, crossing_free_requested))
             .and_then(|()| {
                 crate::layouts::integrated::witness::validate(&input, logistics_components, &report)
             }) {
@@ -5052,6 +5141,29 @@ fn validate_fixed_dimensions(
                 "fixed-dimension research witness must use exactly {}x{} cells",
                 fixed.width, fixed.height
             ),
+        ));
+    }
+    Ok(())
+}
+
+fn validate_crossing_free_witness(
+    report: &IntegratedLayoutReport,
+    crossing_free_requested: bool,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    if !crossing_free_requested {
+        return Ok(());
+    }
+    let bridge_count = report
+        .logistics_components
+        .iter()
+        .filter(|component| component.kind == LogisticsComponentKind::Bridge)
+        .count();
+    if bridge_count != 0 {
+        return Err(IntegratedLayoutDiagnostic::error(
+            "invalid-crossing-free-witness",
+            "/logistics_components",
+            Some(bridge_count.to_string()),
+            "a crossing-free research witness must not contain a same-layer bridge",
         ));
     }
     Ok(())
@@ -6967,6 +7079,98 @@ fn post_cell_topology(
 fn same_axis(cell: usize, neighbor: usize, width: i32, horizontal: bool) -> bool {
     let width = usize::try_from(width).expect("validated width is positive");
     (cell / width == neighbor / width) == horizontal
+}
+
+fn post_crossing_free_restriction(
+    solver: &mut RecordedModel,
+    input: &ModelInput,
+    layers: &[SharedLayer],
+    bridges: &[ModelBridge],
+    collector: &CrossingFreeBuildCertificateCollector,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let grid_cell_count = input.cell_count as usize;
+    let expected_bridge_count = grid_cell_count
+        .checked_mul(layers.len())
+        .expect("validated layer and grid sizes fit usize");
+    let mut entries = bridges
+        .iter()
+        .map(|bridge| CrossingFreeBridgeCertificate {
+            transport: bridge.transport,
+            cell: bridge.cell,
+        })
+        .collect::<Vec<_>>();
+    entries.sort_by_key(|entry| {
+        (
+            match entry.transport {
+                TransportKind::Belt => 0_u8,
+                TransportKind::Pipe => 1_u8,
+            },
+            entry.cell,
+        )
+    });
+    let unique_count = entries
+        .iter()
+        .map(|entry| {
+            (
+                match entry.transport {
+                    TransportKind::Belt => 0_u8,
+                    TransportKind::Pipe => 1_u8,
+                },
+                entry.cell,
+            )
+        })
+        .collect::<BTreeSet<_>>()
+        .len();
+    let complete = bridges.len() == expected_bridge_count && unique_count == bridges.len();
+    if !complete {
+        return Err(IntegratedLayoutDiagnostic::error(
+            "incomplete-crossing-free-restriction",
+            "/crossing_free_restriction",
+            Some(format!(
+                "expected={expected_bridge_count}, observed={}, unique={unique_count}",
+                bridges.len()
+            )),
+            "crossing-free research mode must enumerate every bridge variable exactly once",
+        ));
+    }
+    if !bridges.is_empty() {
+        solver.post_equals(
+            ConstraintFamily::CrossingRestriction,
+            bridges
+                .iter()
+                .map(|bridge| bridge.selected.scaled(1))
+                .collect(),
+            0,
+            1,
+            tag,
+        );
+    }
+    let certificate = CrossingFreeBuildCertificate {
+        schema_version: CROSSING_FREE_BUILD_CERTIFICATE_SCHEMA_VERSION,
+        mode: "all-bridge-selected-zero".to_string(),
+        bridges: entries,
+        bridge_count: bridges.len(),
+        expected_bridge_count,
+        active_transport_layer_count: layers.len(),
+        grid_cell_count,
+        posted_constraint_count: usize::from(!bridges.is_empty()),
+        posted_term_count: bridges.len(),
+        new_variable_count: 0,
+        complete,
+    };
+    let mut slot = collector
+        .lock()
+        .expect("crossing-free build certificate collector is not poisoned");
+    if slot.replace(certificate).is_some() {
+        return Err(IntegratedLayoutDiagnostic::error(
+            "duplicate-crossing-free-certificate",
+            "/crossing_free_restriction",
+            None,
+            "crossing-free research mode must emit exactly one build certificate",
+        ));
+    }
+    Ok(())
 }
 
 fn build_transport_occupancy(

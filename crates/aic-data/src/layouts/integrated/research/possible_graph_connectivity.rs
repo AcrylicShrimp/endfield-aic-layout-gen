@@ -431,7 +431,7 @@ fn connectivity_runtime(
     }
 }
 
-fn grid_analyzer_runtime(
+pub(super) fn grid_analyzer_runtime(
     statistics: exact::LayerGridAnalyzerStatistics,
 ) -> LayerGridAnalyzerRuntime {
     LayerGridAnalyzerRuntime {
