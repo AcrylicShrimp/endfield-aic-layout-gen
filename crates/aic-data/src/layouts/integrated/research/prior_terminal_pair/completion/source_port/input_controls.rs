@@ -25,7 +25,8 @@ use super::{PriorSourcePortPortfolioReport, diagnose_prior_source_port_portfolio
 mod pair;
 
 pub use pair::{
-    EXTERNAL_BOUNDARY_CELL_PARTITION_SCHEMA_VERSION,
+    BOUNDARY_CELL_WIDTH_SENSITIVITY_SCHEMA_VERSION, BoundaryCellWidthCaseReport,
+    BoundaryCellWidthSensitivityReport, EXTERNAL_BOUNDARY_CELL_PARTITION_SCHEMA_VERSION,
     EXTERNAL_BOUNDARY_KEY_LEGAL_SUPPORT_AB_SCHEMA_VERSION,
     EXTERNAL_BOUNDARY_SIDE_PARTITION_SCHEMA_VERSION, ExternalBoundaryCellCaseReport,
     ExternalBoundaryCellPartitionReport, ExternalBoundaryKeyCommonModelContract,
@@ -39,9 +40,10 @@ pub use pair::{
     PriorInputPortResidualDomain, RESIDUAL_FACILITY_PORT_TUPLE_PORTFOLIO_SCHEMA_VERSION,
     ResidualFacilityPortDomain, ResidualFacilityPortFixationObservation,
     ResidualFacilityPortTupleCaseReport, ResidualFacilityPortTuplePortfolioReport,
-    diagnose_external_boundary_cell_partition, diagnose_external_boundary_key_legal_support_ab,
-    diagnose_external_boundary_side_partition, diagnose_prior_input_pair_root_snapshot,
-    diagnose_prior_input_port_pair_portfolio, diagnose_residual_facility_port_tuple_portfolio,
+    diagnose_boundary_cell_width_sensitivity, diagnose_external_boundary_cell_partition,
+    diagnose_external_boundary_key_legal_support_ab, diagnose_external_boundary_side_partition,
+    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_pair_portfolio,
+    diagnose_residual_facility_port_tuple_portfolio,
 };
 
 pub const PRIOR_INPUT_PORT_CONTROLS_SCHEMA_VERSION: u32 = 1;

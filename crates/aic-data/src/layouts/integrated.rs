@@ -45,7 +45,9 @@ pub use report::{
     TransportNetworkTerminal,
 };
 pub use research::{
-    CONNECTIVITY_WITNESS_DIAGNOSIS_SCHEMA_VERSION, CUMULATIVE_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION,
+    BOUNDARY_CELL_WIDTH_SENSITIVITY_SCHEMA_VERSION, BoundaryCellWidthCaseReport,
+    BoundaryCellWidthSensitivityReport, CONNECTIVITY_WITNESS_DIAGNOSIS_SCHEMA_VERSION,
+    CUMULATIVE_EXACT_DIMENSION_SWEEP_SCHEMA_VERSION,
     CUMULATIVE_FACILITY_COORDINATE_PARTITION_SCHEMA_VERSION,
     CUMULATIVE_FACILITY_PORT_PARTITION_SCHEMA_VERSION,
     CUMULATIVE_FACILITY_ROTATION_PARTITION_SCHEMA_VERSION,
@@ -113,7 +115,7 @@ pub use research::{
     compare_first_integrated_layout_phase_shared_layer,
     decompose_first_integrated_layout_phase_factored_networks,
     decompose_first_integrated_layout_phase_factored_requirements,
-    decompose_first_integrated_layout_phase_pair,
+    decompose_first_integrated_layout_phase_pair, diagnose_boundary_cell_width_sensitivity,
     diagnose_cumulative_facility_coordinate_partitions,
     diagnose_cumulative_facility_coordinate_partitions_with_local_continuation,
     diagnose_cumulative_facility_port_partitions,

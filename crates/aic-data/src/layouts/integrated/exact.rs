@@ -32,6 +32,7 @@ mod scaled_endpoint_channel_probe;
 mod search_statistics;
 pub(super) mod shared_layer;
 
+pub(in crate::layouts::integrated) use boundary_terminals::reachable_boundary_keys;
 pub(in crate::layouts::integrated) use connectivity_propagator::PossibleRouteReachabilityStatistics;
 pub(super) use endpoint_channel_probe::probe_endpoint_channels;
 pub(in crate::layouts::integrated) use grid_analyzer::LayerGridAnalyzerStatistics;

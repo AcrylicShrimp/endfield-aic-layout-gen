@@ -4,6 +4,10 @@ use serde::Serialize;
 
 use super::*;
 
+mod width_sensitivity;
+
+pub use width_sensitivity::*;
+
 pub const EXTERNAL_BOUNDARY_CELL_PARTITION_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]

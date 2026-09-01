@@ -4,17 +4,17 @@ use std::time::Duration;
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    ExternalBoundaryCellPartitionReport, ExternalBoundaryKeyLegalSupportAbReport,
-    ExternalBoundarySidePartitionReport, FacilityPlacementRequest,
-    PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
+    BoundaryCellWidthSensitivityReport, ExternalBoundaryCellPartitionReport,
+    ExternalBoundaryKeyLegalSupportAbReport, ExternalBoundarySidePartitionReport,
+    FacilityPlacementRequest, PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
     PriorInputPortPairPortfolioReport, PriorSourcePortPortfolioReport,
     PriorTerminalCompletionPortfolioReport, PriorTerminalPairValuePortfolioReport,
-    ResidualFacilityPortTuplePortfolioReport, diagnose_external_boundary_cell_partition,
-    diagnose_external_boundary_key_legal_support_ab, diagnose_external_boundary_side_partition,
-    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
-    diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
-    diagnose_prior_terminal_completion_portfolio, diagnose_prior_terminal_pair_value_portfolio,
-    diagnose_residual_facility_port_tuple_portfolio,
+    ResidualFacilityPortTuplePortfolioReport, diagnose_boundary_cell_width_sensitivity,
+    diagnose_external_boundary_cell_partition, diagnose_external_boundary_key_legal_support_ab,
+    diagnose_external_boundary_side_partition, diagnose_prior_input_pair_root_snapshot,
+    diagnose_prior_input_port_controls, diagnose_prior_input_port_pair_portfolio,
+    diagnose_prior_source_port_portfolio, diagnose_prior_terminal_completion_portfolio,
+    diagnose_prior_terminal_pair_value_portfolio, diagnose_residual_facility_port_tuple_portfolio,
     render_integrated_layout_html_with_localization,
 };
 use aic_data::localization::{ValidatedLocalizationCatalog, load_localization_catalog};
@@ -124,6 +124,16 @@ struct Args {
     boundary_cell_case_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "MILLISECONDS")]
     boundary_cell_observation_time_limit_ms: Option<u64>,
+    /// Compare exact fixed-width models while preserving one semantic boundary-cell endpoint.
+    #[arg(long)]
+    sweep_boundary_cell_widths: bool,
+    /// Strictly increasing widths, for example 13,14,15,16.
+    #[arg(long, value_name = "WIDTHS", value_delimiter = ',')]
+    boundary_cell_widths: Option<Vec<i32>>,
+    #[arg(long, value_name = "MILLISECONDS")]
+    boundary_cell_width_case_time_limit_ms: Option<u64>,
+    #[arg(long, value_name = "MILLISECONDS")]
+    boundary_cell_width_observation_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -213,6 +223,23 @@ fn main() -> Result<()> {
         args.partition_external_boundary_cell
             == args.boundary_cell_observation_time_limit_ms.is_some(),
         "--boundary-cell-observation-time-limit-ms must be supplied exactly when --partition-external-boundary-cell is enabled"
+    );
+    ensure!(
+        !args.sweep_boundary_cell_widths || args.partition_external_boundary_cell,
+        "--sweep-boundary-cell-widths requires --partition-external-boundary-cell"
+    );
+    ensure!(
+        args.sweep_boundary_cell_widths == args.boundary_cell_widths.is_some(),
+        "--boundary-cell-widths must be supplied exactly when --sweep-boundary-cell-widths is enabled"
+    );
+    ensure!(
+        args.sweep_boundary_cell_widths == args.boundary_cell_width_case_time_limit_ms.is_some(),
+        "--boundary-cell-width-case-time-limit-ms must be supplied exactly when --sweep-boundary-cell-widths is enabled"
+    );
+    ensure!(
+        args.sweep_boundary_cell_widths
+            == args.boundary_cell_width_observation_time_limit_ms.is_some(),
+        "--boundary-cell-width-observation-time-limit-ms must be supplied exactly when --sweep-boundary-cell-widths is enabled"
     );
     let terminal_bits = parse_terminal_pair(&args.terminal_pair)?;
     let worker_count = NonZeroUsize::new(args.worker_count)
@@ -694,6 +721,73 @@ fn run_input_pair(
                         )?,
                     )
                     .context("boundary-cell observation case time limit must be positive")?;
+                    if args.sweep_boundary_cell_widths {
+                        let width_authoritative_budget = NonZeroU64::new(
+                            args.boundary_cell_width_case_time_limit_ms.context(
+                                "boundary-cell width sensitivity requires --boundary-cell-width-case-time-limit-ms",
+                            )?,
+                        )
+                        .context(
+                            "boundary-cell width authoritative case time limit must be positive",
+                        )?;
+                        let width_observation_budget = NonZeroU64::new(
+                            args.boundary_cell_width_observation_time_limit_ms.context(
+                                "boundary-cell width sensitivity requires --boundary-cell-width-observation-time-limit-ms",
+                            )?,
+                        )
+                        .context(
+                            "boundary-cell width observation case time limit must be positive",
+                        )?;
+                        let report = diagnose_boundary_cell_width_sensitivity(
+                            &loaded.wiring,
+                            &loaded.facilities,
+                            &loaded.items,
+                            &loaded.transports,
+                            &loaded.components,
+                            &loaded.placement_request,
+                            args.target_phase,
+                            args.used_width,
+                            args.used_height,
+                            args.facility_x,
+                            args.facility_y,
+                            args.port_assignment_index,
+                            args.facility_rotation,
+                            args.prior_facility_bit,
+                            terminal_bits,
+                            representative_source_leaf_index,
+                            worker_count.get(),
+                            Duration::from_millis(prefix_budget.get()),
+                            Duration::from_millis(pair_budget.get()),
+                            Duration::from_millis(completion_budget.get()),
+                            Duration::from_millis(source_budget.get()),
+                            Duration::from_millis(control_budget.get()),
+                            Duration::from_millis(residual_pair_budget.get()),
+                            Duration::from_millis(parent_observation_budget.get()),
+                            Duration::from_millis(authoritative_budget.get()),
+                            Duration::from_millis(observation_budget.get()),
+                            Duration::from_millis(ab_authoritative_budget.get()),
+                            Duration::from_millis(ab_observation_budget.get()),
+                            Duration::from_millis(side_authoritative_budget.get()),
+                            Duration::from_millis(side_observation_budget.get()),
+                            Duration::from_millis(cell_authoritative_budget.get()),
+                            Duration::from_millis(cell_observation_budget.get()),
+                            args.boundary_cell_widths
+                                .clone()
+                                .context("boundary-cell width list is required")?,
+                            Duration::from_millis(width_authoritative_budget.get()),
+                            Duration::from_millis(width_observation_budget.get()),
+                        )
+                        .map_err(|report| {
+                            anyhow::anyhow!(
+                                "boundary-cell width-sensitivity diagnosis failed: {report:?}"
+                            )
+                        })?;
+                        write_boundary_cell_width_artifacts(args, loaded, &report)?;
+                        serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+                            .context("failed to write boundary-cell width-sensitivity report")?;
+                        println!();
+                        return Ok(());
+                    }
                     let report = diagnose_external_boundary_cell_partition(
                         &loaded.wiring,
                         &loaded.facilities,
@@ -1123,6 +1217,46 @@ fn write_external_boundary_cell_artifacts(
                     .join(format!("key-{}.{kind}.html", case.key)),
                 html.as_bytes(),
                 "external boundary-cell layout",
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn write_boundary_cell_width_artifacts(
+    args: &Args,
+    loaded: &LoadedInputs,
+    report: &BoundaryCellWidthSensitivityReport,
+) -> Result<()> {
+    write_json(&args.output_dir.join("summary.json"), report)?;
+    write_bytes(
+        &args.output_dir.join("summary.html"),
+        render_boundary_cell_width_summary(report)?.as_bytes(),
+        "boundary-cell width-sensitivity summary",
+    )?;
+    for case in &report.cases {
+        for (kind, layout) in [
+            ("authoritative", &case.solve.authoritative_layout),
+            ("observation", &case.solve.observation_layout),
+        ] {
+            let html = render_integrated_layout_html_with_localization(
+                layout,
+                loaded.localization.as_ref(),
+            )
+            .map_err(|diagnostic| {
+                anyhow::anyhow!(
+                    "boundary-cell width {} {kind} visualization failed with {}: {}",
+                    case.width,
+                    diagnostic.code,
+                    diagnostic.message
+                )
+            })?;
+            write_bytes(
+                &args
+                    .output_dir
+                    .join(format!("width-{}.{kind}.html", case.width)),
+                html.as_bytes(),
+                "boundary-cell width-sensitivity layout",
             )?;
         }
     }
@@ -2079,6 +2213,110 @@ fn render_external_boundary_cell_summary(
         report.unknown_count,
         report.invalid_witness_count,
         report.unresolved_keys,
+        report.interpretation_blocked,
+        rows,
+        json,
+    ))
+}
+
+fn render_boundary_cell_width_summary(
+    report: &BoundaryCellWidthSensitivityReport,
+) -> Result<String> {
+    let rows = report
+        .cases
+        .iter()
+        .map(|case| {
+            let unresolved_route_cells = case
+                .solve
+                .root_snapshot
+                .layers
+                .iter()
+                .map(|layer| layer.route_cells.unresolved)
+                .sum::<usize>();
+            let unresolved_route_arcs = case
+                .solve
+                .root_snapshot
+                .layers
+                .iter()
+                .map(|layer| layer.route_arcs.unresolved)
+                .sum::<usize>();
+            let unresolved_flows = case
+                .solve
+                .root_snapshot
+                .layers
+                .iter()
+                .map(|layer| layer.flows.unresolved)
+                .sum::<usize>();
+            let external_domains = case
+                .solve
+                .root_snapshot
+                .terminals
+                .iter()
+                .filter(|terminal| terminal.endpoint_kind == "external")
+                .map(|terminal| terminal.geometry.cardinality.to_string())
+                .collect::<Vec<_>>()
+                .join(",");
+            let first_decision = case
+                .solve
+                .root_snapshot
+                .first_decision
+                .as_ref()
+                .map_or("-", |decision| decision.semantic_name.as_str());
+            format!(
+                "<tr><td>{}</td><td>{}×{}</td><td>{}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td><a href=\"width-{}.authoritative.html\">solve</a> · <a href=\"width-{}.observation.html\">root</a></td></tr>",
+                case.case_index,
+                case.width,
+                case.height,
+                case.encoded_key,
+                case.solve.combined_outcome,
+                case.solve.construction_ms,
+                case.solve.search_ms,
+                case.solve.first_incumbent_ms,
+                case.solve.search_statistics.branch_decisions,
+                case.solve.search_statistics.backtracks,
+                case.solve.search_statistics.conflicts,
+                case.solve.search_statistics.learned_clauses,
+                case.solve.search_statistics.solver_propagations,
+                case.solve.model_scale.variables,
+                case.solve.model_scale.constraints,
+                case.solve.model_scale.incidences,
+                unresolved_route_cells,
+                unresolved_route_arcs,
+                unresolved_flows,
+                external_domains,
+                first_decision,
+                case.width,
+                case.width,
+            )
+        })
+        .collect::<String>();
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 3 boundary-cell width sensitivity</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.warning{{border:1px solid #ffd166;padding:10px;color:#ffd166}}table{{border-collapse:collapse;width:100%;margin-bottom:24px}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}code,a{{color:#ffd166}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {} boundary-cell exact width sensitivity</h1><div class="meta">semantic endpoint={} (x={}, y={}, direction={}) · parent key={} · height={} · widths={:?} · authoritative budget={}ms · observation budget={}ms · experiment={}ms · total={}ms</div><p class="warning">Each row is a separate exact fixed-size problem, not a partition or monotonic proof. Four placements/rotations, fifteen facility ports, and the semantic endpoint are preserved. Routing and all other external terminals remain solver decisions.</p><p>width checks positive/increasing/ceiling/parent={}/{}/{}/{} · logical input identity={} · certificate identity={} · semantic model contract={} · feasible/infeasible/unknown/invalid={}/{}/{}/{} · witness={} · blocked={}</p><table><thead><tr><th>case</th><th>size</th><th>key</th><th>outcome</th><th>build ms</th><th>search ms</th><th>first</th><th>decisions</th><th>backtracks</th><th>conflicts</th><th>learned</th><th>propagations</th><th>vars</th><th>constraints</th><th>incidences</th><th>root route cells</th><th>root arcs</th><th>root flows</th><th>external domains</th><th>first decision</th><th>artifacts</th></tr></thead><tbody>{}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        report.target_phase_index,
+        report.semantic_side,
+        report.semantic_x,
+        report.semantic_y,
+        report.semantic_direction_index,
+        report.selected_parent_key,
+        report.fixed_height,
+        report.requested_widths,
+        report.authoritative_case_search_budget_ms,
+        report.observation_case_search_budget_ms,
+        report.experiment_ms,
+        report.total_wall_ms,
+        report.widths_positive,
+        report.widths_strictly_increasing,
+        report.widths_within_request_ceiling,
+        report.includes_parent_width,
+        report.common_logical_input_identity_satisfied,
+        report.common_certificate_identity_satisfied,
+        report.common_semantic_model_contract_satisfied,
+        report.validated_feasible_count,
+        report.proven_infeasible_count,
+        report.unknown_count,
+        report.invalid_witness_count,
+        report.witness_found,
         report.interpretation_blocked,
         rows,
         json,

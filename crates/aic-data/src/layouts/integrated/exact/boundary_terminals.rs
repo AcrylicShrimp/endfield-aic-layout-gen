@@ -158,7 +158,7 @@ pub(super) fn build_selector(
     }
 }
 
-fn reachable_boundary_keys(width: i32, height: i32) -> Vec<i32> {
+pub(in crate::layouts::integrated) fn reachable_boundary_keys(width: i32, height: i32) -> Vec<i32> {
     let mut keys = BTreeSet::new();
     for x in 0..width {
         keys.insert(geometry_key(x, 0, width, 0));
