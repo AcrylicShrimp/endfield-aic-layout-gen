@@ -170,6 +170,52 @@ absence of support is a sound reason to reject the pair; presence of support is 
 claim. The census observes the current model only. It must not prune domains until a separately
 reviewed exact propagator is implemented.
 
+## Search-Time Rotation Provenance Contract
+
+The next rotation diagnosis observes the unchanged default Pumpkin search. It wraps the default
+brancher but must return exactly the predicate produced by that brancher, call it exactly once per
+decision request, and forward every subscribed brancher event. It must not post constraints,
+change value or variable order, consume solver randomness, terminate search early, or turn an
+observation into a hint or fixation.
+
+The experiment compares the unpartitioned parent with every complete, pairwise-disjoint fitting
+rotation child. Before interpreting the trace, it also compares one-worker and four-worker child
+runs so ordinary parallel lucky-worker effects can be separated from the exact partition itself.
+
+The observer records cheap information on every decision request:
+
+- the predicate's registered variable family and stable variable name when available;
+- cumulative decisions, conflicts, backtracks, and observed brancher restart callbacks;
+- the selected facility's current directional-rotation values; and
+- the selected facility endpoints' aggregate port, local-key, and connection-coordinate domain
+  cardinalities.
+
+It retains bounded detailed decision events, up to the declared target-domain transition cap, and
+aggregate variable-family snapshots only at the root and geometrically spaced decision counts.
+The trace reports both retained and dropped transition counts. Geometric sampling keeps observation
+cost logarithmic in the number of decisions. Trace wall time is descriptive only because reading
+domains can perturb a wall-clock budget; the unchanged non-trace runs remain the performance
+baseline.
+
+Pumpkin 0.5 native restart statistics are authoritative after search. Its engine restart path does
+not currently deliver the brancher restart callback used by the observer. The trace therefore names
+these values `observed_restart_callbacks`; they must not be interpreted as solver restart counts or
+used to classify a target-domain transition as restart-caused.
+
+The diagnosis distinguishes these cases without changing solver semantics:
+
+1. rotation stays non-singleton for most of the parent search: the default search reaches the
+   high-level disjunction late;
+2. rotation becomes singleton only after coordinates or ports are already narrow: the child avoids
+   prior commitments by cutting the exact disjunction at the root;
+3. the same rotation repeatedly becomes singleton and widens again: the parent revisits exact
+   cases across backtracking;
+4. a winning rotation becomes singleton early but still costs much more than its child: fresh
+   trail, learned-state, or earlier-domain-history effects remain for a later experiment.
+
+This observer is diagnostic only. A resulting recommendation to branch on rotation first is a
+search heuristic and cannot become the authoritative solve path without explicit user approval.
+
 ### Rung 2: Pipe Routing
 
 Adds the complete pipe semantic block:

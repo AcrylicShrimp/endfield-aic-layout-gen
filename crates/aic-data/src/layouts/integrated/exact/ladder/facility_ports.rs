@@ -1,9 +1,11 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::rc::Rc;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use pumpkin_solver::Solver;
 use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
+use pumpkin_solver::core::branching::Brancher;
 use pumpkin_solver::core::predicates::PredicateConstructor;
 use pumpkin_solver::core::propagation::Priority;
 use pumpkin_solver::core::results::{CSPSolverExecutionFlag, ProblemSolution, SatisfactionResult};
@@ -41,6 +43,8 @@ use crate::layouts::integrated::{
 };
 use crate::logistics::{CardinalDirection, TransportKind};
 use crate::research::ModelComplexityMetrics;
+
+mod provenance;
 
 const GEOMETRY_FORMULATION: &str = "factorized-coordinate-geometry-rotation-port-support-v1";
 const CLEARANCE_FORMULATION: &str =
@@ -213,6 +217,41 @@ pub(super) fn solve_with_propagated_clearance_and_fixed_rotations(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
+pub(super) fn solve_with_search_provenance(
+    input: ModelInput,
+    time_limit: Duration,
+    priority: EndpointClearanceSchedulingPriority,
+    counters_enabled: bool,
+    false_event_filter_enabled: bool,
+    fixed_rotations: &BTreeMap<String, i64>,
+    target_instance: &str,
+    maximum_detailed_decisions: usize,
+) -> (BottomUpRungReport, super::BottomUpSearchProvenanceTrace) {
+    let collector = provenance::collector(target_instance, maximum_detailed_decisions);
+    let brancher_collector = Rc::clone(&collector);
+    let target_instance = target_instance.to_string();
+    let report = solve_with_brancher(
+        input,
+        time_limit,
+        RungContract {
+            clearance_priority: Some(priority),
+            clearance_counters_enabled: Some(counters_enabled),
+            clearance_false_event_filter_enabled: Some(false_event_filter_enabled),
+            ..PROPAGATED_CLEARANCE_CONTRACT
+        },
+        fixed_rotations,
+        move |model, brancher| {
+            provenance::SearchProvenanceBrancher::new(
+                brancher,
+                provenance::SearchProvenanceProbe::new(model, &target_instance),
+                brancher_collector,
+            )
+        },
+    );
+    (report, provenance::finish(&collector))
+}
+
 pub(super) fn snapshot_propagated_root(
     input: ModelInput,
     priority: EndpointClearanceSchedulingPriority,
@@ -292,6 +331,26 @@ fn solve(
     contract: RungContract,
     fixed_rotations: &BTreeMap<String, i64>,
 ) -> BottomUpRungReport {
+    solve_with_brancher(
+        input,
+        time_limit,
+        contract,
+        fixed_rotations,
+        |_, brancher| brancher,
+    )
+}
+
+fn solve_with_brancher<B, F>(
+    input: ModelInput,
+    time_limit: Duration,
+    contract: RungContract,
+    fixed_rotations: &BTreeMap<String, i64>,
+    decorate_brancher: F,
+) -> BottomUpRungReport
+where
+    B: Brancher,
+    F: FnOnce(&PortModel, pumpkin_solver::core::DefaultBrancher) -> B,
+{
     let ceiling = [input.width, input.height];
     let facility_count = input.instances.len();
     let endpoint_descriptors = facility_endpoint_descriptors(&input);
@@ -350,7 +409,8 @@ fn solve(
     let search_started = Instant::now();
     let search_event_counters = Arc::new(Mutex::new(SearchEventCounters::default()));
     let default_brancher = port_model.placement.model.solver_mut().default_brancher();
-    let mut brancher = MeteredBrancher::new(default_brancher, Arc::clone(&search_event_counters));
+    let decorated_brancher = decorate_brancher(&port_model, default_brancher);
+    let mut brancher = MeteredBrancher::new(decorated_brancher, Arc::clone(&search_event_counters));
     let mut resolver = ResolutionResolver::default();
     let mut termination = TimeBudget::starting_now(time_limit);
     let result = port_model.placement.model.solver_mut().satisfy(
@@ -1793,6 +1853,37 @@ mod tests {
             false,
             &fixed_rotations,
         );
+        let (traced_fixed, trace) = solve_with_search_provenance(
+            input.clone(),
+            Duration::from_secs(1),
+            EndpointClearanceSchedulingPriority::High,
+            true,
+            false,
+            &fixed_rotations,
+            "fixture-instance",
+            16,
+        );
+        assert_eq!(traced_fixed.outcome, fixed.outcome);
+        assert_eq!(traced_fixed.validation, fixed.validation);
+        assert_eq!(traced_fixed.witness, fixed.witness);
+        assert_eq!(
+            traced_fixed.search_statistics.branch_decisions,
+            fixed.search_statistics.branch_decisions
+        );
+        assert_eq!(
+            traced_fixed.search_statistics.conflicts,
+            fixed.search_statistics.conflicts
+        );
+        assert!(trace.decision_histogram_matches_total);
+        assert!(trace.decision_catalog_covers_all);
+        assert_eq!(trace.unrecorded_decisions, 0);
+        assert!(trace.target_rotation_decisions <= trace.decisions);
+        assert_eq!(trace.first_singleton_decision.get(&90), Some(&0));
+        assert_eq!(
+            trace.family_checkpoints[0].trigger,
+            "pre-first-branch-fixpoint"
+        );
+        assert_eq!(trace.target_transitions[0].state.rotation_values, [90]);
         assert_eq!(fixed.outcome, BottomUpRungOutcome::Feasible);
         assert_eq!(fixed.validation, ExactValidationStatus::Passed);
         let Some(BottomUpRungWitness::FacilityPorts { witness }) = fixed.witness else {

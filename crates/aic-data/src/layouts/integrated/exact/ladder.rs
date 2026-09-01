@@ -139,6 +139,96 @@ pub struct BottomUpRootDomainSnapshot {
     pub endpoint_clearance_statistics: EndpointClearancePropagationStatistics,
 }
 
+pub const BOTTOM_UP_SEARCH_PROVENANCE_SCHEMA_VERSION: u32 = 2;
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BottomUpSearchProvenanceTrace {
+    pub schema_version: u32,
+    pub target_instance: String,
+    pub maximum_detailed_decisions: usize,
+    pub decision_requests: u64,
+    pub decisions: u64,
+    pub conflict_callbacks: u64,
+    pub backtrack_callbacks: u64,
+    pub observed_restart_callbacks: u64,
+    pub observer_contains_checks: u64,
+    pub target_rotation_decisions: u64,
+    pub unrecorded_decisions: u64,
+    pub non_singleton_rotation_requests: u64,
+    pub singleton_rotation_requests: BTreeMap<i32, u64>,
+    pub singleton_rotation_entries: BTreeMap<i32, u64>,
+    pub first_singleton_decision: BTreeMap<i32, u64>,
+    pub rotation_widening_transitions: u64,
+    pub detailed_decisions_truncated: bool,
+    pub target_transitions_seen: u64,
+    pub target_transitions_dropped: u64,
+    pub decision_histogram_matches_total: bool,
+    pub decision_catalog_covers_all: bool,
+    pub decision_family_counts: BTreeMap<String, u64>,
+    pub detailed_decisions: Vec<BottomUpProvenanceDecision>,
+    pub target_transitions: Vec<BottomUpProvenanceTargetTransition>,
+    pub family_checkpoints: Vec<BottomUpProvenanceFamilyCheckpoint>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BottomUpProvenanceDecision {
+    pub decision_index: u64,
+    pub elapsed_us: u64,
+    pub variable_family: String,
+    pub variable_name: Option<String>,
+    pub domain_id: u32,
+    pub relation: String,
+    pub right_hand_side: i32,
+    pub domain_cardinality_before: usize,
+    pub target_rotation_values_before: Vec<i32>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BottomUpProvenanceTargetState {
+    pub rotation_values: Vec<i32>,
+    pub x_cardinality: usize,
+    pub y_cardinality: usize,
+    pub endpoint_count: usize,
+    pub port_cardinality_sum: usize,
+    pub local_key_cardinality_sum: usize,
+    pub connection_x_cardinality_sum: usize,
+    pub connection_y_cardinality_sum: usize,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BottomUpProvenanceTargetTransition {
+    pub observation_index: u64,
+    pub decisions_before: u64,
+    pub conflict_callbacks: u64,
+    pub backtrack_callbacks: u64,
+    pub observed_restart_callbacks: u64,
+    pub elapsed_us: u64,
+    pub origin: String,
+    pub state: BottomUpProvenanceTargetState,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BottomUpProvenanceFamilyDomainState {
+    pub family: String,
+    pub total: usize,
+    pub fixed: usize,
+    pub unresolved: usize,
+    pub current_cardinality_sum: u64,
+    pub declared_cardinality_sum: u64,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct BottomUpProvenanceFamilyCheckpoint {
+    pub trigger: String,
+    pub decisions_before: u64,
+    pub conflict_callbacks: u64,
+    pub backtrack_callbacks: u64,
+    pub observed_restart_callbacks: u64,
+    pub elapsed_us: u64,
+    pub target: BottomUpProvenanceTargetState,
+    pub variable_families: Vec<BottomUpProvenanceFamilyDomainState>,
+}
+
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum BottomUpRungOutcome {
@@ -497,6 +587,29 @@ pub(in crate::layouts::integrated) fn snapshot_facility_ports_propagated_root(
         counters_enabled,
         false_event_filter_enabled,
         fixed_rotations,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_facility_ports_search_provenance(
+    input: ModelInput,
+    time_limit: Duration,
+    priority: EndpointClearanceSchedulingPriority,
+    counters_enabled: bool,
+    false_event_filter_enabled: bool,
+    fixed_rotations: &BTreeMap<String, i64>,
+    target_instance: &str,
+    maximum_detailed_decisions: usize,
+) -> (BottomUpRungReport, BottomUpSearchProvenanceTrace) {
+    facility_ports::solve_with_search_provenance(
+        input,
+        time_limit,
+        priority,
+        counters_enabled,
+        false_event_filter_enabled,
+        fixed_rotations,
+        target_instance,
+        maximum_detailed_decisions,
     )
 }
 

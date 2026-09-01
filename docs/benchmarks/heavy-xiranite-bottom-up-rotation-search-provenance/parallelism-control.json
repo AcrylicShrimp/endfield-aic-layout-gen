@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "workload_id": "heavy-xiranite-minimum-rate",
+  "target_phase_index": 30,
+  "cumulative_facility_count": 33,
+  "case_search_budget_ms": 5000,
+  "parent_trials": [
+    {"repeat": 1, "outcome": "unknown", "search_ms": 5000, "branch_decisions": 240705, "conflicts": 13790, "solver_propagations": 50744841},
+    {"repeat": 2, "outcome": "unknown", "search_ms": 5000, "branch_decisions": 214502, "conflicts": 12218, "solver_propagations": 44844782},
+    {"repeat": 3, "outcome": "unknown", "search_ms": 5000, "branch_decisions": 227993, "conflicts": 13020, "solver_propagations": 47911854}
+  ],
+  "partition_trials": [
+    {
+      "mode": "sequential",
+      "worker_count": 1,
+      "repeat": 1,
+      "portfolio_wall_ms": 11236,
+      "cases": [
+        {"rotation": 0, "outcome": "unknown", "search_ms": 5000, "branch_decisions": 272219, "conflicts": 12407, "solver_propagations": 49686409},
+        {"rotation": 90, "outcome": "feasible", "search_ms": 706, "branch_decisions": 53610, "conflicts": 1199, "solver_propagations": 7799263},
+        {"rotation": 180, "outcome": "feasible", "search_ms": 434, "branch_decisions": 33283, "conflicts": 676, "solver_propagations": 4908106},
+        {"rotation": 270, "outcome": "unknown", "search_ms": 5000, "branch_decisions": 291671, "conflicts": 11248, "solver_propagations": 51733551}
+      ]
+    },
+    {
+      "mode": "sequential",
+      "worker_count": 1,
+      "repeat": 2,
+      "portfolio_wall_ms": 11291,
+      "cases": [
+        {"rotation": 0, "outcome": "unknown", "search_ms": 5000, "branch_decisions": 263331, "conflicts": 11916, "solver_propagations": 47902882},
+        {"rotation": 90, "outcome": "feasible", "search_ms": 731, "branch_decisions": 53610, "conflicts": 1199, "solver_propagations": 7799263},
+        {"rotation": 180, "outcome": "feasible", "search_ms": 461, "branch_decisions": 33283, "conflicts": 676, "solver_propagations": 4908106},
+        {"rotation": 270, "outcome": "unknown", "search_ms": 5000, "branch_decisions": 276535, "conflicts": 10396, "solver_propagations": 48646134}
+      ]
+    },
+    {
+      "mode": "sequential",
+      "worker_count": 1,
+      "repeat": 3,
+      "portfolio_wall_ms": 11354,
+      "cases": [
+        {"rotation": 0, "outcome": "unknown", "search_ms": 5000, "branch_decisions": 257326, "conflicts": 11555, "solver_propagations": 46710295},
+        {"rotation": 90, "outcome": "feasible", "search_ms": 775, "branch_decisions": 53610, "conflicts": 1199, "solver_propagations": 7799263},
+        {"rotation": 180, "outcome": "feasible", "search_ms": 479, "branch_decisions": 33283, "conflicts": 676, "solver_propagations": 4908106},
+        {"rotation": 270, "outcome": "unknown", "search_ms": 5000, "branch_decisions": 271432, "conflicts": 10162, "solver_propagations": 47659712}
+      ]
+    },
+    {
+      "mode": "parallel",
+      "worker_count": 4,
+      "repeat": 1,
+      "portfolio_wall_ms": 5042,
+      "cases": [
+        {"rotation": 0, "outcome": "unknown", "search_ms": 5000, "branch_decisions": 223590, "conflicts": 9895, "solver_propagations": 39848500},
+        {"rotation": 90, "outcome": "feasible", "search_ms": 915, "branch_decisions": 53610, "conflicts": 1199, "solver_propagations": 7799263},
+        {"rotation": 180, "outcome": "feasible", "search_ms": 576, "branch_decisions": 33283, "conflicts": 676, "solver_propagations": 4908106},
+        {"rotation": 270, "outcome": "unknown", "search_ms": 5000, "branch_decisions": 240911, "conflicts": 8411, "solver_propagations": 41348541}
+      ]
+    },
+    {
+      "mode": "parallel",
+      "worker_count": 4,
+      "repeat": 2,
+      "portfolio_wall_ms": 5049,
+      "cases": [
+        {"rotation": 0, "outcome": "unknown", "search_ms": 5000, "branch_decisions": 215319, "conflicts": 9540, "solver_propagations": 38257210},
+        {"rotation": 90, "outcome": "feasible", "search_ms": 1034, "branch_decisions": 53610, "conflicts": 1199, "solver_propagations": 7799263},
+        {"rotation": 180, "outcome": "feasible", "search_ms": 651, "branch_decisions": 33283, "conflicts": 676, "solver_propagations": 4908106},
+        {"rotation": 270, "outcome": "unknown", "search_ms": 5000, "branch_decisions": 234966, "conflicts": 8149, "solver_propagations": 40172335}
+      ]
+    },
+    {
+      "mode": "parallel",
+      "worker_count": 4,
+      "repeat": 3,
+      "portfolio_wall_ms": 5050,
+      "cases": [
+        {"rotation": 0, "outcome": "unknown", "search_ms": 5000, "branch_decisions": 210873, "conflicts": 9333, "solver_propagations": 37379292},
+        {"rotation": 90, "outcome": "feasible", "search_ms": 1063, "branch_decisions": 53610, "conflicts": 1199, "solver_propagations": 7799263},
+        {"rotation": 180, "outcome": "feasible", "search_ms": 687, "branch_decisions": 33283, "conflicts": 676, "solver_propagations": 4908106},
+        {"rotation": 270, "outcome": "unknown", "search_ms": 5000, "branch_decisions": 225462, "conflicts": 7770, "solver_propagations": 38307243}
+      ]
+    }
+  ]
+}

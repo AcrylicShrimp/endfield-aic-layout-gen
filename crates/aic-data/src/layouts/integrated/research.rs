@@ -16,6 +16,7 @@ use super::{
 
 mod bottom_up_ladder;
 mod bottom_up_rotation_partition;
+mod bottom_up_rotation_provenance;
 mod bottom_up_rotation_root;
 mod connectivity_witness;
 mod coordinate_partition;
@@ -50,6 +51,10 @@ pub use bottom_up_ladder::{
 pub use bottom_up_rotation_partition::{
     BOTTOM_UP_ROTATION_PARTITION_SCHEMA_VERSION, BottomUpRotationPartitionCaseReport,
     BottomUpRotationPartitionReport, diagnose_bottom_up_rotation_partition,
+};
+pub use bottom_up_rotation_provenance::{
+    BOTTOM_UP_ROTATION_PROVENANCE_SCHEMA_VERSION, BottomUpRotationProvenanceCaseReport,
+    BottomUpRotationProvenanceReport, diagnose_bottom_up_rotation_provenance,
 };
 pub use bottom_up_rotation_root::{
     BOTTOM_UP_ROTATION_ROOT_COMPARISON_SCHEMA_VERSION, BottomUpRotationRootCaseReport,

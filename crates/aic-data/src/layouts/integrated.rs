@@ -48,18 +48,21 @@ pub use report::{
 };
 pub use research::{
     BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION, BOTTOM_UP_ROTATION_PARTITION_SCHEMA_VERSION,
+    BOTTOM_UP_ROTATION_PROVENANCE_SCHEMA_VERSION,
     BOTTOM_UP_ROTATION_ROOT_COMPARISON_SCHEMA_VERSION, BOTTOM_UP_RUNG_SCHEMA_VERSION,
     BottomUpExperimentReport, BottomUpRootClearanceOpportunity, BottomUpRootDomainSnapshot,
     BottomUpRootEndpointDomain, BottomUpRootFacilityDomain, BottomUpRootIntegerDomain,
     BottomUpRootLocalConnectionDomain, BottomUpRootOrientationDomain,
     BottomUpRotationPartitionCaseReport, BottomUpRotationPartitionReport,
+    BottomUpRotationProvenanceCaseReport, BottomUpRotationProvenanceReport,
     BottomUpRotationRootCaseReport, BottomUpRotationRootComparisonReport, BottomUpRungKind,
     BottomUpRungOutcome, BottomUpRungReport, BottomUpRungWitness, BottomUpSearchProfile,
     BottomUpSearchSpaceProfile, BottomUpSemanticCertificate, BottomUpTerminationReason,
     EndpointClearancePropagationStatistics, EndpointClearanceSchedulingPriority,
     FacilityEndpointPlacement, FacilityGeometryPlacement, FacilityGeometryWitness,
     FacilityPortPlacement, FacilityPortsWitness, diagnose_bottom_up_rotation_partition,
-    diagnose_bottom_up_rotation_root_comparison, diagnose_bottom_up_rung,
+    diagnose_bottom_up_rotation_provenance, diagnose_bottom_up_rotation_root_comparison,
+    diagnose_bottom_up_rung,
 };
 pub use research::{
     BOUNDARY_CELL_WIDTH_SENSITIVITY_SCHEMA_VERSION, BoundaryCellWidthCaseReport,
