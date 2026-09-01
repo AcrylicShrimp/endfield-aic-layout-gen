@@ -1,0 +1,241 @@
+{
+  "schema_version": 2,
+  "target_phase_index": 3,
+  "total_phase_count": 41,
+  "cumulative_facility_count": 4,
+  "search_budget_ms": 5000,
+  "rung": {
+    "schema_version": 2,
+    "rung": "facility-geometry",
+    "formulation": "coordinate-geometry-orientation-disjunctive-non-overlap-v2",
+    "ceiling": [
+      50,
+      50
+    ],
+    "facility_count": 4,
+    "semantic_certificate": {
+      "facility_geometry": true,
+      "facility_ports": false,
+      "boundary_terminals": false,
+      "pipe_routing": false,
+      "belt_routing": false,
+      "item_flow": false,
+      "logistics_components": false,
+      "objective": false,
+      "hints": false,
+      "transferred_learned_state": false
+    },
+    "construction_ms": 0,
+    "search_ms": 0,
+    "first_witness_ms": 0,
+    "outcome": "feasible",
+    "validation": "passed",
+    "search_space": {
+      "semantic_assignment_upper_bound_log2": 44.188495648456104,
+      "semantic_assignment_upper_bound_log10": 13.302062653452593,
+      "directional_rotation_upper_bound_log2": 52.188495648456104,
+      "directional_rotation_upper_bound_log10": 15.710302618764443,
+      "rotation_equivalence_reduction_log2": 8.0
+    },
+    "model_complexity": {
+      "variables": {
+        "coverage": "complete",
+        "total_variables": 36,
+        "boolean_variables": 28,
+        "integer_variables": 8,
+        "log2_domain_volume": 73.15084951819779,
+        "by_family": [
+          {
+            "family": "placement",
+            "total_variables": 36,
+            "boolean_variables": 28,
+            "integer_variables": 8,
+            "domains": {
+              "minimum": 2,
+              "maximum": 50,
+              "p50": 2,
+              "p95": 50,
+              "log2_volume": 73.15084951819779
+            }
+          }
+        ]
+      },
+      "constraints": {
+        "total_constraints": 42,
+        "total_terms": 128,
+        "maximum_arity": 6,
+        "p95_arity": 6,
+        "maximum_absolute_coefficient": 1,
+        "by_family": [
+          {
+            "family": "placement-choice",
+            "relation": "less-than-or-equal",
+            "constraints": 8,
+            "terms": 16,
+            "maximum_arity": 2,
+            "p95_arity": 2,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "placement-choice",
+            "relation": "other",
+            "constraints": 4,
+            "terms": 4,
+            "maximum_arity": 1,
+            "p95_arity": 1,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "facility-non-overlap",
+            "relation": "less-than-or-equal",
+            "constraints": 24,
+            "terms": 72,
+            "maximum_arity": 3,
+            "p95_arity": 3,
+            "maximum_absolute_coefficient": 1
+          },
+          {
+            "family": "facility-non-overlap",
+            "relation": "other",
+            "constraints": 6,
+            "terms": 36,
+            "maximum_arity": 6,
+            "p95_arity": 6,
+            "maximum_absolute_coefficient": 1
+          }
+        ]
+      },
+      "factor_graph": {
+        "variable_vertices": 36,
+        "constraint_vertices": 42,
+        "incidences": 128,
+        "mean_variable_degree": 3.5555555555555554,
+        "maximum_variable_degree": 7,
+        "p95_variable_degree": 7,
+        "mean_constraint_degree": 3.0476190476190474,
+        "maximum_constraint_degree": 6,
+        "p95_constraint_degree": 6,
+        "density": 0.08465608465608465,
+        "connected_components": 1,
+        "articulation_points": null,
+        "retained_full_graph": false,
+        "family_incidences": [
+          {
+            "variable_family": "placement",
+            "constraint_family": "placement-choice",
+            "incidences": 20
+          },
+          {
+            "variable_family": "placement",
+            "constraint_family": "facility-non-overlap",
+            "incidences": 108
+          }
+        ]
+      },
+      "coupling": {
+        "facility_network_incidences": 0,
+        "shared_network_facility_pairs": 0,
+        "cross_family_constraints": 0,
+        "placement_routing_constraints": 0,
+        "placement_routing_incidences": 0,
+        "network_collision_constraints": 0,
+        "objective_incidences": 0
+      },
+      "symmetry": null,
+      "estimated_bytes": null
+    },
+    "search_statistics": {
+      "branch_decisions": 20,
+      "backtracks": 1,
+      "conflicts": 1,
+      "learned_clauses": 1,
+      "solver_propagations": 192,
+      "atomic_propagations": null,
+      "restarts": 0,
+      "row_selector_total": null,
+      "row_selector_root_fixed_true": null,
+      "row_selector_root_fixed_false": null,
+      "row_selector_root_unfixed": null,
+      "row_selector_decisions": null,
+      "non_row_selector_decisions": null,
+      "row_selector_true_decisions": null,
+      "row_selector_false_decisions": null,
+      "row_selector_unclassified_decisions": null,
+      "maximum_consecutive_row_selector_decisions": null,
+      "row_selector_conflict_appearances": null
+    },
+    "witness": {
+      "bounds": {
+        "width": 28,
+        "height": 34
+      },
+      "placements": [
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+          "recipe": "pool-liquid-xiranite-poly-1",
+          "facility": "mix-pool-1-mode-liquid",
+          "x": 25,
+          "y": 8,
+          "width": 5,
+          "height": 5,
+          "representative_rotation": 0,
+          "equivalent_rotations": [
+            0,
+            90,
+            180,
+            270
+          ]
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+          "recipe": "xiranite-oven-xiranite-powder-1",
+          "facility": "xiranite-oven-1-mode-liquid",
+          "x": 7,
+          "y": 27,
+          "width": 5,
+          "height": 5,
+          "representative_rotation": 0,
+          "equivalent_rotations": [
+            0,
+            90,
+            180,
+            270
+          ]
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1",
+          "recipe": "xiranite-oven-xiranite-powder-1",
+          "facility": "xiranite-oven-1-mode-liquid",
+          "x": 30,
+          "y": 37,
+          "width": 5,
+          "height": 5,
+          "representative_rotation": 0,
+          "equivalent_rotations": [
+            0,
+            90,
+            180,
+            270
+          ]
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target:0",
+          "recipe": "xiranite-oven-xiranite-enr-powder-1",
+          "facility": "xiranite-oven-1-mode-liquid",
+          "x": 20,
+          "y": 32,
+          "width": 5,
+          "height": 5,
+          "representative_rotation": 0,
+          "equivalent_rotations": [
+            0,
+            90,
+            180,
+            270
+          ]
+        }
+      ]
+    },
+    "diagnostics": []
+  }
+}

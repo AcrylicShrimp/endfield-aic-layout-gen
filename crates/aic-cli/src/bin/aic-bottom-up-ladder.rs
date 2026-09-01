@@ -270,16 +270,16 @@ fn render_html(
                 .map_or(placement.facility.as_str(), |entry| {
                     entry.facility_name.as_str()
                 });
+            let orientation_label = facility_orientation_label(placement);
             writeln!(
                 geometry,
-                r#"<g class="facility"><rect x="{x}" y="{y}" width="{facility_width}" height="{facility_height}"/><text x="{}" y="{}" class="name">{}</text><text x="{}" y="{}" class="instance">{} · {}°</text></g>"#,
+                r#"<g class="facility"><rect x="{x}" y="{y}" width="{facility_width}" height="{facility_height}"/><text x="{}" y="{}" class="name">{}</text><text x="{}" y="{}" class="instance">{}</text></g>"#,
                 x + facility_width / 2,
                 y + facility_height / 2 - 5,
                 escape_html(label),
                 x + facility_width / 2,
                 y + facility_height / 2 + 18,
-                escape_html(&placement.instance),
-                placement.rotation,
+                escape_html(&orientation_label),
             )?;
         }
         geometry.push_str("</svg>");
@@ -301,7 +301,7 @@ fn render_html(
     let stats = &rung.search_statistics;
     let json = escape_html(&serde_json::to_string_pretty(report)?);
     Ok(format!(
-        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bottom-up facility geometry</title><style>body{{margin:0;background:#07131d;color:#d5e8f5;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}}header{{padding:18px 22px;border-bottom:1px solid #315066}}h1{{font-size:20px;margin:0 0 10px}}.meta{{color:#8fb2c8}}.metrics{{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px}}.metric{{padding:8px 10px;border:1px solid #315066;background:#102535}}main{{padding:22px}}svg{{display:block;max-width:100%;height:auto;border:3px solid #58758a;background:#08141f}}.grid{{stroke:#193244;stroke-width:1}}.facility rect{{fill:#173f37;stroke:#65f0bd;stroke-width:2}}.facility text{{fill:#e4f6ff;text-anchor:middle;dominant-baseline:middle}}.facility .name{{font-size:17px;font-weight:700}}.facility .instance{{fill:#8fb2c8;font-size:11px}}.empty{{padding:40px;border:1px solid #ff6b9d;color:#ff6b9d}}details{{margin-top:22px}}pre{{white-space:pre-wrap;word-break:break-word;color:#8fb2c8}}.good{{color:#65f0bd}}.bad{{color:#ff6b9d}}</style></head><body><header><h1>Bottom-up Rung 0 · facility geometry only</h1><div class="meta">Phase {phase}/{total} · ceiling {width}×{height} · {facilities} facilities · formulation {formulation}</div><div class="metrics"><div class="metric {outcome_class}">outcome {outcome:?}</div><div class="metric">build {build} ms</div><div class="metric">search {search} ms</div><div class="metric">first witness {first}</div><div class="metric">variables {variables}</div><div class="metric">log₂ domain {domain:.2}</div><div class="metric">decisions {decisions}</div><div class="metric">backtracks {backtracks}</div><div class="metric">conflicts {conflicts}</div><div class="metric">propagations {propagations}</div></div></header><main>{geometry}<details><summary>Machine-readable report</summary><pre>{json}</pre></details></main></body></html>"#,
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Bottom-up facility geometry</title><style>body{{margin:0;background:#07131d;color:#d5e8f5;font:14px ui-monospace,SFMono-Regular,Menlo,monospace}}header{{padding:18px 22px;border-bottom:1px solid #315066}}h1{{font-size:20px;margin:0 0 10px}}.meta{{color:#8fb2c8}}.metrics{{display:flex;gap:18px;flex-wrap:wrap;margin-top:12px}}.metric{{padding:8px 10px;border:1px solid #315066;background:#102535}}main{{padding:22px}}svg{{display:block;max-width:100%;height:auto;border:3px solid #58758a;background:#08141f}}.grid{{stroke:#193244;stroke-width:1}}.facility rect{{fill:#173f37;stroke:#65f0bd;stroke-width:2}}.facility text{{fill:#e4f6ff;text-anchor:middle;dominant-baseline:middle}}.facility .name{{font-size:17px;font-weight:700}}.facility .instance{{fill:#8fb2c8;font-size:11px}}.empty{{padding:40px;border:1px solid #ff6b9d;color:#ff6b9d}}details{{margin-top:22px}}pre{{white-space:pre-wrap;word-break:break-word;color:#8fb2c8}}.good{{color:#65f0bd}}.bad{{color:#ff6b9d}}</style></head><body><header><h1>Bottom-up Rung 0 · facility geometry only</h1><div class="meta">Phase {phase}/{total} · ceiling {width}×{height} · {facilities} facilities · formulation {formulation}</div><div class="metrics"><div class="metric {outcome_class}">outcome {outcome:?}</div><div class="metric">build {build} ms</div><div class="metric">search {search} ms</div><div class="metric">first witness {first}</div><div class="metric">semantic log₂ upper bound {semantic_log2}</div><div class="metric">semantic decimal orders {semantic_log10}</div><div class="metric">rotation-equivalence reduction {rotation_reduction} bits</div><div class="metric">variables {variables}</div><div class="metric">model log₂ domain {domain:.2}</div><div class="metric">decisions {decisions}</div><div class="metric">backtracks {backtracks}</div><div class="metric">conflicts {conflicts}</div><div class="metric">propagations {propagations}</div></div></header><main>{geometry}<details><summary>Machine-readable report</summary><pre>{json}</pre></details></main></body></html>"#,
         phase = report.target_phase_index,
         total = report.total_phase_count,
         width = rung.ceiling[0],
@@ -319,6 +319,12 @@ fn render_html(
         first = rung
             .first_witness_ms
             .map_or_else(|| "—".to_string(), |value| format!("{value} ms")),
+        semantic_log2 =
+            display_optional_float(rung.search_space.semantic_assignment_upper_bound_log2),
+        semantic_log10 =
+            display_optional_float(rung.search_space.semantic_assignment_upper_bound_log10),
+        rotation_reduction =
+            display_optional_float(rung.search_space.rotation_equivalence_reduction_log2),
         variables = model.total_variables,
         domain = model.log2_domain_volume,
         decisions = display_optional(stats.branch_decisions),
@@ -328,8 +334,27 @@ fn render_html(
     ))
 }
 
+fn facility_orientation_label(placement: &aic_data::layouts::FacilityGeometryPlacement) -> String {
+    if placement.equivalent_rotations.len() == 1 {
+        format!(
+            "{} · rotation {}°",
+            placement.instance, placement.representative_rotation
+        )
+    } else {
+        format!(
+            "{} · {} equivalent rotations",
+            placement.instance,
+            placement.equivalent_rotations.len()
+        )
+    }
+}
+
 fn display_optional(value: Option<u64>) -> String {
     value.map_or_else(|| "—".to_string(), |value| value.to_string())
+}
+
+fn display_optional_float(value: Option<f64>) -> String {
+    value.map_or_else(|| "—".to_string(), |value| format!("{value:.2}"))
 }
 
 fn escape_html(value: &str) -> String {
@@ -364,5 +389,25 @@ mod tests {
         assert_eq!(args.target_phase, 3);
         assert_eq!(args.time_limit_ms, 5000);
         assert_eq!(args.output_dir, PathBuf::from("artifacts"));
+    }
+
+    #[test]
+    fn labels_a_geometry_class_without_claiming_a_selected_rotation() {
+        let placement = aic_data::layouts::FacilityGeometryPlacement {
+            instance: "facility-0".to_string(),
+            recipe: "recipe".to_string(),
+            facility: "facility".to_string(),
+            x: 0,
+            y: 0,
+            width: 3,
+            height: 3,
+            representative_rotation: 0,
+            equivalent_rotations: vec![0, 90, 180, 270],
+        };
+
+        assert_eq!(
+            facility_orientation_label(&placement),
+            "facility-0 · 4 equivalent rotations"
+        );
     }
 }

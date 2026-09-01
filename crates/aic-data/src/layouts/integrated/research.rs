@@ -34,7 +34,8 @@ mod transport_tile_cap;
 
 pub use super::exact::ladder::{
     BOTTOM_UP_RUNG_SCHEMA_VERSION, BottomUpRungKind, BottomUpRungOutcome, BottomUpRungReport,
-    BottomUpSemanticCertificate, FacilityGeometryWitness,
+    BottomUpSearchSpaceProfile, BottomUpSemanticCertificate, FacilityGeometryPlacement,
+    FacilityGeometryWitness,
 };
 pub use bottom_up_ladder::{
     BOTTOM_UP_FACILITY_GEOMETRY_EXPERIMENT_SCHEMA_VERSION,

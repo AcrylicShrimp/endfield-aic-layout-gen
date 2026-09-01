@@ -30,6 +30,11 @@ The ladder does not:
 - claim that an incomplete rung is a legal AIC blueprint;
 - replace the final exact joint model.
 
+Every rung reports the layered search profile defined in
+[`search-space-evaluation.md`](search-space-evaluation.md). Semantic candidate volume, declared
+solver-domain volume, and observed search work remain separate because they measure different
+objects.
+
 ## Controlled Input
 
 Every rung receives the same prepared cumulative production graph, validated game catalogs, hard
@@ -47,9 +52,8 @@ required used footprint. Partial rungs must not require their partial geometry t
 
 Solver decisions:
 
-- facility placement candidate, including origin and allowed rotation, for every facility;
-- canonical physical facility occupancy;
-- facility-only width and height derived from facility occupancy for observation only.
+- facility origin and occupied footprint orientation for every facility;
+- facility-only used width and height computed from the validated witness for observation only.
 
 Hard constraints:
 
@@ -62,6 +66,15 @@ Hard constraints:
   bounding box.
 
 No port, boundary-terminal, transport, item, flow, or logistics-component variable may be present.
+Rung 0 does not materialize per-cell occupancy variables; pairwise rectangle separation is its exact
+non-overlap representation. Reported bounds are `max - min` over validated facility geometry and do
+not imply a translation anchor.
+
+Rung 0 identifies rotations only up to occupied-rectangle equivalence. Rotations that produce the
+same width and height are the same Rung 0 state because no directional port geometry exists yet.
+Every full rotation projects to exactly one such class, and every class retains its complete set of
+allowed full rotations. Rung 1 refines the class back into directional rotations when ports make the
+distinction observable.
 
 ### Rung 1: Facility Ports
 

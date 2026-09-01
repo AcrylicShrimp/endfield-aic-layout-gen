@@ -3,7 +3,6 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use pumpkin_solver::conflict_resolvers::resolvers::ResolutionResolver;
-use pumpkin_solver::core::predicates::PredicateConstructor;
 use pumpkin_solver::core::results::{ProblemSolution, SatisfactionResult};
 use pumpkin_solver::core::termination::TimeBudget;
 use pumpkin_solver::core::variables::{DomainId, Literal, TransformableVariable};
@@ -14,10 +13,10 @@ use super::metrics::elapsed_millis;
 use super::recorder::{ConstraintFamily, RecordedModel, VariableFamily};
 use super::search_statistics::{MeteredBrancher, SearchEventCounters, capture_search_statistics};
 use super::{IntegratedLayoutDiagnostic, ModelInput};
-use crate::layouts::{FacilityPlacement, FacilityPlacementBounds};
+use crate::layouts::FacilityPlacementBounds;
 use crate::research::ModelComplexityMetrics;
 
-pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 1;
+pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -51,7 +50,33 @@ pub struct BottomUpSemanticCertificate {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct FacilityGeometryWitness {
     pub bounds: FacilityPlacementBounds,
-    pub placements: Vec<FacilityPlacement>,
+    pub placements: Vec<FacilityGeometryPlacement>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct FacilityGeometryPlacement {
+    pub instance: String,
+    pub recipe: String,
+    pub facility: String,
+    pub x: i64,
+    pub y: i64,
+    pub width: i64,
+    pub height: i64,
+    pub representative_rotation: i64,
+    pub equivalent_rotations: Vec<i64>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq)]
+pub struct BottomUpSearchSpaceProfile {
+    /// Cartesian product of every facility's legal origin and distinct occupied-rectangle choices.
+    /// Pairwise non-overlap is deliberately not applied, so this is an upper bound on legal witnesses.
+    pub semantic_assignment_upper_bound_log2: Option<f64>,
+    pub semantic_assignment_upper_bound_log10: Option<f64>,
+    /// The same upper bound before rotations with identical occupied rectangles are projected together.
+    pub directional_rotation_upper_bound_log2: Option<f64>,
+    pub directional_rotation_upper_bound_log10: Option<f64>,
+    /// Exact quotient between the two upper bounds, expressed as an equivalent number of binary choices.
+    pub rotation_equivalence_reduction_log2: Option<f64>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -67,6 +92,7 @@ pub struct BottomUpRungReport {
     pub first_witness_ms: Option<u64>,
     pub outcome: BottomUpRungOutcome,
     pub validation: ExactValidationStatus,
+    pub search_space: BottomUpSearchSpaceProfile,
     pub model_complexity: ModelComplexityMetrics,
     pub search_statistics: ExactSearchStatistics,
     pub witness: Option<FacilityGeometryWitness>,
@@ -84,15 +110,13 @@ struct ModelInstance {
     facility: String,
     x: DomainId,
     y: DomainId,
-    rotation: DomainId,
     orientations: Vec<ModelOrientation>,
 }
 
-#[derive(Clone, Copy)]
 struct ModelOrientation {
-    rotation: i64,
     width: i32,
     height: i32,
+    equivalent_rotations: Vec<i64>,
     selected: Literal,
     selected_parent: DomainId,
 }
@@ -103,6 +127,7 @@ pub(in crate::layouts::integrated) fn solve_facility_geometry_rung(
 ) -> BottomUpRungReport {
     let ceiling = [input.width, input.height];
     let facility_count = input.instances.len();
+    let search_space = facility_geometry_search_space_profile(&input);
     let construction_started = Instant::now();
     let mut placement_model = match build_model(&input) {
         Ok(model) => model,
@@ -110,7 +135,7 @@ pub(in crate::layouts::integrated) fn solve_facility_geometry_rung(
             return BottomUpRungReport {
                 schema_version: BOTTOM_UP_RUNG_SCHEMA_VERSION,
                 rung: BottomUpRungKind::FacilityGeometry,
-                formulation: "coordinate-rotation-disjunctive-non-overlap-v1",
+                formulation: "coordinate-geometry-orientation-disjunctive-non-overlap-v2",
                 ceiling,
                 facility_count,
                 semantic_certificate: facility_geometry_certificate(),
@@ -119,6 +144,7 @@ pub(in crate::layouts::integrated) fn solve_facility_geometry_rung(
                 first_witness_ms: None,
                 outcome: BottomUpRungOutcome::Infeasible,
                 validation: ExactValidationStatus::NotAttempted,
+                search_space,
                 model_complexity: ModelComplexityMetrics::unavailable(),
                 search_statistics: ExactSearchStatistics::default(),
                 witness: None,
@@ -194,7 +220,7 @@ pub(in crate::layouts::integrated) fn solve_facility_geometry_rung(
     BottomUpRungReport {
         schema_version: BOTTOM_UP_RUNG_SCHEMA_VERSION,
         rung: BottomUpRungKind::FacilityGeometry,
-        formulation: "coordinate-rotation-disjunctive-non-overlap-v1",
+        formulation: "coordinate-geometry-orientation-disjunctive-non-overlap-v2",
         ceiling,
         facility_count,
         semantic_certificate: facility_geometry_certificate(),
@@ -203,11 +229,74 @@ pub(in crate::layouts::integrated) fn solve_facility_geometry_rung(
         first_witness_ms,
         outcome,
         validation,
+        search_space,
         model_complexity,
         search_statistics,
         witness,
         diagnostics,
     }
+}
+
+fn facility_geometry_search_space_profile(input: &ModelInput) -> BottomUpSearchSpaceProfile {
+    let mut semantic_log2 = 0.0;
+    let mut directional_log2 = 0.0;
+    let mut empty = false;
+
+    for instance in &input.instances {
+        let base_width = i32::try_from(instance.definition.footprint.width)
+            .expect("validated facility width fits i32");
+        let base_height = i32::try_from(instance.definition.footprint.height)
+            .expect("validated facility height fits i32");
+        let mut rotations = instance.definition.allowed_rotations.clone();
+        rotations.sort_unstable();
+        rotations.dedup();
+
+        let mut geometries = BTreeSet::new();
+        let mut directional_assignments = 0_u64;
+        for rotation in rotations {
+            let (width, height) = oriented_dimensions(base_width, base_height, rotation);
+            if width <= input.width && height <= input.height {
+                geometries.insert((width, height));
+                directional_assignments += legal_origin_count(input, width, height);
+            }
+        }
+        let semantic_assignments = geometries
+            .into_iter()
+            .map(|(width, height)| legal_origin_count(input, width, height))
+            .sum::<u64>();
+
+        if semantic_assignments == 0 || directional_assignments == 0 {
+            empty = true;
+        } else {
+            semantic_log2 += (semantic_assignments as f64).log2();
+            directional_log2 += (directional_assignments as f64).log2();
+        }
+    }
+
+    if empty {
+        return BottomUpSearchSpaceProfile {
+            semantic_assignment_upper_bound_log2: None,
+            semantic_assignment_upper_bound_log10: None,
+            directional_rotation_upper_bound_log2: None,
+            directional_rotation_upper_bound_log10: None,
+            rotation_equivalence_reduction_log2: None,
+        };
+    }
+
+    BottomUpSearchSpaceProfile {
+        semantic_assignment_upper_bound_log2: Some(semantic_log2),
+        semantic_assignment_upper_bound_log10: Some(semantic_log2 * std::f64::consts::LOG10_2),
+        directional_rotation_upper_bound_log2: Some(directional_log2),
+        directional_rotation_upper_bound_log10: Some(directional_log2 * std::f64::consts::LOG10_2),
+        rotation_equivalence_reduction_log2: Some(directional_log2 - semantic_log2),
+    }
+}
+
+fn legal_origin_count(input: &ModelInput, width: i32, height: i32) -> u64 {
+    let x_count = u64::try_from(input.width - width + 1).expect("fitting width has legal origins");
+    let y_count =
+        u64::try_from(input.height - height + 1).expect("fitting height has legal origins");
+    x_count * y_count
 }
 
 fn facility_geometry_certificate() -> BottomUpSemanticCertificate {
@@ -238,15 +327,17 @@ fn build_model(input: &ModelInput) -> Result<PlacementModel, IntegratedLayoutDia
         let mut rotations = instance.definition.allowed_rotations.clone();
         rotations.sort_unstable();
         rotations.dedup();
-        let fitting_rotations = rotations
-            .into_iter()
-            .filter_map(|rotation| {
-                let (width, height) = oriented_dimensions(base_width, base_height, rotation);
-                (width <= input.width && height <= input.height)
-                    .then_some((rotation, width, height))
-            })
-            .collect::<Vec<_>>();
-        if fitting_rotations.is_empty() {
+        let mut rotations_by_geometry = BTreeMap::<(i32, i32), Vec<i64>>::new();
+        for rotation in rotations {
+            let geometry = oriented_dimensions(base_width, base_height, rotation);
+            if geometry.0 <= input.width && geometry.1 <= input.height {
+                rotations_by_geometry
+                    .entry(geometry)
+                    .or_default()
+                    .push(rotation);
+            }
+        }
+        if rotations_by_geometry.is_empty() {
             return Err(IntegratedLayoutDiagnostic::error(
                 "bottom-up-facility-does-not-fit-ceiling",
                 "/ceiling",
@@ -270,36 +361,17 @@ fn build_model(input: &ModelInput) -> Result<PlacementModel, IntegratedLayoutDia
             input.height - 1,
             format!("facility:{}:y", instance.id),
         );
-        let rotation = model.new_sparse_variable(
-            VariableFamily::Placement,
-            fitting_rotations
-                .iter()
-                .map(|(rotation, _, _)| i32::try_from(*rotation).expect("rotation fits i32"))
-                .collect::<Vec<_>>(),
-            format!("facility:{}:rotation", instance.id),
-        );
-        let orientations = fitting_rotations
+        let orientations = rotations_by_geometry
             .into_iter()
-            .map(|(rotation_value, width, height)| {
+            .map(|((width, height), equivalent_rotations)| {
                 let selected = model.new_named_literal(
                     VariableFamily::Placement,
                     format!(
-                        "facility:{}:rotation:{rotation_value}:selected",
-                        instance.id
+                        "facility:{}:geometry:{width}x{height}:selected",
+                        instance.id,
                     ),
                 );
                 let selected_parent = *selected.get_integer_variable().inner();
-                model.post_predicate_clause(
-                    ConstraintFamily::PlacementChoice,
-                    &[selected_parent, rotation],
-                    vec![
-                        selected.get_false_predicate(),
-                        rotation.equality_predicate(
-                            i32::try_from(rotation_value).expect("rotation fits i32"),
-                        ),
-                    ],
-                    tag,
-                );
                 model.post_implied_less_than_or_equals(
                     ConstraintFamily::PlacementChoice,
                     vec![x.scaled(1)],
@@ -319,9 +391,9 @@ fn build_model(input: &ModelInput) -> Result<PlacementModel, IntegratedLayoutDia
                     tag,
                 );
                 ModelOrientation {
-                    rotation: rotation_value,
                     width,
                     height,
+                    equivalent_rotations,
                     selected,
                     selected_parent,
                 }
@@ -335,7 +407,6 @@ fn build_model(input: &ModelInput) -> Result<PlacementModel, IntegratedLayoutDia
             facility: instance.facility.clone(),
             x,
             y,
-            rotation,
             orientations,
         });
     }
@@ -471,10 +542,6 @@ fn extract_witness(
     solution: &impl ProblemSolution,
     instances: &[ModelInstance],
 ) -> FacilityGeometryWitness {
-    let mut bounds = FacilityPlacementBounds {
-        width: 0,
-        height: 0,
-    };
     let mut placements = Vec::with_capacity(instances.len());
     for instance in instances {
         let orientation = instance
@@ -482,17 +549,11 @@ fn extract_witness(
             .iter()
             .find(|orientation| solution.get_literal_value(orientation.selected))
             .expect("exactly one orientation is selected");
-        debug_assert_eq!(
-            i64::from(solution.get_integer_value(instance.rotation)),
-            orientation.rotation
-        );
         let x = i64::from(solution.get_integer_value(instance.x));
         let y = i64::from(solution.get_integer_value(instance.y));
         let width = i64::from(orientation.width);
         let height = i64::from(orientation.height);
-        bounds.width = bounds.width.max(x + width);
-        bounds.height = bounds.height.max(y + height);
-        placements.push(FacilityPlacement {
+        placements.push(FacilityGeometryPlacement {
             instance: instance.id.clone(),
             recipe: instance.recipe.clone(),
             facility: instance.facility.clone(),
@@ -500,10 +561,12 @@ fn extract_witness(
             y,
             width,
             height,
-            rotation: orientation.rotation,
+            representative_rotation: orientation.equivalent_rotations[0],
+            equivalent_rotations: orientation.equivalent_rotations.clone(),
         });
     }
     placements.sort_by(|left, right| left.instance.cmp(&right.instance));
+    let bounds = facility_geometry_bounds(&placements);
     FacilityGeometryWitness { bounds, placements }
 }
 
@@ -518,10 +581,6 @@ fn validate_witness(
         .map(|instance| (instance.id.as_str(), instance))
         .collect::<BTreeMap<_, _>>();
     let mut seen = BTreeSet::new();
-    let mut calculated_bounds = FacilityPlacementBounds {
-        width: 0,
-        height: 0,
-    };
 
     for placement in &witness.placements {
         if !seen.insert(placement.instance.as_str()) {
@@ -550,29 +609,45 @@ fn validate_witness(
                 "facility geometry witness changed the instance recipe or facility identity",
             ));
         }
-        if !instance
+        let mut expected_equivalent_rotations = instance
             .definition
             .allowed_rotations
-            .contains(&placement.rotation)
+            .iter()
+            .copied()
+            .filter(|rotation| {
+                oriented_dimensions_i64(
+                    instance.definition.footprint.width,
+                    instance.definition.footprint.height,
+                    *rotation,
+                ) == (placement.width, placement.height)
+            })
+            .collect::<Vec<_>>();
+        expected_equivalent_rotations.sort_unstable();
+        expected_equivalent_rotations.dedup();
+        if expected_equivalent_rotations.is_empty()
+            || placement.equivalent_rotations != expected_equivalent_rotations
+            || !placement
+                .equivalent_rotations
+                .contains(&placement.representative_rotation)
         {
             diagnostics.push(IntegratedLayoutDiagnostic::error(
-                "bottom-up-invalid-facility-rotation",
+                "bottom-up-invalid-facility-geometry-orientation",
                 "/witness/placements",
                 Some(placement.instance.clone()),
-                "facility geometry witness selected a rotation not allowed by the facility catalog",
+                "facility geometry witness does not contain the exact allowed rotations for its occupied rectangle",
             ));
         }
         let (expected_width, expected_height) = oriented_dimensions_i64(
             instance.definition.footprint.width,
             instance.definition.footprint.height,
-            placement.rotation,
+            placement.representative_rotation,
         );
         if placement.width != expected_width || placement.height != expected_height {
             diagnostics.push(IntegratedLayoutDiagnostic::error(
                 "bottom-up-facility-footprint-mismatch",
                 "/witness/placements",
                 Some(placement.instance.clone()),
-                "facility geometry witness dimensions do not match its selected rotation",
+                "facility geometry witness dimensions do not match its representative rotation",
             ));
         }
         if placement.x < 0
@@ -587,8 +662,6 @@ fn validate_witness(
                 "facility geometry witness extends outside the request ceiling",
             ));
         }
-        calculated_bounds.width = calculated_bounds.width.max(placement.x + placement.width);
-        calculated_bounds.height = calculated_bounds.height.max(placement.y + placement.height);
     }
 
     for missing in expected.keys().filter(|id| !seen.contains(**id)) {
@@ -614,7 +687,7 @@ fn validate_witness(
             }
         }
     }
-    if witness.bounds != calculated_bounds {
+    if witness.bounds != facility_geometry_bounds(&witness.placements) {
         diagnostics.push(IntegratedLayoutDiagnostic::error(
             "bottom-up-facility-bounds-mismatch",
             "/witness/bounds",
@@ -623,6 +696,29 @@ fn validate_witness(
         ));
     }
     diagnostics
+}
+
+fn facility_geometry_bounds(placements: &[FacilityGeometryPlacement]) -> FacilityPlacementBounds {
+    let Some(first) = placements.first() else {
+        return FacilityPlacementBounds {
+            width: 0,
+            height: 0,
+        };
+    };
+    let mut min_x = first.x;
+    let mut min_y = first.y;
+    let mut max_x = first.x + first.width;
+    let mut max_y = first.y + first.height;
+    for placement in placements.iter().skip(1) {
+        min_x = min_x.min(placement.x);
+        min_y = min_y.min(placement.y);
+        max_x = max_x.max(placement.x + placement.width);
+        max_y = max_y.max(placement.y + placement.height);
+    }
+    FacilityPlacementBounds {
+        width: max_x - min_x,
+        height: max_y - min_y,
+    }
 }
 
 fn oriented_dimensions(width: i32, height: i32, rotation: i64) -> (i32, i32) {
@@ -641,7 +737,7 @@ fn oriented_dimensions_i64(width: i64, height: i64, rotation: i64) -> (i64, i64)
     }
 }
 
-fn rectangles_overlap(left: &FacilityPlacement, right: &FacilityPlacement) -> bool {
+fn rectangles_overlap(left: &FacilityGeometryPlacement, right: &FacilityGeometryPlacement) -> bool {
     left.x < right.x + right.width
         && right.x < left.x + left.width
         && left.y < right.y + right.height
@@ -652,6 +748,14 @@ fn rectangles_overlap(left: &FacilityPlacement, right: &FacilityPlacement) -> bo
 mod tests {
     use super::*;
     use crate::facilities::{FacilityDefinition, FacilityFootprint};
+
+    #[derive(Clone, Copy)]
+    struct BrutePlacement {
+        x: i32,
+        y: i32,
+        width: i32,
+        height: i32,
+    }
 
     fn instance(
         id: &str,
@@ -681,6 +785,57 @@ mod tests {
             edges: Vec::new(),
             networks: Vec::new(),
         }
+    }
+
+    fn brute_directional_geometry_feasible(input: &ModelInput) -> bool {
+        let candidates = input
+            .instances
+            .iter()
+            .map(|instance| {
+                instance
+                    .definition
+                    .allowed_rotations
+                    .iter()
+                    .flat_map(|rotation| {
+                        let (width, height) = oriented_dimensions(
+                            i32::try_from(instance.definition.footprint.width).unwrap(),
+                            i32::try_from(instance.definition.footprint.height).unwrap(),
+                            *rotation,
+                        );
+                        (0..=(input.width - width).max(-1)).flat_map(move |x| {
+                            (0..=(input.height - height).max(-1)).map(move |y| BrutePlacement {
+                                x,
+                                y,
+                                width,
+                                height,
+                            })
+                        })
+                    })
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        fn choose(candidates: &[Vec<BrutePlacement>], selected: &mut Vec<BrutePlacement>) -> bool {
+            let Some(next) = candidates.get(selected.len()) else {
+                return true;
+            };
+            for candidate in next {
+                let overlaps = selected.iter().any(|other| {
+                    candidate.x < other.x + other.width
+                        && other.x < candidate.x + candidate.width
+                        && candidate.y < other.y + other.height
+                        && other.y < candidate.y + candidate.height
+                });
+                if !overlaps {
+                    selected.push(*candidate);
+                    if choose(candidates, selected) {
+                        return true;
+                    }
+                    selected.pop();
+                }
+            }
+            false
+        }
+        choose(&candidates, &mut Vec::new())
     }
 
     #[test]
@@ -723,7 +878,7 @@ mod tests {
     }
 
     #[test]
-    fn keeps_rotation_as_a_solver_decision() {
+    fn keeps_distinct_footprint_orientations_as_solver_decisions() {
         let report = solve_facility_geometry_rung(
             input(2, 3, vec![instance("a", 3, 2, vec![0, 90])]),
             Duration::from_secs(1),
@@ -731,8 +886,135 @@ mod tests {
 
         assert_eq!(report.outcome, BottomUpRungOutcome::Feasible);
         let placement = &report.witness.as_ref().unwrap().placements[0];
-        assert_eq!(placement.rotation, 90);
+        assert_eq!(placement.representative_rotation, 90);
+        assert_eq!(placement.equivalent_rotations, vec![90]);
         assert_eq!([placement.width, placement.height], [2, 3]);
+    }
+
+    #[test]
+    fn collapses_rotations_with_identical_geometry() {
+        let report = solve_facility_geometry_rung(
+            input(3, 3, vec![instance("a", 2, 2, vec![0, 90, 180, 270])]),
+            Duration::from_secs(1),
+        );
+
+        assert_eq!(report.outcome, BottomUpRungOutcome::Feasible);
+        let placement = &report.witness.as_ref().unwrap().placements[0];
+        assert_eq!(placement.representative_rotation, 0);
+        assert_eq!(placement.equivalent_rotations, vec![0, 90, 180, 270]);
+        assert_eq!(report.model_complexity.variables.total_variables, 3);
+    }
+
+    #[test]
+    fn reports_semantic_assignment_volume_before_non_overlap() {
+        let profile = facility_geometry_search_space_profile(&input(
+            3,
+            3,
+            vec![
+                instance("square", 2, 2, vec![0, 90, 180, 270]),
+                instance("rectangle", 2, 1, vec![0, 90, 180, 270]),
+            ],
+        ));
+
+        assert!(
+            (profile.semantic_assignment_upper_bound_log2.unwrap() - 48_f64.log2()).abs() < 1e-9
+        );
+        assert!(
+            (profile.directional_rotation_upper_bound_log2.unwrap() - 384_f64.log2()).abs() < 1e-9
+        );
+        assert!((profile.rotation_equivalence_reduction_log2.unwrap() - 3.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn groups_rectangle_rotations_into_two_geometry_classes() {
+        let model = build_model(&input(
+            4,
+            4,
+            vec![instance("rectangle", 3, 2, vec![0, 90, 180, 270])],
+        ))
+        .unwrap();
+        let orientations = &model.instances[0].orientations;
+
+        assert_eq!(orientations.len(), 2);
+        assert_eq!([orientations[0].width, orientations[0].height], [2, 3]);
+        assert_eq!(orientations[0].equivalent_rotations, vec![90, 270]);
+        assert_eq!([orientations[1].width, orientations[1].height], [3, 2]);
+        assert_eq!(orientations[1].equivalent_rotations, vec![0, 180]);
+    }
+
+    #[test]
+    fn retains_all_directional_rotations_of_the_only_fitting_geometry() {
+        let model = build_model(&input(
+            2,
+            3,
+            vec![instance("rectangle", 3, 2, vec![0, 90, 180, 270])],
+        ))
+        .unwrap();
+        let orientations = &model.instances[0].orientations;
+
+        assert_eq!(orientations.len(), 1);
+        assert_eq!([orientations[0].width, orientations[0].height], [2, 3]);
+        assert_eq!(orientations[0].equivalent_rotations, vec![90, 270]);
+    }
+
+    #[test]
+    fn reports_used_bounds_independently_of_canvas_translation() {
+        let placements = vec![
+            FacilityGeometryPlacement {
+                instance: "a".to_string(),
+                recipe: "recipe-a".to_string(),
+                facility: "facility-a".to_string(),
+                x: 7,
+                y: 11,
+                width: 3,
+                height: 2,
+                representative_rotation: 0,
+                equivalent_rotations: vec![0],
+            },
+            FacilityGeometryPlacement {
+                instance: "b".to_string(),
+                recipe: "recipe-b".to_string(),
+                facility: "facility-b".to_string(),
+                x: 12,
+                y: 14,
+                width: 2,
+                height: 4,
+                representative_rotation: 0,
+                equivalent_rotations: vec![0],
+            },
+        ];
+
+        assert_eq!(
+            facility_geometry_bounds(&placements),
+            FacilityPlacementBounds {
+                width: 7,
+                height: 7,
+            }
+        );
+    }
+
+    #[test]
+    fn projected_satisfiability_matches_directional_brute_force_on_small_canvases() {
+        for width in 1..=4 {
+            for height in 1..=4 {
+                let case = input(
+                    width,
+                    height,
+                    vec![
+                        instance("rectangle", 2, 1, vec![0, 90, 180, 270]),
+                        instance("square", 2, 2, vec![0, 90, 180, 270]),
+                    ],
+                );
+                let expected = brute_directional_geometry_feasible(&case);
+                let report = solve_facility_geometry_rung(case, Duration::from_secs(1));
+
+                assert_eq!(
+                    report.outcome == BottomUpRungOutcome::Feasible,
+                    expected,
+                    "projection mismatch on {width}x{height} canvas"
+                );
+            }
+        }
     }
 
     #[test]
@@ -744,6 +1026,14 @@ mod tests {
 
         assert_eq!(report.outcome, BottomUpRungOutcome::Infeasible);
         assert_eq!(report.search_ms, 0);
+        assert_eq!(
+            report.search_space.semantic_assignment_upper_bound_log2,
+            None
+        );
+        assert_eq!(
+            report.search_space.directional_rotation_upper_bound_log2,
+            None
+        );
         assert_eq!(
             report.diagnostics[0].code,
             "bottom-up-facility-does-not-fit-ceiling"

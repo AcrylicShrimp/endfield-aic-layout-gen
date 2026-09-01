@@ -11,8 +11,8 @@ pub use growth::{
 pub use integrated::{
     BOTTOM_UP_FACILITY_GEOMETRY_EXPERIMENT_SCHEMA_VERSION, BOTTOM_UP_RUNG_SCHEMA_VERSION,
     BottomUpFacilityGeometryExperimentReport, BottomUpRungKind, BottomUpRungOutcome,
-    BottomUpRungReport, BottomUpSemanticCertificate, FacilityGeometryWitness,
-    diagnose_bottom_up_facility_geometry,
+    BottomUpRungReport, BottomUpSearchSpaceProfile, BottomUpSemanticCertificate,
+    FacilityGeometryPlacement, FacilityGeometryWitness, diagnose_bottom_up_facility_geometry,
 };
 pub use integrated::{
     BOUNDARY_CELL_WIDTH_SENSITIVITY_SCHEMA_VERSION, BoundaryCellWidthCaseReport,

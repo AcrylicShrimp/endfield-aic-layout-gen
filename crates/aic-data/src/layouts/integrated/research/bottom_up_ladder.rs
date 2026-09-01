@@ -15,7 +15,7 @@ use super::super::{
 };
 use super::MAX_NEW_FACILITIES_PER_GROWTH_PHASE;
 
-pub const BOTTOM_UP_FACILITY_GEOMETRY_EXPERIMENT_SCHEMA_VERSION: u32 = 1;
+pub const BOTTOM_UP_FACILITY_GEOMETRY_EXPERIMENT_SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct BottomUpFacilityGeometryExperimentReport {
