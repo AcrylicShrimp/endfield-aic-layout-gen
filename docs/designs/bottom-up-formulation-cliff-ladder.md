@@ -1,4 +1,4 @@
-# Bottom-Up Formulation Cliff Ladder
+# Bottom-Up Solver-Problem Cliff Ladder
 
 ## Status
 
@@ -14,7 +14,13 @@ to every other semantic block.
 
 The bottom-up ladder builds fresh cumulative models. Each rung adds exactly one semantic block to
 the previous contract. The first transition from a tractable model to a first-witness or
-optimization cliff identifies the newly added block and its coupling to the earlier formulation.
+optimization cliff identifies the newly added block and its coupling to the earlier problem.
+
+The first question after a cliff is whether the newly added solver problem is the right problem at
+all. A slow model may ask the solver to decide a relation that game semantics already determine,
+prove a property that the output contract does not require, or distinguish states that are
+observationally equivalent. Those are contract or problem-decomposition defects, not formulation
+defects. Formulation quality is investigated only after the semantic decision set is justified.
 
 The ladder does not:
 
@@ -174,14 +180,20 @@ removed, and replaced descriptors rather than assuming every rung is a syntactic
 
 Inspect only the newly added semantic block and its coupling boundary first:
 
-1. compare variable-domain volume and exact model-family delta;
-2. compare root-domain pruning and first branch family;
-3. determine whether the cost is model volume, weak bidirectional channeling, symmetry, generic
-   branching, or repeated semantic reasoning;
-4. prefer an exact reformulation or solver-native constraint when it strengthens propagation;
-5. add a custom propagator only when a specific sound semantic inference is missing or repeatedly
+1. verify that every new decision and proof obligation is required by confirmed game semantics or
+   the declared output contract;
+2. identify states that are already determined upstream, observationally equivalent, or irrelevant
+   to witness validity and objective quality;
+3. compare variable-domain volume, the exact model-family delta, root-domain pruning, the first
+   branch family, conflicts, and propagation;
+4. classify the evidence as a semantic-contract problem, an oversized representation, weak
+   bidirectional channeling, symmetry, generic branching, or repeated semantic reasoning;
+5. change the problem contract only when the current problem is proven unnecessary or incorrect;
+6. compare exact same-semantics formulations only when the evidence implicates representation or
+   propagation;
+7. add a custom propagator only when a specific sound semantic inference is missing or repeatedly
    recomputed;
-6. independently review proof soundness, implementation risk, and alternative formulations before
+8. independently review proof soundness, implementation risk, and alternative formulations before
    committing a propagator.
 
 After an improvement, rerun the ladder from Rung 0 through the improved cliff and then continue to
@@ -217,31 +229,22 @@ The final rung must be semantically equivalent to the accepted full model. Prove
 full witness validator, exhaustive controlled instances where practical, and bidirectional witness
 acceptance tests. Structural identity with the old formulation is neither required nor expected.
 
-## Formulation Tournament
+## Evidence-Triggered Reformulation
 
-Formulation choice is an explicit experimental axis. “Best formulation” means best measured exact
-formulation for the declared solver, workload family, and budget; it is not an a priori or universal
-claim.
+Formulation choice remains an experimental axis, but it is not exercised preemptively at every
+rung. Doing so would replace one large search with a combinatorial formulation tournament and slow
+the ladder's primary purpose: locating the first semantic cliff.
 
-For each new semantic rung:
+Each new rung begins with one simple, faithful, solver-native exact encoding. After a cliff, first
+check whether the solver was asked to solve the right semantic problem. Only when the retained
+decisions are necessary and the metrics point to weak channeling, excessive representation, or a
+solver-native constraint mismatch should the experiment compare same-semantics formulations.
 
-1. state the exact semantic relation independently of any encoding;
-2. propose solver-native exact encodings with different propagation and model-volume trade-offs;
-3. certify that every candidate accepts the same controlled assignments and rejects the same invalid
-   assignments;
-4. compare build cost, domain volume, root pruning, first-witness search, proof behavior, and memory;
-5. select the measured winner as that rung's baseline while preserving losing candidates as
-   diagnostic controls.
-
-For placement, initial candidates should include at least an enumerated placement-index encoding and
-an independent coordinate/rotation encoding with exact pairwise rectangle non-overlap. For facility
-ports, compare flattened placement-port rows with factored placement, port, and geometry variables
-using a strong bidirectional support relation. Routing candidates are proposed only after the earlier
-rungs identify their actual domain and coupling scale.
-
-When a rung introduces a cliff, compare same-semantics formulations before writing a custom
-propagator. A custom propagator is justified only when the candidate encodings expose a specific
-sound inference that solver-native propagation repeatedly misses or recomputes.
+Every alternative formulation must accept and reject the same controlled assignments. “Better”
+means better measured behavior for the declared solver, workload family, and budget; it is not a
+universal claim. A custom propagator comes later and is justified only when exact formulation
+alternatives expose a specific sound inference that native propagation repeatedly misses or
+recomputes.
 
 ## Reviewed Soundness Notes
 
