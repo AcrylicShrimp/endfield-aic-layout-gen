@@ -136,6 +136,14 @@ The same search profile records whether endpoint-clearance diagnostic counters a
 flag changes instrumentation only; it must not change the propagated relation, event registration,
 search policy, or accepted assignments. Counters remain enabled by default.
 
+The `endpoint-clearance-false-event-filter` search-profile flag changes only wakeup scheduling.
+Coordinate-bound events always enqueue the propagator. An orientation-selector event may be
+skipped only when that selector is already proven false; removing an unselected rectangle cannot
+create a rejection, a unique separation, or a coordinate-bound deduction. Events for true or
+unresolved orientations still enqueue. The flag is disabled by default because its measured
+scheduling effect is phase- and priority-dependent even though the accepted assignments are
+identical.
+
 ### Rung 2: Pipe Routing
 
 Adds the complete pipe semantic block:

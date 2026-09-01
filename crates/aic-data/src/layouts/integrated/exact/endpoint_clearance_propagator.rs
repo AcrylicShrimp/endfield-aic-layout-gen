@@ -22,6 +22,10 @@ pub(in crate::layouts::integrated) struct EndpointClearancePropagationCounters {
     relations: AtomicU64,
     executions: AtomicU64,
     notifications: AtomicU64,
+    coordinate_notifications: AtomicU64,
+    orientation_notifications: AtomicU64,
+    skipped_false_orientation_notifications: AtomicU64,
+    enqueued_notifications: AtomicU64,
     orientation_checks: AtomicU64,
     rejected_orientations: AtomicU64,
     forced_separation_detections: AtomicU64,
@@ -43,6 +47,10 @@ impl EndpointClearancePropagationCounters {
             relations: AtomicU64::default(),
             executions: AtomicU64::default(),
             notifications: AtomicU64::default(),
+            coordinate_notifications: AtomicU64::default(),
+            orientation_notifications: AtomicU64::default(),
+            skipped_false_orientation_notifications: AtomicU64::default(),
+            enqueued_notifications: AtomicU64::default(),
             orientation_checks: AtomicU64::default(),
             rejected_orientations: AtomicU64::default(),
             forced_separation_detections: AtomicU64::default(),
@@ -72,6 +80,12 @@ impl EndpointClearancePropagationCounters {
             relations: self.relations.load(Ordering::Relaxed),
             executions: self.executions.load(Ordering::Relaxed),
             notifications: self.notifications.load(Ordering::Relaxed),
+            coordinate_notifications: self.coordinate_notifications.load(Ordering::Relaxed),
+            orientation_notifications: self.orientation_notifications.load(Ordering::Relaxed),
+            skipped_false_orientation_notifications: self
+                .skipped_false_orientation_notifications
+                .load(Ordering::Relaxed),
+            enqueued_notifications: self.enqueued_notifications.load(Ordering::Relaxed),
             orientation_checks: self.orientation_checks.load(Ordering::Relaxed),
             rejected_orientations: self.rejected_orientations.load(Ordering::Relaxed),
             forced_separation_detections: self.forced_separation_detections.load(Ordering::Relaxed),
@@ -100,6 +114,7 @@ pub(in crate::layouts::integrated) struct EndpointRectangleClearancePropagatorAr
     pub orientations: Vec<EndpointClearanceOrientation>,
     pub priority: Priority,
     pub counters: Arc<EndpointClearancePropagationCounters>,
+    pub false_event_filter_enabled: bool,
     pub constraint_tag: ConstraintTag,
 }
 
@@ -140,6 +155,7 @@ impl PropagatorConstructor for EndpointRectangleClearancePropagatorArgs {
                 orientations: self.orientations,
                 priority: self.priority,
                 counters: self.counters,
+                false_event_filter_enabled: self.false_event_filter_enabled,
                 inference_code: InferenceCode::new(self.constraint_tag, EndpointRectangleClearance),
             },
         }
@@ -156,6 +172,7 @@ pub(in crate::layouts::integrated) struct EndpointRectangleClearancePropagator {
     orientations: Vec<EndpointClearanceOrientation>,
     priority: Priority,
     counters: Arc<EndpointClearancePropagationCounters>,
+    false_event_filter_enabled: bool,
     inference_code: InferenceCode,
 }
 
@@ -501,11 +518,36 @@ impl Propagator for EndpointRectangleClearancePropagator {
 
     fn notify(
         &mut self,
-        _context: NotificationContext,
-        _local_id: LocalId,
+        context: NotificationContext,
+        local_id: LocalId,
         _event: OpaqueDomainEvent,
     ) -> EnqueueDecision {
         self.counters.increment(&self.counters.notifications);
+        let local_index = local_id.unpack() as usize;
+        if local_index < 4 {
+            self.counters
+                .increment(&self.counters.coordinate_notifications);
+            self.counters
+                .increment(&self.counters.enqueued_notifications);
+            return EnqueueDecision::Enqueue;
+        }
+
+        self.counters
+            .increment(&self.counters.orientation_notifications);
+        let orientation = self
+            .orientations
+            .get(local_index - 4)
+            .expect("registered orientation local id is valid");
+        if self.false_event_filter_enabled
+            && context.evaluate_predicate(orientation.selected.get_false_predicate()) == Some(true)
+        {
+            self.counters
+                .increment(&self.counters.skipped_false_orientation_notifications);
+            return EnqueueDecision::Skip;
+        }
+
+        self.counters
+            .increment(&self.counters.enqueued_notifications);
         EnqueueDecision::Enqueue
     }
 
@@ -560,6 +602,7 @@ mod tests {
             }],
             priority: Priority::High,
             counters: Arc::default(),
+            false_event_filter_enabled: false,
             constraint_tag: tag,
         });
         solver.add_clause([selected.get_true_predicate()], tag);
@@ -602,6 +645,7 @@ mod tests {
 
     fn fixed_multiple_orientation_case(
         propagated: bool,
+        false_event_filter_enabled: bool,
         connection: (i32, i32),
         facility: (i32, i32),
         selected_index: usize,
@@ -646,6 +690,7 @@ mod tests {
                 orientations,
                 priority: Priority::High,
                 counters: Arc::default(),
+                false_event_filter_enabled,
                 constraint_tag: tag,
             });
         } else {
@@ -727,21 +772,26 @@ mod tests {
                         for selected_index in 0..2 {
                             let connection = (connection_x, connection_y);
                             let facility = (facility_x, facility_y);
-                            assert_eq!(
-                                fixed_multiple_orientation_case(
-                                    true,
-                                    connection,
-                                    facility,
-                                    selected_index,
-                                ),
-                                fixed_multiple_orientation_case(
-                                    false,
-                                    connection,
-                                    facility,
-                                    selected_index,
-                                ),
-                                "connection={connection:?} facility={facility:?} selected={selected_index}"
+                            let reified = fixed_multiple_orientation_case(
+                                false,
+                                false,
+                                connection,
+                                facility,
+                                selected_index,
                             );
+                            for false_event_filter_enabled in [false, true] {
+                                assert_eq!(
+                                    fixed_multiple_orientation_case(
+                                        true,
+                                        false_event_filter_enabled,
+                                        connection,
+                                        facility,
+                                        selected_index,
+                                    ),
+                                    reified,
+                                    "connection={connection:?} facility={facility:?} selected={selected_index} filter={false_event_filter_enabled}"
+                                );
+                            }
                         }
                     }
                 }
@@ -816,6 +866,7 @@ mod tests {
             ],
             priority: Priority::High,
             counters: Arc::default(),
+            false_event_filter_enabled: false,
             constraint_tag: tag,
         });
         assert_eq!(
@@ -855,6 +906,7 @@ mod tests {
             }],
             priority: Priority::High,
             counters: Arc::default(),
+            false_event_filter_enabled: false,
             constraint_tag: tag,
         });
         solver.add_clause([selected.get_false_predicate()], tag);
@@ -862,6 +914,114 @@ mod tests {
             solver.propagate_to_fixpoint(),
             CSPSolverExecutionFlag::Feasible
         );
+    }
+
+    #[test]
+    fn false_orientation_events_can_be_skipped_without_losing_the_selected_sibling() {
+        let mut solver = Solver::default();
+        let connection_x = solver.new_named_bounded_integer(1, 1, "connection-x");
+        let connection_y = solver.new_named_bounded_integer(1, 1, "connection-y");
+        let facility_x = solver.new_named_bounded_integer(0, 0, "facility-x");
+        let facility_y = solver.new_named_bounded_integer(0, 0, "facility-y");
+        let blocked = solver.new_named_literal("blocked-orientation");
+        let supported = solver.new_named_literal("supported-orientation");
+        let counters = Arc::new(EndpointClearancePropagationCounters::default());
+        let tag = solver.new_constraint_tag();
+        let _ = solver.add_propagator(EndpointRectangleClearancePropagatorArgs {
+            name: "filtered-orientation-events".to_string(),
+            connection_x,
+            connection_y,
+            facility_x,
+            facility_y,
+            orientations: vec![
+                EndpointClearanceOrientation {
+                    selected: blocked,
+                    selected_parent: *blocked.get_integer_variable().inner(),
+                    width: 3,
+                    height: 3,
+                },
+                EndpointClearanceOrientation {
+                    selected: supported,
+                    selected_parent: *supported.get_integer_variable().inner(),
+                    width: 1,
+                    height: 1,
+                },
+            ],
+            priority: Priority::High,
+            counters: Arc::clone(&counters),
+            false_event_filter_enabled: true,
+            constraint_tag: tag,
+        });
+        solver.add_clause(
+            [blocked.get_true_predicate(), supported.get_true_predicate()],
+            tag,
+        );
+        solver.add_clause(
+            [
+                blocked.get_false_predicate(),
+                supported.get_false_predicate(),
+            ],
+            tag,
+        );
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        assert_eq!(
+            solver.upper_bound(blocked.get_integer_variable().inner()),
+            0
+        );
+        assert_eq!(
+            solver.lower_bound(supported.get_integer_variable().inner()),
+            1
+        );
+        let statistics = counters.snapshot();
+        assert!(statistics.skipped_false_orientation_notifications > 0);
+        assert!(statistics.enqueued_notifications > 0);
+        assert_eq!(
+            statistics.notifications,
+            statistics.skipped_false_orientation_notifications + statistics.enqueued_notifications
+        );
+    }
+
+    #[test]
+    fn disabled_false_event_filter_keeps_the_baseline_schedule() {
+        let mut solver = Solver::default();
+        let connection_x = solver.new_named_bounded_integer(1, 1, "connection-x");
+        let connection_y = solver.new_named_bounded_integer(1, 1, "connection-y");
+        let facility_x = solver.new_named_bounded_integer(0, 0, "facility-x");
+        let facility_y = solver.new_named_bounded_integer(0, 0, "facility-y");
+        let selected = solver.new_named_literal("unselected-orientation");
+        let counters = Arc::new(EndpointClearancePropagationCounters::default());
+        let tag = solver.new_constraint_tag();
+        let _ = solver.add_propagator(EndpointRectangleClearancePropagatorArgs {
+            name: "unfiltered-orientation-events".to_string(),
+            connection_x,
+            connection_y,
+            facility_x,
+            facility_y,
+            orientations: vec![EndpointClearanceOrientation {
+                selected,
+                selected_parent: *selected.get_integer_variable().inner(),
+                width: 3,
+                height: 3,
+            }],
+            priority: Priority::High,
+            counters: Arc::clone(&counters),
+            false_event_filter_enabled: false,
+            constraint_tag: tag,
+        });
+        solver.add_clause([selected.get_false_predicate()], tag);
+
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let statistics = counters.snapshot();
+        assert!(statistics.orientation_notifications > 0);
+        assert_eq!(statistics.skipped_false_orientation_notifications, 0);
+        assert_eq!(statistics.notifications, statistics.enqueued_notifications);
     }
 
     #[test]
@@ -947,6 +1107,7 @@ mod tests {
             ],
             priority: Priority::High,
             counters: Arc::clone(&counters),
+            false_event_filter_enabled: true,
             constraint_tag: tag,
         });
         solver.add_clause(
@@ -986,5 +1147,11 @@ mod tests {
         assert!(!solution.get_literal_value(choice));
         assert!(solution.get_literal_value(supported));
         assert!(counters.conflicts.load(Ordering::Relaxed) > 0);
+        assert!(
+            counters
+                .skipped_false_orientation_notifications
+                .load(Ordering::Relaxed)
+                > 0
+        );
     }
 }

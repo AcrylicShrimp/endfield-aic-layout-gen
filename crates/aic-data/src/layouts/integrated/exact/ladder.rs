@@ -21,7 +21,7 @@ use super::super::research::EndpointSupportPropagationStatistics;
 
 mod facility_ports;
 
-pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 7;
+pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 8;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -43,6 +43,7 @@ pub enum EndpointClearanceSchedulingPriority {
 pub struct BottomUpSearchProfile {
     pub endpoint_clearance_priority: Option<EndpointClearanceSchedulingPriority>,
     pub endpoint_clearance_counters_enabled: Option<bool>,
+    pub endpoint_clearance_false_event_filter_enabled: Option<bool>,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
@@ -50,6 +51,10 @@ pub struct EndpointClearancePropagationStatistics {
     pub relations: u64,
     pub executions: u64,
     pub notifications: u64,
+    pub coordinate_notifications: u64,
+    pub orientation_notifications: u64,
+    pub skipped_false_orientation_notifications: u64,
+    pub enqueued_notifications: u64,
     pub orientation_checks: u64,
     pub rejected_orientations: u64,
     pub forced_separation_detections: u64,
@@ -374,8 +379,15 @@ pub(in crate::layouts::integrated) fn solve_facility_ports_propagated_rung(
     time_limit: Duration,
     priority: EndpointClearanceSchedulingPriority,
     counters_enabled: bool,
+    false_event_filter_enabled: bool,
 ) -> BottomUpRungReport {
-    facility_ports::solve_with_propagated_clearance(input, time_limit, priority, counters_enabled)
+    facility_ports::solve_with_propagated_clearance(
+        input,
+        time_limit,
+        priority,
+        counters_enabled,
+        false_event_filter_enabled,
+    )
 }
 
 pub(in crate::layouts::integrated) fn solve_facility_port_geometry_rung(

@@ -73,6 +73,9 @@ struct Args {
     /// Disable endpoint-clearance diagnostic counters for instrumentation-cost experiments.
     #[arg(long)]
     disable_endpoint_clearance_counters: bool,
+    /// Skip scheduling when an orientation event only proves that orientation false.
+    #[arg(long)]
+    endpoint_clearance_false_event_filter: bool,
     /// Benchmark workload manifest JSON file.
     #[arg(long, value_name = "FILE")]
     workload: PathBuf,
@@ -133,7 +136,8 @@ fn run(args: Args) -> Result<bool> {
     ensure!(
         matches!(args.rung, RungArg::FacilityPortsPropagated)
             || (args.endpoint_clearance_priority == EndpointClearancePriorityArg::High
-                && !args.disable_endpoint_clearance_counters),
+                && !args.disable_endpoint_clearance_counters
+                && !args.endpoint_clearance_false_event_filter),
         "endpoint-clearance search settings apply only to rung 'facility-ports-propagated'"
     );
     let mut report = diagnose_bottom_up_rung(
@@ -146,6 +150,7 @@ fn run(args: Args) -> Result<bool> {
         args.rung.into(),
         args.endpoint_clearance_priority.into(),
         !args.disable_endpoint_clearance_counters,
+        args.endpoint_clearance_false_event_filter,
         args.target_phase,
         Duration::from_millis(time_limit.get()),
     )
@@ -612,6 +617,7 @@ mod tests {
             "--endpoint-clearance-priority",
             "medium",
             "--disable-endpoint-clearance-counters",
+            "--endpoint-clearance-false-event-filter",
             "--workload",
             "workload.json",
             "--placement-request",
@@ -631,6 +637,7 @@ mod tests {
             EndpointClearancePriorityArg::Medium
         );
         assert!(args.disable_endpoint_clearance_counters);
+        assert!(args.endpoint_clearance_false_event_filter);
     }
 
     #[test]
