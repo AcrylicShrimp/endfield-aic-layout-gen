@@ -187,35 +187,61 @@ Inspect only the newly added semantic block and its coupling boundary first:
 After an improvement, rerun the ladder from Rung 0 through the improved cliff and then continue to
 the next rung.
 
-## Implementation Cutover
+## Independent Implementation Boundary
 
-Do not add another rung variant to the current `solve_with_endpoint_encoding` mode matrix. The
-existing shared-layer orchestration already combines endpoint encoding, research restrictions,
-collectors, connectivity propagation, search, extraction, and validation in one large function.
+Do not add another rung variant to the current `solve_with_endpoint_encoding` mode matrix and do not
+construct the ladder by disabling pieces of that function. The existing shared-layer orchestration
+combines endpoint encoding, research restrictions, collectors, connectivity propagation, search,
+extraction, and validation. Reusing it would make it difficult to certify that a low rung contains
+no future semantic state.
 
-Implement the ladder through staged fresh-model construction:
+Build the ladder in a new independent formulation package with explicit rung artifacts:
 
-- `builder`: owns the staged build and typed placement, endpoint, routing, and complete artifacts;
-- `placement`: owns placement candidates and canonical facility occupancy;
-- `endpoints`: separates facility endpoint support from external and transport-specific terminal
-  materialization;
-- `routing`: builds exactly one requested shared transport layer;
-- `geometry`: builds occupancy and used geometry only for active layers;
-- `search` and `witness`: run a fresh solve and extract or validate a rung-specific witness.
+- `placement`: exact placement formulation candidates;
+- `endpoints`: facility endpoint and port-selection formulation candidates;
+- `routing`: one requested transport layer and its exact topology/flow formulation candidates;
+- `geometry`: active-geometry occupancy and bounds;
+- `search`: cold feasibility and separately labelled optimization runners;
+- `witness`: rung-specific extraction and validation;
+- `experiment`: counterbalanced execution, certificates, deltas, and cliff classification.
 
-The first implementation slice is behavior-neutral. It introduces typed stage artifacts and build
-snapshots around the existing complete-model build while preserving creation and posting order.
-Existing public solve wrappers must continue to build, search, extract, and validate the same full
-model. Structural equivalence requires identical ordered variable descriptors, aggregate
-constraint-family and factor-incidence metrics, formulation ID, and representative outcomes.
+Only semantics-neutral infrastructure may be shared with the existing implementation: prepared
+`ModelInput`, validated catalogs, solver instrumentation, search counters, report serialization, and
+HTML shell utilities. The old formulation remains an external semantic baseline, not a source of
+hidden constraints or the implementation template for the new ladder.
 
 Before adjacent rung deltas become authoritative, extend model recording to retain normalized
 constraint descriptors. Aggregate counts alone cannot detect offsetting unintended changes.
 
-Only after the complete builder passes its equivalence gate should Rung 0 receive a partial witness
-DTO. Facility endpoint construction must then be separated before Rung 1, and active-layer occupancy
-must be generalized before Rung 2. The current full-terminal builder, hard-coded two-layer occupancy,
-full-layout extractor, and all-layer crossing restriction are not valid shortcuts for partial rungs.
+The final rung must be semantically equivalent to the accepted full model. Prove this with the same
+full witness validator, exhaustive controlled instances where practical, and bidirectional witness
+acceptance tests. Structural identity with the old formulation is neither required nor expected.
+
+## Formulation Tournament
+
+Formulation choice is an explicit experimental axis. “Best formulation” means best measured exact
+formulation for the declared solver, workload family, and budget; it is not an a priori or universal
+claim.
+
+For each new semantic rung:
+
+1. state the exact semantic relation independently of any encoding;
+2. propose solver-native exact encodings with different propagation and model-volume trade-offs;
+3. certify that every candidate accepts the same controlled assignments and rejects the same invalid
+   assignments;
+4. compare build cost, domain volume, root pruning, first-witness search, proof behavior, and memory;
+5. select the measured winner as that rung's baseline while preserving losing candidates as
+   diagnostic controls.
+
+For placement, initial candidates should include at least an enumerated placement-index encoding and
+an independent coordinate/rotation encoding with exact pairwise rectangle non-overlap. For facility
+ports, compare flattened placement-port rows with factored placement, port, and geometry variables
+using a strong bidirectional support relation. Routing candidates are proposed only after the earlier
+rungs identify their actual domain and coupling scale.
+
+When a rung introduces a cliff, compare same-semantics formulations before writing a custom
+propagator. A custom propagator is justified only when the candidate encodings expose a specific
+sound inference that solver-native propagation repeatedly misses or recomputes.
 
 ## Reviewed Soundness Notes
 
