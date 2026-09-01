@@ -76,7 +76,7 @@ Every full rotation projects to exactly one such class, and every class retains 
 allowed full rotations. Rung 1 refines the class back into directional rotations when ports make the
 distinction observable.
 
-### Rung 1: Facility Ports
+### Rung 1A: Facility Port Geometry
 
 Adds one compatible facility-port choice and its rotated physical geometry for every facility-owned
 logical endpoint. Port direction, transport kind, input/output direction, placement, rotation, and
@@ -88,19 +88,33 @@ terminal has independent port-choice and local-connection variables. A complete 
 relation links `(rotation, port choice, local connection)`, and guarded coordinate equalities place
 the outside-adjacent connection cell at the facility origin plus the selected local offset.
 
-Every selected connection cell must be in the request grid and outside every facility footprint.
-This is the one-cell selected-port clearance rule. The connection is known to be outside its owner
-by validated port geometry; exact disjunctions enforce clearance from every other facility. Two
-facility terminals may select the same port or connection cell because current confirmed semantics
-do not establish port exclusivity. Endpoint-to-endpoint transport collision begins with routing and
-is therefore absent from this rung.
+Every selected connection cell must be in the request grid. Rung 1A deliberately does not require
+that cell to remain outside other facility footprints. It is an exact relaxation of the complete
+port contract used only to isolate the cost of rotation-port-coordinate support from the later
+physical-clearance coupling. It does not fix placement, rotation, port, or connection decisions.
+
+Two facility terminals may select the same port or connection cell because current confirmed
+semantics do not establish port exclusivity. Endpoint-to-endpoint transport collision begins with
+routing and is therefore absent from this rung.
 
 External boundary-terminal coordinates are not added. An external logical endpoint contributes only
 its facility-owned counterpart at this rung. No route, flow, item-on-grid, or topology variable may
 be present.
 
 There is no invented port-distance objective. Port assignment has no independent game-quality
-objective before routing exists. Like Rung 0, the primary Rung 1 experiment is feasibility-only.
+objective before routing exists. Like Rung 0, the primary Rung 1A experiment is feasibility-only.
+
+### Rung 1B: Facility Port Clearance
+
+Adds the one-cell selected-port clearance rule to Rung 1A. Every selected connection cell must be
+outside every facility footprint. Validated port geometry proves that the connection is outside its
+owner; exact disjunctions enforce clearance from every other facility. No other semantic state is
+added.
+
+Rung 1B is the complete facility-port contract previously called Rung 1. Comparing fresh Rung 1A
+and Rung 1B models separates the cost of endpoint support and coordinate channeling from the dense
+selected-connection-versus-facility clearance relation. A Rung 1A witness is not a valid Rung 1B
+witness when any selected connection cell is covered by another facility.
 
 ### Rung 2: Pipe Routing
 
@@ -114,7 +128,7 @@ Adds the complete pipe semantic block:
 - facility-versus-pipe physical occupancy coupling.
 
 All placement and facility-port decisions remain solver decisions. Belt facility-port choices from
-Rung 1 remain present, but no belt grid or belt boundary-terminal variable is added.
+Rung 1B remain present, but no belt grid or belt boundary-terminal variable is added.
 
 Pipe bridges remain enabled. This keeps Rung 2 a relaxation of the full model: every full solution
 projects to some legal Rung 2 assignment.

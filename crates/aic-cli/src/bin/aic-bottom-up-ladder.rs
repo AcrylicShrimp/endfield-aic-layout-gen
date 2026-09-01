@@ -27,6 +27,7 @@ use clap::{Parser, ValueEnum};
 #[derive(Debug, Clone, Copy, ValueEnum)]
 enum RungArg {
     FacilityGeometry,
+    FacilityPortGeometry,
     FacilityPorts,
 }
 
@@ -34,6 +35,7 @@ impl From<RungArg> for BottomUpRungKind {
     fn from(value: RungArg) -> Self {
         match value {
             RungArg::FacilityGeometry => Self::FacilityGeometry,
+            RungArg::FacilityPortGeometry => Self::FacilityPortGeometry,
             RungArg::FacilityPorts => Self::FacilityPorts,
         }
     }
@@ -524,6 +526,28 @@ mod tests {
         .expect("independent facility-port rung should parse");
 
         assert!(matches!(args.rung, RungArg::FacilityPorts));
+    }
+
+    #[test]
+    fn parses_the_independent_facility_port_geometry_rung() {
+        let args = Args::try_parse_from([
+            "aic-bottom-up-ladder",
+            "--rung",
+            "facility-port-geometry",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "placement.json",
+            "--target-phase",
+            "3",
+            "--time-limit-ms",
+            "5000",
+            "--output-dir",
+            "artifacts",
+        ])
+        .expect("independent facility-port geometry rung should parse");
+
+        assert!(matches!(args.rung, RungArg::FacilityPortGeometry));
     }
 
     #[test]

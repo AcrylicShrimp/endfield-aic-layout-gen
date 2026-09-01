@@ -15,7 +15,7 @@ use super::super::{
 };
 use super::MAX_NEW_FACILITIES_PER_GROWTH_PHASE;
 
-pub const BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION: u32 = 3;
+pub const BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION: u32 = 4;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct BottomUpExperimentReport {
@@ -107,6 +107,9 @@ pub fn diagnose_bottom_up_rung(
     let rung = match rung_kind {
         exact::ladder::BottomUpRungKind::FacilityGeometry => {
             exact::ladder::solve_facility_geometry_rung(input, search_budget)
+        }
+        exact::ladder::BottomUpRungKind::FacilityPortGeometry => {
+            exact::ladder::solve_facility_port_geometry_rung(input, search_budget)
         }
         exact::ladder::BottomUpRungKind::FacilityPorts => {
             exact::ladder::solve_facility_ports_rung(input, search_budget)

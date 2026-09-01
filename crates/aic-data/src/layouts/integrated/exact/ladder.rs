@@ -21,12 +21,13 @@ use super::super::research::EndpointSupportPropagationStatistics;
 
 mod facility_ports;
 
-pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 3;
+pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 4;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum BottomUpRungKind {
     FacilityGeometry,
+    FacilityPortGeometry,
     FacilityPorts,
 }
 
@@ -52,6 +53,7 @@ pub enum BottomUpTerminationReason {
 pub struct BottomUpSemanticCertificate {
     pub facility_geometry: bool,
     pub facility_ports: bool,
+    pub facility_endpoint_clearance: bool,
     pub boundary_terminals: bool,
     pub pipe_routing: bool,
     pub belt_routing: bool,
@@ -331,7 +333,14 @@ pub(in crate::layouts::integrated) fn solve_facility_ports_rung(
     input: ModelInput,
     time_limit: Duration,
 ) -> BottomUpRungReport {
-    facility_ports::solve(input, time_limit)
+    facility_ports::solve_with_clearance(input, time_limit)
+}
+
+pub(in crate::layouts::integrated) fn solve_facility_port_geometry_rung(
+    input: ModelInput,
+    time_limit: Duration,
+) -> BottomUpRungReport {
+    facility_ports::solve_geometry(input, time_limit)
 }
 
 fn facility_geometry_search_space_profile(input: &ModelInput) -> BottomUpSearchSpaceProfile {
@@ -406,6 +415,7 @@ fn facility_geometry_certificate() -> BottomUpSemanticCertificate {
     BottomUpSemanticCertificate {
         facility_geometry: true,
         facility_ports: false,
+        facility_endpoint_clearance: false,
         boundary_terminals: false,
         pipe_routing: false,
         belt_routing: false,

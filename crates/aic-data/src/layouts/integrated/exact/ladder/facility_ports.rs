@@ -33,7 +33,28 @@ use crate::layouts::integrated::{
 use crate::logistics::{CardinalDirection, TransportKind};
 use crate::research::ModelComplexityMetrics;
 
-const FORMULATION: &str = "factorized-coordinate-geometry-rotation-port-support-v1";
+const GEOMETRY_FORMULATION: &str = "factorized-coordinate-geometry-rotation-port-support-v1";
+const CLEARANCE_FORMULATION: &str =
+    "factorized-coordinate-geometry-rotation-port-support-clearance-v1";
+
+#[derive(Debug, Clone, Copy)]
+struct RungContract {
+    rung: BottomUpRungKind,
+    formulation: &'static str,
+    enforce_clearance: bool,
+}
+
+const GEOMETRY_CONTRACT: RungContract = RungContract {
+    rung: BottomUpRungKind::FacilityPortGeometry,
+    formulation: GEOMETRY_FORMULATION,
+    enforce_clearance: false,
+};
+
+const CLEARANCE_CONTRACT: RungContract = RungContract {
+    rung: BottomUpRungKind::FacilityPorts,
+    formulation: CLEARANCE_FORMULATION,
+    enforce_clearance: true,
+};
 
 struct PortModel {
     placement: PlacementModel,
@@ -62,7 +83,15 @@ struct LocalConnection {
     arm_direction: CardinalDirection,
 }
 
-pub(super) fn solve(input: ModelInput, time_limit: Duration) -> BottomUpRungReport {
+pub(super) fn solve_geometry(input: ModelInput, time_limit: Duration) -> BottomUpRungReport {
+    solve(input, time_limit, GEOMETRY_CONTRACT)
+}
+
+pub(super) fn solve_with_clearance(input: ModelInput, time_limit: Duration) -> BottomUpRungReport {
+    solve(input, time_limit, CLEARANCE_CONTRACT)
+}
+
+fn solve(input: ModelInput, time_limit: Duration, contract: RungContract) -> BottomUpRungReport {
     let ceiling = [input.width, input.height];
     let facility_count = input.instances.len();
     let endpoint_descriptors = facility_endpoint_descriptors(&input);
@@ -73,18 +102,18 @@ pub(super) fn solve(input: ModelInput, time_limit: Duration) -> BottomUpRungRepo
         .collect::<Vec<_>>();
     let search_space = search_space_profile(&input);
     let construction_started = Instant::now();
-    let mut port_model = match build_port_model(&input) {
+    let mut port_model = match build_port_model(&input, contract.enforce_clearance) {
         Ok(model) => model,
         Err(diagnostic) => {
             return BottomUpRungReport {
                 schema_version: BOTTOM_UP_RUNG_SCHEMA_VERSION,
-                rung: BottomUpRungKind::FacilityPorts,
-                formulation: FORMULATION,
+                rung: contract.rung,
+                formulation: contract.formulation,
                 ceiling,
                 facility_count,
                 facility_terminal_count,
                 facility_terminal_ids,
-                semantic_certificate: semantic_certificate(),
+                semantic_certificate: semantic_certificate(contract.enforce_clearance),
                 construction_ms: elapsed_millis(construction_started.elapsed()),
                 search_ms: 0,
                 first_witness_ms: None,
@@ -134,7 +163,8 @@ pub(super) fn solve(input: ModelInput, time_limit: Duration) -> BottomUpRungRepo
                 &port_model.rotations,
                 &port_model.endpoints,
             );
-            let validation_diagnostics = validate_witness(&input, &extracted);
+            let validation_diagnostics =
+                validate_witness(&input, &extracted, contract.enforce_clearance);
             let validation = if validation_diagnostics.is_empty() {
                 ExactValidationStatus::Passed
             } else {
@@ -187,13 +217,13 @@ pub(super) fn solve(input: ModelInput, time_limit: Duration) -> BottomUpRungRepo
 
     BottomUpRungReport {
         schema_version: BOTTOM_UP_RUNG_SCHEMA_VERSION,
-        rung: BottomUpRungKind::FacilityPorts,
-        formulation: FORMULATION,
+        rung: contract.rung,
+        formulation: contract.formulation,
         ceiling,
         facility_count,
         facility_terminal_count,
         facility_terminal_ids,
-        semantic_certificate: semantic_certificate(),
+        semantic_certificate: semantic_certificate(contract.enforce_clearance),
         construction_ms,
         search_ms,
         first_witness_ms,
@@ -210,10 +240,11 @@ pub(super) fn solve(input: ModelInput, time_limit: Duration) -> BottomUpRungRepo
     }
 }
 
-fn semantic_certificate() -> BottomUpSemanticCertificate {
+fn semantic_certificate(enforce_clearance: bool) -> BottomUpSemanticCertificate {
     BottomUpSemanticCertificate {
         facility_geometry: true,
         facility_ports: true,
+        facility_endpoint_clearance: enforce_clearance,
         boundary_terminals: false,
         pipe_routing: false,
         belt_routing: false,
@@ -264,7 +295,10 @@ fn search_space_profile(input: &ModelInput) -> BottomUpSearchSpaceProfile {
     }
 }
 
-fn build_port_model(input: &ModelInput) -> Result<PortModel, IntegratedLayoutDiagnostic> {
+fn build_port_model(
+    input: &ModelInput,
+    enforce_clearance: bool,
+) -> Result<PortModel, IntegratedLayoutDiagnostic> {
     let mut placement = build_model(input)?;
     let tag = placement.model.new_constraint_tag();
     let rotations = build_rotation_channels(&mut placement, tag);
@@ -274,6 +308,7 @@ fn build_port_model(input: &ModelInput) -> Result<PortModel, IntegratedLayoutDia
         input,
         &rotations,
         Arc::clone(&support_counters),
+        enforce_clearance,
         tag,
     )?;
     Ok(PortModel {
@@ -341,6 +376,7 @@ fn build_endpoints(
     input: &ModelInput,
     rotations: &BTreeMap<String, DomainId>,
     counters: Arc<EndpointSupportPropagationCounters>,
+    enforce_clearance: bool,
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) -> Result<Vec<ModelEndpoint>, IntegratedLayoutDiagnostic> {
     let instances = input
@@ -481,15 +517,17 @@ fn build_endpoints(
                 tag,
             );
         }
-        post_connection_clearance(
-            &mut placement.model,
-            &terminal,
-            &instance_id,
-            connection_x,
-            connection_y,
-            &placement.instances,
-            tag,
-        );
+        if enforce_clearance {
+            post_connection_clearance(
+                &mut placement.model,
+                &terminal,
+                &instance_id,
+                connection_x,
+                connection_y,
+                &placement.instances,
+                tag,
+            );
+        }
         endpoints.push(ModelEndpoint {
             terminal,
             instance: instance_id,
@@ -733,6 +771,7 @@ fn extract_witness(
 fn validate_witness(
     input: &ModelInput,
     witness: &FacilityPortsWitness,
+    enforce_clearance: bool,
 ) -> Vec<IntegratedLayoutDiagnostic> {
     let mut diagnostics = Vec::new();
     let expected_instances = input
@@ -879,12 +918,14 @@ fn validate_witness(
                 "facility-port witness connection cell or arm does not match placement, rotation, and port",
             ));
         }
-        if witness.placements.iter().any(|facility| {
-            endpoint.connection_x >= facility.x
-                && endpoint.connection_x < facility.x + facility.width
-                && endpoint.connection_y >= facility.y
-                && endpoint.connection_y < facility.y + facility.height
-        }) {
+        if enforce_clearance
+            && witness.placements.iter().any(|facility| {
+                endpoint.connection_x >= facility.x
+                    && endpoint.connection_x < facility.x + facility.width
+                    && endpoint.connection_y >= facility.y
+                    && endpoint.connection_y < facility.y + facility.height
+            })
+        {
             diagnostics.push(diagnostic(
                 "bottom-up-blocked-facility-endpoint",
                 &endpoint.terminal,
@@ -1091,10 +1132,11 @@ mod tests {
             edges,
         };
 
-        let report = solve(input, Duration::from_secs(1));
+        let report = solve_with_clearance(input, Duration::from_secs(1));
 
         assert_eq!(report.outcome, BottomUpRungOutcome::Feasible);
         assert_eq!(report.validation, ExactValidationStatus::Passed);
+        assert!(report.semantic_certificate.facility_endpoint_clearance);
         assert!(!report.semantic_certificate.pipe_routing);
         assert!(!report.semantic_certificate.belt_routing);
         let BottomUpRungWitness::FacilityPorts { witness } = report.witness.unwrap() else {
@@ -1106,7 +1148,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_a_port_connection_blocked_by_the_only_non_overlapping_placement() {
+    fn clearance_is_the_only_difference_for_a_forced_blocked_connection() {
         let (definition, port) = east_port_fixture();
         let blocker = FacilityDefinition {
             id: "blocker".to_string(),
@@ -1168,10 +1210,20 @@ mod tests {
             edges,
         };
 
-        let report = solve(input, Duration::from_secs(1));
+        let geometry_report = solve_geometry(input.clone(), Duration::from_secs(1));
+        assert_eq!(geometry_report.outcome, BottomUpRungOutcome::Feasible);
+        assert_eq!(geometry_report.validation, ExactValidationStatus::Passed);
+        assert!(
+            !geometry_report
+                .semantic_certificate
+                .facility_endpoint_clearance
+        );
+
+        let report = solve_with_clearance(input, Duration::from_secs(1));
 
         assert_eq!(report.outcome, BottomUpRungOutcome::Infeasible);
         assert_eq!(report.validation, ExactValidationStatus::NotAttempted);
+        assert!(report.semantic_certificate.facility_endpoint_clearance);
         assert!(report.witness.is_none());
     }
 }
