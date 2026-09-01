@@ -67,9 +67,10 @@ mod root_snapshot;
 pub(in crate::layouts::integrated) use root_snapshot::RootDomainSnapshotCollector;
 pub use root_snapshot::{
     RootBooleanDomainCounts, RootDomainCardinality, RootDomainSnapshot,
-    RootExternalGeometrySnapshot, RootFacilityStateSnapshot, RootFirstDecisionSnapshot,
-    RootFlowDomainCounts, RootMaterialNetworkSnapshot, RootTerminalDomainSnapshot,
-    RootTransportLayerSnapshot, RootVariableCoverageSnapshot, RootVariableFamilySnapshot,
+    RootEndpointContinuationArcSnapshot, RootExternalGeometrySnapshot, RootFacilityStateSnapshot,
+    RootFirstDecisionSnapshot, RootFlowDomainCounts, RootMaterialNetworkSnapshot,
+    RootTerminalDomainSnapshot, RootTransportLayerSnapshot, RootVariableCoverageSnapshot,
+    RootVariableFamilySnapshot,
 };
 use root_snapshot::{RootDomainProbe, RootSnapshotBrancher};
 
@@ -103,6 +104,8 @@ enum EndpointEncoding {
         sparse_legal_domain: bool,
         certificates: BoundaryKeyBuildCertificateCollector,
         boundary_key_restriction: Option<BoundaryKeyRestriction>,
+        endpoint_continuation_restriction: Option<EndpointContinuationRestriction>,
+        endpoint_continuation_certificates: Option<EndpointContinuationBuildCertificateCollector>,
     },
 }
 
@@ -111,6 +114,42 @@ struct BoundaryKeyRestriction {
     terminal: String,
     allowed_keys: Vec<i32>,
 }
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub(in crate::layouts::integrated) struct DirectedGridArcRestriction {
+    pub from: usize,
+    pub to: usize,
+}
+
+#[derive(Debug, Clone)]
+pub(in crate::layouts::integrated) struct EndpointContinuationRestriction {
+    pub network_id: String,
+    pub source_terminal: String,
+    pub demand_terminal: String,
+    pub source_selected: DirectedGridArcRestriction,
+    pub source_preceding: Vec<DirectedGridArcRestriction>,
+    pub demand_selected: DirectedGridArcRestriction,
+    pub demand_preceding: Vec<DirectedGridArcRestriction>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub(in crate::layouts::integrated) struct EndpointContinuationBuildCertificate {
+    pub network_id: String,
+    pub network_index: usize,
+    pub transport: TransportKind,
+    pub item: String,
+    pub source_terminal: String,
+    pub source_flow_units: i32,
+    pub source_selected: DirectedGridArcRestriction,
+    pub source_preceding: Vec<DirectedGridArcRestriction>,
+    pub demand_terminal: String,
+    pub demand_flow_units: i32,
+    pub demand_selected: DirectedGridArcRestriction,
+    pub demand_preceding: Vec<DirectedGridArcRestriction>,
+}
+
+type EndpointContinuationBuildCertificateCollector =
+    SyncArc<Mutex<Vec<EndpointContinuationBuildCertificate>>>;
 
 impl EndpointEncoding {
     fn sparse_legal_boundary_keys(&self) -> bool {
@@ -136,6 +175,28 @@ impl EndpointEncoding {
                 boundary_key_restriction,
                 ..
             } => boundary_key_restriction.as_ref(),
+            _ => None,
+        }
+    }
+
+    fn endpoint_continuation_restriction(&self) -> Option<&EndpointContinuationRestriction> {
+        match self {
+            Self::FactoredSparseSupportBoundaryKeyAudit {
+                endpoint_continuation_restriction,
+                ..
+            } => endpoint_continuation_restriction.as_ref(),
+            _ => None,
+        }
+    }
+
+    fn endpoint_continuation_certificate_collector(
+        &self,
+    ) -> Option<&EndpointContinuationBuildCertificateCollector> {
+        match self {
+            Self::FactoredSparseSupportBoundaryKeyAudit {
+                endpoint_continuation_certificates,
+                ..
+            } => endpoint_continuation_certificates.as_ref(),
             _ => None,
         }
     }
@@ -951,6 +1012,8 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
             sparse_legal_domain,
             certificates: SyncArc::clone(&certificates),
             boundary_key_restriction: None,
+            endpoint_continuation_restriction: None,
+            endpoint_continuation_certificates: None,
         },
         fixed_dimensions,
         fixed_coordinate,
@@ -997,6 +1060,8 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
                 terminal,
                 allowed_keys,
             }),
+            endpoint_continuation_restriction: None,
+            endpoint_continuation_certificates: None,
         },
         fixed_dimensions,
         fixed_coordinate,
@@ -1158,6 +1223,8 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
                 sparse_legal_domain,
                 certificates: SyncArc::clone(&certificates),
                 boundary_key_restriction: None,
+                endpoint_continuation_restriction: None,
+                endpoint_continuation_certificates: None,
             },
             fixed_dimensions,
             fixed_coordinate,
@@ -1218,6 +1285,8 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
                     terminal,
                     allowed_keys,
                 }),
+                endpoint_continuation_restriction: None,
+                endpoint_continuation_certificates: None,
             },
             fixed_dimensions,
             fixed_coordinate,
@@ -1238,6 +1307,135 @@ pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_ke
         .expect("boundary-key certificate collector is not poisoned")
         .clone();
     (report, snapshot, captured)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_key_and_continuation_restricted_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: &IntegratedLayoutReport,
+    fixation: ReferenceAblationFixation,
+    terminal: String,
+    mut allowed_keys: Vec<i32>,
+    continuation: EndpointContinuationRestriction,
+) -> (
+    IntegratedLayoutReport,
+    Vec<BoundaryKeyBuildCertificate>,
+    Vec<EndpointContinuationBuildCertificate>,
+) {
+    allowed_keys.sort_unstable();
+    allowed_keys.dedup();
+    assert!(
+        !allowed_keys.is_empty(),
+        "boundary-key restriction must contain at least one value"
+    );
+    let boundary_certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let continuation_certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let report = solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
+        input,
+        logistics_components,
+        time_limit,
+        EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+            counters: SyncArc::new(EndpointSupportPropagationCounters::default()),
+            sparse_legal_domain: true,
+            certificates: SyncArc::clone(&boundary_certificates),
+            boundary_key_restriction: Some(BoundaryKeyRestriction {
+                terminal,
+                allowed_keys,
+            }),
+            endpoint_continuation_restriction: Some(continuation),
+            endpoint_continuation_certificates: Some(SyncArc::clone(&continuation_certificates)),
+        },
+        fixed_dimensions,
+        fixed_coordinate,
+        fixed_ports,
+        prior_solution,
+        fixation,
+    );
+    let boundary = boundary_certificates
+        .lock()
+        .expect("boundary-key certificate collector is not poisoned")
+        .clone();
+    let continuation = continuation_certificates
+        .lock()
+        .expect("endpoint-continuation certificate collector is not poisoned")
+        .clone();
+    (report, boundary, continuation)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub(in crate::layouts::integrated) fn solve_sparse_support_endpoints_boundary_key_and_continuation_restricted_fixed_dimensions_coordinate_ports_prior_overlap_root_snapshot(
+    input: ModelInput,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    time_limit: Option<Duration>,
+    fixed_dimensions: FixedUsedDimensions,
+    fixed_coordinate: FixedFacilityCoordinate,
+    fixed_ports: Vec<FixedTerminalPortChoice>,
+    prior_solution: &IntegratedLayoutReport,
+    fixation: ReferenceAblationFixation,
+    terminal: String,
+    mut allowed_keys: Vec<i32>,
+    continuation: EndpointContinuationRestriction,
+) -> (
+    IntegratedLayoutReport,
+    Option<RootDomainSnapshot>,
+    Vec<BoundaryKeyBuildCertificate>,
+    Vec<EndpointContinuationBuildCertificate>,
+) {
+    allowed_keys.sort_unstable();
+    allowed_keys.dedup();
+    assert!(
+        !allowed_keys.is_empty(),
+        "boundary-key restriction must contain at least one value"
+    );
+    let collector: RootDomainSnapshotCollector = SyncArc::new(Mutex::new(None));
+    let boundary_certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let continuation_certificates = SyncArc::new(Mutex::new(Vec::new()));
+    let report =
+        solve_endpoints_fixed_dimensions_coordinate_ports_prior_overlap_ablation_with_search_mode(
+            input,
+            logistics_components,
+            time_limit,
+            EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+                counters: SyncArc::new(EndpointSupportPropagationCounters::default()),
+                sparse_legal_domain: true,
+                certificates: SyncArc::clone(&boundary_certificates),
+                boundary_key_restriction: Some(BoundaryKeyRestriction {
+                    terminal,
+                    allowed_keys,
+                }),
+                endpoint_continuation_restriction: Some(continuation),
+                endpoint_continuation_certificates: Some(SyncArc::clone(
+                    &continuation_certificates,
+                )),
+            },
+            fixed_dimensions,
+            fixed_coordinate,
+            fixed_ports,
+            prior_solution,
+            fixation,
+            SearchMode::FeasibilityOnlyWithRootSnapshot(SyncArc::clone(&collector)),
+        );
+    let mut snapshot = collector
+        .lock()
+        .expect("root-domain snapshot collector is not poisoned")
+        .clone();
+    if snapshot.is_none() && report.status == IntegratedLayoutStatus::Infeasible {
+        snapshot = Some(RootDomainSnapshot::root_infeasible_without_brancher_call());
+    }
+    let boundary = boundary_certificates
+        .lock()
+        .expect("boundary-key certificate collector is not poisoned")
+        .clone();
+    let continuation = continuation_certificates
+        .lock()
+        .expect("endpoint-continuation certificate collector is not poisoned")
+        .clone();
+    (report, snapshot, boundary, continuation)
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -2236,6 +2434,19 @@ fn solve_with_endpoint_encoding(
         );
         layers.push(layer);
     }
+    if let Some(restriction) = endpoint_encoding.endpoint_continuation_restriction()
+        && let Err(diagnostic) = post_endpoint_continuation_restriction(
+            &mut solver,
+            &input,
+            &model_terminals,
+            &layers,
+            restriction,
+            endpoint_encoding.endpoint_continuation_certificate_collector(),
+            tag,
+        )
+    {
+        return IntegratedLayoutReport::invalid(diagnostic);
+    }
     match &connectivity_mode {
         ConnectivityMode::None => {}
         ConnectivityMode::DeclarativeWitness => {
@@ -2783,6 +2994,13 @@ fn solve_with_endpoint_encoding(
         }
         EndpointEncoding::FactoredSparseSupport(_) => {
             "joint-shared-v4-sparse-support-endpoints-watched-demand-local-continuation-guarded-intersection-propagation"
+        }
+        EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
+            sparse_legal_domain: true,
+            endpoint_continuation_restriction: Some(_),
+            ..
+        } => {
+            "joint-shared-v4-sparse-support-endpoints-legal-boundary-key-endpoint-continuation-partition-watched-demand-local-continuation-guarded-intersection-propagation"
         }
         EndpointEncoding::FactoredSparseSupportBoundaryKeyAudit {
             sparse_legal_domain: true,
@@ -5340,6 +5558,136 @@ fn build_layer(
         route_cells,
         arm_items,
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn post_endpoint_continuation_restriction(
+    solver: &mut RecordedModel,
+    input: &ModelInput,
+    terminals: &[Vec<SharedTerminal>],
+    layers: &[SharedLayer],
+    restriction: &EndpointContinuationRestriction,
+    certificates: Option<&EndpointContinuationBuildCertificateCollector>,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) -> Result<(), IntegratedLayoutDiagnostic> {
+    let invalid = |message: String| {
+        IntegratedLayoutDiagnostic::error(
+            "endpoint-continuation-restriction-invalid",
+            "/endpoint_continuation_restriction",
+            Some(restriction.network_id.clone()),
+            message,
+        )
+    };
+    let network_index = input
+        .networks
+        .iter()
+        .position(|network| network.id() == restriction.network_id)
+        .ok_or_else(|| invalid("selected network does not exist".to_string()))?;
+    let network = &input.networks[network_index];
+    let layer = layers
+        .iter()
+        .find(|layer| {
+            layer.transport == network.transport() && layer.network_indices.contains(&network_index)
+        })
+        .ok_or_else(|| invalid("selected network has no shared transport layer".to_string()))?;
+    let network_terminals = &terminals[network_index];
+    let source = network_terminals
+        .iter()
+        .find(|terminal| terminal.id == restriction.source_terminal)
+        .ok_or_else(|| invalid("selected source terminal does not exist".to_string()))?;
+    let demand = network_terminals
+        .iter()
+        .find(|terminal| terminal.id == restriction.demand_terminal)
+        .ok_or_else(|| invalid("selected demand terminal does not exist".to_string()))?;
+    if source.direction != FacilityPortDirection::Output
+        || demand.direction != FacilityPortDirection::Input
+        || source.flow_units <= 0
+        || demand.flow_units <= 0
+    {
+        return Err(invalid(
+            "selected terminals must be a positive-flow output/input pair".to_string(),
+        ));
+    }
+
+    let mut post_arc = |selected: &DirectedGridArcRestriction,
+                        preceding: &[DirectedGridArcRestriction],
+                        endpoint: &str|
+     -> Result<(), IntegratedLayoutDiagnostic> {
+        let mut semantic_arcs = preceding
+            .iter()
+            .chain(std::iter::once(selected))
+            .map(|arc| (arc.from, arc.to))
+            .collect::<Vec<_>>();
+        semantic_arcs.sort_unstable();
+        semantic_arcs.dedup();
+        if semantic_arcs.len() != preceding.len() + 1 {
+            return Err(invalid(format!(
+                "{endpoint} canonical arc restriction contains duplicates"
+            )));
+        }
+        let resolve = |arc: &DirectedGridArcRestriction| {
+            layer
+                .arcs
+                .iter()
+                .find(|modeled| modeled.from == arc.from && modeled.to == arc.to)
+                .ok_or_else(|| {
+                    invalid(format!(
+                        "{endpoint} arc {} -> {} does not exist in the selected layer",
+                        arc.from, arc.to
+                    ))
+                })
+        };
+        let selected_arc = resolve(selected)?;
+        solver.post_greater_than_or_equals(
+            ConstraintFamily::ResearchFixation,
+            vec![selected_arc.flow.scaled(1)],
+            1,
+            1,
+            tag,
+        );
+        for arc in preceding {
+            let modeled = resolve(arc)?;
+            solver.post_equals(
+                ConstraintFamily::ResearchFixation,
+                vec![modeled.flow.scaled(1)],
+                0,
+                1,
+                tag,
+            );
+        }
+        Ok(())
+    };
+    post_arc(
+        &restriction.source_selected,
+        &restriction.source_preceding,
+        "source",
+    )?;
+    post_arc(
+        &restriction.demand_selected,
+        &restriction.demand_preceding,
+        "demand",
+    )?;
+
+    if let Some(certificates) = certificates {
+        certificates
+            .lock()
+            .expect("endpoint-continuation certificate collector is not poisoned")
+            .push(EndpointContinuationBuildCertificate {
+                network_id: restriction.network_id.clone(),
+                network_index,
+                transport: network.transport(),
+                item: network.item().to_string(),
+                source_terminal: source.id.clone(),
+                source_flow_units: source.flow_units,
+                source_selected: restriction.source_selected.clone(),
+                source_preceding: restriction.source_preceding.clone(),
+                demand_terminal: demand.id.clone(),
+                demand_flow_units: demand.flow_units,
+                demand_selected: restriction.demand_selected.clone(),
+                demand_preceding: restriction.demand_preceding.clone(),
+            });
+    }
+    Ok(())
 }
 
 fn unique_variables(variables: impl Iterator<Item = DomainId>) -> impl Iterator<Item = DomainId> {

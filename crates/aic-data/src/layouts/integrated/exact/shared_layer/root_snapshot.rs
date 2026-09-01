@@ -16,7 +16,7 @@ use super::{
 use crate::facilities::FacilityPortDirection;
 use crate::layouts::integrated::exact::recorder::RecordedVariableDescriptor;
 
-pub const ROOT_DOMAIN_SNAPSHOT_SCHEMA_VERSION: u32 = 3;
+pub const ROOT_DOMAIN_SNAPSHOT_SCHEMA_VERSION: u32 = 4;
 
 pub(in crate::layouts::integrated) type RootDomainSnapshotCollector =
     SyncArc<Mutex<Option<RootDomainSnapshot>>>;
@@ -86,6 +86,7 @@ pub struct RootTerminalDomainSnapshot {
     pub network_id: String,
     pub transport: TransportKind,
     pub direction: FacilityPortDirection,
+    pub flow_units: i32,
     pub endpoint_kind: String,
     pub facility_instance: Option<String>,
     pub external_node: Option<String>,
@@ -100,10 +101,21 @@ pub struct RootTerminalDomainSnapshot {
     pub singleton_geometry_key: Option<i32>,
     pub expected_geometry_keys: Vec<i32>,
     pub routing_options: RootBooleanDomainCounts,
+    pub endpoint_continuation_arcs: Vec<RootEndpointContinuationArcSnapshot>,
     pub external_geometry: Option<RootExternalGeometrySnapshot>,
     pub requested_fixed_port: Option<String>,
     pub explicitly_fixed_facility_terminal: bool,
     pub fixed_contract_satisfied: bool,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct RootEndpointContinuationArcSnapshot {
+    pub terminal_cell: usize,
+    pub terminal_arm_direction: usize,
+    pub from: usize,
+    pub to: usize,
+    pub route_selected: RootDomainCardinality,
+    pub flow: RootDomainCardinality,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -204,6 +216,7 @@ struct TerminalProbe {
     network_id: String,
     transport: TransportKind,
     direction: FacilityPortDirection,
+    flow_units: i32,
     key: DomainId,
     kind: FactoredEndpointKind,
     routing_options: Vec<TerminalRoutingOptionProbe>,
@@ -309,6 +322,7 @@ impl RootDomainProbe {
                         network_id: input.networks[network_index].id().to_string(),
                         transport: input.networks[network_index].transport(),
                         direction: terminal.direction,
+                        flow_units: terminal.flow_units,
                         key: *key,
                         kind: kind.clone(),
                         routing_options: terminal
@@ -631,6 +645,54 @@ impl RootDomainProbe {
                 });
                 let singleton_geometry_key =
                     (geometry.cardinality == 1).then_some(geometry.lower_bound);
+                let mut endpoint_continuation_arcs = self
+                    .layers
+                    .iter()
+                    .find(|layer| layer.transport == probe.transport)
+                    .into_iter()
+                    .flat_map(|layer| {
+                        probe.routing_options.iter().filter_map(move |option| {
+                            context
+                                .contains(option.selected, 1)
+                                .then_some((layer, option))
+                        })
+                    })
+                    .flat_map(|(layer, option)| {
+                        layer.arcs.iter().filter_map(move |arc| {
+                            let incident = match probe.direction {
+                                FacilityPortDirection::Output => arc.from == option.cell,
+                                FacilityPortDirection::Input => arc.to == option.cell,
+                            };
+                            (incident
+                                && context.contains(arc.selected, 1)
+                                && context.upper_bound(arc.flow) > 0)
+                                .then(|| RootEndpointContinuationArcSnapshot {
+                                    terminal_cell: option.cell,
+                                    terminal_arm_direction: option.direction,
+                                    from: arc.from,
+                                    to: arc.to,
+                                    route_selected: cardinality(context, arc.selected),
+                                    flow: cardinality(context, arc.flow),
+                                })
+                        })
+                    })
+                    .collect::<Vec<_>>();
+                endpoint_continuation_arcs.sort_by_key(|arc| {
+                    (
+                        arc.terminal_cell,
+                        arc.terminal_arm_direction,
+                        arc.from,
+                        arc.to,
+                    )
+                });
+                endpoint_continuation_arcs.dedup_by_key(|arc| {
+                    (
+                        arc.terminal_cell,
+                        arc.terminal_arm_direction,
+                        arc.from,
+                        arc.to,
+                    )
+                });
                 let fixed_contract_satisfied =
                     probe
                         .requested_fixed_port
@@ -647,6 +709,7 @@ impl RootDomainProbe {
                     network_id: probe.network_id.clone(),
                     transport: probe.transport,
                     direction: probe.direction,
+                    flow_units: probe.flow_units,
                     endpoint_kind,
                     facility_instance,
                     external_node,
@@ -668,6 +731,7 @@ impl RootDomainProbe {
                             .map(|option| option.selected)
                             .collect::<Vec<_>>(),
                     ),
+                    endpoint_continuation_arcs,
                     external_geometry,
                     requested_fixed_port: probe.requested_fixed_port.clone(),
                     explicitly_fixed_facility_terminal: probe.requested_fixed_port.is_some(),

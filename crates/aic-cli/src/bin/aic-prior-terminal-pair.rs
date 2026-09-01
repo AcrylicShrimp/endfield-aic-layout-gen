@@ -4,17 +4,19 @@ use std::time::Duration;
 
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
-    BoundaryCellWidthSensitivityReport, ExternalBoundaryCellPartitionReport,
-    ExternalBoundaryKeyLegalSupportAbReport, ExternalBoundarySidePartitionReport,
-    FacilityPlacementRequest, PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
+    BoundaryCellWidthSensitivityReport, EndpointContinuationPartitionReport,
+    ExternalBoundaryCellPartitionReport, ExternalBoundaryKeyLegalSupportAbReport,
+    ExternalBoundarySidePartitionReport, FacilityPlacementRequest,
+    PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
     PriorInputPortPairPortfolioReport, PriorSourcePortPortfolioReport,
     PriorTerminalCompletionPortfolioReport, PriorTerminalPairValuePortfolioReport,
     ResidualFacilityPortTuplePortfolioReport, diagnose_boundary_cell_width_sensitivity,
-    diagnose_external_boundary_cell_partition, diagnose_external_boundary_key_legal_support_ab,
-    diagnose_external_boundary_side_partition, diagnose_prior_input_pair_root_snapshot,
-    diagnose_prior_input_port_controls, diagnose_prior_input_port_pair_portfolio,
-    diagnose_prior_source_port_portfolio, diagnose_prior_terminal_completion_portfolio,
-    diagnose_prior_terminal_pair_value_portfolio, diagnose_residual_facility_port_tuple_portfolio,
+    diagnose_endpoint_continuation_partition, diagnose_external_boundary_cell_partition,
+    diagnose_external_boundary_key_legal_support_ab, diagnose_external_boundary_side_partition,
+    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
+    diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
+    diagnose_prior_terminal_completion_portfolio, diagnose_prior_terminal_pair_value_portfolio,
+    diagnose_residual_facility_port_tuple_portfolio,
     render_integrated_layout_html_with_localization,
 };
 use aic_data::localization::{ValidatedLocalizationCatalog, load_localization_catalog};
@@ -134,6 +136,15 @@ struct Args {
     boundary_cell_width_case_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "MILLISECONDS")]
     boundary_cell_width_observation_time_limit_ms: Option<u64>,
+    /// Partition the mandatory first positive source and demand continuation arcs exactly.
+    #[arg(long)]
+    partition_endpoint_continuation: bool,
+    #[arg(long, value_name = "NETWORK_ID")]
+    endpoint_continuation_network: Option<String>,
+    #[arg(long, value_name = "MILLISECONDS")]
+    endpoint_continuation_case_time_limit_ms: Option<u64>,
+    #[arg(long, value_name = "MILLISECONDS")]
+    endpoint_continuation_observation_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -240,6 +251,30 @@ fn main() -> Result<()> {
         args.sweep_boundary_cell_widths
             == args.boundary_cell_width_observation_time_limit_ms.is_some(),
         "--boundary-cell-width-observation-time-limit-ms must be supplied exactly when --sweep-boundary-cell-widths is enabled"
+    );
+    ensure!(
+        !args.partition_endpoint_continuation || args.partition_external_boundary_cell,
+        "--partition-endpoint-continuation requires --partition-external-boundary-cell"
+    );
+    ensure!(
+        !args.partition_endpoint_continuation || !args.sweep_boundary_cell_widths,
+        "endpoint-continuation partition and width sensitivity are separate experiments"
+    );
+    ensure!(
+        args.partition_endpoint_continuation == args.endpoint_continuation_network.is_some(),
+        "--endpoint-continuation-network must be supplied exactly when --partition-endpoint-continuation is enabled"
+    );
+    ensure!(
+        args.partition_endpoint_continuation
+            == args.endpoint_continuation_case_time_limit_ms.is_some(),
+        "--endpoint-continuation-case-time-limit-ms must be supplied exactly when --partition-endpoint-continuation is enabled"
+    );
+    ensure!(
+        args.partition_endpoint_continuation
+            == args
+                .endpoint_continuation_observation_time_limit_ms
+                .is_some(),
+        "--endpoint-continuation-observation-time-limit-ms must be supplied exactly when --partition-endpoint-continuation is enabled"
     );
     let terminal_bits = parse_terminal_pair(&args.terminal_pair)?;
     let worker_count = NonZeroUsize::new(args.worker_count)
@@ -721,6 +756,73 @@ fn run_input_pair(
                         )?,
                     )
                     .context("boundary-cell observation case time limit must be positive")?;
+                    if args.partition_endpoint_continuation {
+                        let continuation_authoritative_budget = NonZeroU64::new(
+                            args.endpoint_continuation_case_time_limit_ms.context(
+                                "endpoint-continuation partition requires --endpoint-continuation-case-time-limit-ms",
+                            )?,
+                        )
+                        .context(
+                            "endpoint-continuation authoritative case time limit must be positive",
+                        )?;
+                        let continuation_observation_budget = NonZeroU64::new(
+                            args.endpoint_continuation_observation_time_limit_ms.context(
+                                "endpoint-continuation partition requires --endpoint-continuation-observation-time-limit-ms",
+                            )?,
+                        )
+                        .context(
+                            "endpoint-continuation observation case time limit must be positive",
+                        )?;
+                        let report = diagnose_endpoint_continuation_partition(
+                            &loaded.wiring,
+                            &loaded.facilities,
+                            &loaded.items,
+                            &loaded.transports,
+                            &loaded.components,
+                            &loaded.placement_request,
+                            args.target_phase,
+                            args.used_width,
+                            args.used_height,
+                            args.facility_x,
+                            args.facility_y,
+                            args.port_assignment_index,
+                            args.facility_rotation,
+                            args.prior_facility_bit,
+                            terminal_bits,
+                            representative_source_leaf_index,
+                            worker_count.get(),
+                            Duration::from_millis(prefix_budget.get()),
+                            Duration::from_millis(pair_budget.get()),
+                            Duration::from_millis(completion_budget.get()),
+                            Duration::from_millis(source_budget.get()),
+                            Duration::from_millis(control_budget.get()),
+                            Duration::from_millis(residual_pair_budget.get()),
+                            Duration::from_millis(parent_observation_budget.get()),
+                            Duration::from_millis(authoritative_budget.get()),
+                            Duration::from_millis(observation_budget.get()),
+                            Duration::from_millis(ab_authoritative_budget.get()),
+                            Duration::from_millis(ab_observation_budget.get()),
+                            Duration::from_millis(side_authoritative_budget.get()),
+                            Duration::from_millis(side_observation_budget.get()),
+                            Duration::from_millis(cell_authoritative_budget.get()),
+                            Duration::from_millis(cell_observation_budget.get()),
+                            args.endpoint_continuation_network
+                                .clone()
+                                .context("endpoint-continuation network is required")?,
+                            Duration::from_millis(continuation_authoritative_budget.get()),
+                            Duration::from_millis(continuation_observation_budget.get()),
+                        )
+                        .map_err(|report| {
+                            anyhow::anyhow!(
+                                "endpoint-continuation partition diagnosis failed: {report:?}"
+                            )
+                        })?;
+                        write_endpoint_continuation_artifacts(args, loaded, &report)?;
+                        serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+                            .context("failed to write endpoint-continuation partition report")?;
+                        println!();
+                        return Ok(());
+                    }
                     if args.sweep_boundary_cell_widths {
                         let width_authoritative_budget = NonZeroU64::new(
                             args.boundary_cell_width_case_time_limit_ms.context(
@@ -1257,6 +1359,46 @@ fn write_boundary_cell_width_artifacts(
                     .join(format!("width-{}.{kind}.html", case.width)),
                 html.as_bytes(),
                 "boundary-cell width-sensitivity layout",
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn write_endpoint_continuation_artifacts(
+    args: &Args,
+    loaded: &LoadedInputs,
+    report: &EndpointContinuationPartitionReport,
+) -> Result<()> {
+    write_json(&args.output_dir.join("summary.json"), report)?;
+    write_bytes(
+        &args.output_dir.join("summary.html"),
+        render_endpoint_continuation_summary(report)?.as_bytes(),
+        "endpoint-continuation partition summary",
+    )?;
+    for case in &report.cases {
+        for (kind, layout) in [
+            ("authoritative", &case.solve.authoritative_layout),
+            ("observation", &case.solve.observation_layout),
+        ] {
+            let html = render_integrated_layout_html_with_localization(
+                layout,
+                loaded.localization.as_ref(),
+            )
+            .map_err(|diagnostic| {
+                anyhow::anyhow!(
+                    "endpoint-continuation case {} {kind} visualization failed with {}: {}",
+                    case.case_index,
+                    diagnostic.code,
+                    diagnostic.message
+                )
+            })?;
+            write_bytes(
+                &args
+                    .output_dir
+                    .join(format!("case-{}.{kind}.html", case.case_index)),
+                html.as_bytes(),
+                "endpoint-continuation layout",
             )?;
         }
     }
@@ -2319,6 +2461,97 @@ fn render_boundary_cell_width_summary(
         report.witness_found,
         report.interpretation_blocked,
         rows,
+        json,
+    ))
+}
+
+fn render_endpoint_continuation_summary(
+    report: &EndpointContinuationPartitionReport,
+) -> Result<String> {
+    let candidate_rows = report
+        .source_candidates
+        .iter()
+        .map(|candidate| ("source", candidate))
+        .chain(
+            report
+                .demand_candidates
+                .iter()
+                .map(|candidate| ("demand", candidate)),
+        )
+        .map(|(endpoint, candidate)| {
+            format!(
+                "<tr><td>{endpoint}</td><td>{}</td><td>{}</td><td>{}→{}</td><td><code>{:?}</code></td></tr>",
+                candidate.case_index,
+                candidate.terminal_cell,
+                candidate.from,
+                candidate.to,
+                candidate.preceding,
+            )
+        })
+        .collect::<String>();
+    let case_rows = report
+        .cases
+        .iter()
+        .map(|case| {
+            format!(
+                "<tr><td>{}</td><td>{}→{} / {}→{}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td><a href=\"case-{}.authoritative.html\">solve</a> · <a href=\"case-{}.observation.html\">root</a></td></tr>",
+                case.case_index,
+                case.source_selected[0],
+                case.source_selected[1],
+                case.demand_selected[0],
+                case.demand_selected[1],
+                case.solve.combined_outcome,
+                case.solve.construction_ms,
+                case.solve.search_ms,
+                case.solve.first_incumbent_ms,
+                case.solve.search_statistics.branch_decisions,
+                case.solve.search_statistics.backtracks,
+                case.solve.search_statistics.conflicts,
+                case.solve.search_statistics.learned_clauses,
+                case.solve.search_statistics.solver_propagations,
+                case.root_restriction_satisfied,
+                case.continuation_certificate_satisfied,
+                case.facility_fixation_satisfied,
+                case.semantic_model_contract_satisfied,
+                case.controlled_axis_model_satisfied,
+                case.case_index,
+                case.case_index,
+            )
+        })
+        .collect::<String>();
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 3 endpoint-continuation partition</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.warning{{border:1px solid #ffd166;padding:10px;color:#ffd166}}table{{border-collapse:collapse;width:100%;margin-bottom:24px}}th,td{{border:1px solid #315066;padding:7px;text-align:left;vertical-align:top}}th{{background:#102535;color:#8fd9ff}}tr:nth-child(even){{background:#0b1c28}}code,a{{color:#ffd166}}details{{margin-top:20px}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {} endpoint-continuation exact partition</h1><div class="meta">network=<code>{}</code> · item=<code>{}</code> · boundary key={} · source={} (cell {}, flow {}) · demand={} (cell {}, flow {}) · workers={} · authoritative wave={}ms · observation wave={}ms · total={}ms</div><p class="warning">Each child fixes only the canonical first positive source arc and demand arc. Later endpoint arcs, the complete route interior, branches, bridges, cycles, placements, ports, and unrelated terminals retain the parent solver freedom.</p><p>geometry singleton={} · terminal presence={} · positive flow={} · distinct cells={} · one source/demand={} · non-empty={} · disjoint={} · exact cover={} · mandatory proof={} · feasible/infeasible/unknown/invalid={}/{}/{}/{} · blocked={}</p><h2>Canonical endpoint cases</h2><table><thead><tr><th>endpoint</th><th>case</th><th>cell</th><th>selected arc</th><th>earlier arcs fixed to zero</th></tr></thead><tbody>{}</tbody></table><h2>Child outcomes</h2><table><thead><tr><th>case</th><th>source / demand arc</th><th>outcome</th><th>build ms</th><th>search ms</th><th>first</th><th>decisions</th><th>backtracks</th><th>conflicts</th><th>learned</th><th>propagations</th><th>root restriction</th><th>certificate</th><th>facility/port fixation</th><th>within-case identity</th><th>controlled-axis model</th><th>artifacts</th></tr></thead><tbody>{}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        report.target_phase_index,
+        report.selected_network_id,
+        report.selected_item,
+        report.selected_boundary_key,
+        report.source_terminal,
+        report.source_cell,
+        report.source_flow_units,
+        report.demand_terminal,
+        report.demand_cell,
+        report.demand_flow_units,
+        report.worker_count,
+        report.authoritative_wave_wall_ms,
+        report.observation_wave_wall_ms,
+        report.total_wall_ms,
+        report.endpoint_geometry_singleton,
+        report.terminal_presence_fixed,
+        report.positive_terminal_flow,
+        report.source_and_demand_cells_distinct,
+        report.selected_network_has_one_source_and_one_demand,
+        report.continuation_sets_non_empty,
+        report.canonical_partition_pairwise_disjoint,
+        report.canonical_partition_exact_cover,
+        report.mandatory_continuation_proof_satisfied,
+        report.validated_feasible_count,
+        report.proven_infeasible_count,
+        report.unknown_count,
+        report.invalid_witness_count,
+        report.interpretation_blocked,
+        candidate_rows,
+        case_rows,
         json,
     ))
 }
