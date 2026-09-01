@@ -7,18 +7,19 @@ use aic_data::layouts::{
     BoundaryCellWidthSensitivityReport, EndpointContinuationPartitionReport,
     EndpointSourceOnlyControlReport, ExternalBoundaryCellPartitionReport,
     ExternalBoundaryKeyLegalSupportAbReport, ExternalBoundarySidePartitionReport,
-    FacilityPlacementRequest, MaterialJunctionContinuationReport, MaterialSeparatorCutReport,
-    PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
+    FacilityPlacementRequest, MaterialJunctionContinuationReport, MaterialRow5SeparatorReport,
+    MaterialSeparatorCutReport, PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
     PriorInputPortPairPortfolioReport, PriorSourcePortPortfolioReport,
     PriorTerminalCompletionPortfolioReport, PriorTerminalPairValuePortfolioReport,
     ResidualFacilityPortTuplePortfolioReport, diagnose_boundary_cell_width_sensitivity,
     diagnose_endpoint_continuation_partition, diagnose_endpoint_source_only_control,
     diagnose_external_boundary_cell_partition, diagnose_external_boundary_key_legal_support_ab,
     diagnose_external_boundary_side_partition, diagnose_material_junction_continuation,
-    diagnose_material_separator_cut, diagnose_prior_input_pair_root_snapshot,
-    diagnose_prior_input_port_controls, diagnose_prior_input_port_pair_portfolio,
-    diagnose_prior_source_port_portfolio, diagnose_prior_terminal_completion_portfolio,
-    diagnose_prior_terminal_pair_value_portfolio, diagnose_residual_facility_port_tuple_portfolio,
+    diagnose_material_row5_separator, diagnose_material_separator_cut,
+    diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
+    diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
+    diagnose_prior_terminal_completion_portfolio, diagnose_prior_terminal_pair_value_portfolio,
+    diagnose_residual_facility_port_tuple_portfolio,
     render_integrated_layout_html_with_localization,
 };
 use aic_data::localization::{ValidatedLocalizationCatalog, load_localization_catalog};
@@ -170,6 +171,13 @@ struct Args {
     material_junction_case_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "MILLISECONDS")]
     material_junction_observation_time_limit_ms: Option<u64>,
+    /// Partition the selected material's complete row-5 crossing inside junction child E.
+    #[arg(long)]
+    partition_material_row5_separator: bool,
+    #[arg(long, value_name = "MILLISECONDS")]
+    material_row5_separator_case_time_limit_ms: Option<u64>,
+    #[arg(long, value_name = "MILLISECONDS")]
+    material_row5_separator_observation_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -346,6 +354,26 @@ fn main() -> Result<()> {
             == args.material_junction_observation_time_limit_ms.is_some(),
         "--material-junction-observation-time-limit-ms must be supplied exactly when --partition-material-junction is enabled"
     );
+    ensure!(
+        !args.partition_material_row5_separator || args.partition_material_junction,
+        "--partition-material-row5-separator requires --partition-material-junction"
+    );
+    validate_row5_parent_separator(
+        args.partition_material_row5_separator,
+        args.material_separator_after_row,
+    )?;
+    ensure!(
+        args.partition_material_row5_separator
+            == args.material_row5_separator_case_time_limit_ms.is_some(),
+        "--material-row5-separator-case-time-limit-ms must be supplied exactly when --partition-material-row5-separator is enabled"
+    );
+    ensure!(
+        args.partition_material_row5_separator
+            == args
+                .material_row5_separator_observation_time_limit_ms
+                .is_some(),
+        "--material-row5-separator-observation-time-limit-ms must be supplied exactly when --partition-material-row5-separator is enabled"
+    );
     let terminal_bits = parse_terminal_pair(&args.terminal_pair)?;
     let worker_count = NonZeroUsize::new(args.worker_count)
         .context("prior-terminal pair worker_count must be positive")?;
@@ -400,6 +428,14 @@ fn main() -> Result<()> {
             &loaded,
         )
     }
+}
+
+fn validate_row5_parent_separator(enabled: bool, separator_after_row: Option<usize>) -> Result<()> {
+    ensure!(
+        !enabled || separator_after_row == Some(4),
+        "--partition-material-row5-separator requires --material-separator-after-row 4"
+    );
+    Ok(())
 }
 
 fn run_pair(
@@ -894,6 +930,102 @@ fn run_input_pair(
                                     .context(
                                         "material-junction observation case time limit must be positive",
                                     )?;
+                                    if args.partition_material_row5_separator {
+                                        let row5_authoritative_budget = NonZeroU64::new(
+                                            args.material_row5_separator_case_time_limit_ms
+                                                .context(
+                                                    "row-5 separator requires --material-row5-separator-case-time-limit-ms",
+                                                )?,
+                                        )
+                                        .context(
+                                            "row-5 separator authoritative case time limit must be positive",
+                                        )?;
+                                        let row5_observation_budget = NonZeroU64::new(
+                                            args.material_row5_separator_observation_time_limit_ms
+                                                .context(
+                                                    "row-5 separator requires --material-row5-separator-observation-time-limit-ms",
+                                                )?,
+                                        )
+                                        .context(
+                                            "row-5 separator observation case time limit must be positive",
+                                        )?;
+                                        let report = diagnose_material_row5_separator(
+                                            &loaded.wiring,
+                                            &loaded.facilities,
+                                            &loaded.items,
+                                            &loaded.transports,
+                                            &loaded.components,
+                                            &loaded.placement_request,
+                                            args.target_phase,
+                                            args.used_width,
+                                            args.used_height,
+                                            args.facility_x,
+                                            args.facility_y,
+                                            args.port_assignment_index,
+                                            args.facility_rotation,
+                                            args.prior_facility_bit,
+                                            terminal_bits,
+                                            representative_source_leaf_index,
+                                            worker_count.get(),
+                                            Duration::from_millis(prefix_budget.get()),
+                                            Duration::from_millis(pair_budget.get()),
+                                            Duration::from_millis(completion_budget.get()),
+                                            Duration::from_millis(source_budget.get()),
+                                            Duration::from_millis(control_budget.get()),
+                                            Duration::from_millis(residual_pair_budget.get()),
+                                            Duration::from_millis(parent_observation_budget.get()),
+                                            Duration::from_millis(authoritative_budget.get()),
+                                            Duration::from_millis(observation_budget.get()),
+                                            Duration::from_millis(ab_authoritative_budget.get()),
+                                            Duration::from_millis(ab_observation_budget.get()),
+                                            Duration::from_millis(side_authoritative_budget.get()),
+                                            Duration::from_millis(side_observation_budget.get()),
+                                            Duration::from_millis(cell_authoritative_budget.get()),
+                                            Duration::from_millis(cell_observation_budget.get()),
+                                            args.endpoint_continuation_network.clone().context(
+                                                "endpoint-continuation network is required",
+                                            )?,
+                                            Duration::from_millis(
+                                                continuation_authoritative_budget.get(),
+                                            ),
+                                            Duration::from_millis(
+                                                continuation_observation_budget.get(),
+                                            ),
+                                            Duration::from_millis(
+                                                source_only_authoritative_budget.get(),
+                                            ),
+                                            Duration::from_millis(
+                                                source_only_observation_budget.get(),
+                                            ),
+                                            Duration::from_millis(
+                                                separator_authoritative_budget.get(),
+                                            ),
+                                            Duration::from_millis(
+                                                separator_observation_budget.get(),
+                                            ),
+                                            Duration::from_millis(
+                                                junction_authoritative_budget.get(),
+                                            ),
+                                            Duration::from_millis(
+                                                junction_observation_budget.get(),
+                                            ),
+                                            Duration::from_millis(row5_authoritative_budget.get()),
+                                            Duration::from_millis(row5_observation_budget.get()),
+                                        )
+                                        .map_err(|report| {
+                                            anyhow::anyhow!(
+                                                "row-5 material separator failed: {report:?}"
+                                            )
+                                        })?;
+                                        write_material_row5_artifacts(args, loaded, &report)?;
+                                        serde_json::to_writer_pretty(
+                                            std::io::stdout().lock(),
+                                            &report,
+                                        )
+                                        .context("failed to write row-5 separator report")?;
+                                        println!();
+                                        return Ok(());
+                                    }
                                     let report = diagnose_material_junction_continuation(
                                         &loaded.wiring,
                                         &loaded.facilities,
@@ -1838,6 +1970,51 @@ fn write_material_junction_artifacts(
                 &args.output_dir.join(format!("{stem}.{kind}.html")),
                 html.as_bytes(),
                 "material-junction layout",
+            )?;
+        }
+    }
+    Ok(())
+}
+
+fn write_material_row5_artifacts(
+    args: &Args,
+    loaded: &LoadedInputs,
+    report: &MaterialRow5SeparatorReport,
+) -> Result<()> {
+    write_json(&args.output_dir.join("summary.json"), report)?;
+    write_bytes(
+        &args.output_dir.join("summary.html"),
+        render_material_row5_summary(report)?.as_bytes(),
+        "row-5 material-separator summary",
+    )?;
+    let cases = std::iter::once((&report.control, "control".to_string())).chain(
+        report.cases.iter().map(|case| {
+            (
+                case,
+                format!("case-{}", case.case_index.expect("child case index")),
+            )
+        }),
+    );
+    for (case, stem) in cases {
+        for (kind, layout) in [
+            ("authoritative", &case.solve.authoritative_layout),
+            ("observation", &case.solve.observation_layout),
+        ] {
+            let html = render_integrated_layout_html_with_localization(
+                layout,
+                loaded.localization.as_ref(),
+            )
+            .map_err(|diagnostic| {
+                anyhow::anyhow!(
+                    "row-5 separator {stem} {kind} visualization failed with {}: {}",
+                    diagnostic.code,
+                    diagnostic.message
+                )
+            })?;
+            write_bytes(
+                &args.output_dir.join(format!("{stem}.{kind}.html")),
+                html.as_bytes(),
+                "row-5 material-separator layout",
             )?;
         }
     }
@@ -3250,6 +3427,58 @@ fn render_material_junction_summary(report: &MaterialJunctionContinuationReport)
     ))
 }
 
+fn render_material_row5_summary(report: &MaterialRow5SeparatorReport) -> Result<String> {
+    let rows = std::iter::once(("control".to_string(), &report.control))
+        .chain(report.cases.iter().map(|case| {
+            (
+                case.case_index.expect("child index").to_string(),
+                case,
+            )
+        }))
+        .map(|(label, case)| {
+            let selected = case
+                .selected_arc
+                .map_or_else(|| "unrestricted".to_string(), |arc| format!("{}→{}", arc[0], arc[1]));
+            let stem = case
+                .case_index
+                .map_or_else(|| "control".to_string(), |index| format!("case-{index}"));
+            format!(
+                "<tr><td>{label}</td><td>{selected}</td><td>{:?}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{}</td><td>{}</td><td>{}</td><td><a href=\"{stem}.authoritative.html\">solve</a> · <a href=\"{stem}.observation.html\">root</a></td></tr>",
+                case.solve.combined_outcome,
+                case.solve.search_ms,
+                case.solve.search_statistics.branch_decisions,
+                case.solve.search_statistics.conflicts,
+                case.solve.search_statistics.solver_propagations,
+                case.ordered_separator_identity_satisfied,
+                case.root_restriction_satisfied,
+                case.interpretation_blocked,
+            )
+        })
+        .collect::<String>();
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Phase 3 row-5 material separator</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.warning{{border:1px solid #ffd166;padding:10px;color:#ffd166}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left}}th{{background:#102535;color:#8fd9ff}}code,a{{color:#ffd166}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase {phase} E-local row-5 exact separator</h1><div class="meta">network=<code>{network}</code> · item=<code>{item}</code> · dimensions={width}×{height} · separator=row 5/6 · source prefix=48→64→80→81 · demand={demand} · workers={workers} · total={total}ms</div><p class="warning">This 16-way partition is complete only inside junction child E. S remains an unresolved sibling. Later crossings, recrossings, branches, cycles, bridges, placement, ports, and other networks remain solver decisions.</p><p>exact cover in E={cover} · S unresolved={sibling} · feasible/infeasible/unknown/invalid={feasible}/{infeasible}/{unknown}/{invalid} · E closed={e_closed} · blocked={blocked}</p><table><thead><tr><th>case</th><th>first row-5 crossing</th><th>outcome</th><th>search ms</th><th>decisions</th><th>conflicts</th><th>propagations</th><th>ordered certificates</th><th>root audit</th><th>blocked</th><th>artifacts</th></tr></thead><tbody>{rows}</tbody></table><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={json};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        phase = report.target_phase_index,
+        network = report.selected_network_id,
+        item = report.selected_item,
+        width = report.fixed_dimensions[0],
+        height = report.fixed_dimensions[1],
+        demand = report.demand_cell,
+        workers = report.worker_count,
+        total = report.total_wall_ms,
+        cover = report.partition_exact_cover_within_e,
+        sibling = report.sibling_s_unresolved,
+        feasible = report.validated_feasible_count,
+        infeasible = report.proven_infeasible_count,
+        unknown = report.unknown_count,
+        invalid = report.invalid_witness_count,
+        e_closed = report.e_proven_infeasible,
+        blocked = report.interpretation_blocked,
+        rows = rows,
+        json = json,
+    ))
+}
+
 fn write_json(path: &Path, report: &impl serde::Serialize) -> Result<()> {
     let encoded = serde_json::to_vec_pretty(report).context("failed to serialize report")?;
     write_bytes(path, &encoded, "prior-terminal pair report")
@@ -3282,6 +3511,19 @@ mod tests {
         assert!(parse_terminal_pair("2").is_err());
         assert!(parse_terminal_pair("2,2").is_err());
         assert!(parse_terminal_pair("two,3").is_err());
+    }
+
+    #[test]
+    fn row5_separator_rejects_a_non_row4_parent() {
+        assert!(validate_row5_parent_separator(false, Some(5)).is_ok());
+        assert!(validate_row5_parent_separator(true, Some(4)).is_ok());
+        let error = validate_row5_parent_separator(true, Some(5))
+            .expect_err("row-5 experiment must reject a non-row-4 parent");
+        assert!(
+            error
+                .to_string()
+                .contains("--material-separator-after-row 4")
+        );
     }
 
     #[test]
@@ -3379,6 +3621,11 @@ mod tests {
             "5000",
             "--material-junction-observation-time-limit-ms",
             "5000",
+            "--partition-material-row5-separator",
+            "--material-row5-separator-case-time-limit-ms",
+            "5000",
+            "--material-row5-separator-observation-time-limit-ms",
+            "5000",
             "--output-dir",
             "out",
         ])
@@ -3401,5 +3648,11 @@ mod tests {
         assert!(args.partition_material_junction);
         assert_eq!(args.material_junction_case_time_limit_ms, Some(5000));
         assert_eq!(args.material_junction_observation_time_limit_ms, Some(5000));
+        assert!(args.partition_material_row5_separator);
+        assert_eq!(args.material_row5_separator_case_time_limit_ms, Some(5000));
+        assert_eq!(
+            args.material_row5_separator_observation_time_limit_ms,
+            Some(5000)
+        );
     }
 }

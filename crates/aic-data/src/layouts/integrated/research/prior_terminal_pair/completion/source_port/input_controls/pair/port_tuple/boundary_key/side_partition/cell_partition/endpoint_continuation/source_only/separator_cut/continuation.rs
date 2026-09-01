@@ -4,6 +4,13 @@ use serde::Serialize;
 
 use super::*;
 
+mod row5;
+
+pub use row5::{
+    MATERIAL_ROW5_SEPARATOR_SCHEMA_VERSION, MaterialRow5SeparatorCaseReport,
+    MaterialRow5SeparatorReport, diagnose_material_row5_separator,
+};
+
 pub const MATERIAL_JUNCTION_CONTINUATION_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -387,7 +394,7 @@ pub fn diagnose_material_junction_continuation(
                 selected_terminal.clone(),
                 allowed_keys.clone(),
                 continuation.clone(),
-                separator.clone(),
+                vec![separator.clone()],
                 junction,
             ))
         } else {
@@ -403,7 +410,7 @@ pub fn diagnose_material_junction_continuation(
                 selected_terminal.clone(),
                 allowed_keys.clone(),
                 continuation.clone(),
-                separator.clone(),
+                vec![separator.clone()],
                 junction,
             ))
         }
@@ -448,7 +455,7 @@ pub fn diagnose_material_junction_continuation(
                     let terminal = selected_terminal.clone();
                     let keys = allowed_keys.clone();
                     let continuation = continuation.clone();
-                    let separator = separator.clone();
+                    let separators = vec![separator.clone()];
                     (
                         case,
                         scope.spawn(move || {
@@ -464,7 +471,7 @@ pub fn diagnose_material_junction_continuation(
                                 terminal,
                                 keys,
                                 continuation,
-                                separator,
+                                separators,
                                 junction,
                             )
                         }),
@@ -495,7 +502,7 @@ pub fn diagnose_material_junction_continuation(
                     let terminal = selected_terminal.clone();
                     let keys = allowed_keys.clone();
                     let continuation = continuation.clone();
-                    let separator = separator.clone();
+                    let separators = vec![separator.clone()];
                     (
                         case,
                         scope.spawn(move || {
@@ -511,7 +518,7 @@ pub fn diagnose_material_junction_continuation(
                                 terminal,
                                 keys,
                                 continuation,
-                                separator,
+                                separators,
                                 junction,
                             )
                         }),
@@ -684,7 +691,7 @@ fn solve_authoritative(
     terminal: String,
     allowed_keys: Vec<i32>,
     continuation: exact::shared_layer::EndpointContinuationRestriction,
-    separator: exact::shared_layer::MaterialSeparatorRestriction,
+    separators: Vec<exact::shared_layer::MaterialSeparatorRestriction>,
     junction: exact::shared_layer::MaterialJunctionRestriction,
 ) -> AuthoritativeResult {
     exact::shared_layer::solve_sparse_support_endpoints_boundary_key_continuation_material_separator_and_junction_fixed_dimensions_coordinate_ports_prior_overlap_ablation(
@@ -699,7 +706,7 @@ fn solve_authoritative(
         terminal,
         allowed_keys,
         continuation,
-        separator,
+        separators,
         junction,
     )
 }
@@ -717,7 +724,7 @@ fn solve_observation(
     terminal: String,
     allowed_keys: Vec<i32>,
     continuation: exact::shared_layer::EndpointContinuationRestriction,
-    separator: exact::shared_layer::MaterialSeparatorRestriction,
+    separators: Vec<exact::shared_layer::MaterialSeparatorRestriction>,
     junction: exact::shared_layer::MaterialJunctionRestriction,
 ) -> ObservationResult {
     exact::shared_layer::solve_sparse_support_endpoints_boundary_key_continuation_material_separator_and_junction_fixed_dimensions_coordinate_ports_prior_overlap_root_snapshot(
@@ -732,7 +739,7 @@ fn solve_observation(
         terminal,
         allowed_keys,
         continuation,
-        separator,
+        separators,
         junction,
     )
 }
@@ -1067,7 +1074,7 @@ fn root_audit_satisfied(
             && separator_ok
             && junction_ok;
     }
-    let Some(separator) = &root.material_separator else {
+    let [separator] = root.material_separators.as_slice() else {
         return false;
     };
     let Some(junction) = &root.material_junction else {

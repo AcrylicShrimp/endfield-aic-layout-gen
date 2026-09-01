@@ -17,7 +17,7 @@ use super::{
 use crate::facilities::FacilityPortDirection;
 use crate::layouts::integrated::exact::recorder::RecordedVariableDescriptor;
 
-pub const ROOT_DOMAIN_SNAPSHOT_SCHEMA_VERSION: u32 = 6;
+pub const ROOT_DOMAIN_SNAPSHOT_SCHEMA_VERSION: u32 = 7;
 
 pub(in crate::layouts::integrated) type RootDomainSnapshotCollector =
     SyncArc<Mutex<Option<RootDomainSnapshot>>>;
@@ -225,7 +225,7 @@ pub struct RootDomainSnapshot {
     pub terminals: Vec<RootTerminalDomainSnapshot>,
     pub layers: Vec<RootTransportLayerSnapshot>,
     pub networks: Vec<RootMaterialNetworkSnapshot>,
-    pub material_separator: Option<RootMaterialSeparatorSnapshot>,
+    pub material_separators: Vec<RootMaterialSeparatorSnapshot>,
     pub material_junction: Option<RootMaterialJunctionSnapshot>,
     pub first_decision: Option<RootFirstDecisionSnapshot>,
 }
@@ -252,7 +252,7 @@ impl RootDomainSnapshot {
             terminals: Vec::new(),
             layers: Vec::new(),
             networks: Vec::new(),
-            material_separator: None,
+            material_separators: Vec::new(),
             material_junction: None,
             first_decision: None,
         }
@@ -317,7 +317,7 @@ pub(super) struct RootDomainProbe {
     variable_descriptors: BTreeMap<DomainId, RecordedVariableDescriptor>,
     network_ids: Vec<String>,
     network_items: Vec<String>,
-    material_separator: Option<MaterialSeparatorProbe>,
+    material_separators: Vec<MaterialSeparatorProbe>,
     material_junction: Option<MaterialJunctionProbe>,
 }
 
@@ -331,7 +331,7 @@ impl RootDomainProbe {
         layers: &[SharedLayer],
         facility_occupancy: &[DomainId],
         explicitly_fixed_ports: &BTreeMap<String, String>,
-        material_separator: Option<&MaterialSeparatorProbe>,
+        material_separators: &[MaterialSeparatorProbe],
         material_junction: Option<&MaterialJunctionProbe>,
         variable_catalog: Vec<RecordedVariableDescriptor>,
     ) -> Self {
@@ -434,7 +434,7 @@ impl RootDomainProbe {
                 .iter()
                 .map(|network| network.item().to_string())
                 .collect(),
-            material_separator: material_separator.cloned(),
+            material_separators: material_separators.to_vec(),
             material_junction: material_junction.cloned(),
         }
     }
@@ -452,7 +452,7 @@ impl RootDomainProbe {
         let terminals = self.capture_terminals(context);
         let layers = self.capture_layers(context);
         let networks = self.capture_networks(context);
-        let material_separator = self.capture_material_separator(context);
+        let material_separators = self.capture_material_separators(context);
         let material_junction = self.capture_material_junction(context);
         let boundary_cells = (0..self.facility_occupancy.len())
             .filter(|cell| self.is_boundary_cell(*cell))
@@ -511,47 +511,50 @@ impl RootDomainProbe {
             terminals,
             layers,
             networks,
-            material_separator,
+            material_separators,
             material_junction,
             first_decision: None,
         }
     }
 
-    fn capture_material_separator(
+    fn capture_material_separators(
         &self,
         context: &SelectionContext,
-    ) -> Option<RootMaterialSeparatorSnapshot> {
-        self.material_separator.as_ref().map(|probe| {
-            let candidates = probe
-                .candidates
-                .iter()
-                .map(|candidate| {
-                    let from_item_values = domain_values(context, candidate.from_item);
-                    RootMaterialSeparatorArcSnapshot {
-                        case_index: candidate.case_index,
-                        from: candidate.from,
-                        to: candidate.to,
-                        route_selected: cardinality(context, candidate.route_selected),
-                        flow: cardinality(context, candidate.flow),
-                        from_item: cardinality(context, candidate.from_item),
-                        selected_item_possible: from_item_values
-                            .contains(&candidate.selected_item_code),
-                        from_item_values,
-                        selected_item_code: candidate.selected_item_code,
-                    }
-                })
-                .collect();
-            RootMaterialSeparatorSnapshot {
-                network_id: probe.network_id.clone(),
-                network_index: probe.network_index,
-                transport: probe.transport,
-                item: probe.item.clone(),
-                selected_item_code: probe.selected_item_code,
-                separator_after_row: probe.separator_after_row,
-                selected_case_index: probe.selected_case_index,
-                candidates,
-            }
-        })
+    ) -> Vec<RootMaterialSeparatorSnapshot> {
+        self.material_separators
+            .iter()
+            .map(|probe| {
+                let candidates = probe
+                    .candidates
+                    .iter()
+                    .map(|candidate| {
+                        let from_item_values = domain_values(context, candidate.from_item);
+                        RootMaterialSeparatorArcSnapshot {
+                            case_index: candidate.case_index,
+                            from: candidate.from,
+                            to: candidate.to,
+                            route_selected: cardinality(context, candidate.route_selected),
+                            flow: cardinality(context, candidate.flow),
+                            from_item: cardinality(context, candidate.from_item),
+                            selected_item_possible: from_item_values
+                                .contains(&candidate.selected_item_code),
+                            from_item_values,
+                            selected_item_code: candidate.selected_item_code,
+                        }
+                    })
+                    .collect();
+                RootMaterialSeparatorSnapshot {
+                    network_id: probe.network_id.clone(),
+                    network_index: probe.network_index,
+                    transport: probe.transport,
+                    item: probe.item.clone(),
+                    selected_item_code: probe.selected_item_code,
+                    separator_after_row: probe.separator_after_row,
+                    selected_case_index: probe.selected_case_index,
+                    candidates,
+                }
+            })
+            .collect()
     }
 
     fn capture_material_junction(
