@@ -12,8 +12,8 @@ pub use integrated::{
     BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION, BOTTOM_UP_RUNG_SCHEMA_VERSION, BottomUpExperimentReport,
     BottomUpRungKind, BottomUpRungOutcome, BottomUpRungReport, BottomUpRungWitness,
     BottomUpSearchSpaceProfile, BottomUpSemanticCertificate, BottomUpTerminationReason,
-    FacilityEndpointPlacement, FacilityGeometryPlacement, FacilityGeometryWitness,
-    FacilityPortPlacement, FacilityPortsWitness, diagnose_bottom_up_rung,
+    EndpointClearancePropagationStatistics, FacilityEndpointPlacement, FacilityGeometryPlacement,
+    FacilityGeometryWitness, FacilityPortPlacement, FacilityPortsWitness, diagnose_bottom_up_rung,
 };
 pub use integrated::{
     BOUNDARY_CELL_WIDTH_SENSITIVITY_SCHEMA_VERSION, BoundaryCellWidthCaseReport,

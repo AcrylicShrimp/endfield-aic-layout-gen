@@ -29,6 +29,7 @@ enum RungArg {
     FacilityGeometry,
     FacilityPortGeometry,
     FacilityPorts,
+    FacilityPortsPropagated,
 }
 
 impl From<RungArg> for BottomUpRungKind {
@@ -37,6 +38,7 @@ impl From<RungArg> for BottomUpRungKind {
             RungArg::FacilityGeometry => Self::FacilityGeometry,
             RungArg::FacilityPortGeometry => Self::FacilityPortGeometry,
             RungArg::FacilityPorts => Self::FacilityPorts,
+            RungArg::FacilityPortsPropagated => Self::FacilityPortsPropagated,
         }
     }
 }
@@ -548,6 +550,28 @@ mod tests {
         .expect("independent facility-port geometry rung should parse");
 
         assert!(matches!(args.rung, RungArg::FacilityPortGeometry));
+    }
+
+    #[test]
+    fn parses_the_propagated_facility_port_rung() {
+        let args = Args::try_parse_from([
+            "aic-bottom-up-ladder",
+            "--rung",
+            "facility-ports-propagated",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "placement.json",
+            "--target-phase",
+            "3",
+            "--time-limit-ms",
+            "5000",
+            "--output-dir",
+            "artifacts",
+        ])
+        .expect("propagated facility-port rung should parse");
+
+        assert!(matches!(args.rung, RungArg::FacilityPortsPropagated));
     }
 
     #[test]

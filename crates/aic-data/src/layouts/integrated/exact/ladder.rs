@@ -21,7 +21,7 @@ use super::super::research::EndpointSupportPropagationStatistics;
 
 mod facility_ports;
 
-pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 4;
+pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 5;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -29,6 +29,20 @@ pub enum BottomUpRungKind {
     FacilityGeometry,
     FacilityPortGeometry,
     FacilityPorts,
+    FacilityPortsPropagated,
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
+pub struct EndpointClearancePropagationStatistics {
+    pub relations: u64,
+    pub executions: u64,
+    pub notifications: u64,
+    pub orientation_checks: u64,
+    pub rejected_orientations: u64,
+    pub forced_separation_detections: u64,
+    pub bound_updates: u64,
+    pub conflicts: u64,
+    pub maximum_reason_predicates: u64,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -163,6 +177,7 @@ pub struct BottomUpRungReport {
     pub model_complexity: ModelComplexityMetrics,
     pub search_statistics: ExactSearchStatistics,
     pub endpoint_support_statistics: Option<EndpointSupportPropagationStatistics>,
+    pub endpoint_clearance_statistics: Option<EndpointClearancePropagationStatistics>,
     pub witness: Option<BottomUpRungWitness>,
     pub diagnostics: Vec<IntegratedLayoutDiagnostic>,
 }
@@ -220,6 +235,7 @@ pub(in crate::layouts::integrated) fn solve_facility_geometry_rung(
                 model_complexity: ModelComplexityMetrics::unavailable(),
                 search_statistics: ExactSearchStatistics::default(),
                 endpoint_support_statistics: None,
+                endpoint_clearance_statistics: None,
                 witness: None,
                 diagnostics: vec![diagnostic],
             };
@@ -324,6 +340,7 @@ pub(in crate::layouts::integrated) fn solve_facility_geometry_rung(
         model_complexity,
         search_statistics,
         endpoint_support_statistics: None,
+        endpoint_clearance_statistics: None,
         witness,
         diagnostics,
     }
@@ -334,6 +351,13 @@ pub(in crate::layouts::integrated) fn solve_facility_ports_rung(
     time_limit: Duration,
 ) -> BottomUpRungReport {
     facility_ports::solve_with_clearance(input, time_limit)
+}
+
+pub(in crate::layouts::integrated) fn solve_facility_ports_propagated_rung(
+    input: ModelInput,
+    time_limit: Duration,
+) -> BottomUpRungReport {
+    facility_ports::solve_with_propagated_clearance(input, time_limit)
 }
 
 pub(in crate::layouts::integrated) fn solve_facility_port_geometry_rung(

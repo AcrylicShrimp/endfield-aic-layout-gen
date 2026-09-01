@@ -8,6 +8,10 @@ use pumpkin_solver::core::results::{ProblemSolution, SatisfactionResult};
 use pumpkin_solver::core::termination::TimeBudget;
 use pumpkin_solver::core::variables::{DomainId, Literal, TransformableVariable};
 
+use super::super::endpoint_clearance_propagator::{
+    EndpointClearanceOrientation, EndpointClearancePropagationCounters,
+    EndpointRectangleClearancePropagatorArgs,
+};
 use super::super::endpoint_support_propagator::{
     EndpointSupportPropagationCounters, SparseEndpointSupportPropagatorArgs,
 };
@@ -36,24 +40,39 @@ use crate::research::ModelComplexityMetrics;
 const GEOMETRY_FORMULATION: &str = "factorized-coordinate-geometry-rotation-port-support-v1";
 const CLEARANCE_FORMULATION: &str =
     "factorized-coordinate-geometry-rotation-port-support-clearance-v1";
+const PROPAGATED_CLEARANCE_FORMULATION: &str =
+    "factorized-coordinate-geometry-rotation-port-support-point-rectangle-clearance-v1";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ClearanceEncoding {
+    None,
+    ReifiedDirections,
+    PointRectanglePropagator,
+}
 
 #[derive(Debug, Clone, Copy)]
 struct RungContract {
     rung: BottomUpRungKind,
     formulation: &'static str,
-    enforce_clearance: bool,
+    clearance: ClearanceEncoding,
 }
 
 const GEOMETRY_CONTRACT: RungContract = RungContract {
     rung: BottomUpRungKind::FacilityPortGeometry,
     formulation: GEOMETRY_FORMULATION,
-    enforce_clearance: false,
+    clearance: ClearanceEncoding::None,
 };
 
 const CLEARANCE_CONTRACT: RungContract = RungContract {
     rung: BottomUpRungKind::FacilityPorts,
     formulation: CLEARANCE_FORMULATION,
-    enforce_clearance: true,
+    clearance: ClearanceEncoding::ReifiedDirections,
+};
+
+const PROPAGATED_CLEARANCE_CONTRACT: RungContract = RungContract {
+    rung: BottomUpRungKind::FacilityPortsPropagated,
+    formulation: PROPAGATED_CLEARANCE_FORMULATION,
+    clearance: ClearanceEncoding::PointRectanglePropagator,
 };
 
 struct PortModel {
@@ -61,6 +80,7 @@ struct PortModel {
     rotations: BTreeMap<String, DomainId>,
     endpoints: Vec<ModelEndpoint>,
     support_counters: Arc<EndpointSupportPropagationCounters>,
+    clearance_counters: Option<Arc<EndpointClearancePropagationCounters>>,
 }
 
 struct ModelEndpoint {
@@ -91,6 +111,13 @@ pub(super) fn solve_with_clearance(input: ModelInput, time_limit: Duration) -> B
     solve(input, time_limit, CLEARANCE_CONTRACT)
 }
 
+pub(super) fn solve_with_propagated_clearance(
+    input: ModelInput,
+    time_limit: Duration,
+) -> BottomUpRungReport {
+    solve(input, time_limit, PROPAGATED_CLEARANCE_CONTRACT)
+}
+
 fn solve(input: ModelInput, time_limit: Duration, contract: RungContract) -> BottomUpRungReport {
     let ceiling = [input.width, input.height];
     let facility_count = input.instances.len();
@@ -102,7 +129,7 @@ fn solve(input: ModelInput, time_limit: Duration, contract: RungContract) -> Bot
         .collect::<Vec<_>>();
     let search_space = search_space_profile(&input);
     let construction_started = Instant::now();
-    let mut port_model = match build_port_model(&input, contract.enforce_clearance) {
+    let mut port_model = match build_port_model(&input, contract.clearance) {
         Ok(model) => model,
         Err(diagnostic) => {
             return BottomUpRungReport {
@@ -113,7 +140,7 @@ fn solve(input: ModelInput, time_limit: Duration, contract: RungContract) -> Bot
                 facility_count,
                 facility_terminal_count,
                 facility_terminal_ids,
-                semantic_certificate: semantic_certificate(contract.enforce_clearance),
+                semantic_certificate: semantic_certificate(contract.clearance),
                 construction_ms: elapsed_millis(construction_started.elapsed()),
                 search_ms: 0,
                 first_witness_ms: None,
@@ -125,6 +152,7 @@ fn solve(input: ModelInput, time_limit: Duration, contract: RungContract) -> Bot
                 model_complexity: ModelComplexityMetrics::unavailable(),
                 search_statistics: ExactSearchStatistics::default(),
                 endpoint_support_statistics: None,
+                endpoint_clearance_statistics: None,
                 witness: None,
                 diagnostics: vec![diagnostic],
             };
@@ -163,8 +191,11 @@ fn solve(input: ModelInput, time_limit: Duration, contract: RungContract) -> Bot
                 &port_model.rotations,
                 &port_model.endpoints,
             );
-            let validation_diagnostics =
-                validate_witness(&input, &extracted, contract.enforce_clearance);
+            let validation_diagnostics = validate_witness(
+                &input,
+                &extracted,
+                contract.clearance != ClearanceEncoding::None,
+            );
             let validation = if validation_diagnostics.is_empty() {
                 ExactValidationStatus::Passed
             } else {
@@ -223,7 +254,7 @@ fn solve(input: ModelInput, time_limit: Duration, contract: RungContract) -> Bot
         facility_count,
         facility_terminal_count,
         facility_terminal_ids,
-        semantic_certificate: semantic_certificate(contract.enforce_clearance),
+        semantic_certificate: semantic_certificate(contract.clearance),
         construction_ms,
         search_ms,
         first_witness_ms,
@@ -235,16 +266,20 @@ fn solve(input: ModelInput, time_limit: Duration, contract: RungContract) -> Bot
         model_complexity,
         search_statistics,
         endpoint_support_statistics: Some(port_model.support_counters.snapshot()),
+        endpoint_clearance_statistics: port_model
+            .clearance_counters
+            .as_ref()
+            .map(|counters| counters.snapshot()),
         witness,
         diagnostics,
     }
 }
 
-fn semantic_certificate(enforce_clearance: bool) -> BottomUpSemanticCertificate {
+fn semantic_certificate(clearance: ClearanceEncoding) -> BottomUpSemanticCertificate {
     BottomUpSemanticCertificate {
         facility_geometry: true,
         facility_ports: true,
-        facility_endpoint_clearance: enforce_clearance,
+        facility_endpoint_clearance: clearance != ClearanceEncoding::None,
         boundary_terminals: false,
         pipe_routing: false,
         belt_routing: false,
@@ -297,18 +332,21 @@ fn search_space_profile(input: &ModelInput) -> BottomUpSearchSpaceProfile {
 
 fn build_port_model(
     input: &ModelInput,
-    enforce_clearance: bool,
+    clearance: ClearanceEncoding,
 ) -> Result<PortModel, IntegratedLayoutDiagnostic> {
     let mut placement = build_model(input)?;
     let tag = placement.model.new_constraint_tag();
     let rotations = build_rotation_channels(&mut placement, tag);
     let support_counters = Arc::new(EndpointSupportPropagationCounters::default());
+    let clearance_counters = (clearance == ClearanceEncoding::PointRectanglePropagator)
+        .then(|| Arc::new(EndpointClearancePropagationCounters::default()));
     let endpoints = build_endpoints(
         &mut placement,
         input,
         &rotations,
         Arc::clone(&support_counters),
-        enforce_clearance,
+        clearance,
+        clearance_counters.clone(),
         tag,
     )?;
     Ok(PortModel {
@@ -316,6 +354,7 @@ fn build_port_model(
         rotations,
         endpoints,
         support_counters,
+        clearance_counters,
     })
 }
 
@@ -376,7 +415,8 @@ fn build_endpoints(
     input: &ModelInput,
     rotations: &BTreeMap<String, DomainId>,
     counters: Arc<EndpointSupportPropagationCounters>,
-    enforce_clearance: bool,
+    clearance: ClearanceEncoding,
+    clearance_counters: Option<Arc<EndpointClearancePropagationCounters>>,
     tag: pumpkin_solver::core::proof::ConstraintTag,
 ) -> Result<Vec<ModelEndpoint>, IntegratedLayoutDiagnostic> {
     let instances = input
@@ -517,8 +557,9 @@ fn build_endpoints(
                 tag,
             );
         }
-        if enforce_clearance {
-            post_connection_clearance(
+        match clearance {
+            ClearanceEncoding::None => {}
+            ClearanceEncoding::ReifiedDirections => post_connection_clearance(
                 &mut placement.model,
                 &terminal,
                 &instance_id,
@@ -526,7 +567,23 @@ fn build_endpoints(
                 connection_y,
                 &placement.instances,
                 tag,
-            );
+            ),
+            ClearanceEncoding::PointRectanglePropagator => {
+                post_propagated_connection_clearance(
+                    &mut placement.model,
+                    &terminal,
+                    &instance_id,
+                    connection_x,
+                    connection_y,
+                    &placement.instances,
+                    Arc::clone(
+                        clearance_counters
+                            .as_ref()
+                            .expect("propagated clearance has counters"),
+                    ),
+                    tag,
+                );
+            }
         }
         endpoints.push(ModelEndpoint {
             terminal,
@@ -612,6 +669,52 @@ fn post_connection_clearance(
                 tag,
             );
         }
+    }
+}
+
+fn post_propagated_connection_clearance(
+    model: &mut super::super::recorder::RecordedModel,
+    terminal: &str,
+    owner: &str,
+    connection_x: DomainId,
+    connection_y: DomainId,
+    instances: &[ModelInstance],
+    counters: Arc<EndpointClearancePropagationCounters>,
+    tag: pumpkin_solver::core::proof::ConstraintTag,
+) {
+    for instance in instances.iter().filter(|instance| instance.id != owner) {
+        let orientations = instance
+            .orientations
+            .iter()
+            .map(|orientation| EndpointClearanceOrientation {
+                selected: orientation.selected,
+                selected_parent: orientation.selected_parent,
+                width: orientation.width,
+                height: orientation.height,
+            })
+            .collect::<Vec<_>>();
+        let mut variables = vec![connection_x, connection_y, instance.x, instance.y];
+        variables.extend(
+            orientations
+                .iter()
+                .map(|orientation| orientation.selected_parent),
+        );
+        model.record_global_constraint(ConstraintFamily::EndpointClearance, variables);
+        let _ = model
+            .solver_mut()
+            .add_propagator(EndpointRectangleClearancePropagatorArgs {
+                name: format!(
+                    "terminal:{terminal}:outside-facility:{}:point-rectangle-clearance",
+                    instance.id
+                ),
+                connection_x,
+                connection_y,
+                facility_x: instance.x,
+                facility_y: instance.y,
+                orientations,
+                counters: Arc::clone(&counters),
+                constraint_tag: tag,
+            });
     }
 }
 
@@ -1132,7 +1235,7 @@ mod tests {
             edges,
         };
 
-        let report = solve_with_clearance(input, Duration::from_secs(1));
+        let report = solve_with_clearance(input.clone(), Duration::from_secs(1));
 
         assert_eq!(report.outcome, BottomUpRungOutcome::Feasible);
         assert_eq!(report.validation, ExactValidationStatus::Passed);
@@ -1145,6 +1248,12 @@ mod tests {
         assert_eq!(witness.placements.len(), 1);
         assert_eq!(witness.endpoints.len(), 1);
         assert_eq!(witness.endpoints[0].port, "output");
+
+        let propagated = solve_with_propagated_clearance(input, Duration::from_secs(1));
+        assert_eq!(propagated.outcome, BottomUpRungOutcome::Feasible);
+        assert_eq!(propagated.validation, ExactValidationStatus::Passed);
+        assert_eq!(propagated.rung, BottomUpRungKind::FacilityPortsPropagated);
+        assert!(propagated.endpoint_clearance_statistics.is_some());
     }
 
     #[test]
@@ -1219,11 +1328,21 @@ mod tests {
                 .facility_endpoint_clearance
         );
 
-        let report = solve_with_clearance(input, Duration::from_secs(1));
+        let report = solve_with_clearance(input.clone(), Duration::from_secs(1));
 
         assert_eq!(report.outcome, BottomUpRungOutcome::Infeasible);
         assert_eq!(report.validation, ExactValidationStatus::NotAttempted);
         assert!(report.semantic_certificate.facility_endpoint_clearance);
         assert!(report.witness.is_none());
+
+        let propagated = solve_with_propagated_clearance(input, Duration::from_secs(1));
+        assert_eq!(propagated.outcome, BottomUpRungOutcome::Infeasible);
+        assert_eq!(propagated.validation, ExactValidationStatus::NotAttempted);
+        assert!(propagated.semantic_certificate.facility_endpoint_clearance);
+        assert!(propagated.witness.is_none());
+        let statistics = propagated
+            .endpoint_clearance_statistics
+            .expect("propagated clearance should report counters");
+        assert!(statistics.relations > 0);
     }
 }

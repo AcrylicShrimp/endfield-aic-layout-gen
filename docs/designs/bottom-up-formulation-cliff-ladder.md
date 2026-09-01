@@ -116,6 +116,16 @@ and Rung 1B models separates the cost of endpoint support and coordinate channel
 selected-connection-versus-facility clearance relation. A Rung 1A witness is not a valid Rung 1B
 witness when any selected connection cell is covered by another facility.
 
+Rung 1B has two same-semantics formulation variants. `facility-ports` is the baseline: each
+endpoint, non-owner facility, and facility geometry class creates four fully reified directional
+separation inequalities plus one guarded disjunction. `facility-ports-propagated` replaces that
+intermediate Boolean expansion with one exact point-versus-variable-rectangle propagator per
+endpoint and non-owner facility. The propagator rejects a facility geometry class when all four
+separations are impossible and directly tightens coordinate bounds when a selected class has one
+remaining separation. It must reject exactly the same complete assignments as the baseline and
+uses the unchanged Rung 1B witness validator. The variant is a formulation experiment, not an
+additional semantic rung.
+
 ### Rung 2: Pipe Routing
 
 Adds the complete pipe semantic block:
