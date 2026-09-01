@@ -7,15 +7,16 @@ use aic_data::layouts::{
     BoundaryCellWidthSensitivityReport, EndpointContinuationPartitionReport,
     EndpointSourceOnlyControlReport, ExternalBoundaryCellPartitionReport,
     ExternalBoundaryKeyLegalSupportAbReport, ExternalBoundarySidePartitionReport,
-    FacilityPlacementRequest, GuardedCoreInitialGateReport, MaterialJunctionContinuationReport,
-    MaterialRow5SeparatorReport, MaterialSeparatorCutReport, PriorInputPairRootSnapshotReport,
-    PriorInputPortControlsReport, PriorInputPortPairPortfolioReport,
-    PriorSourcePortPortfolioReport, PriorTerminalCompletionPortfolioReport,
-    PriorTerminalPairValuePortfolioReport, ResidualFacilityPortTuplePortfolioReport,
-    diagnose_boundary_cell_width_sensitivity, diagnose_endpoint_continuation_partition,
-    diagnose_endpoint_source_only_control, diagnose_external_boundary_cell_partition,
-    diagnose_external_boundary_key_legal_support_ab, diagnose_external_boundary_side_partition,
-    diagnose_guarded_core_initial_gate, diagnose_material_junction_continuation,
+    FacilityPlacementRequest, GuardedCoreInitialGateReport, GuardedCoreSequentialShrinkReport,
+    MaterialJunctionContinuationReport, MaterialRow5SeparatorReport, MaterialSeparatorCutReport,
+    PriorInputPairRootSnapshotReport, PriorInputPortControlsReport,
+    PriorInputPortPairPortfolioReport, PriorSourcePortPortfolioReport,
+    PriorTerminalCompletionPortfolioReport, PriorTerminalPairValuePortfolioReport,
+    ResidualFacilityPortTuplePortfolioReport, diagnose_boundary_cell_width_sensitivity,
+    diagnose_endpoint_continuation_partition, diagnose_endpoint_source_only_control,
+    diagnose_external_boundary_cell_partition, diagnose_external_boundary_key_legal_support_ab,
+    diagnose_external_boundary_side_partition, diagnose_guarded_core_initial_gate,
+    diagnose_guarded_core_sequential_shrinking, diagnose_material_junction_continuation,
     diagnose_material_row5_separator, diagnose_material_separator_cut,
     diagnose_prior_input_pair_root_snapshot, diagnose_prior_input_port_controls,
     diagnose_prior_input_port_pair_portfolio, diagnose_prior_source_port_portfolio,
@@ -184,6 +185,11 @@ struct Args {
     guarded_core_initial_gate: bool,
     #[arg(long, value_name = "MILLISECONDS")]
     guarded_core_full_time_limit_ms: Option<u64>,
+    /// Remove one accepted atom at a time only after a fresh infeasibility proof.
+    #[arg(long)]
+    shrink_guarded_core: bool,
+    #[arg(long, value_name = "MILLISECONDS")]
+    guarded_core_shrink_time_limit_ms: Option<u64>,
     #[arg(long, value_name = "DIR")]
     output_dir: PathBuf,
 }
@@ -387,6 +393,14 @@ fn main() -> Result<()> {
     ensure!(
         args.guarded_core_initial_gate == args.guarded_core_full_time_limit_ms.is_some(),
         "--guarded-core-full-time-limit-ms must be supplied exactly when --guarded-core-initial-gate is enabled"
+    );
+    ensure!(
+        !args.shrink_guarded_core || args.guarded_core_initial_gate,
+        "--shrink-guarded-core requires --guarded-core-initial-gate"
+    );
+    ensure!(
+        args.shrink_guarded_core == args.guarded_core_shrink_time_limit_ms.is_some(),
+        "--guarded-core-shrink-time-limit-ms must be supplied exactly when --shrink-guarded-core is enabled"
     );
     let terminal_bits = parse_terminal_pair(&args.terminal_pair)?;
     let worker_count = NonZeroUsize::new(args.worker_count)
@@ -1062,6 +1076,47 @@ fn run_input_pair(
                                             write_guarded_core_initial_gate_artifacts(
                                                 args, loaded, &report,
                                             )?;
+                                            if args.shrink_guarded_core {
+                                                let shrink_budget = NonZeroU64::new(
+                                                    args.guarded_core_shrink_time_limit_ms.context(
+                                                        "guarded-core shrinking requires --guarded-core-shrink-time-limit-ms",
+                                                    )?,
+                                                )
+                                                .context(
+                                                    "guarded-core shrinking time limit must be positive",
+                                                )?;
+                                                let shrink_report =
+                                                    diagnose_guarded_core_sequential_shrinking(
+                                                        &loaded.wiring,
+                                                        &loaded.facilities,
+                                                        &loaded.items,
+                                                        &loaded.transports,
+                                                        &loaded.components,
+                                                        &loaded.placement_request,
+                                                        args.target_phase,
+                                                        report,
+                                                        Duration::from_millis(shrink_budget.get()),
+                                                    )
+                                                    .map_err(|report| {
+                                                        anyhow::anyhow!(
+                                                            "guarded-core sequential shrinking failed: {report:?}"
+                                                        )
+                                                    })?;
+                                                write_guarded_core_shrinking_artifacts(
+                                                    args,
+                                                    loaded,
+                                                    &shrink_report,
+                                                )?;
+                                                serde_json::to_writer_pretty(
+                                                    std::io::stdout().lock(),
+                                                    &shrink_report,
+                                                )
+                                                .context(
+                                                    "failed to write guarded-core shrinking report",
+                                                )?;
+                                                println!();
+                                                return Ok(());
+                                            }
                                             serde_json::to_writer_pretty(
                                                 std::io::stdout().lock(),
                                                 &report,
@@ -2205,6 +2260,69 @@ fn write_guarded_core_initial_gate_artifacts(
         control_html.as_bytes(),
         "guarded-core unrestricted-control layout",
     )?;
+    Ok(())
+}
+
+fn write_guarded_core_shrinking_artifacts(
+    args: &Args,
+    loaded: &LoadedInputs,
+    report: &GuardedCoreSequentialShrinkReport,
+) -> Result<()> {
+    write_json(&args.output_dir.join("summary.json"), report)?;
+    write_bytes(
+        &args.output_dir.join("summary.html"),
+        render_guarded_core_shrinking_summary(report)?.as_bytes(),
+        "guarded-core shrinking summary",
+    )?;
+    for attempt in &report.attempts {
+        let html = render_integrated_layout_html_with_localization(
+            &attempt.layout,
+            loaded.localization.as_ref(),
+        )
+        .map_err(|diagnostic| {
+            anyhow::anyhow!(
+                "guarded-core shrink attempt {} visualization failed with {}: {}",
+                attempt.attempt_index,
+                diagnostic.code,
+                diagnostic.message
+            )
+        })?;
+        write_bytes(
+            &args
+                .output_dir
+                .join(guarded_core_attempt_artifact_name(attempt.attempt_index)),
+            html.as_bytes(),
+            "guarded-core shrink attempt layout",
+        )?;
+    }
+    for (name, layout) in [
+        (
+            "final-core.authoritative.html",
+            report.final_authoritative_layout.as_ref(),
+        ),
+        (
+            "final-core.observation.html",
+            report.final_observation_layout.as_ref(),
+        ),
+    ] {
+        let Some(layout) = layout else {
+            continue;
+        };
+        let html =
+            render_integrated_layout_html_with_localization(layout, loaded.localization.as_ref())
+                .map_err(|diagnostic| {
+                anyhow::anyhow!(
+                    "guarded-core final visualization failed with {}: {}",
+                    diagnostic.code,
+                    diagnostic.message
+                )
+            })?;
+        write_bytes(
+            &args.output_dir.join(name),
+            html.as_bytes(),
+            "guarded-core final layout",
+        )?;
+    }
     Ok(())
 }
 
@@ -3713,6 +3831,62 @@ fn render_guarded_core_initial_gate_summary(
     ))
 }
 
+fn render_guarded_core_shrinking_summary(
+    report: &GuardedCoreSequentialShrinkReport,
+) -> Result<String> {
+    let rows = report
+        .attempts
+        .iter()
+        .map(|attempt| {
+            let artifact = guarded_core_attempt_artifact_name(attempt.attempt_index);
+            format!(
+                "<tr><td>{}</td><td><code>{}</code></td><td>{} → {}</td><td>{:?}</td><td>{}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td>{:?}</td><td><a href=\"{}\">evidence</a></td></tr>",
+                attempt.attempt_index,
+                attempt.attempted_atom_id,
+                attempt.prior_core_size,
+                attempt.candidate_core_size,
+                attempt.outcome,
+                attempt.removed,
+                attempt.search_ms,
+                attempt.branch_decisions,
+                attempt.backtracks,
+                attempt.conflicts,
+                attempt.solver_propagations,
+                artifact,
+            )
+        })
+        .collect::<String>();
+    let json = serde_json::to_string(report)?.replace('<', "\\u003c");
+    Ok(format!(
+        r#"<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Guarded core sequential shrinking</title><style>body{{font:14px ui-monospace,SFMono-Regular,Menlo,monospace;background:#07131d;color:#d5e8f5;margin:24px}}h1{{font-size:20px}}.meta{{color:#8fb2c8;margin-bottom:18px}}.gate{{border:1px solid #315066;padding:12px}}.pass{{color:#65f0bd}}.block{{color:#ff6b9d}}table{{border-collapse:collapse;width:100%}}th,td{{border:1px solid #315066;padding:7px;text-align:left}}th{{background:#102535;color:#8fd9ff}}code,a{{color:#ffd166}}pre{{white-space:pre-wrap}}</style></head><body><h1>Phase 3 guarded-core sequential shrinking</h1><div class="meta">status={status:?} · core={initial} → {final_size} · removed={removed} · budget={budget}ms/case · shrinking={shrinking}ms</div><div class="gate {class}">final proof={proof} · certificate={certificate} · unrestricted boundary={boundary} · exact delta={delta} · root predicates={root} · model identity={identity} · blocked={blocked}</div><p><a href="initial-full-core.authoritative.html">Initial core</a> · <a href="final-core.authoritative.html">Final authoritative</a> · <a href="final-core.observation.html">Final observation</a></p><table><thead><tr><th>#</th><th>attempted removal</th><th>core size</th><th>outcome</th><th>removed</th><th>search ms</th><th>decisions</th><th>backtracks</th><th>conflicts</th><th>propagations</th><th>artifact</th></tr></thead><tbody>{rows}</tbody></table><details><summary>Final retained atoms</summary><pre>{final_atoms}</pre></details><details><summary>Machine-readable report</summary><pre id="json"></pre></details><script>const report={json};document.getElementById('json').textContent=JSON.stringify(report,null,2);</script></body></html>"#,
+        status = report.status,
+        initial = report.initial_core_size,
+        final_size = report.final_core_size,
+        removed = report.removed_atom_ids.len(),
+        budget = report.search_budget_ms,
+        shrinking = report.shrinking_ms,
+        class = if report.interpretation_blocked {
+            "block"
+        } else {
+            "pass"
+        },
+        proof = report.final_proven_infeasible,
+        certificate = report.final_certificate_satisfied,
+        boundary = report.final_unrestricted_boundary_satisfied,
+        delta = report.final_exact_model_delta_satisfied,
+        root = report.final_root_predicates_satisfied,
+        identity = report.final_model_identity_satisfied,
+        blocked = report.interpretation_blocked,
+        rows = rows,
+        final_atoms = report.final_atom_ids.join("\n"),
+        json = json,
+    ))
+}
+
+fn guarded_core_attempt_artifact_name(attempt_index: usize) -> String {
+    format!("attempt-{attempt_index:02}.authoritative.html")
+}
+
 fn write_json(path: &Path, report: &impl serde::Serialize) -> Result<()> {
     let encoded = serde_json::to_vec_pretty(report).context("failed to serialize report")?;
     write_bytes(path, &encoded, "prior-terminal pair report")
@@ -3745,6 +3919,18 @@ mod tests {
         assert!(parse_terminal_pair("2").is_err());
         assert!(parse_terminal_pair("2,2").is_err());
         assert!(parse_terminal_pair("two,3").is_err());
+    }
+
+    #[test]
+    fn guarded_core_attempt_artifacts_follow_the_design_contract() {
+        assert_eq!(
+            guarded_core_attempt_artifact_name(0),
+            "attempt-00.authoritative.html"
+        );
+        assert_eq!(
+            guarded_core_attempt_artifact_name(29),
+            "attempt-29.authoritative.html"
+        );
     }
 
     #[test]
@@ -3863,6 +4049,9 @@ mod tests {
             "--guarded-core-initial-gate",
             "--guarded-core-full-time-limit-ms",
             "5000",
+            "--shrink-guarded-core",
+            "--guarded-core-shrink-time-limit-ms",
+            "5000",
             "--output-dir",
             "out",
         ])
@@ -3893,5 +4082,7 @@ mod tests {
         );
         assert!(args.guarded_core_initial_gate);
         assert_eq!(args.guarded_core_full_time_limit_ms, Some(5000));
+        assert!(args.shrink_guarded_core);
+        assert_eq!(args.guarded_core_shrink_time_limit_ms, Some(5000));
     }
 }

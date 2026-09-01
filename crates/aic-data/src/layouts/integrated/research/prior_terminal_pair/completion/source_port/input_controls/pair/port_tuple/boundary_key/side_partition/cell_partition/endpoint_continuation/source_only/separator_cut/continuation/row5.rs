@@ -8,7 +8,9 @@ mod guarded_core;
 
 pub use guarded_core::{
     GUARDED_CORE_INITIAL_GATE_SCHEMA_VERSION, GuardedCoreAcceptedFixture,
-    GuardedCoreInitialGateReport, GuardedCoreInitialGateStatus, diagnose_guarded_core_initial_gate,
+    GuardedCoreInitialGateReport, GuardedCoreInitialGateStatus, GuardedCoreSequentialShrinkReport,
+    GuardedCoreSequentialShrinkStatus, GuardedCoreShrinkAttempt,
+    diagnose_guarded_core_initial_gate, diagnose_guarded_core_sequential_shrinking,
 };
 
 pub const MATERIAL_ROW5_SEPARATOR_SCHEMA_VERSION: u32 = 1;

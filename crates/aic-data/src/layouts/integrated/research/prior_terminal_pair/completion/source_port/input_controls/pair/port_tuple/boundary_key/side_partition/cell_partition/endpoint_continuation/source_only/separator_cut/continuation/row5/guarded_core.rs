@@ -106,6 +106,89 @@ pub struct GuardedCoreInitialGateReport {
     pub diagnostic_only: bool,
 }
 
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum GuardedCoreSequentialShrinkStatus {
+    Completed,
+    StoppedEmptyCore,
+    Blocked,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct GuardedCoreShrinkAttempt {
+    pub attempt_index: usize,
+    pub attempted_atom_index: usize,
+    pub attempted_atom_id: String,
+    pub prior_core_size: usize,
+    pub candidate_core_size: usize,
+    pub candidate_atom_ids: Vec<String>,
+    pub outcome: ExactDimensionCaseOutcome,
+    pub removed: bool,
+    pub removal_authorized_by_proof: bool,
+    pub certificate_satisfied: bool,
+    pub unrestricted_boundary_satisfied: bool,
+    pub exact_model_delta_satisfied: bool,
+    pub interpretation_blocked: bool,
+    pub wall_ms: u64,
+    pub construction_ms: Option<u64>,
+    pub search_ms: Option<u64>,
+    pub first_incumbent_ms: Option<u64>,
+    pub branch_decisions: Option<u64>,
+    pub backtracks: Option<u64>,
+    pub conflicts: Option<u64>,
+    pub learned_clauses: Option<u64>,
+    pub solver_propagations: Option<u64>,
+    pub variables: Option<u64>,
+    pub constraints: Option<u64>,
+    pub incidences: Option<u64>,
+    pub termination: Option<String>,
+    pub proof: Option<String>,
+    pub validation: Option<String>,
+    pub model_complexity: Option<crate::research::ModelComplexityMetrics>,
+    pub(in crate::layouts::integrated) guarded_core_certificates:
+        Vec<exact::shared_layer::GuardedCoreBuildCertificate>,
+    pub(in crate::layouts::integrated) boundary_certificates:
+        Vec<exact::shared_layer::BoundaryKeyBuildCertificate>,
+    #[serde(skip_serializing)]
+    pub layout: IntegratedLayoutReport,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct GuardedCoreSequentialShrinkReport {
+    pub schema_version: u32,
+    pub initial_gate: GuardedCoreInitialGateReport,
+    pub search_budget_ms: u64,
+    pub initial_core_size: usize,
+    pub attempts: Vec<GuardedCoreShrinkAttempt>,
+    pub final_atom_ids: Vec<String>,
+    pub removed_atom_ids: Vec<String>,
+    pub final_core_size: usize,
+    pub final_authoritative_outcome: Option<ExactDimensionCaseOutcome>,
+    pub final_observation_outcome: Option<ExactDimensionCaseOutcome>,
+    pub final_certificate_satisfied: bool,
+    pub final_unrestricted_boundary_satisfied: bool,
+    pub final_exact_model_delta_satisfied: bool,
+    pub final_root_predicates_satisfied: bool,
+    pub final_model_identity_satisfied: bool,
+    pub final_proven_infeasible: bool,
+    pub(in crate::layouts::integrated) final_authoritative_guarded_core_certificates:
+        Vec<exact::shared_layer::GuardedCoreBuildCertificate>,
+    pub(in crate::layouts::integrated) final_observation_guarded_core_certificates:
+        Vec<exact::shared_layer::GuardedCoreBuildCertificate>,
+    pub(in crate::layouts::integrated) final_authoritative_boundary_certificates:
+        Vec<exact::shared_layer::BoundaryKeyBuildCertificate>,
+    pub(in crate::layouts::integrated) final_observation_boundary_certificates:
+        Vec<exact::shared_layer::BoundaryKeyBuildCertificate>,
+    pub final_root_snapshot: Option<exact::shared_layer::RootDomainSnapshot>,
+    pub status: GuardedCoreSequentialShrinkStatus,
+    pub interpretation_blocked: bool,
+    pub shrinking_ms: u64,
+    pub total_wall_ms: u64,
+    pub final_authoritative_layout: Option<IntegratedLayoutReport>,
+    pub final_observation_layout: Option<IntegratedLayoutReport>,
+    pub diagnostic_only: bool,
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn diagnose_guarded_core_initial_gate(
     instance_wiring: &FacilityInstanceWiringReport,
@@ -294,103 +377,9 @@ pub fn diagnose_guarded_core_initial_gate(
         ));
     }
 
-    let row4_parent = &parent.parent.parent;
-    let source_parent = &row4_parent.parent;
-    let endpoint_parent = &source_parent.parent;
-    let cell_parent = &endpoint_parent.parent;
-    let boundary_parent = &cell_parent.parent.parent;
-    let tuple_parent = &boundary_parent.parent;
-    let parent_assignments = tuple_parent
-        .parent
-        .inherited_assignments
-        .iter()
-        .chain(&tuple_parent.parent.assignments)
-        .cloned()
-        .collect::<Vec<_>>();
-    let requested = parent_assignments
-        .iter()
-        .chain(&boundary_parent.selected_assignments)
-        .cloned()
-        .collect::<Vec<_>>();
-    assert_distinct_assignments(
-        &requested,
-        EXPECTED_TOTAL_FIXED_TERMINALS,
-        "/guarded_core/facility_ports",
-    )?;
-
-    let prior_reference = &tuple_parent.parent.prior_reference;
-    if input.instances.len() != 4 || prior_reference.placements.len() != 3 {
-        return Err(invalid_input(
-            "/guarded_core/placements",
-            "accepted guarded-core fixture requires three inherited and one new placement",
-        ));
-    }
-
-    let mut atoms = vec![
-        exact::shared_layer::GuardedCoreAtom::UsedWidth { value: 16 },
-        exact::shared_layer::GuardedCoreAtom::UsedHeight { value: 16 },
-    ];
-    for placement in &prior_reference.placements {
-        atoms.push(exact::shared_layer::GuardedCoreAtom::Placement {
-            instance: placement.instance.clone(),
-            x: i32::try_from(placement.x).map_err(|_| {
-                invalid_input(
-                    "/guarded_core/placements/x",
-                    "prior placement x does not fit i32",
-                )
-            })?,
-            y: i32::try_from(placement.y).map_err(|_| {
-                invalid_input(
-                    "/guarded_core/placements/y",
-                    "prior placement y does not fit i32",
-                )
-            })?,
-            rotation: placement.rotation,
-        });
-    }
-    atoms.push(exact::shared_layer::GuardedCoreAtom::Placement {
-        instance: tuple_parent.parent.partitioned_facility.clone(),
-        x: tuple_parent.parent.fixed_coordinate[0],
-        y: tuple_parent.parent.fixed_coordinate[1],
-        rotation: tuple_parent.parent.fixed_rotation,
-    });
-    atoms.extend(requested.iter().map(|assignment| {
-        exact::shared_layer::GuardedCoreAtom::FacilityPort {
-            terminal: assignment.terminal.clone(),
-            port: assignment.port.clone(),
-        }
-    }));
-    atoms.push(exact::shared_layer::GuardedCoreAtom::ExternalBoundaryKey {
-        terminal: cell_parent.selected_terminal.clone(),
-        key: endpoint_parent.selected_boundary_key,
-    });
-    atoms.extend([
-        exact::shared_layer::GuardedCoreAtom::MaterialArcFlowAtLeast {
-            network: parent.selected_network_id.clone(),
-            from: 48,
-            to: 64,
-            minimum: 1,
-        },
-        exact::shared_layer::GuardedCoreAtom::MaterialArcFlowEquals {
-            network: parent.selected_network_id.clone(),
-            from: 48,
-            to: 32,
-            value: 0,
-        },
-    ]);
-    for (from, to) in [(64, 80), (80, 81), (80, 96)] {
-        atoms.push(exact::shared_layer::GuardedCoreAtom::MaterialArcSelected {
-            network: parent.selected_network_id.clone(),
-            from,
-            to,
-        });
-        atoms.push(exact::shared_layer::GuardedCoreAtom::MaterialArcItem {
-            network: parent.selected_network_id.clone(),
-            from,
-            to,
-            item: parent.selected_item.clone(),
-        });
-    }
+    let reconstructed = reconstruct_guarded_core(&parent, &input)?;
+    let atoms = reconstructed.atoms;
+    let prior_reference = &reconstructed.prior_reference;
 
     let atom_ids = atoms
         .iter()
@@ -581,6 +570,532 @@ pub fn diagnose_guarded_core_initial_gate(
     })
 }
 
+#[allow(clippy::too_many_arguments)]
+pub fn diagnose_guarded_core_sequential_shrinking(
+    instance_wiring: &FacilityInstanceWiringReport,
+    facilities: &ValidatedFacilityCatalog,
+    items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
+    logistics_components: &ValidatedLogisticsComponentCatalog,
+    request: &FacilityPlacementRequest,
+    target_phase_index: usize,
+    initial_gate: GuardedCoreInitialGateReport,
+    search_budget: Duration,
+) -> Result<GuardedCoreSequentialShrinkReport, IntegratedLayoutReport> {
+    let total_started = Instant::now();
+    if search_budget.is_zero() {
+        return Err(invalid_input(
+            "/guarded_core/shrinking/search_budget",
+            "guarded-core shrinking search budget must be positive",
+        ));
+    }
+    if initial_gate.gate_status != GuardedCoreInitialGateStatus::Go
+        || initial_gate.interpretation_blocked
+        || !initial_gate.full_core_proven_infeasible
+        || target_phase_index != initial_gate.target_phase_index
+    {
+        return Err(invalid_input(
+            "/guarded_core/shrinking/initial_gate",
+            "sequential shrinking requires a non-blocked Go initial gate for the same phase",
+        ));
+    }
+
+    let fixture = accepted_guarded_core_fixture();
+    let growth = plan_facility_growth(instance_wiring, MAX_NEW_FACILITIES_PER_GROWTH_PHASE);
+    let input = prepare_target_input(
+        instance_wiring,
+        facilities,
+        items,
+        transports,
+        logistics_components,
+        request,
+        &growth,
+        target_phase_index,
+    )?;
+    let identity = build_phase_identity(instance_wiring, &input, logistics_components);
+    if identity.solver_signature != fixture.solver_signature
+        || identity.workload_wiring_sha256 != fixture.workload_wiring_sha256
+        || identity.phase_model_semantics_sha256 != fixture.phase_model_semantics_sha256
+        || identity.external_terminal_ids != fixture.external_terminal_ids
+        || identity.network_item_codes != fixture.network_item_codes
+    {
+        return Err(invalid_input(
+            "/guarded_core/shrinking/phase_identity",
+            "sequential shrinking Phase 3 semantics do not match the committed fixture",
+        ));
+    }
+
+    let reconstructed = reconstruct_guarded_core(&initial_gate.parent, &input)?;
+    let original_atoms = reconstructed.atoms;
+    let original_atom_ids = original_atoms
+        .iter()
+        .map(exact::shared_layer::GuardedCoreAtom::stable_id)
+        .collect::<Vec<_>>();
+    if original_atom_ids != initial_gate.atom_ids || original_atom_ids != fixture.atom_ids {
+        return Err(invalid_input(
+            "/guarded_core/shrinking/atoms",
+            "sequential shrinking reconstructed atoms do not match the accepted initial gate",
+        ));
+    }
+
+    let shrinking_started = Instant::now();
+    let legal_boundary_keys = exact::reachable_boundary_keys(16, 16);
+    let initial_atom_certificates = initial_gate
+        .guarded_core_certificates
+        .first()
+        .filter(|_| initial_gate.guarded_core_certificates.len() == 1)
+        .map(|certificate| certificate.atoms.clone())
+        .ok_or_else(|| {
+            invalid_input(
+                "/guarded_core/shrinking/initial_certificates",
+                "sequential shrinking requires exactly one accepted initial atom certificate",
+            )
+        })?;
+    let mut current_atoms = original_atoms.clone();
+    let mut attempts = Vec::with_capacity(original_atoms.len());
+    let mut removed_atom_ids = Vec::new();
+    let mut blocked = false;
+
+    for (attempt_index, attempted_atom) in original_atoms.iter().enumerate() {
+        let attempted_atom_id = attempted_atom.stable_id();
+        let prior_core_size = current_atoms.len();
+        let candidate_atoms = current_atoms
+            .iter()
+            .filter(|atom| atom.stable_id() != attempted_atom_id)
+            .cloned()
+            .collect::<Vec<_>>();
+        let candidate_atom_ids = candidate_atoms
+            .iter()
+            .map(exact::shared_layer::GuardedCoreAtom::stable_id)
+            .collect::<Vec<_>>();
+        if candidate_atoms.len() + 1 != prior_core_size {
+            return Err(invalid_input(
+                "/guarded_core/shrinking/order",
+                "each accepted atom must occur exactly once in the current core",
+            ));
+        }
+
+        let expected_certificates = expected_atom_certificate_subset(
+            &initial_atom_certificates,
+            &candidate_atom_ids,
+        )
+        .ok_or_else(|| {
+            invalid_input(
+                "/guarded_core/shrinking/candidate_certificates",
+                "candidate atom IDs must map bijectively to the accepted initial certificates",
+            )
+        })?;
+        let attempt_started = Instant::now();
+        let (layout, certificates, boundary_certificates, _, _) =
+            exact::shared_layer::solve_sparse_support_guarded_core_feasibility(
+                input.clone(),
+                logistics_components,
+                Some(search_budget),
+                Some(&reconstructed.prior_reference),
+                candidate_atoms.clone(),
+                exact::shared_layer::GuardedCorePosting::Assumptions,
+            );
+        let outcome = classify_outcome(&layout);
+        let certificate_satisfied = assumption_certificate_exactly_matches(
+            &certificates,
+            &candidate_atom_ids,
+            &expected_certificates,
+        );
+        let unrestricted_boundary_satisfied = complete_unrestricted_boundary_certificate(
+            &layout,
+            &boundary_certificates,
+            &fixture.external_terminal_ids,
+            &legal_boundary_keys,
+        );
+        let exact_model_delta_satisfied = guarded_core_delta_is_exact(
+            &initial_gate.control_layout,
+            &layout,
+            candidate_atoms.len(),
+        );
+        let evidence_conflict = candidate_atoms.is_empty()
+            && initial_gate.control_outcome == ExactDimensionCaseOutcome::ValidatedFeasible
+            && outcome == ExactDimensionCaseOutcome::ProvenInfeasible;
+        let (removed, interpretation_blocked) = classify_shrink_attempt(
+            outcome,
+            certificate_satisfied,
+            unrestricted_boundary_satisfied,
+            exact_model_delta_satisfied,
+            evidence_conflict,
+        );
+        let metrics = compact_solve_metrics(&layout);
+        attempts.push(GuardedCoreShrinkAttempt {
+            attempt_index,
+            attempted_atom_index: attempt_index,
+            attempted_atom_id: attempted_atom_id.clone(),
+            prior_core_size,
+            candidate_core_size: candidate_atoms.len(),
+            candidate_atom_ids,
+            outcome,
+            removed,
+            removal_authorized_by_proof: removed,
+            certificate_satisfied,
+            unrestricted_boundary_satisfied,
+            exact_model_delta_satisfied,
+            interpretation_blocked,
+            wall_ms: millis(attempt_started.elapsed()),
+            construction_ms: metrics.construction_ms,
+            search_ms: metrics.search_ms,
+            first_incumbent_ms: metrics.first_incumbent_ms,
+            branch_decisions: metrics.branch_decisions,
+            backtracks: metrics.backtracks,
+            conflicts: metrics.conflicts,
+            learned_clauses: metrics.learned_clauses,
+            solver_propagations: metrics.solver_propagations,
+            variables: metrics.variables,
+            constraints: metrics.constraints,
+            incidences: metrics.incidences,
+            termination: metrics.termination,
+            proof: metrics.proof,
+            validation: metrics.validation,
+            model_complexity: metrics.model_complexity,
+            guarded_core_certificates: certificates,
+            boundary_certificates,
+            layout,
+        });
+        if interpretation_blocked {
+            blocked = true;
+            break;
+        }
+        if removed {
+            current_atoms = candidate_atoms;
+            removed_atom_ids.push(attempted_atom_id);
+        }
+    }
+
+    let final_atom_ids = current_atoms
+        .iter()
+        .map(exact::shared_layer::GuardedCoreAtom::stable_id)
+        .collect::<Vec<_>>();
+    let mut final_authoritative_layout = None;
+    let mut final_observation_layout = None;
+    let mut final_authoritative_outcome = None;
+    let mut final_observation_outcome = None;
+    let mut final_certificate_satisfied = false;
+    let mut final_unrestricted_boundary_satisfied = false;
+    let mut final_exact_model_delta_satisfied = false;
+    let mut final_root_predicates_satisfied = false;
+    let mut final_model_identity_satisfied = false;
+    let mut final_proven_infeasible = false;
+    let mut final_authoritative_guarded_core_certificates = Vec::new();
+    let mut final_observation_guarded_core_certificates = Vec::new();
+    let mut final_authoritative_boundary_certificates = Vec::new();
+    let mut final_observation_boundary_certificates = Vec::new();
+    let mut final_root_snapshot = None;
+
+    if !blocked {
+        let (authoritative, certificates, boundary_certificates, _, _) =
+            exact::shared_layer::solve_sparse_support_guarded_core_feasibility(
+                input.clone(),
+                logistics_components,
+                Some(search_budget),
+                Some(&reconstructed.prior_reference),
+                current_atoms.clone(),
+                exact::shared_layer::GuardedCorePosting::Assumptions,
+            );
+        let (observation, observed_certificates, observed_boundary_certificates, _, _, snapshot) =
+            exact::shared_layer::solve_sparse_support_guarded_core_root_snapshot(
+                input,
+                logistics_components,
+                Some(search_budget),
+                Some(&reconstructed.prior_reference),
+                current_atoms,
+                exact::shared_layer::GuardedCorePosting::Assumptions,
+            );
+        let authoritative_outcome = classify_outcome(&authoritative);
+        let observation_outcome = classify_outcome(&observation);
+        let expected_certificates =
+            expected_atom_certificate_subset(&initial_atom_certificates, &final_atom_ids)
+                .ok_or_else(|| {
+                    invalid_input(
+                        "/guarded_core/shrinking/final_certificates",
+                        "final atom IDs must map bijectively to the accepted initial certificates",
+                    )
+                })?;
+        final_certificate_satisfied = assumption_certificate_exactly_matches(
+            &certificates,
+            &final_atom_ids,
+            &expected_certificates,
+        ) && certificates == observed_certificates;
+        final_unrestricted_boundary_satisfied = complete_unrestricted_boundary_certificate(
+            &authoritative,
+            &boundary_certificates,
+            &fixture.external_terminal_ids,
+            &legal_boundary_keys,
+        ) && complete_unrestricted_boundary_certificate(
+            &observation,
+            &observed_boundary_certificates,
+            &fixture.external_terminal_ids,
+            &legal_boundary_keys,
+        );
+        final_exact_model_delta_satisfied = guarded_core_delta_is_exact(
+            &initial_gate.control_layout,
+            &authoritative,
+            final_atom_ids.len(),
+        );
+        final_root_predicates_satisfied = snapshot.as_ref().is_some_and(|snapshot| {
+            snapshot.guarded_core_atoms.len() == final_atom_ids.len()
+                && snapshot
+                    .guarded_core_atoms
+                    .iter()
+                    .map(|atom| atom.stable_id.as_str())
+                    .eq(final_atom_ids.iter().map(String::as_str))
+                && snapshot
+                    .guarded_core_atoms
+                    .iter()
+                    .all(|atom| atom.predicate_forced_true)
+        });
+        final_model_identity_satisfied = same_exact_model(&authoritative, &observation);
+        final_proven_infeasible = authoritative_outcome
+            == ExactDimensionCaseOutcome::ProvenInfeasible
+            && !matches!(
+                observation_outcome,
+                ExactDimensionCaseOutcome::ValidatedFeasible
+                    | ExactDimensionCaseOutcome::InvalidWitness
+            );
+        blocked = !final_certificate_satisfied
+            || !final_unrestricted_boundary_satisfied
+            || !final_exact_model_delta_satisfied
+            || !final_root_predicates_satisfied
+            || !final_model_identity_satisfied
+            || !final_proven_infeasible;
+        final_authoritative_outcome = Some(authoritative_outcome);
+        final_observation_outcome = Some(observation_outcome);
+        final_authoritative_guarded_core_certificates = certificates;
+        final_observation_guarded_core_certificates = observed_certificates;
+        final_authoritative_boundary_certificates = boundary_certificates;
+        final_observation_boundary_certificates = observed_boundary_certificates;
+        final_root_snapshot = snapshot;
+        final_authoritative_layout = Some(authoritative);
+        final_observation_layout = Some(observation);
+    }
+
+    let status = if blocked {
+        GuardedCoreSequentialShrinkStatus::Blocked
+    } else if final_atom_ids.is_empty() {
+        GuardedCoreSequentialShrinkStatus::StoppedEmptyCore
+    } else {
+        GuardedCoreSequentialShrinkStatus::Completed
+    };
+    let total_wall_ms = initial_gate
+        .total_wall_ms
+        .saturating_add(millis(total_started.elapsed()));
+    Ok(GuardedCoreSequentialShrinkReport {
+        schema_version: 1,
+        search_budget_ms: millis(search_budget),
+        initial_core_size: original_atom_ids.len(),
+        attempts,
+        final_core_size: final_atom_ids.len(),
+        final_atom_ids,
+        removed_atom_ids,
+        final_authoritative_outcome,
+        final_observation_outcome,
+        final_certificate_satisfied,
+        final_unrestricted_boundary_satisfied,
+        final_exact_model_delta_satisfied,
+        final_root_predicates_satisfied,
+        final_model_identity_satisfied,
+        final_proven_infeasible,
+        final_authoritative_guarded_core_certificates,
+        final_observation_guarded_core_certificates,
+        final_authoritative_boundary_certificates,
+        final_observation_boundary_certificates,
+        final_root_snapshot,
+        status,
+        interpretation_blocked: blocked,
+        shrinking_ms: millis(shrinking_started.elapsed()),
+        total_wall_ms,
+        initial_gate,
+        final_authoritative_layout,
+        final_observation_layout,
+        diagnostic_only: true,
+    })
+}
+
+struct CompactSolveMetrics {
+    construction_ms: Option<u64>,
+    search_ms: Option<u64>,
+    first_incumbent_ms: Option<u64>,
+    branch_decisions: Option<u64>,
+    backtracks: Option<u64>,
+    conflicts: Option<u64>,
+    learned_clauses: Option<u64>,
+    solver_propagations: Option<u64>,
+    variables: Option<u64>,
+    constraints: Option<u64>,
+    incidences: Option<u64>,
+    termination: Option<String>,
+    proof: Option<String>,
+    validation: Option<String>,
+    model_complexity: Option<crate::research::ModelComplexityMetrics>,
+}
+
+fn compact_solve_metrics(report: &IntegratedLayoutReport) -> CompactSolveMetrics {
+    let exact = report.exact.as_ref();
+    let statistics = exact.map(|exact| &exact.search_statistics);
+    CompactSolveMetrics {
+        construction_ms: exact.map(|exact| exact.construction_ms),
+        search_ms: exact.map(|exact| exact.search_ms),
+        first_incumbent_ms: exact.and_then(|exact| exact.first_incumbent_ms),
+        branch_decisions: statistics.and_then(|statistics| statistics.branch_decisions),
+        backtracks: statistics.and_then(|statistics| statistics.backtracks),
+        conflicts: statistics.and_then(|statistics| statistics.conflicts),
+        learned_clauses: statistics.and_then(|statistics| statistics.learned_clauses),
+        solver_propagations: statistics.and_then(|statistics| statistics.solver_propagations),
+        variables: exact.map(|exact| exact.model_complexity.variables.total_variables),
+        constraints: exact.and_then(|exact| {
+            exact
+                .model_complexity
+                .constraints
+                .as_ref()
+                .map(|constraints| constraints.total_constraints)
+        }),
+        incidences: exact.and_then(|exact| {
+            exact
+                .model_complexity
+                .factor_graph
+                .as_ref()
+                .map(|graph| graph.incidences)
+        }),
+        termination: exact.map(|exact| format!("{:?}", exact.termination)),
+        proof: exact.map(|exact| format!("{:?}", exact.proof)),
+        validation: exact.map(|exact| format!("{:?}", exact.validation)),
+        model_complexity: exact.map(|exact| exact.model_complexity.clone()),
+    }
+}
+
+fn classify_shrink_attempt(
+    outcome: ExactDimensionCaseOutcome,
+    certificate_satisfied: bool,
+    unrestricted_boundary_satisfied: bool,
+    exact_model_delta_satisfied: bool,
+    evidence_conflict: bool,
+) -> (bool, bool) {
+    let blocked = outcome == ExactDimensionCaseOutcome::InvalidWitness
+        || !certificate_satisfied
+        || !unrestricted_boundary_satisfied
+        || !exact_model_delta_satisfied;
+    let blocked = blocked || evidence_conflict;
+    let removed = !blocked && outcome == ExactDimensionCaseOutcome::ProvenInfeasible;
+    (removed, blocked)
+}
+
+struct ReconstructedGuardedCore {
+    atoms: Vec<exact::shared_layer::GuardedCoreAtom>,
+    prior_reference: IntegratedLayoutReport,
+}
+
+fn reconstruct_guarded_core(
+    parent: &MaterialRow5SeparatorReport,
+    input: &crate::layouts::integrated::model::ModelInput,
+) -> Result<ReconstructedGuardedCore, IntegratedLayoutReport> {
+    let row4_parent = &parent.parent.parent;
+    let source_parent = &row4_parent.parent;
+    let endpoint_parent = &source_parent.parent;
+    let cell_parent = &endpoint_parent.parent;
+    let boundary_parent = &cell_parent.parent.parent;
+    let tuple_parent = &boundary_parent.parent;
+    let parent_assignments = tuple_parent
+        .parent
+        .inherited_assignments
+        .iter()
+        .chain(&tuple_parent.parent.assignments)
+        .cloned()
+        .collect::<Vec<_>>();
+    let requested = parent_assignments
+        .iter()
+        .chain(&boundary_parent.selected_assignments)
+        .cloned()
+        .collect::<Vec<_>>();
+    assert_distinct_assignments(
+        &requested,
+        EXPECTED_TOTAL_FIXED_TERMINALS,
+        "/guarded_core/facility_ports",
+    )?;
+
+    let prior_reference = &tuple_parent.parent.prior_reference;
+    if input.instances.len() != 4 || prior_reference.placements.len() != 3 {
+        return Err(invalid_input(
+            "/guarded_core/placements",
+            "accepted guarded-core fixture requires three inherited and one new placement",
+        ));
+    }
+
+    let mut atoms = vec![
+        exact::shared_layer::GuardedCoreAtom::UsedWidth { value: 16 },
+        exact::shared_layer::GuardedCoreAtom::UsedHeight { value: 16 },
+    ];
+    for placement in &prior_reference.placements {
+        atoms.push(exact::shared_layer::GuardedCoreAtom::Placement {
+            instance: placement.instance.clone(),
+            x: i32::try_from(placement.x).map_err(|_| {
+                invalid_input(
+                    "/guarded_core/placements/x",
+                    "prior placement x does not fit i32",
+                )
+            })?,
+            y: i32::try_from(placement.y).map_err(|_| {
+                invalid_input(
+                    "/guarded_core/placements/y",
+                    "prior placement y does not fit i32",
+                )
+            })?,
+            rotation: placement.rotation,
+        });
+    }
+    atoms.push(exact::shared_layer::GuardedCoreAtom::Placement {
+        instance: tuple_parent.parent.partitioned_facility.clone(),
+        x: tuple_parent.parent.fixed_coordinate[0],
+        y: tuple_parent.parent.fixed_coordinate[1],
+        rotation: tuple_parent.parent.fixed_rotation,
+    });
+    atoms.extend(requested.iter().map(|assignment| {
+        exact::shared_layer::GuardedCoreAtom::FacilityPort {
+            terminal: assignment.terminal.clone(),
+            port: assignment.port.clone(),
+        }
+    }));
+    atoms.push(exact::shared_layer::GuardedCoreAtom::ExternalBoundaryKey {
+        terminal: cell_parent.selected_terminal.clone(),
+        key: endpoint_parent.selected_boundary_key,
+    });
+    atoms.extend([
+        exact::shared_layer::GuardedCoreAtom::MaterialArcFlowAtLeast {
+            network: parent.selected_network_id.clone(),
+            from: 48,
+            to: 64,
+            minimum: 1,
+        },
+        exact::shared_layer::GuardedCoreAtom::MaterialArcFlowEquals {
+            network: parent.selected_network_id.clone(),
+            from: 48,
+            to: 32,
+            value: 0,
+        },
+    ]);
+    for (from, to) in [(64, 80), (80, 81), (80, 96)] {
+        atoms.push(exact::shared_layer::GuardedCoreAtom::MaterialArcSelected {
+            network: parent.selected_network_id.clone(),
+            from,
+            to,
+        });
+        atoms.push(exact::shared_layer::GuardedCoreAtom::MaterialArcItem {
+            network: parent.selected_network_id.clone(),
+            from,
+            to,
+            item: parent.selected_item.clone(),
+        });
+    }
+    Ok(ReconstructedGuardedCore {
+        atoms,
+        prior_reference: prior_reference.clone(),
+    })
+}
+
 fn build_phase_identity(
     instance_wiring: &FacilityInstanceWiringReport,
     input: &crate::layouts::integrated::model::ModelInput,
@@ -751,6 +1266,39 @@ fn assumption_certificate_matches(
             .eq(atom_ids.iter().map(String::as_str))
 }
 
+fn expected_atom_certificate_subset(
+    initial: &[exact::shared_layer::GuardedCoreAtomCertificate],
+    retained_atom_ids: &[String],
+) -> Option<Vec<exact::shared_layer::GuardedCoreAtomCertificate>> {
+    let by_id = initial
+        .iter()
+        .map(|certificate| (certificate.stable_id.as_str(), certificate))
+        .collect::<std::collections::BTreeMap<_, _>>();
+    if by_id.len() != initial.len()
+        || retained_atom_ids.iter().collect::<BTreeSet<_>>().len() != retained_atom_ids.len()
+    {
+        return None;
+    }
+    retained_atom_ids
+        .iter()
+        .enumerate()
+        .map(|(atom_index, atom_id)| {
+            let mut certificate = (*by_id.get(atom_id.as_str())?).clone();
+            certificate.atom_index = atom_index;
+            Some(certificate)
+        })
+        .collect()
+}
+
+fn assumption_certificate_exactly_matches(
+    certificates: &[exact::shared_layer::GuardedCoreBuildCertificate],
+    atom_ids: &[String],
+    expected_atoms: &[exact::shared_layer::GuardedCoreAtomCertificate],
+) -> bool {
+    assumption_certificate_matches(certificates, atom_ids)
+        && certificates[0].atoms == expected_atoms
+}
+
 fn complete_unrestricted_boundary_certificate(
     report: &IntegratedLayoutReport,
     certificates: &[exact::shared_layer::BoundaryKeyBuildCertificate],
@@ -823,6 +1371,12 @@ fn guarded_core_delta_is_exact(
     {
         return false;
     }
+    if expected == 0 {
+        return zero_arity_guarded_core_delta_is_exact(
+            &control.model_complexity,
+            &assumptions.model_complexity,
+        );
+    }
     let (Some(control_constraints), Some(assumption_constraints)) = (
         control.model_complexity.constraints.as_ref(),
         assumptions.model_complexity.constraints.as_ref(),
@@ -881,6 +1435,13 @@ fn guarded_core_delta_is_exact(
         && non_guarded_assumption_incidences == control_graph.family_incidences
 }
 
+fn zero_arity_guarded_core_delta_is_exact(
+    control: &crate::research::ModelComplexityMetrics,
+    assumptions: &crate::research::ModelComplexityMetrics,
+) -> bool {
+    control == assumptions
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -903,11 +1464,126 @@ mod tests {
         }
     }
 
+    fn atom_certificate(
+        atom_index: usize,
+        stable_id: &str,
+        domain_id: u32,
+    ) -> exact::shared_layer::GuardedCoreAtomCertificate {
+        exact::shared_layer::GuardedCoreAtomCertificate {
+            atom_index,
+            stable_id: stable_id.to_string(),
+            domain_id,
+            variable_family: "test".to_string(),
+            variable_name: format!("domain-{domain_id}"),
+            declared_lower_bound: 0,
+            declared_upper_bound: 1,
+            declared_cardinality: 2,
+            relation: exact::shared_layer::NativePredicateRelation::Equal,
+            value: 1,
+            complement_relation: exact::shared_layer::NativePredicateRelation::NotEqual,
+            complement_value: 1,
+        }
+    }
+
     #[test]
     fn initial_gate_blocks_every_non_proof_outcome() {
         assert!(initial_gate_is_blocked(&[true, true], false));
         assert!(initial_gate_is_blocked(&[true, false], true));
         assert!(!initial_gate_is_blocked(&[true, true], true));
+    }
+
+    #[test]
+    fn shrinking_removes_only_a_valid_infeasibility_proof() {
+        assert_eq!(
+            classify_shrink_attempt(
+                ExactDimensionCaseOutcome::ProvenInfeasible,
+                true,
+                true,
+                true,
+                false
+            ),
+            (true, false)
+        );
+        for outcome in [
+            ExactDimensionCaseOutcome::ValidatedFeasible,
+            ExactDimensionCaseOutcome::Unknown,
+        ] {
+            assert_eq!(
+                classify_shrink_attempt(outcome, true, true, true, false),
+                (false, false)
+            );
+        }
+        assert_eq!(
+            classify_shrink_attempt(
+                ExactDimensionCaseOutcome::InvalidWitness,
+                true,
+                true,
+                true,
+                false
+            ),
+            (false, true)
+        );
+        for gates in [
+            (false, true, true),
+            (true, false, true),
+            (true, true, false),
+        ] {
+            assert_eq!(
+                classify_shrink_attempt(
+                    ExactDimensionCaseOutcome::ProvenInfeasible,
+                    gates.0,
+                    gates.1,
+                    gates.2,
+                    false,
+                ),
+                (false, true)
+            );
+        }
+        assert_eq!(
+            classify_shrink_attempt(
+                ExactDimensionCaseOutcome::ProvenInfeasible,
+                true,
+                true,
+                true,
+                true,
+            ),
+            (false, true)
+        );
+    }
+
+    #[test]
+    fn zero_atom_delta_requires_exact_atom_free_model_identity() {
+        let control = crate::research::ModelComplexityMetrics::unavailable();
+        assert!(zero_arity_guarded_core_delta_is_exact(&control, &control));
+        let mut drifted = control.clone();
+        drifted.estimated_bytes = Some(1);
+        assert!(!zero_arity_guarded_core_delta_is_exact(&control, &drifted));
+    }
+
+    #[test]
+    fn deletion_certificate_is_the_exact_reindexed_initial_subset() {
+        let initial = vec![
+            atom_certificate(0, "atom:a", 10),
+            atom_certificate(1, "atom:b", 20),
+            atom_certificate(2, "atom:c", 30),
+        ];
+        let retained = vec!["atom:a".to_string(), "atom:c".to_string()];
+        let subset = expected_atom_certificate_subset(&initial, &retained)
+            .expect("accepted subset should resolve");
+        assert_eq!(subset[0], initial[0]);
+        assert_eq!(subset[1].stable_id, "atom:c");
+        assert_eq!(subset[1].domain_id, 30);
+        assert_eq!(subset[1].atom_index, 1);
+        assert!(
+            expected_atom_certificate_subset(
+                &initial,
+                &["atom:a".to_string(), "atom:a".to_string()]
+            )
+            .is_none()
+        );
+        assert!(
+            expected_atom_certificate_subset(&initial, &["atom:missing".to_string()]).is_none()
+        );
     }
 
     #[test]

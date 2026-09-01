@@ -67,8 +67,10 @@ mod material_junction;
 mod material_separator;
 mod root_snapshot;
 
+#[cfg(test)]
+pub(in crate::layouts::integrated) use guarded_core::NativePredicateRelation;
 pub(in crate::layouts::integrated) use guarded_core::{
-    GuardedCoreAtom, GuardedCoreBuildCertificate, GuardedCorePosting,
+    GuardedCoreAtom, GuardedCoreAtomCertificate, GuardedCoreBuildCertificate, GuardedCorePosting,
 };
 use guarded_core::{
     GuardedCoreBuildCertificateCollector, GuardedCoreRequest, GuardedCoreResolutionContext,
