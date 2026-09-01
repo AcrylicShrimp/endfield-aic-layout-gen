@@ -21,7 +21,7 @@ use super::super::research::EndpointSupportPropagationStatistics;
 
 mod facility_ports;
 
-pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 5;
+pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 6;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -30,6 +30,18 @@ pub enum BottomUpRungKind {
     FacilityPortGeometry,
     FacilityPorts,
     FacilityPortsPropagated,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum EndpointClearanceSchedulingPriority {
+    High,
+    Medium,
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
+pub struct BottomUpSearchProfile {
+    pub endpoint_clearance_priority: Option<EndpointClearanceSchedulingPriority>,
 }
 
 #[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq)]
@@ -161,6 +173,7 @@ pub struct BottomUpRungReport {
     pub schema_version: u32,
     pub rung: BottomUpRungKind,
     pub formulation: &'static str,
+    pub search_profile: BottomUpSearchProfile,
     pub ceiling: [i32; 2],
     pub facility_count: usize,
     pub facility_terminal_count: usize,
@@ -219,6 +232,7 @@ pub(in crate::layouts::integrated) fn solve_facility_geometry_rung(
                 schema_version: BOTTOM_UP_RUNG_SCHEMA_VERSION,
                 rung: BottomUpRungKind::FacilityGeometry,
                 formulation: "coordinate-geometry-orientation-disjunctive-non-overlap-v2",
+                search_profile: BottomUpSearchProfile::default(),
                 ceiling,
                 facility_count,
                 facility_terminal_count: 0,
@@ -324,6 +338,7 @@ pub(in crate::layouts::integrated) fn solve_facility_geometry_rung(
         schema_version: BOTTOM_UP_RUNG_SCHEMA_VERSION,
         rung: BottomUpRungKind::FacilityGeometry,
         formulation: "coordinate-geometry-orientation-disjunctive-non-overlap-v2",
+        search_profile: BottomUpSearchProfile::default(),
         ceiling,
         facility_count,
         facility_terminal_count: 0,
@@ -356,8 +371,9 @@ pub(in crate::layouts::integrated) fn solve_facility_ports_rung(
 pub(in crate::layouts::integrated) fn solve_facility_ports_propagated_rung(
     input: ModelInput,
     time_limit: Duration,
+    priority: EndpointClearanceSchedulingPriority,
 ) -> BottomUpRungReport {
-    facility_ports::solve_with_propagated_clearance(input, time_limit)
+    facility_ports::solve_with_propagated_clearance(input, time_limit, priority)
 }
 
 pub(in crate::layouts::integrated) fn solve_facility_port_geometry_rung(

@@ -63,6 +63,7 @@ pub(in crate::layouts::integrated) struct EndpointRectangleClearancePropagatorAr
     pub facility_x: DomainId,
     pub facility_y: DomainId,
     pub orientations: Vec<EndpointClearanceOrientation>,
+    pub priority: Priority,
     pub counters: Arc<EndpointClearancePropagationCounters>,
     pub constraint_tag: ConstraintTag,
 }
@@ -102,6 +103,7 @@ impl PropagatorConstructor for EndpointRectangleClearancePropagatorArgs {
                 facility_x: self.facility_x,
                 facility_y: self.facility_y,
                 orientations: self.orientations,
+                priority: self.priority,
                 counters: self.counters,
                 inference_code: InferenceCode::new(self.constraint_tag, EndpointRectangleClearance),
             },
@@ -117,6 +119,7 @@ pub(in crate::layouts::integrated) struct EndpointRectangleClearancePropagator {
     facility_x: DomainId,
     facility_y: DomainId,
     orientations: Vec<EndpointClearanceOrientation>,
+    priority: Priority,
     counters: Arc<EndpointClearancePropagationCounters>,
     inference_code: InferenceCode,
 }
@@ -464,7 +467,7 @@ impl Propagator for EndpointRectangleClearancePropagator {
     }
 
     fn priority(&self) -> Priority {
-        Priority::High
+        self.priority
     }
 
     fn notify(
@@ -526,6 +529,7 @@ mod tests {
                 width,
                 height,
             }],
+            priority: Priority::High,
             counters: Arc::default(),
             constraint_tag: tag,
         });
@@ -611,6 +615,7 @@ mod tests {
                 facility_x,
                 facility_y,
                 orientations,
+                priority: Priority::High,
                 counters: Arc::default(),
                 constraint_tag: tag,
             });
@@ -780,6 +785,7 @@ mod tests {
                     height: 1,
                 },
             ],
+            priority: Priority::High,
             counters: Arc::default(),
             constraint_tag: tag,
         });
@@ -818,6 +824,7 @@ mod tests {
                 width: 3,
                 height: 3,
             }],
+            priority: Priority::High,
             counters: Arc::default(),
             constraint_tag: tag,
         });
@@ -909,6 +916,7 @@ mod tests {
                     height: 1,
                 },
             ],
+            priority: Priority::High,
             counters: Arc::clone(&counters),
             constraint_tag: tag,
         });

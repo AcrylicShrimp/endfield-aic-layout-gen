@@ -7,7 +7,7 @@ use std::time::Duration;
 use aic_data::facilities::{ValidatedFacilityCatalog, load_facility_catalog};
 use aic_data::layouts::{
     BottomUpExperimentReport, BottomUpRungKind, BottomUpRungOutcome, BottomUpRungWitness,
-    FacilityPlacementRequest, diagnose_bottom_up_rung,
+    EndpointClearanceSchedulingPriority, FacilityPlacementRequest, diagnose_bottom_up_rung,
 };
 use aic_data::localization::{ValidatedLocalizationCatalog, load_localization_catalog};
 use aic_data::logistics::{
@@ -43,6 +43,21 @@ impl From<RungArg> for BottomUpRungKind {
     }
 }
 
+#[derive(Debug, Clone, Copy, ValueEnum, PartialEq, Eq)]
+enum EndpointClearancePriorityArg {
+    High,
+    Medium,
+}
+
+impl From<EndpointClearancePriorityArg> for EndpointClearanceSchedulingPriority {
+    fn from(value: EndpointClearancePriorityArg) -> Self {
+        match value {
+            EndpointClearancePriorityArg::High => Self::High,
+            EndpointClearancePriorityArg::Medium => Self::Medium,
+        }
+    }
+}
+
 #[derive(Debug, Parser)]
 #[command(
     name = "aic-bottom-up-ladder",
@@ -52,6 +67,9 @@ struct Args {
     /// Semantic ladder rung to solve independently.
     #[arg(long, value_enum, default_value = "facility-geometry")]
     rung: RungArg,
+    /// Scheduling priority for the propagated endpoint-clearance rung.
+    #[arg(long, value_enum, default_value = "high")]
+    endpoint_clearance_priority: EndpointClearancePriorityArg,
     /// Benchmark workload manifest JSON file.
     #[arg(long, value_name = "FILE")]
     workload: PathBuf,
@@ -109,6 +127,11 @@ fn run(args: Args) -> Result<bool> {
     let time_limit = NonZeroU64::new(args.time_limit_ms)
         .context("bottom-up rung time_limit_ms must be positive")?;
     let loaded = load_inputs(&args)?;
+    ensure!(
+        matches!(args.rung, RungArg::FacilityPortsPropagated)
+            || args.endpoint_clearance_priority == EndpointClearancePriorityArg::High,
+        "endpoint_clearance_priority applies only to rung 'facility-ports-propagated'"
+    );
     let mut report = diagnose_bottom_up_rung(
         &loaded.wiring,
         &loaded.facilities,
@@ -117,6 +140,7 @@ fn run(args: Args) -> Result<bool> {
         &loaded.components,
         &loaded.placement_request,
         args.rung.into(),
+        args.endpoint_clearance_priority.into(),
         args.target_phase,
         Duration::from_millis(time_limit.get()),
     )
@@ -572,6 +596,34 @@ mod tests {
         .expect("propagated facility-port rung should parse");
 
         assert!(matches!(args.rung, RungArg::FacilityPortsPropagated));
+    }
+
+    #[test]
+    fn parses_the_medium_priority_propagated_facility_port_rung() {
+        let args = Args::try_parse_from([
+            "aic-bottom-up-ladder",
+            "--rung",
+            "facility-ports-propagated",
+            "--endpoint-clearance-priority",
+            "medium",
+            "--workload",
+            "workload.json",
+            "--placement-request",
+            "placement.json",
+            "--target-phase",
+            "3",
+            "--time-limit-ms",
+            "5000",
+            "--output-dir",
+            "artifacts",
+        ])
+        .expect("medium-priority propagated facility-port rung should parse");
+
+        assert!(matches!(args.rung, RungArg::FacilityPortsPropagated));
+        assert_eq!(
+            args.endpoint_clearance_priority,
+            EndpointClearancePriorityArg::Medium
+        );
     }
 
     #[test]

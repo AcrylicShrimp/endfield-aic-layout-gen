@@ -11,8 +11,9 @@ pub use growth::{
 pub use integrated::{
     BOTTOM_UP_EXPERIMENT_SCHEMA_VERSION, BOTTOM_UP_RUNG_SCHEMA_VERSION, BottomUpExperimentReport,
     BottomUpRungKind, BottomUpRungOutcome, BottomUpRungReport, BottomUpRungWitness,
-    BottomUpSearchSpaceProfile, BottomUpSemanticCertificate, BottomUpTerminationReason,
-    EndpointClearancePropagationStatistics, FacilityEndpointPlacement, FacilityGeometryPlacement,
+    BottomUpSearchProfile, BottomUpSearchSpaceProfile, BottomUpSemanticCertificate,
+    BottomUpTerminationReason, EndpointClearancePropagationStatistics,
+    EndpointClearanceSchedulingPriority, FacilityEndpointPlacement, FacilityGeometryPlacement,
     FacilityGeometryWitness, FacilityPortPlacement, FacilityPortsWitness, diagnose_bottom_up_rung,
 };
 pub use integrated::{

@@ -126,6 +126,12 @@ remaining separation. It must reject exactly the same complete assignments as th
 uses the unchanged Rung 1B witness validator. The variant is a formulation experiment, not an
 additional semantic rung.
 
+The propagated rung accepts an independent `endpoint-clearance-priority` search-profile setting.
+Its `High` and `Medium` values change only the Pumpkin propagator scheduling priority; variables,
+constraints, reasons, accepted assignments, and validation remain identical. Priority is recorded
+separately from the rung and formulation so scheduling effects can be reproduced without labeling
+the same semantic problem as a different ladder rung.
+
 ### Rung 2: Pipe Routing
 
 Adds the complete pipe semantic block:
