@@ -57,25 +57,26 @@
 - Prefer the new contract over reusing old code. Delete or rewrite old code when reuse would distort the new design.
 - For external data or CLI contracts, make breaking changes explicit through schema versions, migration notes, or diagnostics instead of preserving obsolete internal code paths.
 
-## Exact Solver And Heuristic Policy
+## Constructive Planner And Local Solver Policy
 
-- The currently approved research architecture solves facility placement, facility rotation, directional port selection, and belt/pipe routing in one joint constraint model for each cumulative production graph.
-- Logical wiring edges define material supply and demand, not mandatory physical source-to-target belt or pipe paths. Complete routing experiments must permit same-item flow to form solver-selected commodity networks with shared trunks, splitters, and convergers.
-- Joint placement-routing is an experiment to implement faithfully and measure over a meaningful period, not a permanent project invariant. A measured alternative solver architecture may replace it after the user explicitly approves that architectural change.
-- Compact used geometry is the primary optimization concern. Minimize the used bounding-box area first, physical belt/pipe tile count second, and total route turns third before later shape, component-count, or stability tie-breakers.
-- A placement-candidate generator followed by a separate heuristic router and post-hoc candidate scoring is not a joint solve and must not be used as the authoritative optimization path.
-- Hand-written layout or routing heuristics are prohibited unless the user gives explicit approval before implementation. This prohibition includes deterministic or randomized shelf placement, constructive placement, routing-order portfolios, greedy port assignment, greedy path selection, corridor restriction, coordinate templates, and data-specific placement rules.
-- Do not introduce a heuristic merely as an intermediate implementation step, fallback, warm start, or performance optimization without the same prior approval.
-- Reusing a complete prior solver solution as a hint for the enlarged exact model is allowed. A hint must never alter feasibility, exclude a legal solution, or become a permanent coordinate constraint.
-- Sound lower bounds, completeness-preserving domain reductions, exact symmetry breaking, canonical translation, stable entity ordering, solver presolve, and solver-native search are allowed because they do not replace or restrict the intended solution set heuristically.
-- Any domain restriction that can exclude a legal solution is a heuristic, even when it is described as an active window, crop, corridor, neighborhood, or practical bound. It requires prior user approval.
-- If the current exact joint formulation cannot meet the required runtime or memory budget, report the measured blocker before changing architecture. Compare exact reformulations, decomposition architectures, and any proposed heuristic separately, explain correctness and quality effects, and obtain explicit user approval before replacing the approved experiment.
-- Existing heuristic optimizer paths must not be extended during the joint-solver cutover. Remove them when the replacement is complete instead of preserving them as compatibility fallbacks.
-- Before committing each solver slice, compare the implementation against this policy and the current accepted design. Treat agreement with a superseded or incorrect plan as a failure, not as evidence that architectural drift is absent.
+- The production architecture must construct a complete valid factory first and improve that concrete layout iteratively afterward.
+- Facility placement, port assignment, logical commodity-network synthesis, and physical routing may use deterministic constructive heuristics. These heuristics are now the approved production path; they do not claim global optimality or global infeasibility.
+- Use a dedicated routing engine rather than a global placement-routing constraint model. Route pipes first, use A* or Dijkstra with length, turn, and congestion costs, and support rip-up-and-reroute.
+- Synthesize one logical network per compatible commodity and transport kind before embedding it into the grid. Shared trunks and trees are preferred; splitters and convergers are derived from the embedded result.
+- CP or SAT solving is a local oracle. Approved uses include port assignment for a bounded facility group, local facility relocation, local packing, and proof that a precisely defined local neighborhood is impossible.
+- A local proof must not be reported as proof that the whole factory request is infeasible.
+- Improvement passes operate transactionally. Keep the current valid layout unless a candidate validates and improves the configured score.
+- Preserve the score priority: used bounding-box area first, physical belt and pipe tile count second, total route turns third, followed by later tie-breakers.
+- The initial constructor may be visually poor. Its first acceptance criterion is a complete validated factory within caller-supplied hard bounds.
+- A construction failure is a structured planner failure, not a global infeasibility proof. Diagnostics must identify the failing stage, network, facility group, or exhausted bound.
+- Keep the former global exact joint solver as isolated research tooling. Production APIs and normal CLI commands must not invoke it, automatically fall back to it, or expose its timeouts as production planner failures.
+- Before committing each planner slice, compare it against `docs/designs/2026-09-02.00-constructive-layout-planner.md` and this policy.
 
 ## Exact Search Research Policy
 
-- Search-space explosion in the current faithful joint model is an expected research result. It is evidence to measure, not permission to silently remove placement or routing decisions from the approved experiment.
+- The global joint placement-routing model is retained only as an explicit research instrument and historical exact baseline.
+- Keep its APIs, commands, reports, and dependencies separated from the production constructive planner. New production behavior must not depend on research model construction or search completion.
+- Search-space explosion in the faithful joint model is an expected research result. It is evidence to measure, not a production failure.
 - Establish and measure the faithful exact baseline before attempting to reduce its search space. It is acceptable for the baseline to time out or return `unknown`, including in an early SCC phase.
 - Do not replace, bypass, crop, or pre-decide the difficult part of the model merely to obtain a feasible demonstration. That removes the research subject instead of improving the solver.
 - Push every applicable game rule into the solver formulation so that propagation can eliminate invalid placement, port, and routing combinations as early as possible.
@@ -97,7 +98,7 @@
 
 - Treat `max_width` and `max_height` as caller-supplied hard ceilings for one solve request, not as required blueprint dimensions, target dimensions, canonical game limits, or default model sizes.
 - Do not promote any diagnostic or example request bound into a project invariant or MVP success criterion. A test bound may exist only to evaluate that specific request or to determine whether an earlier bound was too restrictive.
-- Actual layout width and height come from the used facility, belt, pipe, and logistics-component geometry selected by the solver. Unused search capacity is not part of the blueprint footprint.
+- Actual layout width and height come from the used facility, belt, pipe, and logistics-component geometry selected by the planner or research solver. Unused search capacity is not part of the blueprint footprint.
 - Exact solving does not require eagerly materializing every cell inside a loose maximum bound. Symbolic, sparse, or otherwise compact exact formulations are allowed when they preserve every legal solution and the configured objective.
 - Never hardcode an example request bound into solver architecture, runtime data, benchmark acceptance, or documentation claims about system limits.
 
