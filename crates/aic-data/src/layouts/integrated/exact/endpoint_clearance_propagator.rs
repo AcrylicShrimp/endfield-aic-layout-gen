@@ -14,7 +14,8 @@ use pumpkin_solver::core::state::PropagationStatusCP;
 use pumpkin_solver::core::variables::{DomainId, Literal};
 
 use super::ladder::{
-    EndpointClearanceBatchingStatistics, EndpointClearanceGroupStatistics,
+    EndpointClearanceBatchClassStatistics, EndpointClearanceBatchingStatistics,
+    EndpointClearanceFullShardCauseBucketStatistics, EndpointClearanceGroupStatistics,
     EndpointClearancePropagationStatistics, EndpointClearanceRelationHotsetStatistics,
     EndpointClearanceRelationStatistics,
 };
@@ -67,12 +68,92 @@ pub(in crate::layouts::integrated) struct EndpointClearancePropagationCounters {
     shard_enqueue_requests: AtomicU64,
     shard_executions: AtomicU64,
     shard_scratch_executions: AtomicU64,
-    shard_full_batches: AtomicU64,
-    shard_endpoint_only_batches: AtomicU64,
-    shard_dirty_relation_checks: AtomicU64,
-    shard_total_dirty_batch_size: AtomicU64,
+    shard_full_batch: EndpointClearanceBatchClassCounters,
+    shard_relation_subset_batch: EndpointClearanceBatchClassCounters,
+    shard_full_batch_cause_buckets: [EndpointClearanceFullShardCauseBucketCounters; 16],
     shard_maximum_dirty_batch_size: AtomicU64,
     relation_details: Mutex<Vec<Arc<EndpointClearanceRelationCounters>>>,
+}
+
+#[derive(Debug, Default)]
+struct EndpointClearanceBatchClassCounters {
+    batches: AtomicU64,
+    scheduled_relation_checks: AtomicU64,
+    actual_relation_checks: AtomicU64,
+    effectful_relation_checks: AtomicU64,
+    no_effect_relation_checks: AtomicU64,
+    universally_entailed_relation_checks: AtomicU64,
+    conflict_relation_checks: AtomicU64,
+}
+
+impl EndpointClearanceBatchClassCounters {
+    fn note_batch(&self, scheduled_relations: u64) {
+        self.batches.fetch_add(1, Ordering::Relaxed);
+        self.scheduled_relation_checks
+            .fetch_add(scheduled_relations, Ordering::Relaxed);
+    }
+
+    fn note_relation_check(&self, effects: ExecutionEffects) {
+        self.actual_relation_checks.fetch_add(1, Ordering::Relaxed);
+        if effects.has_domain_effect() {
+            self.effectful_relation_checks
+                .fetch_add(1, Ordering::Relaxed);
+        } else {
+            self.no_effect_relation_checks
+                .fetch_add(1, Ordering::Relaxed);
+        }
+        if effects.universally_entailed {
+            self.universally_entailed_relation_checks
+                .fetch_add(1, Ordering::Relaxed);
+        }
+        if effects.conflict {
+            self.conflict_relation_checks
+                .fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    fn snapshot(&self) -> EndpointClearanceBatchClassStatistics {
+        let scheduled_relation_checks = self.scheduled_relation_checks.load(Ordering::Relaxed);
+        let actual_relation_checks = self.actual_relation_checks.load(Ordering::Relaxed);
+        EndpointClearanceBatchClassStatistics {
+            batches: self.batches.load(Ordering::Relaxed),
+            scheduled_relation_checks,
+            actual_relation_checks,
+            conflict_abandoned_relation_occurrences: scheduled_relation_checks
+                .saturating_sub(actual_relation_checks),
+            effectful_relation_checks: self.effectful_relation_checks.load(Ordering::Relaxed),
+            no_effect_relation_checks: self.no_effect_relation_checks.load(Ordering::Relaxed),
+            universally_entailed_relation_checks: self
+                .universally_entailed_relation_checks
+                .load(Ordering::Relaxed),
+            conflict_relation_checks: self.conflict_relation_checks.load(Ordering::Relaxed),
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+struct EndpointClearanceFullShardCauseBucketCounters {
+    batch: EndpointClearanceBatchClassCounters,
+    exact_unaffected_axis_opportunity_relation_checks: AtomicU64,
+}
+
+impl EndpointClearanceFullShardCauseBucketCounters {
+    fn snapshot(
+        &self,
+        causes: EndpointClearanceFullShardCauses,
+    ) -> EndpointClearanceFullShardCauseBucketStatistics {
+        EndpointClearanceFullShardCauseBucketStatistics {
+            cause_mask: causes.mask(),
+            initial_execution: causes.initial_execution,
+            facility_x: causes.facility_x,
+            facility_y: causes.facility_y,
+            orientation: causes.orientation,
+            batch: self.batch.snapshot(),
+            exact_unaffected_axis_opportunity_relation_checks: self
+                .exact_unaffected_axis_opportunity_relation_checks
+                .load(Ordering::Relaxed),
+        }
+    }
 }
 
 impl Default for EndpointClearancePropagationCounters {
@@ -128,10 +209,11 @@ impl EndpointClearancePropagationCounters {
             shard_enqueue_requests: AtomicU64::default(),
             shard_executions: AtomicU64::default(),
             shard_scratch_executions: AtomicU64::default(),
-            shard_full_batches: AtomicU64::default(),
-            shard_endpoint_only_batches: AtomicU64::default(),
-            shard_dirty_relation_checks: AtomicU64::default(),
-            shard_total_dirty_batch_size: AtomicU64::default(),
+            shard_full_batch: EndpointClearanceBatchClassCounters::default(),
+            shard_relation_subset_batch: EndpointClearanceBatchClassCounters::default(),
+            shard_full_batch_cause_buckets: std::array::from_fn(|_| {
+                EndpointClearanceFullShardCauseBucketCounters::default()
+            }),
             shard_maximum_dirty_batch_size: AtomicU64::default(),
             relation_details: Mutex::new(Vec::new()),
         }
@@ -159,6 +241,10 @@ impl EndpointClearancePropagationCounters {
     pub(in crate::layouts::integrated) fn snapshot(
         &self,
     ) -> EndpointClearancePropagationStatistics {
+        if !self.enabled {
+            return EndpointClearancePropagationStatistics::default();
+        }
+
         EndpointClearancePropagationStatistics {
             relations: self.relations.load(Ordering::Relaxed),
             executions: self.executions.load(Ordering::Relaxed),
@@ -227,13 +313,21 @@ impl EndpointClearancePropagationCounters {
                 enqueue_requests: self.shard_enqueue_requests.load(Ordering::Relaxed),
                 shard_executions: self.shard_executions.load(Ordering::Relaxed),
                 scratch_executions: self.shard_scratch_executions.load(Ordering::Relaxed),
-                full_shard_batches: self.shard_full_batches.load(Ordering::Relaxed),
-                endpoint_only_batches: self.shard_endpoint_only_batches.load(Ordering::Relaxed),
-                dirty_relation_checks: self.shard_dirty_relation_checks.load(Ordering::Relaxed),
-                total_dirty_batch_size: self.shard_total_dirty_batch_size.load(Ordering::Relaxed),
                 maximum_dirty_batch_size: self
                     .shard_maximum_dirty_batch_size
                     .load(Ordering::Relaxed),
+                full_shard: self.shard_full_batch.snapshot(),
+                relation_subset: self.shard_relation_subset_batch.snapshot(),
+                full_shard_cause_buckets: self
+                    .shard_full_batch_cause_buckets
+                    .iter()
+                    .enumerate()
+                    .map(|(mask, counters)| {
+                        counters.snapshot(EndpointClearanceFullShardCauses::from_mask(
+                            u8::try_from(mask).expect("full-shard cause bucket fits u8"),
+                        ))
+                    })
+                    .collect(),
             },
         }
     }
@@ -313,7 +407,13 @@ impl EndpointClearancePropagationCounters {
         );
     }
 
-    pub(super) fn note_shard_batch(&self, dirty_relations: usize, full: bool, scratch: bool) {
+    pub(super) fn note_shard_batch(
+        &self,
+        scheduled_relations: usize,
+        full: bool,
+        scratch: bool,
+        causes: EndpointClearanceFullShardCauses,
+    ) {
         if !self.enabled {
             return;
         }
@@ -322,21 +422,48 @@ impl EndpointClearancePropagationCounters {
             self.shard_scratch_executions
                 .fetch_add(1, Ordering::Relaxed);
             return;
-        } else if full {
-            self.shard_full_batches.fetch_add(1, Ordering::Relaxed);
-        } else {
-            self.shard_endpoint_only_batches
-                .fetch_add(1, Ordering::Relaxed);
         }
-        let dirty_relations = dirty_relations.try_into().unwrap_or(u64::MAX);
-        self.shard_total_dirty_batch_size
-            .fetch_add(dirty_relations, Ordering::Relaxed);
+        let batch = if full {
+            &self.shard_full_batch
+        } else {
+            &self.shard_relation_subset_batch
+        };
+        let scheduled_relations = scheduled_relations.try_into().unwrap_or(u64::MAX);
+        batch.note_batch(scheduled_relations);
         self.shard_maximum_dirty_batch_size
-            .fetch_max(dirty_relations, Ordering::Relaxed);
+            .fetch_max(scheduled_relations, Ordering::Relaxed);
+        if full {
+            self.shard_full_batch_cause_buckets[usize::from(causes.mask())]
+                .batch
+                .note_batch(scheduled_relations);
+        }
     }
 
-    pub(super) fn note_shard_relation_check(&self) {
-        self.increment(&self.shard_dirty_relation_checks);
+    pub(super) fn note_shard_relation_check(
+        &self,
+        full: bool,
+        causes: EndpointClearanceFullShardCauses,
+        effects: ExecutionEffects,
+        exact_unaffected_axis_opportunity: bool,
+    ) {
+        if !self.enabled {
+            return;
+        }
+        let batch = if full {
+            &self.shard_full_batch
+        } else {
+            &self.shard_relation_subset_batch
+        };
+        batch.note_relation_check(effects);
+        if full {
+            let bucket = &self.shard_full_batch_cause_buckets[usize::from(causes.mask())];
+            bucket.batch.note_relation_check(effects);
+            if exact_unaffected_axis_opportunity {
+                bucket
+                    .exact_unaffected_axis_opportunity_relation_checks
+                    .fetch_add(1, Ordering::Relaxed);
+            }
+        }
     }
 
     pub(in crate::layouts::integrated) fn register_relation(
@@ -513,6 +640,46 @@ pub(super) enum EndpointClearanceNotificationAxis {
     Orientation,
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(super) struct EndpointClearanceFullShardCauses {
+    pub initial_execution: bool,
+    pub facility_x: bool,
+    pub facility_y: bool,
+    pub orientation: bool,
+}
+
+impl EndpointClearanceFullShardCauses {
+    const INITIAL_EXECUTION_BIT: u8 = 1 << 0;
+    const FACILITY_X_BIT: u8 = 1 << 1;
+    const FACILITY_Y_BIT: u8 = 1 << 2;
+    const ORIENTATION_BIT: u8 = 1 << 3;
+
+    pub(super) fn from_mask(mask: u8) -> Self {
+        debug_assert!(mask < 16);
+        Self {
+            initial_execution: mask & Self::INITIAL_EXECUTION_BIT != 0,
+            facility_x: mask & Self::FACILITY_X_BIT != 0,
+            facility_y: mask & Self::FACILITY_Y_BIT != 0,
+            orientation: mask & Self::ORIENTATION_BIT != 0,
+        }
+    }
+
+    pub(super) fn mask(self) -> u8 {
+        u8::from(self.initial_execution) * Self::INITIAL_EXECUTION_BIT
+            | u8::from(self.facility_x) * Self::FACILITY_X_BIT
+            | u8::from(self.facility_y) * Self::FACILITY_Y_BIT
+            | u8::from(self.orientation) * Self::ORIENTATION_BIT
+    }
+
+    pub(super) fn is_facility_x_only(self) -> bool {
+        self.mask() == Self::FACILITY_X_BIT
+    }
+
+    pub(super) fn is_facility_y_only(self) -> bool {
+        self.mask() == Self::FACILITY_Y_BIT
+    }
+}
+
 impl EndpointClearanceRelationCounters {
     fn snapshot(&self) -> EndpointClearanceRelationStatistics {
         EndpointClearanceRelationStatistics {
@@ -656,7 +823,7 @@ impl ExecutionTrigger {
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-struct ExecutionEffects {
+pub(super) struct ExecutionEffects {
     rejection: bool,
     forced_separation: bool,
     bound_update: bool,
@@ -665,7 +832,7 @@ struct ExecutionEffects {
 }
 
 impl ExecutionEffects {
-    fn has_domain_effect(self) -> bool {
+    pub(super) fn has_domain_effect(self) -> bool {
         self.rejection || self.bound_update || self.conflict
     }
 }
@@ -786,6 +953,42 @@ impl EndpointRectangleClearancePropagator {
             facility_y_lower: context.lower_bound(&self.facility_y),
             facility_y_upper: context.upper_bound(&self.facility_y),
         }
+    }
+
+    pub(super) fn universally_separated_on_x(&self, context: &impl ReadDomains) -> bool {
+        let bounds = self.bounds(context);
+        let mut any_surviving_orientation = false;
+        for orientation in &self.orientations {
+            if context.evaluate_predicate(orientation.selected.get_false_predicate()) == Some(true)
+            {
+                continue;
+            }
+            any_surviving_orientation = true;
+            if !(bounds.connection_x_upper < bounds.facility_x_lower
+                || bounds.connection_x_lower >= bounds.facility_x_upper + orientation.width)
+            {
+                return false;
+            }
+        }
+        any_surviving_orientation
+    }
+
+    pub(super) fn universally_separated_on_y(&self, context: &impl ReadDomains) -> bool {
+        let bounds = self.bounds(context);
+        let mut any_surviving_orientation = false;
+        for orientation in &self.orientations {
+            if context.evaluate_predicate(orientation.selected.get_false_predicate()) == Some(true)
+            {
+                continue;
+            }
+            any_surviving_orientation = true;
+            if !(bounds.connection_y_upper < bounds.facility_y_lower
+                || bounds.connection_y_lower >= bounds.facility_y_upper + orientation.height)
+            {
+                return false;
+            }
+        }
+        any_surviving_orientation
     }
 
     fn possible_separations(
@@ -1042,6 +1245,14 @@ impl EndpointRectangleClearancePropagator {
         context: &mut PropagationContext,
         trigger: ExecutionTrigger,
     ) -> PropagationStatusCP {
+        self.propagate_all_with_effects(context, trigger).0
+    }
+
+    pub(super) fn propagate_all_with_effects(
+        &mut self,
+        context: &mut PropagationContext,
+        trigger: ExecutionTrigger,
+    ) -> (PropagationStatusCP, ExecutionEffects) {
         self.counters.increment(&self.counters.executions);
         let mut effects = ExecutionEffects::default();
         let result = (|| {
@@ -1095,7 +1306,7 @@ impl EndpointRectangleClearancePropagator {
         if let Some(relation_counters) = &self.relation_counters {
             relation_counters.note_execution(effects);
         }
-        result
+        (result, effects)
     }
 }
 

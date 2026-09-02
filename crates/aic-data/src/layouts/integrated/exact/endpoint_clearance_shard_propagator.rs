@@ -10,13 +10,25 @@ use pumpkin_solver::core::state::PropagationStatusCP;
 use pumpkin_solver::core::variables::DomainId;
 
 use super::endpoint_clearance_propagator::{
-    EndpointClearanceNotificationAxis, EndpointClearanceOrientation,
-    EndpointClearancePropagationCounters, EndpointClearanceRelationCounters,
-    EndpointRectangleClearancePropagator, ExecutionTrigger,
+    EndpointClearanceFullShardCauses, EndpointClearanceNotificationAxis,
+    EndpointClearanceOrientation, EndpointClearancePropagationCounters,
+    EndpointClearanceRelationCounters, EndpointRectangleClearancePropagator, ExecutionTrigger,
 };
 
 const COORDINATE_TRIGGER: u8 = 1 << 0;
 const ORIENTATION_TRIGGER: u8 = 1 << 1;
+const FACILITY_X_CAUSE: u8 = 1 << 0;
+const FACILITY_Y_CAUSE: u8 = 1 << 1;
+const ORIENTATION_CAUSE: u8 = 1 << 2;
+
+fn decode_full_shard_causes(mask: u8) -> EndpointClearanceFullShardCauses {
+    EndpointClearanceFullShardCauses {
+        initial_execution: false,
+        facility_x: mask & FACILITY_X_CAUSE != 0,
+        facility_y: mask & FACILITY_Y_CAUSE != 0,
+        orientation: mask & ORIENTATION_CAUSE != 0,
+    }
+}
 
 #[derive(Clone, Debug)]
 pub(in crate::layouts::integrated) struct EndpointClearanceShardRelationArgs {
@@ -137,7 +149,9 @@ impl PropagatorConstructor for TargetFacilityEndpointClearanceShardPropagatorArg
                 false_event_filter_enabled: self.false_event_filter_enabled,
                 events,
                 pending_full: true,
+                pending_initial_execution: true,
                 pending_full_trigger_mask: 0,
+                pending_full_cause_mask: 0,
                 dirty_relations: Vec::new(),
                 batch_buffer: Vec::with_capacity(relation_count),
                 relation_is_dirty: vec![false; relation_count],
@@ -157,7 +171,9 @@ pub(in crate::layouts::integrated) struct TargetFacilityEndpointClearanceShardPr
     false_event_filter_enabled: bool,
     events: Vec<ShardEvent>,
     pending_full: bool,
+    pending_initial_execution: bool,
     pending_full_trigger_mask: u8,
+    pending_full_cause_mask: u8,
     dirty_relations: Vec<usize>,
     batch_buffer: Vec<(usize, u8)>,
     relation_is_dirty: Vec<bool>,
@@ -180,9 +196,10 @@ impl TargetFacilityEndpointClearanceShardPropagator {
         }
     }
 
-    fn dirty_all(&mut self, trigger_mask: u8) {
+    fn dirty_all(&mut self, trigger_mask: u8, cause_mask: u8) {
         self.pending_full = true;
         self.pending_full_trigger_mask |= trigger_mask;
+        self.pending_full_cause_mask |= cause_mask;
     }
 
     fn dirty_relation(&mut self, relation_index: usize, trigger_mask: u8) {
@@ -194,12 +211,15 @@ impl TargetFacilityEndpointClearanceShardPropagator {
         self.dirty_relations.push(relation_index);
     }
 
-    fn take_batch(&mut self) -> (bool, Vec<(usize, u8)>) {
+    fn take_batch(&mut self) -> (bool, EndpointClearanceFullShardCauses, Vec<(usize, u8)>) {
         let mut batch = std::mem::take(&mut self.batch_buffer);
         batch.clear();
         if self.pending_full {
             self.pending_full = false;
             let full_trigger_mask = std::mem::take(&mut self.pending_full_trigger_mask);
+            let mut causes =
+                decode_full_shard_causes(std::mem::take(&mut self.pending_full_cause_mask));
+            causes.initial_execution = std::mem::take(&mut self.pending_initial_execution);
             self.dirty_relations.clear();
             for relation_index in 0..self.relation_kernels.len() {
                 self.relation_is_dirty[relation_index] = false;
@@ -207,7 +227,7 @@ impl TargetFacilityEndpointClearanceShardPropagator {
                     | std::mem::take(&mut self.relation_trigger_masks[relation_index]);
                 batch.push((relation_index, trigger_mask));
             }
-            return (true, batch);
+            return (true, causes, batch);
         }
 
         for relation_index in self.dirty_relations.drain(..) {
@@ -217,7 +237,7 @@ impl TargetFacilityEndpointClearanceShardPropagator {
                 std::mem::take(&mut self.relation_trigger_masks[relation_index]),
             ));
         }
-        (false, batch)
+        (false, EndpointClearanceFullShardCauses::default(), batch)
     }
 
     fn recycle_batch(&mut self, mut batch: Vec<(usize, u8)>) {
@@ -233,7 +253,9 @@ impl TargetFacilityEndpointClearanceShardPropagator {
 
     fn clear_transient_state(&mut self) {
         self.pending_full = false;
+        self.pending_initial_execution = false;
         self.pending_full_trigger_mask = 0;
+        self.pending_full_cause_mask = 0;
         self.dirty_relations.clear();
         self.relation_is_dirty.fill(false);
         self.relation_trigger_masks.fill(0);
@@ -267,7 +289,7 @@ impl Propagator for TargetFacilityEndpointClearanceShardPropagator {
                     logical_relations,
                 );
                 self.note_all_logical_notifications();
-                self.dirty_all(COORDINATE_TRIGGER);
+                self.dirty_all(COORDINATE_TRIGGER, FACILITY_X_CAUSE);
             }
             ShardEvent::FacilityY => {
                 let logical_relations = self.relation_kernels.len();
@@ -276,7 +298,7 @@ impl Propagator for TargetFacilityEndpointClearanceShardPropagator {
                     logical_relations,
                 );
                 self.note_all_logical_notifications();
-                self.dirty_all(COORDINATE_TRIGGER);
+                self.dirty_all(COORDINATE_TRIGGER, FACILITY_Y_CAUSE);
             }
             ShardEvent::Orientation(orientation_index) => {
                 let logical_relations = self.relation_kernels.len();
@@ -295,7 +317,7 @@ impl Propagator for TargetFacilityEndpointClearanceShardPropagator {
                     self.counters.note_shard_notification(false);
                     return EnqueueDecision::Skip;
                 }
-                self.dirty_all(ORIENTATION_TRIGGER);
+                self.dirty_all(ORIENTATION_TRIGGER, ORIENTATION_CAUSE);
             }
             ShardEvent::ConnectionX(relation_index) => {
                 self.counters
@@ -323,13 +345,29 @@ impl Propagator for TargetFacilityEndpointClearanceShardPropagator {
     }
 
     fn propagate(&mut self, mut context: PropagationContext) -> PropagationStatusCP {
-        let (full, batch) = self.take_batch();
-        self.counters.note_shard_batch(batch.len(), full, false);
+        let (full, causes, batch) = self.take_batch();
+        self.counters
+            .note_shard_batch(batch.len(), full, false, causes);
         for (batch_index, (relation_index, trigger_mask)) in batch.iter().copied().enumerate() {
-            self.counters.note_shard_relation_check();
-            if let Err(conflict) = self.relation_kernels[relation_index]
-                .propagate_all(&mut context, ExecutionTrigger::from_mask(trigger_mask))
-            {
+            let exact_unaffected_axis_opportunity = if full && causes.is_facility_x_only() {
+                self.relation_kernels[relation_index].universally_separated_on_y(&context)
+            } else if full && causes.is_facility_y_only() {
+                self.relation_kernels[relation_index].universally_separated_on_x(&context)
+            } else {
+                false
+            };
+            let (result, effects) = self.relation_kernels[relation_index]
+                .propagate_all_with_effects(
+                    &mut context,
+                    ExecutionTrigger::from_mask(trigger_mask),
+                );
+            self.counters.note_shard_relation_check(
+                full,
+                causes,
+                effects,
+                exact_unaffected_axis_opportunity,
+            );
+            if let Err(conflict) = result {
                 self.restore_unprocessed(&batch[batch_index + 1..]);
                 self.recycle_batch(batch);
                 return Err(conflict);
@@ -340,8 +378,12 @@ impl Propagator for TargetFacilityEndpointClearanceShardPropagator {
     }
 
     fn propagate_from_scratch(&self, mut context: PropagationContext) -> PropagationStatusCP {
-        self.counters
-            .note_shard_batch(self.relation_kernels.len(), true, true);
+        self.counters.note_shard_batch(
+            self.relation_kernels.len(),
+            true,
+            true,
+            EndpointClearanceFullShardCauses::default(),
+        );
         let mut scratch = self.clone();
         for relation in &mut scratch.relation_kernels {
             relation.propagate_all(&mut context, ExecutionTrigger::Scratch)?;
@@ -372,11 +414,35 @@ mod tests {
 
     use super::*;
     use crate::layouts::integrated::exact::endpoint_clearance_propagator::EndpointRectangleClearancePropagatorArgs;
+    use crate::layouts::integrated::exact::ladder::{
+        EndpointClearanceBatchClassStatistics, EndpointClearanceFullShardCauseBucketStatistics,
+        EndpointClearancePropagationStatistics,
+    };
 
     #[derive(Debug, PartialEq, Eq)]
     struct RootSnapshot {
         status: CSPSolverExecutionFlag,
         domains: Vec<Vec<i32>>,
+    }
+
+    fn cause_bucket(
+        statistics: &EndpointClearancePropagationStatistics,
+        causes: EndpointClearanceFullShardCauses,
+    ) -> &EndpointClearanceFullShardCauseBucketStatistics {
+        &statistics.batching.full_shard_cause_buckets[usize::from(causes.mask())]
+    }
+
+    fn assert_batch_accounting(batch: &EndpointClearanceBatchClassStatistics) {
+        assert_eq!(
+            batch.actual_relation_checks + batch.conflict_abandoned_relation_occurrences,
+            batch.scheduled_relation_checks
+        );
+        assert_eq!(
+            batch.effectful_relation_checks + batch.no_effect_relation_checks,
+            batch.actual_relation_checks
+        );
+        assert!(batch.conflict_relation_checks <= batch.effectful_relation_checks);
+        assert!(batch.universally_entailed_relation_checks <= batch.no_effect_relation_checks);
     }
 
     fn retained_values(solver: &Solver, variable: DomainId, lower: i32, upper: i32) -> Vec<i32> {
@@ -732,6 +798,29 @@ mod tests {
         );
 
         let initial = counters.snapshot();
+        assert_eq!(initial.batching.full_shard.batches, 1);
+        assert_eq!(initial.batching.full_shard.scheduled_relation_checks, 2);
+        assert_eq!(initial.batching.full_shard.actual_relation_checks, 2);
+        assert_eq!(
+            initial
+                .batching
+                .full_shard_cause_buckets
+                .iter()
+                .filter(|bucket| bucket.initial_execution)
+                .map(|bucket| bucket.batch.batches)
+                .sum::<u64>(),
+            1
+        );
+        assert_eq!(
+            initial
+                .batching
+                .full_shard_cause_buckets
+                .iter()
+                .filter(|bucket| bucket.initial_execution)
+                .map(|bucket| bucket.batch.scheduled_relation_checks)
+                .sum::<u64>(),
+            2
+        );
         solver.add_clause([first_x.lower_bound_predicate(1)], tag);
         assert_eq!(
             solver.propagate_to_fixpoint(),
@@ -739,13 +828,16 @@ mod tests {
         );
         let endpoint = counters.snapshot();
         assert_eq!(
-            endpoint.batching.total_dirty_batch_size - initial.batching.total_dirty_batch_size,
+            endpoint.batching.relation_subset.scheduled_relation_checks
+                - initial.batching.relation_subset.scheduled_relation_checks,
             1
         );
         assert_eq!(
-            endpoint.batching.dirty_relation_checks - initial.batching.dirty_relation_checks,
+            endpoint.batching.relation_subset.actual_relation_checks
+                - initial.batching.relation_subset.actual_relation_checks,
             1
         );
+        assert_batch_accounting(&endpoint.batching.relation_subset);
         assert_eq!(endpoint.notifications - initial.notifications, 1);
         assert_eq!(
             endpoint.enqueued_notifications - initial.enqueued_notifications,
@@ -767,13 +859,77 @@ mod tests {
         );
         let facility = counters.snapshot();
         assert_eq!(
-            facility.batching.total_dirty_batch_size - endpoint.batching.total_dirty_batch_size,
+            facility.batching.full_shard.scheduled_relation_checks
+                - endpoint.batching.full_shard.scheduled_relation_checks,
             2
         );
         assert_eq!(
-            facility.batching.dirty_relation_checks - endpoint.batching.dirty_relation_checks,
+            facility.batching.full_shard.actual_relation_checks
+                - endpoint.batching.full_shard.actual_relation_checks,
             2
         );
+        assert_eq!(
+            cause_bucket(
+                &facility,
+                EndpointClearanceFullShardCauses {
+                    facility_x: true,
+                    ..EndpointClearanceFullShardCauses::default()
+                }
+            )
+            .batch
+            .batches
+                - cause_bucket(
+                    &endpoint,
+                    EndpointClearanceFullShardCauses {
+                        facility_x: true,
+                        ..EndpointClearanceFullShardCauses::default()
+                    }
+                )
+                .batch
+                .batches,
+            1
+        );
+        assert_eq!(
+            cause_bucket(
+                &facility,
+                EndpointClearanceFullShardCauses {
+                    facility_x: true,
+                    ..EndpointClearanceFullShardCauses::default()
+                }
+            )
+            .batch
+            .scheduled_relation_checks
+                - cause_bucket(
+                    &endpoint,
+                    EndpointClearanceFullShardCauses {
+                        facility_x: true,
+                        ..EndpointClearanceFullShardCauses::default()
+                    }
+                )
+                .batch
+                .scheduled_relation_checks,
+            2
+        );
+        assert_eq!(
+            cause_bucket(
+                &facility,
+                EndpointClearanceFullShardCauses {
+                    facility_x: true,
+                    ..EndpointClearanceFullShardCauses::default()
+                }
+            )
+            .exact_unaffected_axis_opportunity_relation_checks
+                - cause_bucket(
+                    &endpoint,
+                    EndpointClearanceFullShardCauses {
+                        facility_x: true,
+                        ..EndpointClearanceFullShardCauses::default()
+                    }
+                )
+                .exact_unaffected_axis_opportunity_relation_checks,
+            2
+        );
+        assert_batch_accounting(&facility.batching.full_shard);
         assert_eq!(facility.notifications - endpoint.notifications, 2);
         assert_eq!(
             facility.enqueued_notifications - endpoint.enqueued_notifications,
@@ -787,6 +943,372 @@ mod tests {
             facility.batching.enqueue_requests - endpoint.batching.enqueue_requests,
             1
         );
+    }
+
+    #[test]
+    fn full_batch_causes_distinguish_facility_y_and_orientation_events() {
+        let mut solver = Solver::default();
+        let tag = solver.new_constraint_tag();
+        let facility_x = solver.new_named_bounded_integer(0, 0, "facility-x");
+        let facility_y = solver.new_named_bounded_integer(0, 1, "facility-y");
+        let selected = solver.new_named_literal("selected-orientation");
+        let connection_x = solver.new_named_bounded_integer(10, 10, "connection-x");
+        let connection_y = solver.new_named_bounded_integer(10, 10, "connection-y");
+        let counters = Arc::new(EndpointClearancePropagationCounters::default());
+        let _ = solver.add_propagator(TargetFacilityEndpointClearanceShardPropagatorArgs {
+            name: "full-batch-causes".to_string(),
+            target_facility: "target".to_string(),
+            facility_x,
+            facility_y,
+            orientations: vec![EndpointClearanceOrientation {
+                selected,
+                selected_parent: *selected.get_integer_variable().inner(),
+                width: 1,
+                height: 1,
+            }],
+            relations: vec![EndpointClearanceShardRelationArgs {
+                terminal: "terminal".to_string(),
+                connection_x,
+                connection_y,
+                relation_counters: counters.register_relation("terminal", "target"),
+            }],
+            priority: Priority::High,
+            counters: Arc::clone(&counters),
+            false_event_filter_enabled: false,
+            constraint_tag: tag,
+        });
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let initial = counters.snapshot();
+
+        solver.add_clause([facility_y.lower_bound_predicate(1)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let facility_y_event = counters.snapshot();
+        let facility_y_causes = EndpointClearanceFullShardCauses {
+            facility_y: true,
+            ..EndpointClearanceFullShardCauses::default()
+        };
+        assert_eq!(
+            cause_bucket(&facility_y_event, facility_y_causes)
+                .batch
+                .batches
+                - cause_bucket(&initial, facility_y_causes).batch.batches,
+            1
+        );
+        assert_eq!(
+            cause_bucket(&facility_y_event, facility_y_causes)
+                .exact_unaffected_axis_opportunity_relation_checks
+                - cause_bucket(&initial, facility_y_causes)
+                    .exact_unaffected_axis_opportunity_relation_checks,
+            1
+        );
+
+        solver.add_clause([selected.get_true_predicate()], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let orientation_event = counters.snapshot();
+        let orientation_causes = EndpointClearanceFullShardCauses {
+            orientation: true,
+            ..EndpointClearanceFullShardCauses::default()
+        };
+        assert_eq!(
+            cause_bucket(&orientation_event, orientation_causes)
+                .batch
+                .batches
+                - cause_bucket(&facility_y_event, orientation_causes)
+                    .batch
+                    .batches,
+            1
+        );
+    }
+
+    #[test]
+    fn coalesced_full_batch_uses_one_disjoint_cause_bucket() {
+        let mut solver = Solver::default();
+        let tag = solver.new_constraint_tag();
+        let facility_x = solver.new_named_bounded_integer(0, 1, "facility-x");
+        let facility_y = solver.new_named_bounded_integer(0, 1, "facility-y");
+        let selected = solver.new_named_literal("selected-orientation");
+        let connection_x = solver.new_named_bounded_integer(10, 10, "connection-x");
+        let connection_y = solver.new_named_bounded_integer(10, 10, "connection-y");
+        let counters = Arc::new(EndpointClearancePropagationCounters::default());
+        let _ = solver.add_propagator(TargetFacilityEndpointClearanceShardPropagatorArgs {
+            name: "coalesced-causes".to_string(),
+            target_facility: "target".to_string(),
+            facility_x,
+            facility_y,
+            orientations: vec![EndpointClearanceOrientation {
+                selected,
+                selected_parent: *selected.get_integer_variable().inner(),
+                width: 1,
+                height: 1,
+            }],
+            relations: vec![EndpointClearanceShardRelationArgs {
+                terminal: "terminal".to_string(),
+                connection_x,
+                connection_y,
+                relation_counters: counters.register_relation("terminal", "target"),
+            }],
+            priority: Priority::High,
+            counters: Arc::clone(&counters),
+            false_event_filter_enabled: false,
+            constraint_tag: tag,
+        });
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let initial = counters.snapshot();
+
+        solver.add_clause([facility_x.lower_bound_predicate(1)], tag);
+        solver.add_clause([facility_y.lower_bound_predicate(1)], tag);
+        solver.add_clause([selected.get_true_predicate()], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let coalesced = counters.snapshot();
+        let causes = EndpointClearanceFullShardCauses {
+            facility_x: true,
+            facility_y: true,
+            orientation: true,
+            ..EndpointClearanceFullShardCauses::default()
+        };
+        let bucket = cause_bucket(&coalesced, causes);
+        let initial_bucket = cause_bucket(&initial, causes);
+        assert_eq!(bucket.batch.batches - initial_bucket.batch.batches, 1);
+        assert_eq!(
+            bucket.batch.scheduled_relation_checks - initial_bucket.batch.scheduled_relation_checks,
+            1
+        );
+        assert_eq!(
+            bucket.batch.actual_relation_checks - initial_bucket.batch.actual_relation_checks,
+            1
+        );
+        assert_eq!(
+            bucket.exact_unaffected_axis_opportunity_relation_checks
+                - initial_bucket.exact_unaffected_axis_opportunity_relation_checks,
+            0
+        );
+        assert_eq!(
+            coalesced
+                .batching
+                .full_shard_cause_buckets
+                .iter()
+                .zip(&initial.batching.full_shard_cause_buckets)
+                .map(|(after, before)| after.batch.batches - before.batch.batches)
+                .sum::<u64>(),
+            1
+        );
+        for bucket in &coalesced.batching.full_shard_cause_buckets {
+            assert_batch_accounting(&bucket.batch);
+        }
+    }
+
+    #[test]
+    fn relation_subset_conflict_reports_its_abandoned_tail_occurrence() {
+        let mut solver = Solver::default();
+        let tag = solver.new_constraint_tag();
+        let facility_x = solver.new_named_bounded_integer(0, 0, "facility-x");
+        let facility_y = solver.new_named_bounded_integer(0, 0, "facility-y");
+        let selected = solver.new_named_literal("selected-orientation");
+        solver.add_clause([selected.get_true_predicate()], tag);
+        let first_x = solver.new_named_bounded_integer(-1, 1, "first-x");
+        let first_y = solver.new_named_bounded_integer(-1, 1, "first-y");
+        let second_x = solver.new_named_bounded_integer(-1, 1, "second-x");
+        let second_y = solver.new_named_bounded_integer(-1, 1, "second-y");
+        let counters = Arc::new(EndpointClearancePropagationCounters::default());
+        let _ = solver.add_propagator(TargetFacilityEndpointClearanceShardPropagatorArgs {
+            name: "relation-subset-conflict".to_string(),
+            target_facility: "target".to_string(),
+            facility_x,
+            facility_y,
+            orientations: vec![EndpointClearanceOrientation {
+                selected,
+                selected_parent: *selected.get_integer_variable().inner(),
+                width: 1,
+                height: 1,
+            }],
+            relations: [("first", first_x, first_y), ("second", second_x, second_y)]
+                .into_iter()
+                .map(
+                    |(terminal, connection_x, connection_y)| EndpointClearanceShardRelationArgs {
+                        terminal: terminal.to_string(),
+                        connection_x,
+                        connection_y,
+                        relation_counters: counters.register_relation(terminal, "target"),
+                    },
+                )
+                .collect(),
+            priority: Priority::High,
+            counters: Arc::clone(&counters),
+            false_event_filter_enabled: false,
+            constraint_tag: tag,
+        });
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let initial = counters.snapshot();
+
+        for variable in [first_x, first_y, second_x, second_y] {
+            solver.add_clause([variable.equality_predicate(0)], tag);
+        }
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Infeasible
+        );
+        let conflict = counters.snapshot();
+        assert_eq!(
+            conflict.batching.relation_subset.scheduled_relation_checks
+                - initial.batching.relation_subset.scheduled_relation_checks,
+            2
+        );
+        assert_eq!(
+            conflict.batching.relation_subset.actual_relation_checks
+                - initial.batching.relation_subset.actual_relation_checks,
+            1
+        );
+        assert_eq!(
+            conflict
+                .batching
+                .relation_subset
+                .conflict_abandoned_relation_occurrences
+                - initial
+                    .batching
+                    .relation_subset
+                    .conflict_abandoned_relation_occurrences,
+            1
+        );
+        assert_batch_accounting(&conflict.batching.relation_subset);
+    }
+
+    #[test]
+    fn disabled_counters_keep_every_batch_metric_zero() {
+        let mut solver = Solver::default();
+        let tag = solver.new_constraint_tag();
+        let facility_x = solver.new_named_bounded_integer(0, 1, "facility-x");
+        let facility_y = solver.new_named_bounded_integer(0, 1, "facility-y");
+        let selected = solver.new_named_literal("selected-orientation");
+        let connection_x = solver.new_named_bounded_integer(10, 10, "connection-x");
+        let connection_y = solver.new_named_bounded_integer(10, 10, "connection-y");
+        let counters = Arc::new(EndpointClearancePropagationCounters::new(false));
+        let _ = solver.add_propagator(TargetFacilityEndpointClearanceShardPropagatorArgs {
+            name: "disabled-counters".to_string(),
+            target_facility: "target".to_string(),
+            facility_x,
+            facility_y,
+            orientations: vec![EndpointClearanceOrientation {
+                selected,
+                selected_parent: *selected.get_integer_variable().inner(),
+                width: 1,
+                height: 1,
+            }],
+            relations: vec![EndpointClearanceShardRelationArgs {
+                terminal: "terminal".to_string(),
+                connection_x,
+                connection_y,
+                relation_counters: counters.register_relation("terminal", "target"),
+            }],
+            priority: Priority::High,
+            counters: Arc::clone(&counters),
+            false_event_filter_enabled: false,
+            constraint_tag: tag,
+        });
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        solver.add_clause([facility_x.lower_bound_predicate(1)], tag);
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Feasible
+        );
+        let statistics = counters.snapshot();
+        assert_eq!(statistics.relations, 0);
+        assert_eq!(statistics.batching.shards, 0);
+        assert_eq!(statistics.batching.shard_executions, 0);
+        assert_eq!(
+            statistics.batching.full_shard,
+            EndpointClearanceBatchClassStatistics::default()
+        );
+        assert_eq!(
+            statistics.batching.relation_subset,
+            EndpointClearanceBatchClassStatistics::default()
+        );
+        assert!(statistics.batching.full_shard_cause_buckets.is_empty());
+    }
+
+    #[test]
+    fn conflict_reports_the_abandoned_full_batch_tail_occurrence() {
+        let mut solver = Solver::default();
+        let tag = solver.new_constraint_tag();
+        let facility_x = solver.new_named_bounded_integer(0, 0, "facility-x");
+        let facility_y = solver.new_named_bounded_integer(0, 0, "facility-y");
+        let selected = solver.new_named_literal("selected-orientation");
+        solver.add_clause([selected.get_true_predicate()], tag);
+        let blocked_x = solver.new_named_bounded_integer(0, 0, "blocked-x");
+        let blocked_y = solver.new_named_bounded_integer(0, 0, "blocked-y");
+        let clear_x = solver.new_named_bounded_integer(10, 10, "clear-x");
+        let clear_y = solver.new_named_bounded_integer(10, 10, "clear-y");
+        let counters = Arc::new(EndpointClearancePropagationCounters::default());
+        let _ = solver.add_propagator(TargetFacilityEndpointClearanceShardPropagatorArgs {
+            name: "conflicting-full-batch".to_string(),
+            target_facility: "target".to_string(),
+            facility_x,
+            facility_y,
+            orientations: vec![EndpointClearanceOrientation {
+                selected,
+                selected_parent: *selected.get_integer_variable().inner(),
+                width: 1,
+                height: 1,
+            }],
+            relations: [
+                ("blocked", blocked_x, blocked_y),
+                ("clear", clear_x, clear_y),
+            ]
+            .into_iter()
+            .map(
+                |(terminal, connection_x, connection_y)| EndpointClearanceShardRelationArgs {
+                    terminal: terminal.to_string(),
+                    connection_x,
+                    connection_y,
+                    relation_counters: counters.register_relation(terminal, "target"),
+                },
+            )
+            .collect(),
+            priority: Priority::High,
+            counters: Arc::clone(&counters),
+            false_event_filter_enabled: false,
+            constraint_tag: tag,
+        });
+        assert_eq!(
+            solver.propagate_to_fixpoint(),
+            CSPSolverExecutionFlag::Infeasible
+        );
+        let statistics = counters.snapshot();
+        assert_eq!(statistics.batching.full_shard.scheduled_relation_checks, 2);
+        assert_eq!(statistics.batching.full_shard.actual_relation_checks, 1);
+        assert_eq!(
+            statistics
+                .batching
+                .full_shard
+                .conflict_abandoned_relation_occurrences,
+            1
+        );
+        assert_eq!(statistics.batching.full_shard.conflict_relation_checks, 1);
+        assert_eq!(statistics.batching.full_shard.effectful_relation_checks, 1);
+        assert_batch_accounting(&statistics.batching.full_shard);
+        for bucket in &statistics.batching.full_shard_cause_buckets {
+            assert_batch_accounting(&bucket.batch);
+        }
     }
 
     fn backtracking_case(sharded: bool) -> (bool, bool, bool, u64) {

@@ -21,7 +21,7 @@ use super::super::research::EndpointSupportPropagationStatistics;
 
 mod facility_ports;
 
-pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 10;
+pub const BOTTOM_UP_RUNG_SCHEMA_VERSION: u32 = 11;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -99,11 +99,48 @@ pub struct EndpointClearanceBatchingStatistics {
     pub enqueue_requests: u64,
     pub shard_executions: u64,
     pub scratch_executions: u64,
-    pub full_shard_batches: u64,
-    pub endpoint_only_batches: u64,
-    pub dirty_relation_checks: u64,
-    pub total_dirty_batch_size: u64,
     pub maximum_dirty_batch_size: u64,
+    /// Batches that checked every relation in one target-facility shard.
+    pub full_shard: EndpointClearanceBatchClassStatistics,
+    /// Batches that checked a dirty relation subset. This is an execution scope, not an event
+    /// cause: it can contain endpoint-event work and tails restored after an earlier conflict.
+    pub relation_subset: EndpointClearanceBatchClassStatistics,
+    /// Sixteen disjoint buckets indexed by the four-bit initial/X/Y/orientation cause mask.
+    pub full_shard_cause_buckets: Vec<EndpointClearanceFullShardCauseBucketStatistics>,
+}
+
+#[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
+pub struct EndpointClearanceBatchClassStatistics {
+    pub batches: u64,
+    /// Relation-check occurrences selected before a batch began.
+    pub scheduled_relation_checks: u64,
+    /// Relation-check occurrences reached before success or the first conflict.
+    pub actual_relation_checks: u64,
+    /// Scheduled occurrences skipped after a conflict in that batch. Restored relations can be
+    /// scheduled again later, so this is neither live pending work nor permanently lost work.
+    pub conflict_abandoned_relation_occurrences: u64,
+    /// Actual checks that rejected a value, tightened a bound, or produced a conflict.
+    pub effectful_relation_checks: u64,
+    pub no_effect_relation_checks: u64,
+    /// An overlapping subset of no-effect checks whose every surviving orientation was already
+    /// outside the rectangle.
+    pub universally_entailed_relation_checks: u64,
+    /// An overlapping subset of effectful checks.
+    pub conflict_relation_checks: u64,
+}
+
+#[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
+pub struct EndpointClearanceFullShardCauseBucketStatistics {
+    pub cause_mask: u8,
+    pub initial_execution: bool,
+    pub facility_x: bool,
+    pub facility_y: bool,
+    pub orientation: bool,
+    pub batch: EndpointClearanceBatchClassStatistics,
+    /// X-only checks already separated on Y, or Y-only checks already separated on X. Other
+    /// cause masks always report zero. This is an exact skip-opportunity census, not an applied
+    /// reduction.
+    pub exact_unaffected_axis_opportunity_relation_checks: u64,
 }
 
 #[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
