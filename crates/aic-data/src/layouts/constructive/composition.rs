@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
 
 use crate::facilities::{FacilityPortDirection, ValidatedFacilityCatalog};
 use crate::layouts::{
@@ -20,6 +21,67 @@ use super::{
     ConstructiveFrontierDiagnostic, ConstructiveNode, ConstructiveProcessModuleBoundary,
     ConstructiveProcessModuleReport,
 };
+
+const TARGET_OFFSET: i64 = 4;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct CandidateOrder {
+    rotation: usize,
+    y: i64,
+    x: i64,
+    source_port: usize,
+    target_port: usize,
+}
+
+#[derive(Debug, Clone, Copy)]
+struct PlacementCandidate {
+    x: i64,
+    y: i64,
+    area_lower_bound: usize,
+    additive: bool,
+}
+
+impl PlacementCandidate {
+    fn new(
+        x: i64,
+        y: i64,
+        source: &FacilityPlacementBounds,
+        target: &FacilityPlacementBounds,
+    ) -> Self {
+        let source_right = x + source.width;
+        let source_bottom = y + source.height;
+        let target_right = TARGET_OFFSET + target.width;
+        let target_bottom = TARGET_OFFSET + target.height;
+        let width = source_right.max(target_right) - x.min(TARGET_OFFSET);
+        let height = source_bottom.max(target_bottom) - y.min(TARGET_OFFSET);
+        let horizontal_gap = axis_gap(x, source_right, TARGET_OFFSET, target_right);
+        let vertical_gap = axis_gap(y, source_bottom, TARGET_OFFSET, target_bottom);
+        let vertical_overlap = ranges_overlap(y, source_bottom, TARGET_OFFSET, target_bottom);
+        let horizontal_overlap = ranges_overlap(x, source_right, TARGET_OFFSET, target_right);
+        let additive = horizontal_gap.is_some_and(|gap| gap <= 1) && vertical_overlap
+            || vertical_gap.is_some_and(|gap| gap <= 1) && horizontal_overlap;
+        Self {
+            x,
+            y,
+            area_lower_bound: usize::try_from(width.saturating_mul(height)).unwrap_or(usize::MAX),
+            additive,
+        }
+    }
+}
+
+fn axis_gap(left_start: i64, left_end: i64, right_start: i64, right_end: i64) -> Option<i64> {
+    if left_end <= right_start {
+        Some(right_start - left_end)
+    } else if right_end <= left_start {
+        Some(left_start - right_end)
+    } else {
+        None
+    }
+}
+
+fn ranges_overlap(left_start: i64, left_end: i64, right_start: i64, right_end: i64) -> bool {
+    left_start < right_end && right_start < left_end
+}
 
 pub fn constructive_node_from_process_module(
     report: &ConstructiveProcessModuleReport,
@@ -252,6 +314,23 @@ pub fn compose_constructive_nodes(
     edge: &FacilityInstanceWiringEdge,
     facilities: &ValidatedFacilityCatalog,
 ) -> ConstructiveCompositionReport {
+    let best_zero_blocked_area = AtomicUsize::new(usize::MAX);
+    compose_constructive_nodes_with_area_incumbent(
+        source,
+        target,
+        edge,
+        facilities,
+        &best_zero_blocked_area,
+    )
+}
+
+pub(super) fn compose_constructive_nodes_with_area_incumbent(
+    source: &ConstructiveNode,
+    target: &ConstructiveNode,
+    edge: &FacilityInstanceWiringEdge,
+    facilities: &ValidatedFacilityCatalog,
+    best_zero_blocked_area: &AtomicUsize,
+) -> ConstructiveCompositionReport {
     if !source.member_instances.contains(&edge.source)
         || !target.member_instances.contains(&edge.target)
     {
@@ -305,87 +384,118 @@ pub fn compose_constructive_nodes(
 
     let canvas_width = source.bounds.width + target.bounds.width + 10;
     let canvas_height = source.bounds.height + target.bounds.height + 10;
-    let target_candidate = translate_node(target, 4, 4);
+    let target_candidate = translate_node(target, TARGET_OFFSET, TARGET_OFFSET);
     let mut route_workspace = RouteWorkspace::new(canvas_width, canvas_height);
     let mut statistics = ConstructiveCompositionStatistics::default();
-    let mut best: Option<(ConstructiveCompositionScore, usize, ConstructiveNode)> = None;
-    let mut order = 0usize;
-    for rotation in [0, 90, 180, 270] {
+    let mut best: Option<(
+        ConstructiveCompositionScore,
+        CandidateOrder,
+        ConstructiveNode,
+    )> = None;
+    for (rotation_index, rotation) in [0, 90, 180, 270].into_iter().enumerate() {
         statistics.rotations_considered += 1;
         let rotated = rotate_node(source, rotation);
         if !node_rotations_are_legal(&rotated, facilities) {
             continue;
         }
-        for y in 1..canvas_height - rotated.bounds.height {
-            for x in 1..canvas_width - rotated.bounds.width {
-                statistics.placements_considered += 1;
-                let source_candidate = translate_node(&rotated, x, y);
-                if nodes_collide(&source_candidate, &target_candidate) {
-                    statistics.colliding_placements_rejected += 1;
-                    continue;
-                }
-                let blocked = routing_blocked_cells(
-                    &source_candidate,
-                    &target_candidate,
-                    source_boundary.transport,
-                );
-                let source_options = transformed_boundary(&source_candidate, &edge.id)
-                    .map(|boundary| &boundary.port_options)
-                    .into_iter()
-                    .flatten();
-                let target_options = transformed_boundary(&target_candidate, &edge.id)
-                    .map(|boundary| &boundary.port_options)
-                    .into_iter()
-                    .flatten();
-                for source_port in source_options {
-                    for target_port in target_options.clone() {
-                        statistics.port_pairs_considered += 1;
-                        if blocked.contains(&(source_port.connection.x, source_port.connection.y))
-                            || blocked
-                                .contains(&(target_port.connection.x, target_port.connection.y))
-                        {
-                            statistics.blocked_port_pairs_rejected += 1;
-                            continue;
-                        }
-                        statistics.astar_searches += 1;
-                        let Some(path) = route_workspace.route(
-                            &blocked,
-                            &source_port.connection,
-                            &target_port.connection,
-                        ) else {
-                            statistics.astar_failures += 1;
-                            continue;
-                        };
-                        let route = connection_network(
-                            edge,
-                            source_boundary.transport,
-                            source_port,
-                            target_port,
-                            path,
-                        );
-                        let Some((composite, blocked_options)) = combine_nodes(
-                            &source_candidate,
-                            &target_candidate,
-                            edge,
-                            source_port,
-                            target_port,
-                            route,
-                        ) else {
-                            statistics.boundary_dead_ends_rejected += 1;
-                            continue;
-                        };
-                        if !validate_node_geometry(&composite) {
-                            continue;
-                        }
-                        statistics.valid_candidates_scored += 1;
-                        let score = composition_score(&composite, blocked_options);
-                        let candidate_order = order;
-                        order += 1;
-                        if best.as_ref().is_none_or(|(current, current_order, _)| {
-                            (score, candidate_order) < (*current, *current_order)
-                        }) {
-                            best = Some((score, candidate_order, composite));
-                        }
+        let source_bounds = &rotated.bounds;
+        let target_bounds = &target_candidate.bounds;
+        let mut placements = (1..canvas_height - rotated.bounds.height)
+            .flat_map(|y| {
+                (1..canvas_width - rotated.bounds.width)
+                    .map(move |x| PlacementCandidate::new(x, y, source_bounds, target_bounds))
+            })
+            .collect::<Vec<_>>();
+        placements.sort_by_key(|candidate| {
+            (
+                !candidate.additive,
+                candidate.area_lower_bound,
+                candidate.y,
+                candidate.x,
+            )
+        });
+        for placement in placements {
+            statistics.placements_considered += 1;
+            statistics.additive_placements_considered += u64::from(placement.additive);
+            let shared_area = best_zero_blocked_area.load(AtomicOrdering::Relaxed);
+            if placement.area_lower_bound > shared_area {
+                statistics.area_lower_bound_rejections += 1;
+                continue;
+            }
+            let source_candidate = translate_node(&rotated, placement.x, placement.y);
+            if nodes_collide(&source_candidate, &target_candidate) {
+                statistics.colliding_placements_rejected += 1;
+                continue;
+            }
+            let blocked = routing_blocked_cells(
+                &source_candidate,
+                &target_candidate,
+                source_boundary.transport,
+            );
+            let source_options = transformed_boundary(&source_candidate, &edge.id)
+                .map(|boundary| &boundary.port_options)
+                .into_iter()
+                .flatten();
+            let target_options = transformed_boundary(&target_candidate, &edge.id)
+                .map(|boundary| &boundary.port_options)
+                .into_iter()
+                .flatten();
+            for (source_port_index, source_port) in source_options.enumerate() {
+                for (target_port_index, target_port) in target_options.clone().enumerate() {
+                    statistics.port_pairs_considered += 1;
+                    if blocked.contains(&(source_port.connection.x, source_port.connection.y))
+                        || blocked.contains(&(target_port.connection.x, target_port.connection.y))
+                    {
+                        statistics.blocked_port_pairs_rejected += 1;
+                        continue;
+                    }
+                    statistics.astar_searches += 1;
+                    let Some(path) = route_workspace.route(
+                        &blocked,
+                        &source_port.connection,
+                        &target_port.connection,
+                    ) else {
+                        statistics.astar_failures += 1;
+                        continue;
+                    };
+                    let route = connection_network(
+                        edge,
+                        source_boundary.transport,
+                        source_port,
+                        target_port,
+                        path,
+                    );
+                    let Some((composite, blocked_options)) = combine_nodes(
+                        &source_candidate,
+                        &target_candidate,
+                        edge,
+                        source_port,
+                        target_port,
+                        route,
+                    ) else {
+                        statistics.boundary_dead_ends_rejected += 1;
+                        continue;
+                    };
+                    if !validate_node_geometry(&composite) {
+                        continue;
+                    }
+                    statistics.valid_candidates_scored += 1;
+                    let score = composition_score(&composite, blocked_options);
+                    if score.blocked_boundary_port_options == 0 {
+                        best_zero_blocked_area
+                            .fetch_min(score.used_bounding_box_area, AtomicOrdering::Relaxed);
+                    }
+                    let candidate_order = CandidateOrder {
+                        rotation: rotation_index,
+                        y: placement.y,
+                        x: placement.x,
+                        source_port: source_port_index,
+                        target_port: target_port_index,
+                    };
+                    if best.as_ref().is_none_or(|(current, current_order, _)| {
+                        (score, candidate_order) < (*current, *current_order)
+                    }) {
+                        best = Some((score, candidate_order, composite));
                     }
                 }
             }
@@ -1048,6 +1158,8 @@ mod tests {
         );
 
         assert!(report.success, "{:?}", report.diagnostics);
+        assert!(report.statistics.additive_placements_considered > 0);
+        assert!(report.statistics.area_lower_bound_rejections > 0);
         let composite = report.composite.as_ref().expect("composite node");
         assert_eq!(composite.placements.len(), 4);
         assert_eq!(composite.transport_networks.len(), 3);
@@ -1068,5 +1180,25 @@ mod tests {
             .expect("constructive composition should render");
         assert!(html.contains("constructive-composition-boundary"));
         assert!(html.contains("FEASIBLE"));
+    }
+
+    #[test]
+    fn placement_lower_bound_recognizes_adjacent_additions() {
+        let target = FacilityPlacementBounds {
+            width: 4,
+            height: 4,
+        };
+        let source = FacilityPlacementBounds {
+            width: 2,
+            height: 2,
+        };
+
+        let adjacent = PlacementCandidate::new(8, 5, &source, &target);
+        assert!(adjacent.additive);
+        assert_eq!(adjacent.area_lower_bound, 24);
+
+        let distant = PlacementCandidate::new(12, 5, &source, &target);
+        assert!(!distant.additive);
+        assert_eq!(distant.area_lower_bound, 40);
     }
 }

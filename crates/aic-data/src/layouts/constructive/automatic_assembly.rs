@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use std::sync::atomic::AtomicUsize;
 use std::time::Instant;
 
 use crate::facilities::ValidatedFacilityCatalog;
@@ -7,6 +8,7 @@ use crate::recipes::{
     FacilityInstanceWiringEdge, FacilityInstanceWiringNode, FacilityInstanceWiringReport,
 };
 
+use super::composition::compose_constructive_nodes_with_area_incumbent;
 use super::{
     CONSTRUCTIVE_ASSEMBLY_REPORT_SCHEMA_VERSION,
     CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION,
@@ -14,8 +16,7 @@ use super::{
     ConstructiveAssemblyStepReport, ConstructiveAutomaticAssemblyDiscoveryStep,
     ConstructiveAutomaticAssemblyReport, ConstructiveAutomaticAssemblyRequest,
     ConstructiveCompositionReport, ConstructiveFrontierDiagnostic, ConstructiveNode,
-    compose_constructive_nodes, construct_facility_node, construct_process_module,
-    constructive_node_from_process_module,
+    construct_facility_node, construct_process_module, constructive_node_from_process_module,
 };
 
 struct Candidate {
@@ -242,18 +243,21 @@ fn compose_candidates_parallel(
         .map_or(1, std::num::NonZeroUsize::get)
         .min(prepared.len());
     let chunk_size = prepared.len().div_ceil(workers);
+    let best_zero_blocked_area = AtomicUsize::new(usize::MAX);
     let outcomes = std::thread::scope(|scope| {
         prepared
             .chunks(chunk_size)
             .map(|chunk| {
+                let best_zero_blocked_area = &best_zero_blocked_area;
                 scope.spawn(move || {
                     let mut outcome = CompositionWorkerOutcome::default();
                     for prepared in chunk {
-                        let composition = compose_constructive_nodes(
+                        let composition = compose_constructive_nodes_with_area_incumbent(
                             &prepared.source,
                             current,
                             &prepared.edge,
                             facilities,
+                            &best_zero_blocked_area,
                         );
                         if !composition.success {
                             outcome.failures += 1;

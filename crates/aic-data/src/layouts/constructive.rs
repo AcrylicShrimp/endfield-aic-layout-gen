@@ -392,7 +392,7 @@ const STAGE: &str = "constructive-planner";
 pub const CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION: u32 = 3;
 pub const CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION: u32 = 1;
-pub const CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION: u32 = 1;
+pub const CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION: u32 = 2;
 pub const CONSTRUCTIVE_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
@@ -531,6 +531,8 @@ pub struct ConstructiveCompositionScore {
 pub struct ConstructiveCompositionStatistics {
     pub rotations_considered: u64,
     pub placements_considered: u64,
+    pub additive_placements_considered: u64,
+    pub area_lower_bound_rejections: u64,
     pub colliding_placements_rejected: u64,
     pub port_pairs_considered: u64,
     pub blocked_port_pairs_rejected: u64,
