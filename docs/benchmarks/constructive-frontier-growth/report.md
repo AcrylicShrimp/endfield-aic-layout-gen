@@ -24,7 +24,7 @@ Every phase still performs one complete transaction:
 - Belt tiles: 13
 - Total layer-aware transport tiles: 16
 - Final turns: 1
-- Release runtime: 62.13 seconds
+- Release runtime: 0.62 seconds
 
 | Growth | Transport | Facilities | Bounds | Area | New tiles | Total tiles | Turns |
 | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |
@@ -40,14 +40,30 @@ The final layout places all six 5x5 facilities in one compact horizontal band. T
 
 - Placement candidates considered: 61,952
 - Overlapping placements rejected: 4,692
-- Port pairs considered: 459,776
-- Blocked port pairs rejected: 36,482
-- Future-port dead ends rejected: 6,077
-- A* searches: 423,294
-- A* failures: 8
-- Valid candidates scored: 416,977
+- Port pairs considered after placement pruning: 4,134
+- Blocked port pairs rejected: 672
+- Future-port dead ends rejected: 45
+- A* searches: 874
+- A* failures: 0
+- Valid candidates scored: 829
+- Peak parallel workers: 16
+- Placement area-bound prunes: 56,773
+- Endpoint area-bound prunes: 2,588
+- Exact route-cache hits: 0
 
-The five-stage result is valid, but the runtime is already too high for further naive expansion. Candidate enumeration is not yet the dominant repeated operation: nearly every viable port pair launches an independent A* search. This measured cliff is the next implementation target.
+| Metric | Sequential baseline | Parallel area-bound run | Change |
+| --- | ---: | ---: | ---: |
+| Runtime | 62.13 s | 0.62 s | 100.2x faster |
+| A* searches | 423,294 | 874 | 99.79% fewer |
+| Final bounds | `32x7` | `32x7` | unchanged |
+| Pipe / belt tiles | 3 / 13 | 3 / 13 | unchanged |
+| Final score | `(224, 0, 16, 1)` | `(224, 0, 16, 1)` | unchanged |
+
+Workers share only the best used-area incumbent. A placement is pruned when its facility-only area lower bound is strictly larger, and a port pair is pruned when the area lower bound including both connection cells is strictly larger. Equal-area candidates remain eligible, so later score tiers are not discarded.
+
+Two independent runs produced byte-identical phase geometry, selected ports, routes, and scores. Diagnostic counters vary slightly with worker scheduling because an earlier incumbent can prevent another worker from beginning work; this does not affect the selected result.
+
+The exact endpoint route cache recorded no hits. Facility placement changes the blocked map, and every surviving physical endpoint pair was unique within that map. A global path cache would therefore add memory and hashing without helping this workload. Reusable one-to-many route-search state remains a separate future experiment if routing again dominates after further growth.
 
 ## Visualization
 

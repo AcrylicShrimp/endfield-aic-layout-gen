@@ -1,4 +1,5 @@
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
 
 use crate::facilities::{FacilityDefinition, FacilityPortDirection, ValidatedFacilityCatalog};
 use crate::layouts::{
@@ -44,6 +45,37 @@ struct Candidate {
     source_port: PlacedFacilityPort,
     target_port: PlacedFacilityPort,
     score: ConstructionCandidateScore,
+    order: CandidateOrder,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+struct CandidateOrder {
+    target_state: usize,
+    source: usize,
+    source_port: usize,
+    target_port: usize,
+}
+
+#[derive(Default)]
+struct WorkerOutcome {
+    best: Option<Candidate>,
+    statistics: WorkerStatistics,
+    workers: usize,
+}
+
+#[derive(Debug, Clone, Copy, Default)]
+struct WorkerStatistics {
+    placement_candidates: u64,
+    overlaps: u64,
+    port_pairs: u64,
+    blocked_port_pairs: u64,
+    future_port_dead_ends: u64,
+    astar_searches: u64,
+    astar_failures: u64,
+    valid_candidates: u64,
+    placement_area_bound_pruned: u64,
+    endpoint_area_bound_pruned: u64,
+    route_cache_hits: u64,
 }
 
 pub fn construct_frontier_growth(
@@ -137,7 +169,8 @@ pub fn construct_frontier_growth(
             0
         };
         let mut best: Option<Candidate> = None;
-        for target_state in target_states {
+        let best_area = AtomicUsize::new(usize::MAX);
+        for (target_state_index, target_state) in target_states.into_iter().enumerate() {
             let Some(target) = target_state
                 .placements
                 .iter()
@@ -151,112 +184,24 @@ pub fn construct_frontier_growth(
                 &request,
                 Some(target),
             );
-            for source in source_candidates {
-                phase_statistics.supplier_placements_considered += 1;
-                aggregate.placement_candidates_considered += 1;
-                if target_state
-                    .placements
-                    .iter()
-                    .any(|placed| rectangles_overlap(&source, placed))
-                {
-                    phase_statistics.overlapping_placements_rejected += 1;
-                    aggregate.overlapping_placements_rejected += 1;
-                    continue;
-                }
-                let mut placements = target_state.placements.clone();
-                placements.push(source);
-                let Some((source_ports, target_ports)) = candidate_ports(
-                    &placements,
-                    facilities,
-                    &request,
-                    &growth_edge.source.id,
-                    &growth_edge.target.id,
-                    growth_edge.transport,
-                ) else {
-                    continue;
-                };
-                let mut blocked = occupied_cells(&placements);
-                blocked.extend(transport_cells_for_kind(
-                    &target_state.transport_networks,
-                    growth_edge.transport,
-                ));
-                for source_port in source_ports {
-                    if target_state
-                        .used_ports
-                        .contains(&(source_port.instance.clone(), source_port.port.clone()))
-                    {
-                        continue;
-                    }
-                    for target_port in &target_ports {
-                        if target_state
-                            .used_ports
-                            .contains(&(target_port.instance.clone(), target_port.port.clone()))
-                        {
-                            continue;
-                        }
-                        phase_statistics.port_pairs_considered += 1;
-                        aggregate.port_pairs_considered += 1;
-                        if blocked.contains(&(source_port.connection.x, source_port.connection.y))
-                            || blocked
-                                .contains(&(target_port.connection.x, target_port.connection.y))
-                        {
-                            phase_statistics.blocked_port_pairs_rejected += 1;
-                            aggregate.blocked_port_pairs_rejected += 1;
-                            continue;
-                        }
-                        phase_statistics.astar_searches += 1;
-                        aggregate.astar_searches += 1;
-                        let Some(path) = route_shortest_path(
-                            request.max_width,
-                            request.max_height,
-                            &blocked,
-                            &source_port.connection,
-                            &target_port.connection,
-                        ) else {
-                            phase_statistics.astar_failures += 1;
-                            aggregate.astar_failures += 1;
-                            continue;
-                        };
-                        let network = network_for(
-                            growth_edge.edge,
-                            growth_edge.transport,
-                            &source_port,
-                            target_port,
-                            path,
-                        );
-                        let mut candidate_state = target_state.clone();
-                        candidate_state.placements = placements.clone();
-                        candidate_state.transport_networks.push(network);
-                        candidate_state
-                            .used_ports
-                            .insert((source_port.instance.clone(), source_port.port.clone()));
-                        candidate_state
-                            .used_ports
-                            .insert((target_port.instance.clone(), target_port.port.clone()));
-                        if !validate_state(&candidate_state) {
-                            continue;
-                        }
-                        let Some(blocked_future_port_options) = future_port_loss(
-                            &candidate_state,
-                            &growth[index + 1..],
-                            facilities,
-                            &request,
-                        ) else {
-                            aggregate.future_port_dead_ends_rejected += 1;
-                            continue;
-                        };
-                        let score = score(&candidate_state, blocked_future_port_options);
-                        aggregate.valid_candidates_scored += 1;
-                        if best.as_ref().is_none_or(|current| score < current.score) {
-                            best = Some(Candidate {
-                                state: candidate_state,
-                                source_port: source_port.clone(),
-                                target_port: target_port.clone(),
-                                score,
-                            });
-                        }
-                    }
-                }
+            let outcome = evaluate_source_candidates_parallel(
+                target_state_index,
+                &target_state,
+                &source_candidates,
+                growth_edge,
+                &growth[index + 1..],
+                facilities,
+                &request,
+                &best_area,
+            );
+            apply_worker_statistics(&mut phase_statistics, &mut aggregate, outcome.statistics);
+            aggregate.parallel_workers_peak = aggregate.parallel_workers_peak.max(outcome.workers);
+            if let Some(candidate) = outcome.best
+                && best
+                    .as_ref()
+                    .is_none_or(|current| candidate_is_better(&candidate, current))
+            {
+                best = Some(candidate);
             }
         }
 
@@ -324,6 +269,279 @@ pub fn construct_frontier_growth(
             "constructed an initial pipe chain and its immediate belt suppliers as validated routed frontier transactions",
         )],
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn evaluate_source_candidates_parallel(
+    target_state_index: usize,
+    target_state: &LayoutState,
+    source_candidates: &[FacilityPlacement],
+    growth_edge: &GrowthEdge<'_>,
+    remaining: &[GrowthEdge<'_>],
+    facilities: &ValidatedFacilityCatalog,
+    request: &FacilityPlacementRequest,
+    best_area: &AtomicUsize,
+) -> WorkerOutcome {
+    if source_candidates.is_empty() {
+        return WorkerOutcome::default();
+    }
+    let workers = std::thread::available_parallelism()
+        .map_or(1, std::num::NonZeroUsize::get)
+        .min(source_candidates.len());
+    let chunk_size = source_candidates.len().div_ceil(workers);
+    let outcomes = std::thread::scope(|scope| {
+        let handles = source_candidates
+            .chunks(chunk_size)
+            .enumerate()
+            .map(|(chunk_index, chunk)| {
+                let source_offset = chunk_index * chunk_size;
+                scope.spawn(move || {
+                    let mut outcome = WorkerOutcome {
+                        workers: 1,
+                        ..WorkerOutcome::default()
+                    };
+                    for (offset, source) in chunk.iter().enumerate() {
+                        let candidate_outcome = evaluate_source_candidate(
+                            CandidateOrder {
+                                target_state: target_state_index,
+                                source: source_offset + offset,
+                                source_port: 0,
+                                target_port: 0,
+                            },
+                            target_state,
+                            source,
+                            growth_edge,
+                            remaining,
+                            facilities,
+                            request,
+                            best_area,
+                        );
+                        merge_worker_outcome(&mut outcome, candidate_outcome);
+                    }
+                    outcome
+                })
+            })
+            .collect::<Vec<_>>();
+        handles
+            .into_iter()
+            .map(|handle| handle.join().expect("constructive route worker panicked"))
+            .collect::<Vec<_>>()
+    });
+
+    let mut combined = WorkerOutcome {
+        workers: outcomes.len(),
+        ..WorkerOutcome::default()
+    };
+    for outcome in outcomes {
+        merge_worker_outcome(&mut combined, outcome);
+    }
+    combined.workers = workers;
+    combined
+}
+
+#[allow(clippy::too_many_arguments)]
+fn evaluate_source_candidate(
+    order: CandidateOrder,
+    target_state: &LayoutState,
+    source: &FacilityPlacement,
+    growth_edge: &GrowthEdge<'_>,
+    remaining: &[GrowthEdge<'_>],
+    facilities: &ValidatedFacilityCatalog,
+    request: &FacilityPlacementRequest,
+    best_area: &AtomicUsize,
+) -> WorkerOutcome {
+    let mut outcome = WorkerOutcome::default();
+    outcome.statistics.placement_candidates = 1;
+    if target_state
+        .placements
+        .iter()
+        .any(|placed| rectangles_overlap(source, placed))
+    {
+        outcome.statistics.overlaps = 1;
+        return outcome;
+    }
+    let mut placements = target_state.placements.clone();
+    placements.push(source.clone());
+    if used_area_lower_bound(&placements, &target_state.transport_networks, &[])
+        > best_area.load(AtomicOrdering::Relaxed)
+    {
+        outcome.statistics.placement_area_bound_pruned = 1;
+        return outcome;
+    }
+    let Some((source_ports, target_ports)) = candidate_ports(
+        &placements,
+        facilities,
+        request,
+        &growth_edge.source.id,
+        &growth_edge.target.id,
+        growth_edge.transport,
+    ) else {
+        return outcome;
+    };
+    let mut blocked = occupied_cells(&placements);
+    blocked.extend(transport_cells_for_kind(
+        &target_state.transport_networks,
+        growth_edge.transport,
+    ));
+    let mut route_cache = HashMap::<(i64, i64, i64, i64), Option<Vec<WorldGridPosition>>>::new();
+    for (source_port_index, source_port) in source_ports.into_iter().enumerate() {
+        if target_state
+            .used_ports
+            .contains(&(source_port.instance.clone(), source_port.port.clone()))
+        {
+            continue;
+        }
+        for (target_port_index, target_port) in target_ports.iter().enumerate() {
+            if target_state
+                .used_ports
+                .contains(&(target_port.instance.clone(), target_port.port.clone()))
+            {
+                continue;
+            }
+            outcome.statistics.port_pairs += 1;
+            if blocked.contains(&(source_port.connection.x, source_port.connection.y))
+                || blocked.contains(&(target_port.connection.x, target_port.connection.y))
+            {
+                outcome.statistics.blocked_port_pairs += 1;
+                continue;
+            }
+            if used_area_lower_bound(
+                &placements,
+                &target_state.transport_networks,
+                &[&source_port.connection, &target_port.connection],
+            ) > best_area.load(AtomicOrdering::Relaxed)
+            {
+                outcome.statistics.endpoint_area_bound_pruned += 1;
+                continue;
+            }
+            let route_key = (
+                source_port.connection.x,
+                source_port.connection.y,
+                target_port.connection.x,
+                target_port.connection.y,
+            );
+            let path = if let Some(cached) = route_cache.get(&route_key) {
+                outcome.statistics.route_cache_hits += 1;
+                cached.clone()
+            } else {
+                outcome.statistics.astar_searches += 1;
+                let routed = route_shortest_path(
+                    request.max_width,
+                    request.max_height,
+                    &blocked,
+                    &source_port.connection,
+                    &target_port.connection,
+                );
+                if routed.is_none() {
+                    outcome.statistics.astar_failures += 1;
+                }
+                route_cache.insert(route_key, routed.clone());
+                routed
+            };
+            let Some(path) = path else {
+                continue;
+            };
+            let network = network_for(
+                growth_edge.edge,
+                growth_edge.transport,
+                &source_port,
+                target_port,
+                path,
+            );
+            let mut candidate_state = target_state.clone();
+            candidate_state.placements = placements.clone();
+            candidate_state.transport_networks.push(network);
+            candidate_state
+                .used_ports
+                .insert((source_port.instance.clone(), source_port.port.clone()));
+            candidate_state
+                .used_ports
+                .insert((target_port.instance.clone(), target_port.port.clone()));
+            if !validate_state(&candidate_state) {
+                continue;
+            }
+            let Some(blocked_future_port_options) =
+                future_port_loss(&candidate_state, remaining, facilities, request)
+            else {
+                outcome.statistics.future_port_dead_ends += 1;
+                continue;
+            };
+            let score = score(&candidate_state, blocked_future_port_options);
+            outcome.statistics.valid_candidates += 1;
+            best_area.fetch_min(score.used_bounding_box_area, AtomicOrdering::Relaxed);
+            let candidate = Candidate {
+                state: candidate_state,
+                source_port: source_port.clone(),
+                target_port: target_port.clone(),
+                score,
+                order: CandidateOrder {
+                    source_port: source_port_index,
+                    target_port: target_port_index,
+                    ..order
+                },
+            };
+            if outcome
+                .best
+                .as_ref()
+                .is_none_or(|current| candidate_is_better(&candidate, current))
+            {
+                outcome.best = Some(candidate);
+            }
+        }
+    }
+    outcome
+}
+
+fn candidate_is_better(candidate: &Candidate, current: &Candidate) -> bool {
+    (candidate.score, candidate.order) < (current.score, current.order)
+}
+
+fn merge_worker_outcome(combined: &mut WorkerOutcome, outcome: WorkerOutcome) {
+    if let Some(candidate) = outcome.best
+        && combined
+            .best
+            .as_ref()
+            .is_none_or(|current| candidate_is_better(&candidate, current))
+    {
+        combined.best = Some(candidate);
+    }
+    let target = &mut combined.statistics;
+    let source = outcome.statistics;
+    target.placement_candidates += source.placement_candidates;
+    target.overlaps += source.overlaps;
+    target.port_pairs += source.port_pairs;
+    target.blocked_port_pairs += source.blocked_port_pairs;
+    target.future_port_dead_ends += source.future_port_dead_ends;
+    target.astar_searches += source.astar_searches;
+    target.astar_failures += source.astar_failures;
+    target.valid_candidates += source.valid_candidates;
+    target.placement_area_bound_pruned += source.placement_area_bound_pruned;
+    target.endpoint_area_bound_pruned += source.endpoint_area_bound_pruned;
+    target.route_cache_hits += source.route_cache_hits;
+}
+
+fn apply_worker_statistics(
+    phase: &mut ConstructiveFrontierStatistics,
+    aggregate: &mut ConstructiveFrontierGrowthStatistics,
+    statistics: WorkerStatistics,
+) {
+    phase.supplier_placements_considered += statistics.placement_candidates;
+    phase.overlapping_placements_rejected += statistics.overlaps;
+    phase.port_pairs_considered += statistics.port_pairs;
+    phase.blocked_port_pairs_rejected += statistics.blocked_port_pairs;
+    phase.astar_searches += statistics.astar_searches;
+    phase.astar_failures += statistics.astar_failures;
+    aggregate.placement_candidates_considered += statistics.placement_candidates;
+    aggregate.overlapping_placements_rejected += statistics.overlaps;
+    aggregate.port_pairs_considered += statistics.port_pairs;
+    aggregate.blocked_port_pairs_rejected += statistics.blocked_port_pairs;
+    aggregate.future_port_dead_ends_rejected += statistics.future_port_dead_ends;
+    aggregate.astar_searches += statistics.astar_searches;
+    aggregate.astar_failures += statistics.astar_failures;
+    aggregate.valid_candidates_scored += statistics.valid_candidates;
+    aggregate.placement_area_bound_pruned += statistics.placement_area_bound_pruned;
+    aggregate.endpoint_area_bound_pruned += statistics.endpoint_area_bound_pruned;
+    aggregate.route_cache_hits += statistics.route_cache_hits;
 }
 
 fn failure(
@@ -684,7 +902,6 @@ fn future_port_loss(
 }
 
 fn score(state: &LayoutState, blocked_future_port_options: usize) -> ConstructionCandidateScore {
-    let cells = transport_cells(&state.transport_networks);
     let transport_tiles = state
         .transport_networks
         .iter()
@@ -696,38 +913,12 @@ fn score(state: &LayoutState, blocked_future_port_options: usize) -> Constructio
         })
         .collect::<HashSet<_>>()
         .len();
-    let minimum_x = state
-        .placements
-        .iter()
-        .map(|placement| placement.x)
-        .chain(cells.iter().map(|(x, _)| *x))
-        .min()
-        .unwrap_or(0);
-    let minimum_y = state
-        .placements
-        .iter()
-        .map(|placement| placement.y)
-        .chain(cells.iter().map(|(_, y)| *y))
-        .min()
-        .unwrap_or(0);
-    let maximum_x = state
-        .placements
-        .iter()
-        .map(|placement| placement.x + placement.width)
-        .chain(cells.iter().map(|(x, _)| *x + 1))
-        .max()
-        .unwrap_or(0);
-    let maximum_y = state
-        .placements
-        .iter()
-        .map(|placement| placement.y + placement.height)
-        .chain(cells.iter().map(|(_, y)| *y + 1))
-        .max()
-        .unwrap_or(0);
-    let area = usize::try_from((maximum_x - minimum_x).saturating_mul(maximum_y - minimum_y))
-        .unwrap_or(usize::MAX);
     ConstructionCandidateScore {
-        used_bounding_box_area: area,
+        used_bounding_box_area: used_area_lower_bound(
+            &state.placements,
+            &state.transport_networks,
+            &[],
+        ),
         blocked_future_port_options,
         transport_tiles,
         route_turns: state
@@ -736,6 +927,59 @@ fn score(state: &LayoutState, blocked_future_port_options: usize) -> Constructio
             .map(|network| count_turns(&network.cells))
             .sum(),
     }
+}
+
+fn used_area_lower_bound(
+    placements: &[FacilityPlacement],
+    networks: &[TransportNetwork],
+    extra_points: &[&WorldGridPosition],
+) -> usize {
+    let minimum_x = placements
+        .iter()
+        .map(|placement| placement.x)
+        .chain(
+            networks
+                .iter()
+                .flat_map(|network| network.cells.iter().map(|cell| cell.x)),
+        )
+        .chain(extra_points.iter().map(|point| point.x))
+        .min()
+        .unwrap_or(0);
+    let minimum_y = placements
+        .iter()
+        .map(|placement| placement.y)
+        .chain(
+            networks
+                .iter()
+                .flat_map(|network| network.cells.iter().map(|cell| cell.y)),
+        )
+        .chain(extra_points.iter().map(|point| point.y))
+        .min()
+        .unwrap_or(0);
+    let maximum_x = placements
+        .iter()
+        .map(|placement| placement.x + placement.width)
+        .chain(
+            networks
+                .iter()
+                .flat_map(|network| network.cells.iter().map(|cell| cell.x + 1)),
+        )
+        .chain(extra_points.iter().map(|point| point.x + 1))
+        .max()
+        .unwrap_or(0);
+    let maximum_y = placements
+        .iter()
+        .map(|placement| placement.y + placement.height)
+        .chain(
+            networks
+                .iter()
+                .flat_map(|network| network.cells.iter().map(|cell| cell.y + 1)),
+        )
+        .chain(extra_points.iter().map(|point| point.y + 1))
+        .max()
+        .unwrap_or(0);
+    usize::try_from((maximum_x - minimum_x).saturating_mul(maximum_y - minimum_y))
+        .unwrap_or(usize::MAX)
 }
 
 fn validate_state(state: &LayoutState) -> bool {
@@ -769,13 +1013,6 @@ fn validate_state(state: &LayoutState) -> bool {
         }
     }
     true
-}
-
-fn transport_cells(networks: &[TransportNetwork]) -> HashSet<(i64, i64)> {
-    networks
-        .iter()
-        .flat_map(|network| network.cells.iter().map(|cell| (cell.x, cell.y)))
-        .collect()
 }
 
 fn transport_cells_for_kind(

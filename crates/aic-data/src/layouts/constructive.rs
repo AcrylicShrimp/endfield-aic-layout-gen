@@ -162,7 +162,7 @@ pub fn render_constructive_frontier_growth_html(
 
 const STAGE: &str = "constructive-planner";
 pub const CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION: u32 = 1;
-pub const CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION: u32 = 1;
+pub const CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -215,6 +215,10 @@ pub struct ConstructiveFrontierGrowthStatistics {
     pub astar_searches: u64,
     pub astar_failures: u64,
     pub valid_candidates_scored: u64,
+    pub parallel_workers_peak: usize,
+    pub placement_area_bound_pruned: u64,
+    pub endpoint_area_bound_pruned: u64,
+    pub route_cache_hits: u64,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
