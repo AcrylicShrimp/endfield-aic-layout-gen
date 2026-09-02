@@ -330,6 +330,10 @@ enum LayoutsCommand {
         #[arg(long, value_name = "FILE")]
         item_catalog: PathBuf,
 
+        /// Belt and pipe capacity catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        transport_catalog: PathBuf,
+
         /// Seed facility instance whose unresolved inputs drive discovery.
         #[arg(long)]
         target_instance: String,
@@ -747,6 +751,7 @@ fn run() -> Result<CommandStatus> {
                 source_plan,
                 facility_catalog,
                 item_catalog,
+                transport_catalog,
                 target_instance,
                 max_steps,
                 visualization_output,
@@ -757,6 +762,7 @@ fn run() -> Result<CommandStatus> {
                 source_plan,
                 facility_catalog,
                 item_catalog,
+                transport_catalog,
                 target_instance,
                 max_steps,
                 visualization_output,
@@ -1621,6 +1627,7 @@ fn auto_assemble_process_modules_command(
     source_plan: PathBuf,
     facility_catalog: PathBuf,
     item_catalog: PathBuf,
+    transport_catalog: PathBuf,
     target_instance: String,
     max_steps: usize,
     visualization_output: PathBuf,
@@ -1633,13 +1640,27 @@ fn auto_assemble_process_modules_command(
     else {
         return Ok(CommandStatus::Failure);
     };
+    let transports = match ValidatedTransportCatalog::try_from_catalog(load_transport_catalog(
+        &transport_catalog,
+    )?) {
+        Ok(catalog) => catalog,
+        Err(report) => {
+            write_transport_catalog_validation_report(&report)?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
     let request = ConstructiveAutomaticAssemblyRequest {
         schema_version: aic_data::layouts::CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REQUEST_SCHEMA_VERSION,
         target_instance,
         max_steps,
     };
-    let report =
-        automatically_assemble_constructive_modules(&wiring, &facilities, &items, &request);
+    let report = automatically_assemble_constructive_modules(
+        &wiring,
+        &facilities,
+        &items,
+        &transports,
+        &request,
+    );
     let success = report.success;
     let html = render_constructive_automatic_assembly_html(&report, localization.as_ref())
         .map_err(|diagnostic| {
@@ -2667,6 +2688,8 @@ mod tests {
             "facilities.json",
             "--item-catalog",
             "items.json",
+            "--transport-catalog",
+            "transports.json",
             "--target-instance",
             "target",
             "--max-steps",
@@ -2683,6 +2706,7 @@ mod tests {
                 LayoutsCommand::AutoAssembleProcessModules {
                     target_instance,
                     max_steps,
+                    transport_catalog,
                     visualization_output,
                     report_output,
                     ..
@@ -2693,6 +2717,7 @@ mod tests {
         };
         assert_eq!(target_instance, "target");
         assert_eq!(max_steps, 2);
+        assert_eq!(transport_catalog, PathBuf::from("transports.json"));
         assert_eq!(visualization_output, PathBuf::from("automatic.html"));
         assert_eq!(report_output, PathBuf::from("automatic.json"));
     }

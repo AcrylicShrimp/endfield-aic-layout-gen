@@ -65,6 +65,7 @@ cargo run --release -p aic-cli -- layouts auto-assemble-process-modules \
   --source-plan data/examples/source-plan.game-heavy-xiranite-forge.request.json \
   --facility-catalog data/game/normalized/facilities.json \
   --item-catalog data/game/normalized/items.json \
+  --transport-catalog data/game/normalized/transports.json \
   --target-instance facility-instance:recipe-occurrence:/target:0 \
   --max-steps 6 \
   --localization-catalog data/game/normalized/localization.ko-KR.json

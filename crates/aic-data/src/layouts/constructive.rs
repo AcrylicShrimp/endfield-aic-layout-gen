@@ -20,6 +20,7 @@ mod automatic_assembly;
 mod composition;
 mod first_pipe_frontier;
 mod pipe_chain;
+mod port_demand;
 mod process_module;
 mod routing;
 
@@ -31,6 +32,7 @@ pub use composition::{
 };
 pub use first_pipe_frontier::construct_first_pipe_frontier;
 pub use pipe_chain::construct_frontier_growth;
+pub use port_demand::analyze_constructive_port_demands;
 pub use process_module::construct_process_module;
 
 pub fn render_constructive_frontier_html(
@@ -272,6 +274,18 @@ pub fn render_constructive_assembly_html(
     report: &ConstructiveAssemblyReport,
     localization: Option<&ValidatedLocalizationCatalog>,
 ) -> Result<String, IntegratedLayoutDiagnostic> {
+    render_constructive_assembly_history_html(report, None, localization)
+}
+
+fn render_constructive_assembly_history_html(
+    report: &ConstructiveAssemblyReport,
+    port_demand_analysis: Option<&ConstructivePortDemandAnalysis>,
+    localization: Option<&ValidatedLocalizationCatalog>,
+) -> Result<String, IntegratedLayoutDiagnostic> {
+    let visual_success = report.success
+        && port_demand_analysis
+            .map(|analysis| analysis.success)
+            .unwrap_or(true);
     let successful_steps = report
         .steps
         .iter()
@@ -280,7 +294,7 @@ pub fn render_constructive_assembly_html(
     if successful_steps.is_empty() {
         let synthetic = ConstructiveCompositionReport {
             schema_version: CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION,
-            success: report.success,
+            success: visual_success,
             requirement: String::new(),
             source_node: String::new(),
             target_node: report.target_instance.clone(),
@@ -310,7 +324,8 @@ pub fn render_constructive_assembly_html(
     let pages = successful_steps
         .iter()
         .zip(&visual_networks)
-        .map(|(step, networks)| {
+        .enumerate()
+        .map(|(page_index, (step, networks))| {
             let node = step
                 .composition
                 .composite
@@ -320,6 +335,17 @@ pub fn render_constructive_assembly_html(
                 .composition
                 .score
                 .expect("successful assembly steps have a score");
+            let port_demand_detail = port_demand_analysis
+                .filter(|_| page_index + 1 == successful_steps.len())
+                .map(|analysis| {
+                    format!(
+                        " · {} capacity-required ports vs {} edge-implied · {} over-capacity routes",
+                        analysis.required_ports,
+                        analysis.edge_implied_ports,
+                        analysis.over_capacity_routed_networks.len(),
+                    )
+                })
+                .unwrap_or_default();
             LayoutVisualizationPage {
                 bounds: &node.bounds,
                 placements: &node.placements,
@@ -332,25 +358,30 @@ pub fn render_constructive_assembly_html(
                     .collect(),
                 label: format!("Assembly {}/{}", step.index + 1, report.requested_modules),
                 detail: format!(
-                    " · +{} facilities · area {} · {} boundary options blocked · {} transport tiles · {} turns",
+                    " · +{} facilities · area {} · {} boundary options blocked · {} transport tiles · {} turns{}",
                     step.module_member_instances.len(),
                     score.used_bounding_box_area,
                     score.blocked_boundary_port_options,
                     score.transport_tiles,
                     score.route_turns,
+                    port_demand_detail,
                 ),
                 history: true,
             }
         })
         .collect::<Vec<_>>();
-    render_layout_history_html(&pages, report.success, localization)
+    render_layout_history_html(&pages, visual_success, localization)
 }
 
 pub fn render_constructive_automatic_assembly_html(
     report: &ConstructiveAutomaticAssemblyReport,
     localization: Option<&ValidatedLocalizationCatalog>,
 ) -> Result<String, IntegratedLayoutDiagnostic> {
-    render_constructive_assembly_html(&report.assembly, localization)
+    render_constructive_assembly_history_html(
+        &report.assembly,
+        Some(&report.port_demand_analysis),
+        localization,
+    )
 }
 
 fn boundary_visualization_networks(
@@ -396,7 +427,8 @@ pub const CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION: u32 = 3;
 pub const CONSTRUCTIVE_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
-pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 2;
+pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 3;
+pub const CONSTRUCTIVE_PORT_DEMAND_ANALYSIS_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -624,8 +656,61 @@ pub struct ConstructiveAutomaticAssemblyReport {
     pub max_steps: usize,
     pub discovery_steps: Vec<ConstructiveAutomaticAssemblyDiscoveryStep>,
     pub unresolved_facility_requirements: Vec<String>,
+    pub port_demand_analysis: ConstructivePortDemandAnalysis,
     pub assembly: ConstructiveAssemblyReport,
     pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructivePortDemandGroup {
+    pub inside_instance: String,
+    pub direction: FacilityPortDirection,
+    pub item: String,
+    pub transport: TransportKind,
+    pub logical_requirements: Vec<String>,
+    pub total_rate: Rate,
+    pub line_capacity: Rate,
+    pub edge_implied_ports: usize,
+    pub required_ports: usize,
+    pub available_distinct_ports: usize,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructivePortDemandScope {
+    pub inside_instance: String,
+    pub direction: FacilityPortDirection,
+    pub transport: TransportKind,
+    pub item_groups: usize,
+    pub required_ports: usize,
+    pub available_distinct_ports: usize,
+    pub capacity_sufficient: bool,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructivePortDemandAnalysis {
+    pub schema_version: u32,
+    pub success: bool,
+    pub boundary_requirements: usize,
+    pub capacity_groups: usize,
+    pub edge_implied_ports: usize,
+    pub required_ports: usize,
+    pub edge_implied_port_excess: usize,
+    pub edge_implied_port_deficit: usize,
+    pub routed_networks: usize,
+    pub over_capacity_routed_networks: Vec<ConstructiveTransportCapacityViolation>,
+    pub groups: Vec<ConstructivePortDemandGroup>,
+    pub scopes: Vec<ConstructivePortDemandScope>,
+    pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructiveTransportCapacityViolation {
+    pub network: String,
+    pub item: String,
+    pub transport: TransportKind,
+    pub peak_reported_rate: Rate,
+    pub line_capacity: Rate,
+    pub required_parallel_lines: usize,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]

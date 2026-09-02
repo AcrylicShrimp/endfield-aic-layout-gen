@@ -3,12 +3,13 @@ use std::sync::atomic::AtomicUsize;
 use std::time::Instant;
 
 use crate::facilities::ValidatedFacilityCatalog;
-use crate::logistics::ValidatedItemCatalog;
+use crate::logistics::{ValidatedItemCatalog, ValidatedTransportCatalog};
 use crate::recipes::{
     FacilityInstanceWiringEdge, FacilityInstanceWiringNode, FacilityInstanceWiringReport,
 };
 
 use super::composition::compose_constructive_nodes_with_area_incumbent;
+use super::port_demand::unavailable_constructive_port_demand_analysis;
 use super::{
     CONSTRUCTIVE_ASSEMBLY_REPORT_SCHEMA_VERSION,
     CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION,
@@ -16,7 +17,8 @@ use super::{
     ConstructiveAssemblyStepReport, ConstructiveAutomaticAssemblyDiscoveryStep,
     ConstructiveAutomaticAssemblyReport, ConstructiveAutomaticAssemblyRequest,
     ConstructiveCompositionReport, ConstructiveFrontierDiagnostic, ConstructiveNode,
-    construct_facility_node, construct_process_module, constructive_node_from_process_module,
+    analyze_constructive_port_demands, construct_facility_node, construct_process_module,
+    constructive_node_from_process_module,
 };
 
 struct Candidate {
@@ -46,6 +48,7 @@ pub fn automatically_assemble_constructive_modules(
     wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
     request: &ConstructiveAutomaticAssemblyRequest,
 ) -> ConstructiveAutomaticAssemblyReport {
     if request.schema_version != CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REQUEST_SCHEMA_VERSION {
@@ -93,7 +96,7 @@ pub fn automatically_assemble_constructive_modules(
         let step_started = Instant::now();
         let frontier = facility_frontier(wiring, &current, &facility_instances);
         if frontier.is_empty() {
-            return completed_report(request, current, steps, discovery_steps);
+            return completed_report(request, current, steps, discovery_steps, transports);
         }
         let mut candidates_generated = 0usize;
         let mut module_constructions_failed = 0usize;
@@ -188,6 +191,7 @@ pub fn automatically_assemble_constructive_modules(
                 discovery_steps,
                 unresolved_requirement_ids(&frontier),
                 diagnostic,
+                transports,
             );
         };
         let Some(composite) = selected.composition.composite.clone() else {
@@ -228,6 +232,7 @@ pub fn automatically_assemble_constructive_modules(
         steps,
         discovery_steps,
         unresolved_requirement_ids(&frontier),
+        transports,
     )
 }
 
@@ -349,6 +354,10 @@ fn invalid_report(
         max_steps: request.max_steps,
         discovery_steps: Vec::new(),
         unresolved_facility_requirements: Vec::new(),
+        port_demand_analysis: unavailable_constructive_port_demand_analysis(
+            "constructive-port-demand-analysis-not-run",
+            "port demand analysis did not run because the automatic assembly request was invalid",
+        ),
         assembly: assembly_report(request, false, None, Vec::new(), diagnostic.clone()),
         diagnostics: vec![diagnostic],
     }
@@ -359,10 +368,16 @@ fn completed_report(
     current: ConstructiveNode,
     steps: Vec<ConstructiveAssemblyStepReport>,
     discovery_steps: Vec<ConstructiveAutomaticAssemblyDiscoveryStep>,
+    transports: &ValidatedTransportCatalog,
 ) -> ConstructiveAutomaticAssemblyReport {
     let diagnostic = ConstructiveFrontierDiagnostic::info(
         "constructive-automatic-assembly-complete",
         "automatic module discovery resolved every facility-supplied boundary requirement",
+    );
+    let port_demand_analysis = analyze_constructive_port_demands(
+        &current.boundary_requirements,
+        &current.transport_networks,
+        transports,
     );
     ConstructiveAutomaticAssemblyReport {
         schema_version: CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION,
@@ -371,6 +386,7 @@ fn completed_report(
         max_steps: request.max_steps,
         discovery_steps,
         unresolved_facility_requirements: Vec::new(),
+        port_demand_analysis,
         assembly: assembly_report(request, true, Some(current), steps, diagnostic.clone()),
         diagnostics: vec![diagnostic],
     }
@@ -382,10 +398,16 @@ fn partial_report(
     steps: Vec<ConstructiveAssemblyStepReport>,
     discovery_steps: Vec<ConstructiveAutomaticAssemblyDiscoveryStep>,
     unresolved_facility_requirements: Vec<String>,
+    transports: &ValidatedTransportCatalog,
 ) -> ConstructiveAutomaticAssemblyReport {
     let diagnostic = ConstructiveFrontierDiagnostic::info(
         "constructive-automatic-assembly-step-limit-reached",
         "automatic module discovery reached the requested growth-step limit with a valid partial composite",
+    );
+    let port_demand_analysis = analyze_constructive_port_demands(
+        &current.boundary_requirements,
+        &current.transport_networks,
+        transports,
     );
     ConstructiveAutomaticAssemblyReport {
         schema_version: CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION,
@@ -394,6 +416,7 @@ fn partial_report(
         max_steps: request.max_steps,
         discovery_steps,
         unresolved_facility_requirements,
+        port_demand_analysis,
         assembly: assembly_report(request, true, Some(current), steps, diagnostic.clone()),
         diagnostics: vec![diagnostic],
     }
@@ -406,7 +429,13 @@ fn exhausted_report(
     discovery_steps: Vec<ConstructiveAutomaticAssemblyDiscoveryStep>,
     unresolved_facility_requirements: Vec<String>,
     diagnostic: ConstructiveFrontierDiagnostic,
+    transports: &ValidatedTransportCatalog,
 ) -> ConstructiveAutomaticAssemblyReport {
+    let port_demand_analysis = analyze_constructive_port_demands(
+        &current.boundary_requirements,
+        &current.transport_networks,
+        transports,
+    );
     ConstructiveAutomaticAssemblyReport {
         schema_version: CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION,
         success: false,
@@ -414,6 +443,7 @@ fn exhausted_report(
         max_steps: request.max_steps,
         discovery_steps,
         unresolved_facility_requirements,
+        port_demand_analysis,
         assembly: assembly_report(request, false, Some(current), steps, diagnostic.clone()),
         diagnostics: vec![diagnostic],
     }
@@ -424,6 +454,33 @@ mod tests {
     use super::*;
     use crate::layouts::constructive::assembly::tests::two_module_fixture;
     use crate::layouts::render_constructive_automatic_assembly_html;
+    use crate::logistics::{
+        SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION, TransportCapacity, TransportCatalog,
+        TransportDefinition, TransportKind,
+    };
+
+    fn transports() -> ValidatedTransportCatalog {
+        ValidatedTransportCatalog::try_from_catalog(TransportCatalog {
+            schema_version: SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION,
+            transports: vec![
+                TransportDefinition {
+                    kind: TransportKind::Belt,
+                    capacity: TransportCapacity {
+                        quantity: 1,
+                        duration_ms: 1_000,
+                    },
+                },
+                TransportDefinition {
+                    kind: TransportKind::Pipe,
+                    capacity: TransportCapacity {
+                        quantity: 1,
+                        duration_ms: 500,
+                    },
+                },
+            ],
+        })
+        .expect("transport catalog validates")
+    }
 
     #[test]
     fn discovers_and_assembles_two_modules_without_an_explicit_module_plan() {
@@ -434,8 +491,13 @@ mod tests {
             max_steps: 2,
         };
 
-        let report =
-            automatically_assemble_constructive_modules(&wiring, &facilities, &items, &request);
+        let report = automatically_assemble_constructive_modules(
+            &wiring,
+            &facilities,
+            &items,
+            &transports(),
+            &request,
+        );
 
         assert!(report.success, "{:?}", report.diagnostics);
         assert!(report.complete);
@@ -443,6 +505,11 @@ mod tests {
         assert_eq!(report.assembly.completed_modules, 2);
         assert_eq!(report.discovery_steps[0].selected_requirement, "module-a");
         assert_eq!(report.discovery_steps[1].selected_requirement, "module-b");
+        assert!(report.port_demand_analysis.success);
+        assert_eq!(report.port_demand_analysis.boundary_requirements, 1);
+        assert_eq!(report.port_demand_analysis.required_ports, 1);
+        assert_eq!(report.port_demand_analysis.edge_implied_ports, 1);
+        assert_eq!(report.port_demand_analysis.edge_implied_port_deficit, 0);
         assert!(
             report
                 .discovery_steps
