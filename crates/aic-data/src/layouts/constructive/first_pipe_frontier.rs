@@ -76,6 +76,7 @@ pub fn construct_first_pipe_frontier(
                 &request,
                 &frontier.source.id,
                 &frontier.target.id,
+                TransportKind::Pipe,
             ) else {
                 continue;
             };
@@ -341,6 +342,7 @@ pub(super) fn candidate_ports(
     request: &FacilityPlacementRequest,
     source_instance: &str,
     target_instance: &str,
+    transport: TransportKind,
 ) -> Option<(Vec<PlacedFacilityPort>, Vec<PlacedFacilityPort>)> {
     let report = FacilityPlacementReport {
         success: true,
@@ -359,7 +361,7 @@ pub(super) fn candidate_ports(
         .filter(|port| {
             port.instance == source_instance
                 && port.direction == FacilityPortDirection::Output
-                && port.transport == TransportKind::Pipe
+                && port.transport == transport
         })
         .cloned()
         .collect::<Vec<_>>();
@@ -369,7 +371,7 @@ pub(super) fn candidate_ports(
         .filter(|port| {
             port.instance == target_instance
                 && port.direction == FacilityPortDirection::Input
-                && port.transport == TransportKind::Pipe
+                && port.transport == transport
         })
         .cloned()
         .collect::<Vec<_>>();

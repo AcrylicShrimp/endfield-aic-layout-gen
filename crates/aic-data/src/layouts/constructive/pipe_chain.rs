@@ -18,16 +18,18 @@ use super::first_pipe_frontier::{
 };
 use super::routing::{count_turns, route_shortest_path};
 use super::{
-    CONSTRUCTIVE_PIPE_CHAIN_SCHEMA_VERSION, ConstructionCandidateScore,
-    ConstructiveFrontierDiagnostic, ConstructiveFrontierStatistics, ConstructivePipeChainPhase,
-    ConstructivePipeChainReport, ConstructivePipeChainStatistics, ConstructivePipeChainStatus,
+    CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION, ConstructionCandidateScore,
+    ConstructiveFrontierDiagnostic, ConstructiveFrontierGrowthPhase,
+    ConstructiveFrontierGrowthReport, ConstructiveFrontierGrowthStatistics,
+    ConstructiveFrontierGrowthStatus, ConstructiveFrontierStatistics,
 };
 
 #[derive(Clone)]
-struct ChainEdge<'a> {
+struct GrowthEdge<'a> {
     edge: &'a FacilityInstanceWiringEdge,
     source: FacilityInstance,
     target: FacilityInstance,
+    transport: TransportKind,
 }
 
 #[derive(Clone, Default)]
@@ -44,72 +46,72 @@ struct Candidate {
     score: ConstructionCandidateScore,
 }
 
-pub fn construct_pipe_chain(
+pub fn construct_frontier_growth(
     wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
-) -> ConstructivePipeChainReport {
+) -> ConstructiveFrontierGrowthReport {
     if let Some(diagnostic) = validate_inputs(wiring) {
         return failure(
-            ConstructivePipeChainStatus::InvalidInput,
+            ConstructiveFrontierGrowthStatus::InvalidInput,
             Vec::new(),
-            ConstructivePipeChainStatistics::default(),
+            ConstructiveFrontierGrowthStatistics::default(),
             diagnostic,
         );
     }
-    let chain = match select_longest_linear_pipe_chain(wiring, items) {
-        Ok(chain) if !chain.is_empty() => chain,
+    let growth = match select_initial_frontier_growth(wiring, items) {
+        Ok(growth) if !growth.is_empty() => growth,
         Ok(_) => {
             return failure(
-                ConstructivePipeChainStatus::NoEligibleChain,
+                ConstructiveFrontierGrowthStatus::NoEligibleFrontier,
                 Vec::new(),
-                ConstructivePipeChainStatistics::default(),
+                ConstructiveFrontierGrowthStatistics::default(),
                 ConstructiveFrontierDiagnostic::error(
-                    "no-linear-pipe-chain",
+                    "no-eligible-frontier-growth",
                     "/edges",
                     None,
-                    "instance wiring contains no facility-to-facility linear pipe chain",
+                    "instance wiring contains no eligible facility-to-facility transport frontier",
                 ),
             );
         }
         Err(diagnostic) => {
             return failure(
-                ConstructivePipeChainStatus::InvalidInput,
+                ConstructiveFrontierGrowthStatus::InvalidInput,
                 Vec::new(),
-                ConstructivePipeChainStatistics::default(),
+                ConstructiveFrontierGrowthStatistics::default(),
                 diagnostic,
             );
         }
     };
-    let request = match chain_canvas(&chain, facilities) {
+    let request = match growth_canvas(&growth, facilities) {
         Ok(request) => request,
         Err(diagnostic) => {
             return failure(
-                ConstructivePipeChainStatus::InvalidInput,
+                ConstructiveFrontierGrowthStatus::InvalidInput,
                 Vec::new(),
-                ConstructivePipeChainStatistics::default(),
+                ConstructiveFrontierGrowthStatistics::default(),
                 diagnostic,
             );
         }
     };
-    let mut aggregate = ConstructivePipeChainStatistics {
-        selected_requirements: chain.len(),
-        ..ConstructivePipeChainStatistics::default()
+    let mut aggregate = ConstructiveFrontierGrowthStatistics {
+        selected_requirements: growth.len(),
+        ..ConstructiveFrontierGrowthStatistics::default()
     };
-    let mut phases = Vec::with_capacity(chain.len());
+    let mut phases = Vec::with_capacity(growth.len());
     let mut state = LayoutState::default();
 
-    for (index, chain_edge) in chain.iter().enumerate() {
+    for (index, growth_edge) in growth.iter().enumerate() {
         let target_states = if state.placements.is_empty() {
-            let Some(definition) = facilities.facility(&chain_edge.target.facility) else {
+            let Some(definition) = facilities.facility(&growth_edge.target.facility) else {
                 return failure(
-                    ConstructivePipeChainStatus::InvalidInput,
+                    ConstructiveFrontierGrowthStatus::InvalidInput,
                     phases,
                     aggregate,
-                    missing_facility(&chain_edge.target),
+                    missing_facility(&growth_edge.target),
                 );
             };
-            seed_candidates(&chain_edge.target, definition, &request)
+            seed_candidates(&growth_edge.target, definition, &request)
                 .into_iter()
                 .map(|placement| LayoutState {
                     placements: vec![placement],
@@ -120,12 +122,12 @@ pub fn construct_pipe_chain(
             vec![state.clone()]
         };
 
-        let Some(source_definition) = facilities.facility(&chain_edge.source.facility) else {
+        let Some(source_definition) = facilities.facility(&growth_edge.source.facility) else {
             return failure(
-                ConstructivePipeChainStatus::InvalidInput,
+                ConstructiveFrontierGrowthStatus::InvalidInput,
                 phases,
                 aggregate,
-                missing_facility(&chain_edge.source),
+                missing_facility(&growth_edge.source),
             );
         };
         let mut phase_statistics = ConstructiveFrontierStatistics::default();
@@ -139,12 +141,12 @@ pub fn construct_pipe_chain(
             let Some(target) = target_state
                 .placements
                 .iter()
-                .find(|placement| placement.instance == chain_edge.target.id)
+                .find(|placement| placement.instance == growth_edge.target.id)
             else {
                 continue;
             };
             let source_candidates = placement_candidates(
-                &chain_edge.source,
+                &growth_edge.source,
                 source_definition,
                 &request,
                 Some(target),
@@ -167,13 +169,17 @@ pub fn construct_pipe_chain(
                     &placements,
                     facilities,
                     &request,
-                    &chain_edge.source.id,
-                    &chain_edge.target.id,
+                    &growth_edge.source.id,
+                    &growth_edge.target.id,
+                    growth_edge.transport,
                 ) else {
                     continue;
                 };
                 let mut blocked = occupied_cells(&placements);
-                blocked.extend(transport_cells(&target_state.transport_networks));
+                blocked.extend(transport_cells_for_kind(
+                    &target_state.transport_networks,
+                    growth_edge.transport,
+                ));
                 for source_port in source_ports {
                     if target_state
                         .used_ports
@@ -211,7 +217,13 @@ pub fn construct_pipe_chain(
                             aggregate.astar_failures += 1;
                             continue;
                         };
-                        let network = network_for(chain_edge.edge, &source_port, target_port, path);
+                        let network = network_for(
+                            growth_edge.edge,
+                            growth_edge.transport,
+                            &source_port,
+                            target_port,
+                            path,
+                        );
                         let mut candidate_state = target_state.clone();
                         candidate_state.placements = placements.clone();
                         candidate_state.transport_networks.push(network);
@@ -226,7 +238,7 @@ pub fn construct_pipe_chain(
                         }
                         let Some(blocked_future_port_options) = future_port_loss(
                             &candidate_state,
-                            &chain[index + 1..],
+                            &growth[index + 1..],
                             facilities,
                             &request,
                         ) else {
@@ -251,16 +263,16 @@ pub fn construct_pipe_chain(
         let Some(candidate) = best else {
             aggregate.completed_requirements = phases.len();
             return failure(
-                ConstructivePipeChainStatus::Exhausted,
+                ConstructiveFrontierGrowthStatus::Exhausted,
                 phases,
                 aggregate,
                 ConstructiveFrontierDiagnostic::error(
-                    "pipe-chain-growth-exhausted",
+                    "frontier-growth-exhausted",
                     format!("/phases/{index}"),
-                    Some(chain_edge.edge.id.clone()),
+                    Some(growth_edge.edge.id.clone()),
                     format!(
-                        "constructive pipe-chain growth exhausted local placement, port, and route candidates for requirement '{}'",
-                        chain_edge.edge.id
+                        "constructive frontier growth exhausted local placement, port, and route candidates for requirement '{}'",
+                        growth_edge.edge.id
                     ),
                 ),
             );
@@ -278,12 +290,12 @@ pub fn construct_pipe_chain(
         state = candidate.state;
         let (placements, networks, source_port, target_port, bounds) =
             canonical_snapshot(&state, candidate.source_port, candidate.target_port);
-        phases.push(ConstructivePipeChainPhase {
+        phases.push(ConstructiveFrontierGrowthPhase {
             index,
-            requirement: chain_edge.edge.id.clone(),
-            item: chain_edge.edge.item.clone(),
-            rate: chain_edge.edge.rate,
-            introduced_facility: chain_edge.source.id.clone(),
+            requirement: growth_edge.edge.id.clone(),
+            item: growth_edge.edge.item.clone(),
+            rate: growth_edge.edge.rate,
+            introduced_facility: growth_edge.source.id.clone(),
             bounds,
             placements,
             transport_networks: networks,
@@ -298,31 +310,31 @@ pub fn construct_pipe_chain(
     let final_phase = phases
         .last()
         .expect("a non-empty selected chain completes at least one phase");
-    ConstructivePipeChainReport {
-        schema_version: CONSTRUCTIVE_PIPE_CHAIN_SCHEMA_VERSION,
+    ConstructiveFrontierGrowthReport {
+        schema_version: CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION,
         success: true,
-        status: ConstructivePipeChainStatus::Constructed,
+        status: ConstructiveFrontierGrowthStatus::Constructed,
         bounds: Some(final_phase.bounds.clone()),
         placements: final_phase.placements.clone(),
         transport_networks: final_phase.transport_networks.clone(),
         phases,
         statistics: aggregate,
         diagnostics: vec![ConstructiveFrontierDiagnostic::info(
-            "pipe-chain-constructed",
-            "constructed a linear facility pipe chain as validated routed frontier transactions",
+            "frontier-growth-constructed",
+            "constructed an initial pipe chain and its immediate belt suppliers as validated routed frontier transactions",
         )],
     }
 }
 
 fn failure(
-    status: ConstructivePipeChainStatus,
-    phases: Vec<ConstructivePipeChainPhase>,
-    statistics: ConstructivePipeChainStatistics,
+    status: ConstructiveFrontierGrowthStatus,
+    phases: Vec<ConstructiveFrontierGrowthPhase>,
+    statistics: ConstructiveFrontierGrowthStatistics,
     diagnostic: ConstructiveFrontierDiagnostic,
-) -> ConstructivePipeChainReport {
+) -> ConstructiveFrontierGrowthReport {
     let final_phase = phases.last();
-    ConstructivePipeChainReport {
-        schema_version: CONSTRUCTIVE_PIPE_CHAIN_SCHEMA_VERSION,
+    ConstructiveFrontierGrowthReport {
+        schema_version: CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION,
         success: false,
         status,
         bounds: final_phase.map(|phase| phase.bounds.clone()),
@@ -338,7 +350,7 @@ fn failure(
 fn select_longest_linear_pipe_chain<'a>(
     wiring: &'a FacilityInstanceWiringReport,
     items: &ValidatedItemCatalog,
-) -> Result<Vec<ChainEdge<'a>>, ConstructiveFrontierDiagnostic> {
+) -> Result<Vec<GrowthEdge<'a>>, ConstructiveFrontierDiagnostic> {
     let instances = wiring
         .nodes
         .iter()
@@ -378,10 +390,11 @@ fn select_longest_linear_pipe_chain<'a>(
         ) else {
             continue;
         };
-        eligible.push(ChainEdge {
+        eligible.push(GrowthEdge {
             edge,
             source: source.clone(),
             target: target.clone(),
+            transport: TransportKind::Pipe,
         });
     }
     eligible.sort_by(|left, right| left.edge.id.cmp(&right.edge.id));
@@ -425,12 +438,79 @@ fn select_longest_linear_pipe_chain<'a>(
     Ok(best)
 }
 
-fn chain_canvas(
-    chain: &[ChainEdge<'_>],
+fn select_initial_frontier_growth<'a>(
+    wiring: &'a FacilityInstanceWiringReport,
+    items: &ValidatedItemCatalog,
+) -> Result<Vec<GrowthEdge<'a>>, ConstructiveFrontierDiagnostic> {
+    let mut growth = select_longest_linear_pipe_chain(wiring, items)?;
+    let instances = wiring
+        .nodes
+        .iter()
+        .filter_map(|node| match node {
+            FacilityInstanceWiringNode::Facility {
+                id,
+                recipe,
+                facility,
+                ..
+            } => Some((
+                id.as_str(),
+                FacilityInstance {
+                    id: id.clone(),
+                    recipe: recipe.clone(),
+                    facility: facility.clone(),
+                },
+            )),
+            _ => None,
+        })
+        .collect::<BTreeMap<_, _>>();
+    let mut selected_instances = growth
+        .iter()
+        .flat_map(|edge| [edge.source.id.clone(), edge.target.id.clone()])
+        .collect::<BTreeSet<_>>();
+    let mut belt_frontiers = Vec::new();
+    for edge in &wiring.edges {
+        let Some(item) = items.item(&edge.item) else {
+            return Err(ConstructiveFrontierDiagnostic::error(
+                "missing-item-definition",
+                "/edges",
+                Some(edge.item.clone()),
+                format!("wiring edge references missing item '{}'", edge.item),
+            ));
+        };
+        if item.transport != TransportKind::Belt
+            || !selected_instances.contains(&edge.target)
+            || selected_instances.contains(&edge.source)
+        {
+            continue;
+        }
+        let (Some(source), Some(target)) = (
+            instances.get(edge.source.as_str()),
+            instances.get(edge.target.as_str()),
+        ) else {
+            continue;
+        };
+        belt_frontiers.push(GrowthEdge {
+            edge,
+            source: source.clone(),
+            target: target.clone(),
+            transport: TransportKind::Belt,
+        });
+    }
+    belt_frontiers.sort_by(|left, right| left.edge.id.cmp(&right.edge.id));
+    for frontier in belt_frontiers {
+        if selected_instances.insert(frontier.source.id.clone()) {
+            growth.push(frontier);
+        }
+    }
+    Ok(growth)
+}
+
+fn growth_canvas(
+    growth: &[GrowthEdge<'_>],
     facilities: &ValidatedFacilityCatalog,
 ) -> Result<FacilityPlacementRequest, ConstructiveFrontierDiagnostic> {
     let mut instances = BTreeMap::new();
-    for edge in chain {
+    for edge in growth {
         instances.insert(edge.source.id.as_str(), &edge.source);
         instances.insert(edge.target.id.as_str(), &edge.target);
     }
@@ -492,6 +572,7 @@ fn seed_candidates(
 
 fn network_for(
     edge: &FacilityInstanceWiringEdge,
+    transport: TransportKind,
     source: &PlacedFacilityPort,
     target: &PlacedFacilityPort,
     cells: Vec<WorldGridPosition>,
@@ -500,7 +581,7 @@ fn network_for(
         id: format!("constructive:{}", edge.id),
         requirement_ids: vec![edge.id.clone()],
         item: edge.item.clone(),
-        transport: TransportKind::Pipe,
+        transport,
         segments: cells
             .windows(2)
             .map(|pair| TransportNetworkSegment {
@@ -540,7 +621,7 @@ fn network_for(
 
 fn future_port_loss(
     state: &LayoutState,
-    remaining: &[ChainEdge<'_>],
+    remaining: &[GrowthEdge<'_>],
     facilities: &ValidatedFacilityCatalog,
     request: &FacilityPlacementRequest,
 ) -> Option<usize> {
@@ -559,9 +640,10 @@ fn future_port_loss(
         return None;
     }
     let occupied_facilities = occupied_cells(&state.placements);
-    let occupied_transport = transport_cells(&state.transport_networks);
     let mut loss = 0;
     for edge in remaining {
+        let occupied_transport =
+            transport_cells_for_kind(&state.transport_networks, edge.transport);
         for (instance, direction) in [
             (&edge.source.id, FacilityPortDirection::Output),
             (&edge.target.id, FacilityPortDirection::Input),
@@ -579,7 +661,7 @@ fn future_port_loss(
                 .filter(|port| {
                     port.instance == *instance
                         && port.direction == direction
-                        && port.transport == TransportKind::Pipe
+                        && port.transport == edge.transport
                         && !state
                             .used_ports
                             .contains(&(port.instance.clone(), port.port.clone()))
@@ -603,6 +685,17 @@ fn future_port_loss(
 
 fn score(state: &LayoutState, blocked_future_port_options: usize) -> ConstructionCandidateScore {
     let cells = transport_cells(&state.transport_networks);
+    let transport_tiles = state
+        .transport_networks
+        .iter()
+        .flat_map(|network| {
+            network
+                .cells
+                .iter()
+                .map(move |cell| (transport_layer_key(network.transport), cell.x, cell.y))
+        })
+        .collect::<HashSet<_>>()
+        .len();
     let minimum_x = state
         .placements
         .iter()
@@ -636,7 +729,7 @@ fn score(state: &LayoutState, blocked_future_port_options: usize) -> Constructio
     ConstructionCandidateScore {
         used_bounding_box_area: area,
         blocked_future_port_options,
-        transport_tiles: cells.len(),
+        transport_tiles,
         route_turns: state
             .transport_networks
             .iter()
@@ -657,8 +750,7 @@ fn validate_state(state: &LayoutState) -> bool {
     let facilities = occupied_cells(&state.placements);
     let mut transport = HashSet::new();
     for network in &state.transport_networks {
-        if network.transport != TransportKind::Pipe
-            || network.cells.is_empty()
+        if network.cells.is_empty()
             || network
                 .cells
                 .iter()
@@ -667,10 +759,9 @@ fn validate_state(state: &LayoutState) -> bool {
                 .cells
                 .windows(2)
                 .any(|pair| pair[0].x.abs_diff(pair[1].x) + pair[0].y.abs_diff(pair[1].y) != 1)
-            || network
-                .cells
-                .iter()
-                .any(|cell| !transport.insert((cell.x, cell.y)))
+            || network.cells.iter().any(|cell| {
+                !transport.insert((transport_layer_key(network.transport), cell.x, cell.y))
+            })
             || network.terminals.first().map(|terminal| &terminal.position) != network.cells.first()
             || network.terminals.last().map(|terminal| &terminal.position) != network.cells.last()
         {
@@ -685,6 +776,24 @@ fn transport_cells(networks: &[TransportNetwork]) -> HashSet<(i64, i64)> {
         .iter()
         .flat_map(|network| network.cells.iter().map(|cell| (cell.x, cell.y)))
         .collect()
+}
+
+fn transport_cells_for_kind(
+    networks: &[TransportNetwork],
+    transport: TransportKind,
+) -> HashSet<(i64, i64)> {
+    networks
+        .iter()
+        .filter(|network| network.transport == transport)
+        .flat_map(|network| network.cells.iter().map(|cell| (cell.x, cell.y)))
+        .collect()
+}
+
+fn transport_layer_key(transport: TransportKind) -> u8 {
+    match transport {
+        TransportKind::Belt => 0,
+        TransportKind::Pipe => 1,
+    }
 }
 
 fn canonical_snapshot(
@@ -789,6 +898,20 @@ mod tests {
                     position: FacilityPortPosition { x: 1, y: 0 },
                     edge: FacilityPortEdge::East,
                 },
+                FacilityPortDefinition {
+                    id: "belt-input".to_string(),
+                    direction: FacilityPortDirection::Input,
+                    transport: TransportKind::Belt,
+                    position: FacilityPortPosition { x: 0, y: 1 },
+                    edge: FacilityPortEdge::South,
+                },
+                FacilityPortDefinition {
+                    id: "belt-output".to_string(),
+                    direction: FacilityPortDirection::Output,
+                    transport: TransportKind::Belt,
+                    position: FacilityPortPosition { x: 1, y: 1 },
+                    edge: FacilityPortEdge::South,
+                },
             ],
         }
     }
@@ -865,15 +988,15 @@ mod tests {
         })
         .expect("item catalog validates");
 
-        let report = construct_pipe_chain(&wiring, &facilities, &items);
+        let report = construct_frontier_growth(&wiring, &facilities, &items);
         assert!(report.success, "{:?}", report.diagnostics);
         assert_eq!(report.phases.len(), 2);
         assert_eq!(report.phases[0].placements.len(), 2);
         assert_eq!(report.phases[1].placements.len(), 3);
         assert_eq!(report.phases[1].transport_networks.len(), 2);
         assert_eq!(report.statistics.completed_requirements, 2);
-        let html = crate::layouts::render_constructive_pipe_chain_html(&report, None)
-            .expect("constructive pipe chain history should render");
+        let html = crate::layouts::render_constructive_frontier_growth_html(&report, None)
+            .expect("constructive frontier growth history should render");
         assert!(html.contains("data-phase-label=\"Growth 1/2\""));
         assert!(html.contains("data-phase-label=\"Growth 2/2\""));
         assert!(html.contains("CONSTRUCTED"));
@@ -882,6 +1005,90 @@ mod tests {
             transport_networks: report.transport_networks,
             used_ports: BTreeSet::new(),
         }));
+    }
+
+    #[test]
+    fn extends_the_pipe_chain_with_an_immediate_belt_supplier() {
+        let rate = Rate {
+            numerator: 1,
+            denominator: 1,
+        };
+        let wiring = FacilityInstanceWiringReport {
+            schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
+            success: true,
+            nodes: vec![
+                node("upstream"),
+                node("middle"),
+                node("target"),
+                node("belt-source"),
+            ],
+            edges: vec![
+                FacilityInstanceWiringEdge {
+                    id: "upstream-middle".to_string(),
+                    source: "upstream".to_string(),
+                    target: "middle".to_string(),
+                    kind: "intermediate".to_string(),
+                    item: "fluid-a".to_string(),
+                    rate,
+                    projection: FacilityInstanceWiringProjection::Original,
+                },
+                FacilityInstanceWiringEdge {
+                    id: "middle-target".to_string(),
+                    source: "middle".to_string(),
+                    target: "target".to_string(),
+                    kind: "intermediate".to_string(),
+                    item: "fluid-b".to_string(),
+                    rate,
+                    projection: FacilityInstanceWiringProjection::Original,
+                },
+                FacilityInstanceWiringEdge {
+                    id: "belt-target".to_string(),
+                    source: "belt-source".to_string(),
+                    target: "target".to_string(),
+                    kind: "intermediate".to_string(),
+                    item: "solid".to_string(),
+                    rate,
+                    projection: FacilityInstanceWiringProjection::Original,
+                },
+            ],
+            diagnostics: Vec::new(),
+        };
+        let facilities = ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
+            schema_version: SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION,
+            facilities: vec![
+                definition("upstream"),
+                definition("middle"),
+                definition("target"),
+                definition("belt-source"),
+            ],
+        })
+        .expect("facility catalog validates");
+        let items = ValidatedItemCatalog::try_from_catalog(ItemCatalog {
+            schema_version: SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+            items: vec![
+                ItemDefinition {
+                    id: "fluid-a".to_string(),
+                    transport: TransportKind::Pipe,
+                },
+                ItemDefinition {
+                    id: "fluid-b".to_string(),
+                    transport: TransportKind::Pipe,
+                },
+                ItemDefinition {
+                    id: "solid".to_string(),
+                    transport: TransportKind::Belt,
+                },
+            ],
+        })
+        .expect("item catalog validates");
+
+        let report = construct_frontier_growth(&wiring, &facilities, &items);
+        assert!(report.success, "{:?}", report.diagnostics);
+        assert_eq!(report.phases.len(), 3);
+        assert_eq!(report.placements.len(), 4);
+        assert_eq!(report.transport_networks.len(), 3);
+        assert_eq!(report.transport_networks[2].transport, TransportKind::Belt);
+        assert_eq!(report.statistics.completed_requirements, 3);
     }
 
     #[test]

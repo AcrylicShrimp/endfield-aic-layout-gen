@@ -9,10 +9,10 @@ use aic_data::facilities::{
     validate_facility_catalog,
 };
 use aic_data::layouts::{
-    ConstructiveFrontierReport, ConstructivePipeChainReport, FacilityPlacementDiagnostic,
+    ConstructiveFrontierGrowthReport, ConstructiveFrontierReport, FacilityPlacementDiagnostic,
     FacilityPlacementReport, FacilityPlacementRequest, IntegratedLayoutDiagnostic,
-    IntegratedLayoutReport, construct_first_pipe_frontier, construct_pipe_chain,
-    render_constructive_frontier_html, render_constructive_pipe_chain_html,
+    IntegratedLayoutReport, construct_first_pipe_frontier, construct_frontier_growth,
+    render_constructive_frontier_growth_html, render_constructive_frontier_html,
     render_integrated_layout_html_with_localization, solve_facility_placement,
     solve_integrated_layout_with_time_limit,
 };
@@ -162,8 +162,8 @@ enum LayoutsCommand {
         #[arg(long, value_name = "FILE")]
         localization_catalog: Option<PathBuf>,
     },
-    /// Construct the longest linear facility pipe chain as routed growth steps.
-    ConstructPipeChain {
+    /// Construct an initial pipe chain and its immediate belt suppliers as routed growth steps.
+    ConstructFrontierGrowth {
         /// Recipe JSON file to load.
         #[arg(long, value_name = "FILE")]
         recipes: PathBuf,
@@ -500,14 +500,14 @@ fn run() -> Result<CommandStatus> {
                 visualization_output,
                 localization_catalog,
             ),
-            LayoutsCommand::ConstructPipeChain {
+            LayoutsCommand::ConstructFrontierGrowth {
                 recipes,
                 source_plan,
                 facility_catalog,
                 item_catalog,
                 visualization_output,
                 localization_catalog,
-            } => construct_pipe_chain_command(
+            } => construct_frontier_growth_command(
                 recipes,
                 source_plan,
                 facility_catalog,
@@ -1174,7 +1174,7 @@ fn construct_first_pipe_frontier_command(
     }
 }
 
-fn construct_pipe_chain_command(
+fn construct_frontier_growth_command(
     recipes: PathBuf,
     source_plan: PathBuf,
     facility_catalog: PathBuf,
@@ -1188,19 +1188,19 @@ fn construct_pipe_chain_command(
     else {
         return Ok(CommandStatus::Failure);
     };
-    let report = construct_pipe_chain(&wiring, &facilities, &items);
+    let report = construct_frontier_growth(&wiring, &facilities, &items);
     let success = report.success;
-    let html = render_constructive_pipe_chain_html(&report, localization.as_ref()).map_err(
+    let html = render_constructive_frontier_growth_html(&report, localization.as_ref()).map_err(
         |diagnostic| {
             anyhow::anyhow!(
-                "constructive pipe-chain visualization failed with {}: {}",
+                "constructive frontier-growth visualization failed with {}: {}",
                 diagnostic.code,
                 diagnostic.message
             )
         },
     )?;
     write_constructive_visualization(&visualization_output, html)?;
-    write_constructive_pipe_chain_report(&report)?;
+    write_constructive_frontier_growth_report(&report)?;
     if success {
         Ok(CommandStatus::Success)
     } else {
@@ -1694,9 +1694,11 @@ fn write_constructive_frontier_report(report: &ConstructiveFrontierReport) -> Re
     Ok(())
 }
 
-fn write_constructive_pipe_chain_report(report: &ConstructivePipeChainReport) -> Result<()> {
+fn write_constructive_frontier_growth_report(
+    report: &ConstructiveFrontierGrowthReport,
+) -> Result<()> {
     serde_json::to_writer_pretty(std::io::stdout().lock(), report)
-        .context("failed to write constructive pipe chain report")?;
+        .context("failed to write constructive frontier growth report")?;
     println!();
 
     Ok(())
@@ -1901,11 +1903,11 @@ mod tests {
     }
 
     #[test]
-    fn parses_constructive_pipe_chain_visualization_output() {
+    fn parses_constructive_frontier_growth_visualization_output() {
         let cli = Cli::try_parse_from([
             "aic-cli",
             "layouts",
-            "construct-pipe-chain",
+            "construct-frontier-growth",
             "--recipes",
             "recipes.json",
             "--source-plan",
@@ -1923,14 +1925,14 @@ mod tests {
 
         let Command::Layouts {
             command:
-                LayoutsCommand::ConstructPipeChain {
+                LayoutsCommand::ConstructFrontierGrowth {
                     visualization_output,
                     localization_catalog,
                     ..
                 },
         } = cli.command
         else {
-            panic!("expected constructive pipe chain command")
+            panic!("expected constructive frontier growth command")
         };
         assert_eq!(visualization_output, PathBuf::from("chain.html"));
         assert_eq!(

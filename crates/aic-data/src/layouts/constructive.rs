@@ -19,7 +19,7 @@ mod pipe_chain;
 mod routing;
 
 pub use first_pipe_frontier::construct_first_pipe_frontier;
-pub use pipe_chain::construct_pipe_chain;
+pub use pipe_chain::construct_frontier_growth;
 
 pub fn render_constructive_frontier_html(
     report: &ConstructiveFrontierReport,
@@ -107,8 +107,8 @@ pub fn render_constructive_frontier_html(
     render_integrated_layout_html_with_localization(&integrated, localization)
 }
 
-pub fn render_constructive_pipe_chain_html(
-    report: &ConstructivePipeChainReport,
+pub fn render_constructive_frontier_growth_html(
+    report: &ConstructiveFrontierGrowthReport,
     localization: Option<&ValidatedLocalizationCatalog>,
 ) -> Result<String, IntegratedLayoutDiagnostic> {
     if report.phases.is_empty() {
@@ -162,7 +162,7 @@ pub fn render_constructive_pipe_chain_html(
 
 const STAGE: &str = "constructive-planner";
 pub const CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION: u32 = 1;
-pub const CONSTRUCTIVE_PIPE_CHAIN_SCHEMA_VERSION: u32 = 1;
+pub const CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -196,15 +196,15 @@ pub struct ConstructionCandidateScore {
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
-pub enum ConstructivePipeChainStatus {
+pub enum ConstructiveFrontierGrowthStatus {
     Constructed,
     InvalidInput,
-    NoEligibleChain,
+    NoEligibleFrontier,
     Exhausted,
 }
 
 #[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
-pub struct ConstructivePipeChainStatistics {
+pub struct ConstructiveFrontierGrowthStatistics {
     pub selected_requirements: usize,
     pub completed_requirements: usize,
     pub placement_candidates_considered: u64,
@@ -218,7 +218,7 @@ pub struct ConstructivePipeChainStatistics {
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct ConstructivePipeChainPhase {
+pub struct ConstructiveFrontierGrowthPhase {
     pub index: usize,
     pub requirement: String,
     pub item: String,
@@ -234,15 +234,15 @@ pub struct ConstructivePipeChainPhase {
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct ConstructivePipeChainReport {
+pub struct ConstructiveFrontierGrowthReport {
     pub schema_version: u32,
     pub success: bool,
-    pub status: ConstructivePipeChainStatus,
+    pub status: ConstructiveFrontierGrowthStatus,
     pub bounds: Option<FacilityPlacementBounds>,
     pub placements: Vec<FacilityPlacement>,
     pub transport_networks: Vec<TransportNetwork>,
-    pub phases: Vec<ConstructivePipeChainPhase>,
-    pub statistics: ConstructivePipeChainStatistics,
+    pub phases: Vec<ConstructiveFrontierGrowthPhase>,
+    pub statistics: ConstructiveFrontierGrowthStatistics,
     pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
 }
 
