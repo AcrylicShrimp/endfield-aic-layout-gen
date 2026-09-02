@@ -1,7 +1,14 @@
+mod constructive;
 mod growth;
 mod integrated;
 mod placement;
 mod ports;
+
+pub use constructive::{
+    CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION, ConstructiveFrontierDiagnostic,
+    ConstructiveFrontierReport, ConstructiveFrontierStatistics, ConstructiveFrontierStatus,
+    construct_first_pipe_frontier, render_constructive_frontier_html,
+};
 
 pub use growth::{
     FacilityGrowthComponent, FacilityGrowthDiagnostic, FacilityGrowthPhase,

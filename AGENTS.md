@@ -69,7 +69,7 @@
 - A local proof must not be reported as proof that the whole factory request is infeasible.
 - Improvement passes operate transactionally. Keep the current valid layout unless a candidate validates and improves the configured score.
 - Preserve the score priority: used bounding-box area first, physical belt and pipe tile count second, total route turns third, followed by later tie-breakers.
-- The initial constructor may be visually poor. Every committed growth state must be valid for its covered production subgraph, and its final acceptance criterion is a complete validated factory within caller-supplied hard bounds.
+- The initial constructor may be visually poor. Every committed growth state must be valid for its covered production subgraph, and its final acceptance criterion is a complete validated factory at whatever natural footprint construction produces.
 - A construction failure is a structured planner failure, not a global infeasibility proof. Diagnostics must identify the failing stage, network, facility group, or exhausted bound.
 - Keep the former global exact joint solver as isolated research tooling. Production APIs and normal CLI commands must not invoke it, automatically fall back to it, or expose its timeouts as production planner failures.
 - Before committing each planner slice, compare it against `docs/designs/2026-09-02.00-constructive-layout-planner.md` and this policy.
@@ -98,11 +98,12 @@
 
 ## Layout Bound Semantics
 
-- Treat `max_width` and `max_height` as caller-supplied hard ceilings for one solve request, not as required blueprint dimensions, target dimensions, canonical game limits, or default model sizes.
+- Production constructive planning has no caller-supplied W/H limit. Width and height are measured outputs and optimization objectives, not feasibility constraints.
+- Treat legacy `max_width` and `max_height` fields as explicit research-solver canvas ceilings for that one diagnostic request only. They are not production planner inputs, system limits, required blueprint dimensions, target dimensions, canonical game limits, or default model sizes.
 - Do not promote any diagnostic or example request bound into a project invariant or MVP success criterion. A test bound may exist only to evaluate that specific request or to determine whether an earlier bound was too restrictive.
 - Actual layout width and height come from the used facility, belt, pipe, and logistics-component geometry selected by the planner or research solver. Unused search capacity is not part of the blueprint footprint.
 - Exact solving does not require eagerly materializing every cell inside a loose maximum bound. Symbolic, sparse, or otherwise compact exact formulations are allowed when they preserve every legal solution and the configured objective.
-- Never hardcode an example request bound into solver architecture, runtime data, benchmark acceptance, or documentation claims about system limits.
+- Never hardcode an example request bound into planner or solver architecture, runtime data, benchmark acceptance, or documentation claims about system limits.
 
 ## Contract And Diagnostic Design
 
