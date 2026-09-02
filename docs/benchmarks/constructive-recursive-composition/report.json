@@ -1,0 +1,704 @@
+{
+  "schema_version": 1,
+  "success": true,
+  "requirement": "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6",
+  "source_node": "process-module:facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0:item-carbon-enr",
+  "target_node": "facility-node:facility-instance:recipe-occurrence:/target:0",
+  "score": {
+    "blocked_boundary_port_options": 1,
+    "used_bounding_box_area": 112,
+    "transport_tiles": 9,
+    "route_turns": 0
+  },
+  "composite": {
+    "id": "composite:facility-node:facility-instance:recipe-occurrence:/target:0+process-module:facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0:item-carbon-enr",
+    "bounds": {
+      "width": 14,
+      "height": 8
+    },
+    "member_instances": [
+      "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+      "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+      "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+      "facility-instance:recipe-occurrence:/target:0"
+    ],
+    "internal_requirements": [
+      "wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8",
+      "wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb",
+      "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6"
+    ],
+    "placements": [
+      {
+        "instance": "facility-instance:recipe-occurrence:/target:0",
+        "recipe": "xiranite-oven-xiranite-enr-powder-1",
+        "facility": "xiranite-oven-1-mode-liquid",
+        "x": 0,
+        "y": 3,
+        "width": 5,
+        "height": 5,
+        "rotation": 0
+      },
+      {
+        "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+        "recipe": "xiranite-oven-xiranite-powder-1",
+        "facility": "xiranite-oven-1-mode-liquid",
+        "x": 9,
+        "y": 2,
+        "width": 5,
+        "height": 5,
+        "rotation": 180
+      },
+      {
+        "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+        "recipe": "furnance-carbon-enr-1",
+        "facility": "furnance-1-mode-normal",
+        "x": 6,
+        "y": 3,
+        "width": 3,
+        "height": 3,
+        "rotation": 0
+      },
+      {
+        "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+        "recipe": "furnance-carbon-enr-1",
+        "facility": "furnance-1-mode-normal",
+        "x": 5,
+        "y": 0,
+        "width": 3,
+        "height": 3,
+        "rotation": 90
+      }
+    ],
+    "transport_networks": [
+      {
+        "id": "constructive:wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8",
+        "requirement_ids": [
+          "wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8"
+        ],
+        "item": "item-carbon-enr",
+        "transport": "belt",
+        "cells": [
+          {
+            "x": 8,
+            "y": 2
+          }
+        ],
+        "segments": [],
+        "terminals": [
+          {
+            "id": "wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8:source",
+            "node": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+            "direction": "output",
+            "endpoint": {
+              "kind": "facility",
+              "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+              "port": "output-belt-2"
+            },
+            "position": {
+              "x": 8,
+              "y": 2
+            },
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8:target",
+            "node": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+            "direction": "input",
+            "endpoint": {
+              "kind": "facility",
+              "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+              "port": "input-belt-4"
+            },
+            "position": {
+              "x": 8,
+              "y": 2
+            },
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ],
+        "component_ids": []
+      },
+      {
+        "id": "constructive:wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb",
+        "requirement_ids": [
+          "wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb"
+        ],
+        "item": "item-carbon-enr",
+        "transport": "belt",
+        "cells": [
+          {
+            "x": 8,
+            "y": 1
+          },
+          {
+            "x": 9,
+            "y": 1
+          },
+          {
+            "x": 10,
+            "y": 1
+          }
+        ],
+        "segments": [
+          {
+            "from": {
+              "x": 8,
+              "y": 1
+            },
+            "to": {
+              "x": 9,
+              "y": 1
+            },
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "from": {
+              "x": 9,
+              "y": 1
+            },
+            "to": {
+              "x": 10,
+              "y": 1
+            },
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ],
+        "terminals": [
+          {
+            "id": "wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb:source",
+            "node": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+            "direction": "output",
+            "endpoint": {
+              "kind": "facility",
+              "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+              "port": "output-belt-1"
+            },
+            "position": {
+              "x": 8,
+              "y": 1
+            },
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb:target",
+            "node": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+            "direction": "input",
+            "endpoint": {
+              "kind": "facility",
+              "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+              "port": "input-belt-3"
+            },
+            "position": {
+              "x": 10,
+              "y": 1
+            },
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ],
+        "component_ids": []
+      },
+      {
+        "id": "constructive-composition:wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6",
+        "requirement_ids": [
+          "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6"
+        ],
+        "item": "item-xiranite-powder",
+        "transport": "belt",
+        "cells": [
+          {
+            "x": 9,
+            "y": 7
+          },
+          {
+            "x": 8,
+            "y": 7
+          },
+          {
+            "x": 7,
+            "y": 7
+          },
+          {
+            "x": 6,
+            "y": 7
+          },
+          {
+            "x": 5,
+            "y": 7
+          }
+        ],
+        "segments": [
+          {
+            "from": {
+              "x": 9,
+              "y": 7
+            },
+            "to": {
+              "x": 8,
+              "y": 7
+            },
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "from": {
+              "x": 8,
+              "y": 7
+            },
+            "to": {
+              "x": 7,
+              "y": 7
+            },
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "from": {
+              "x": 7,
+              "y": 7
+            },
+            "to": {
+              "x": 6,
+              "y": 7
+            },
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "from": {
+              "x": 6,
+              "y": 7
+            },
+            "to": {
+              "x": 5,
+              "y": 7
+            },
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ],
+        "terminals": [
+          {
+            "id": "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6:source",
+            "node": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+            "direction": "output",
+            "endpoint": {
+              "kind": "facility",
+              "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+              "port": "output-belt-4"
+            },
+            "position": {
+              "x": 9,
+              "y": 7
+            },
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          },
+          {
+            "id": "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6:target",
+            "node": "facility-instance:recipe-occurrence:/target:0",
+            "direction": "input",
+            "endpoint": {
+              "kind": "facility",
+              "instance": "facility-instance:recipe-occurrence:/target:0",
+              "port": "input-belt-4"
+            },
+            "position": {
+              "x": 5,
+              "y": 7
+            },
+            "rate": {
+              "numerator": 1,
+              "denominator": 2
+            }
+          }
+        ],
+        "component_ids": []
+      }
+    ],
+    "boundary_requirements": [
+      {
+        "requirement": "wiring-edge:121c0d63102c8c4f409587a74e73fbc957b60f98e7976c6cc0c3ab11971344a2",
+        "item": "item-carbon-enr-powder",
+        "transport": "belt",
+        "rate": {
+          "numerator": 1,
+          "denominator": 2
+        },
+        "direction": "input",
+        "inside_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+        "port_options": [
+          {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+            "facility": "furnance-1-mode-normal",
+            "port": "input-belt-0",
+            "direction": "input",
+            "transport": "belt",
+            "position": {
+              "x": 5,
+              "y": 0
+            },
+            "edge": "west",
+            "connection": {
+              "x": 4,
+              "y": 0
+            }
+          },
+          {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+            "facility": "furnance-1-mode-normal",
+            "port": "input-belt-1",
+            "direction": "input",
+            "transport": "belt",
+            "position": {
+              "x": 5,
+              "y": 1
+            },
+            "edge": "west",
+            "connection": {
+              "x": 4,
+              "y": 1
+            }
+          },
+          {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+            "facility": "furnance-1-mode-normal",
+            "port": "input-belt-2",
+            "direction": "input",
+            "transport": "belt",
+            "position": {
+              "x": 5,
+              "y": 2
+            },
+            "edge": "south",
+            "connection": {
+              "x": 5,
+              "y": 3
+            }
+          }
+        ]
+      },
+      {
+        "requirement": "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd",
+        "item": "item-liquid-xiranite-poly",
+        "transport": "pipe",
+        "rate": {
+          "numerator": 1,
+          "denominator": 2
+        },
+        "direction": "input",
+        "inside_instance": "facility-instance:recipe-occurrence:/target:0",
+        "port_options": [
+          {
+            "instance": "facility-instance:recipe-occurrence:/target:0",
+            "facility": "xiranite-oven-1-mode-liquid",
+            "port": "input-pipe-5",
+            "direction": "input",
+            "transport": "pipe",
+            "position": {
+              "x": 0,
+              "y": 5
+            },
+            "edge": "west",
+            "connection": {
+              "x": -1,
+              "y": 5
+            }
+          }
+        ]
+      },
+      {
+        "requirement": "wiring-edge:6a3c9cb8b6801d699a1752f09f622e035b42f899651f3a50feb4530a02eb319a",
+        "item": "item-carbon-enr-powder",
+        "transport": "belt",
+        "rate": {
+          "numerator": 1,
+          "denominator": 2
+        },
+        "direction": "input",
+        "inside_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+        "port_options": [
+          {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+            "facility": "furnance-1-mode-normal",
+            "port": "input-belt-0",
+            "direction": "input",
+            "transport": "belt",
+            "position": {
+              "x": 6,
+              "y": 5
+            },
+            "edge": "south",
+            "connection": {
+              "x": 6,
+              "y": 6
+            }
+          },
+          {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+            "facility": "furnance-1-mode-normal",
+            "port": "input-belt-1",
+            "direction": "input",
+            "transport": "belt",
+            "position": {
+              "x": 7,
+              "y": 5
+            },
+            "edge": "south",
+            "connection": {
+              "x": 7,
+              "y": 6
+            }
+          }
+        ]
+      },
+      {
+        "requirement": "wiring-edge:73f36e90398b68aa42387f2354fff999d50989d1bbd721fd6ffd65ba7ad03c42",
+        "item": "item-liquid-water",
+        "transport": "pipe",
+        "rate": {
+          "numerator": 1,
+          "denominator": 2
+        },
+        "direction": "input",
+        "inside_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+        "port_options": [
+          {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+            "facility": "xiranite-oven-1-mode-liquid",
+            "port": "input-pipe-5",
+            "direction": "input",
+            "transport": "pipe",
+            "position": {
+              "x": 13,
+              "y": 4
+            },
+            "edge": "east",
+            "connection": {
+              "x": 14,
+              "y": 4
+            }
+          }
+        ]
+      },
+      {
+        "requirement": "wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de",
+        "item": "item-xiranite-enr-powder",
+        "transport": "belt",
+        "rate": {
+          "numerator": 1,
+          "denominator": 10
+        },
+        "direction": "output",
+        "inside_instance": "facility-instance:recipe-occurrence:/target:0",
+        "port_options": [
+          {
+            "instance": "facility-instance:recipe-occurrence:/target:0",
+            "facility": "xiranite-oven-1-mode-liquid",
+            "port": "output-belt-0",
+            "direction": "output",
+            "transport": "belt",
+            "position": {
+              "x": 0,
+              "y": 3
+            },
+            "edge": "north",
+            "connection": {
+              "x": 0,
+              "y": 2
+            }
+          },
+          {
+            "instance": "facility-instance:recipe-occurrence:/target:0",
+            "facility": "xiranite-oven-1-mode-liquid",
+            "port": "output-belt-1",
+            "direction": "output",
+            "transport": "belt",
+            "position": {
+              "x": 1,
+              "y": 3
+            },
+            "edge": "north",
+            "connection": {
+              "x": 1,
+              "y": 2
+            }
+          },
+          {
+            "instance": "facility-instance:recipe-occurrence:/target:0",
+            "facility": "xiranite-oven-1-mode-liquid",
+            "port": "output-belt-2",
+            "direction": "output",
+            "transport": "belt",
+            "position": {
+              "x": 2,
+              "y": 3
+            },
+            "edge": "north",
+            "connection": {
+              "x": 2,
+              "y": 2
+            }
+          },
+          {
+            "instance": "facility-instance:recipe-occurrence:/target:0",
+            "facility": "xiranite-oven-1-mode-liquid",
+            "port": "output-belt-3",
+            "direction": "output",
+            "transport": "belt",
+            "position": {
+              "x": 3,
+              "y": 3
+            },
+            "edge": "north",
+            "connection": {
+              "x": 3,
+              "y": 2
+            }
+          },
+          {
+            "instance": "facility-instance:recipe-occurrence:/target:0",
+            "facility": "xiranite-oven-1-mode-liquid",
+            "port": "output-belt-4",
+            "direction": "output",
+            "transport": "belt",
+            "position": {
+              "x": 4,
+              "y": 3
+            },
+            "edge": "north",
+            "connection": {
+              "x": 4,
+              "y": 2
+            }
+          }
+        ]
+      },
+      {
+        "requirement": "wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e",
+        "item": "item-xiranite-powder",
+        "transport": "belt",
+        "rate": {
+          "numerator": 1,
+          "denominator": 2
+        },
+        "direction": "input",
+        "inside_instance": "facility-instance:recipe-occurrence:/target:0",
+        "port_options": [
+          {
+            "instance": "facility-instance:recipe-occurrence:/target:0",
+            "facility": "xiranite-oven-1-mode-liquid",
+            "port": "input-belt-0",
+            "direction": "input",
+            "transport": "belt",
+            "position": {
+              "x": 0,
+              "y": 7
+            },
+            "edge": "south",
+            "connection": {
+              "x": 0,
+              "y": 8
+            }
+          },
+          {
+            "instance": "facility-instance:recipe-occurrence:/target:0",
+            "facility": "xiranite-oven-1-mode-liquid",
+            "port": "input-belt-1",
+            "direction": "input",
+            "transport": "belt",
+            "position": {
+              "x": 1,
+              "y": 7
+            },
+            "edge": "south",
+            "connection": {
+              "x": 1,
+              "y": 8
+            }
+          },
+          {
+            "instance": "facility-instance:recipe-occurrence:/target:0",
+            "facility": "xiranite-oven-1-mode-liquid",
+            "port": "input-belt-2",
+            "direction": "input",
+            "transport": "belt",
+            "position": {
+              "x": 2,
+              "y": 7
+            },
+            "edge": "south",
+            "connection": {
+              "x": 2,
+              "y": 8
+            }
+          },
+          {
+            "instance": "facility-instance:recipe-occurrence:/target:0",
+            "facility": "xiranite-oven-1-mode-liquid",
+            "port": "input-belt-3",
+            "direction": "input",
+            "transport": "belt",
+            "position": {
+              "x": 3,
+              "y": 7
+            },
+            "edge": "south",
+            "connection": {
+              "x": 3,
+              "y": 8
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "statistics": {
+    "rotations_considered": 4,
+    "placements_considered": 776,
+    "colliding_placements_rejected": 238,
+    "port_pairs_considered": 13450,
+    "blocked_port_pairs_rejected": 496,
+    "astar_searches": 12954,
+    "astar_failures": 0,
+    "boundary_dead_ends_rejected": 950,
+    "valid_candidates_scored": 12004
+  },
+  "diagnostics": [
+    {
+      "stage": "constructive-planner",
+      "severity": "info",
+      "code": "constructive-composition-constructed",
+      "path": "/",
+      "entity": null,
+      "message": "placed and routed two immutable constructive nodes as one composite node"
+    }
+  ]
+}

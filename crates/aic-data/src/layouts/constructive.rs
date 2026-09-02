@@ -15,11 +15,16 @@ use crate::recipes::Rate;
 
 use super::integrated::{LayoutVisualizationPage, render_layout_history_html};
 
+mod composition;
 mod first_pipe_frontier;
 mod pipe_chain;
 mod process_module;
 mod routing;
 
+pub use composition::{
+    compose_constructive_nodes, compose_process_module_with_facility, construct_facility_node,
+    constructive_node_from_process_module,
+};
 pub use first_pipe_frontier::construct_first_pipe_frontier;
 pub use pipe_chain::construct_frontier_growth;
 pub use process_module::construct_process_module;
@@ -208,10 +213,97 @@ pub fn render_constructive_process_module_html(
     render_constructive_frontier_growth_html(&visual, localization)
 }
 
+pub fn render_constructive_composition_html(
+    report: &ConstructiveCompositionReport,
+    localization: Option<&ValidatedLocalizationCatalog>,
+) -> Result<String, IntegratedLayoutDiagnostic> {
+    let (bounds, placements, mut transport_networks) = report
+        .composite
+        .as_ref()
+        .map(|node| {
+            (
+                Some(node.bounds.clone()),
+                node.placements.clone(),
+                node.transport_networks.clone(),
+            )
+        })
+        .unwrap_or_else(|| (None, Vec::new(), Vec::new()));
+    if let Some(node) = &report.composite {
+        transport_networks.extend(boundary_visualization_networks(
+            &node.boundary_requirements,
+            "constructive-composition-boundary",
+        ));
+    }
+    let integrated = IntegratedLayoutReport {
+        schema_version: crate::layouts::INTEGRATED_LAYOUT_SCHEMA_VERSION,
+        success: report.success,
+        status: if report.success {
+            IntegratedLayoutStatus::Feasible
+        } else {
+            IntegratedLayoutStatus::Unknown
+        },
+        bounds,
+        placements,
+        logistics_components: Vec::new(),
+        transport_networks,
+        phases: Vec::new(),
+        exact: None,
+        diagnostics: report
+            .diagnostics
+            .iter()
+            .map(|diagnostic| IntegratedLayoutDiagnostic {
+                stage: diagnostic.stage,
+                severity: diagnostic.severity,
+                code: diagnostic.code,
+                path: diagnostic.path.clone(),
+                entity: diagnostic.entity.clone(),
+                message: diagnostic.message.clone(),
+            })
+            .collect(),
+    };
+    render_integrated_layout_html_with_localization(&integrated, localization)
+}
+
+fn boundary_visualization_networks(
+    boundaries: &[ConstructiveProcessModuleBoundary],
+    id_prefix: &str,
+) -> Vec<TransportNetwork> {
+    boundaries
+        .iter()
+        .flat_map(|boundary| {
+            boundary
+                .port_options
+                .iter()
+                .enumerate()
+                .map(move |(option_index, port)| TransportNetwork {
+                    id: format!("{id_prefix}:{}:option:{option_index}", boundary.requirement),
+                    requirement_ids: vec![boundary.requirement.clone()],
+                    item: boundary.item.clone(),
+                    transport: boundary.transport,
+                    cells: Vec::new(),
+                    segments: Vec::new(),
+                    terminals: vec![TransportNetworkTerminal {
+                        id: format!("{}:boundary-option:{option_index}", boundary.requirement),
+                        node: boundary.inside_instance.clone(),
+                        direction: boundary.direction,
+                        endpoint: TransportNetworkEndpoint::Facility {
+                            instance: boundary.inside_instance.clone(),
+                            port: port.port.clone(),
+                        },
+                        position: port.connection.clone(),
+                        rate: boundary.rate,
+                    }],
+                    component_ids: Vec::new(),
+                })
+        })
+        .collect()
+}
+
 const STAGE: &str = "constructive-planner";
 pub const CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION: u32 = 3;
 pub const CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION: u32 = 1;
+pub const CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -321,6 +413,51 @@ pub struct ConstructiveProcessModuleReport {
     pub internal_requirements: Vec<String>,
     pub boundary_requirements: Vec<ConstructiveProcessModuleBoundary>,
     pub growth: ConstructiveFrontierGrowthReport,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructiveNode {
+    pub id: String,
+    pub bounds: FacilityPlacementBounds,
+    pub member_instances: Vec<String>,
+    pub internal_requirements: Vec<String>,
+    pub placements: Vec<FacilityPlacement>,
+    pub transport_networks: Vec<TransportNetwork>,
+    pub boundary_requirements: Vec<ConstructiveProcessModuleBoundary>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ConstructiveCompositionScore {
+    pub blocked_boundary_port_options: usize,
+    pub used_bounding_box_area: usize,
+    pub transport_tiles: usize,
+    pub route_turns: usize,
+}
+
+#[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
+pub struct ConstructiveCompositionStatistics {
+    pub rotations_considered: u64,
+    pub placements_considered: u64,
+    pub colliding_placements_rejected: u64,
+    pub port_pairs_considered: u64,
+    pub blocked_port_pairs_rejected: u64,
+    pub astar_searches: u64,
+    pub astar_failures: u64,
+    pub boundary_dead_ends_rejected: u64,
+    pub valid_candidates_scored: u64,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructiveCompositionReport {
+    pub schema_version: u32,
+    pub success: bool,
+    pub requirement: String,
+    pub source_node: String,
+    pub target_node: String,
+    pub score: Option<ConstructiveCompositionScore>,
+    pub composite: Option<ConstructiveNode>,
+    pub statistics: ConstructiveCompositionStatistics,
+    pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]

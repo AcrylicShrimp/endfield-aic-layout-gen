@@ -5,13 +5,17 @@ mod placement;
 mod ports;
 
 pub use constructive::{
-    CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION, CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION,
-    CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION, ConstructionCandidateScore,
-    ConstructiveFrontierDiagnostic, ConstructiveFrontierGrowthPhase,
-    ConstructiveFrontierGrowthReport, ConstructiveFrontierGrowthStatistics,
-    ConstructiveFrontierGrowthStatus, ConstructiveFrontierReport, ConstructiveFrontierStatistics,
-    ConstructiveFrontierStatus, ConstructiveProcessModuleBoundary, ConstructiveProcessModuleReport,
+    CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION, CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION,
+    CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION, CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION,
+    ConstructionCandidateScore, ConstructiveCompositionReport, ConstructiveCompositionScore,
+    ConstructiveCompositionStatistics, ConstructiveFrontierDiagnostic,
+    ConstructiveFrontierGrowthPhase, ConstructiveFrontierGrowthReport,
+    ConstructiveFrontierGrowthStatistics, ConstructiveFrontierGrowthStatus,
+    ConstructiveFrontierReport, ConstructiveFrontierStatistics, ConstructiveFrontierStatus,
+    ConstructiveNode, ConstructiveProcessModuleBoundary, ConstructiveProcessModuleReport,
+    compose_constructive_nodes, compose_process_module_with_facility, construct_facility_node,
     construct_first_pipe_frontier, construct_frontier_growth, construct_process_module,
+    constructive_node_from_process_module, render_constructive_composition_html,
     render_constructive_frontier_growth_html, render_constructive_frontier_html,
     render_constructive_process_module_html,
 };

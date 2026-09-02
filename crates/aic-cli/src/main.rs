@@ -9,13 +9,14 @@ use aic_data::facilities::{
     validate_facility_catalog,
 };
 use aic_data::layouts::{
-    ConstructiveFrontierGrowthReport, ConstructiveFrontierReport, ConstructiveProcessModuleReport,
-    FacilityPlacementDiagnostic, FacilityPlacementReport, FacilityPlacementRequest,
-    IntegratedLayoutDiagnostic, IntegratedLayoutReport, construct_first_pipe_frontier,
-    construct_frontier_growth, construct_process_module, render_constructive_frontier_growth_html,
-    render_constructive_frontier_html, render_constructive_process_module_html,
-    render_integrated_layout_html_with_localization, solve_facility_placement,
-    solve_integrated_layout_with_time_limit,
+    ConstructiveCompositionReport, ConstructiveFrontierGrowthReport, ConstructiveFrontierReport,
+    ConstructiveProcessModuleReport, FacilityPlacementDiagnostic, FacilityPlacementReport,
+    FacilityPlacementRequest, IntegratedLayoutDiagnostic, IntegratedLayoutReport,
+    compose_process_module_with_facility, construct_first_pipe_frontier, construct_frontier_growth,
+    construct_process_module, render_constructive_composition_html,
+    render_constructive_frontier_growth_html, render_constructive_frontier_html,
+    render_constructive_process_module_html, render_integrated_layout_html_with_localization,
+    solve_facility_placement, solve_integrated_layout_with_time_limit,
 };
 use aic_data::localization::{
     LocalizationCatalogValidationReport, ValidatedLocalizationCatalog, load_localization_catalog,
@@ -222,6 +223,52 @@ enum LayoutsCommand {
         /// Standalone paginated HTML wireframe for the module construction history.
         #[arg(long, value_name = "FILE")]
         visualization_output: PathBuf,
+
+        /// Optional localization catalog used for facility labels.
+        #[arg(long, value_name = "FILE")]
+        localization_catalog: Option<PathBuf>,
+    },
+    /// Compose one immutable process module with one facility through a routed boundary.
+    ComposeProcessModule {
+        /// Recipe JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        recipes: PathBuf,
+
+        /// Hierarchical recipe source-plan request JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        source_plan: PathBuf,
+
+        /// Facility catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        facility_catalog: PathBuf,
+
+        /// Item transport catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        item_catalog: PathBuf,
+
+        /// Facility instance at the output side of the source process module.
+        #[arg(long)]
+        module_root_instance: String,
+
+        /// Facility-supplied input item routed inside the source process module.
+        #[arg(long)]
+        module_internal_item: String,
+
+        /// Facility instance that receives the process-module output.
+        #[arg(long)]
+        target_instance: String,
+
+        /// Wiring requirement that joins the source module and target facility.
+        #[arg(long)]
+        requirement: String,
+
+        /// Standalone HTML wireframe for the composite result.
+        #[arg(long, value_name = "FILE")]
+        visualization_output: PathBuf,
+
+        /// Machine-readable composition report JSON file.
+        #[arg(long, value_name = "FILE")]
+        report_output: PathBuf,
 
         /// Optional localization catalog used for facility labels.
         #[arg(long, value_name = "FILE")]
@@ -573,6 +620,31 @@ fn run() -> Result<CommandStatus> {
                 root_instance,
                 internal_item,
                 visualization_output,
+                localization_catalog,
+            ),
+            LayoutsCommand::ComposeProcessModule {
+                recipes,
+                source_plan,
+                facility_catalog,
+                item_catalog,
+                module_root_instance,
+                module_internal_item,
+                target_instance,
+                requirement,
+                visualization_output,
+                report_output,
+                localization_catalog,
+            } => compose_process_module_command(
+                recipes,
+                source_plan,
+                facility_catalog,
+                item_catalog,
+                module_root_instance,
+                module_internal_item,
+                target_instance,
+                requirement,
+                visualization_output,
+                report_output,
                 localization_catalog,
             ),
             LayoutsCommand::PlaceFacilities {
@@ -1307,6 +1379,75 @@ fn construct_process_module_command(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
+fn compose_process_module_command(
+    recipes: PathBuf,
+    source_plan: PathBuf,
+    facility_catalog: PathBuf,
+    item_catalog: PathBuf,
+    module_root_instance: String,
+    module_internal_item: String,
+    target_instance: String,
+    requirement: String,
+    visualization_output: PathBuf,
+    report_output: PathBuf,
+    localization_catalog: Option<PathBuf>,
+) -> Result<CommandStatus> {
+    let localization = load_visualization_localization(localization_catalog.as_deref())?;
+    let Some((wiring, facilities, items)) =
+        load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
+    else {
+        return Ok(CommandStatus::Failure);
+    };
+    let module = construct_process_module(
+        &wiring,
+        &facilities,
+        &items,
+        &module_root_instance,
+        &module_internal_item,
+    );
+    let report = if module.success {
+        compose_process_module_with_facility(
+            &wiring,
+            &facilities,
+            &items,
+            &module,
+            &target_instance,
+            &requirement,
+        )
+    } else {
+        ConstructiveCompositionReport {
+            schema_version: aic_data::layouts::CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION,
+            success: false,
+            requirement,
+            source_node: format!("process-module:{module_root_instance}:{module_internal_item}"),
+            target_node: target_instance,
+            score: None,
+            composite: None,
+            statistics: Default::default(),
+            diagnostics: module.growth.diagnostics,
+        }
+    };
+    let success = report.success;
+    let html = render_constructive_composition_html(&report, localization.as_ref()).map_err(
+        |diagnostic| {
+            anyhow::anyhow!(
+                "constructive composition visualization failed with {}: {}",
+                diagnostic.code,
+                diagnostic.message
+            )
+        },
+    )?;
+    write_constructive_visualization(&visualization_output, html)?;
+    write_constructive_composition_report_file(&report_output, &report)?;
+    write_constructive_composition_report(&report)?;
+    if success {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
+    }
+}
+
 fn load_constructive_inputs(
     recipes: &Path,
     source_plan: &Path,
@@ -1813,6 +1954,41 @@ fn write_constructive_process_module_report(
     Ok(())
 }
 
+fn write_constructive_composition_report(report: &ConstructiveCompositionReport) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write constructive composition report")?;
+    println!();
+
+    Ok(())
+}
+
+fn write_constructive_composition_report_file(
+    output: &Path,
+    report: &ConstructiveCompositionReport,
+) -> Result<()> {
+    if let Some(parent) = output.parent() {
+        std::fs::create_dir_all(parent).with_context(|| {
+            format!(
+                "failed to create constructive composition report directory {}",
+                parent.display()
+            )
+        })?;
+    }
+    let file = std::fs::File::create(output).with_context(|| {
+        format!(
+            "failed to create constructive composition report {}",
+            output.display()
+        )
+    })?;
+    serde_json::to_writer_pretty(file, report).with_context(|| {
+        format!(
+            "failed to write constructive composition report {}",
+            output.display()
+        )
+    })?;
+    Ok(())
+}
+
 fn write_layout_visualization(
     output: Option<&Path>,
     layout: &IntegratedLayoutReport,
@@ -2092,6 +2268,58 @@ mod tests {
         assert_eq!(root_instance, "root");
         assert_eq!(internal_item, "item");
         assert_eq!(visualization_output, PathBuf::from("module.html"));
+    }
+
+    #[test]
+    fn parses_constructive_process_module_composition_command() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "layouts",
+            "compose-process-module",
+            "--recipes",
+            "recipes.json",
+            "--source-plan",
+            "source-plan.json",
+            "--facility-catalog",
+            "facilities.json",
+            "--item-catalog",
+            "items.json",
+            "--module-root-instance",
+            "module-root",
+            "--module-internal-item",
+            "module-item",
+            "--target-instance",
+            "target",
+            "--requirement",
+            "edge",
+            "--visualization-output",
+            "composite.html",
+            "--report-output",
+            "composite.json",
+        ])
+        .expect("constructive process-module composition CLI should parse");
+
+        let Command::Layouts {
+            command:
+                LayoutsCommand::ComposeProcessModule {
+                    module_root_instance,
+                    module_internal_item,
+                    target_instance,
+                    requirement,
+                    visualization_output,
+                    report_output,
+                    ..
+                },
+        } = cli.command
+        else {
+            panic!("expected constructive process-module composition command")
+        };
+        assert_eq!(module_root_instance, "module-root");
+        assert_eq!(module_internal_item, "module-item");
+        assert_eq!(target_instance, "target");
+        assert_eq!(requirement, "edge");
+        assert_eq!(visualization_output, PathBuf::from("composite.html"));
+        assert_eq!(report_output, PathBuf::from("composite.json"));
     }
 
     #[test]
