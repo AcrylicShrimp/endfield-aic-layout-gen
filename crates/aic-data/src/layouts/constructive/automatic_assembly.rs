@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use std::time::Instant;
 
 use crate::facilities::ValidatedFacilityCatalog;
 use crate::logistics::ValidatedItemCatalog;
@@ -23,6 +24,21 @@ struct Candidate {
     requirement: String,
     module_member_instances: Vec<String>,
     composition: ConstructiveCompositionReport,
+}
+
+struct PreparedCandidate {
+    root_instance: String,
+    internal_item: String,
+    requirement: String,
+    module_member_instances: Vec<String>,
+    source: ConstructiveNode,
+    edge: FacilityInstanceWiringEdge,
+}
+
+#[derive(Default)]
+struct CompositionWorkerOutcome {
+    candidates: Vec<Candidate>,
+    failures: usize,
 }
 
 pub fn automatically_assemble_constructive_modules(
@@ -73,14 +89,14 @@ pub fn automatically_assemble_constructive_modules(
     let mut discovery_steps = Vec::new();
 
     for index in 0..request.max_steps {
+        let step_started = Instant::now();
         let frontier = facility_frontier(wiring, &current, &facility_instances);
         if frontier.is_empty() {
             return completed_report(request, current, steps, discovery_steps);
         }
         let mut candidates_generated = 0usize;
         let mut module_constructions_failed = 0usize;
-        let mut compositions_failed = 0usize;
-        let mut candidates = Vec::new();
+        let mut prepared = Vec::new();
         for edge in &frontier {
             let internal_items = wiring
                 .edges
@@ -117,20 +133,20 @@ pub fn automatically_assemble_constructive_modules(
                     module_constructions_failed += 1;
                     continue;
                 }
-                let composition = compose_constructive_nodes(&source, &current, edge, facilities);
-                if !composition.success {
-                    compositions_failed += 1;
-                    continue;
-                }
-                candidates.push(Candidate {
+                prepared.push(PreparedCandidate {
                     root_instance: edge.source.clone(),
                     internal_item,
                     requirement: edge.id.clone(),
-                    module_member_instances: source.member_instances,
-                    composition,
+                    module_member_instances: source.member_instances.clone(),
+                    source,
+                    edge: (*edge).clone(),
                 });
             }
         }
+        let (composition_workers, composition_outcome) =
+            compose_candidates_parallel(&prepared, &current, facilities);
+        let compositions_failed = composition_outcome.failures;
+        let mut candidates = composition_outcome.candidates;
         let composable_candidates = candidates.len();
         candidates.sort_by(|left, right| {
             let left_score = left
@@ -178,9 +194,15 @@ pub fn automatically_assemble_constructive_modules(
         };
         discovery_steps.push(ConstructiveAutomaticAssemblyDiscoveryStep {
             index,
+            elapsed_ms: step_started
+                .elapsed()
+                .as_millis()
+                .try_into()
+                .unwrap_or(u64::MAX),
             frontier_requirements: frontier.len(),
             candidates_generated,
             module_constructions_failed,
+            composition_workers,
             compositions_failed,
             composable_candidates,
             selected_root_instance: selected.root_instance.clone(),
@@ -206,6 +228,63 @@ pub fn automatically_assemble_constructive_modules(
         discovery_steps,
         unresolved_requirement_ids(&frontier),
     )
+}
+
+fn compose_candidates_parallel(
+    prepared: &[PreparedCandidate],
+    current: &ConstructiveNode,
+    facilities: &ValidatedFacilityCatalog,
+) -> (usize, CompositionWorkerOutcome) {
+    if prepared.is_empty() {
+        return (0, CompositionWorkerOutcome::default());
+    }
+    let workers = std::thread::available_parallelism()
+        .map_or(1, std::num::NonZeroUsize::get)
+        .min(prepared.len());
+    let chunk_size = prepared.len().div_ceil(workers);
+    let outcomes = std::thread::scope(|scope| {
+        prepared
+            .chunks(chunk_size)
+            .map(|chunk| {
+                scope.spawn(move || {
+                    let mut outcome = CompositionWorkerOutcome::default();
+                    for prepared in chunk {
+                        let composition = compose_constructive_nodes(
+                            &prepared.source,
+                            current,
+                            &prepared.edge,
+                            facilities,
+                        );
+                        if !composition.success {
+                            outcome.failures += 1;
+                            continue;
+                        }
+                        outcome.candidates.push(Candidate {
+                            root_instance: prepared.root_instance.clone(),
+                            internal_item: prepared.internal_item.clone(),
+                            requirement: prepared.requirement.clone(),
+                            module_member_instances: prepared.module_member_instances.clone(),
+                            composition,
+                        });
+                    }
+                    outcome
+                })
+            })
+            .collect::<Vec<_>>()
+            .into_iter()
+            .map(|handle| {
+                handle
+                    .join()
+                    .expect("constructive composition worker panicked")
+            })
+            .collect::<Vec<_>>()
+    });
+    let mut combined = CompositionWorkerOutcome::default();
+    for mut outcome in outcomes {
+        combined.failures += outcome.failures;
+        combined.candidates.append(&mut outcome.candidates);
+    }
+    (workers, combined)
 }
 
 fn facility_frontier<'a>(
@@ -365,6 +444,12 @@ mod tests {
                 .discovery_steps
                 .iter()
                 .all(|step| step.candidates_generated > 0)
+        );
+        assert!(
+            report
+                .discovery_steps
+                .iter()
+                .all(|step| step.composition_workers > 0)
         );
         let html = render_constructive_automatic_assembly_html(&report, None)
             .expect("automatic assembly should render");

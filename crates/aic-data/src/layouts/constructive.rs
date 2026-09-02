@@ -396,7 +396,7 @@ pub const CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
-pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 1;
+pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -602,9 +602,11 @@ pub struct ConstructiveAutomaticAssemblyRequest {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct ConstructiveAutomaticAssemblyDiscoveryStep {
     pub index: usize,
+    pub elapsed_ms: u64,
     pub frontier_requirements: usize,
     pub candidates_generated: usize,
     pub module_constructions_failed: usize,
+    pub composition_workers: usize,
     pub compositions_failed: usize,
     pub composable_candidates: usize,
     pub selected_root_instance: String,
