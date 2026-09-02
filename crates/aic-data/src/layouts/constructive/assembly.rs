@@ -233,7 +233,7 @@ fn failed_report(
 }
 
 #[cfg(test)]
-mod tests {
+pub(super) mod tests {
     use super::*;
     use crate::facilities::{
         FacilityCatalog, FacilityDefinition, FacilityFootprint, FacilityPortDefinition,
@@ -325,8 +325,12 @@ mod tests {
         .expect("facility catalog validates")
     }
 
-    #[test]
-    fn recursively_assembles_two_modules_into_the_same_target_node() {
+    pub(crate) fn two_module_fixture() -> (
+        FacilityInstanceWiringReport,
+        ValidatedFacilityCatalog,
+        ValidatedItemCatalog,
+        ConstructiveAssemblyRequest,
+    ) {
         let wiring = FacilityInstanceWiringReport {
             schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
             success: true,
@@ -375,6 +379,12 @@ mod tests {
                 },
             ],
         };
+        (wiring, facilities, items, request)
+    }
+
+    #[test]
+    fn recursively_assembles_two_modules_into_the_same_target_node() {
+        let (wiring, facilities, items, request) = two_module_fixture();
 
         let report = assemble_constructive_modules(&wiring, &facilities, &items, &request);
 

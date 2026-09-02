@@ -16,6 +16,7 @@ use crate::recipes::Rate;
 use super::integrated::{LayoutVisualizationPage, render_layout_history_html};
 
 mod assembly;
+mod automatic_assembly;
 mod composition;
 mod first_pipe_frontier;
 mod pipe_chain;
@@ -23,6 +24,7 @@ mod process_module;
 mod routing;
 
 pub use assembly::assemble_constructive_modules;
+pub use automatic_assembly::automatically_assemble_constructive_modules;
 pub use composition::{
     compose_constructive_nodes, compose_process_module_with_facility, construct_facility_node,
     constructive_node_from_process_module,
@@ -344,6 +346,13 @@ pub fn render_constructive_assembly_html(
     render_layout_history_html(&pages, report.success, localization)
 }
 
+pub fn render_constructive_automatic_assembly_html(
+    report: &ConstructiveAutomaticAssemblyReport,
+    localization: Option<&ValidatedLocalizationCatalog>,
+) -> Result<String, IntegratedLayoutDiagnostic> {
+    render_constructive_assembly_html(&report.assembly, localization)
+}
+
 fn boundary_visualization_networks(
     boundaries: &[ConstructiveProcessModuleBoundary],
     id_prefix: &str,
@@ -386,6 +395,8 @@ pub const CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 1;
+pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
+pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -577,6 +588,39 @@ pub struct ConstructiveAssemblyReport {
     pub completed_modules: usize,
     pub steps: Vec<ConstructiveAssemblyStepReport>,
     pub final_node: Option<ConstructiveNode>,
+    pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ConstructiveAutomaticAssemblyRequest {
+    pub schema_version: u32,
+    pub target_instance: String,
+    pub max_steps: usize,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructiveAutomaticAssemblyDiscoveryStep {
+    pub index: usize,
+    pub frontier_requirements: usize,
+    pub candidates_generated: usize,
+    pub module_constructions_failed: usize,
+    pub compositions_failed: usize,
+    pub composable_candidates: usize,
+    pub selected_root_instance: String,
+    pub selected_internal_item: String,
+    pub selected_requirement: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructiveAutomaticAssemblyReport {
+    pub schema_version: u32,
+    pub success: bool,
+    pub complete: bool,
+    pub max_steps: usize,
+    pub discovery_steps: Vec<ConstructiveAutomaticAssemblyDiscoveryStep>,
+    pub unresolved_facility_requirements: Vec<String>,
+    pub assembly: ConstructiveAssemblyReport,
     pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
 }
 

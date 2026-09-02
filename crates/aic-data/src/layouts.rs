@@ -6,21 +6,26 @@ mod ports;
 
 pub use constructive::{
     CONSTRUCTIVE_ASSEMBLY_REPORT_SCHEMA_VERSION, CONSTRUCTIVE_ASSEMBLY_REQUEST_SCHEMA_VERSION,
+    CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION,
+    CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REQUEST_SCHEMA_VERSION,
     CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION, CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION,
     CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION, CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION,
     ConstructionCandidateScore, ConstructiveAssemblyModuleRequest, ConstructiveAssemblyReport,
-    ConstructiveAssemblyRequest, ConstructiveAssemblyStepReport, ConstructiveCompositionReport,
+    ConstructiveAssemblyRequest, ConstructiveAssemblyStepReport,
+    ConstructiveAutomaticAssemblyDiscoveryStep, ConstructiveAutomaticAssemblyReport,
+    ConstructiveAutomaticAssemblyRequest, ConstructiveCompositionReport,
     ConstructiveCompositionScore, ConstructiveCompositionStatistics,
     ConstructiveFrontierDiagnostic, ConstructiveFrontierGrowthPhase,
     ConstructiveFrontierGrowthReport, ConstructiveFrontierGrowthStatistics,
     ConstructiveFrontierGrowthStatus, ConstructiveFrontierReport, ConstructiveFrontierStatistics,
     ConstructiveFrontierStatus, ConstructiveNode, ConstructiveProcessModuleBoundary,
-    ConstructiveProcessModuleReport, assemble_constructive_modules, compose_constructive_nodes,
+    ConstructiveProcessModuleReport, assemble_constructive_modules,
+    automatically_assemble_constructive_modules, compose_constructive_nodes,
     compose_process_module_with_facility, construct_facility_node, construct_first_pipe_frontier,
     construct_frontier_growth, construct_process_module, constructive_node_from_process_module,
-    render_constructive_assembly_html, render_constructive_composition_html,
-    render_constructive_frontier_growth_html, render_constructive_frontier_html,
-    render_constructive_process_module_html,
+    render_constructive_assembly_html, render_constructive_automatic_assembly_html,
+    render_constructive_composition_html, render_constructive_frontier_growth_html,
+    render_constructive_frontier_html, render_constructive_process_module_html,
 };
 
 pub use growth::{
