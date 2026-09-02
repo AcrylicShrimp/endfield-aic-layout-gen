@@ -5,9 +5,12 @@ mod placement;
 mod ports;
 
 pub use constructive::{
-    CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION, ConstructiveFrontierDiagnostic,
-    ConstructiveFrontierReport, ConstructiveFrontierStatistics, ConstructiveFrontierStatus,
-    construct_first_pipe_frontier, render_constructive_frontier_html,
+    CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION, CONSTRUCTIVE_PIPE_CHAIN_SCHEMA_VERSION,
+    ConstructionCandidateScore, ConstructiveFrontierDiagnostic, ConstructiveFrontierReport,
+    ConstructiveFrontierStatistics, ConstructiveFrontierStatus, ConstructivePipeChainPhase,
+    ConstructivePipeChainReport, ConstructivePipeChainStatistics, ConstructivePipeChainStatus,
+    construct_first_pipe_frontier, construct_pipe_chain, render_constructive_frontier_html,
+    render_constructive_pipe_chain_html,
 };
 
 pub use growth::{

@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use serde::Serialize;
 
 use crate::layouts::{
@@ -10,10 +12,14 @@ use crate::localization::ValidatedLocalizationCatalog;
 use crate::logistics::TransportKind;
 use crate::recipes::Rate;
 
+use super::integrated::{LayoutVisualizationPage, render_layout_history_html};
+
 mod first_pipe_frontier;
+mod pipe_chain;
 mod routing;
 
 pub use first_pipe_frontier::construct_first_pipe_frontier;
+pub use pipe_chain::construct_pipe_chain;
 
 pub fn render_constructive_frontier_html(
     report: &ConstructiveFrontierReport,
@@ -101,8 +107,62 @@ pub fn render_constructive_frontier_html(
     render_integrated_layout_html_with_localization(&integrated, localization)
 }
 
-const STAGE: &str = "constructive-frontier";
+pub fn render_constructive_pipe_chain_html(
+    report: &ConstructivePipeChainReport,
+    localization: Option<&ValidatedLocalizationCatalog>,
+) -> Result<String, IntegratedLayoutDiagnostic> {
+    if report.phases.is_empty() {
+        let integrated = IntegratedLayoutReport {
+            schema_version: crate::layouts::INTEGRATED_LAYOUT_SCHEMA_VERSION,
+            success: false,
+            status: IntegratedLayoutStatus::Unknown,
+            bounds: report.bounds.clone(),
+            placements: report.placements.clone(),
+            logistics_components: Vec::new(),
+            transport_networks: report.transport_networks.clone(),
+            phases: Vec::new(),
+            exact: None,
+            diagnostics: report
+                .diagnostics
+                .iter()
+                .map(|diagnostic| IntegratedLayoutDiagnostic {
+                    stage: diagnostic.stage,
+                    severity: diagnostic.severity,
+                    code: diagnostic.code,
+                    path: diagnostic.path.clone(),
+                    entity: diagnostic.entity.clone(),
+                    message: diagnostic.message.clone(),
+                })
+                .collect(),
+        };
+        return render_integrated_layout_html_with_localization(&integrated, localization);
+    }
+    let pages = report
+        .phases
+        .iter()
+        .map(|phase| LayoutVisualizationPage {
+            bounds: &phase.bounds,
+            placements: &phase.placements,
+            logistics_components: &[],
+            transport_networks: &phase.transport_networks,
+            introduced_facilities: BTreeSet::from([phase.introduced_facility.as_str()]),
+            label: format!("Growth {}/{}", phase.index + 1, report.phases.len()),
+            detail: format!(
+                " · +1 facility · area {} · {} future port options blocked · {} transport tiles · {} turns",
+                phase.score.used_bounding_box_area,
+                phase.score.blocked_future_port_options,
+                phase.score.transport_tiles,
+                phase.score.route_turns,
+            ),
+            history: true,
+        })
+        .collect::<Vec<_>>();
+    render_layout_history_html(&pages, report.success, localization)
+}
+
+const STAGE: &str = "constructive-planner";
 pub const CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION: u32 = 1;
+pub const CONSTRUCTIVE_PIPE_CHAIN_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -124,6 +184,66 @@ pub struct ConstructiveFrontierStatistics {
     pub astar_failures: u64,
     pub accepted_path_tiles: usize,
     pub accepted_path_turns: usize,
+}
+
+#[derive(Debug, Clone, Copy, Default, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ConstructionCandidateScore {
+    pub used_bounding_box_area: usize,
+    pub blocked_future_port_options: usize,
+    pub transport_tiles: usize,
+    pub route_turns: usize,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "kebab-case")]
+pub enum ConstructivePipeChainStatus {
+    Constructed,
+    InvalidInput,
+    NoEligibleChain,
+    Exhausted,
+}
+
+#[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
+pub struct ConstructivePipeChainStatistics {
+    pub selected_requirements: usize,
+    pub completed_requirements: usize,
+    pub placement_candidates_considered: u64,
+    pub overlapping_placements_rejected: u64,
+    pub port_pairs_considered: u64,
+    pub blocked_port_pairs_rejected: u64,
+    pub future_port_dead_ends_rejected: u64,
+    pub astar_searches: u64,
+    pub astar_failures: u64,
+    pub valid_candidates_scored: u64,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructivePipeChainPhase {
+    pub index: usize,
+    pub requirement: String,
+    pub item: String,
+    pub rate: Rate,
+    pub introduced_facility: String,
+    pub bounds: FacilityPlacementBounds,
+    pub placements: Vec<FacilityPlacement>,
+    pub transport_networks: Vec<TransportNetwork>,
+    pub source_port: PlacedFacilityPort,
+    pub target_port: PlacedFacilityPort,
+    pub score: ConstructionCandidateScore,
+    pub statistics: ConstructiveFrontierStatistics,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructivePipeChainReport {
+    pub schema_version: u32,
+    pub success: bool,
+    pub status: ConstructivePipeChainStatus,
+    pub bounds: Option<FacilityPlacementBounds>,
+    pub placements: Vec<FacilityPlacement>,
+    pub transport_networks: Vec<TransportNetwork>,
+    pub phases: Vec<ConstructivePipeChainPhase>,
+    pub statistics: ConstructivePipeChainStatistics,
+    pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]

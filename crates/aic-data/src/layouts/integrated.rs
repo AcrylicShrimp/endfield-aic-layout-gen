@@ -33,6 +33,7 @@ pub use exact::shared_layer::{
     RootVariableCoverageSnapshot, RootVariableFamilySnapshot,
 };
 use geometry::{candidate_port_connections, grid_index, world_position};
+pub(crate) use html::{LayoutVisualizationPage, render_layout_history_html};
 pub use html::{render_integrated_layout_html, render_integrated_layout_html_with_localization};
 use model::{
     ComponentCapacityRates, EdgeInput, EndpointInput, InstanceInput, ModelInput, prepare_model,

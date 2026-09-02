@@ -19,10 +19,10 @@ use super::{
 };
 
 #[derive(Clone)]
-struct FacilityInstance {
-    id: String,
-    recipe: String,
-    facility: String,
+pub(super) struct FacilityInstance {
+    pub(super) id: String,
+    pub(super) recipe: String,
+    pub(super) facility: String,
 }
 
 struct Frontier<'a> {
@@ -140,7 +140,7 @@ pub fn construct_first_pipe_frontier(
     }
 }
 
-fn validate_inputs(
+pub(super) fn validate_inputs(
     wiring: &FacilityInstanceWiringReport,
 ) -> Option<ConstructiveFrontierDiagnostic> {
     if !wiring.success {
@@ -271,7 +271,7 @@ fn missing_facility(
     )
 }
 
-fn placement_candidates(
+pub(super) fn placement_candidates(
     instance: &FacilityInstance,
     definition: &FacilityDefinition,
     request: &FacilityPlacementRequest,
@@ -328,14 +328,14 @@ fn placement_distance(placement: &FacilityPlacement, near: Option<&FacilityPlace
         + placement_center_y.abs_diff(near_center_y) as i64
 }
 
-fn rectangles_overlap(left: &FacilityPlacement, right: &FacilityPlacement) -> bool {
+pub(super) fn rectangles_overlap(left: &FacilityPlacement, right: &FacilityPlacement) -> bool {
     left.x < right.x + right.width
         && right.x < left.x + left.width
         && left.y < right.y + right.height
         && right.y < left.y + left.height
 }
 
-fn candidate_ports(
+pub(super) fn candidate_ports(
     placements: &[FacilityPlacement],
     facilities: &ValidatedFacilityCatalog,
     request: &FacilityPlacementRequest,
@@ -378,7 +378,7 @@ fn candidate_ports(
     (!source_ports.is_empty() && !target_ports.is_empty()).then_some((source_ports, target_ports))
 }
 
-fn occupied_cells(placements: &[FacilityPlacement]) -> HashSet<(i64, i64)> {
+pub(super) fn occupied_cells(placements: &[FacilityPlacement]) -> HashSet<(i64, i64)> {
     placements
         .iter()
         .flat_map(|placement| {
@@ -456,7 +456,7 @@ fn canonicalize(
     }
 }
 
-fn bounds_for(
+pub(super) fn bounds_for(
     placements: &[FacilityPlacement],
     path: &[WorldGridPosition],
 ) -> FacilityPlacementBounds {

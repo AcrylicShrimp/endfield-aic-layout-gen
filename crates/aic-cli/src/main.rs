@@ -9,9 +9,10 @@ use aic_data::facilities::{
     validate_facility_catalog,
 };
 use aic_data::layouts::{
-    ConstructiveFrontierReport, FacilityPlacementDiagnostic, FacilityPlacementReport,
-    FacilityPlacementRequest, IntegratedLayoutDiagnostic, IntegratedLayoutReport,
-    construct_first_pipe_frontier, render_constructive_frontier_html,
+    ConstructiveFrontierReport, ConstructivePipeChainReport, FacilityPlacementDiagnostic,
+    FacilityPlacementReport, FacilityPlacementRequest, IntegratedLayoutDiagnostic,
+    IntegratedLayoutReport, construct_first_pipe_frontier, construct_pipe_chain,
+    render_constructive_frontier_html, render_constructive_pipe_chain_html,
     render_integrated_layout_html_with_localization, solve_facility_placement,
     solve_integrated_layout_with_time_limit,
 };
@@ -154,6 +155,32 @@ enum LayoutsCommand {
         item_catalog: PathBuf,
 
         /// Standalone HTML wireframe for the constructive result.
+        #[arg(long, value_name = "FILE")]
+        visualization_output: PathBuf,
+
+        /// Optional localization catalog used for facility labels.
+        #[arg(long, value_name = "FILE")]
+        localization_catalog: Option<PathBuf>,
+    },
+    /// Construct the longest linear facility pipe chain as routed growth steps.
+    ConstructPipeChain {
+        /// Recipe JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        recipes: PathBuf,
+
+        /// Hierarchical recipe source-plan request JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        source_plan: PathBuf,
+
+        /// Facility catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        facility_catalog: PathBuf,
+
+        /// Item transport catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        item_catalog: PathBuf,
+
+        /// Standalone paginated HTML wireframe for the growth history.
         #[arg(long, value_name = "FILE")]
         visualization_output: PathBuf,
 
@@ -466,6 +493,21 @@ fn run() -> Result<CommandStatus> {
                 visualization_output,
                 localization_catalog,
             } => construct_first_pipe_frontier_command(
+                recipes,
+                source_plan,
+                facility_catalog,
+                item_catalog,
+                visualization_output,
+                localization_catalog,
+            ),
+            LayoutsCommand::ConstructPipeChain {
+                recipes,
+                source_plan,
+                facility_catalog,
+                item_catalog,
+                visualization_output,
+                localization_catalog,
+            } => construct_pipe_chain_command(
                 recipes,
                 source_plan,
                 facility_catalog,
@@ -1107,48 +1149,11 @@ fn construct_first_pipe_frontier_command(
     localization_catalog: Option<PathBuf>,
 ) -> Result<CommandStatus> {
     let localization = load_visualization_localization(localization_catalog.as_deref())?;
-    let (book, source_plan) = match load_contextual_recipe_request(&recipes, &source_plan)? {
-        Ok(inputs) => inputs,
-        Err(report) => {
-            serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
-                .context("failed to write validation report")?;
-            println!();
-            return Ok(CommandStatus::Failure);
-        }
+    let Some((wiring, facilities, items)) =
+        load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
+    else {
+        return Ok(CommandStatus::Failure);
     };
-    let throughput = book.calculate_contextual_throughput(&source_plan);
-    if !throughput.success {
-        write_contextual_throughput_report(&throughput)?;
-        return Ok(CommandStatus::Failure);
-    }
-    let facility_requirements = calculate_contextual_facility_requirements(&throughput);
-    if !facility_requirements.success {
-        write_contextual_facility_requirement_report(&facility_requirements)?;
-        return Ok(CommandStatus::Failure);
-    }
-    let wiring = build_contextual_facility_instance_wiring(&throughput, &facility_requirements);
-    if !wiring.success {
-        write_facility_instance_wiring_report(&wiring)?;
-        return Ok(CommandStatus::Failure);
-    }
-
-    let facilities =
-        match ValidatedFacilityCatalog::try_from_catalog(load_facility_catalog(&facility_catalog)?)
-        {
-            Ok(catalog) => catalog,
-            Err(report) => {
-                write_facility_catalog_validation_report(&report)?;
-                return Ok(CommandStatus::Failure);
-            }
-        };
-    let items = match ValidatedItemCatalog::try_from_catalog(load_item_catalog(&item_catalog)?) {
-        Ok(catalog) => catalog,
-        Err(report) => {
-            write_item_catalog_validation_report(&report)?;
-            return Ok(CommandStatus::Failure);
-        }
-    };
-
     let report = construct_first_pipe_frontier(&wiring, &facilities, &items);
     let success = report.success;
     let html = render_constructive_frontier_html(&report, localization.as_ref()).map_err(
@@ -1160,18 +1165,112 @@ fn construct_first_pipe_frontier_command(
             )
         },
     )?;
-    std::fs::write(&visualization_output, html).with_context(|| {
-        format!(
-            "failed to write constructive visualization '{}'",
-            visualization_output.display()
-        )
-    })?;
+    write_constructive_visualization(&visualization_output, html)?;
     write_constructive_frontier_report(&report)?;
     if success {
         Ok(CommandStatus::Success)
     } else {
         Ok(CommandStatus::Failure)
     }
+}
+
+fn construct_pipe_chain_command(
+    recipes: PathBuf,
+    source_plan: PathBuf,
+    facility_catalog: PathBuf,
+    item_catalog: PathBuf,
+    visualization_output: PathBuf,
+    localization_catalog: Option<PathBuf>,
+) -> Result<CommandStatus> {
+    let localization = load_visualization_localization(localization_catalog.as_deref())?;
+    let Some((wiring, facilities, items)) =
+        load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
+    else {
+        return Ok(CommandStatus::Failure);
+    };
+    let report = construct_pipe_chain(&wiring, &facilities, &items);
+    let success = report.success;
+    let html = render_constructive_pipe_chain_html(&report, localization.as_ref()).map_err(
+        |diagnostic| {
+            anyhow::anyhow!(
+                "constructive pipe-chain visualization failed with {}: {}",
+                diagnostic.code,
+                diagnostic.message
+            )
+        },
+    )?;
+    write_constructive_visualization(&visualization_output, html)?;
+    write_constructive_pipe_chain_report(&report)?;
+    if success {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
+    }
+}
+
+fn load_constructive_inputs(
+    recipes: &Path,
+    source_plan: &Path,
+    facility_catalog: &Path,
+    item_catalog: &Path,
+) -> Result<
+    Option<(
+        FacilityInstanceWiringReport,
+        ValidatedFacilityCatalog,
+        ValidatedItemCatalog,
+    )>,
+> {
+    let (book, source_plan) = match load_contextual_recipe_request(&recipes, &source_plan)? {
+        Ok(inputs) => inputs,
+        Err(report) => {
+            serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
+                .context("failed to write validation report")?;
+            println!();
+            return Ok(None);
+        }
+    };
+    let throughput = book.calculate_contextual_throughput(&source_plan);
+    if !throughput.success {
+        write_contextual_throughput_report(&throughput)?;
+        return Ok(None);
+    }
+    let facility_requirements = calculate_contextual_facility_requirements(&throughput);
+    if !facility_requirements.success {
+        write_contextual_facility_requirement_report(&facility_requirements)?;
+        return Ok(None);
+    }
+    let wiring = build_contextual_facility_instance_wiring(&throughput, &facility_requirements);
+    if !wiring.success {
+        write_facility_instance_wiring_report(&wiring)?;
+        return Ok(None);
+    }
+
+    let facilities =
+        match ValidatedFacilityCatalog::try_from_catalog(load_facility_catalog(&facility_catalog)?)
+        {
+            Ok(catalog) => catalog,
+            Err(report) => {
+                write_facility_catalog_validation_report(&report)?;
+                return Ok(None);
+            }
+        };
+    let items = match ValidatedItemCatalog::try_from_catalog(load_item_catalog(&item_catalog)?) {
+        Ok(catalog) => catalog,
+        Err(report) => {
+            write_item_catalog_validation_report(&report)?;
+            return Ok(None);
+        }
+    };
+    Ok(Some((wiring, facilities, items)))
+}
+
+fn write_constructive_visualization(output: &Path, html: String) -> Result<()> {
+    std::fs::write(output, html).with_context(|| {
+        format!(
+            "failed to write constructive visualization '{}'",
+            output.display()
+        )
+    })
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1595,6 +1694,14 @@ fn write_constructive_frontier_report(report: &ConstructiveFrontierReport) -> Re
     Ok(())
 }
 
+fn write_constructive_pipe_chain_report(report: &ConstructivePipeChainReport) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write constructive pipe chain report")?;
+    println!();
+
+    Ok(())
+}
+
 fn write_layout_visualization(
     output: Option<&Path>,
     layout: &IntegratedLayoutReport,
@@ -1787,6 +1894,45 @@ mod tests {
             panic!("expected constructive pipe frontier command")
         };
         assert_eq!(visualization_output, PathBuf::from("frontier.html"));
+        assert_eq!(
+            localization_catalog,
+            Some(PathBuf::from("localization.json"))
+        );
+    }
+
+    #[test]
+    fn parses_constructive_pipe_chain_visualization_output() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "layouts",
+            "construct-pipe-chain",
+            "--recipes",
+            "recipes.json",
+            "--source-plan",
+            "source-plan.json",
+            "--facility-catalog",
+            "facilities.json",
+            "--item-catalog",
+            "items.json",
+            "--visualization-output",
+            "chain.html",
+            "--localization-catalog",
+            "localization.json",
+        ])
+        .expect("constructive pipe chain CLI should parse");
+
+        let Command::Layouts {
+            command:
+                LayoutsCommand::ConstructPipeChain {
+                    visualization_output,
+                    localization_catalog,
+                    ..
+                },
+        } = cli.command
+        else {
+            panic!("expected constructive pipe chain command")
+        };
+        assert_eq!(visualization_output, PathBuf::from("chain.html"));
         assert_eq!(
             localization_catalog,
             Some(PathBuf::from("localization.json"))

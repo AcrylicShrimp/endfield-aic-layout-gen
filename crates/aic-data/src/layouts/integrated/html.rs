@@ -5,17 +5,19 @@ use crate::localization::ValidatedLocalizationCatalog;
 use crate::logistics::{LogisticsComponentKind, TransportKind};
 
 use super::{
-    FacilityPlacement, FacilityPlacementBounds, IntegratedLayoutDiagnostic, IntegratedLayoutPhase,
-    IntegratedLayoutReport, PlacedLogisticsComponent, TransportNetwork, TransportNetworkEndpoint,
+    FacilityPlacement, FacilityPlacementBounds, IntegratedLayoutDiagnostic, IntegratedLayoutReport,
+    PlacedLogisticsComponent, TransportNetwork, TransportNetworkEndpoint,
 };
 
-struct RenderPage<'a> {
-    bounds: &'a FacilityPlacementBounds,
-    placements: &'a [FacilityPlacement],
-    logistics_components: &'a [PlacedLogisticsComponent],
-    transport_networks: &'a [TransportNetwork],
-    introduced_facilities: BTreeSet<&'a str>,
-    phase: Option<&'a IntegratedLayoutPhase>,
+pub(crate) struct LayoutVisualizationPage<'a> {
+    pub(crate) bounds: &'a FacilityPlacementBounds,
+    pub(crate) placements: &'a [FacilityPlacement],
+    pub(crate) logistics_components: &'a [PlacedLogisticsComponent],
+    pub(crate) transport_networks: &'a [TransportNetwork],
+    pub(crate) introduced_facilities: BTreeSet<&'a str>,
+    pub(crate) label: String,
+    pub(crate) detail: String,
+    pub(crate) history: bool,
 }
 
 pub fn render_integrated_layout_html(
@@ -36,7 +38,47 @@ pub fn render_integrated_layout_html_with_localization(
         return Ok(render_failure_summary(report));
     }
     let pages = collect_pages(report)?;
-    let final_page = pages.last().expect("successful layout has a render page");
+    let run_status = match (report.success, report.status, report.phases.is_empty()) {
+        (true, super::IntegratedLayoutStatus::Optimal, _) => {
+            "<span class=\"run-status success\">OPTIMAL</span>"
+        }
+        (true, _, _) => "<span class=\"run-status success\">FEASIBLE</span>",
+        (false, _, true) => {
+            "<span class=\"run-status failure\">REJECTED · INVALID INCUMBENT</span>"
+        }
+        (false, _, false) => "<span class=\"run-status failure\">FAILED · PARTIAL HISTORY</span>",
+    };
+    render_layout_visualization_pages(&pages, run_status, !report.success, localization)
+}
+
+pub(crate) fn render_layout_history_html(
+    pages: &[LayoutVisualizationPage<'_>],
+    success: bool,
+    localization: Option<&ValidatedLocalizationCatalog>,
+) -> Result<String, IntegratedLayoutDiagnostic> {
+    if pages.is_empty() {
+        return Err(IntegratedLayoutDiagnostic::error(
+            "layout-visualization-missing-pages",
+            "/phases",
+            None,
+            "layout history visualization requires at least one geometry page",
+        ));
+    }
+    let run_status = if success {
+        "<span class=\"run-status success\">CONSTRUCTED</span>"
+    } else {
+        "<span class=\"run-status failure\">FAILED · PARTIAL HISTORY</span>"
+    };
+    render_layout_visualization_pages(pages, run_status, !success, localization)
+}
+
+fn render_layout_visualization_pages(
+    pages: &[LayoutVisualizationPage<'_>],
+    run_status: &str,
+    partial_final: bool,
+    localization: Option<&ValidatedLocalizationCatalog>,
+) -> Result<String, IntegratedLayoutDiagnostic> {
+    let final_page = pages.last().expect("validated pages are non-empty");
     let width = final_page.bounds.width.max(1);
     let height = final_page.bounds.height.max(1);
     let total_route_cells = pages
@@ -49,16 +91,6 @@ pub fn render_integrated_layout_html_with_localization(
         })
         .sum::<usize>();
     let final_metrics = page_metrics(final_page);
-    let run_status = match (report.success, report.status, report.phases.is_empty()) {
-        (true, super::IntegratedLayoutStatus::Optimal, _) => {
-            "<span class=\"run-status success\">OPTIMAL</span>"
-        }
-        (true, _, _) => "<span class=\"run-status success\">FEASIBLE</span>",
-        (false, _, true) => {
-            "<span class=\"run-status failure\">REJECTED · INVALID INCUMBENT</span>"
-        }
-        (false, _, false) => "<span class=\"run-status failure\">FAILED · PARTIAL HISTORY</span>",
-    };
     let mut html = String::with_capacity(total_route_cells.saturating_mul(10).max(32_768));
     write!(
         html,
@@ -161,7 +193,7 @@ pub fn render_integrated_layout_html_with_localization(
             page,
             index,
             pages.len(),
-            !report.success && index + 1 == pages.len(),
+            partial_final && index + 1 == pages.len(),
             localization,
         );
     }
@@ -314,7 +346,7 @@ fn render_failure_summary(report: &IntegratedLayoutReport) -> String {
 
 fn collect_pages(
     report: &IntegratedLayoutReport,
-) -> Result<Vec<RenderPage<'_>>, IntegratedLayoutDiagnostic> {
+) -> Result<Vec<LayoutVisualizationPage<'_>>, IntegratedLayoutDiagnostic> {
     let pages = if report.phases.is_empty() {
         let bounds = report.bounds.as_ref().ok_or_else(|| {
             IntegratedLayoutDiagnostic::error(
@@ -324,29 +356,48 @@ fn collect_pages(
                 "successful integrated layout report has no used bounds",
             )
         })?;
-        vec![RenderPage {
+        vec![LayoutVisualizationPage {
             bounds,
             placements: &report.placements,
             logistics_components: &report.logistics_components,
             transport_networks: &report.transport_networks,
             introduced_facilities: BTreeSet::new(),
-            phase: None,
+            label: "Final layout".to_string(),
+            detail: String::new(),
+            history: false,
         }]
     } else {
         report
             .phases
             .iter()
-            .map(|phase| RenderPage {
-                bounds: &phase.bounds,
-                placements: &phase.placements,
-                logistics_components: &phase.logistics_components,
-                transport_networks: &phase.transport_networks,
-                introduced_facilities: phase
-                    .introduced_facilities
-                    .iter()
-                    .map(String::as_str)
-                    .collect(),
-                phase: Some(phase),
+            .map(|phase| {
+                let objective = phase.exact.objective;
+                LayoutVisualizationPage {
+                    bounds: &phase.bounds,
+                    placements: &phase.placements,
+                    logistics_components: &phase.logistics_components,
+                    transport_networks: &phase.transport_networks,
+                    introduced_facilities: phase
+                        .introduced_facilities
+                        .iter()
+                        .map(String::as_str)
+                        .collect(),
+                    label: if phase.introduced_components.is_empty() {
+                        "Final refinement".to_string()
+                    } else {
+                        format!("Phase {}/{}", phase.index + 1, report.phases.len())
+                    },
+                    detail: format!(
+                        " · +{} facilities · {} warm-start variables · area {} · {} transport tiles · {} turns · {} ms search",
+                        phase.introduced_facilities.len(),
+                        phase.exact.model.hint_variables,
+                        objective.map_or(0, |value| value.used_bounding_box_area),
+                        objective.map_or(0, |value| value.physical_transport_tiles),
+                        objective.map_or(0, |value| value.total_route_turns),
+                        phase.exact.search_ms,
+                    ),
+                    history: true,
+                }
             })
             .collect()
     };
@@ -368,7 +419,7 @@ fn collect_pages(
 
 fn render_page(
     html: &mut String,
-    page: &RenderPage<'_>,
+    page: &LayoutVisualizationPage<'_>,
     index: usize,
     page_count: usize,
     partial_final: bool,
@@ -381,18 +432,9 @@ fn render_page(
     } else {
         " hidden-phase"
     };
-    let mut phase_label = page.phase.map_or_else(
-        || "Final layout".to_string(),
-        |phase| {
-            if phase.introduced_components.is_empty() {
-                "Final refinement".to_string()
-            } else {
-                format!("Phase {}/{}", phase.index + 1, page_count)
-            }
-        },
-    );
+    let mut phase_label = page.label.clone();
     if partial_final {
-        phase_label.push_str(if page.phase.is_some() {
+        phase_label.push_str(if page.history {
             " · last valid"
         } else {
             " · rejected incumbent"
@@ -441,7 +483,7 @@ fn render_page(
     html.push_str("      </g>\n");
 }
 
-fn page_metrics(page: &RenderPage<'_>) -> String {
+fn page_metrics(page: &LayoutVisualizationPage<'_>) -> String {
     let route_cells = transport_cell_count(page, None);
     let belt_cells = transport_cell_count(page, Some(TransportKind::Belt));
     let pipe_cells = transport_cell_count(page, Some(TransportKind::Pipe));
@@ -450,18 +492,6 @@ fn page_metrics(page: &RenderPage<'_>) -> String {
         .iter()
         .filter(|component| component.kind == LogisticsComponentKind::Bridge)
         .count();
-    let phase_detail = page.phase.map_or_else(String::new, |phase| {
-        let objective = phase.exact.objective;
-        format!(
-            " · +{} facilities · {} warm-start variables · area {} · {} transport tiles · {} turns · {} ms search",
-            phase.introduced_facilities.len(),
-            phase.exact.model.hint_variables,
-            objective.map_or(0, |value| value.used_bounding_box_area),
-            objective.map_or(0, |value| value.physical_transport_tiles),
-            objective.map_or(0, |value| value.total_route_turns),
-            phase.exact.search_ms,
-        )
-    });
     format!(
         "{}×{} · {} facilities · {} occupied transport tiles (belt {} / pipe {}) · {} bridges{}",
         page.bounds.width,
@@ -471,11 +501,14 @@ fn page_metrics(page: &RenderPage<'_>) -> String {
         belt_cells,
         pipe_cells,
         bridge_count,
-        phase_detail,
+        page.detail,
     )
 }
 
-fn transport_cell_count(page: &RenderPage<'_>, transport: Option<TransportKind>) -> usize {
+fn transport_cell_count(
+    page: &LayoutVisualizationPage<'_>,
+    transport: Option<TransportKind>,
+) -> usize {
     page.transport_networks
         .iter()
         .filter(|network| transport.is_none_or(|transport| network.transport == transport))
@@ -483,7 +516,7 @@ fn transport_cell_count(page: &RenderPage<'_>, transport: Option<TransportKind>)
         .sum::<usize>()
 }
 
-fn transport_summary(page: &RenderPage<'_>, transport: TransportKind) -> String {
+fn transport_summary(page: &LayoutVisualizationPage<'_>, transport: TransportKind) -> String {
     let tiles = transport_cell_count(page, Some(transport));
     format!("{tiles} tiles")
 }
