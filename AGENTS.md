@@ -60,6 +60,8 @@
 ## Constructive Planner And Local Solver Policy
 
 - The production architecture must construct a complete valid factory first and improve that concrete layout iteratively afterward.
+- Construction grows a connected production subgraph incrementally. Add one frontier facility or atomic cycle, assign the newly required ports, and route the new connection before expanding the frontier again. Do not place the entire facility set and defer all routing to a later global phase.
+- Treat each frontier expansion as a transaction. When it cannot place or route the new input, retry alternative local placement, rotation, port, and route choices; if necessary, roll back a bounded recent growth window without discarding unrelated validated regions.
 - Facility placement, port assignment, logical commodity-network synthesis, and physical routing may use deterministic constructive heuristics. These heuristics are now the approved production path; they do not claim global optimality or global infeasibility.
 - Use a dedicated routing engine rather than a global placement-routing constraint model. Route pipes first, use A* or Dijkstra with length, turn, and congestion costs, and support rip-up-and-reroute.
 - Synthesize one logical network per compatible commodity and transport kind before embedding it into the grid. Shared trunks and trees are preferred; splitters and convergers are derived from the embedded result.
@@ -67,7 +69,7 @@
 - A local proof must not be reported as proof that the whole factory request is infeasible.
 - Improvement passes operate transactionally. Keep the current valid layout unless a candidate validates and improves the configured score.
 - Preserve the score priority: used bounding-box area first, physical belt and pipe tile count second, total route turns third, followed by later tie-breakers.
-- The initial constructor may be visually poor. Its first acceptance criterion is a complete validated factory within caller-supplied hard bounds.
+- The initial constructor may be visually poor. Every committed growth state must be valid for its covered production subgraph, and its final acceptance criterion is a complete validated factory within caller-supplied hard bounds.
 - A construction failure is a structured planner failure, not a global infeasibility proof. Diagnostics must identify the failing stage, network, facility group, or exhausted bound.
 - Keep the former global exact joint solver as isolated research tooling. Production APIs and normal CLI commands must not invoke it, automatically fall back to it, or expose its timeouts as production planner failures.
 - Before committing each planner slice, compare it against `docs/designs/2026-09-02.00-constructive-layout-planner.md` and this policy.
