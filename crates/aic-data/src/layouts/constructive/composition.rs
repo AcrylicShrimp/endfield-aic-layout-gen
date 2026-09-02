@@ -13,7 +13,7 @@ use crate::recipes::{
 };
 
 use super::first_pipe_frontier::{bounds_for, occupied_cells, rectangles_overlap};
-use super::routing::{count_turns, route_shortest_path};
+use super::routing::{RouteWorkspace, count_turns};
 use super::{
     CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION, ConstructiveCompositionReport,
     ConstructiveCompositionScore, ConstructiveCompositionStatistics,
@@ -306,6 +306,7 @@ pub fn compose_constructive_nodes(
     let canvas_width = source.bounds.width + target.bounds.width + 10;
     let canvas_height = source.bounds.height + target.bounds.height + 10;
     let target_candidate = translate_node(target, 4, 4);
+    let mut route_workspace = RouteWorkspace::new(canvas_width, canvas_height);
     let mut statistics = ConstructiveCompositionStatistics::default();
     let mut best: Option<(ConstructiveCompositionScore, usize, ConstructiveNode)> = None;
     let mut order = 0usize;
@@ -347,9 +348,7 @@ pub fn compose_constructive_nodes(
                             continue;
                         }
                         statistics.astar_searches += 1;
-                        let Some(path) = route_shortest_path(
-                            canvas_width,
-                            canvas_height,
+                        let Some(path) = route_workspace.route(
                             &blocked,
                             &source_port.connection,
                             &target_port.connection,
