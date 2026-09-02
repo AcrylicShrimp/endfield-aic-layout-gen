@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::facilities::FacilityPortDirection;
 use crate::layouts::{
@@ -15,12 +15,14 @@ use crate::recipes::Rate;
 
 use super::integrated::{LayoutVisualizationPage, render_layout_history_html};
 
+mod assembly;
 mod composition;
 mod first_pipe_frontier;
 mod pipe_chain;
 mod process_module;
 mod routing;
 
+pub use assembly::assemble_constructive_modules;
 pub use composition::{
     compose_constructive_nodes, compose_process_module_with_facility, construct_facility_node,
     constructive_node_from_process_module,
@@ -264,6 +266,84 @@ pub fn render_constructive_composition_html(
     render_integrated_layout_html_with_localization(&integrated, localization)
 }
 
+pub fn render_constructive_assembly_html(
+    report: &ConstructiveAssemblyReport,
+    localization: Option<&ValidatedLocalizationCatalog>,
+) -> Result<String, IntegratedLayoutDiagnostic> {
+    let successful_steps = report
+        .steps
+        .iter()
+        .filter(|step| step.composition.success && step.composition.composite.is_some())
+        .collect::<Vec<_>>();
+    if successful_steps.is_empty() {
+        let synthetic = ConstructiveCompositionReport {
+            schema_version: CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION,
+            success: report.success,
+            requirement: String::new(),
+            source_node: String::new(),
+            target_node: report.target_instance.clone(),
+            score: None,
+            composite: report.final_node.clone(),
+            statistics: ConstructiveCompositionStatistics::default(),
+            diagnostics: report.diagnostics.clone(),
+        };
+        return render_constructive_composition_html(&synthetic, localization);
+    }
+    let visual_networks = successful_steps
+        .iter()
+        .map(|step| {
+            let node = step
+                .composition
+                .composite
+                .as_ref()
+                .expect("successful assembly steps have a composite node");
+            let mut networks = node.transport_networks.clone();
+            networks.extend(boundary_visualization_networks(
+                &node.boundary_requirements,
+                &format!("constructive-assembly-step-{}-boundary", step.index),
+            ));
+            networks
+        })
+        .collect::<Vec<_>>();
+    let pages = successful_steps
+        .iter()
+        .zip(&visual_networks)
+        .map(|(step, networks)| {
+            let node = step
+                .composition
+                .composite
+                .as_ref()
+                .expect("successful assembly steps have a composite node");
+            let score = step
+                .composition
+                .score
+                .expect("successful assembly steps have a score");
+            LayoutVisualizationPage {
+                bounds: &node.bounds,
+                placements: &node.placements,
+                logistics_components: &[],
+                transport_networks: networks,
+                introduced_facilities: step
+                    .module_member_instances
+                    .iter()
+                    .map(String::as_str)
+                    .collect(),
+                label: format!("Assembly {}/{}", step.index + 1, report.requested_modules),
+                detail: format!(
+                    " · +{} facilities · area {} · {} boundary options blocked · {} transport tiles · {} turns",
+                    step.module_member_instances.len(),
+                    score.used_bounding_box_area,
+                    score.blocked_boundary_port_options,
+                    score.transport_tiles,
+                    score.route_turns,
+                ),
+                history: true,
+            }
+        })
+        .collect::<Vec<_>>();
+    render_layout_history_html(&pages, report.success, localization)
+}
+
 fn boundary_visualization_networks(
     boundaries: &[ConstructiveProcessModuleBoundary],
     id_prefix: &str,
@@ -304,6 +384,8 @@ pub const CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION: u32 = 3;
 pub const CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION: u32 = 1;
+pub const CONSTRUCTIVE_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
+pub const CONSTRUCTIVE_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -457,6 +539,44 @@ pub struct ConstructiveCompositionReport {
     pub score: Option<ConstructiveCompositionScore>,
     pub composite: Option<ConstructiveNode>,
     pub statistics: ConstructiveCompositionStatistics,
+    pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ConstructiveAssemblyRequest {
+    pub schema_version: u32,
+    pub target_instance: String,
+    pub modules: Vec<ConstructiveAssemblyModuleRequest>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct ConstructiveAssemblyModuleRequest {
+    pub root_instance: String,
+    pub internal_item: String,
+    pub requirement: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructiveAssemblyStepReport {
+    pub index: usize,
+    pub root_instance: String,
+    pub internal_item: String,
+    pub requirement: String,
+    pub module_member_instances: Vec<String>,
+    pub composition: ConstructiveCompositionReport,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructiveAssemblyReport {
+    pub schema_version: u32,
+    pub success: bool,
+    pub target_instance: String,
+    pub requested_modules: usize,
+    pub completed_modules: usize,
+    pub steps: Vec<ConstructiveAssemblyStepReport>,
+    pub final_node: Option<ConstructiveNode>,
     pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
 }
 

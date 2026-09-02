@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "target_instance": "facility-instance:recipe-occurrence:/target:0",
+  "modules": [
+    {
+      "root_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+      "internal_item": "item-carbon-enr",
+      "requirement": "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6"
+    },
+    {
+      "root_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1",
+      "internal_item": "item-carbon-enr",
+      "requirement": "wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e"
+    }
+  ]
+}

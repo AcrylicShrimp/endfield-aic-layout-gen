@@ -9,14 +9,16 @@ use aic_data::facilities::{
     validate_facility_catalog,
 };
 use aic_data::layouts::{
-    ConstructiveCompositionReport, ConstructiveFrontierGrowthReport, ConstructiveFrontierReport,
-    ConstructiveProcessModuleReport, FacilityPlacementDiagnostic, FacilityPlacementReport,
-    FacilityPlacementRequest, IntegratedLayoutDiagnostic, IntegratedLayoutReport,
+    ConstructiveAssemblyReport, ConstructiveAssemblyRequest, ConstructiveCompositionReport,
+    ConstructiveFrontierGrowthReport, ConstructiveFrontierReport, ConstructiveProcessModuleReport,
+    FacilityPlacementDiagnostic, FacilityPlacementReport, FacilityPlacementRequest,
+    IntegratedLayoutDiagnostic, IntegratedLayoutReport, assemble_constructive_modules,
     compose_process_module_with_facility, construct_first_pipe_frontier, construct_frontier_growth,
-    construct_process_module, render_constructive_composition_html,
-    render_constructive_frontier_growth_html, render_constructive_frontier_html,
-    render_constructive_process_module_html, render_integrated_layout_html_with_localization,
-    solve_facility_placement, solve_integrated_layout_with_time_limit,
+    construct_process_module, render_constructive_assembly_html,
+    render_constructive_composition_html, render_constructive_frontier_growth_html,
+    render_constructive_frontier_html, render_constructive_process_module_html,
+    render_integrated_layout_html_with_localization, solve_facility_placement,
+    solve_integrated_layout_with_time_limit,
 };
 use aic_data::localization::{
     LocalizationCatalogValidationReport, ValidatedLocalizationCatalog, load_localization_catalog,
@@ -267,6 +269,40 @@ enum LayoutsCommand {
         visualization_output: PathBuf,
 
         /// Machine-readable composition report JSON file.
+        #[arg(long, value_name = "FILE")]
+        report_output: PathBuf,
+
+        /// Optional localization catalog used for facility labels.
+        #[arg(long, value_name = "FILE")]
+        localization_catalog: Option<PathBuf>,
+    },
+    /// Recursively compose process modules into one constructive node.
+    AssembleProcessModules {
+        /// Recipe JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        recipes: PathBuf,
+
+        /// Hierarchical recipe source-plan request JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        source_plan: PathBuf,
+
+        /// Facility catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        facility_catalog: PathBuf,
+
+        /// Item transport catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        item_catalog: PathBuf,
+
+        /// Recursive module-assembly request JSON file.
+        #[arg(long, value_name = "FILE")]
+        assembly_request: PathBuf,
+
+        /// Standalone paginated HTML wireframe for the assembly history.
+        #[arg(long, value_name = "FILE")]
+        visualization_output: PathBuf,
+
+        /// Machine-readable assembly report JSON file.
         #[arg(long, value_name = "FILE")]
         report_output: PathBuf,
 
@@ -643,6 +679,25 @@ fn run() -> Result<CommandStatus> {
                 module_internal_item,
                 target_instance,
                 requirement,
+                visualization_output,
+                report_output,
+                localization_catalog,
+            ),
+            LayoutsCommand::AssembleProcessModules {
+                recipes,
+                source_plan,
+                facility_catalog,
+                item_catalog,
+                assembly_request,
+                visualization_output,
+                report_output,
+                localization_catalog,
+            } => assemble_process_modules_command(
+                recipes,
+                source_plan,
+                facility_catalog,
+                item_catalog,
+                assembly_request,
                 visualization_output,
                 report_output,
                 localization_catalog,
@@ -1448,6 +1503,57 @@ fn compose_process_module_command(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
+fn assemble_process_modules_command(
+    recipes: PathBuf,
+    source_plan: PathBuf,
+    facility_catalog: PathBuf,
+    item_catalog: PathBuf,
+    assembly_request: PathBuf,
+    visualization_output: PathBuf,
+    report_output: PathBuf,
+    localization_catalog: Option<PathBuf>,
+) -> Result<CommandStatus> {
+    let localization = load_visualization_localization(localization_catalog.as_deref())?;
+    let Some((wiring, facilities, items)) =
+        load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
+    else {
+        return Ok(CommandStatus::Failure);
+    };
+    let request_bytes = std::fs::read(&assembly_request).with_context(|| {
+        format!(
+            "failed to read constructive assembly request {}",
+            assembly_request.display()
+        )
+    })?;
+    let request: ConstructiveAssemblyRequest = serde_json::from_slice(&request_bytes)
+        .with_context(|| {
+            format!(
+                "failed to parse constructive assembly request {}",
+                assembly_request.display()
+            )
+        })?;
+    let report = assemble_constructive_modules(&wiring, &facilities, &items, &request);
+    let success = report.success;
+    let html = render_constructive_assembly_html(&report, localization.as_ref()).map_err(
+        |diagnostic| {
+            anyhow::anyhow!(
+                "constructive assembly visualization failed with {}: {}",
+                diagnostic.code,
+                diagnostic.message
+            )
+        },
+    )?;
+    write_constructive_visualization(&visualization_output, html)?;
+    write_constructive_assembly_report_file(&report_output, &report)?;
+    write_constructive_assembly_report(&report)?;
+    if success {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
+    }
+}
+
 fn load_constructive_inputs(
     recipes: &Path,
     source_plan: &Path,
@@ -1505,6 +1611,14 @@ fn load_constructive_inputs(
 }
 
 fn write_constructive_visualization(output: &Path, html: String) -> Result<()> {
+    if let Some(parent) = output.parent() {
+        std::fs::create_dir_all(parent).with_context(|| {
+            format!(
+                "failed to create constructive visualization directory '{}'",
+                parent.display()
+            )
+        })?;
+    }
     std::fs::write(output, html).with_context(|| {
         format!(
             "failed to write constructive visualization '{}'",
@@ -1989,6 +2103,41 @@ fn write_constructive_composition_report_file(
     Ok(())
 }
 
+fn write_constructive_assembly_report(report: &ConstructiveAssemblyReport) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write constructive assembly report")?;
+    println!();
+
+    Ok(())
+}
+
+fn write_constructive_assembly_report_file(
+    output: &Path,
+    report: &ConstructiveAssemblyReport,
+) -> Result<()> {
+    if let Some(parent) = output.parent() {
+        std::fs::create_dir_all(parent).with_context(|| {
+            format!(
+                "failed to create constructive assembly report directory {}",
+                parent.display()
+            )
+        })?;
+    }
+    let file = std::fs::File::create(output).with_context(|| {
+        format!(
+            "failed to create constructive assembly report {}",
+            output.display()
+        )
+    })?;
+    serde_json::to_writer_pretty(file, report).with_context(|| {
+        format!(
+            "failed to write constructive assembly report {}",
+            output.display()
+        )
+    })?;
+    Ok(())
+}
+
 fn write_layout_visualization(
     output: Option<&Path>,
     layout: &IntegratedLayoutReport,
@@ -2320,6 +2469,46 @@ mod tests {
         assert_eq!(requirement, "edge");
         assert_eq!(visualization_output, PathBuf::from("composite.html"));
         assert_eq!(report_output, PathBuf::from("composite.json"));
+    }
+
+    #[test]
+    fn parses_recursive_constructive_assembly_command() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "layouts",
+            "assemble-process-modules",
+            "--recipes",
+            "recipes.json",
+            "--source-plan",
+            "source-plan.json",
+            "--facility-catalog",
+            "facilities.json",
+            "--item-catalog",
+            "items.json",
+            "--assembly-request",
+            "assembly.json",
+            "--visualization-output",
+            "assembly.html",
+            "--report-output",
+            "assembly-report.json",
+        ])
+        .expect("recursive constructive assembly CLI should parse");
+
+        let Command::Layouts {
+            command:
+                LayoutsCommand::AssembleProcessModules {
+                    assembly_request,
+                    visualization_output,
+                    report_output,
+                    ..
+                },
+        } = cli.command
+        else {
+            panic!("expected recursive constructive assembly command")
+        };
+        assert_eq!(assembly_request, PathBuf::from("assembly.json"));
+        assert_eq!(visualization_output, PathBuf::from("assembly.html"));
+        assert_eq!(report_output, PathBuf::from("assembly-report.json"));
     }
 
     #[test]
