@@ -82,6 +82,7 @@ pub fn construct_frontier_growth(
     wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
+    belt_frontier_depth: usize,
 ) -> ConstructiveFrontierGrowthReport {
     if let Some(diagnostic) = validate_inputs(wiring) {
         return failure(
@@ -89,9 +90,10 @@ pub fn construct_frontier_growth(
             Vec::new(),
             ConstructiveFrontierGrowthStatistics::default(),
             diagnostic,
+            belt_frontier_depth,
         );
     }
-    let growth = match select_initial_frontier_growth(wiring, items) {
+    let growth = match select_initial_frontier_growth(wiring, items, belt_frontier_depth) {
         Ok(growth) if !growth.is_empty() => growth,
         Ok(_) => {
             return failure(
@@ -104,6 +106,7 @@ pub fn construct_frontier_growth(
                     None,
                     "instance wiring contains no eligible facility-to-facility transport frontier",
                 ),
+                belt_frontier_depth,
             );
         }
         Err(diagnostic) => {
@@ -112,6 +115,7 @@ pub fn construct_frontier_growth(
                 Vec::new(),
                 ConstructiveFrontierGrowthStatistics::default(),
                 diagnostic,
+                belt_frontier_depth,
             );
         }
     };
@@ -123,6 +127,7 @@ pub fn construct_frontier_growth(
                 Vec::new(),
                 ConstructiveFrontierGrowthStatistics::default(),
                 diagnostic,
+                belt_frontier_depth,
             );
         }
     };
@@ -141,6 +146,7 @@ pub fn construct_frontier_growth(
                     phases,
                     aggregate,
                     missing_facility(&growth_edge.target),
+                    belt_frontier_depth,
                 );
             };
             seed_candidates(&growth_edge.target, definition, &request)
@@ -160,6 +166,7 @@ pub fn construct_frontier_growth(
                 phases,
                 aggregate,
                 missing_facility(&growth_edge.source),
+                belt_frontier_depth,
             );
         };
         let mut phase_statistics = ConstructiveFrontierStatistics::default();
@@ -220,6 +227,7 @@ pub fn construct_frontier_growth(
                         growth_edge.edge.id
                     ),
                 ),
+                belt_frontier_depth,
             );
         };
         phase_statistics.accepted_path_tiles = candidate
@@ -257,6 +265,7 @@ pub fn construct_frontier_growth(
         .expect("a non-empty selected chain completes at least one phase");
     ConstructiveFrontierGrowthReport {
         schema_version: CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION,
+        requested_belt_frontier_depth: belt_frontier_depth,
         success: true,
         status: ConstructiveFrontierGrowthStatus::Constructed,
         bounds: Some(final_phase.bounds.clone()),
@@ -549,10 +558,12 @@ fn failure(
     phases: Vec<ConstructiveFrontierGrowthPhase>,
     statistics: ConstructiveFrontierGrowthStatistics,
     diagnostic: ConstructiveFrontierDiagnostic,
+    requested_belt_frontier_depth: usize,
 ) -> ConstructiveFrontierGrowthReport {
     let final_phase = phases.last();
     ConstructiveFrontierGrowthReport {
         schema_version: CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION,
+        requested_belt_frontier_depth,
         success: false,
         status,
         bounds: final_phase.map(|phase| phase.bounds.clone()),
@@ -659,6 +670,7 @@ fn select_longest_linear_pipe_chain<'a>(
 fn select_initial_frontier_growth<'a>(
     wiring: &'a FacilityInstanceWiringReport,
     items: &ValidatedItemCatalog,
+    belt_frontier_depth: usize,
 ) -> Result<Vec<GrowthEdge<'a>>, ConstructiveFrontierDiagnostic> {
     let mut growth = select_longest_linear_pipe_chain(wiring, items)?;
     let instances = wiring
@@ -685,39 +697,44 @@ fn select_initial_frontier_growth<'a>(
         .iter()
         .flat_map(|edge| [edge.source.id.clone(), edge.target.id.clone()])
         .collect::<BTreeSet<_>>();
-    let mut belt_frontiers = Vec::new();
-    for edge in &wiring.edges {
-        let Some(item) = items.item(&edge.item) else {
-            return Err(ConstructiveFrontierDiagnostic::error(
-                "missing-item-definition",
-                "/edges",
-                Some(edge.item.clone()),
-                format!("wiring edge references missing item '{}'", edge.item),
-            ));
-        };
-        if item.transport != TransportKind::Belt
-            || !selected_instances.contains(&edge.target)
-            || selected_instances.contains(&edge.source)
-        {
-            continue;
+    for _ in 0..belt_frontier_depth {
+        let mut belt_frontiers = Vec::new();
+        for edge in &wiring.edges {
+            let Some(item) = items.item(&edge.item) else {
+                return Err(ConstructiveFrontierDiagnostic::error(
+                    "missing-item-definition",
+                    "/edges",
+                    Some(edge.item.clone()),
+                    format!("wiring edge references missing item '{}'", edge.item),
+                ));
+            };
+            if item.transport != TransportKind::Belt
+                || !selected_instances.contains(&edge.target)
+                || selected_instances.contains(&edge.source)
+            {
+                continue;
+            }
+            let (Some(source), Some(target)) = (
+                instances.get(edge.source.as_str()),
+                instances.get(edge.target.as_str()),
+            ) else {
+                continue;
+            };
+            belt_frontiers.push(GrowthEdge {
+                edge,
+                source: source.clone(),
+                target: target.clone(),
+                transport: TransportKind::Belt,
+            });
         }
-        let (Some(source), Some(target)) = (
-            instances.get(edge.source.as_str()),
-            instances.get(edge.target.as_str()),
-        ) else {
-            continue;
-        };
-        belt_frontiers.push(GrowthEdge {
-            edge,
-            source: source.clone(),
-            target: target.clone(),
-            transport: TransportKind::Belt,
-        });
-    }
-    belt_frontiers.sort_by(|left, right| left.edge.id.cmp(&right.edge.id));
-    for frontier in belt_frontiers {
-        if selected_instances.insert(frontier.source.id.clone()) {
-            growth.push(frontier);
+        belt_frontiers.sort_by(|left, right| left.edge.id.cmp(&right.edge.id));
+        if belt_frontiers.is_empty() {
+            break;
+        }
+        for frontier in belt_frontiers {
+            if selected_instances.insert(frontier.source.id.clone()) {
+                growth.push(frontier);
+            }
         }
     }
     Ok(growth)
@@ -1225,7 +1242,7 @@ mod tests {
         })
         .expect("item catalog validates");
 
-        let report = construct_frontier_growth(&wiring, &facilities, &items);
+        let report = construct_frontier_growth(&wiring, &facilities, &items, 1);
         assert!(report.success, "{:?}", report.diagnostics);
         assert_eq!(report.phases.len(), 2);
         assert_eq!(report.phases[0].placements.len(), 2);
@@ -1258,6 +1275,7 @@ mod tests {
                 node("middle"),
                 node("target"),
                 node("belt-source"),
+                node("belt-source-upstream"),
             ],
             edges: vec![
                 FacilityInstanceWiringEdge {
@@ -1282,6 +1300,15 @@ mod tests {
                     id: "belt-target".to_string(),
                     source: "belt-source".to_string(),
                     target: "target".to_string(),
+                    kind: "intermediate".to_string(),
+                    item: "solid".to_string(),
+                    rate,
+                    projection: FacilityInstanceWiringProjection::Original,
+                },
+                FacilityInstanceWiringEdge {
+                    id: "belt-source-upstream".to_string(),
+                    source: "belt-source-upstream".to_string(),
+                    target: "belt-source".to_string(),
                     kind: "intermediate".to_string(),
                     item: "solid".to_string(),
                     rate,
@@ -1319,13 +1346,18 @@ mod tests {
         })
         .expect("item catalog validates");
 
-        let report = construct_frontier_growth(&wiring, &facilities, &items);
+        let report = construct_frontier_growth(&wiring, &facilities, &items, 1);
         assert!(report.success, "{:?}", report.diagnostics);
         assert_eq!(report.phases.len(), 3);
         assert_eq!(report.placements.len(), 4);
         assert_eq!(report.transport_networks.len(), 3);
         assert_eq!(report.transport_networks[2].transport, TransportKind::Belt);
         assert_eq!(report.statistics.completed_requirements, 3);
+
+        let two_ring_growth = select_initial_frontier_growth(&wiring, &items, 2)
+            .expect("two belt rings should be selected");
+        assert_eq!(two_ring_growth.len(), 4);
+        assert_eq!(two_ring_growth[3].source.id, "belt-source-upstream");
     }
 
     #[test]

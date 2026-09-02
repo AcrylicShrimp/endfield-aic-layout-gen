@@ -162,7 +162,7 @@ enum LayoutsCommand {
         #[arg(long, value_name = "FILE")]
         localization_catalog: Option<PathBuf>,
     },
-    /// Construct an initial pipe chain and its immediate belt suppliers as routed growth steps.
+    /// Construct an initial pipe chain and cumulative belt-supplier rings as routed growth steps.
     ConstructFrontierGrowth {
         /// Recipe JSON file to load.
         #[arg(long, value_name = "FILE")]
@@ -179,6 +179,10 @@ enum LayoutsCommand {
         /// Item transport catalog JSON file to load.
         #[arg(long, value_name = "FILE")]
         item_catalog: PathBuf,
+
+        /// Number of cumulative belt frontier rings after the initial pipe chain.
+        #[arg(long, default_value_t = 1)]
+        belt_frontier_depth: usize,
 
         /// Standalone paginated HTML wireframe for the growth history.
         #[arg(long, value_name = "FILE")]
@@ -505,6 +509,7 @@ fn run() -> Result<CommandStatus> {
                 source_plan,
                 facility_catalog,
                 item_catalog,
+                belt_frontier_depth,
                 visualization_output,
                 localization_catalog,
             } => construct_frontier_growth_command(
@@ -512,6 +517,7 @@ fn run() -> Result<CommandStatus> {
                 source_plan,
                 facility_catalog,
                 item_catalog,
+                belt_frontier_depth,
                 visualization_output,
                 localization_catalog,
             ),
@@ -1179,6 +1185,7 @@ fn construct_frontier_growth_command(
     source_plan: PathBuf,
     facility_catalog: PathBuf,
     item_catalog: PathBuf,
+    belt_frontier_depth: usize,
     visualization_output: PathBuf,
     localization_catalog: Option<PathBuf>,
 ) -> Result<CommandStatus> {
@@ -1188,7 +1195,7 @@ fn construct_frontier_growth_command(
     else {
         return Ok(CommandStatus::Failure);
     };
-    let report = construct_frontier_growth(&wiring, &facilities, &items);
+    let report = construct_frontier_growth(&wiring, &facilities, &items, belt_frontier_depth);
     let success = report.success;
     let html = render_constructive_frontier_growth_html(&report, localization.as_ref()).map_err(
         |diagnostic| {
@@ -1916,6 +1923,8 @@ mod tests {
             "facilities.json",
             "--item-catalog",
             "items.json",
+            "--belt-frontier-depth",
+            "2",
             "--visualization-output",
             "chain.html",
             "--localization-catalog",
@@ -1926,6 +1935,7 @@ mod tests {
         let Command::Layouts {
             command:
                 LayoutsCommand::ConstructFrontierGrowth {
+                    belt_frontier_depth,
                     visualization_output,
                     localization_catalog,
                     ..
@@ -1934,6 +1944,7 @@ mod tests {
         else {
             panic!("expected constructive frontier growth command")
         };
+        assert_eq!(belt_frontier_depth, 2);
         assert_eq!(visualization_output, PathBuf::from("chain.html"));
         assert_eq!(
             localization_catalog,

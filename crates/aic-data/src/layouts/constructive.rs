@@ -162,7 +162,7 @@ pub fn render_constructive_frontier_growth_html(
 
 const STAGE: &str = "constructive-planner";
 pub const CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION: u32 = 1;
-pub const CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION: u32 = 2;
+pub const CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION: u32 = 3;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -240,6 +240,7 @@ pub struct ConstructiveFrontierGrowthPhase {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct ConstructiveFrontierGrowthReport {
     pub schema_version: u32,
+    pub requested_belt_frontier_depth: usize,
     pub success: bool,
     pub status: ConstructiveFrontierGrowthStatus,
     pub bounds: Option<FacilityPlacementBounds>,
