@@ -26,11 +26,11 @@ use super::{
 };
 
 #[derive(Clone)]
-struct GrowthEdge<'a> {
-    edge: &'a FacilityInstanceWiringEdge,
-    source: FacilityInstance,
-    target: FacilityInstance,
-    transport: TransportKind,
+pub(super) struct GrowthEdge<'a> {
+    pub(super) edge: &'a FacilityInstanceWiringEdge,
+    pub(super) source: FacilityInstance,
+    pub(super) target: FacilityInstance,
+    pub(super) transport: TransportKind,
 }
 
 #[derive(Clone, Default)]
@@ -119,6 +119,20 @@ pub fn construct_frontier_growth(
             );
         }
     };
+    construct_selected_growth(
+        growth,
+        facilities,
+        belt_frontier_depth,
+        "constructed an initial pipe chain and its cumulative belt suppliers as validated routed frontier transactions",
+    )
+}
+
+pub(super) fn construct_selected_growth(
+    growth: Vec<GrowthEdge<'_>>,
+    facilities: &ValidatedFacilityCatalog,
+    report_belt_frontier_depth: usize,
+    success_message: &str,
+) -> ConstructiveFrontierGrowthReport {
     let request = match growth_canvas(&growth, facilities) {
         Ok(request) => request,
         Err(diagnostic) => {
@@ -127,7 +141,7 @@ pub fn construct_frontier_growth(
                 Vec::new(),
                 ConstructiveFrontierGrowthStatistics::default(),
                 diagnostic,
-                belt_frontier_depth,
+                report_belt_frontier_depth,
             );
         }
     };
@@ -146,7 +160,7 @@ pub fn construct_frontier_growth(
                     phases,
                     aggregate,
                     missing_facility(&growth_edge.target),
-                    belt_frontier_depth,
+                    report_belt_frontier_depth,
                 );
             };
             seed_candidates(&growth_edge.target, definition, &request)
@@ -166,7 +180,7 @@ pub fn construct_frontier_growth(
                 phases,
                 aggregate,
                 missing_facility(&growth_edge.source),
-                belt_frontier_depth,
+                report_belt_frontier_depth,
             );
         };
         let mut phase_statistics = ConstructiveFrontierStatistics::default();
@@ -227,7 +241,7 @@ pub fn construct_frontier_growth(
                         growth_edge.edge.id
                     ),
                 ),
-                belt_frontier_depth,
+                report_belt_frontier_depth,
             );
         };
         phase_statistics.accepted_path_tiles = candidate
@@ -265,7 +279,7 @@ pub fn construct_frontier_growth(
         .expect("a non-empty selected chain completes at least one phase");
     ConstructiveFrontierGrowthReport {
         schema_version: CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION,
-        requested_belt_frontier_depth: belt_frontier_depth,
+        requested_belt_frontier_depth: report_belt_frontier_depth,
         success: true,
         status: ConstructiveFrontierGrowthStatus::Constructed,
         bounds: Some(final_phase.bounds.clone()),
@@ -275,7 +289,7 @@ pub fn construct_frontier_growth(
         statistics: aggregate,
         diagnostics: vec![ConstructiveFrontierDiagnostic::info(
             "frontier-growth-constructed",
-            "constructed an initial pipe chain and its immediate belt suppliers as validated routed frontier transactions",
+            success_message,
         )],
     }
 }

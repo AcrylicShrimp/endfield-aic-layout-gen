@@ -9,10 +9,11 @@ use aic_data::facilities::{
     validate_facility_catalog,
 };
 use aic_data::layouts::{
-    ConstructiveFrontierGrowthReport, ConstructiveFrontierReport, FacilityPlacementDiagnostic,
-    FacilityPlacementReport, FacilityPlacementRequest, IntegratedLayoutDiagnostic,
-    IntegratedLayoutReport, construct_first_pipe_frontier, construct_frontier_growth,
-    render_constructive_frontier_growth_html, render_constructive_frontier_html,
+    ConstructiveFrontierGrowthReport, ConstructiveFrontierReport, ConstructiveProcessModuleReport,
+    FacilityPlacementDiagnostic, FacilityPlacementReport, FacilityPlacementRequest,
+    IntegratedLayoutDiagnostic, IntegratedLayoutReport, construct_first_pipe_frontier,
+    construct_frontier_growth, construct_process_module, render_constructive_frontier_growth_html,
+    render_constructive_frontier_html, render_constructive_process_module_html,
     render_integrated_layout_html_with_localization, solve_facility_placement,
     solve_integrated_layout_with_time_limit,
 };
@@ -185,6 +186,40 @@ enum LayoutsCommand {
         belt_frontier_depth: usize,
 
         /// Standalone paginated HTML wireframe for the growth history.
+        #[arg(long, value_name = "FILE")]
+        visualization_output: PathBuf,
+
+        /// Optional localization catalog used for facility labels.
+        #[arg(long, value_name = "FILE")]
+        localization_catalog: Option<PathBuf>,
+    },
+    /// Construct and expose one routed process module as an immutable macro candidate.
+    ConstructProcessModule {
+        /// Recipe JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        recipes: PathBuf,
+
+        /// Hierarchical recipe source-plan request JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        source_plan: PathBuf,
+
+        /// Facility catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        facility_catalog: PathBuf,
+
+        /// Item transport catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        item_catalog: PathBuf,
+
+        /// Facility instance at the output side of the local process module.
+        #[arg(long)]
+        root_instance: String,
+
+        /// Facility-supplied input item to route inside the module.
+        #[arg(long)]
+        internal_item: String,
+
+        /// Standalone paginated HTML wireframe for the module construction history.
         #[arg(long, value_name = "FILE")]
         visualization_output: PathBuf,
 
@@ -518,6 +553,25 @@ fn run() -> Result<CommandStatus> {
                 facility_catalog,
                 item_catalog,
                 belt_frontier_depth,
+                visualization_output,
+                localization_catalog,
+            ),
+            LayoutsCommand::ConstructProcessModule {
+                recipes,
+                source_plan,
+                facility_catalog,
+                item_catalog,
+                root_instance,
+                internal_item,
+                visualization_output,
+                localization_catalog,
+            } => construct_process_module_command(
+                recipes,
+                source_plan,
+                facility_catalog,
+                item_catalog,
+                root_instance,
+                internal_item,
                 visualization_output,
                 localization_catalog,
             ),
@@ -1215,6 +1269,44 @@ fn construct_frontier_growth_command(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
+fn construct_process_module_command(
+    recipes: PathBuf,
+    source_plan: PathBuf,
+    facility_catalog: PathBuf,
+    item_catalog: PathBuf,
+    root_instance: String,
+    internal_item: String,
+    visualization_output: PathBuf,
+    localization_catalog: Option<PathBuf>,
+) -> Result<CommandStatus> {
+    let localization = load_visualization_localization(localization_catalog.as_deref())?;
+    let Some((wiring, facilities, items)) =
+        load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
+    else {
+        return Ok(CommandStatus::Failure);
+    };
+    let report =
+        construct_process_module(&wiring, &facilities, &items, &root_instance, &internal_item);
+    let success = report.success;
+    let html = render_constructive_process_module_html(&report, localization.as_ref()).map_err(
+        |diagnostic| {
+            anyhow::anyhow!(
+                "constructive process-module visualization failed with {}: {}",
+                diagnostic.code,
+                diagnostic.message
+            )
+        },
+    )?;
+    write_constructive_visualization(&visualization_output, html)?;
+    write_constructive_process_module_report(&report)?;
+    if success {
+        Ok(CommandStatus::Success)
+    } else {
+        Ok(CommandStatus::Failure)
+    }
+}
+
 fn load_constructive_inputs(
     recipes: &Path,
     source_plan: &Path,
@@ -1711,6 +1803,16 @@ fn write_constructive_frontier_growth_report(
     Ok(())
 }
 
+fn write_constructive_process_module_report(
+    report: &ConstructiveProcessModuleReport,
+) -> Result<()> {
+    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
+        .context("failed to write constructive process module report")?;
+    println!();
+
+    Ok(())
+}
+
 fn write_layout_visualization(
     output: Option<&Path>,
     layout: &IntegratedLayoutReport,
@@ -1950,6 +2052,46 @@ mod tests {
             localization_catalog,
             Some(PathBuf::from("localization.json"))
         );
+    }
+
+    #[test]
+    fn parses_constructive_process_module_command() {
+        let cli = Cli::try_parse_from([
+            "aic-cli",
+            "layouts",
+            "construct-process-module",
+            "--recipes",
+            "recipes.json",
+            "--source-plan",
+            "source-plan.json",
+            "--facility-catalog",
+            "facilities.json",
+            "--item-catalog",
+            "items.json",
+            "--root-instance",
+            "root",
+            "--internal-item",
+            "item",
+            "--visualization-output",
+            "module.html",
+        ])
+        .expect("constructive process module CLI should parse");
+
+        let Command::Layouts {
+            command:
+                LayoutsCommand::ConstructProcessModule {
+                    root_instance,
+                    internal_item,
+                    visualization_output,
+                    ..
+                },
+        } = cli.command
+        else {
+            panic!("expected constructive process module command")
+        };
+        assert_eq!(root_instance, "root");
+        assert_eq!(internal_item, "item");
+        assert_eq!(visualization_output, PathBuf::from("module.html"));
     }
 
     #[test]

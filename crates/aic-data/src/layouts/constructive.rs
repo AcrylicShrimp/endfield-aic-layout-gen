@@ -2,6 +2,7 @@ use std::collections::BTreeSet;
 
 use serde::Serialize;
 
+use crate::facilities::FacilityPortDirection;
 use crate::layouts::{
     FacilityPlacement, FacilityPlacementBounds, IntegratedLayoutDiagnostic, IntegratedLayoutReport,
     IntegratedLayoutStatus, PlacedFacilityPort, TransportNetwork, TransportNetworkEndpoint,
@@ -16,10 +17,12 @@ use super::integrated::{LayoutVisualizationPage, render_layout_history_html};
 
 mod first_pipe_frontier;
 mod pipe_chain;
+mod process_module;
 mod routing;
 
 pub use first_pipe_frontier::construct_first_pipe_frontier;
 pub use pipe_chain::construct_frontier_growth;
+pub use process_module::construct_process_module;
 
 pub fn render_constructive_frontier_html(
     report: &ConstructiveFrontierReport,
@@ -160,9 +163,55 @@ pub fn render_constructive_frontier_growth_html(
     render_layout_history_html(&pages, report.success, localization)
 }
 
+pub fn render_constructive_process_module_html(
+    report: &ConstructiveProcessModuleReport,
+    localization: Option<&ValidatedLocalizationCatalog>,
+) -> Result<String, IntegratedLayoutDiagnostic> {
+    let mut visual = report.growth.clone();
+    let boundary_networks = report
+        .boundary_requirements
+        .iter()
+        .flat_map(|boundary| {
+            boundary
+                .port_options
+                .iter()
+                .enumerate()
+                .map(move |(option_index, port)| TransportNetwork {
+                    id: format!(
+                        "process-module-boundary:{}:option:{option_index}",
+                        boundary.requirement
+                    ),
+                    requirement_ids: vec![boundary.requirement.clone()],
+                    item: boundary.item.clone(),
+                    transport: boundary.transport,
+                    cells: Vec::new(),
+                    segments: Vec::new(),
+                    terminals: vec![TransportNetworkTerminal {
+                        id: format!("{}:boundary-option:{option_index}", boundary.requirement),
+                        node: boundary.inside_instance.clone(),
+                        direction: boundary.direction,
+                        endpoint: TransportNetworkEndpoint::Facility {
+                            instance: boundary.inside_instance.clone(),
+                            port: port.port.clone(),
+                        },
+                        position: port.connection.clone(),
+                        rate: boundary.rate,
+                    }],
+                    component_ids: Vec::new(),
+                })
+        })
+        .collect::<Vec<_>>();
+    visual.transport_networks.extend(boundary_networks.clone());
+    if let Some(final_phase) = visual.phases.last_mut() {
+        final_phase.transport_networks.extend(boundary_networks);
+    }
+    render_constructive_frontier_growth_html(&visual, localization)
+}
+
 const STAGE: &str = "constructive-planner";
 pub const CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION: u32 = 3;
+pub const CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -249,6 +298,29 @@ pub struct ConstructiveFrontierGrowthReport {
     pub phases: Vec<ConstructiveFrontierGrowthPhase>,
     pub statistics: ConstructiveFrontierGrowthStatistics,
     pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructiveProcessModuleBoundary {
+    pub requirement: String,
+    pub item: String,
+    pub transport: TransportKind,
+    pub rate: Rate,
+    pub direction: FacilityPortDirection,
+    pub inside_instance: String,
+    pub port_options: Vec<PlacedFacilityPort>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructiveProcessModuleReport {
+    pub schema_version: u32,
+    pub success: bool,
+    pub root_instance: String,
+    pub internal_item: String,
+    pub member_instances: Vec<String>,
+    pub internal_requirements: Vec<String>,
+    pub boundary_requirements: Vec<ConstructiveProcessModuleBoundary>,
+    pub growth: ConstructiveFrontierGrowthReport,
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]

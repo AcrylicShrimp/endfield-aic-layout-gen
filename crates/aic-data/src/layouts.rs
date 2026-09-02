@@ -6,11 +6,14 @@ mod ports;
 
 pub use constructive::{
     CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION, CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION,
-    ConstructionCandidateScore, ConstructiveFrontierDiagnostic, ConstructiveFrontierGrowthPhase,
+    CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION, ConstructionCandidateScore,
+    ConstructiveFrontierDiagnostic, ConstructiveFrontierGrowthPhase,
     ConstructiveFrontierGrowthReport, ConstructiveFrontierGrowthStatistics,
     ConstructiveFrontierGrowthStatus, ConstructiveFrontierReport, ConstructiveFrontierStatistics,
-    ConstructiveFrontierStatus, construct_first_pipe_frontier, construct_frontier_growth,
+    ConstructiveFrontierStatus, ConstructiveProcessModuleBoundary, ConstructiveProcessModuleReport,
+    construct_first_pipe_frontier, construct_frontier_growth, construct_process_module,
     render_constructive_frontier_growth_html, render_constructive_frontier_html,
+    render_constructive_process_module_html,
 };
 
 pub use growth::{

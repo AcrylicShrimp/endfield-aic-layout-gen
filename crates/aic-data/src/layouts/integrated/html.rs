@@ -535,44 +535,47 @@ fn render_transport_networks(
     };
     writeln!(html, "        <g class=\"{layer_class}\">").expect("writing to String cannot fail");
     for network in networks {
-        if network.transport != transport || network.cells.is_empty() {
+        if network.transport != transport {
             continue;
         }
         let item_name = localized_item_name(localization, &network.item);
-        let title = xml_escape(&format!(
-            "{:?} transport network | {} | item {} | {} terminals | {} occupied tiles | {} logical requirements",
-            network.transport,
-            network.id,
-            item_name,
-            network.terminals.len(),
-            network.cells.len(),
-            network.requirement_ids.len(),
-        ));
-        writeln!(
-            html,
-            "          <g class=\"route-group\" data-inspect=\"{title}\">"
-        )
-        .expect("writing to String cannot fail");
-        for cell in &network.cells {
+        if !network.cells.is_empty() {
+            let title = xml_escape(&format!(
+                "{:?} transport network | {} | item {} | {} terminals | {} occupied tiles | {} logical requirements",
+                network.transport,
+                network.id,
+                item_name,
+                network.terminals.len(),
+                network.cells.len(),
+                network.requirement_ids.len(),
+            ));
             writeln!(
                 html,
-                "            <rect class=\"route-cell {route_class}\" x=\"{}\" y=\"{}\" width=\"1\" height=\"1\"/>",
-                cell.x, cell.y,
+                "          <g class=\"route-group\" data-inspect=\"{title}\">"
             )
             .expect("writing to String cannot fail");
-        }
-        for (segment_index, segment) in network.segments.iter().enumerate() {
-            if network.segments.len() > 8 && segment_index % 8 != 4 {
-                continue;
+            for cell in &network.cells {
+                writeln!(
+                    html,
+                    "            <rect class=\"route-cell {route_class}\" x=\"{}\" y=\"{}\" width=\"1\" height=\"1\"/>",
+                    cell.x, cell.y,
+                )
+                .expect("writing to String cannot fail");
             }
-            let points = flow_arrow_points(&segment.from, &segment.from, &segment.to, 0.34, 0.22);
-            writeln!(
-                html,
-                "            <polygon class=\"route-direction\" points=\"{points}\"/>"
-            )
-            .expect("writing to String cannot fail");
+            for (segment_index, segment) in network.segments.iter().enumerate() {
+                if network.segments.len() > 8 && segment_index % 8 != 4 {
+                    continue;
+                }
+                let points =
+                    flow_arrow_points(&segment.from, &segment.from, &segment.to, 0.34, 0.22);
+                writeln!(
+                    html,
+                    "            <polygon class=\"route-direction\" points=\"{points}\"/>"
+                )
+                .expect("writing to String cannot fail");
+            }
+            html.push_str("          </g>\n");
         }
-        html.push_str("          </g>\n");
         let endpoint_class = match transport {
             TransportKind::Belt => "endpoint-belt",
             TransportKind::Pipe => "endpoint-pipe",
