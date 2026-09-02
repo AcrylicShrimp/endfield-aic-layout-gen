@@ -243,12 +243,12 @@ fn compose_candidates_parallel(
         .map_or(1, std::num::NonZeroUsize::get)
         .min(prepared.len());
     let chunk_size = prepared.len().div_ceil(workers);
-    let best_zero_blocked_area = AtomicUsize::new(usize::MAX);
+    let best_area = AtomicUsize::new(usize::MAX);
     let outcomes = std::thread::scope(|scope| {
         prepared
             .chunks(chunk_size)
             .map(|chunk| {
-                let best_zero_blocked_area = &best_zero_blocked_area;
+                let best_area = &best_area;
                 scope.spawn(move || {
                     let mut outcome = CompositionWorkerOutcome::default();
                     for prepared in chunk {
@@ -257,7 +257,7 @@ fn compose_candidates_parallel(
                             current,
                             &prepared.edge,
                             facilities,
-                            &best_zero_blocked_area,
+                            best_area,
                         );
                         if !composition.success {
                             outcome.failures += 1;

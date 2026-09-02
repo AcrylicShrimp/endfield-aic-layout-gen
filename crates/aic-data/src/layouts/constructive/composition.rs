@@ -314,14 +314,8 @@ pub fn compose_constructive_nodes(
     edge: &FacilityInstanceWiringEdge,
     facilities: &ValidatedFacilityCatalog,
 ) -> ConstructiveCompositionReport {
-    let best_zero_blocked_area = AtomicUsize::new(usize::MAX);
-    compose_constructive_nodes_with_area_incumbent(
-        source,
-        target,
-        edge,
-        facilities,
-        &best_zero_blocked_area,
-    )
+    let best_area = AtomicUsize::new(usize::MAX);
+    compose_constructive_nodes_with_area_incumbent(source, target, edge, facilities, &best_area)
 }
 
 pub(super) fn compose_constructive_nodes_with_area_incumbent(
@@ -329,7 +323,7 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
     target: &ConstructiveNode,
     edge: &FacilityInstanceWiringEdge,
     facilities: &ValidatedFacilityCatalog,
-    best_zero_blocked_area: &AtomicUsize,
+    best_area: &AtomicUsize,
 ) -> ConstructiveCompositionReport {
     if !source.member_instances.contains(&edge.source)
         || !target.member_instances.contains(&edge.target)
@@ -417,8 +411,7 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
         for placement in placements {
             statistics.placements_considered += 1;
             statistics.additive_placements_considered += u64::from(placement.additive);
-            let shared_area = best_zero_blocked_area.load(AtomicOrdering::Relaxed);
-            if placement.area_lower_bound > shared_area {
+            if placement.area_lower_bound > best_area.load(AtomicOrdering::Relaxed) {
                 statistics.area_lower_bound_rejections += 1;
                 continue;
             }
@@ -481,10 +474,7 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
                     }
                     statistics.valid_candidates_scored += 1;
                     let score = composition_score(&composite, blocked_options);
-                    if score.blocked_boundary_port_options == 0 {
-                        best_zero_blocked_area
-                            .fetch_min(score.used_bounding_box_area, AtomicOrdering::Relaxed);
-                    }
+                    best_area.fetch_min(score.used_bounding_box_area, AtomicOrdering::Relaxed);
                     let candidate_order = CandidateOrder {
                         rotation: rotation_index,
                         y: placement.y,
@@ -1200,5 +1190,23 @@ mod tests {
         let distant = PlacementCandidate::new(12, 5, &source, &target);
         assert!(!distant.additive);
         assert_eq!(distant.area_lower_bound, 40);
+    }
+
+    #[test]
+    fn compact_geometry_precedes_unused_port_flexibility() {
+        let compact = ConstructiveCompositionScore {
+            used_bounding_box_area: 100,
+            transport_tiles: 20,
+            route_turns: 3,
+            blocked_boundary_port_options: 8,
+        };
+        let flexible = ConstructiveCompositionScore {
+            used_bounding_box_area: 101,
+            transport_tiles: 1,
+            route_turns: 0,
+            blocked_boundary_port_options: 0,
+        };
+
+        assert!(compact < flexible);
     }
 }

@@ -183,11 +183,15 @@ machine. A connected belt or pipe starts on the adjacent free cell outside that 
 must leave that first connected cell available, but it need not reserve space for a port that the
 layout does not use.
 
-**Open ambiguity.** The catalogs do not attach an item ID or recipe slot ID to a port. The current
-model therefore allows any belt item through any direction-compatible belt port, and likewise for
-pipe items. Item filters, control-port behavior, and any requirement that unused ports remain
-clear need additional source data and a contract before a propagator may assume them. Evidence:
-E2, E13, and E17.
+**Accepted target semantics.** The catalogs do not statically attach an item ID or recipe slot ID
+to a port. A selected port is assigned one compatible item and one belt or pipe line. Same-item
+logical supplies or demands may aggregate before that port while their combined rate remains
+within one line capacity. For one facility, direction, item, and transport group, the minimum
+selected port count is therefore `ceil(total group rate / C_line(transport))`. Unselected catalog
+ports need not remain usable. The current constructive edge-boundary representation is an interim
+over-approximation of required port count and must be replaced by these capacity-grouped demands.
+Item filters and control-port behavior still require additional source data. Evidence: E2, E12,
+E13, E17, and the accepted constructive-planner contract clarification.
 
 ## Items, belt and pipe layers, and physical collision
 
@@ -707,7 +711,7 @@ The following are specifically *not* safe assumptions without a new accepted con
 evidence:
 
 - every catalog port, including unused ports, must have a free outside cell;
-- a belt/pipe port is dedicated to one item or recipe slot;
+- a catalog belt/pipe port is statically dedicated to one item or recipe slot;
 - one terminal or one logical edge owns one physical route;
 - every same-item network must be globally connected;
 - every active cell must be reachable from a terminal;
@@ -720,25 +724,20 @@ evidence:
 
 ## Unresolved questions requiring domain decisions or game evidence
 
-1. Must an unused facility port's outside-adjacent cell remain in bounds and unoccupied, or is
-   selected-port clearance sufficient?
-2. Are ports item-specific, recipe-slot-specific, filtered, or capacity-limited independently of
-   the attached line? Can multiple same-item terminals legally aggregate through one port while
-   their total stays within line capacity?
-3. May multiple logical external terminals share one physical boundary `(cell, outward side)`, or
+1. May multiple logical external terminals share one physical boundary `(cell, outward side)`, or
    does each require a distinct connector tile/side?
-4. Do game splitters divide equally, and if so under what demand/back-pressure conditions? Are
+2. Do game splitters divide equally, and if so under what demand/back-pressure conditions? Are
    priority and filter modes part of the target scope?
-5. Does a logistics bridge permit two different items, both travel directions, and every reported
+3. Does a logistics bridge permit two different items, both travel directions, and every reported
    rotation without additional entrance, elevation, or neighboring-cell constraints?
-6. Are all belt/pipe and belt-component/pipe-component coordinate overlaps physically legal in
+4. Are all belt/pipe and belt-component/pipe-component coordinate overlaps physically legal in
    game, or are there cross-layer exceptions absent from current source normalization?
-7. Do target and surplus outputs require concrete depot/storage/disposal geometry outside the
+5. Do target and surplus outputs require concrete depot/storage/disposal geometry outside the
    current used-boundary terminal, and are multiple boundary terminals allowed to share an outside
    manifold?
-8. Is disconnected positive circulation operationally acceptable in exported layouts, or should a
+6. Is disconnected positive circulation operationally acceptable in exported layouts, or should a
    later explicitly approved semantic/objective change discourage or prohibit it?
-9. Are control ports, underground logistics, power, height, construction access, blueprint node
+7. Are control ports, underground logistics, power, height, construction access, blueprint node
    conversion, or other source-table mechanics in scope for the spatial contract? They are not in
    the present model.
 

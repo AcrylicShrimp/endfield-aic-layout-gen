@@ -392,7 +392,7 @@ const STAGE: &str = "constructive-planner";
 pub const CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION: u32 = 3;
 pub const CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION: u32 = 1;
-pub const CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION: u32 = 2;
+pub const CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION: u32 = 3;
 pub const CONSTRUCTIVE_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
@@ -521,10 +521,10 @@ pub struct ConstructiveNode {
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ConstructiveCompositionScore {
-    pub blocked_boundary_port_options: usize,
     pub used_bounding_box_area: usize,
     pub transport_tiles: usize,
     pub route_turns: usize,
+    pub blocked_boundary_port_options: usize,
 }
 
 #[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
