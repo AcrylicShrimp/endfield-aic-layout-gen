@@ -64,6 +64,42 @@ legally share one port and physical trunk while capacity remains available, but 
 only describe unused facility ports. It cannot describe attachment to an already synthesized
 commodity network or the residual capacity of that network.
 
+## Plain-Language Interpretation
+
+The current constructor treats two logical consumers of the same item as if each one always needs
+its own producer port and its own point-to-point route:
+
+```text
+producer OUT-0 ------> consumer B
+producer OUT-1? -----> consumer C
+```
+
+The accepted network semantics allow one capacity-safe trunk to branch through an explicit
+catalog-valid splitter instead:
+
+```text
+producer OUT-0 ---- [splitter] ----> consumer B
+                         |
+                         +----------> consumer C
+```
+
+The consumers still require their own input terminals. What can be shared is the compatible
+producer port and the common belt or pipe segment. A shared segment is legal only when the sum of
+all rates using it does not exceed the runtime line capacity. For example, a `1/2 item/s` belt that
+already carries `1/5 item/s` has `3/10 item/s` residual capacity on that segment.
+
+Today a boundary requirement can name only unused facility ports. It cannot name an existing
+same-item network and the capacity-safe places where a catalog-valid splitter or converger could
+join it. An ordinary line cell or facility terminal cannot branch by itself. Therefore the
+post-route guard rejects a candidate when no separate unused port remains, even if a shared trunk
+and explicit branch component could be legal. The 186,951 rejected complete lane bundles expose
+this representation gap. They are not themselves proof of complete valid factories because
+residual capacity, branch-component selection, and a realizable branch are not represented yet.
+
+The next slice must expand the boundary alternatives rather than simply remove the guard. Its full
+contract, invariants, controlled fixtures, and reconstruction map are recorded in
+`docs/designs/2026-09-05.00-network-aware-constructive-frontier.md`.
+
 The multi-lane implementation exposes a second, smaller completeness weakness. It asks A* for only
 one shortest path for each lane endpoint pair. A shortest first lane can block the second lane even
 when a different first path would permit both. This affects incomplete bundle branches, but it is
@@ -76,12 +112,14 @@ state which the current constructor may still be unable to extend. First add a b
 choice that can reference either:
 
 1. an unused compatible facility port, or
-2. an existing compatible commodity network with sufficient residual capacity.
+2. an existing compatible commodity network with sufficient residual capacity and a
+   catalog-valid splitter/converger attachment anchor.
 
-Then synthesize one logical network per item and transport kind, extend its trunk/tree when a new
-requirement is attached, and make grouped residual capacity the acceptance rule. Re-run this exact
-frontier after that narrow cutover. Bounded rollback remains the recovery mechanism if the new
-network-aware frontier still exhausts all candidates.
+The constructive CLI must load the external logistics-component catalog during that cutover. Then
+synthesize one logical network per item and transport kind, extend its trunk/tree when a new
+requirement is attached, and make explicit component topology plus grouped residual capacity the
+acceptance rules. Re-run this exact frontier after that narrow cutover. Bounded rollback remains
+the recovery mechanism if the new network-aware frontier still exhausts all candidates.
 
 ## Reproduction
 

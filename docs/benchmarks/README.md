@@ -2,6 +2,31 @@
 
 This directory stores normalized diagnostic measurements, not generated layouts or expected solver answers.
 
+## Constructive Planner Checkpoints
+
+The production constructive-planner baseline is defined in
+`../designs/2026-09-02.00-constructive-layout-planner.md`. Unlike the exact-search checkpoints below,
+these reports measure a planner that first constructs a concrete valid partial factory and then
+grows it transactionally.
+
+`constructive-capacity-lanes/report.md` records the cutover from one route per logical edge to the
+minimum number of capacity-bounded physical lanes. Its controlled `1 item/s` belt requirement is
+represented by two `1/2 item/s` lines, and the Heavy Xiranite six-step audit contains no
+over-capacity routed networks.
+
+`constructive-growth-cliff-diagnosis/report.md` then grows the capacity-valid Heavy Xiranite
+partial factory until the next measured cliff. It records the last valid 28-facility state, the
+complete rejected-candidate breakdown, the machine-readable report, the paginated HTML history,
+and the release reproduction command. The immediate mismatch is that unresolved boundaries can
+reference only unused facility ports, while accepted commodity-network semantics also permit a
+capacity-safe branch into an existing same-item network.
+
+The proposed corrective contract is
+`../designs/2026-09-05.00-network-aware-constructive-frontier.md`. It is explicitly not implemented
+yet. It defines segment-local residual capacity, new-port versus existing-network attachments,
+catalog-valid splitter/converger placement, controlled fan-out and overload fixtures, and the Heavy
+Xiranite remeasurement criteria.
+
 ## Heavy Xiranite Known-Bad Baseline
 
 `heavy-xiranite-forge.iterative-scc.known-bad.json` records the behavior before the incremental optimizer cutover. Its `baseline_status` is `known-bad-diagnostic-only`. Tests and later implementations must not preserve its coordinates, perimeter routes, or score.
