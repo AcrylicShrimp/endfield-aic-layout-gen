@@ -43,6 +43,22 @@ struct LaneBundle {
 }
 
 #[derive(Debug, Clone, Copy)]
+enum CombineFailure {
+    BoundaryOptionsExhausted,
+    BoundaryCapacityInsufficient,
+}
+
+#[derive(Debug, Clone, Copy)]
+enum GeometryFailure {
+    FacilityOverlap,
+    EmptyNetwork,
+    FacilityTransportOverlap,
+    NonContiguousRoute,
+    SameLayerTransportOverlap,
+    TerminalMismatch,
+}
+
+#[derive(Debug, Clone, Copy)]
 struct PlacementCandidate {
     x: i64,
     y: i64,
@@ -488,7 +504,7 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
                 else {
                     continue;
                 };
-                let Some((composite, blocked_options)) = combine_nodes(
+                let (composite, blocked_options) = match combine_nodes(
                     &source_candidate,
                     &target_candidate,
                     edge,
@@ -496,11 +512,41 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
                     &bundle.source_ports,
                     &bundle.target_ports,
                     bundle.networks,
-                ) else {
-                    statistics.boundary_dead_ends_rejected += 1;
-                    continue;
+                ) {
+                    Ok(composite) => composite,
+                    Err(CombineFailure::BoundaryOptionsExhausted) => {
+                        statistics.boundary_dead_ends_rejected += 1;
+                        statistics.boundary_option_dead_ends_rejected += 1;
+                        continue;
+                    }
+                    Err(CombineFailure::BoundaryCapacityInsufficient) => {
+                        statistics.boundary_dead_ends_rejected += 1;
+                        statistics.boundary_capacity_dead_ends_rejected += 1;
+                        continue;
+                    }
                 };
-                if !validate_node_geometry(&composite) {
+                if let Err(failure) = validate_node_geometry(&composite) {
+                    statistics.geometry_rejections += 1;
+                    match failure {
+                        GeometryFailure::FacilityOverlap => {
+                            statistics.facility_overlap_geometry_rejections += 1;
+                        }
+                        GeometryFailure::EmptyNetwork => {
+                            statistics.empty_network_geometry_rejections += 1;
+                        }
+                        GeometryFailure::FacilityTransportOverlap => {
+                            statistics.facility_transport_overlap_geometry_rejections += 1;
+                        }
+                        GeometryFailure::NonContiguousRoute => {
+                            statistics.non_contiguous_route_geometry_rejections += 1;
+                        }
+                        GeometryFailure::SameLayerTransportOverlap => {
+                            statistics.same_layer_overlap_geometry_rejections += 1;
+                        }
+                        GeometryFailure::TerminalMismatch => {
+                            statistics.terminal_mismatch_geometry_rejections += 1;
+                        }
+                    }
                     continue;
                 }
                 statistics.valid_candidates_scored += 1;
@@ -564,7 +610,7 @@ fn combine_nodes(
     source_ports: &[PlacedFacilityPort],
     target_ports: &[PlacedFacilityPort],
     routes: Vec<TransportNetwork>,
-) -> Option<(ConstructiveNode, usize)> {
+) -> Result<(ConstructiveNode, usize), CombineFailure> {
     let mut placements = target.placements.clone();
     placements.extend(source.placements.clone());
     let mut networks = target.transport_networks.clone();
@@ -614,12 +660,12 @@ fn combine_nodes(
                 ))
         });
         if boundary.port_options.is_empty() {
-            return None;
+            return Err(CombineFailure::BoundaryOptionsExhausted);
         }
     }
     boundaries.sort_by(|left, right| left.requirement.cmp(&right.requirement));
     if !super::analyze_constructive_port_demands(&boundaries, &networks, transports).success {
-        return None;
+        return Err(CombineFailure::BoundaryCapacityInsufficient);
     }
     let options_after = boundaries
         .iter()
@@ -640,7 +686,7 @@ fn combine_nodes(
         transport_networks: networks,
         boundary_requirements: boundaries,
     };
-    Some((canonicalize_node(&node), options_before - options_after))
+    Ok((canonicalize_node(&node), options_before - options_after))
 }
 
 fn connection_network(
@@ -1063,34 +1109,49 @@ fn node_rotations_are_legal(
     })
 }
 
-fn validate_node_geometry(node: &ConstructiveNode) -> bool {
+fn validate_node_geometry(node: &ConstructiveNode) -> Result<(), GeometryFailure> {
     for (index, left) in node.placements.iter().enumerate() {
         if node.placements[index + 1..]
             .iter()
             .any(|right| rectangles_overlap(left, right))
         {
-            return false;
+            return Err(GeometryFailure::FacilityOverlap);
         }
     }
     let facilities = occupied_cells(&node.placements);
     let mut transport = HashSet::new();
-    node.transport_networks.iter().all(|network| {
-        !network.cells.is_empty()
-            && network
-                .cells
-                .iter()
-                .all(|cell| !facilities.contains(&(cell.x, cell.y)))
-            && network
-                .cells
-                .windows(2)
-                .all(|pair| pair[0].x.abs_diff(pair[1].x) + pair[0].y.abs_diff(pair[1].y) == 1)
-            && network
-                .cells
-                .iter()
-                .all(|cell| transport.insert((layer_key(network.transport), cell.x, cell.y)))
-            && network.terminals.first().map(|terminal| &terminal.position) == network.cells.first()
-            && network.terminals.last().map(|terminal| &terminal.position) == network.cells.last()
-    })
+    for network in &node.transport_networks {
+        if network.cells.is_empty() {
+            return Err(GeometryFailure::EmptyNetwork);
+        }
+        if network
+            .cells
+            .iter()
+            .any(|cell| facilities.contains(&(cell.x, cell.y)))
+        {
+            return Err(GeometryFailure::FacilityTransportOverlap);
+        }
+        if network
+            .cells
+            .windows(2)
+            .any(|pair| pair[0].x.abs_diff(pair[1].x) + pair[0].y.abs_diff(pair[1].y) != 1)
+        {
+            return Err(GeometryFailure::NonContiguousRoute);
+        }
+        if network
+            .cells
+            .iter()
+            .any(|cell| !transport.insert((layer_key(network.transport), cell.x, cell.y)))
+        {
+            return Err(GeometryFailure::SameLayerTransportOverlap);
+        }
+        if network.terminals.first().map(|terminal| &terminal.position) != network.cells.first()
+            || network.terminals.last().map(|terminal| &terminal.position) != network.cells.last()
+        {
+            return Err(GeometryFailure::TerminalMismatch);
+        }
+    }
+    Ok(())
 }
 
 fn composition_score(

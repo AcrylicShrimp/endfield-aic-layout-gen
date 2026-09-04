@@ -14,11 +14,11 @@ use super::{
     CONSTRUCTIVE_ASSEMBLY_REPORT_SCHEMA_VERSION,
     CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION,
     CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REQUEST_SCHEMA_VERSION, ConstructiveAssemblyReport,
-    ConstructiveAssemblyStepReport, ConstructiveAutomaticAssemblyDiscoveryStep,
-    ConstructiveAutomaticAssemblyReport, ConstructiveAutomaticAssemblyRequest,
-    ConstructiveCompositionReport, ConstructiveFrontierDiagnostic, ConstructiveNode,
-    analyze_constructive_port_demands, construct_facility_node, construct_process_module,
-    constructive_node_from_process_module,
+    ConstructiveAssemblyStepReport, ConstructiveAutomaticAssemblyCandidateFailure,
+    ConstructiveAutomaticAssemblyDiscoveryStep, ConstructiveAutomaticAssemblyReport,
+    ConstructiveAutomaticAssemblyRequest, ConstructiveCompositionReport,
+    ConstructiveFrontierDiagnostic, ConstructiveNode, analyze_constructive_port_demands,
+    construct_facility_node, construct_process_module, constructive_node_from_process_module,
 };
 
 struct Candidate {
@@ -41,7 +41,7 @@ struct PreparedCandidate {
 #[derive(Default)]
 struct CompositionWorkerOutcome {
     candidates: Vec<Candidate>,
-    failures: usize,
+    failures: Vec<ConstructiveAutomaticAssemblyCandidateFailure>,
 }
 
 pub fn automatically_assemble_constructive_modules(
@@ -100,6 +100,7 @@ pub fn automatically_assemble_constructive_modules(
         }
         let mut candidates_generated = 0usize;
         let mut module_constructions_failed = 0usize;
+        let mut candidate_failures = Vec::new();
         let mut prepared = Vec::new();
         for edge in &frontier {
             let internal_items = wiring
@@ -124,11 +125,30 @@ pub fn automatically_assemble_constructive_modules(
                 );
                 if !module.success {
                     module_constructions_failed += 1;
+                    candidate_failures.push(ConstructiveAutomaticAssemblyCandidateFailure {
+                        stage: "module-construction".to_string(),
+                        root_instance: edge.source.clone(),
+                        internal_item: internal_item.clone(),
+                        requirement: edge.id.clone(),
+                        composition_statistics: None,
+                        diagnostics: module.growth.diagnostics.clone(),
+                    });
                     continue;
                 }
-                let Ok(source) = constructive_node_from_process_module(&module) else {
-                    module_constructions_failed += 1;
-                    continue;
+                let source = match constructive_node_from_process_module(&module) {
+                    Ok(source) => source,
+                    Err(diagnostic) => {
+                        module_constructions_failed += 1;
+                        candidate_failures.push(ConstructiveAutomaticAssemblyCandidateFailure {
+                            stage: "module-conversion".to_string(),
+                            root_instance: edge.source.clone(),
+                            internal_item: internal_item.clone(),
+                            requirement: edge.id.clone(),
+                            composition_statistics: None,
+                            diagnostics: vec![diagnostic],
+                        });
+                        continue;
+                    }
                 };
                 if source
                     .member_instances
@@ -136,6 +156,19 @@ pub fn automatically_assemble_constructive_modules(
                     .any(|instance| current.member_instances.contains(instance))
                 {
                     module_constructions_failed += 1;
+                    candidate_failures.push(ConstructiveAutomaticAssemblyCandidateFailure {
+                        stage: "member-overlap".to_string(),
+                        root_instance: edge.source.clone(),
+                        internal_item: internal_item.clone(),
+                        requirement: edge.id.clone(),
+                        composition_statistics: None,
+                        diagnostics: vec![ConstructiveFrontierDiagnostic::error(
+                            "constructive-automatic-candidate-member-overlap",
+                            format!("/steps/{index}"),
+                            Some(edge.id.clone()),
+                            "candidate process module contains a facility already present in the current composite",
+                        )],
+                    });
                     continue;
                 }
                 prepared.push(PreparedCandidate {
@@ -150,7 +183,8 @@ pub fn automatically_assemble_constructive_modules(
         }
         let (composition_workers, composition_outcome) =
             compose_candidates_parallel(&prepared, &current, transports, facilities);
-        let compositions_failed = composition_outcome.failures;
+        let compositions_failed = composition_outcome.failures.len();
+        candidate_failures.extend(composition_outcome.failures);
         let mut candidates = composition_outcome.candidates;
         let composable_candidates = candidates.len();
         candidates.sort_by(|left, right| {
@@ -190,6 +224,7 @@ pub fn automatically_assemble_constructive_modules(
                 current,
                 steps,
                 discovery_steps,
+                candidate_failures,
                 unresolved_requirement_ids(&frontier),
                 diagnostic,
                 transports,
@@ -268,7 +303,16 @@ fn compose_candidates_parallel(
                             best_area,
                         );
                         if !composition.success {
-                            outcome.failures += 1;
+                            outcome
+                                .failures
+                                .push(ConstructiveAutomaticAssemblyCandidateFailure {
+                                    stage: "composition".to_string(),
+                                    root_instance: prepared.root_instance.clone(),
+                                    internal_item: prepared.internal_item.clone(),
+                                    requirement: prepared.requirement.clone(),
+                                    composition_statistics: Some(composition.statistics.clone()),
+                                    diagnostics: composition.diagnostics.clone(),
+                                });
                             continue;
                         }
                         outcome.candidates.push(Candidate {
@@ -293,7 +337,7 @@ fn compose_candidates_parallel(
     });
     let mut combined = CompositionWorkerOutcome::default();
     for mut outcome in outcomes {
-        combined.failures += outcome.failures;
+        combined.failures.append(&mut outcome.failures);
         combined.candidates.append(&mut outcome.candidates);
     }
     (workers, combined)
@@ -356,6 +400,7 @@ fn invalid_report(
         complete: false,
         max_steps: request.max_steps,
         discovery_steps: Vec::new(),
+        exhausted_candidate_failures: Vec::new(),
         unresolved_facility_requirements: Vec::new(),
         port_demand_analysis: unavailable_constructive_port_demand_analysis(
             "constructive-port-demand-analysis-not-run",
@@ -398,6 +443,7 @@ fn completed_report(
         complete: success,
         max_steps: request.max_steps,
         discovery_steps,
+        exhausted_candidate_failures: Vec::new(),
         unresolved_facility_requirements: Vec::new(),
         port_demand_analysis,
         assembly: assembly_report(request, success, Some(current), steps, assembly_diagnostic),
@@ -438,6 +484,7 @@ fn partial_report(
         complete: unresolved_facility_requirements.is_empty(),
         max_steps: request.max_steps,
         discovery_steps,
+        exhausted_candidate_failures: Vec::new(),
         unresolved_facility_requirements,
         port_demand_analysis,
         assembly: assembly_report(request, success, Some(current), steps, assembly_diagnostic),
@@ -450,6 +497,7 @@ fn exhausted_report(
     current: ConstructiveNode,
     steps: Vec<ConstructiveAssemblyStepReport>,
     discovery_steps: Vec<ConstructiveAutomaticAssemblyDiscoveryStep>,
+    exhausted_candidate_failures: Vec<ConstructiveAutomaticAssemblyCandidateFailure>,
     unresolved_facility_requirements: Vec<String>,
     diagnostic: ConstructiveFrontierDiagnostic,
     transports: &ValidatedTransportCatalog,
@@ -465,6 +513,7 @@ fn exhausted_report(
         complete: false,
         max_steps: request.max_steps,
         discovery_steps,
+        exhausted_candidate_failures,
         unresolved_facility_requirements,
         port_demand_analysis,
         assembly: assembly_report(request, false, Some(current), steps, diagnostic.clone()),

@@ -424,11 +424,11 @@ const STAGE: &str = "constructive-planner";
 pub const CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION: u32 = 4;
 pub const CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION: u32 = 1;
-pub const CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION: u32 = 3;
+pub const CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION: u32 = 4;
 pub const CONSTRUCTIVE_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
-pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 3;
+pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 4;
 pub const CONSTRUCTIVE_PORT_DEMAND_ANALYSIS_SCHEMA_VERSION: u32 = 1;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -572,6 +572,15 @@ pub struct ConstructiveCompositionStatistics {
     pub astar_searches: u64,
     pub astar_failures: u64,
     pub boundary_dead_ends_rejected: u64,
+    pub boundary_option_dead_ends_rejected: u64,
+    pub boundary_capacity_dead_ends_rejected: u64,
+    pub geometry_rejections: u64,
+    pub facility_overlap_geometry_rejections: u64,
+    pub empty_network_geometry_rejections: u64,
+    pub facility_transport_overlap_geometry_rejections: u64,
+    pub non_contiguous_route_geometry_rejections: u64,
+    pub same_layer_overlap_geometry_rejections: u64,
+    pub terminal_mismatch_geometry_rejections: u64,
     pub valid_candidates_scored: u64,
 }
 
@@ -650,12 +659,23 @@ pub struct ConstructiveAutomaticAssemblyDiscoveryStep {
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructiveAutomaticAssemblyCandidateFailure {
+    pub stage: String,
+    pub root_instance: String,
+    pub internal_item: String,
+    pub requirement: String,
+    pub composition_statistics: Option<ConstructiveCompositionStatistics>,
+    pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct ConstructiveAutomaticAssemblyReport {
     pub schema_version: u32,
     pub success: bool,
     pub complete: bool,
     pub max_steps: usize,
     pub discovery_steps: Vec<ConstructiveAutomaticAssemblyDiscoveryStep>,
+    pub exhausted_candidate_failures: Vec<ConstructiveAutomaticAssemblyCandidateFailure>,
     pub unresolved_facility_requirements: Vec<String>,
     pub port_demand_analysis: ConstructivePortDemandAnalysis,
     pub assembly: ConstructiveAssemblyReport,
