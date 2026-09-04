@@ -1,5 +1,5 @@
 use crate::facilities::ValidatedFacilityCatalog;
-use crate::logistics::ValidatedItemCatalog;
+use crate::logistics::{ValidatedItemCatalog, ValidatedTransportCatalog};
 use crate::recipes::FacilityInstanceWiringReport;
 
 use super::{
@@ -15,6 +15,7 @@ pub fn assemble_constructive_modules(
     wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
     request: &ConstructiveAssemblyRequest,
 ) -> ConstructiveAssemblyReport {
     if request.schema_version != CONSTRUCTIVE_ASSEMBLY_REQUEST_SCHEMA_VERSION {
@@ -57,6 +58,7 @@ pub fn assemble_constructive_modules(
             wiring,
             facilities,
             items,
+            transports,
             &module_request.root_instance,
             &module_request.internal_item,
         );
@@ -146,7 +148,8 @@ pub fn assemble_constructive_modules(
             return failed_report(request, steps, Some(current), diagnostic);
         };
         let module_member_instances = source.member_instances.clone();
-        let composition = compose_constructive_nodes(&source, &current, edge, facilities);
+        let composition =
+            compose_constructive_nodes(&source, &current, edge, transports, facilities);
         let Some(composite) = composition.composite.clone() else {
             let diagnostic = composition.diagnostics.first().cloned().unwrap_or_else(|| {
                 ConstructiveFrontierDiagnostic::error(
@@ -242,7 +245,9 @@ pub(super) mod tests {
     };
     use crate::layouts::{ConstructiveAssemblyModuleRequest, render_constructive_assembly_html};
     use crate::logistics::{
-        ItemCatalog, ItemDefinition, SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION, TransportKind,
+        ItemCatalog, ItemDefinition, SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+        SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION, TransportCapacity, TransportCatalog,
+        TransportDefinition, TransportKind, ValidatedTransportCatalog,
     };
     use crate::recipes::{
         FACILITY_INSTANCE_WIRING_SCHEMA_VERSION, FacilityInstanceWiringEdge,
@@ -325,10 +330,34 @@ pub(super) mod tests {
         .expect("facility catalog validates")
     }
 
+    fn transports() -> ValidatedTransportCatalog {
+        ValidatedTransportCatalog::try_from_catalog(TransportCatalog {
+            schema_version: SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION,
+            transports: vec![
+                TransportDefinition {
+                    kind: TransportKind::Belt,
+                    capacity: TransportCapacity {
+                        quantity: 1,
+                        duration_ms: 1_000,
+                    },
+                },
+                TransportDefinition {
+                    kind: TransportKind::Pipe,
+                    capacity: TransportCapacity {
+                        quantity: 1,
+                        duration_ms: 500,
+                    },
+                },
+            ],
+        })
+        .expect("transport catalog validates")
+    }
+
     pub(crate) fn two_module_fixture() -> (
         FacilityInstanceWiringReport,
         ValidatedFacilityCatalog,
         ValidatedItemCatalog,
+        ValidatedTransportCatalog,
         ConstructiveAssemblyRequest,
     ) {
         let wiring = FacilityInstanceWiringReport {
@@ -379,14 +408,15 @@ pub(super) mod tests {
                 },
             ],
         };
-        (wiring, facilities, items, request)
+        (wiring, facilities, items, transports(), request)
     }
 
     #[test]
     fn recursively_assembles_two_modules_into_the_same_target_node() {
-        let (wiring, facilities, items, request) = two_module_fixture();
+        let (wiring, facilities, items, transports, request) = two_module_fixture();
 
-        let report = assemble_constructive_modules(&wiring, &facilities, &items, &request);
+        let report =
+            assemble_constructive_modules(&wiring, &facilities, &items, &transports, &request);
 
         assert!(report.success, "{:?}", report.diagnostics);
         assert_eq!(report.completed_modules, 2);

@@ -186,6 +186,10 @@ enum LayoutsCommand {
         #[arg(long, value_name = "FILE")]
         item_catalog: PathBuf,
 
+        /// Transport capacity catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        transport_catalog: PathBuf,
+
         /// Number of cumulative belt frontier rings after the initial pipe chain.
         #[arg(long, default_value_t = 1)]
         belt_frontier_depth: usize,
@@ -215,6 +219,10 @@ enum LayoutsCommand {
         /// Item transport catalog JSON file to load.
         #[arg(long, value_name = "FILE")]
         item_catalog: PathBuf,
+
+        /// Transport capacity catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        transport_catalog: PathBuf,
 
         /// Facility instance at the output side of the local process module.
         #[arg(long)]
@@ -249,6 +257,10 @@ enum LayoutsCommand {
         /// Item transport catalog JSON file to load.
         #[arg(long, value_name = "FILE")]
         item_catalog: PathBuf,
+
+        /// Transport capacity catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        transport_catalog: PathBuf,
 
         /// Facility instance at the output side of the source process module.
         #[arg(long)]
@@ -295,6 +307,10 @@ enum LayoutsCommand {
         /// Item transport catalog JSON file to load.
         #[arg(long, value_name = "FILE")]
         item_catalog: PathBuf,
+
+        /// Transport capacity catalog JSON file to load.
+        #[arg(long, value_name = "FILE")]
+        transport_catalog: PathBuf,
 
         /// Recursive module-assembly request JSON file.
         #[arg(long, value_name = "FILE")]
@@ -671,6 +687,7 @@ fn run() -> Result<CommandStatus> {
                 source_plan,
                 facility_catalog,
                 item_catalog,
+                transport_catalog,
                 belt_frontier_depth,
                 visualization_output,
                 localization_catalog,
@@ -679,6 +696,7 @@ fn run() -> Result<CommandStatus> {
                 source_plan,
                 facility_catalog,
                 item_catalog,
+                transport_catalog,
                 belt_frontier_depth,
                 visualization_output,
                 localization_catalog,
@@ -688,6 +706,7 @@ fn run() -> Result<CommandStatus> {
                 source_plan,
                 facility_catalog,
                 item_catalog,
+                transport_catalog,
                 root_instance,
                 internal_item,
                 visualization_output,
@@ -697,6 +716,7 @@ fn run() -> Result<CommandStatus> {
                 source_plan,
                 facility_catalog,
                 item_catalog,
+                transport_catalog,
                 root_instance,
                 internal_item,
                 visualization_output,
@@ -707,6 +727,7 @@ fn run() -> Result<CommandStatus> {
                 source_plan,
                 facility_catalog,
                 item_catalog,
+                transport_catalog,
                 module_root_instance,
                 module_internal_item,
                 target_instance,
@@ -719,6 +740,7 @@ fn run() -> Result<CommandStatus> {
                 source_plan,
                 facility_catalog,
                 item_catalog,
+                transport_catalog,
                 module_root_instance,
                 module_internal_item,
                 target_instance,
@@ -732,6 +754,7 @@ fn run() -> Result<CommandStatus> {
                 source_plan,
                 facility_catalog,
                 item_catalog,
+                transport_catalog,
                 assembly_request,
                 visualization_output,
                 report_output,
@@ -741,6 +764,7 @@ fn run() -> Result<CommandStatus> {
                 source_plan,
                 facility_catalog,
                 item_catalog,
+                transport_catalog,
                 assembly_request,
                 visualization_output,
                 report_output,
@@ -1433,6 +1457,7 @@ fn construct_frontier_growth_command(
     source_plan: PathBuf,
     facility_catalog: PathBuf,
     item_catalog: PathBuf,
+    transport_catalog: PathBuf,
     belt_frontier_depth: usize,
     visualization_output: PathBuf,
     localization_catalog: Option<PathBuf>,
@@ -1443,7 +1468,22 @@ fn construct_frontier_growth_command(
     else {
         return Ok(CommandStatus::Failure);
     };
-    let report = construct_frontier_growth(&wiring, &facilities, &items, belt_frontier_depth);
+    let transports = match ValidatedTransportCatalog::try_from_catalog(load_transport_catalog(
+        &transport_catalog,
+    )?) {
+        Ok(catalog) => catalog,
+        Err(report) => {
+            write_transport_catalog_validation_report(&report)?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
+    let report = construct_frontier_growth(
+        &wiring,
+        &facilities,
+        &items,
+        &transports,
+        belt_frontier_depth,
+    );
     let success = report.success;
     let html = render_constructive_frontier_growth_html(&report, localization.as_ref()).map_err(
         |diagnostic| {
@@ -1469,6 +1509,7 @@ fn construct_process_module_command(
     source_plan: PathBuf,
     facility_catalog: PathBuf,
     item_catalog: PathBuf,
+    transport_catalog: PathBuf,
     root_instance: String,
     internal_item: String,
     visualization_output: PathBuf,
@@ -1480,8 +1521,23 @@ fn construct_process_module_command(
     else {
         return Ok(CommandStatus::Failure);
     };
-    let report =
-        construct_process_module(&wiring, &facilities, &items, &root_instance, &internal_item);
+    let transports = match ValidatedTransportCatalog::try_from_catalog(load_transport_catalog(
+        &transport_catalog,
+    )?) {
+        Ok(catalog) => catalog,
+        Err(report) => {
+            write_transport_catalog_validation_report(&report)?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
+    let report = construct_process_module(
+        &wiring,
+        &facilities,
+        &items,
+        &transports,
+        &root_instance,
+        &internal_item,
+    );
     let success = report.success;
     let html = render_constructive_process_module_html(&report, localization.as_ref()).map_err(
         |diagnostic| {
@@ -1507,6 +1563,7 @@ fn compose_process_module_command(
     source_plan: PathBuf,
     facility_catalog: PathBuf,
     item_catalog: PathBuf,
+    transport_catalog: PathBuf,
     module_root_instance: String,
     module_internal_item: String,
     target_instance: String,
@@ -1521,10 +1578,20 @@ fn compose_process_module_command(
     else {
         return Ok(CommandStatus::Failure);
     };
+    let transports = match ValidatedTransportCatalog::try_from_catalog(load_transport_catalog(
+        &transport_catalog,
+    )?) {
+        Ok(catalog) => catalog,
+        Err(report) => {
+            write_transport_catalog_validation_report(&report)?;
+            return Ok(CommandStatus::Failure);
+        }
+    };
     let module = construct_process_module(
         &wiring,
         &facilities,
         &items,
+        &transports,
         &module_root_instance,
         &module_internal_item,
     );
@@ -1533,6 +1600,7 @@ fn compose_process_module_command(
             &wiring,
             &facilities,
             &items,
+            &transports,
             &module,
             &target_instance,
             &requirement,
@@ -1576,6 +1644,7 @@ fn assemble_process_modules_command(
     source_plan: PathBuf,
     facility_catalog: PathBuf,
     item_catalog: PathBuf,
+    transport_catalog: PathBuf,
     assembly_request: PathBuf,
     visualization_output: PathBuf,
     report_output: PathBuf,
@@ -1586,6 +1655,15 @@ fn assemble_process_modules_command(
         load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
     else {
         return Ok(CommandStatus::Failure);
+    };
+    let transports = match ValidatedTransportCatalog::try_from_catalog(load_transport_catalog(
+        &transport_catalog,
+    )?) {
+        Ok(catalog) => catalog,
+        Err(report) => {
+            write_transport_catalog_validation_report(&report)?;
+            return Ok(CommandStatus::Failure);
+        }
     };
     let request_bytes = std::fs::read(&assembly_request).with_context(|| {
         format!(
@@ -1600,7 +1678,7 @@ fn assemble_process_modules_command(
                 assembly_request.display()
             )
         })?;
-    let report = assemble_constructive_modules(&wiring, &facilities, &items, &request);
+    let report = assemble_constructive_modules(&wiring, &facilities, &items, &transports, &request);
     let success = report.success;
     let html = render_constructive_assembly_html(&report, localization.as_ref()).map_err(
         |diagnostic| {
@@ -2513,6 +2591,8 @@ mod tests {
             "facilities.json",
             "--item-catalog",
             "items.json",
+            "--transport-catalog",
+            "transports.json",
             "--belt-frontier-depth",
             "2",
             "--visualization-output",
@@ -2526,6 +2606,7 @@ mod tests {
             command:
                 LayoutsCommand::ConstructFrontierGrowth {
                     belt_frontier_depth,
+                    transport_catalog,
                     visualization_output,
                     localization_catalog,
                     ..
@@ -2535,6 +2616,7 @@ mod tests {
             panic!("expected constructive frontier growth command")
         };
         assert_eq!(belt_frontier_depth, 2);
+        assert_eq!(transport_catalog, PathBuf::from("transports.json"));
         assert_eq!(visualization_output, PathBuf::from("chain.html"));
         assert_eq!(
             localization_catalog,
@@ -2556,6 +2638,8 @@ mod tests {
             "facilities.json",
             "--item-catalog",
             "items.json",
+            "--transport-catalog",
+            "transports.json",
             "--root-instance",
             "root",
             "--internal-item",
@@ -2568,6 +2652,7 @@ mod tests {
         let Command::Layouts {
             command:
                 LayoutsCommand::ConstructProcessModule {
+                    transport_catalog,
                     root_instance,
                     internal_item,
                     visualization_output,
@@ -2577,6 +2662,7 @@ mod tests {
         else {
             panic!("expected constructive process module command")
         };
+        assert_eq!(transport_catalog, PathBuf::from("transports.json"));
         assert_eq!(root_instance, "root");
         assert_eq!(internal_item, "item");
         assert_eq!(visualization_output, PathBuf::from("module.html"));
@@ -2596,6 +2682,8 @@ mod tests {
             "facilities.json",
             "--item-catalog",
             "items.json",
+            "--transport-catalog",
+            "transports.json",
             "--module-root-instance",
             "module-root",
             "--module-internal-item",
@@ -2614,6 +2702,7 @@ mod tests {
         let Command::Layouts {
             command:
                 LayoutsCommand::ComposeProcessModule {
+                    transport_catalog,
                     module_root_instance,
                     module_internal_item,
                     target_instance,
@@ -2626,6 +2715,7 @@ mod tests {
         else {
             panic!("expected constructive process-module composition command")
         };
+        assert_eq!(transport_catalog, PathBuf::from("transports.json"));
         assert_eq!(module_root_instance, "module-root");
         assert_eq!(module_internal_item, "module-item");
         assert_eq!(target_instance, "target");
@@ -2648,6 +2738,8 @@ mod tests {
             "facilities.json",
             "--item-catalog",
             "items.json",
+            "--transport-catalog",
+            "transports.json",
             "--assembly-request",
             "assembly.json",
             "--visualization-output",
@@ -2660,6 +2752,7 @@ mod tests {
         let Command::Layouts {
             command:
                 LayoutsCommand::AssembleProcessModules {
+                    transport_catalog,
                     assembly_request,
                     visualization_output,
                     report_output,
@@ -2669,6 +2762,7 @@ mod tests {
         else {
             panic!("expected recursive constructive assembly command")
         };
+        assert_eq!(transport_catalog, PathBuf::from("transports.json"));
         assert_eq!(assembly_request, PathBuf::from("assembly.json"));
         assert_eq!(visualization_output, PathBuf::from("assembly.html"));
         assert_eq!(report_output, PathBuf::from("assembly-report.json"));

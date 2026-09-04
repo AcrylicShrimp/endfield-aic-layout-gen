@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 use std::sync::atomic::{AtomicUsize, Ordering as AtomicOrdering};
 
 use crate::facilities::{FacilityDefinition, FacilityPortDirection, ValidatedFacilityCatalog};
@@ -8,11 +8,12 @@ use crate::layouts::{
     TransportNetwork, TransportNetworkEndpoint, TransportNetworkSegment, TransportNetworkTerminal,
     WorldGridPosition, project_facility_ports,
 };
-use crate::logistics::{TransportKind, ValidatedItemCatalog};
+use crate::logistics::{TransportKind, ValidatedItemCatalog, ValidatedTransportCatalog};
 use crate::recipes::{
     FacilityInstanceWiringEdge, FacilityInstanceWiringNode, FacilityInstanceWiringReport,
 };
 
+use super::capacity::split_rate_into_lanes;
 use super::first_pipe_frontier::{
     FacilityInstance, bounds_for, candidate_ports, occupied_cells, placement_candidates,
     rectangles_overlap, validate_inputs,
@@ -31,6 +32,7 @@ pub(super) struct GrowthEdge<'a> {
     pub(super) source: FacilityInstance,
     pub(super) target: FacilityInstance,
     pub(super) transport: TransportKind,
+    pub(super) lane_rates: Vec<crate::recipes::Rate>,
 }
 
 #[derive(Clone, Default)]
@@ -42,18 +44,17 @@ struct LayoutState {
 
 struct Candidate {
     state: LayoutState,
-    source_port: PlacedFacilityPort,
-    target_port: PlacedFacilityPort,
+    source_ports: Vec<PlacedFacilityPort>,
+    target_ports: Vec<PlacedFacilityPort>,
     score: ConstructionCandidateScore,
     order: CandidateOrder,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct CandidateOrder {
     target_state: usize,
     source: usize,
-    source_port: usize,
-    target_port: usize,
+    port_pairs: Vec<(usize, usize)>,
 }
 
 #[derive(Default)]
@@ -82,6 +83,7 @@ pub fn construct_frontier_growth(
     wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
     belt_frontier_depth: usize,
 ) -> ConstructiveFrontierGrowthReport {
     if let Some(diagnostic) = validate_inputs(wiring) {
@@ -93,7 +95,12 @@ pub fn construct_frontier_growth(
             belt_frontier_depth,
         );
     }
-    let growth = match select_initial_frontier_growth(wiring, items, belt_frontier_depth) {
+    let growth = match select_initial_frontier_growth(
+        wiring,
+        items,
+        transports,
+        belt_frontier_depth,
+    ) {
         Ok(growth) if !growth.is_empty() => growth,
         Ok(_) => {
             return failure(
@@ -247,16 +254,22 @@ pub(super) fn construct_selected_growth(
         phase_statistics.accepted_path_tiles = candidate
             .state
             .transport_networks
-            .last()
-            .map_or(0, |network| network.cells.len());
+            .iter()
+            .rev()
+            .take(growth_edge.lane_rates.len())
+            .map(|network| network.cells.len())
+            .sum();
         phase_statistics.accepted_path_turns = candidate
             .state
             .transport_networks
-            .last()
-            .map_or(0, |network| count_turns(&network.cells));
+            .iter()
+            .rev()
+            .take(growth_edge.lane_rates.len())
+            .map(|network| count_turns(&network.cells))
+            .sum();
         state = candidate.state;
-        let (placements, networks, source_port, target_port, bounds) =
-            canonical_snapshot(&state, candidate.source_port, candidate.target_port);
+        let (placements, networks, source_ports, target_ports, bounds) =
+            canonical_snapshot(&state, candidate.source_ports, candidate.target_ports);
         phases.push(ConstructiveFrontierGrowthPhase {
             index,
             requirement: growth_edge.edge.id.clone(),
@@ -266,8 +279,8 @@ pub(super) fn construct_selected_growth(
             bounds,
             placements,
             transport_networks: networks,
-            source_port,
-            target_port,
+            source_ports,
+            target_ports,
             score: candidate.score,
             statistics: phase_statistics,
         });
@@ -328,8 +341,7 @@ fn evaluate_source_candidates_parallel(
                             CandidateOrder {
                                 target_state: target_state_index,
                                 source: source_offset + offset,
-                                source_port: 0,
-                                target_port: 0,
+                                port_pairs: Vec::new(),
                             },
                             target_state,
                             source,
@@ -401,24 +413,123 @@ fn evaluate_source_candidate(
     ) else {
         return outcome;
     };
+    let source_ports = source_ports
+        .into_iter()
+        .filter(|port| {
+            !target_state
+                .used_ports
+                .contains(&(port.instance.clone(), port.port.clone()))
+        })
+        .collect::<Vec<_>>();
+    let target_ports = target_ports
+        .into_iter()
+        .filter(|port| {
+            !target_state
+                .used_ports
+                .contains(&(port.instance.clone(), port.port.clone()))
+        })
+        .collect::<Vec<_>>();
+    if source_ports.len() < growth_edge.lane_rates.len()
+        || target_ports.len() < growth_edge.lane_rates.len()
+    {
+        return outcome;
+    }
     let mut blocked = occupied_cells(&placements);
     blocked.extend(transport_cells_for_kind(
         &target_state.transport_networks,
         growth_edge.transport,
     ));
-    let mut route_cache = HashMap::<(i64, i64, i64, i64), Option<Vec<WorldGridPosition>>>::new();
-    for (source_port_index, source_port) in source_ports.into_iter().enumerate() {
-        if target_state
-            .used_ports
-            .contains(&(source_port.instance.clone(), source_port.port.clone()))
+    search_lane_bundle(
+        0,
+        0,
+        &order,
+        target_state,
+        &placements,
+        growth_edge,
+        remaining,
+        facilities,
+        request,
+        best_area,
+        &source_ports,
+        &target_ports,
+        &mut vec![false; target_ports.len()],
+        &blocked,
+        &mut Vec::new(),
+        &mut Vec::new(),
+        &mut Vec::new(),
+        &mut outcome,
+    );
+    outcome
+}
+
+#[allow(clippy::too_many_arguments)]
+fn search_lane_bundle(
+    lane_index: usize,
+    source_start: usize,
+    order: &CandidateOrder,
+    target_state: &LayoutState,
+    placements: &[FacilityPlacement],
+    growth_edge: &GrowthEdge<'_>,
+    remaining: &[GrowthEdge<'_>],
+    facilities: &ValidatedFacilityCatalog,
+    request: &FacilityPlacementRequest,
+    best_area: &AtomicUsize,
+    source_ports: &[PlacedFacilityPort],
+    target_ports: &[PlacedFacilityPort],
+    target_used: &mut [bool],
+    blocked: &HashSet<(i64, i64)>,
+    networks: &mut Vec<TransportNetwork>,
+    selected_source_ports: &mut Vec<PlacedFacilityPort>,
+    selected_target_ports: &mut Vec<PlacedFacilityPort>,
+    outcome: &mut WorkerOutcome,
+) {
+    if lane_index == growth_edge.lane_rates.len() {
+        let mut candidate_state = target_state.clone();
+        candidate_state.placements = placements.to_vec();
+        candidate_state
+            .transport_networks
+            .extend(networks.iter().cloned());
+        for port in selected_source_ports
+            .iter()
+            .chain(selected_target_ports.iter())
         {
-            continue;
-        }
-        for (target_port_index, target_port) in target_ports.iter().enumerate() {
-            if target_state
+            candidate_state
                 .used_ports
-                .contains(&(target_port.instance.clone(), target_port.port.clone()))
-            {
+                .insert((port.instance.clone(), port.port.clone()));
+        }
+        if !validate_state(&candidate_state) {
+            return;
+        }
+        let Some(blocked_future_port_options) =
+            future_port_loss(&candidate_state, remaining, facilities, request)
+        else {
+            outcome.statistics.future_port_dead_ends += 1;
+            return;
+        };
+        let score = score(&candidate_state, blocked_future_port_options);
+        outcome.statistics.valid_candidates += 1;
+        best_area.fetch_min(score.used_bounding_box_area, AtomicOrdering::Relaxed);
+        let candidate = Candidate {
+            state: candidate_state,
+            source_ports: selected_source_ports.clone(),
+            target_ports: selected_target_ports.clone(),
+            score,
+            order: order.clone(),
+        };
+        if outcome
+            .best
+            .as_ref()
+            .is_none_or(|current| candidate_is_better(&candidate, current))
+        {
+            outcome.best = Some(candidate);
+        }
+        return;
+    }
+
+    for source_port_index in source_start..source_ports.len() {
+        let source_port = &source_ports[source_port_index];
+        for (target_port_index, target_port) in target_ports.iter().enumerate() {
+            if target_used[target_port_index] {
                 continue;
             }
             outcome.statistics.port_pairs += 1;
@@ -429,7 +540,7 @@ fn evaluate_source_candidate(
                 continue;
             }
             if used_area_lower_bound(
-                &placements,
+                placements,
                 &target_state.transport_networks,
                 &[&source_port.connection, &target_port.connection],
             ) > best_area.load(AtomicOrdering::Relaxed)
@@ -437,86 +548,66 @@ fn evaluate_source_candidate(
                 outcome.statistics.endpoint_area_bound_pruned += 1;
                 continue;
             }
-            let route_key = (
-                source_port.connection.x,
-                source_port.connection.y,
-                target_port.connection.x,
-                target_port.connection.y,
-            );
-            let path = if let Some(cached) = route_cache.get(&route_key) {
-                outcome.statistics.route_cache_hits += 1;
-                cached.clone()
-            } else {
-                outcome.statistics.astar_searches += 1;
-                let routed = route_shortest_path(
-                    request.max_width,
-                    request.max_height,
-                    &blocked,
-                    &source_port.connection,
-                    &target_port.connection,
-                );
-                if routed.is_none() {
-                    outcome.statistics.astar_failures += 1;
-                }
-                route_cache.insert(route_key, routed.clone());
-                routed
-            };
-            let Some(path) = path else {
+            outcome.statistics.astar_searches += 1;
+            let Some(path) = route_shortest_path(
+                request.max_width,
+                request.max_height,
+                blocked,
+                &source_port.connection,
+                &target_port.connection,
+            ) else {
+                outcome.statistics.astar_failures += 1;
                 continue;
             };
-            let network = network_for(
+            let mut next_blocked = blocked.clone();
+            next_blocked.extend(path.iter().map(|cell| (cell.x, cell.y)));
+            networks.push(network_for(
                 growth_edge.edge,
                 growth_edge.transport,
-                &source_port,
+                growth_edge.lane_rates[lane_index],
+                lane_index,
+                growth_edge.lane_rates.len(),
+                source_port,
                 target_port,
                 path,
+            ));
+            selected_source_ports.push(source_port.clone());
+            selected_target_ports.push(target_port.clone());
+            target_used[target_port_index] = true;
+            let mut next_order = order.clone();
+            next_order
+                .port_pairs
+                .push((source_port_index, target_port_index));
+            search_lane_bundle(
+                lane_index + 1,
+                source_port_index + 1,
+                &next_order,
+                target_state,
+                placements,
+                growth_edge,
+                remaining,
+                facilities,
+                request,
+                best_area,
+                source_ports,
+                target_ports,
+                target_used,
+                &next_blocked,
+                networks,
+                selected_source_ports,
+                selected_target_ports,
+                outcome,
             );
-            let mut candidate_state = target_state.clone();
-            candidate_state.placements = placements.clone();
-            candidate_state.transport_networks.push(network);
-            candidate_state
-                .used_ports
-                .insert((source_port.instance.clone(), source_port.port.clone()));
-            candidate_state
-                .used_ports
-                .insert((target_port.instance.clone(), target_port.port.clone()));
-            if !validate_state(&candidate_state) {
-                continue;
-            }
-            let Some(blocked_future_port_options) =
-                future_port_loss(&candidate_state, remaining, facilities, request)
-            else {
-                outcome.statistics.future_port_dead_ends += 1;
-                continue;
-            };
-            let score = score(&candidate_state, blocked_future_port_options);
-            outcome.statistics.valid_candidates += 1;
-            best_area.fetch_min(score.used_bounding_box_area, AtomicOrdering::Relaxed);
-            let candidate = Candidate {
-                state: candidate_state,
-                source_port: source_port.clone(),
-                target_port: target_port.clone(),
-                score,
-                order: CandidateOrder {
-                    source_port: source_port_index,
-                    target_port: target_port_index,
-                    ..order
-                },
-            };
-            if outcome
-                .best
-                .as_ref()
-                .is_none_or(|current| candidate_is_better(&candidate, current))
-            {
-                outcome.best = Some(candidate);
-            }
+            target_used[target_port_index] = false;
+            selected_target_ports.pop();
+            selected_source_ports.pop();
+            networks.pop();
         }
     }
-    outcome
 }
 
 fn candidate_is_better(candidate: &Candidate, current: &Candidate) -> bool {
-    (candidate.score, candidate.order) < (current.score, current.order)
+    (candidate.score, candidate.order.clone()) < (current.score, current.order.clone())
 }
 
 fn merge_worker_outcome(combined: &mut WorkerOutcome, outcome: WorkerOutcome) {
@@ -593,6 +684,7 @@ fn failure(
 fn select_longest_linear_pipe_chain<'a>(
     wiring: &'a FacilityInstanceWiringReport,
     items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
 ) -> Result<Vec<GrowthEdge<'a>>, ConstructiveFrontierDiagnostic> {
     let instances = wiring
         .nodes
@@ -633,11 +725,13 @@ fn select_longest_linear_pipe_chain<'a>(
         ) else {
             continue;
         };
+        let lane_rates = split_rate_into_lanes(edge.rate, item.transport, transports, &edge.id)?;
         eligible.push(GrowthEdge {
             edge,
             source: source.clone(),
             target: target.clone(),
             transport: TransportKind::Pipe,
+            lane_rates,
         });
     }
     eligible.sort_by(|left, right| left.edge.id.cmp(&right.edge.id));
@@ -684,9 +778,10 @@ fn select_longest_linear_pipe_chain<'a>(
 fn select_initial_frontier_growth<'a>(
     wiring: &'a FacilityInstanceWiringReport,
     items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
     belt_frontier_depth: usize,
 ) -> Result<Vec<GrowthEdge<'a>>, ConstructiveFrontierDiagnostic> {
-    let mut growth = select_longest_linear_pipe_chain(wiring, items)?;
+    let mut growth = select_longest_linear_pipe_chain(wiring, items, transports)?;
     let instances = wiring
         .nodes
         .iter()
@@ -734,11 +829,14 @@ fn select_initial_frontier_growth<'a>(
             ) else {
                 continue;
             };
+            let lane_rates =
+                split_rate_into_lanes(edge.rate, item.transport, transports, &edge.id)?;
             belt_frontiers.push(GrowthEdge {
                 edge,
                 source: source.clone(),
                 target: target.clone(),
                 transport: TransportKind::Belt,
+                lane_rates,
             });
         }
         belt_frontiers.sort_by(|left, right| left.edge.id.cmp(&right.edge.id));
@@ -822,12 +920,20 @@ fn seed_candidates(
 fn network_for(
     edge: &FacilityInstanceWiringEdge,
     transport: TransportKind,
+    rate: crate::recipes::Rate,
+    lane_index: usize,
+    lane_count: usize,
     source: &PlacedFacilityPort,
     target: &PlacedFacilityPort,
     cells: Vec<WorldGridPosition>,
 ) -> TransportNetwork {
+    let lane = super::capacity::lane_id(&edge.id, lane_index);
     TransportNetwork {
-        id: format!("constructive:{}", edge.id),
+        id: if lane_count == 1 {
+            format!("constructive:{}", edge.id)
+        } else {
+            format!("constructive:{lane}")
+        },
         requirement_ids: vec![edge.id.clone()],
         item: edge.item.clone(),
         transport,
@@ -836,13 +942,13 @@ fn network_for(
             .map(|pair| TransportNetworkSegment {
                 from: pair[0].clone(),
                 to: pair[1].clone(),
-                rate: edge.rate,
+                rate,
             })
             .collect(),
         cells,
         terminals: vec![
             TransportNetworkTerminal {
-                id: format!("{}:source", edge.id),
+                id: format!("{lane}:source"),
                 node: source.instance.clone(),
                 direction: FacilityPortDirection::Output,
                 endpoint: TransportNetworkEndpoint::Facility {
@@ -850,10 +956,10 @@ fn network_for(
                     port: source.port.clone(),
                 },
                 position: source.connection.clone(),
-                rate: edge.rate,
+                rate,
             },
             TransportNetworkTerminal {
-                id: format!("{}:target", edge.id),
+                id: format!("{lane}:target"),
                 node: target.instance.clone(),
                 direction: FacilityPortDirection::Input,
                 endpoint: TransportNetworkEndpoint::Facility {
@@ -861,7 +967,7 @@ fn network_for(
                     port: target.port.clone(),
                 },
                 position: target.connection.clone(),
-                rate: edge.rate,
+                rate,
             },
         ],
         component_ids: Vec::new(),
@@ -923,7 +1029,7 @@ fn future_port_loss(
                         && !occupied_transport.contains(&(port.connection.x, port.connection.y))
                 })
                 .count();
-            if viable == 0 {
+            if viable < edge.lane_rates.len() {
                 return None;
             }
             loss += candidates.len() - viable;
@@ -1066,13 +1172,13 @@ fn transport_layer_key(transport: TransportKind) -> u8 {
 
 fn canonical_snapshot(
     state: &LayoutState,
-    mut source_port: PlacedFacilityPort,
-    mut target_port: PlacedFacilityPort,
+    mut source_ports: Vec<PlacedFacilityPort>,
+    mut target_ports: Vec<PlacedFacilityPort>,
 ) -> (
     Vec<FacilityPlacement>,
     Vec<TransportNetwork>,
-    PlacedFacilityPort,
-    PlacedFacilityPort,
+    Vec<PlacedFacilityPort>,
+    Vec<PlacedFacilityPort>,
     FacilityPlacementBounds,
 ) {
     let mut placements = state.placements.clone();
@@ -1117,7 +1223,7 @@ fn canonical_snapshot(
             terminal.position.y -= minimum_y;
         }
     }
-    for port in [&mut source_port, &mut target_port] {
+    for port in source_ports.iter_mut().chain(&mut target_ports) {
         port.position.x -= minimum_x;
         port.position.y -= minimum_y;
         port.connection.x -= minimum_x;
@@ -1128,7 +1234,7 @@ fn canonical_snapshot(
         .flat_map(|network| network.cells.iter().cloned())
         .collect::<Vec<_>>();
     let bounds = bounds_for(&placements, &cells);
-    (placements, networks, source_port, target_port, bounds)
+    (placements, networks, source_ports, target_ports, bounds)
 }
 
 #[cfg(test)]
@@ -1138,7 +1244,11 @@ mod tests {
         FacilityCatalog, FacilityFootprint, FacilityPortDefinition, FacilityPortEdge,
         FacilityPortPosition, SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION,
     };
-    use crate::logistics::{ItemCatalog, ItemDefinition, SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION};
+    use crate::logistics::{
+        ItemCatalog, ItemDefinition, SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+        SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION, TransportCapacity, TransportCatalog,
+        TransportDefinition, ValidatedTransportCatalog,
+    };
     use crate::recipes::{
         FACILITY_INSTANCE_WIRING_SCHEMA_VERSION, FacilityInstanceWiringProjection, Rate,
     };
@@ -1184,6 +1294,61 @@ mod tests {
         }
     }
 
+    fn multi_belt_facility(id: &str) -> FacilityDefinition {
+        FacilityDefinition {
+            id: id.to_string(),
+            footprint: FacilityFootprint {
+                width: 3,
+                height: 3,
+            },
+            allowed_rotations: vec![0],
+            ports: vec![
+                FacilityPortDefinition {
+                    id: "input".to_string(),
+                    direction: FacilityPortDirection::Input,
+                    transport: TransportKind::Pipe,
+                    position: FacilityPortPosition { x: 0, y: 1 },
+                    edge: FacilityPortEdge::West,
+                },
+                FacilityPortDefinition {
+                    id: "output".to_string(),
+                    direction: FacilityPortDirection::Output,
+                    transport: TransportKind::Pipe,
+                    position: FacilityPortPosition { x: 2, y: 1 },
+                    edge: FacilityPortEdge::East,
+                },
+                FacilityPortDefinition {
+                    id: "belt-input-a".to_string(),
+                    direction: FacilityPortDirection::Input,
+                    transport: TransportKind::Belt,
+                    position: FacilityPortPosition { x: 0, y: 2 },
+                    edge: FacilityPortEdge::South,
+                },
+                FacilityPortDefinition {
+                    id: "belt-output-a".to_string(),
+                    direction: FacilityPortDirection::Output,
+                    transport: TransportKind::Belt,
+                    position: FacilityPortPosition { x: 1, y: 2 },
+                    edge: FacilityPortEdge::South,
+                },
+                FacilityPortDefinition {
+                    id: "belt-input-b".to_string(),
+                    direction: FacilityPortDirection::Input,
+                    transport: TransportKind::Belt,
+                    position: FacilityPortPosition { x: 2, y: 2 },
+                    edge: FacilityPortEdge::South,
+                },
+                FacilityPortDefinition {
+                    id: "belt-output-b".to_string(),
+                    direction: FacilityPortDirection::Output,
+                    transport: TransportKind::Belt,
+                    position: FacilityPortPosition { x: 1, y: 0 },
+                    edge: FacilityPortEdge::North,
+                },
+            ],
+        }
+    }
+
     fn node(id: &str) -> FacilityInstanceWiringNode {
         let one = Rate {
             numerator: 1,
@@ -1198,6 +1363,33 @@ mod tests {
             work_seconds_per_second: one,
             unused_capacity: Rate::zero(),
         }
+    }
+
+    fn transports() -> ValidatedTransportCatalog {
+        transports_with_belt_duration(1_000)
+    }
+
+    fn transports_with_belt_duration(duration_ms: i64) -> ValidatedTransportCatalog {
+        ValidatedTransportCatalog::try_from_catalog(TransportCatalog {
+            schema_version: SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION,
+            transports: vec![
+                TransportDefinition {
+                    kind: TransportKind::Pipe,
+                    capacity: TransportCapacity {
+                        quantity: 1,
+                        duration_ms: 1_000,
+                    },
+                },
+                TransportDefinition {
+                    kind: TransportKind::Belt,
+                    capacity: TransportCapacity {
+                        quantity: 1,
+                        duration_ms,
+                    },
+                },
+            ],
+        })
+        .expect("transport catalog validates")
     }
 
     #[test]
@@ -1256,7 +1448,7 @@ mod tests {
         })
         .expect("item catalog validates");
 
-        let report = construct_frontier_growth(&wiring, &facilities, &items, 1);
+        let report = construct_frontier_growth(&wiring, &facilities, &items, &transports(), 1);
         assert!(report.success, "{:?}", report.diagnostics);
         assert_eq!(report.phases.len(), 2);
         assert_eq!(report.phases[0].placements.len(), 2);
@@ -1360,7 +1552,7 @@ mod tests {
         })
         .expect("item catalog validates");
 
-        let report = construct_frontier_growth(&wiring, &facilities, &items, 1);
+        let report = construct_frontier_growth(&wiring, &facilities, &items, &transports(), 1);
         assert!(report.success, "{:?}", report.diagnostics);
         assert_eq!(report.phases.len(), 3);
         assert_eq!(report.placements.len(), 4);
@@ -1368,10 +1560,92 @@ mod tests {
         assert_eq!(report.transport_networks[2].transport, TransportKind::Belt);
         assert_eq!(report.statistics.completed_requirements, 3);
 
-        let two_ring_growth = select_initial_frontier_growth(&wiring, &items, 2)
+        let two_ring_growth = select_initial_frontier_growth(&wiring, &items, &transports(), 2)
             .expect("two belt rings should be selected");
         assert_eq!(two_ring_growth.len(), 4);
         assert_eq!(two_ring_growth[3].source.id, "belt-source-upstream");
+    }
+
+    #[test]
+    fn splits_belt_transport_requirement_into_multiple_lanes() {
+        let rate = Rate {
+            numerator: 1,
+            denominator: 1,
+        };
+        let wiring = FacilityInstanceWiringReport {
+            schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
+            success: true,
+            nodes: vec![
+                node("pipe-source"),
+                node("pipe-target"),
+                node("belt-source"),
+            ],
+            edges: vec![
+                FacilityInstanceWiringEdge {
+                    id: "pipe-edge".to_string(),
+                    source: "pipe-source".to_string(),
+                    target: "pipe-target".to_string(),
+                    kind: "intermediate".to_string(),
+                    item: "fluid".to_string(),
+                    rate,
+                    projection: FacilityInstanceWiringProjection::Original,
+                },
+                FacilityInstanceWiringEdge {
+                    id: "belt-edge".to_string(),
+                    source: "belt-source".to_string(),
+                    target: "pipe-source".to_string(),
+                    kind: "intermediate".to_string(),
+                    item: "solid".to_string(),
+                    rate,
+                    projection: FacilityInstanceWiringProjection::Original,
+                },
+            ],
+            diagnostics: Vec::new(),
+        };
+        let facilities = ValidatedFacilityCatalog::try_from_catalog(FacilityCatalog {
+            schema_version: SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION,
+            facilities: vec![
+                multi_belt_facility("pipe-source"),
+                multi_belt_facility("pipe-target"),
+                multi_belt_facility("belt-source"),
+            ],
+        })
+        .expect("facility catalog validates");
+        let items = ValidatedItemCatalog::try_from_catalog(ItemCatalog {
+            schema_version: SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+            items: vec![
+                ItemDefinition {
+                    id: "solid".to_string(),
+                    transport: TransportKind::Belt,
+                },
+                ItemDefinition {
+                    id: "fluid".to_string(),
+                    transport: TransportKind::Pipe,
+                },
+            ],
+        })
+        .expect("item catalog validates");
+
+        let report = construct_frontier_growth(
+            &wiring,
+            &facilities,
+            &items,
+            &transports_with_belt_duration(2_000),
+            1,
+        );
+        assert!(report.success, "{:?}", report.diagnostics);
+        assert_eq!(report.phases.len(), 2);
+        assert_eq!(report.phases[1].transport_networks.len(), 3);
+        assert_eq!(report.phases[1].source_ports.len(), 2);
+        assert_eq!(report.phases[1].target_ports.len(), 2);
+        assert_eq!(
+            report.phases[1]
+                .transport_networks
+                .iter()
+                .filter(|network| network.id.starts_with("constructive:belt-edge:lane:"))
+                .count(),
+            2
+        );
     }
 
     #[test]

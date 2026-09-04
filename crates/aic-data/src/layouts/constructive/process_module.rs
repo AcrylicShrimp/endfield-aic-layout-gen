@@ -5,9 +5,10 @@ use crate::layouts::{
     FacilityPlacementBounds, FacilityPlacementReport, FacilityPlacementRequest,
     FacilityPlacementStatus, SUPPORTED_FACILITY_PLACEMENT_SCHEMA_VERSION, project_facility_ports,
 };
-use crate::logistics::ValidatedItemCatalog;
+use crate::logistics::{ValidatedItemCatalog, ValidatedTransportCatalog};
 use crate::recipes::{FacilityInstanceWiringNode, FacilityInstanceWiringReport, Rate};
 
+use super::capacity::split_rate_into_lanes;
 use super::first_pipe_frontier::{FacilityInstance, occupied_cells, validate_inputs};
 use super::pipe_chain::{GrowthEdge, construct_selected_growth};
 use super::{
@@ -21,6 +22,7 @@ pub fn construct_process_module(
     wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
     root_instance: &str,
     internal_item: &str,
 ) -> ConstructiveProcessModuleReport {
@@ -72,21 +74,28 @@ pub fn construct_process_module(
         );
     };
 
-    let mut selected_edges = wiring
+    let mut selected_edges = Vec::new();
+    for edge in wiring
         .edges
         .iter()
         .filter(|edge| edge.target == root_instance && edge.item == internal_item)
-        .filter_map(|edge| {
-            instances
-                .get(edge.source.as_str())
-                .map(|source| GrowthEdge {
-                    edge,
-                    source: source.clone(),
-                    target: root.clone(),
-                    transport: item.transport,
-                })
-        })
-        .collect::<Vec<_>>();
+    {
+        let Some(source) = instances.get(edge.source.as_str()) else {
+            continue;
+        };
+        let lane_rates =
+            match split_rate_into_lanes(edge.rate, item.transport, transports, &edge.id) {
+                Ok(lanes) => lanes,
+                Err(diagnostic) => return failure(root_instance, internal_item, diagnostic),
+            };
+        selected_edges.push(GrowthEdge {
+            edge,
+            source: source.clone(),
+            target: root.clone(),
+            transport: item.transport,
+            lane_rates,
+        });
+    }
     selected_edges.sort_by(|left, right| left.edge.id.cmp(&right.edge.id));
     if selected_edges.is_empty() {
         return failure(
@@ -120,7 +129,14 @@ pub fn construct_process_module(
         "constructed a process module with every selected internal requirement physically routed",
     );
     let boundary_requirements = if growth.success {
-        match project_boundary_requirements(wiring, facilities, items, &member_instances, &growth) {
+        match project_boundary_requirements(
+            wiring,
+            facilities,
+            items,
+            transports,
+            &member_instances,
+            &growth,
+        ) {
             Ok(boundary) => boundary,
             Err(diagnostic) => {
                 growth.success = false;
@@ -149,6 +165,7 @@ fn project_boundary_requirements(
     wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
     member_instances: &[String],
     growth: &ConstructiveFrontierGrowthReport,
 ) -> Result<Vec<ConstructiveProcessModuleBoundary>, ConstructiveFrontierDiagnostic> {
@@ -268,17 +285,6 @@ fn project_boundary_requirements(
             })
             .cloned()
             .collect::<Vec<_>>();
-        if port_options.is_empty() {
-            return Err(ConstructiveFrontierDiagnostic::error(
-                "process-module-boundary-blocked",
-                "/boundary_requirements",
-                Some(edge.id.clone()),
-                format!(
-                    "process module boundary requirement '{}' has no physically exposed compatible port",
-                    edge.id
-                ),
-            ));
-        }
         boundary.push(ConstructiveProcessModuleBoundary {
             requirement: edge.id.clone(),
             item: edge.item.clone(),
@@ -293,6 +299,18 @@ fn project_boundary_requirements(
         });
     }
     boundary.sort_by(|left, right| left.requirement.cmp(&right.requirement));
+    let analysis =
+        super::analyze_constructive_port_demands(&boundary, &growth.transport_networks, transports);
+    if !analysis.success {
+        return Err(analysis.diagnostics.into_iter().next().unwrap_or_else(|| {
+            ConstructiveFrontierDiagnostic::error(
+                "process-module-port-demand-invalid",
+                "/boundary_requirements",
+                None,
+                "process module does not expose enough capacity-compatible ports",
+            )
+        }));
+    }
     Ok(boundary)
 }
 
@@ -332,7 +350,9 @@ mod tests {
         FacilityPortEdge, FacilityPortPosition, SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION,
     };
     use crate::logistics::{
-        ItemCatalog, ItemDefinition, SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION, TransportKind,
+        ItemCatalog, ItemDefinition, SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+        SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION, TransportCapacity, TransportCatalog,
+        TransportDefinition, TransportKind, ValidatedTransportCatalog,
     };
     use crate::recipes::{
         FACILITY_INSTANCE_WIRING_SCHEMA_VERSION, FacilityInstanceWiringEdge,
@@ -368,6 +388,29 @@ mod tests {
             },
             projection: FacilityInstanceWiringProjection::Original,
         }
+    }
+
+    fn transports() -> ValidatedTransportCatalog {
+        ValidatedTransportCatalog::try_from_catalog(TransportCatalog {
+            schema_version: SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION,
+            transports: vec![
+                TransportDefinition {
+                    kind: TransportKind::Belt,
+                    capacity: TransportCapacity {
+                        quantity: 1,
+                        duration_ms: 1_000,
+                    },
+                },
+                TransportDefinition {
+                    kind: TransportKind::Pipe,
+                    capacity: TransportCapacity {
+                        quantity: 1,
+                        duration_ms: 500,
+                    },
+                },
+            ],
+        })
+        .expect("transport catalog validates")
     }
 
     #[test]
@@ -437,7 +480,14 @@ mod tests {
         })
         .expect("item catalog validates");
 
-        let report = construct_process_module(&wiring, &facilities, &items, "root", "internal");
+        let report = construct_process_module(
+            &wiring,
+            &facilities,
+            &items,
+            &transports(),
+            "root",
+            "internal",
+        );
         assert!(report.success, "{:?}", report.growth.diagnostics);
         assert_eq!(report.member_instances.len(), 3);
         assert_eq!(report.internal_requirements.len(), 2);

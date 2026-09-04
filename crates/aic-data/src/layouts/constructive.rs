@@ -17,6 +17,7 @@ use super::integrated::{LayoutVisualizationPage, render_layout_history_html};
 
 mod assembly;
 mod automatic_assembly;
+mod capacity;
 mod composition;
 mod first_pipe_frontier;
 mod pipe_chain;
@@ -421,7 +422,7 @@ fn boundary_visualization_networks(
 
 const STAGE: &str = "constructive-planner";
 pub const CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION: u32 = 1;
-pub const CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION: u32 = 3;
+pub const CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION: u32 = 4;
 pub const CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION: u32 = 3;
 pub const CONSTRUCTIVE_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
@@ -497,8 +498,8 @@ pub struct ConstructiveFrontierGrowthPhase {
     pub bounds: FacilityPlacementBounds,
     pub placements: Vec<FacilityPlacement>,
     pub transport_networks: Vec<TransportNetwork>,
-    pub source_port: PlacedFacilityPort,
-    pub target_port: PlacedFacilityPort,
+    pub source_ports: Vec<PlacedFacilityPort>,
+    pub target_ports: Vec<PlacedFacilityPort>,
     pub score: ConstructionCandidateScore,
     pub statistics: ConstructiveFrontierStatistics,
 }

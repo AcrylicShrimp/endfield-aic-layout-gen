@@ -118,6 +118,7 @@ pub fn automatically_assemble_constructive_modules(
                     wiring,
                     facilities,
                     items,
+                    transports,
                     &edge.source,
                     &internal_item,
                 );
@@ -148,7 +149,7 @@ pub fn automatically_assemble_constructive_modules(
             }
         }
         let (composition_workers, composition_outcome) =
-            compose_candidates_parallel(&prepared, &current, facilities);
+            compose_candidates_parallel(&prepared, &current, transports, facilities);
         let compositions_failed = composition_outcome.failures;
         let mut candidates = composition_outcome.candidates;
         let composable_candidates = candidates.len();
@@ -239,6 +240,7 @@ pub fn automatically_assemble_constructive_modules(
 fn compose_candidates_parallel(
     prepared: &[PreparedCandidate],
     current: &ConstructiveNode,
+    transports: &ValidatedTransportCatalog,
     facilities: &ValidatedFacilityCatalog,
 ) -> (usize, CompositionWorkerOutcome) {
     if prepared.is_empty() {
@@ -261,6 +263,7 @@ fn compose_candidates_parallel(
                             &prepared.source,
                             current,
                             &prepared.edge,
+                            transports,
                             facilities,
                             best_area,
                         );
@@ -379,16 +382,26 @@ fn completed_report(
         &current.transport_networks,
         transports,
     );
+    let success = port_demand_analysis.success;
+    let diagnostics = if success {
+        vec![diagnostic.clone()]
+    } else {
+        port_demand_analysis.diagnostics.clone()
+    };
+    let assembly_diagnostic = diagnostics
+        .first()
+        .cloned()
+        .unwrap_or_else(|| diagnostic.clone());
     ConstructiveAutomaticAssemblyReport {
         schema_version: CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION,
-        success: true,
-        complete: true,
+        success,
+        complete: success,
         max_steps: request.max_steps,
         discovery_steps,
         unresolved_facility_requirements: Vec::new(),
         port_demand_analysis,
-        assembly: assembly_report(request, true, Some(current), steps, diagnostic.clone()),
-        diagnostics: vec![diagnostic],
+        assembly: assembly_report(request, success, Some(current), steps, assembly_diagnostic),
+        diagnostics,
     }
 }
 
@@ -409,16 +422,26 @@ fn partial_report(
         &current.transport_networks,
         transports,
     );
+    let success = port_demand_analysis.success;
+    let diagnostics = if success {
+        vec![diagnostic.clone()]
+    } else {
+        port_demand_analysis.diagnostics.clone()
+    };
+    let assembly_diagnostic = diagnostics
+        .first()
+        .cloned()
+        .unwrap_or_else(|| diagnostic.clone());
     ConstructiveAutomaticAssemblyReport {
         schema_version: CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION,
-        success: true,
+        success,
         complete: unresolved_facility_requirements.is_empty(),
         max_steps: request.max_steps,
         discovery_steps,
         unresolved_facility_requirements,
         port_demand_analysis,
-        assembly: assembly_report(request, true, Some(current), steps, diagnostic.clone()),
-        diagnostics: vec![diagnostic],
+        assembly: assembly_report(request, success, Some(current), steps, assembly_diagnostic),
+        diagnostics,
     }
 }
 
@@ -484,7 +507,7 @@ mod tests {
 
     #[test]
     fn discovers_and_assembles_two_modules_without_an_explicit_module_plan() {
-        let (wiring, facilities, items, _) = two_module_fixture();
+        let (wiring, facilities, items, _, _) = two_module_fixture();
         let request = ConstructiveAutomaticAssemblyRequest {
             schema_version: CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REQUEST_SCHEMA_VERSION,
             target_instance: "target".to_string(),

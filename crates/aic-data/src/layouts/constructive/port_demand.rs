@@ -181,6 +181,22 @@ pub fn analyze_constructive_port_demands(
             capacity_sufficient: accumulator.ports.len() >= accumulator.required_ports,
         })
         .collect::<Vec<_>>();
+    for scope in &scopes {
+        if !scope.capacity_sufficient {
+            diagnostics.push(ConstructiveFrontierDiagnostic::error(
+                "constructive-port-demand-capacity-insufficient",
+                "/boundary_requirements",
+                Some(scope.inside_instance.clone()),
+                format!(
+                    "facility scope requires {} {:?} {:?} ports but only {} distinct choices remain",
+                    scope.required_ports,
+                    scope.direction,
+                    scope.transport,
+                    scope.available_distinct_ports,
+                ),
+            ));
+        }
+    }
     let edge_implied_ports = groups.iter().map(|group| group.edge_implied_ports).sum();
     let required_ports = groups.iter().map(|group| group.required_ports).sum();
 

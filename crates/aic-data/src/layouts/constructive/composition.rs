@@ -8,11 +8,12 @@ use crate::layouts::{
     TransportNetwork, TransportNetworkEndpoint, TransportNetworkSegment, TransportNetworkTerminal,
     WorldGridPosition, project_facility_ports,
 };
-use crate::logistics::{TransportKind, ValidatedItemCatalog};
+use crate::logistics::{TransportKind, ValidatedItemCatalog, ValidatedTransportCatalog};
 use crate::recipes::{
-    FacilityInstanceWiringEdge, FacilityInstanceWiringNode, FacilityInstanceWiringReport,
+    FacilityInstanceWiringEdge, FacilityInstanceWiringNode, FacilityInstanceWiringReport, Rate,
 };
 
+use super::capacity::{lane_id, split_rate_into_lanes};
 use super::first_pipe_frontier::{bounds_for, occupied_cells, rectangles_overlap};
 use super::routing::{RouteWorkspace, count_turns};
 use super::{
@@ -31,6 +32,14 @@ struct CandidateOrder {
     x: i64,
     source_port: usize,
     target_port: usize,
+}
+
+#[derive(Debug)]
+struct LaneBundle {
+    source_ports: Vec<PlacedFacilityPort>,
+    target_ports: Vec<PlacedFacilityPort>,
+    port_pairs: Vec<(usize, usize)>,
+    networks: Vec<TransportNetwork>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -271,6 +280,7 @@ pub fn compose_process_module_with_facility(
     wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
+    transports: &ValidatedTransportCatalog,
     source_module: &ConstructiveProcessModuleReport,
     target_instance: &str,
     requirement: &str,
@@ -305,23 +315,27 @@ pub fn compose_process_module_with_facility(
             ),
         );
     };
-    compose_constructive_nodes(&source, &target, edge, facilities)
+    compose_constructive_nodes(&source, &target, edge, transports, facilities)
 }
 
 pub fn compose_constructive_nodes(
     source: &ConstructiveNode,
     target: &ConstructiveNode,
     edge: &FacilityInstanceWiringEdge,
+    transports: &ValidatedTransportCatalog,
     facilities: &ValidatedFacilityCatalog,
 ) -> ConstructiveCompositionReport {
     let best_area = AtomicUsize::new(usize::MAX);
-    compose_constructive_nodes_with_area_incumbent(source, target, edge, facilities, &best_area)
+    compose_constructive_nodes_with_area_incumbent(
+        source, target, edge, transports, facilities, &best_area,
+    )
 }
 
 pub(super) fn compose_constructive_nodes_with_area_incumbent(
     source: &ConstructiveNode,
     target: &ConstructiveNode,
     edge: &FacilityInstanceWiringEdge,
+    transports: &ValidatedTransportCatalog,
     facilities: &ValidatedFacilityCatalog,
     best_area: &AtomicUsize,
 ) -> ConstructiveCompositionReport {
@@ -376,6 +390,14 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
         );
     }
 
+    let lane_rates =
+        match split_rate_into_lanes(edge.rate, source_boundary.transport, transports, &edge.id) {
+            Ok(rates) => rates,
+            Err(diagnostic) => {
+                return failed_report(&edge.id, &source.id, &target.id, diagnostic);
+            }
+        };
+
     let canvas_width = source.bounds.width + target.bounds.width + 10;
     let canvas_height = source.bounds.height + target.bounds.height + 10;
     let target_candidate = translate_node(target, TARGET_OFFSET, TARGET_OFFSET);
@@ -425,68 +447,76 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
                 &target_candidate,
                 source_boundary.transport,
             );
-            let source_options = transformed_boundary(&source_candidate, &edge.id)
-                .map(|boundary| &boundary.port_options)
-                .into_iter()
-                .flatten();
-            let target_options = transformed_boundary(&target_candidate, &edge.id)
-                .map(|boundary| &boundary.port_options)
-                .into_iter()
-                .flatten();
-            for (source_port_index, source_port) in source_options.enumerate() {
-                for (target_port_index, target_port) in target_options.clone().enumerate() {
-                    statistics.port_pairs_considered += 1;
-                    if blocked.contains(&(source_port.connection.x, source_port.connection.y))
-                        || blocked.contains(&(target_port.connection.x, target_port.connection.y))
-                    {
-                        statistics.blocked_port_pairs_rejected += 1;
-                        continue;
-                    }
-                    statistics.astar_searches += 1;
-                    let Some(path) = route_workspace.route(
-                        &blocked,
-                        &source_port.connection,
-                        &target_port.connection,
-                    ) else {
-                        statistics.astar_failures += 1;
-                        continue;
-                    };
-                    let route = connection_network(
-                        edge,
-                        source_boundary.transport,
-                        source_port,
-                        target_port,
-                        path,
-                    );
-                    let Some((composite, blocked_options)) = combine_nodes(
-                        &source_candidate,
-                        &target_candidate,
-                        edge,
-                        source_port,
-                        target_port,
-                        route,
-                    ) else {
-                        statistics.boundary_dead_ends_rejected += 1;
-                        continue;
-                    };
-                    if !validate_node_geometry(&composite) {
-                        continue;
-                    }
-                    statistics.valid_candidates_scored += 1;
-                    let score = composition_score(&composite, blocked_options);
-                    best_area.fetch_min(score.used_bounding_box_area, AtomicOrdering::Relaxed);
-                    let candidate_order = CandidateOrder {
-                        rotation: rotation_index,
-                        y: placement.y,
-                        x: placement.x,
-                        source_port: source_port_index,
-                        target_port: target_port_index,
-                    };
-                    if best.as_ref().is_none_or(|(current, current_order, _)| {
-                        (score, candidate_order) < (*current, *current_order)
-                    }) {
-                        best = Some((score, candidate_order, composite));
-                    }
+            let source_ports = transformed_boundary(&source_candidate, &edge.id)
+                .map(|boundary| boundary.port_options.clone())
+                .unwrap_or_default();
+            let target_ports = transformed_boundary(&target_candidate, &edge.id)
+                .map(|boundary| boundary.port_options.clone())
+                .unwrap_or_default();
+            if source_ports.len() < lane_rates.len() || target_ports.len() < lane_rates.len() {
+                continue;
+            }
+
+            let mut lane_bundles = Vec::new();
+            let mut selected_source_ports = Vec::new();
+            let mut selected_target_ports = Vec::new();
+            let mut selected_routes = Vec::new();
+            let mut selected_pairs = Vec::new();
+            let mut target_used = vec![false; target_ports.len()];
+            enumerate_lane_bundles(
+                edge,
+                source_boundary.transport,
+                &lane_rates,
+                &source_ports,
+                &target_ports,
+                0,
+                0,
+                &mut route_workspace,
+                &blocked,
+                &mut target_used,
+                &mut selected_source_ports,
+                &mut selected_target_ports,
+                &mut selected_routes,
+                &mut selected_pairs,
+                &mut statistics,
+                &mut lane_bundles,
+            );
+
+            for bundle in lane_bundles {
+                let Some((source_port_index, target_port_index)) =
+                    bundle.port_pairs.first().copied()
+                else {
+                    continue;
+                };
+                let Some((composite, blocked_options)) = combine_nodes(
+                    &source_candidate,
+                    &target_candidate,
+                    edge,
+                    transports,
+                    &bundle.source_ports,
+                    &bundle.target_ports,
+                    bundle.networks,
+                ) else {
+                    statistics.boundary_dead_ends_rejected += 1;
+                    continue;
+                };
+                if !validate_node_geometry(&composite) {
+                    continue;
+                }
+                statistics.valid_candidates_scored += 1;
+                let score = composition_score(&composite, blocked_options);
+                best_area.fetch_min(score.used_bounding_box_area, AtomicOrdering::Relaxed);
+                let candidate_order = CandidateOrder {
+                    rotation: rotation_index,
+                    y: placement.y,
+                    x: placement.x,
+                    source_port: source_port_index,
+                    target_port: target_port_index,
+                };
+                if best.as_ref().is_none_or(|(current, current_order, _)| {
+                    (score, candidate_order) < (*current, *current_order)
+                }) {
+                    best = Some((score, candidate_order, composite));
                 }
             }
         }
@@ -530,15 +560,16 @@ fn combine_nodes(
     source: &ConstructiveNode,
     target: &ConstructiveNode,
     edge: &FacilityInstanceWiringEdge,
-    source_port: &PlacedFacilityPort,
-    target_port: &PlacedFacilityPort,
-    route: TransportNetwork,
+    transports: &ValidatedTransportCatalog,
+    source_ports: &[PlacedFacilityPort],
+    target_ports: &[PlacedFacilityPort],
+    routes: Vec<TransportNetwork>,
 ) -> Option<(ConstructiveNode, usize)> {
     let mut placements = target.placements.clone();
     placements.extend(source.placements.clone());
     let mut networks = target.transport_networks.clone();
     networks.extend(source.transport_networks.clone());
-    networks.push(route);
+    networks.extend(routes);
     let mut member_instances = target.member_instances.clone();
     member_instances.extend(source.member_instances.clone());
     member_instances.sort();
@@ -571,9 +602,11 @@ fn combine_nodes(
         .collect::<HashSet<_>>();
     for boundary in &mut boundaries {
         boundary.port_options.retain(|port| {
-            (port.instance != source_port.instance || port.port != source_port.port)
-                && (port.instance != target_port.instance || port.port != target_port.port)
-                && !facility_cells.contains(&(port.connection.x, port.connection.y))
+            !source_ports.iter().any(|source_port| {
+                source_port.instance == port.instance && source_port.port == port.port
+            }) && !target_ports.iter().any(|target_port| {
+                target_port.instance == port.instance && target_port.port == port.port
+            }) && !facility_cells.contains(&(port.connection.x, port.connection.y))
                 && !transport_cells.contains(&(
                     layer_key(port.transport),
                     port.connection.x,
@@ -585,6 +618,9 @@ fn combine_nodes(
         }
     }
     boundaries.sort_by(|left, right| left.requirement.cmp(&right.requirement));
+    if !super::analyze_constructive_port_demands(&boundaries, &networks, transports).success {
+        return None;
+    }
     let options_after = boundaries
         .iter()
         .map(|boundary| boundary.port_options.len())
@@ -610,12 +646,20 @@ fn combine_nodes(
 fn connection_network(
     edge: &FacilityInstanceWiringEdge,
     transport: TransportKind,
+    rate: Rate,
+    lane_index: usize,
+    lane_count: usize,
     source: &PlacedFacilityPort,
     target: &PlacedFacilityPort,
     cells: Vec<WorldGridPosition>,
 ) -> TransportNetwork {
+    let lane = if lane_count == 1 {
+        edge.id.clone()
+    } else {
+        lane_id(&edge.id, lane_index)
+    };
     TransportNetwork {
-        id: format!("constructive-composition:{}", edge.id),
+        id: format!("constructive-composition:{lane}"),
         requirement_ids: vec![edge.id.clone()],
         item: edge.item.clone(),
         transport,
@@ -624,13 +668,13 @@ fn connection_network(
             .map(|pair| TransportNetworkSegment {
                 from: pair[0].clone(),
                 to: pair[1].clone(),
-                rate: edge.rate,
+                rate,
             })
             .collect(),
         cells,
         terminals: vec![
             TransportNetworkTerminal {
-                id: format!("{}:source", edge.id),
+                id: format!("{lane}:source"),
                 node: source.instance.clone(),
                 direction: FacilityPortDirection::Output,
                 endpoint: TransportNetworkEndpoint::Facility {
@@ -638,10 +682,10 @@ fn connection_network(
                     port: source.port.clone(),
                 },
                 position: source.connection.clone(),
-                rate: edge.rate,
+                rate,
             },
             TransportNetworkTerminal {
-                id: format!("{}:target", edge.id),
+                id: format!("{lane}:target"),
                 node: target.instance.clone(),
                 direction: FacilityPortDirection::Input,
                 endpoint: TransportNetworkEndpoint::Facility {
@@ -649,10 +693,110 @@ fn connection_network(
                     port: target.port.clone(),
                 },
                 position: target.connection.clone(),
-                rate: edge.rate,
+                rate,
             },
         ],
         component_ids: Vec::new(),
+    }
+}
+
+fn enumerate_lane_bundles(
+    edge: &FacilityInstanceWiringEdge,
+    transport: TransportKind,
+    lane_rates: &[Rate],
+    source_ports: &[PlacedFacilityPort],
+    target_ports: &[PlacedFacilityPort],
+    source_start: usize,
+    lane_index: usize,
+    route_workspace: &mut RouteWorkspace,
+    blocked: &HashSet<(i64, i64)>,
+    target_used: &mut [bool],
+    selected_source_ports: &mut Vec<PlacedFacilityPort>,
+    selected_target_ports: &mut Vec<PlacedFacilityPort>,
+    selected_routes: &mut Vec<TransportNetwork>,
+    selected_pairs: &mut Vec<(usize, usize)>,
+    statistics: &mut ConstructiveCompositionStatistics,
+    bundles: &mut Vec<LaneBundle>,
+) {
+    if lane_index == lane_rates.len() {
+        bundles.push(LaneBundle {
+            source_ports: selected_source_ports.clone(),
+            target_ports: selected_target_ports.clone(),
+            port_pairs: selected_pairs.clone(),
+            networks: selected_routes.clone(),
+        });
+        return;
+    }
+
+    for source_port_index in source_start..source_ports.len() {
+        let source_port = &source_ports[source_port_index];
+        for (target_port_index, target_port) in target_ports.iter().enumerate() {
+            if target_used[target_port_index] {
+                continue;
+            }
+            statistics.port_pairs_considered += 1;
+            if blocked.contains(&(source_port.connection.x, source_port.connection.y))
+                || blocked.contains(&(target_port.connection.x, target_port.connection.y))
+            {
+                statistics.blocked_port_pairs_rejected += 1;
+                continue;
+            }
+            statistics.astar_searches += 1;
+            let Some(path) =
+                route_workspace.route(blocked, &source_port.connection, &target_port.connection)
+            else {
+                statistics.astar_failures += 1;
+                continue;
+            };
+
+            let route = connection_network(
+                edge,
+                transport,
+                lane_rates[lane_index],
+                lane_index,
+                lane_rates.len(),
+                source_port,
+                target_port,
+                path,
+            );
+            selected_source_ports.push(source_port.clone());
+            selected_target_ports.push(target_port.clone());
+            selected_pairs.push((source_port_index, target_port_index));
+            selected_routes.push(route);
+            target_used[target_port_index] = true;
+
+            let mut next_blocked = blocked.clone();
+            let route_cells = selected_routes
+                .last()
+                .expect("route was just pushed")
+                .cells
+                .clone();
+            next_blocked.extend(route_cells.iter().map(|cell| (cell.x, cell.y)));
+            enumerate_lane_bundles(
+                edge,
+                transport,
+                lane_rates,
+                source_ports,
+                target_ports,
+                source_port_index + 1,
+                lane_index + 1,
+                route_workspace,
+                &next_blocked,
+                target_used,
+                selected_source_ports,
+                selected_target_ports,
+                selected_routes,
+                selected_pairs,
+                statistics,
+                bundles,
+            );
+
+            target_used[target_port_index] = false;
+            selected_routes.pop();
+            selected_source_ports.pop();
+            selected_target_ports.pop();
+            selected_pairs.pop();
+        }
     }
 }
 
@@ -1020,7 +1164,11 @@ mod tests {
         FacilityPortEdge, FacilityPortPosition, SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION,
     };
     use crate::layouts::{construct_process_module, render_constructive_composition_html};
-    use crate::logistics::{ItemCatalog, ItemDefinition, SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION};
+    use crate::logistics::{
+        ItemCatalog, ItemDefinition, SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
+        SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION, TransportCapacity, TransportCatalog,
+        TransportDefinition, TransportKind, ValidatedTransportCatalog,
+    };
     use crate::recipes::{
         FACILITY_INSTANCE_WIRING_SCHEMA_VERSION, FacilityInstanceWiringProjection, Rate,
     };
@@ -1101,9 +1249,32 @@ mod tests {
         .expect("facility catalog validates")
     }
 
+    fn transports() -> ValidatedTransportCatalog {
+        ValidatedTransportCatalog::try_from_catalog(TransportCatalog {
+            schema_version: SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION,
+            transports: vec![
+                TransportDefinition {
+                    kind: TransportKind::Belt,
+                    capacity: TransportCapacity {
+                        quantity: 1,
+                        duration_ms: 1_000,
+                    },
+                },
+                TransportDefinition {
+                    kind: TransportKind::Pipe,
+                    capacity: TransportCapacity {
+                        quantity: 1,
+                        duration_ms: 500,
+                    },
+                },
+            ],
+        })
+        .expect("transport catalog validates")
+    }
+
     #[test]
     fn composes_an_immutable_process_module_with_a_facility_node() {
-        let wiring = FacilityInstanceWiringReport {
+        let mut wiring = FacilityInstanceWiringReport {
             schema_version: FACILITY_INSTANCE_WIRING_SCHEMA_VERSION,
             success: true,
             nodes: vec![
@@ -1123,6 +1294,15 @@ mod tests {
             ],
             diagnostics: Vec::new(),
         };
+        wiring
+            .edges
+            .iter_mut()
+            .find(|edge| edge.id == "root-target")
+            .expect("composition edge")
+            .rate = Rate {
+            numerator: 2,
+            denominator: 1,
+        };
         let facilities = facility_catalog();
         let items = ValidatedItemCatalog::try_from_catalog(ItemCatalog {
             schema_version: SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION,
@@ -1136,12 +1316,20 @@ mod tests {
         })
         .expect("item catalog validates");
 
-        let module = construct_process_module(&wiring, &facilities, &items, "root", "internal");
+        let module = construct_process_module(
+            &wiring,
+            &facilities,
+            &items,
+            &transports(),
+            "root",
+            "internal",
+        );
         assert!(module.success, "{:?}", module.growth.diagnostics);
         let report = compose_process_module_with_facility(
             &wiring,
             &facilities,
             &items,
+            &transports(),
             &module,
             "target",
             "root-target",
@@ -1152,7 +1340,24 @@ mod tests {
         assert!(report.statistics.area_lower_bound_rejections > 0);
         let composite = report.composite.as_ref().expect("composite node");
         assert_eq!(composite.placements.len(), 4);
-        assert_eq!(composite.transport_networks.len(), 3);
+        assert_eq!(composite.transport_networks.len(), 4);
+        let composed_lanes = composite
+            .transport_networks
+            .iter()
+            .filter(|network| {
+                network
+                    .id
+                    .starts_with("constructive-composition:root-target:lane:")
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(composed_lanes.len(), 2);
+        assert!(composed_lanes.iter().all(|network| {
+            network.terminals[0].rate
+                == Rate {
+                    numerator: 1,
+                    denominator: 1,
+                }
+        }));
         assert_eq!(composite.internal_requirements.len(), 3);
         assert!(
             composite
