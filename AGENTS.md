@@ -74,6 +74,7 @@
 - A construction failure is a structured planner failure, not a global infeasibility proof. Diagnostics must identify the failing stage, network, facility group, or exhausted bound.
 - Keep the former global exact joint solver as isolated research tooling. Production APIs and normal CLI commands must not invoke it, automatically fall back to it, or expose its timeouts as production planner failures.
 - Before committing each planner slice, compare it against `docs/designs/2026-09-02.00-constructive-layout-planner.md` and this policy.
+- The user-approved placement-only visual diagnostic may place all facilities without routing, outside production commands. It must label the output as unvalidated for factory use, preserve a frozen geometry artifact for a later fixed-placement routing probe, and never become a production fallback. Belt-first visual orientation/traversal in this diagnostic does not change production pipe-first routing.
 
 ## Exact Search Research Policy
 
