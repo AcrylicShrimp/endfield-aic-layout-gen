@@ -1,7 +1,9 @@
 //! Commodity-network attachment and independent constructive witness validation.
+mod first;
 #[cfg(test)]
 mod tests;
 mod validation;
+pub(super) use first::connect_first;
 use std::collections::{BTreeMap, BTreeSet, HashSet, VecDeque};
 pub(super) use validation::validate;
 

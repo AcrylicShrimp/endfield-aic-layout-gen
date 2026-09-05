@@ -16,7 +16,12 @@ use crate::recipes::Rate;
 use super::integrated::{LayoutVisualizationPage, render_layout_history_html};
 
 mod assembly;
-mod automatic_assembly;
+mod production;
+pub use production::{
+    CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION, ConstructiveProductionObstruction,
+    ConstructiveProductionReport, ConstructiveProductionRequest, ConstructiveProductionStep,
+    construct_production, render_constructive_production_html,
+};
 mod capacity;
 mod composition;
 mod first_pipe_frontier;
@@ -37,7 +42,6 @@ fn test_components() -> crate::logistics::ValidatedLogisticsComponentCatalog {
 }
 
 pub use assembly::assemble_constructive_modules;
-pub use automatic_assembly::automatically_assemble_constructive_modules;
 pub use composition::{
     compose_constructive_nodes, compose_process_module_with_facility, construct_facility_node,
     constructive_node_from_process_module,
@@ -444,17 +448,6 @@ fn render_constructive_assembly_history_html(
     Ok(add_capacity_inspection(html, &nodes))
 }
 
-pub fn render_constructive_automatic_assembly_html(
-    report: &ConstructiveAutomaticAssemblyReport,
-    localization: Option<&ValidatedLocalizationCatalog>,
-) -> Result<String, IntegratedLayoutDiagnostic> {
-    render_constructive_assembly_history_html(
-        &report.assembly,
-        Some(&report.port_demand_analysis),
-        localization,
-    )
-}
-
 fn boundary_visualization_networks(
     boundaries: &[ConstructiveProcessModuleBoundary],
     id_prefix: &str,
@@ -498,8 +491,6 @@ pub const CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION: u32 = 2;
 pub const CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION: u32 = 5;
 pub const CONSTRUCTIVE_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 2;
-pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
-pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 5;
 pub const CONSTRUCTIVE_PORT_DEMAND_ANALYSIS_SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
@@ -768,53 +759,6 @@ pub struct ConstructiveAssemblyReport {
     pub completed_modules: usize,
     pub steps: Vec<ConstructiveAssemblyStepReport>,
     pub final_node: Option<ConstructiveNode>,
-    pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-#[serde(deny_unknown_fields)]
-pub struct ConstructiveAutomaticAssemblyRequest {
-    pub schema_version: u32,
-    pub target_instance: String,
-    pub max_steps: usize,
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct ConstructiveAutomaticAssemblyDiscoveryStep {
-    pub index: usize,
-    pub elapsed_ms: u64,
-    pub frontier_requirements: usize,
-    pub candidates_generated: usize,
-    pub module_constructions_failed: usize,
-    pub composition_workers: usize,
-    pub compositions_failed: usize,
-    pub composable_candidates: usize,
-    pub selected_root_instance: String,
-    pub selected_internal_item: String,
-    pub selected_requirement: String,
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct ConstructiveAutomaticAssemblyCandidateFailure {
-    pub stage: String,
-    pub root_instance: String,
-    pub internal_item: String,
-    pub requirement: String,
-    pub composition_statistics: Option<ConstructiveCompositionStatistics>,
-    pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
-}
-
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
-pub struct ConstructiveAutomaticAssemblyReport {
-    pub schema_version: u32,
-    pub success: bool,
-    pub complete: bool,
-    pub max_steps: usize,
-    pub discovery_steps: Vec<ConstructiveAutomaticAssemblyDiscoveryStep>,
-    pub exhausted_candidate_failures: Vec<ConstructiveAutomaticAssemblyCandidateFailure>,
-    pub unresolved_facility_requirements: Vec<String>,
-    pub port_demand_analysis: ConstructivePortDemandAnalysis,
-    pub assembly: ConstructiveAssemblyReport,
     pub diagnostics: Vec<ConstructiveFrontierDiagnostic>,
 }
 

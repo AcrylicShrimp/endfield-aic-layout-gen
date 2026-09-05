@@ -354,18 +354,6 @@ fn direction_key(direction: FacilityPortDirection) -> u8 {
     }
 }
 
-pub(super) fn unavailable_constructive_port_demand_analysis(
-    code: &'static str,
-    message: impl Into<String>,
-) -> ConstructivePortDemandAnalysis {
-    failure(
-        0,
-        vec![ConstructiveFrontierDiagnostic::error(
-            code, "/", None, message,
-        )],
-    )
-}
-
 fn failure(
     boundary_requirements: usize,
     diagnostics: Vec<ConstructiveFrontierDiagnostic>,

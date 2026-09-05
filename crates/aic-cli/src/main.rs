@@ -9,16 +9,15 @@ use aic_data::facilities::{
     validate_facility_catalog,
 };
 use aic_data::layouts::{
-    ConstructiveAssemblyReport, ConstructiveAssemblyRequest, ConstructiveAutomaticAssemblyReport,
-    ConstructiveAutomaticAssemblyRequest, ConstructiveCompositionReport,
+    ConstructiveAssemblyReport, ConstructiveAssemblyRequest, ConstructiveCompositionReport,
     ConstructiveFrontierGrowthReport, ConstructiveFrontierReport, ConstructiveProcessModuleReport,
-    FacilityPlacementDiagnostic, FacilityPlacementReport, FacilityPlacementRequest,
-    IntegratedLayoutDiagnostic, IntegratedLayoutReport, assemble_constructive_modules,
-    automatically_assemble_constructive_modules, compose_process_module_with_facility,
+    ConstructiveProductionReport, ConstructiveProductionRequest, FacilityPlacementDiagnostic,
+    FacilityPlacementReport, FacilityPlacementRequest, IntegratedLayoutDiagnostic,
+    IntegratedLayoutReport, assemble_constructive_modules, compose_process_module_with_facility,
     construct_first_pipe_frontier, construct_frontier_growth, construct_process_module,
-    render_constructive_assembly_html, render_constructive_automatic_assembly_html,
-    render_constructive_composition_html, render_constructive_frontier_growth_html,
-    render_constructive_frontier_html, render_constructive_process_module_html,
+    construct_production, render_constructive_assembly_html, render_constructive_composition_html,
+    render_constructive_frontier_growth_html, render_constructive_frontier_html,
+    render_constructive_process_module_html, render_constructive_production_html,
     render_integrated_layout_html_with_localization, solve_facility_placement,
     solve_integrated_layout_with_time_limit,
 };
@@ -340,8 +339,8 @@ enum LayoutsCommand {
         #[arg(long, value_name = "FILE")]
         localization_catalog: Option<PathBuf>,
     },
-    /// Discover and recursively compose process modules from the production graph.
-    AutoAssembleProcessModules {
+    /// Construct connected facilities at their natural footprint before optimization.
+    ConstructProduction {
         /// Recipe JSON file to load.
         #[arg(long, value_name = "FILE")]
         recipes: PathBuf,
@@ -370,15 +369,23 @@ enum LayoutsCommand {
         #[arg(long)]
         target_instance: String,
 
-        /// Maximum number of automatically selected module attachments.
-        #[arg(long, default_value_t = 1)]
+        /// Maximum number of facility or atomic-cycle growth transactions.
+        #[arg(long, default_value_t = 256)]
         max_steps: usize,
 
-        /// Standalone paginated HTML wireframe for the automatic assembly history.
+        /// Maximum placement attempts in one growth transaction.
+        #[arg(long, default_value_t = 256)]
+        max_placement_attempts: usize,
+
+        /// Maximum A* calls in one growth transaction.
+        #[arg(long, default_value_t = 4096)]
+        max_route_searches: u64,
+
+        /// Standalone paginated HTML history of validated construction states.
         #[arg(long, value_name = "FILE")]
         visualization_output: PathBuf,
 
-        /// Machine-readable automatic assembly report JSON file.
+        /// Machine-readable construction report, including partial-state diagnostics.
         #[arg(long, value_name = "FILE")]
         report_output: PathBuf,
 
@@ -792,7 +799,7 @@ fn run() -> Result<CommandStatus> {
                 report_output,
                 localization_catalog,
             ),
-            LayoutsCommand::AutoAssembleProcessModules {
+            LayoutsCommand::ConstructProduction {
                 recipes,
                 source_plan,
                 facility_catalog,
@@ -801,10 +808,12 @@ fn run() -> Result<CommandStatus> {
                 logistics_component_catalog,
                 target_instance,
                 max_steps,
+                max_placement_attempts,
+                max_route_searches,
                 visualization_output,
                 report_output,
                 localization_catalog,
-            } => auto_assemble_process_modules_command(
+            } => construct_production_command(
                 recipes,
                 source_plan,
                 facility_catalog,
@@ -813,6 +822,8 @@ fn run() -> Result<CommandStatus> {
                 logistics_component_catalog,
                 target_instance,
                 max_steps,
+                max_placement_attempts,
+                max_route_searches,
                 visualization_output,
                 report_output,
                 localization_catalog,
@@ -1767,7 +1778,7 @@ fn assemble_process_modules_command(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn auto_assemble_process_modules_command(
+fn construct_production_command(
     recipes: PathBuf,
     source_plan: PathBuf,
     facility_catalog: PathBuf,
@@ -1776,6 +1787,8 @@ fn auto_assemble_process_modules_command(
     logistics_component_catalog: PathBuf,
     target_instance: String,
     max_steps: usize,
+    max_placement_attempts: usize,
+    max_route_searches: u64,
     visualization_output: PathBuf,
     report_output: PathBuf,
     localization_catalog: Option<PathBuf>,
@@ -1805,12 +1818,14 @@ fn auto_assemble_process_modules_command(
             return Ok(CommandStatus::Failure);
         }
     };
-    let request = ConstructiveAutomaticAssemblyRequest {
-        schema_version: aic_data::layouts::CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REQUEST_SCHEMA_VERSION,
+    let request = ConstructiveProductionRequest {
+        schema_version: aic_data::layouts::CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION,
         target_instance,
         max_steps,
+        max_placement_attempts,
+        max_route_searches,
     };
-    let report = automatically_assemble_constructive_modules(
+    let report = construct_production(
         &wiring,
         &facilities,
         &items,
@@ -1819,17 +1834,22 @@ fn auto_assemble_process_modules_command(
         &request,
     );
     let success = report.success;
-    let html = render_constructive_automatic_assembly_html(&report, localization.as_ref())
-        .map_err(|diagnostic| {
+    // Preserve structured input/construction failures even when there is no geometry to render.
+    write_constructive_production_report_file(&report_output, &report)?;
+    write_constructive_production_report(&report)?;
+    if report.final_node.is_none() {
+        return Ok(CommandStatus::Failure);
+    }
+    let html = render_constructive_production_html(&report, localization.as_ref()).map_err(
+        |diagnostic| {
             anyhow::anyhow!(
-                "constructive automatic assembly visualization failed with {}: {}",
+                "constructive production visualization failed with {}: {}",
                 diagnostic.code,
                 diagnostic.message
             )
-        })?;
+        },
+    )?;
     write_constructive_visualization(&visualization_output, html)?;
-    write_constructive_automatic_assembly_report_file(&report_output, &report)?;
-    write_constructive_automatic_assembly_report(&report)?;
     if success {
         Ok(CommandStatus::Success)
     } else {
@@ -2421,37 +2441,35 @@ fn write_constructive_assembly_report_file(
     Ok(())
 }
 
-fn write_constructive_automatic_assembly_report(
-    report: &ConstructiveAutomaticAssemblyReport,
-) -> Result<()> {
+fn write_constructive_production_report(report: &ConstructiveProductionReport) -> Result<()> {
     serde_json::to_writer_pretty(std::io::stdout().lock(), report)
-        .context("failed to write constructive automatic assembly report")?;
+        .context("failed to write constructive production report")?;
     println!();
 
     Ok(())
 }
 
-fn write_constructive_automatic_assembly_report_file(
+fn write_constructive_production_report_file(
     output: &Path,
-    report: &ConstructiveAutomaticAssemblyReport,
+    report: &ConstructiveProductionReport,
 ) -> Result<()> {
     if let Some(parent) = output.parent() {
         std::fs::create_dir_all(parent).with_context(|| {
             format!(
-                "failed to create constructive automatic assembly report directory {}",
+                "failed to create constructive production report directory {}",
                 parent.display()
             )
         })?;
     }
     let file = std::fs::File::create(output).with_context(|| {
         format!(
-            "failed to create constructive automatic assembly report {}",
+            "failed to create constructive production report {}",
             output.display()
         )
     })?;
     serde_json::to_writer_pretty(file, report).with_context(|| {
         format!(
-            "failed to write constructive automatic assembly report {}",
+            "failed to write constructive production report {}",
             output.display()
         )
     })?;
@@ -2854,11 +2872,11 @@ mod tests {
     }
 
     #[test]
-    fn parses_automatic_constructive_assembly_command() {
+    fn parses_completion_first_production_command() {
         let cli = Cli::try_parse_from([
             "aic-cli",
             "layouts",
-            "auto-assemble-process-modules",
+            "construct-production",
             "--recipes",
             "recipes.json",
             "--source-plan",
@@ -2876,17 +2894,19 @@ mod tests {
             "--max-steps",
             "2",
             "--visualization-output",
-            "automatic.html",
+            "production.html",
             "--report-output",
-            "automatic.json",
+            "production.json",
         ])
-        .expect("automatic constructive assembly CLI should parse");
+        .expect("completion-first production CLI should parse");
 
         let Command::Layouts {
             command:
-                LayoutsCommand::AutoAssembleProcessModules {
+                LayoutsCommand::ConstructProduction {
                     target_instance,
                     max_steps,
+                    max_placement_attempts,
+                    max_route_searches,
                     transport_catalog,
                     visualization_output,
                     report_output,
@@ -2894,13 +2914,22 @@ mod tests {
                 },
         } = cli.command
         else {
-            panic!("expected automatic constructive assembly command")
+            panic!("expected completion-first production command")
         };
         assert_eq!(target_instance, "target");
         assert_eq!(max_steps, 2);
+        assert_eq!(max_placement_attempts, 256);
+        assert_eq!(max_route_searches, 4096);
         assert_eq!(transport_catalog, PathBuf::from("transports.json"));
-        assert_eq!(visualization_output, PathBuf::from("automatic.html"));
-        assert_eq!(report_output, PathBuf::from("automatic.json"));
+        assert_eq!(visualization_output, PathBuf::from("production.html"));
+        assert_eq!(report_output, PathBuf::from("production.json"));
+    }
+
+    #[test]
+    fn rejects_removed_automatic_module_command() {
+        assert!(
+            Cli::try_parse_from(["aic-cli", "layouts", "auto-assemble-process-modules"]).is_err()
+        );
     }
 
     #[test]

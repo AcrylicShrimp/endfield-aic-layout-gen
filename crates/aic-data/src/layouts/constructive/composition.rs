@@ -623,7 +623,10 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
     }
 }
 
-fn merge_nodes(source: &ConstructiveNode, target: &ConstructiveNode) -> ConstructiveNode {
+pub(super) fn merge_nodes(
+    source: &ConstructiveNode,
+    target: &ConstructiveNode,
+) -> ConstructiveNode {
     let mut node = target.clone();
     node.id = format!("composite:{}+{}", target.id, source.id);
     node.placements.extend(source.placements.clone());
@@ -854,7 +857,7 @@ fn translate_port(port: &mut PlacedFacilityPort, dx: i64, dy: i64) {
     port.connection.y += dy;
 }
 
-fn canonicalize_node(node: &ConstructiveNode) -> ConstructiveNode {
+pub(super) fn canonicalize_node(node: &ConstructiveNode) -> ConstructiveNode {
     let minimum_x = node
         .placements
         .iter()
