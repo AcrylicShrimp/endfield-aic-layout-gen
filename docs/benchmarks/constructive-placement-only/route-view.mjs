@@ -27,9 +27,10 @@ for(const id of routing.unresolved_internal){const e=requirements.get(id);select
 const control=document.createElement('label');control.textContent='Inspect failure ';control.append(selector);document.querySelector('header').append(control);
 control.style.display='block';
 const failures=document.createElement('p');failures.id='failure-detail';document.querySelector('header').append(failures);
+const displayedNode=()=>routing.first_failure_state&&selector.value===routing.unresolved_internal[0]?routing.first_failure_state:routing.final_node;
 const originalDraw=draw;
 draw=function(){originalDraw();svg.querySelectorAll('[data-port] title').forEach(t=>t.textContent=t.textContent.replace('unassigned','catalog candidate'));const group=el('g',{'pointer-events':'none'});
- for(const n of routing.final_node.transport_networks){const color=n.transport==='belt'?'light-dark(#9b650c,#e9be6c)':'light-dark(#047c96,#68d9ed)';
+ for(const n of displayedNode().transport_networks){const color=n.transport==='belt'?'light-dark(#9b650c,#e9be6c)':'light-dark(#047c96,#68d9ed)';
   for(const p of n.cells)group.append(el('rect',{x:p.x-shift+.18,y:p.y-shift+.18,width:.64,height:.64,fill:color,opacity:.7}));
   for(const s of n.segments)group.append(el('line',{x1:s.from.x-shift+.5,y1:s.from.y-shift+.5,x2:s.to.x-shift+.5,y2:s.to.y-shift+.5,stroke:color,'stroke-width':.18}));
  }
@@ -37,6 +38,7 @@ draw=function(){originalDraw();svg.querySelectorAll('[data-port] title').forEach
  if(edge){const a=byId.get(edge.source),b=byId.get(edge.target);svg.append(el('path',{d:'M'+(a.x+a.width/2)+' '+(a.y+a.height/2)+' L'+(b.x+b.width/2)+' '+(b.y+b.height/2),fill:'none',stroke:'light-dark(#b72d32,#ff8790)','stroke-width':.14,'stroke-dasharray':'.3 .25'}));
   const attempt=routing.attempts.findLast(t=>t.requirement===edge.id);failures.textContent='Unresolved '+a.label+' → '+b.label+': '+attempt.port_pairs+' lane/attachment trials, '+attempt.astar_searches+' A* calls, '+attempt.witness_rejections+' invalid-witness rejections, '+attempt.future_domain_rejections+' future-domain rejections. Bounded search failure, not infeasibility.';
   failures.textContent+=' Placement index '+attempt.placement_index+', nearest port distance '+attempt.nearest_port_distance+'.';
+  if(displayedNode()!==routing.final_node)failures.textContent+=' Showing the validated state AT THIS FAILURE, before later routing attempts.';
   const preservation=attempt.port_trials.filter(t=>t.preservation_conflict).map(t=>t.preservation_conflict);
   failures.textContent+=' '+preservation.length+' last-port path rejections before materialization.';
   const affected=[...new Set([...attempt.rejected_future_requirements,...preservation])].map(id=>requirements.get(id)).filter(Boolean);
@@ -44,11 +46,12 @@ draw=function(){originalDraw();svg.querySelectorAll('[data-port] title').forEach
  }else failures.textContent='Choose an unresolved requirement to inspect its endpoints and final attempt. No facility relocation was performed.';
  const count=routing.required_internal-routing.unresolved_internal.length;
  document.getElementById('status').textContent=report.placements.length+' facilities · '+count+' / '+routing.required_internal+' internal requirements connected · '+routing.unresolved_external.length+' external requirements pending · '+routing.elapsed_ms.toFixed(1)+' ms routing probe';
+ if(displayedNode()!==routing.final_node)document.getElementById('status').textContent+=' · SHOWN SNAPSHOT: '+displayedNode().internal_requirements.length+' connections at the first failure (counts above are final).';
  if(selected)document.getElementById('selected-details').textContent=document.getElementById('selected-details').textContent.replace('No port assignments or physical route feasibility checks.','Physical routes shown; unresolved requirements and external wiring remain.').replace('Catalog ports (all unassigned):','Catalog port candidates:');
 };
 function fitRouting(){const edge=requirements.get(selector.value);
  const points=edge?[byId.get(edge.source),byId.get(edge.target)].flatMap(p=>[{x:p.x-3,y:p.y-3},{x:p.x+p.width+3,y:p.y+p.height+3}]):
- [...report.placements.flatMap(p=>[{x:p.x-1,y:p.y-1},{x:p.x+p.width+1,y:p.y+p.height+1}]),...routing.final_node.transport_networks.flatMap(n=>n.cells.map(p=>({x:p.x-shift,y:p.y-shift})))];
+ [...report.placements.flatMap(p=>[{x:p.x-1,y:p.y-1},{x:p.x+p.width+1,y:p.y+p.height+1}]),...displayedNode().transport_networks.flatMap(n=>n.cells.map(p=>({x:p.x-shift,y:p.y-shift})))];
  const x=Math.min(...points.map(p=>p.x))-1,y=Math.min(...points.map(p=>p.y))-1;view=[x,y,Math.max(...points.map(p=>p.x))+2-x,Math.max(...points.map(p=>p.y))+2-y];applyView();}
 selector.onchange=()=>{const e=requirements.get(selector.value);selected=e?.source??null;draw();fitRouting();};
 const fit=document.createElement('button');fit.type='button';fit.textContent='Fit view';fit.onclick=fitRouting;control.after(fit);

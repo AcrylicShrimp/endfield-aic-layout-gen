@@ -77,6 +77,7 @@ fn adjacent_opposed_ports_use_one_straight_cell_without_moving_facilities() {
     assert!(r.attempts[0].connected);
     assert!(!r.factory_validated);
     assert!(r.covered_routes_validated);
+    assert!(r.first_failure_state.is_none());
     for (a, b) in input.placements.iter().zip(&r.final_node.placements) {
         assert_eq!((a.x + 4, a.y + 4, a.rotation), (b.x, b.y, b.rotation));
     }
@@ -107,6 +108,33 @@ fn initial_obstruction_remains_explicit_and_cannot_be_reported_as_factory_succes
     assert_eq!(r.initial_empty_domains.len(), 2);
     assert!(r.final_node.transport_networks.is_empty());
     assert!(!r.factory_validated);
+}
+
+#[test]
+fn first_failure_snapshot_excludes_later_successful_routes() {
+    let (mut input, f, i, t, c) = fixture();
+    let mut third = input.placements[1].clone();
+    third.instance = "c".into();
+    third.x = 4;
+    input.placements.push(third);
+    input.required_facilities = 3;
+    let mut later = input.internal_requirements[0].clone();
+    later.id = "later".into();
+    later.source = "b".into();
+    later.target = "c".into();
+    input.internal_requirements.push(later);
+    input.internal_requirements[0].rate = Rate {
+        numerator: 1,
+        denominator: 1,
+    };
+    let r = probe_fixed_routing(&input, &f, &i, &t, &c, 4, 32).unwrap();
+    assert_eq!(r.unresolved_internal, vec!["edge"]);
+    assert_eq!(r.final_node.internal_requirements, vec!["later"]);
+    let snapshot = r.first_failure_state.unwrap();
+    assert!(snapshot.internal_requirements.is_empty());
+    assert!(snapshot.transport_networks.is_empty());
+    assert_eq!(snapshot.placements, r.final_node.placements);
+    network::validate(&snapshot, &f, &t, &c).unwrap();
 }
 
 #[test]

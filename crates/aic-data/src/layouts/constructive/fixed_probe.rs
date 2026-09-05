@@ -69,6 +69,7 @@ pub struct FixedRoutingReport {
     pub unresolved_external: Vec<String>,
     pub initial_empty_domains: Vec<String>,
     pub attempts: Vec<FixedRoutingAttempt>,
+    pub first_failure_state: Option<ConstructiveNode>,
     pub final_node: ConstructiveNode,
     pub elapsed_ms: f64,
 }
@@ -268,6 +269,7 @@ pub fn probe_fixed_routing(
         .collect();
     let mut workspace = RouteWorkspace::new(canvas.width, canvas.height);
     let mut attempts = Vec::new();
+    let mut first_failure_state = None;
     let indices = input
         .placements
         .iter()
@@ -402,6 +404,12 @@ pub fn probe_fixed_routing(
         };
         if let Some(candidate) = result {
             node = candidate;
+        } else if first_failure_state.is_none() {
+            let mut snapshot = node.clone();
+            snapshot.boundary_requirements =
+                refreshed(&snapshot, &boundaries, transports, components);
+            network::report_capacity(&mut snapshot, transports)?;
+            first_failure_state = Some(snapshot);
         }
         attempts.push(FixedRoutingAttempt {
             requirement: edge.id.clone(),
@@ -446,6 +454,7 @@ pub fn probe_fixed_routing(
             .collect(),
         initial_empty_domains,
         attempts,
+        first_failure_state,
         final_node: node,
         elapsed_ms: start.elapsed().as_secs_f64() * 1000.0,
     })
