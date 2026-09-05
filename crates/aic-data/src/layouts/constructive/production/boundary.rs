@@ -1,5 +1,6 @@
 //! Candidate-local occupancy and commodity-local exterior reachability.
 use super::*;
+mod parallel;
 
 const FACILITY: u8 = 1;
 const BELT: u8 = 2;
@@ -14,6 +15,8 @@ pub(super) enum ScreenError {
     Coordinates,
     Resource,
     Allocation,
+    WorkerSpawn,
+    WorkerPanic,
 }
 
 impl ScreenError {
@@ -22,6 +25,8 @@ impl ScreenError {
             Self::Coordinates => "production-boundary-coordinate-overflow",
             Self::Resource => "production-boundary-workspace-budget-exhausted",
             Self::Allocation => "production-boundary-workspace-allocation-failed",
+            Self::WorkerSpawn => "production-boundary-worker-spawn-failed",
+            Self::WorkerPanic => "production-boundary-worker-panicked",
         }
     }
 }
@@ -38,6 +43,11 @@ struct Work {
     visited: u64,
     probes: u64,
     hops: u64,
+}
+
+struct Outcome {
+    blocked: Vec<String>,
+    work: Work,
 }
 
 impl Workspace {
@@ -147,6 +157,15 @@ impl Workspace {
             + self.cells.capacity()
             + self.queue.capacity() * size_of::<usize>()
     }
+
+    fn fork(&self) -> Result<Self, ScreenError> {
+        let mut copy = Self::new(
+            self.width as i64 - 2,
+            (self.cells.len() / self.width) as i64 - 2,
+        )?;
+        copy.occupancy.copy_from_slice(&self.occupancy);
+        Ok(copy)
+    }
 }
 
 fn layer(transport: TransportKind) -> u8 {
@@ -177,57 +196,106 @@ pub(super) fn blocked_boundaries(
     node: &ConstructiveNode,
     transports: &ValidatedTransportCatalog,
     components: &ValidatedLogisticsComponentCatalog,
+    requested_workers: usize,
 ) -> Result<Vec<String>, ScreenError> {
     let span = profile_span(ProfileOp::BoundaryEscape);
     let mut workspace = build_workspace(node)?;
     span.add_work("envelope-cells", workspace.cells.len() as u64);
-    span.add_work("workspace-bytes", workspace.bytes() as u64);
-    span.max_work("peak-workspace-bytes", workspace.bytes() as u64);
     let commodities = node
         .boundary_requirements
         .iter()
         .map(|b| (b.transport, b.item.clone()))
-        .collect::<BTreeSet<_>>();
-    let mut blocked = Vec::new();
-    for (transport, item) in commodities {
-        workspace.reset();
-        let cap = transports.capacity(transport);
-        let rate = Rate::from_quantity_per_duration_ms(cap.quantity, cap.duration_ms).unwrap();
-        let crossings = network::crossings::options(node, transport, &item, rate, components);
-        for ((x, y), (horizontal, _)) in crossings {
-            if let Some(index) = workspace.index(x, y) {
-                workspace.cells[index] |= if horizontal { HORIZONTAL } else { VERTICAL };
-            }
-        }
-        let work = {
-            let _span = profile_span(ProfileOp::BoundaryFlood);
-            workspace.flood(FACILITY | layer(transport))
-        };
-        span.add_work("commodity-screens", 1);
-        span.add_work("cells-visited", work.visited);
-        span.add_work("neighbor-probes", work.probes);
-        span.add_work("crossing-hops", work.hops);
-        for boundary in node
-            .boundary_requirements
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect::<Vec<_>>();
+    let workers = parallel::worker_count(
+        requested_workers,
+        commodities.len(),
+        workspace.bytes(),
+        std::thread::available_parallelism().map_or(1, usize::from),
+    );
+    let bytes = workspace.bytes() * if workers > 1 { workers + 1 } else { 1 };
+    span.add_work("workspace-bytes", bytes as u64);
+    span.max_work("peak-workspace-bytes", bytes as u64);
+    span.max_work("peak-workers", workers as u64);
+    span.add_work("worker-slots", workers as u64);
+    let outcomes = if workers > 1 {
+        span.add_work("parallel-screens", 1);
+        let _dispatch = profile_span(ProfileOp::BoundaryDispatch);
+        parallel::screen(
+            &workspace,
+            &commodities,
+            node,
+            transports,
+            components,
+            workers,
+        )?
+    } else {
+        commodities
             .iter()
-            .filter(|b| b.transport == transport && b.item == item)
-        {
-            if !boundary.attachments.iter().any(|attachment| {
-                let p = match attachment {
-                    ConstructiveBoundaryAttachment::NewPort { port } => &port.connection,
-                    ConstructiveBoundaryAttachment::ExistingNetwork { branch_cell, .. } => {
-                        branch_cell
-                    }
-                };
-                workspace.seen(p.x, p.y)
-            }) {
-                blocked.push(boundary.requirement.clone());
-            }
-        }
+            .map(|(transport, item)| {
+                screen_commodity(
+                    &mut workspace,
+                    node,
+                    transports,
+                    components,
+                    *transport,
+                    item,
+                )
+            })
+            .collect()
+    };
+    let mut blocked = Vec::new();
+    for outcome in outcomes {
+        span.add_work("commodity-screens", 1);
+        span.add_work("cells-visited", outcome.work.visited);
+        span.add_work("neighbor-probes", outcome.work.probes);
+        span.add_work("crossing-hops", outcome.work.hops);
+        blocked.extend(outcome.blocked);
     }
     blocked.sort();
     blocked.dedup();
     Ok(blocked)
+}
+
+fn screen_commodity(
+    workspace: &mut Workspace,
+    node: &ConstructiveNode,
+    transports: &ValidatedTransportCatalog,
+    components: &ValidatedLogisticsComponentCatalog,
+    transport: TransportKind,
+    item: &str,
+) -> Outcome {
+    workspace.reset();
+    let cap = transports.capacity(transport);
+    let rate = Rate::from_quantity_per_duration_ms(cap.quantity, cap.duration_ms).unwrap();
+    let crossings = network::crossings::options(node, transport, item, rate, components);
+    for ((x, y), (horizontal, _)) in crossings {
+        if let Some(index) = workspace.index(x, y) {
+            workspace.cells[index] |= if horizontal { HORIZONTAL } else { VERTICAL };
+        }
+    }
+    let work = {
+        let _span = profile_span(ProfileOp::BoundaryFlood);
+        workspace.flood(FACILITY | layer(transport))
+    };
+    let mut blocked = Vec::new();
+    for boundary in node
+        .boundary_requirements
+        .iter()
+        .filter(|b| b.transport == transport && b.item == item)
+    {
+        if !boundary.attachments.iter().any(|attachment| {
+            let p = match attachment {
+                ConstructiveBoundaryAttachment::NewPort { port } => &port.connection,
+                ConstructiveBoundaryAttachment::ExistingNetwork { branch_cell, .. } => branch_cell,
+            };
+            workspace.seen(p.x, p.y)
+        }) {
+            blocked.push(boundary.requirement.clone());
+        }
+    }
+    Outcome { blocked, work }
 }
 
 fn build_workspace(node: &ConstructiveNode) -> Result<Workspace, ScreenError> {

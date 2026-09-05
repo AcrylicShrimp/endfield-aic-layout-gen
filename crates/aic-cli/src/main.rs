@@ -383,6 +383,10 @@ enum LayoutsCommand {
         #[arg(long, default_value_t = 4096)]
         max_route_searches: u64,
 
+        /// Maximum boundary-analysis workers (1..=16), capped by host/jobs/memory; 1 is serial.
+        #[arg(long, default_value_t = 4)]
+        analysis_workers: usize,
+
         /// Emit aggregate operation timings as one compact JSON record on stderr.
         #[arg(long)]
         profile: bool,
@@ -816,6 +820,7 @@ fn run() -> Result<CommandStatus> {
                 max_steps,
                 max_placement_attempts,
                 max_route_searches,
+                analysis_workers,
                 profile,
                 visualization_output,
                 report_output,
@@ -832,6 +837,7 @@ fn run() -> Result<CommandStatus> {
                     max_steps,
                     max_placement_attempts,
                     max_route_searches,
+                    analysis_workers,
                     visualization_output,
                     report_output,
                     localization_catalog,
@@ -1835,6 +1841,7 @@ fn construct_production_command(
     max_steps: usize,
     max_placement_attempts: usize,
     max_route_searches: u64,
+    analysis_workers: usize,
     visualization_output: PathBuf,
     report_output: PathBuf,
     localization_catalog: Option<PathBuf>,
@@ -1890,6 +1897,7 @@ fn construct_production_command(
         max_steps,
         max_placement_attempts,
         max_route_searches,
+        analysis_workers,
     };
     let report = construct_production(
         &wiring,
@@ -3039,6 +3047,7 @@ mod tests {
                     max_placement_attempts,
                     max_route_searches,
                     profile,
+                    analysis_workers,
                     transport_catalog,
                     visualization_output,
                     report_output,
@@ -3052,6 +3061,7 @@ mod tests {
         assert_eq!(max_steps, 2);
         assert_eq!(max_placement_attempts, 256);
         assert_eq!(max_route_searches, 4096);
+        assert_eq!(analysis_workers, 4);
         assert!(profile);
         assert_eq!(transport_catalog, PathBuf::from("transports.json"));
         assert_eq!(visualization_output, PathBuf::from("production.html"));

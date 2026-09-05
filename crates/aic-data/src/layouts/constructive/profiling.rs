@@ -23,6 +23,7 @@ pub enum ConstructiveProfileOperation {
     BoundaryEscape,
     BoundaryWorkspace,
     BoundaryFlood,
+    BoundaryDispatch,
     NetworkValidation,
     ValidationSetup,
     ValidationCells,
@@ -68,12 +69,33 @@ pub struct ConstructiveRuntimeProfile {
     pub scope: &'static str,
     pub elapsed_ns: u128,
     pub operations: BTreeMap<ConstructiveProfileOperation, ConstructiveOperationTiming>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub workers: Option<ConstructiveWorkerProfile>,
+}
+
+#[derive(Debug, Default, Serialize)]
+pub struct ConstructiveWorkerProfile {
+    pub captures: u64,
+    pub busy_captures: u64,
+    pub jobs: u64,
+    pub wall_ns_sum: u128,
+    pub max_parallelism: usize,
+    pub slots: BTreeMap<usize, ConstructiveWorkerLoad>,
+    pub operations: BTreeMap<ConstructiveProfileOperation, ConstructiveOperationTiming>,
+}
+
+#[derive(Debug, Default, Serialize)]
+pub struct ConstructiveWorkerLoad {
+    pub captures: u64,
+    pub jobs: u64,
+    pub wall_ns_sum: u128,
 }
 
 #[derive(Default)]
 struct Collector {
     stack: Vec<(Instant, u128)>,
     operations: BTreeMap<ConstructiveProfileOperation, ConstructiveOperationTiming>,
+    workers: ConstructiveWorkerProfile,
 }
 
 thread_local! {
@@ -88,7 +110,8 @@ impl Drop for Capture {
     }
 }
 
-/// Capture only the calling thread. Nested captures return an error without disturbing the outer
+/// Capture the calling thread and explicitly merged worker captures. Nested captures on the same
+/// thread return an error without disturbing the outer
 /// capture. A panic unwinds the scopes and disables collection before propagating to the caller.
 pub fn collect_constructive_profile<T>(
     action: impl FnOnce() -> T,
@@ -114,11 +137,60 @@ pub fn collect_constructive_profile<T>(
         ConstructiveRuntimeProfile {
             schema_version: 1,
             clock: "monotonic-wall-time",
-            scope: "calling-thread-only",
+            scope: if collector.workers.captures == 0 {
+                "calling-thread-only"
+            } else {
+                "calling-thread-with-separate-worker-aggregates"
+            },
             elapsed_ns,
             operations: collector.operations,
+            workers: (collector.workers.captures > 0).then_some(collector.workers),
         },
     ))
+}
+
+pub(super) fn enabled() -> bool {
+    ACTIVE.with(|active| active.borrow().is_some())
+}
+
+/// Worker durations overlap each other and the caller. Never add them to the caller's span stack.
+pub(super) fn merge_workers(
+    profiles: Vec<(usize, ConstructiveRuntimeProfile)>,
+    peak_active: usize,
+) {
+    ACTIVE.with(|active| {
+        let mut active = active.borrow_mut();
+        let Some(collector) = active.as_mut() else {
+            return;
+        };
+        let workers = &mut collector.workers;
+        workers.max_parallelism = workers.max_parallelism.max(peak_active);
+        for (slot, (jobs, profile)) in profiles.into_iter().enumerate() {
+            workers.captures += 1;
+            workers.busy_captures += u64::from(jobs > 0);
+            workers.jobs += jobs as u64;
+            workers.wall_ns_sum += profile.elapsed_ns;
+            let load = workers.slots.entry(slot).or_default();
+            load.captures += 1;
+            load.jobs += jobs as u64;
+            load.wall_ns_sum += profile.elapsed_ns;
+            for (operation, row) in profile.operations {
+                let total = workers.operations.entry(operation).or_default();
+                total.calls += row.calls;
+                total.inclusive_ns += row.inclusive_ns;
+                total.exclusive_ns += row.exclusive_ns;
+                total.max_ns = total.max_ns.max(row.max_ns);
+                for (key, value) in row.work {
+                    let current = total.work.entry(key).or_default();
+                    if key.starts_with("peak-") {
+                        *current = (*current).max(value);
+                    } else {
+                        *current += value;
+                    }
+                }
+            }
+        }
+    });
 }
 
 /// Measure a pipeline operation without exposing a guard that could escape its capture.
@@ -217,6 +289,43 @@ impl Drop for Span {
 mod tests {
     use super::*;
     use ConstructiveProfileOperation::{Construction, SharedPath};
+
+    #[test]
+    fn worker_durations_and_operations_are_separate_from_the_calling_thread_stack() {
+        let (_, profile) = collect_constructive_profile(|| {
+            measure_constructive_operation(Construction, || {
+                let profiles = std::thread::scope(|scope| {
+                    (0..2)
+                        .map(|_| {
+                            scope.spawn(|| {
+                                collect_constructive_profile(|| {
+                                    measure_constructive_operation(SharedPath, || 7)
+                                })
+                                .unwrap()
+                                .1
+                            })
+                        })
+                        .collect::<Vec<_>>()
+                        .into_iter()
+                        .map(|h| (1, h.join().unwrap()))
+                        .collect()
+                });
+                merge_workers(profiles, 2);
+            });
+        })
+        .unwrap();
+        assert_eq!(profile.operations.len(), 1);
+        assert_eq!(
+            profile.operations[&Construction].exclusive_ns,
+            profile.operations[&Construction].inclusive_ns
+        );
+        let workers = profile.workers.unwrap();
+        assert_eq!(workers.jobs, 2);
+        assert_eq!(workers.captures, 2);
+        assert_eq!(workers.operations[&SharedPath].calls, 2);
+        assert_eq!(workers.slots.values().map(|s| s.jobs).sum::<u64>(), 2);
+        assert!(workers.wall_ns_sum >= workers.operations[&SharedPath].exclusive_ns);
+    }
 
     #[test]
     fn accounting_subtracts_children_and_keeps_maximum() {

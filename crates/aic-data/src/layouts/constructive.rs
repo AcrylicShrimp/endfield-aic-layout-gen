@@ -32,7 +32,8 @@ mod process_module;
 mod profiling;
 pub use profiling::{
     ConstructiveOperationTiming, ConstructiveProfileOperation, ConstructiveRuntimeProfile,
-    collect_constructive_profile, measure_constructive_operation,
+    ConstructiveWorkerLoad, ConstructiveWorkerProfile, collect_constructive_profile,
+    measure_constructive_operation,
 };
 use profiling::{ConstructiveProfileOperation as ProfileOp, span as profile_span};
 mod routing;

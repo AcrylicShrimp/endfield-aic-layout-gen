@@ -78,6 +78,7 @@ fn request(seed: &str) -> ConstructiveProductionRequest {
         max_steps: 64,
         max_placement_attempts: 128,
         max_route_searches: 512,
+        analysis_workers: 1,
     }
 }
 
@@ -126,6 +127,77 @@ fn profiling_preserves_nodes_choices_and_counts_actual_routes() {
             .sum::<u128>(),
         profile.operations[&ProfileOp::Construction].inclusive_ns
     );
+}
+
+#[test]
+fn bounded_parallel_analysis_preserves_witnesses_budgets_and_worker_work() {
+    let (f, i, t, c) = catalogs();
+    let w = wiring(&[("a", "b"), ("b", "c")]);
+    let serial = construct_production(&w, &f, &i, &t, &c, &request("c"));
+    for workers in [1, 2, 4, 8] {
+        let mut req = request("c");
+        req.analysis_workers = workers;
+        let parallel = construct_production(&w, &f, &i, &t, &c, &req);
+        assert_eq!(parallel.final_node, serial.final_node);
+        assert_eq!(parallel.diagnostics, serial.diagnostics);
+        for (a, b) in parallel.steps.iter().zip(&serial.steps) {
+            assert_eq!(a.statistics, b.statistics);
+            assert_eq!(a.node, b.node);
+        }
+    }
+    // Distinct commodities force multiple independent jobs without changing the query geometry.
+    let mut node = serial.steps[0].node.clone();
+    let first = node.boundary_requirements[0].clone();
+    for suffix in ["-second", "-third", "-fourth"] {
+        let mut b = first.clone();
+        b.item.push_str(suffix);
+        b.requirement.push_str(suffix);
+        node.boundary_requirements.push(b);
+    }
+    let (expected, one) =
+        collect_constructive_profile(|| blocked_boundaries(&node, &t, &c, 1)).unwrap();
+    for workers in [2, 4, 8] {
+        for _ in 0..3 {
+            let (result, profile) =
+                collect_constructive_profile(|| blocked_boundaries(&node, &t, &c, workers))
+                    .unwrap();
+            assert_eq!(result, expected);
+            let total = &profile.operations[&ProfileOp::BoundaryEscape];
+            for key in [
+                "commodity-screens",
+                "cells-visited",
+                "neighbor-probes",
+                "crossing-hops",
+            ] {
+                assert_eq!(
+                    total.work[key],
+                    one.operations[&ProfileOp::BoundaryEscape].work[key]
+                );
+            }
+            if std::thread::available_parallelism().unwrap().get() > 1 {
+                let worker = profile.workers.unwrap();
+                assert_eq!(worker.jobs, total.work["commodity-screens"]);
+                assert_eq!(
+                    worker.operations[&ProfileOp::BoundaryFlood].calls,
+                    worker.jobs
+                );
+                assert!(worker.max_parallelism <= workers);
+            }
+        }
+    }
+}
+
+#[test]
+fn analysis_worker_limits_return_structured_input_errors() {
+    let (f, i, t, c) = catalogs();
+    let w = wiring(&[("a", "b")]);
+    for count in [0, 17] {
+        let mut req = request("b");
+        req.analysis_workers = count;
+        let report = construct_production(&w, &f, &i, &t, &c, &req);
+        assert!(!report.success);
+        assert_eq!(report.diagnostics[0].code, "production-input-invalid");
+    }
 }
 
 #[test]
@@ -187,10 +259,13 @@ fn boundary_screen_matches_reference_across_growth_commodities_and_geometry_chan
                             }
                         }
                     }
-                    assert_eq!(
-                        blocked_boundaries(&node, &t, &c).unwrap(),
-                        boundary::reference::blocked_boundaries(&node, &t, &c)
-                    );
+                    let expected = boundary::reference::blocked_boundaries(&node, &t, &c);
+                    for workers in [1, 4] {
+                        assert_eq!(
+                            blocked_boundaries(&node, &t, &c, workers).unwrap(),
+                            expected
+                        );
+                    }
                 }
             }
         }
@@ -204,7 +279,7 @@ fn boundary_coordinate_failure_is_not_a_blocked_requirement() {
     let mut node = r.final_node.unwrap();
     node.placements[0].x = i64::MAX;
     assert_eq!(
-        blocked_boundaries(&node, &t, &c),
+        blocked_boundaries(&node, &t, &c, 1),
         Err(boundary::ScreenError::Coordinates)
     );
 }
@@ -398,7 +473,7 @@ fn separated_moss_fan_in_preserves_four_total_output_port_domains() {
         .node;
     assert_eq!(n.placements.len(), 3);
     assert_eq!(n.boundary_requirements.len(), 2);
-    assert!(blocked_boundaries(&n, &t, &c).unwrap().is_empty());
+    assert!(blocked_boundaries(&n, &t, &c, 1).unwrap().is_empty());
     let used = n
         .transport_networks
         .iter()

@@ -31,6 +31,12 @@ pub struct ConstructiveProductionRequest {
     pub max_steps: usize,
     pub max_placement_attempts: usize,
     pub max_route_searches: u64,
+    #[serde(default = "default_analysis_workers")]
+    pub analysis_workers: usize,
+}
+
+fn default_analysis_workers() -> usize {
+    4
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -161,9 +167,11 @@ pub fn construct_production(
         || request.max_steps == 0
         || request.max_placement_attempts == 0
         || request.max_route_searches == 0
+        || request.analysis_workers == 0
+        || request.analysis_workers > 16
         || !ids.contains(&request.target_instance)
     {
-        report.diagnostics.push(failure("production-input-invalid",&request.target_instance,"expected valid wiring, supported schema, an existing seed and positive operation budgets"));
+        report.diagnostics.push(failure("production-input-invalid",&request.target_instance,"expected valid wiring, supported schema, an existing seed, positive operation budgets and 1..=16 analysis workers"));
         return report;
     }
     let all_ids = wiring
@@ -728,6 +736,7 @@ impl Constructor<'_> {
             let reasons = &mut self.reasons;
             let last_obstruction = &mut self.last_obstruction;
             let screen_failure = &mut self.screen_failure;
+            let analysis_workers = self.request.analysis_workers;
             let mut accept = |n: &ConstructiveNode| {
                 if let Err(d) = network::validate(n, facilities, transports, components) {
                     *reasons.entry(d.message).or_default() += 1;
@@ -743,14 +752,19 @@ impl Constructor<'_> {
                     *reasons.entry("remaining capacity".into()).or_default() += 1;
                     return false;
                 }
-                let blocked_requirements = match blocked_boundaries(n, transports, components) {
+                let blocked_requirements = match blocked_boundaries(
+                    n,
+                    transports,
+                    components,
+                    analysis_workers,
+                ) {
                     Ok(blocked) => blocked,
                     Err(error) => {
                         *reasons.entry(error.code().into()).or_default() += 1;
                         *screen_failure = Some(failure(
                             error.code(),
                             &edge.id,
-                            "boundary screening could not allocate or represent its candidate-local workspace; this is not an inaccessible-boundary or infeasibility result",
+                            "boundary screening encountered a workspace or worker failure; this is not an inaccessible-boundary or infeasibility result",
                         ));
                         return false;
                     }
