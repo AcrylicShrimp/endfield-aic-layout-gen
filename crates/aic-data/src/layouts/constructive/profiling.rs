@@ -8,7 +8,7 @@ pub enum ConstructiveProfileOperation {
     InputLoading,
     Construction,
     ReportFile,
-    ReportStdout,
+    CompletionSummary,
     HtmlRendering,
     HtmlWriting,
     GroupGrowth,

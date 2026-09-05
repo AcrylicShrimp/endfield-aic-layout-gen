@@ -3,6 +3,11 @@
 Date: 2026-09-05. Instrumentation-only slice based on `5cfe2ed`. No candidate-order, routing,
 validation, catalog, construction-report or HTML-content change is intended.
 
+Historical baseline: these measurements were captured at the profiling slice `dbb5ebd`, before
+the stdout cutover. The current command emits a short summary; see
+`../constructive-output-summary/report.md` for the subsequent change. The current harness checks
+that new summary contract. Reproducing the old stdout cost requires the historical revision.
+
 ## Result
 
 The main construction costs are repeated existing-network path searches and future-boundary

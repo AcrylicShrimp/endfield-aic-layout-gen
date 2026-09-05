@@ -11,17 +11,17 @@ use aic_data::facilities::{
 use aic_data::layouts::{
     ConstructiveAssemblyReport, ConstructiveAssemblyRequest, ConstructiveCompositionReport,
     ConstructiveFrontierGrowthReport, ConstructiveFrontierReport, ConstructiveProcessModuleReport,
-    ConstructiveProductionReport, ConstructiveProductionRequest,
-    ConstructiveProfileOperation as ProfileOp, FacilityPlacementDiagnostic,
-    FacilityPlacementReport, FacilityPlacementRequest, IntegratedLayoutDiagnostic,
-    IntegratedLayoutReport, assemble_constructive_modules, collect_constructive_profile,
-    compose_process_module_with_facility, construct_first_pipe_frontier, construct_frontier_growth,
-    construct_process_module, construct_production,
-    measure_constructive_operation as measure_operation, render_constructive_assembly_html,
-    render_constructive_composition_html, render_constructive_frontier_growth_html,
-    render_constructive_frontier_html, render_constructive_process_module_html,
-    render_constructive_production_html, render_integrated_layout_html_with_localization,
-    solve_facility_placement, solve_integrated_layout_with_time_limit,
+    ConstructiveProductionRequest, ConstructiveProfileOperation as ProfileOp,
+    FacilityPlacementDiagnostic, FacilityPlacementReport, FacilityPlacementRequest,
+    IntegratedLayoutDiagnostic, IntegratedLayoutReport, assemble_constructive_modules,
+    collect_constructive_profile, compose_process_module_with_facility,
+    construct_first_pipe_frontier, construct_frontier_growth, construct_process_module,
+    construct_production, measure_constructive_operation as measure_operation,
+    render_constructive_assembly_html, render_constructive_composition_html,
+    render_constructive_frontier_growth_html, render_constructive_frontier_html,
+    render_constructive_process_module_html, render_constructive_production_html,
+    render_integrated_layout_html_with_localization, solve_facility_placement,
+    solve_integrated_layout_with_time_limit,
 };
 use aic_data::localization::{
     LocalizationCatalogValidationReport, ValidatedLocalizationCatalog, load_localization_catalog,
@@ -391,7 +391,7 @@ enum LayoutsCommand {
         #[arg(long, value_name = "FILE")]
         visualization_output: PathBuf,
 
-        /// Machine-readable construction report, including partial-state diagnostics.
+        /// Full JSON report and detailed diagnostics. Stdout contains only a short summary.
         #[arg(long, value_name = "FILE")]
         report_output: PathBuf,
 
@@ -1471,11 +1471,14 @@ fn construct_first_pipe_frontier_command(
     localization_catalog: Option<PathBuf>,
 ) -> Result<CommandStatus> {
     let localization = load_visualization_localization(localization_catalog.as_deref())?;
-    let Some((wiring, facilities, items)) =
-        load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
-    else {
-        return Ok(CommandStatus::Failure);
-    };
+    let (wiring, facilities, items) =
+        match load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)? {
+            Ok(inputs) => inputs,
+            Err(report) => {
+                write_constructive_input_failure(&report)?;
+                return Ok(CommandStatus::Failure);
+            }
+        };
     let report = construct_first_pipe_frontier(&wiring, &facilities, &items);
     let success = report.success;
     let html = render_constructive_frontier_html(&report, localization.as_ref()).map_err(
@@ -1507,11 +1510,14 @@ fn construct_frontier_growth_command(
     localization_catalog: Option<PathBuf>,
 ) -> Result<CommandStatus> {
     let localization = load_visualization_localization(localization_catalog.as_deref())?;
-    let Some((wiring, facilities, items)) =
-        load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
-    else {
-        return Ok(CommandStatus::Failure);
-    };
+    let (wiring, facilities, items) =
+        match load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)? {
+            Ok(inputs) => inputs,
+            Err(report) => {
+                write_constructive_input_failure(&report)?;
+                return Ok(CommandStatus::Failure);
+            }
+        };
     let transports = match ValidatedTransportCatalog::try_from_catalog(load_transport_catalog(
         &transport_catalog,
     )?) {
@@ -1571,11 +1577,14 @@ fn construct_process_module_command(
         )
     })?;
     let localization = load_visualization_localization(localization_catalog.as_deref())?;
-    let Some((wiring, facilities, items)) =
-        load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
-    else {
-        return Ok(CommandStatus::Failure);
-    };
+    let (wiring, facilities, items) =
+        match load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)? {
+            Ok(inputs) => inputs,
+            Err(report) => {
+                write_constructive_input_failure(&report)?;
+                return Ok(CommandStatus::Failure);
+            }
+        };
     let transports = match ValidatedTransportCatalog::try_from_catalog(load_transport_catalog(
         &transport_catalog,
     )?) {
@@ -1640,11 +1649,14 @@ fn compose_process_module_command(
         )
     })?;
     let localization = load_visualization_localization(localization_catalog.as_deref())?;
-    let Some((wiring, facilities, items)) =
-        load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
-    else {
-        return Ok(CommandStatus::Failure);
-    };
+    let (wiring, facilities, items) =
+        match load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)? {
+            Ok(inputs) => inputs,
+            Err(report) => {
+                write_constructive_input_failure(&report)?;
+                return Ok(CommandStatus::Failure);
+            }
+        };
     let transports = match ValidatedTransportCatalog::try_from_catalog(load_transport_catalog(
         &transport_catalog,
     )?) {
@@ -1731,11 +1743,14 @@ fn assemble_process_modules_command(
         )
     })?;
     let localization = load_visualization_localization(localization_catalog.as_deref())?;
-    let Some((wiring, facilities, items)) =
-        load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
-    else {
-        return Ok(CommandStatus::Failure);
-    };
+    let (wiring, facilities, items) =
+        match load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)? {
+            Ok(inputs) => inputs,
+            Err(report) => {
+                write_constructive_input_failure(&report)?;
+                return Ok(CommandStatus::Failure);
+            }
+        };
     let transports = match ValidatedTransportCatalog::try_from_catalog(load_transport_catalog(
         &transport_catalog,
     )?) {
@@ -1825,28 +1840,34 @@ fn construct_production_command(
     localization_catalog: Option<PathBuf>,
 ) -> Result<CommandStatus> {
     let loaded = measure_operation(ProfileOp::InputLoading, || -> Result<_> {
-        let components = ValidatedLogisticsComponentCatalog::try_from_catalog(
+        let components = match ValidatedLogisticsComponentCatalog::try_from_catalog(
             load_logistics_component_catalog(&logistics_component_catalog)?,
-        )
-        .map_err(|report| {
-            anyhow::anyhow!(
-                "invalid logistics component catalog '{}': {:?}",
-                logistics_component_catalog.display(),
-                report.diagnostics
-            )
-        })?;
+        ) {
+            Ok(components) => components,
+            Err(report) => {
+                write_constructive_production_report_file(&report_output, &report)?;
+                return Ok(None);
+            }
+        };
         let localization = load_visualization_localization(localization_catalog.as_deref())?;
-        let Some((wiring, facilities, items)) =
-            load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
-        else {
-            return Ok(None);
+        let (wiring, facilities, items) = match load_constructive_inputs(
+            &recipes,
+            &source_plan,
+            &facility_catalog,
+            &item_catalog,
+        )? {
+            Ok(inputs) => inputs,
+            Err(report) => {
+                write_constructive_production_report_file(&report_output, &report)?;
+                return Ok(None);
+            }
         };
         let transports = match ValidatedTransportCatalog::try_from_catalog(load_transport_catalog(
             &transport_catalog,
         )?) {
             Ok(catalog) => catalog,
             Err(report) => {
-                write_transport_catalog_validation_report(&report)?;
+                write_constructive_production_report_file(&report_output, &report)?;
                 return Ok(None);
             }
         };
@@ -1860,6 +1881,7 @@ fn construct_production_command(
         )))
     })?;
     let Some((components, localization, wiring, facilities, items, transports)) = loaded else {
+        write_constructive_production_summary("invalid-input", false, &report_output, None)?;
         return Ok(CommandStatus::Failure);
     };
     let request = ConstructiveProductionRequest {
@@ -1879,13 +1901,9 @@ fn construct_production_command(
     );
     let success = report.success;
     // Preserve structured input/construction failures even when there is no geometry to render.
-    measure_operation(ProfileOp::ReportFile, || {
-        write_constructive_production_report_file(&report_output, &report)
-    })?;
-    measure_operation(ProfileOp::ReportStdout, || {
-        write_constructive_production_report(&report)
-    })?;
+    write_constructive_production_report_file(&report_output, &report)?;
     if report.final_node.is_none() {
+        write_constructive_production_summary(&report.status, success, &report_output, None)?;
         return Ok(CommandStatus::Failure);
     }
     let html = render_constructive_production_html(&report, localization.as_ref()).map_err(
@@ -1900,11 +1918,39 @@ fn construct_production_command(
     measure_operation(ProfileOp::HtmlWriting, || {
         write_constructive_visualization(&visualization_output, html)
     })?;
+    write_constructive_production_summary(
+        &report.status,
+        success,
+        &report_output,
+        Some(&visualization_output),
+    )?;
     if success {
         Ok(CommandStatus::Success)
     } else {
         Ok(CommandStatus::Failure)
     }
+}
+
+#[derive(Debug, Serialize)]
+#[serde(untagged)]
+enum ConstructiveInputFailure {
+    Recipes(ValidationReport),
+    Throughput(ContextualThroughputReport),
+    FacilityRequirements(ContextualFacilityRequirementReport),
+    Wiring(FacilityInstanceWiringReport),
+    Facilities(FacilityCatalogValidationReport),
+    Items(ItemCatalogValidationReport),
+}
+
+fn write_constructive_input_failure(report: &ConstructiveInputFailure) -> Result<()> {
+    use std::io::Write;
+    let mut stdout = std::io::stdout().lock();
+    serde_json::to_writer_pretty(&mut stdout, report)
+        .context("failed to write constructive input validation report")?;
+    stdout
+        .write_all(b"\n")
+        .context("failed to finish constructive input validation report")?;
+    Ok(())
 }
 
 fn load_constructive_inputs(
@@ -1913,35 +1959,34 @@ fn load_constructive_inputs(
     facility_catalog: &Path,
     item_catalog: &Path,
 ) -> Result<
-    Option<(
-        FacilityInstanceWiringReport,
-        ValidatedFacilityCatalog,
-        ValidatedItemCatalog,
-    )>,
+    std::result::Result<
+        (
+            FacilityInstanceWiringReport,
+            ValidatedFacilityCatalog,
+            ValidatedItemCatalog,
+        ),
+        ConstructiveInputFailure,
+    >,
 > {
     let (book, source_plan) = match load_contextual_recipe_request(&recipes, &source_plan)? {
         Ok(inputs) => inputs,
         Err(report) => {
-            serde_json::to_writer_pretty(std::io::stdout().lock(), &report)
-                .context("failed to write validation report")?;
-            println!();
-            return Ok(None);
+            return Ok(Err(ConstructiveInputFailure::Recipes(report)));
         }
     };
     let throughput = book.calculate_contextual_throughput(&source_plan);
     if !throughput.success {
-        write_contextual_throughput_report(&throughput)?;
-        return Ok(None);
+        return Ok(Err(ConstructiveInputFailure::Throughput(throughput)));
     }
     let facility_requirements = calculate_contextual_facility_requirements(&throughput);
     if !facility_requirements.success {
-        write_contextual_facility_requirement_report(&facility_requirements)?;
-        return Ok(None);
+        return Ok(Err(ConstructiveInputFailure::FacilityRequirements(
+            facility_requirements,
+        )));
     }
     let wiring = build_contextual_facility_instance_wiring(&throughput, &facility_requirements);
     if !wiring.success {
-        write_facility_instance_wiring_report(&wiring)?;
-        return Ok(None);
+        return Ok(Err(ConstructiveInputFailure::Wiring(wiring)));
     }
 
     let facilities =
@@ -1949,18 +1994,16 @@ fn load_constructive_inputs(
         {
             Ok(catalog) => catalog,
             Err(report) => {
-                write_facility_catalog_validation_report(&report)?;
-                return Ok(None);
+                return Ok(Err(ConstructiveInputFailure::Facilities(report)));
             }
         };
     let items = match ValidatedItemCatalog::try_from_catalog(load_item_catalog(&item_catalog)?) {
         Ok(catalog) => catalog,
         Err(report) => {
-            write_item_catalog_validation_report(&report)?;
-            return Ok(None);
+            return Ok(Err(ConstructiveInputFailure::Items(report)));
         }
     };
-    Ok(Some((wiring, facilities, items)))
+    Ok(Ok((wiring, facilities, items)))
 }
 
 fn write_constructive_visualization(output: &Path, html: String) -> Result<()> {
@@ -2491,46 +2534,76 @@ fn write_constructive_assembly_report_file(
     Ok(())
 }
 
-fn write_constructive_production_report(report: &ConstructiveProductionReport) -> Result<()> {
-    serde_json::to_writer_pretty(std::io::stdout().lock(), report)
-        .context("failed to write constructive production report")?;
-    println!();
-
-    Ok(())
+#[derive(Serialize)]
+struct ConstructiveProductionSummary<'a> {
+    schema_version: u32,
+    kind: &'static str,
+    status: &'a str,
+    success: bool,
+    report_output: &'a Path,
+    visualization_output: Option<&'a Path>,
 }
 
-fn write_constructive_production_report_file(
-    output: &Path,
-    report: &ConstructiveProductionReport,
+fn write_constructive_production_summary(
+    status: &str,
+    success: bool,
+    report_output: &Path,
+    visualization_output: Option<&Path>,
 ) -> Result<()> {
-    if let Some(parent) = output.parent() {
-        std::fs::create_dir_all(parent).with_context(|| {
+    measure_operation(ProfileOp::CompletionSummary, || {
+        use std::io::Write;
+        let summary = ConstructiveProductionSummary {
+            schema_version: 1,
+            kind: "constructive-production-summary",
+            status,
+            success,
+            report_output,
+            visualization_output,
+        };
+        let mut stdout = std::io::stdout().lock();
+        serde_json::to_writer(&mut stdout, &summary)
+            .context("failed to write constructive completion summary")?;
+        stdout
+            .write_all(b"\n")
+            .context("failed to finish constructive completion summary")?;
+        Ok(())
+    })
+}
+
+fn write_constructive_production_report_file<T: Serialize>(
+    output: &Path,
+    report: &T,
+) -> Result<()> {
+    measure_operation(ProfileOp::ReportFile, || {
+        if let Some(parent) = output.parent() {
+            std::fs::create_dir_all(parent).with_context(|| {
+                format!(
+                    "failed to create constructive production report directory {}",
+                    parent.display()
+                )
+            })?;
+        }
+        let file = std::fs::File::create(output).with_context(|| {
             format!(
-                "failed to create constructive production report directory {}",
-                parent.display()
+                "failed to create constructive production report {}",
+                output.display()
             )
         })?;
-    }
-    let file = std::fs::File::create(output).with_context(|| {
-        format!(
-            "failed to create constructive production report {}",
-            output.display()
-        )
-    })?;
-    let mut writer = std::io::BufWriter::new(file);
-    serde_json::to_writer_pretty(&mut writer, report).with_context(|| {
-        format!(
-            "failed to write constructive production report {}",
-            output.display()
-        )
-    })?;
-    std::io::Write::flush(&mut writer).with_context(|| {
-        format!(
-            "failed to flush constructive production report '{}'",
-            output.display()
-        )
-    })?;
-    Ok(())
+        let mut writer = std::io::BufWriter::new(file);
+        serde_json::to_writer_pretty(&mut writer, report).with_context(|| {
+            format!(
+                "failed to write constructive production report {}",
+                output.display()
+            )
+        })?;
+        std::io::Write::flush(&mut writer).with_context(|| {
+            format!(
+                "failed to flush constructive production report '{}'",
+                output.display()
+            )
+        })?;
+        Ok(())
+    })
 }
 
 fn write_layout_visualization(
