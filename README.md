@@ -27,9 +27,13 @@ cargo run -p aic-cli -- recipes graph --file data/examples/recipes.graph.json --
 
 ## Production Construction
 
-The [active milestones](docs/todos/2026-09-05.05-fast-construction-milestones.md) start with faster
-complete construction, followed by transactional layout improvement. Indexed path queries, dense
-boundary screening and independent reachability are complete; bounded parallel analysis is next.
+The [runtime milestones](docs/todos/2026-09-05.05-fast-construction-milestones.md) are complete:
+indexed paths, dense boundary screening, independent reachability and bounded parallel analysis.
+The [same-host checkpoint](docs/benchmarks/constructive-runtime-checkpoint/report.md) reduces
+Heavy Xiranite construction median from 21.52 to 3.14 s, or 23.22 to 4.83 s including full JSON/HTML,
+with identical factory/search choices. These are measured release results, not universal guarantees.
+Next is [Q1 transactional route improvement](docs/todos/2026-09-05.11-transactional-route-improvement.md);
+its contract is specified, but the improvement pass is not implemented yet.
 
 Construct connected facilities at their natural footprint, accepting the first valid local growth
 instead of optimizing compact modules before the factory is complete:
@@ -45,7 +49,7 @@ cargo run --release -p aic-cli -- layouts construct-production \
   --target-instance 'facility-instance:recipe-occurrence:/target:0' \
   --max-steps 256 --max-placement-attempts 256 --max-route-searches 4096 \
   --visualization-output /tmp/aic-production.html \
-  --report-output /tmp/aic-production.json > /dev/null
+  --report-output /tmp/aic-production.json
 ```
 
 This real example now completes all 59 facilities, 89 internal requirements and seven external
@@ -53,6 +57,11 @@ input/output requirements under the current catalog and validation contract. It 
 `status=complete`, `complete=true`, no unresolved requirements and exit 0. The constructor remains
 heuristic: other requests may return a validated partial layout and a nonzero exit code. There are
 no W/H inputs. Budgets bound operations, not game geometry. The initial layout is not optimized.
+
+Boundary analysis defaults to a ceiling of four workers, capped by host availability, commodity jobs
+and aggregate workspace memory. `--analysis-workers 1` selects serial execution; valid ceilings
+are 1 through 16. Growth, route search and first-feasible acceptance remain ordered. Stdout is one
+short completion JSON line with file paths; full diagnostics/history use the report file.
 
 The `construct-production` command uses request schema 1 and report schema 2. It replaces the removed
 `auto-assemble-process-modules` command and its automatic assembly API. There is no compatibility
