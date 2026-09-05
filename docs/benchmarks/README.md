@@ -21,11 +21,14 @@ and the release reproduction command. The immediate mismatch is that unresolved 
 reference only unused facility ports, while accepted commodity-network semantics also permit a
 capacity-safe branch into an existing same-item network.
 
-The proposed corrective contract is
-`../designs/2026-09-05.00-network-aware-constructive-frontier.md`. It is explicitly not implemented
-yet. It defines segment-local residual capacity, new-port versus existing-network attachments,
-catalog-valid splitter/converger placement, controlled fan-out and overload fixtures, and the Heavy
-Xiranite remeasurement criteria.
+The corrective contract in `../designs/2026-09-05.00-network-aware-constructive-frontier.md` is
+implemented in `443f643`. `constructive-network-attachments/report.md` records catalog-valid shared
+fan-out/merge, capacity and geometry checks, and the twelve-step remeasurement. The run still stops
+at eleven attachments. Its next measured obstruction includes compact new modules with conflicting
+output cells, bridge-free routing, and module ownership. The report explains why rollback is not
+established as necessary and recommends restoring construction-first behavior before further
+partial-layout compactness search. It includes JSON/HTML witnesses and a read-only accessibility
+probe under the repository's bridge model.
 
 ## Heavy Xiranite Known-Bad Baseline
 
