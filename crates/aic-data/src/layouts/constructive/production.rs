@@ -1,4 +1,5 @@
 //! Natural-footprint first-feasible construction, independent of rigid module composition.
+mod audit;
 #[cfg(test)]
 mod tests;
 use super::composition::{canonicalize_node, merge_nodes, rotate_node, translate_node};
@@ -16,6 +17,7 @@ use std::collections::{BTreeMap, BTreeSet, HashSet, VecDeque};
 use std::time::Instant;
 
 pub const CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION: u32 = 1;
+pub const CONSTRUCTIVE_PRODUCTION_REPORT_SCHEMA_VERSION: u32 = 2;
 const CONNECTION_ROUTE_LIMIT: u64 = 64;
 const ROUTING_WORKSPACE_CELL_LIMIT: usize = 1_000_000;
 
@@ -32,6 +34,7 @@ pub struct ConstructiveProductionRequest {
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct ConstructiveProductionStep {
     pub index: usize,
+    pub stage: &'static str,
     pub added_instances: Vec<String>,
     pub elapsed_ms: u64,
     pub placement_attempts: usize,
@@ -114,7 +117,7 @@ pub fn construct_production(
         .map(|e| e.id.clone())
         .collect::<Vec<_>>();
     let mut report = ConstructiveProductionReport {
-        schema_version: CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION,
+        schema_version: CONSTRUCTIVE_PRODUCTION_REPORT_SCHEMA_VERSION,
         request: request.clone(),
         per_connection_route_limit: CONNECTION_ROUTE_LIMIT,
         routing_workspace_cell_limit: ROUTING_WORKSPACE_CELL_LIMIT,
@@ -186,6 +189,48 @@ pub fn construct_production(
             "wiring requires unique node/edge identities, existing endpoints and positive rates",
         ));
         return report;
+    }
+    for e in &wiring.edges {
+        let source = wiring
+            .nodes
+            .iter()
+            .find(|n| match n {
+                FacilityInstanceWiringNode::Facility { id, .. }
+                | FacilityInstanceWiringNode::External { id, .. }
+                | FacilityInstanceWiringNode::Target { id, .. }
+                | FacilityInstanceWiringNode::Surplus { id, .. } => *id == e.source,
+            })
+            .unwrap();
+        let target = wiring
+            .nodes
+            .iter()
+            .find(|n| match n {
+                FacilityInstanceWiringNode::Facility { id, .. }
+                | FacilityInstanceWiringNode::External { id, .. }
+                | FacilityInstanceWiringNode::Target { id, .. }
+                | FacilityInstanceWiringNode::Surplus { id, .. } => *id == e.target,
+            })
+            .unwrap();
+        let source_valid = match source {
+            FacilityInstanceWiringNode::Facility { .. } => true,
+            FacilityInstanceWiringNode::External { item, .. } => *item == e.item,
+            _ => false,
+        };
+        let target_valid = match target {
+            FacilityInstanceWiringNode::Facility { .. } => true,
+            FacilityInstanceWiringNode::Target { item, .. }
+            | FacilityInstanceWiringNode::Surplus { item, .. } => *item == e.item,
+            _ => false,
+        };
+        if !source_valid || !target_valid || (!ids.contains(&e.source) && !ids.contains(&e.target))
+        {
+            report.diagnostics.push(failure(
+                "production-input-invalid",
+                &e.id,
+                "external endpoint role/item mismatch or external-to-external edge",
+            ));
+            return report;
+        }
     }
     let mut current = match c.fresh(&request.target_instance, 0) {
         Ok(node) => node,
@@ -271,6 +316,11 @@ pub fn construct_production(
             report.last_obstruction = c.last_obstruction.take();
             break;
         };
+        if let Err(d) = audit::validate_coverage(&next, wiring, items) {
+            report.status = "validation-failed".into();
+            report.diagnostics.push(d);
+            break;
+        }
         let added = next
             .member_instances
             .iter()
@@ -279,6 +329,7 @@ pub fn construct_production(
             .collect();
         report.steps.push(ConstructiveProductionStep {
             index,
+            stage: "internal-growth",
             added_instances: added,
             elapsed_ms: millis(step_started),
             placement_attempts: c.attempts,
@@ -294,9 +345,91 @@ pub fn construct_production(
         .collect();
     report.internal_complete = report.unresolved_internal_requirements.is_empty()
         && current.member_instances.len() == ids.len();
+    if report.internal_complete {
+        let padding = 8;
+        let width = current.bounds.width + 2 * padding;
+        let height = current.bounds.height + 2 * padding;
+        let mut working = translate_node(&current, padding, padding);
+        let mut pending = wiring
+            .edges
+            .iter()
+            .filter(|e| report.unresolved_external_requirements.contains(&e.id))
+            .collect::<Vec<_>>();
+        pending.sort_by_key(|e| {
+            (
+                items
+                    .item(&e.item)
+                    .is_none_or(|i| i.transport != TransportKind::Pipe),
+                e.id.clone(),
+            )
+        });
+        for edge in pending {
+            c.statistics = Default::default();
+            let step_started = Instant::now();
+            if width
+                .checked_mul(height)
+                .is_none_or(|n| n > ROUTING_WORKSPACE_CELL_LIMIT as i64)
+            {
+                report.diagnostics.push(failure(
+                    "production-routing-workspace-budget-exhausted",
+                    &edge.id,
+                    "external routing workspace resource guard exhausted",
+                ));
+                break;
+            }
+            let Some(next) = network::connect_external(
+                &working,
+                edge,
+                width,
+                height,
+                transports,
+                components,
+                &mut c.statistics,
+                request.max_route_searches.min(CONNECTION_ROUTE_LIMIT),
+                &mut |n| {
+                    network::validate(n, facilities, transports, components).is_ok()
+                        && audit::validate_coverage(n, wiring, items).is_ok()
+                        && analyze_constructive_port_demands(
+                            &n.boundary_requirements,
+                            &n.transport_networks,
+                            transports,
+                        )
+                        .success
+                },
+            ) else {
+                report.diagnostics.push(failure(
+                    "production-external-routing-exhausted",
+                    &edge.id,
+                    "external connection candidates exhausted; last validated state retained",
+                ));
+                report.failed_statistics = c.statistics.clone();
+                break;
+            };
+            working = next;
+            current = canonicalize_node(&working);
+            network::report_capacity(&mut current, transports).expect("validated network capacity");
+            report.steps.push(ConstructiveProductionStep {
+                index: report.steps.len(),
+                stage: "external-connection",
+                added_instances: vec![],
+                elapsed_ms: millis(step_started),
+                placement_attempts: 0,
+                statistics: c.statistics.clone(),
+                node: current.clone(),
+            });
+        }
+        report
+            .unresolved_external_requirements
+            .retain(|id| !current.external_requirements.contains(id));
+    }
     report.complete =
         report.internal_complete && report.unresolved_external_requirements.is_empty();
     report.success = report.complete;
+    if let Err(d) = audit::validate_coverage(&current, wiring, items) {
+        report.complete = false;
+        report.success = false;
+        report.diagnostics.push(d);
+    }
     if report.internal_complete {
         report.status = if report.complete {
             "complete"
@@ -305,7 +438,7 @@ pub fn construct_production(
         }
         .into();
         if !report.complete {
-            report.diagnostics.push(failure("production-external-connections-pending",&request.target_instance,"all facility connections are validated; external input/output realization is a separate unfinished stage"));
+            report.diagnostics.push(failure("production-external-connections-pending",&request.target_instance,"all facility connections are validated; external input/output connections remain unresolved"));
         }
     } else if report.status == "step-limit" {
         report.diagnostics.push(failure(
@@ -597,7 +730,7 @@ impl Constructor<'_> {
                     *reasons.entry("remaining capacity".into()).or_default() += 1;
                     return false;
                 }
-                let blocked_requirements = blocked_boundaries(n);
+                let blocked_requirements = blocked_boundaries(n, transports, components);
                 if !blocked_requirements.is_empty() {
                     *reasons
                         .entry("remaining boundary escape".into())
@@ -643,7 +776,11 @@ impl Constructor<'_> {
     }
 }
 
-fn blocked_boundaries(node: &ConstructiveNode) -> Vec<String> {
+fn blocked_boundaries(
+    node: &ConstructiveNode,
+    transports: &ValidatedTransportCatalog,
+    components: &ValidatedLogisticsComponentCatalog,
+) -> Vec<String> {
     let mut blocked_requirements = Vec::new();
     let facilities = super::first_pipe_frontier::occupied_cells(&node.placements);
     let max_x = node
@@ -670,7 +807,12 @@ fn blocked_boundaries(node: &ConstructiveNode) -> Vec<String> {
         .max()
         .unwrap_or(0)
         + 3;
-    for transport in [TransportKind::Pipe, TransportKind::Belt] {
+    let commodities = node
+        .boundary_requirements
+        .iter()
+        .map(|b| (b.transport, b.item.clone()))
+        .collect::<BTreeSet<_>>();
+    for (transport, item) in commodities {
         let mut blocked = facilities.clone();
         blocked.extend(
             node.transport_networks
@@ -678,10 +820,20 @@ fn blocked_boundaries(node: &ConstructiveNode) -> Vec<String> {
                 .filter(|n| n.transport == transport)
                 .flat_map(|n| n.cells.iter().map(|p| (p.x, p.y))),
         );
+        let cap = transports.capacity(transport);
+        let rate = Rate::from_quantity_per_duration_ms(cap.quantity, cap.duration_ms).unwrap();
+        let crossings = network::crossings::options(node, transport, &item, rate, components);
         let mut seen = HashSet::from([(-1, -1)]);
         let mut queue = VecDeque::from([(-1, -1)]);
         while let Some((x, y)) = queue.pop_front() {
-            for p in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
+            for (dx, dy) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
+                let mut p = (x + dx, y + dy);
+                while crossings
+                    .get(&p)
+                    .is_some_and(|(horizontal, _)| *horizontal == (dy == 0))
+                {
+                    p = (p.0 + dx, p.1 + dy);
+                }
                 if p.0 >= -1
                     && p.1 >= -1
                     && p.0 <= max_x
@@ -696,7 +848,7 @@ fn blocked_boundaries(node: &ConstructiveNode) -> Vec<String> {
         for b in node
             .boundary_requirements
             .iter()
-            .filter(|b| b.transport == transport)
+            .filter(|b| b.transport == transport && b.item == item)
         {
             if !b.attachments.iter().any(|a| match a {
                 ConstructiveBoundaryAttachment::NewPort { port } => {
@@ -752,7 +904,12 @@ pub fn render_constructive_production_html(
                 .get(i)
                 .map(|s| s.added_instances.iter().map(String::as_str).collect())
                 .unwrap_or_default(),
-            label: format!("Construction {} · {}", i + 1, report.status),
+            label: format!(
+                "Construction {} · {} · {}",
+                i + 1,
+                report.steps.get(i).map(|s| s.stage).unwrap_or("seed"),
+                report.status
+            ),
             detail: format!(
                 " · {} / {} facilities · {} / {} internal requirements",
                 n.member_instances.len(),

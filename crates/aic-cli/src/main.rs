@@ -2467,9 +2467,16 @@ fn write_constructive_production_report_file(
             output.display()
         )
     })?;
-    serde_json::to_writer_pretty(file, report).with_context(|| {
+    let mut writer = std::io::BufWriter::new(file);
+    serde_json::to_writer_pretty(&mut writer, report).with_context(|| {
         format!(
             "failed to write constructive production report {}",
+            output.display()
+        )
+    })?;
+    std::io::Write::flush(&mut writer).with_context(|| {
+        format!(
+            "failed to flush constructive production report '{}'",
             output.display()
         )
     })?;

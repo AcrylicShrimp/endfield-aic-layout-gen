@@ -18,9 +18,9 @@ use super::integrated::{LayoutVisualizationPage, render_layout_history_html};
 mod assembly;
 mod production;
 pub use production::{
-    CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION, ConstructiveProductionObstruction,
-    ConstructiveProductionReport, ConstructiveProductionRequest, ConstructiveProductionStep,
-    construct_production, render_constructive_production_html,
+    CONSTRUCTIVE_PRODUCTION_REPORT_SCHEMA_VERSION, CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION,
+    ConstructiveProductionObstruction, ConstructiveProductionReport, ConstructiveProductionRequest,
+    ConstructiveProductionStep, construct_production, render_constructive_production_html,
 };
 mod capacity;
 mod composition;
@@ -323,7 +323,11 @@ fn add_capacity_inspection(mut html: String, nodes: &[&ConstructiveNode]) -> Str
 (() => {{
   const capacityPages = {data};
   document.querySelectorAll('.phase-page').forEach((page, index) => {{
-    const records = new Map((capacityPages[index] || []).map(r => [`${{r.layer}}:${{r.x}}:${{r.y}}`, r.details]));
+    const records = new Map();
+    for (const r of capacityPages[index] || []) {{
+      const key = `${{r.layer}}:${{r.x}}:${{r.y}}`;
+      records.set(key, records.has(key) ? `${{records.get(key)}} || Independent crossing channel: ${{r.details}}` : r.details);
+    }}
     for (const layer of ['belt-layer', 'pipe-layer']) {{
       page.querySelectorAll(`.${{layer}} .route-cell`).forEach(cell => {{
         const details = records.get(`${{layer}}:${{cell.getAttribute('x')}}:${{cell.getAttribute('y')}}`);
@@ -640,6 +644,7 @@ pub struct ConstructiveNode {
     pub bounds: FacilityPlacementBounds,
     pub member_instances: Vec<String>,
     pub internal_requirements: Vec<String>,
+    pub external_requirements: Vec<String>,
     pub placements: Vec<FacilityPlacement>,
     pub transport_networks: Vec<TransportNetwork>,
     pub logistics_components: Vec<crate::layouts::PlacedLogisticsComponent>,

@@ -512,8 +512,14 @@ fn transport_cell_count(
     page.transport_networks
         .iter()
         .filter(|network| transport.is_none_or(|transport| network.transport == transport))
-        .map(|network| network.cells.len())
-        .sum::<usize>()
+        .flat_map(|network| {
+            network
+                .cells
+                .iter()
+                .map(move |p| (network.transport, p.x, p.y))
+        })
+        .collect::<std::collections::BTreeSet<_>>()
+        .len()
 }
 
 fn transport_summary(page: &LayoutVisualizationPage<'_>, transport: TransportKind) -> String {
@@ -1135,6 +1141,50 @@ mod tests {
         assert!(partial.contains("FAILED · PARTIAL HISTORY"));
         assert!(partial.contains("Phase 2/2 · last valid"));
         assert_eq!(partial.matches("class=\"phase-page").count(), 2);
+    }
+
+    #[test]
+    fn physical_tile_count_deduplicates_bridge_channels_but_preserves_layers() {
+        let networks = [
+            TransportKind::Belt,
+            TransportKind::Belt,
+            TransportKind::Pipe,
+        ]
+        .into_iter()
+        .enumerate()
+        .map(|(i, transport)| TransportNetwork {
+            id: format!("network-{i}"),
+            item: format!("item-{i}"),
+            transport,
+            requirement_ids: vec![],
+            component_ids: vec![],
+            terminals: vec![],
+            segments: vec![],
+            cells: vec![WorldGridPosition { x: 1, y: 1 }],
+        })
+        .collect::<Vec<_>>();
+        let page = super::LayoutVisualizationPage {
+            bounds: &FacilityPlacementBounds {
+                width: 3,
+                height: 3,
+            },
+            placements: &[],
+            logistics_components: &[],
+            transport_networks: &networks,
+            introduced_facilities: Default::default(),
+            label: String::new(),
+            detail: String::new(),
+            history: false,
+        };
+        assert_eq!(super::transport_cell_count(&page, None), 2);
+        assert_eq!(
+            super::transport_cell_count(&page, Some(TransportKind::Belt)),
+            1
+        );
+        assert_eq!(
+            super::transport_cell_count(&page, Some(TransportKind::Pipe)),
+            1
+        );
     }
 
     #[test]

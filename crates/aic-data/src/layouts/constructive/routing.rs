@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::{BinaryHeap, HashSet};
+use std::collections::{BTreeMap, BinaryHeap, HashSet};
 
 use crate::layouts::WorldGridPosition;
 
@@ -147,12 +147,25 @@ impl RouteWorkspace {
         start: &WorldGridPosition,
         goal: &WorldGridPosition,
     ) -> Option<Vec<WorldGridPosition>> {
+        self.route_crossings(blocked, &BTreeMap::new(), start, goal)
+    }
+
+    /// Crossing cells may only be traversed straight on their designated axis (true = horizontal).
+    pub(super) fn route_crossings(
+        &mut self,
+        blocked: &HashSet<(i64, i64)>,
+        crossings: &BTreeMap<(i64, i64), bool>,
+        start: &WorldGridPosition,
+        goal: &WorldGridPosition,
+    ) -> Option<Vec<WorldGridPosition>> {
         let width = self.width;
         let height = self.height;
         if !inside(width, height, start.x, start.y)
             || !inside(width, height, goal.x, goal.y)
             || blocked.contains(&(start.x, start.y))
             || blocked.contains(&(goal.x, goal.y))
+            || crossings.contains_key(&(start.x, start.y))
+            || crossings.contains_key(&(goal.x, goal.y))
         {
             return None;
         }
@@ -191,9 +204,23 @@ impl RouteWorkspace {
 
             for direction in Direction::ALL {
                 let (dx, dy) = direction.delta();
+                if crossings
+                    .get(&(entry.state.x, entry.state.y))
+                    .is_some_and(|horizontal| {
+                        *horizontal != (dy == 0) || entry.state.heading != Some(direction)
+                    })
+                {
+                    continue;
+                }
                 let next_x = entry.state.x + dx;
                 let next_y = entry.state.y + dy;
-                if !inside(width, height, next_x, next_y) || blocked.contains(&(next_x, next_y)) {
+                if !inside(width, height, next_x, next_y)
+                    || (blocked.contains(&(next_x, next_y))
+                        && !crossings.contains_key(&(next_x, next_y)))
+                    || crossings
+                        .get(&(next_x, next_y))
+                        .is_some_and(|horizontal| *horizontal != (dy == 0))
+                {
                     continue;
                 }
                 let next = State {
@@ -323,6 +350,48 @@ mod tests {
         assert!(path.iter().all(|cell| !blocked.contains(&(cell.x, cell.y))));
         assert_eq!(path.len(), 7);
         assert_eq!(count_turns(&path), 2);
+    }
+
+    #[test]
+    fn crossing_axis_cannot_turn_or_terminate_on_a_crossing() {
+        let blocked = HashSet::from([(1, 0), (1, 1), (1, 2)]);
+        let crossings = BTreeMap::from([((1, 1), true)]);
+        let mut w = RouteWorkspace::new(3, 3);
+        assert!(
+            w.route(
+                &blocked,
+                &WorldGridPosition { x: 0, y: 1 },
+                &WorldGridPosition { x: 2, y: 1 }
+            )
+            .is_none()
+        );
+        let path = w
+            .route_crossings(
+                &blocked,
+                &crossings,
+                &WorldGridPosition { x: 0, y: 1 },
+                &WorldGridPosition { x: 2, y: 1 },
+            )
+            .unwrap();
+        assert_eq!(path.len(), 3);
+        assert!(
+            w.route_crossings(
+                &blocked,
+                &crossings,
+                &WorldGridPosition { x: 0, y: 1 },
+                &WorldGridPosition { x: 1, y: 1 }
+            )
+            .is_none()
+        );
+        assert!(
+            w.route_crossings(
+                &blocked,
+                &crossings,
+                &WorldGridPosition { x: 0, y: 1 },
+                &WorldGridPosition { x: 1, y: 0 }
+            )
+            .is_none()
+        );
     }
 
     #[test]

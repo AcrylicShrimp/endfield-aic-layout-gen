@@ -112,6 +112,7 @@ pub fn constructive_node_from_process_module(
         bounds,
         member_instances: report.member_instances.clone(),
         internal_requirements: report.internal_requirements.clone(),
+        external_requirements: Vec::new(),
         placements: report.growth.placements.clone(),
         transport_networks: {
             let mut networks = report.growth.transport_networks.clone();
@@ -275,6 +276,7 @@ pub fn construct_facility_node(
         bounds: FacilityPlacementBounds { width, height },
         member_instances: vec![instance_id.to_string()],
         internal_requirements: Vec::new(),
+        external_requirements: Vec::new(),
         placements: vec![placement],
         transport_networks: Vec::new(),
         logistics_components: Vec::new(),
@@ -636,6 +638,9 @@ pub(super) fn merge_nodes(
     node.internal_requirements
         .extend(source.internal_requirements.clone());
     node.internal_requirements.sort();
+    node.external_requirements
+        .extend(source.external_requirements.clone());
+    node.external_requirements.sort();
     node.transport_networks
         .extend(source.transport_networks.clone());
     node.logistics_components
@@ -686,6 +691,11 @@ pub(super) fn rotate_node(node: &ConstructiveNode, rotation: i64) -> Constructiv
                 node.bounds.height,
                 rotation,
             );
+            if let crate::layouts::TransportNetworkEndpoint::External { side, .. } =
+                &mut terminal.endpoint
+            {
+                *side = side.rotated_clockwise(rotation);
+            }
         }
     }
     for component in &mut rotated.logistics_components {

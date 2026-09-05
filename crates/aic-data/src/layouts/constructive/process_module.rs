@@ -281,6 +281,7 @@ fn project_boundary_requirements(
     }
     boundary.sort_by(|left, right| left.requirement.cmp(&right.requirement));
     let mut node = ConstructiveNode {
+        external_requirements: Vec::new(),
         id: "process-module-boundary".to_string(),
         bounds: bounds.clone(),
         member_instances: member_instances.to_vec(),

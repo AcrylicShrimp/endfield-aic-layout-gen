@@ -1,5 +1,8 @@
 //! Commodity-network attachment and independent constructive witness validation.
+pub(super) mod crossings;
+mod external;
 mod first;
+pub(super) use external::connect_external;
 #[cfg(test)]
 mod tests;
 mod validation;

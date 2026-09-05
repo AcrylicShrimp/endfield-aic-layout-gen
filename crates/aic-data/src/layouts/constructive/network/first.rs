@@ -126,7 +126,11 @@ fn search(
                 stats.new_port_attempts += 1;
             }
             stats.astar_searches += 1;
-            let Some(path) = workspace.route(&blocked, endpoint(source), endpoint(target)) else {
+            let choices = crossings::options(node, transport, &edge.item, rate, components);
+            let axes = choices.iter().map(|(p, (axis, _))| (*p, *axis)).collect();
+            let Some(path) =
+                workspace.route_crossings(&blocked, &axes, endpoint(source), endpoint(target))
+            else {
                 stats.astar_failures += 1;
                 if shared {
                     stats.branch_route_failures += 1;
@@ -186,7 +190,7 @@ fn search(
                     to: p[1].clone(),
                     rate,
                 }));
-            n.cells.extend(path);
+            n.cells.extend(path.iter().cloned());
             n.cells.sort_by_key(xy);
             n.cells.dedup();
             next.attachment_events
@@ -214,6 +218,7 @@ fn search(
                         })
                         .collect(),
                 });
+            crossings::install(&mut next, transport, &edge.item, &path, &choices);
             if let Some(result) = search(
                 &next,
                 edge,

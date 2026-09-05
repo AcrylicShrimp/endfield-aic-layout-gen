@@ -151,7 +151,7 @@ fn step_limit_is_a_partial_result_not_a_successful_blueprint() {
 }
 
 #[test]
-fn external_io_is_not_silently_counted_as_complete() {
+fn realizes_external_io_before_declaring_complete() {
     let (f, i, t, c) = catalogs();
     let mut w = wiring(&[("a", "b")]);
     w.nodes.push(FacilityInstanceWiringNode::External {
@@ -172,10 +172,36 @@ fn external_io_is_not_silently_counted_as_complete() {
     });
     let r = construct_production(&w, &f, &i, &t, &c, &request("b"));
     assert!(r.internal_complete, "{:?}", r.diagnostics);
-    assert!(!r.complete);
-    assert!(!r.success);
-    assert_eq!(r.status, "external-connections-pending");
-    assert_eq!(r.unresolved_external_requirements, vec!["import-edge"]);
+    assert!(r.complete);
+    assert!(r.success);
+    assert_eq!(r.status, "complete");
+    assert!(r.unresolved_external_requirements.is_empty());
+    let n = r.final_node.unwrap();
+    assert_eq!(n.external_requirements, vec!["import-edge"]);
+    network::validate(&n, &f, &t, &c).unwrap();
+    audit::validate_coverage(&n, &w, &i).unwrap();
+    for rotation in [0, 90, 180, 270] {
+        network::validate(&canonicalize_node(&rotate_node(&n, rotation)), &f, &t, &c).unwrap();
+    }
+    let mut wrong = w.clone();
+    wrong.edges[0].rate = Rate {
+        numerator: 3,
+        denominator: 10,
+    };
+    assert!(
+        audit::validate_coverage(&n, &wrong, &i).is_err(),
+        "physical totals must match the original request"
+    );
+    let mut bad = n.clone();
+    let terminal = bad
+        .transport_networks
+        .iter_mut()
+        .flat_map(|n| &mut n.terminals)
+        .find(|t| matches!(t.endpoint, TransportNetworkEndpoint::External { .. }))
+        .unwrap();
+    terminal.position.x += 1;
+    terminal.position.y += 1;
+    assert!(network::validate(&bad, &f, &t, &c).is_err());
 }
 
 #[test]
@@ -251,10 +277,16 @@ fn separated_moss_fan_in_preserves_four_total_output_port_domains() {
         "{:?} {:?}",
         r.diagnostics, r.rejected_reasons
     );
-    let n = r.final_node.unwrap();
+    let n = &r
+        .steps
+        .iter()
+        .rev()
+        .find(|s| s.stage == "internal-growth")
+        .unwrap()
+        .node;
     assert_eq!(n.placements.len(), 3);
     assert_eq!(n.boundary_requirements.len(), 2);
-    assert!(blocked_boundaries(&n).is_empty());
+    assert!(blocked_boundaries(&n, &t, &c).is_empty());
     let used = n
         .transport_networks
         .iter()
@@ -268,7 +300,7 @@ fn separated_moss_fan_in_preserves_four_total_output_port_domains() {
         .filter(|a| matches!(a, ConstructiveBoundaryAttachment::NewPort { .. }))
         .count();
     assert_eq!(used + remaining, 4);
-    assert!(!r.complete);
+    assert!(r.complete);
 }
 
 #[test]
@@ -355,4 +387,62 @@ fn splits_new_demand_across_partially_loaded_existing_ports() {
         }
         && e.source_kind == "existing-network"));
     network::validate(&n, &f, &t, &c).unwrap();
+}
+
+#[test]
+fn external_lane_budget_is_atomic_and_does_not_claim_success() {
+    let (_, i, t, c) = catalogs();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let f = ValidatedFacilityCatalog::try_from_catalog(
+        crate::facilities::load_facility_catalog(root.join("data/game/normalized/facilities.json"))
+            .unwrap(),
+    )
+    .unwrap();
+    let mut w = wiring(&[("a", "b")]);
+    w.nodes
+        .retain(|n| matches!(n,FacilityInstanceWiringNode::Facility{id,..}if id=="a"));
+    if let FacilityInstanceWiringNode::Facility { facility, .. } = &mut w.nodes[0] {
+        *facility = "grinder-1-mode-normal".into();
+    }
+    w.nodes.push(FacilityInstanceWiringNode::External {
+        id: "import".into(),
+        item: "ore".into(),
+    });
+    w.edges[0].source = "import".into();
+    w.edges[0].target = "a".into();
+    w.edges[0].rate = Rate {
+        numerator: 1,
+        denominator: 1,
+    };
+    let mut req = request("a");
+    req.max_route_searches = 1;
+    let r = construct_production(&w, &f, &i, &t, &c, &req);
+    assert!(r.internal_complete);
+    assert!(!r.complete);
+    assert!(!r.success);
+    assert_eq!(r.failed_statistics.astar_searches, 1);
+    let n = r.final_node.unwrap();
+    assert!(n.transport_networks.is_empty());
+    assert!(n.external_requirements.is_empty());
+    assert_eq!(r.unresolved_external_requirements.len(), 1);
+    network::validate(&n, &f, &t, &c).unwrap();
+    let full = construct_production(&w, &f, &i, &t, &c, &request("a"));
+    assert!(full.complete, "{:?}", full.diagnostics);
+    let n = full.final_node.unwrap();
+    assert_eq!(
+        n.transport_networks[0]
+            .terminals
+            .iter()
+            .filter(|t| matches!(t.endpoint, TransportNetworkEndpoint::External { .. }))
+            .count(),
+        2
+    );
+    audit::validate_coverage(&n, &w, &i).unwrap();
+    if let FacilityInstanceWiringNode::External { item, .. } = &mut w.nodes[1] {
+        *item = "wrong-item".into();
+    }
+    assert_eq!(
+        construct_production(&w, &f, &i, &t, &c, &request("a")).status,
+        "invalid-input"
+    );
 }

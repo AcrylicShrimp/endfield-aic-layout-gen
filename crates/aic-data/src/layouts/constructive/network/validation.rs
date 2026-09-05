@@ -92,7 +92,14 @@ pub(in crate::layouts::constructive) fn validate(
         .iter()
         .flat_map(|n| n.requirement_ids.iter().cloned())
         .collect::<BTreeSet<_>>();
-    if requirements != node.internal_requirements.iter().cloned().collect() {
+    if requirements
+        != node
+            .internal_requirements
+            .iter()
+            .chain(&node.external_requirements)
+            .cloned()
+            .collect()
+    {
         return Err(fail(
             node.id.clone(),
             "routed requirement identities do not match the covered subgraph",
@@ -111,7 +118,9 @@ pub(in crate::layouts::constructive) fn validate(
     }
     let mut used_ports = BTreeSet::new();
     let mut component_ids = BTreeSet::new();
+    let mut bridge_axes = BTreeMap::<String, Vec<bool>>::new();
     for n in &node.transport_networks {
+        let mut network_components = BTreeSet::new();
         let Some(cap) = line_capacity(n.transport, transports) else {
             return Err(fail(n.id.clone(), "invalid line capacity"));
         };
@@ -124,7 +133,12 @@ pub(in crate::layouts::constructive) fn validate(
             (Rate, Rate, Vec<CardinalDirection>, Vec<CardinalDirection>),
         >::new();
         for p in &cells {
-            if occupied.contains(p) || !physical.insert((n.transport, *p)) {
+            let crossing = node.logistics_components.iter().any(|c| {
+                c.transport == n.transport
+                    && xy(&c.position) == *p
+                    && c.kind == LogisticsComponentKind::Bridge
+            });
+            if occupied.contains(p) || (!physical.insert((n.transport, *p)) && !crossing) {
                 return Err(fail(n.id.clone(), "transport collision"));
             }
             flow.insert(*p, (Rate::zero(), Rate::zero(), Vec::new(), Vec::new()));
@@ -157,6 +171,76 @@ pub(in crate::layouts::constructive) fn validate(
             f.2.push(rotate(out, 180));
         }
         for t in &n.terminals {
+            if let TransportNetworkEndpoint::External {
+                node: external_node,
+                side,
+            } = &t.endpoint
+            {
+                use crate::facilities::FacilityPortEdge;
+                let xs = node
+                    .placements
+                    .iter()
+                    .flat_map(|p| [p.x, p.x + p.width - 1])
+                    .chain(
+                        node.transport_networks
+                            .iter()
+                            .flat_map(|n| n.cells.iter().map(|p| p.x)),
+                    )
+                    .collect::<Vec<_>>();
+                let ys = node
+                    .placements
+                    .iter()
+                    .flat_map(|p| [p.y, p.y + p.height - 1])
+                    .chain(
+                        node.transport_networks
+                            .iter()
+                            .flat_map(|n| n.cells.iter().map(|p| p.y)),
+                    )
+                    .collect::<Vec<_>>();
+                let (on_boundary, d) = match side {
+                    FacilityPortEdge::North => (
+                        Some(&t.position.y) == ys.iter().min(),
+                        CardinalDirection::North,
+                    ),
+                    FacilityPortEdge::East => (
+                        Some(&t.position.x) == xs.iter().max(),
+                        CardinalDirection::East,
+                    ),
+                    FacilityPortEdge::South => (
+                        Some(&t.position.y) == ys.iter().max(),
+                        CardinalDirection::South,
+                    ),
+                    FacilityPortEdge::West => (
+                        Some(&t.position.x) == xs.iter().min(),
+                        CardinalDirection::West,
+                    ),
+                };
+                if !on_boundary
+                    || t.node != *external_node
+                    || t.rate <= Rate::zero()
+                    || t.rate > cap
+                {
+                    return Err(fail(
+                        t.id.clone(),
+                        "invalid external terminal identity, used-boundary position or capacity",
+                    ));
+                }
+                let Some(f) = flow.get_mut(&xy(&t.position)) else {
+                    return Err(fail(t.id.clone(), "external terminal missing from network"));
+                };
+                if t.direction == FacilityPortDirection::Output {
+                    f.0 =
+                        f.0.checked_add(t.rate)
+                            .map_err(|_| fail(t.id.clone(), "external flow overflow"))?;
+                    f.2.push(d);
+                } else {
+                    f.1 =
+                        f.1.checked_add(t.rate)
+                            .map_err(|_| fail(t.id.clone(), "external flow overflow"))?;
+                    f.3.push(d);
+                }
+                continue;
+            }
             let TransportNetworkEndpoint::Facility { instance, port } = &t.endpoint else {
                 return Err(fail(
                     n.id.clone(),
@@ -222,7 +306,7 @@ pub(in crate::layouts::constructive) fn validate(
                 let Some(def) = components.component(&c.component) else {
                     return Err(fail(c.id.clone(), "unknown component"));
                 };
-                if !component_ids.insert(c.id.clone())
+                if (!component_ids.insert(c.id.clone()) && c.kind != LogisticsComponentKind::Bridge)
                     || !n.component_ids.contains(&c.id)
                     || def.kind != c.kind
                     || def.transport != c.transport
@@ -234,6 +318,7 @@ pub(in crate::layouts::constructive) fn validate(
                         "component identity, rotation, or capacity mismatch",
                     ));
                 }
+                network_components.insert(c.id.clone());
                 let allowed_in = def
                     .input_directions
                     .iter()
@@ -247,7 +332,19 @@ pub(in crate::layouts::constructive) fn validate(
                 let topology = match c.kind {
                     LogisticsComponentKind::Splitter => inputs.len() == 1 && outputs.len() >= 2,
                     LogisticsComponentKind::Converger => inputs.len() >= 2 && outputs.len() == 1,
-                    LogisticsComponentKind::Bridge => false,
+                    LogisticsComponentKind::Bridge => {
+                        let straight = inputs.len() == 1
+                            && outputs.len() == 1
+                            && rotate(inputs[0], 180) == outputs[0]
+                            && !n.terminals.iter().any(|t| xy(&t.position) == *p);
+                        if straight {
+                            bridge_axes.entry(c.id.clone()).or_default().push(matches!(
+                                inputs[0],
+                                CardinalDirection::East | CardinalDirection::West
+                            ));
+                        }
+                        straight
+                    }
                 };
                 if !topology
                     || !inputs.iter().all(|d| allowed_in.contains(d))
@@ -262,7 +359,9 @@ pub(in crate::layouts::constructive) fn validate(
                 ));
             }
         }
-        if n.component_ids.iter().any(|id| !component_ids.contains(id)) {
+        if n.component_ids.iter().cloned().collect::<BTreeSet<_>>() != network_components
+            || n.component_ids.len() != network_components.len()
+        {
             return Err(fail(n.id.clone(), "network references missing component"));
         }
         // No disconnected circulation-only geometry: each physical cell must be reachable from
@@ -292,6 +391,15 @@ pub(in crate::layouts::constructive) fn validate(
                 return Err(fail(n.id.clone(), "unreachable network geometry"));
             }
         }
+    }
+    if bridge_axes
+        .values()
+        .any(|axes| axes.len() != 2 || axes[0] == axes[1])
+    {
+        return Err(fail(
+            node.id.clone(),
+            "bridge requires two independent perpendicular straight channels",
+        ));
     }
     if component_ids.len() != node.logistics_components.len() {
         return Err(fail(node.id.clone(), "unowned logistics component"));

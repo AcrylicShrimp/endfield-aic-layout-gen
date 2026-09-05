@@ -228,6 +228,116 @@ fn overloaded_shared_trunk_cannot_use_the_only_port() {
 }
 
 #[test]
+fn dedicated_router_installs_and_validates_independent_bridge_axes() {
+    use super::super::composition::{merge_nodes, rotate_node, translate_node};
+    let (f, _, t, c) = catalogs();
+    let items = ValidatedItemCatalog::try_from_catalog(ItemCatalog {
+        schema_version: 1,
+        items: ["ore", "other"]
+            .into_iter()
+            .map(|id| ItemDefinition {
+                id: id.into(),
+                transport: TransportKind::Belt,
+            })
+            .collect(),
+    })
+    .unwrap();
+    let rate = Rate {
+        numerator: 1,
+        denominator: 5,
+    };
+    let w = FacilityInstanceWiringReport {
+        schema_version: 1,
+        success: true,
+        nodes: ["a", "b", "c", "d"]
+            .into_iter()
+            .map(|id| FacilityInstanceWiringNode::Facility {
+                id: id.into(),
+                recipe: id.into(),
+                facility: "network-fixture-machine".into(),
+                index: 0,
+                runs_per_second: rate,
+                work_seconds_per_second: rate,
+                unused_capacity: Rate::zero(),
+            })
+            .collect(),
+        edges: [("a", "b", "ore"), ("c", "d", "other")]
+            .into_iter()
+            .enumerate()
+            .map(|(i, (source, target, item))| FacilityInstanceWiringEdge {
+                id: format!("edge-{i}"),
+                source: source.into(),
+                target: target.into(),
+                item: item.into(),
+                rate,
+                kind: "recipe-flow".into(),
+                projection: FacilityInstanceWiringProjection::Original,
+            })
+            .collect(),
+        diagnostics: vec![],
+    };
+    let nodes = [
+        ("a", 0, 3, 0),
+        ("b", 6, 3, 0),
+        ("c", 3, 0, 90),
+        ("d", 3, 6, 90),
+    ]
+    .into_iter()
+    .map(|(id, x, y, r)| {
+        translate_node(
+            &rotate_node(&construct_facility_node(&w, &f, &items, id).unwrap(), r),
+            x,
+            y,
+        )
+    })
+    .collect::<Vec<_>>();
+    let mut n = merge_nodes(&nodes[0], &nodes[1]);
+    let mut workspace = RouteWorkspace::new(7, 7);
+    let mut stats = ConstructiveCompositionStatistics::default();
+    for (i, edge) in w.edges.iter().enumerate() {
+        if i == 1 {
+            n = merge_nodes(&merge_nodes(&n, &nodes[2]), &nodes[3]);
+        }
+        n = connect_first(&n, edge, &t, &c, &mut workspace, &mut stats, 64, &mut |n| {
+            validate(n, &f, &t, &c).is_ok()
+        })
+        .expect("perpendicular lines must cross with a real bridge");
+    }
+    assert_eq!(n.logistics_components.len(), 1);
+    assert_eq!(
+        n.logistics_components[0].kind,
+        LogisticsComponentKind::Bridge
+    );
+    validate(&n, &f, &t, &c).unwrap();
+    for r in [0, 90, 180, 270] {
+        validate(&translate_node(&rotate_node(&n, r), 8, 8), &f, &t, &c).unwrap();
+    }
+    let mut bad = n.clone();
+    bad.logistics_components.clear();
+    assert!(validate(&bad, &f, &t, &c).is_err());
+    let mut bad = n.clone();
+    bad.transport_networks.pop();
+    bad.internal_requirements = bad
+        .transport_networks
+        .iter()
+        .flat_map(|n| n.requirement_ids.clone())
+        .collect();
+    assert!(
+        validate(&bad, &f, &t, &c).is_err(),
+        "single-axis bridge is invalid"
+    );
+    let mut bad = n.clone();
+    bad.logistics_components[0].rotation = 45;
+    assert!(validate(&bad, &f, &t, &c).is_err());
+    let mut bad = n;
+    bad.transport_networks[0].segments[0].rate = Rate {
+        numerator: 1,
+        denominator: 1,
+    };
+    assert!(validate(&bad, &f, &t, &c).is_err());
+}
+
+#[test]
 #[ignore = "writes reproducible controlled JSON and HTML benchmark artifacts"]
 fn write_network_attachment_artifacts() {
     let directory = root().join("docs/benchmarks/constructive-network-attachments");
