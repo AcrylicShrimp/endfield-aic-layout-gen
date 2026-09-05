@@ -1,5 +1,9 @@
 # Placement-only review and source-direction incident
 
+Historical pre-fix report and artifacts. The subsequent correction, regenerated placement and
+timing measurements are in `../constructive-corrected-ports/report.md`; the current served
+`placement-only.html` has been updated. The incident evidence below remains unchanged.
+
 ## Visual milestone
 
 The user requested all facilities without any routing, to inspect placement before another routing

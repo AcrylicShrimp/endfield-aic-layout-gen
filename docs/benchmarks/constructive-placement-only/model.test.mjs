@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { placeOnly, rotateFacility } from './model.mjs';
 import { render } from './render.mjs';
 const base = JSON.parse(fs.readFileSync(new URL('../../../data/examples/constructive-network.facilities.json', import.meta.url)));
@@ -74,4 +78,31 @@ test('HTML labels unrouted geometry and safely embeds instance IDs', () => {
   assert(!html.includes('a</script>'));
   assert(html.includes('Logical edges (NOT routes)'));
   assert(!/id="show-graph"[^>]*checked/.test(html));
+});
+test('CLI writes separate timings and only a compact completion; rejects output collisions', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'aic-placement-cli-test-'));
+  const files = Object.fromEntries(['wiring', 'facilities', 'items', 'report', 'html', 'timing'].map(k => [k, path.join(dir, k)]));
+  for (const [key, value] of Object.entries({ wiring: wiring([['a', 'b']]), facilities: base, items }))
+    fs.writeFileSync(files[key], JSON.stringify(value));
+  const cli = fileURLToPath(new URL('./place.mjs', import.meta.url));
+  const args = ['--wiring', files.wiring, '--facilities', files.facilities, '--items', files.items,
+    '--target', 'b', '--report-output', files.report, '--visualization-output', files.html, '--timing-output', files.timing];
+  const run = values => spawnSync(process.execPath, [cli, ...values], { encoding: 'utf8', timeout: 10000 });
+  const collision = run([...args.slice(0, -1), files.report]);
+  assert.equal(collision.status, 1);
+  assert.equal(fs.existsSync(files.report), false);
+  const result = run(args);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout.trim().split('\n').length, 1);
+  assert.equal(JSON.parse(result.stdout).status, 'placement-only-unrouted');
+  const report = JSON.parse(fs.readFileSync(files.report)), timing = JSON.parse(fs.readFileSync(files.timing));
+  assert.equal(timing.placement_ms, report.placement_ms);
+  assert.equal(timing.report_bytes, fs.statSync(files.report).size);
+  assert.equal(timing.html_bytes, fs.statSync(files.html).size);
+  for (const [key, value] of Object.entries(timing)) if (key.endsWith('_ms')) assert(value >= 0 && Number.isFinite(value));
+  assert(timing.measured_body_ms >= timing.placement_ms + timing.input_loading_ms);
+  assert.equal(run(args).status, 1);
+  // Remove only the exact temporary files created by this test; no recursive deletion.
+  for (const file of Object.values(files)) fs.unlinkSync(file);
+  fs.rmdirSync(dir);
 });

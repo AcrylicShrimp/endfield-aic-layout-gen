@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "stage": "source-port-direction-audit",
+  "inputs": [
+    {
+      "path": "data/game/source/table-cfg/FactoryBuildingTable.json",
+      "sha256": "9f366968411c90a5d7920d84b451f9c15651f59f7aa72d8f9e45ffd1a2594b73"
+    },
+    {
+      "path": "data/game/normalized/facilities.json",
+      "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+    },
+    {
+      "path": "/tmp/aic-direct.1UUfPc/matrix/heavy-xiranite-0-baseline.json",
+      "sha256": "c7f31614dc5f9f038dde82955e1c6cb5cf8191564d688b58080ed3d5d0ab62a7"
+    }
+  ],
+  "noncorner_direction_mapping": {
+    "input:180": [
+      "south"
+    ],
+    "output:180": [
+      "north"
+    ],
+    "output:90": [
+      "east"
+    ],
+    "input:90": [
+      "west"
+    ]
+  },
+  "total_ports": 250,
+  "affected_ports": 0,
+  "affected_facility_modes": 0,
+  "mismatches": [],
+  "baseline_complete": true,
+  "baseline_used_affected_ports": [],
+  "interpretation": "Mismatch inferred from source rotation/direction classes with unambiguous non-corner normals. This audit changes no catalog or geometry. Zero affected terminals in this baseline does not validate every historical search result or prove source equivalence for all game semantics."
+}
