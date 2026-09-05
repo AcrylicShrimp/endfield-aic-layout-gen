@@ -1,0 +1,1337 @@
+{
+  "schema_version": 1,
+  "status": "complete-graph-validated",
+  "factory_validated": true,
+  "covered_facilities": 59,
+  "total_facilities": 59,
+  "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/complete-0",
+  "elapsed_ms": 2813.0775,
+  "selected_output_ms": 104.09662599999933,
+  "score": {
+    "width": 100,
+    "height": 129,
+    "area": 12900,
+    "physical_tiles": 2401,
+    "turns": 253,
+    "tuple": [
+      12900,
+      2401,
+      253
+    ]
+  },
+  "stages": [
+    {
+      "node": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder:0",
+      "label": "F09",
+      "trials": 8,
+      "construction_ms": 187.67304200000004,
+      "validation_output_ms": 234.991584,
+      "failures": [],
+      "candidates": [
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-0-candidate-0",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 93,
+            "height": 128,
+            "area": 11904,
+            "physical_tiles": 1979,
+            "turns": 248,
+            "tuple": [
+              11904,
+              1979,
+              248
+            ]
+          },
+          "validator_ms": 8.55375,
+          "input_io_ms": 7.8442079999999805,
+          "validation_process_ms": 36.222958000000006,
+          "coverage_io_ms": 11.592792000000031,
+          "diagnostics": [],
+          "witness_sha256": "4400173b1e2560caeaabbb94373b59ac780c3b61b1297ef838032dc8b06bddf5"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-0-candidate-1",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 93,
+            "height": 128,
+            "area": 11904,
+            "physical_tiles": 1979,
+            "turns": 248,
+            "tuple": [
+              11904,
+              1979,
+              248
+            ]
+          },
+          "validator_ms": 6.621667,
+          "input_io_ms": 11.007583000000011,
+          "validation_process_ms": 103.45737500000001,
+          "coverage_io_ms": 15.80808300000001,
+          "diagnostics": [],
+          "witness_sha256": "bc94bc9bc5a07ac622158799c275666abad21710a9faf445dbf3e38ef2943ff1"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-0-candidate-2",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 93,
+            "height": 128,
+            "area": 11904,
+            "physical_tiles": 1979,
+            "turns": 248,
+            "tuple": [
+              11904,
+              1979,
+              248
+            ]
+          },
+          "validator_ms": 5.279624999999999,
+          "input_io_ms": 7.503083000000004,
+          "validation_process_ms": 28.09808400000003,
+          "coverage_io_ms": 63.666292,
+          "diagnostics": [],
+          "witness_sha256": "f5186596ca3a31458d37f9fafd6964ca3e7d861b60a069a89ef5f335e7c58367"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-0-candidate-3",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 93,
+            "height": 128,
+            "area": 11904,
+            "physical_tiles": 1981,
+            "turns": 248,
+            "tuple": [
+              11904,
+              1981,
+              248
+            ]
+          },
+          "validator_ms": 6.193125,
+          "input_io_ms": 7.1183750000000146,
+          "validation_process_ms": 103.13579200000004,
+          "coverage_io_ms": 7.801584000000048,
+          "diagnostics": [],
+          "witness_sha256": "90ae5cd1bf909efd22d0ebc37adc9c70f1d71b64eb2e3016a7e173667335c34a"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-0-candidate-4",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 93,
+            "height": 128,
+            "area": 11904,
+            "physical_tiles": 1985,
+            "turns": 248,
+            "tuple": [
+              11904,
+              1985,
+              248
+            ]
+          },
+          "validator_ms": 5.82925,
+          "input_io_ms": 4.997916000000032,
+          "validation_process_ms": 25.16395799999998,
+          "coverage_io_ms": 19.185541000000057,
+          "diagnostics": [],
+          "witness_sha256": "b2bbfb6b77c7a824ae66e63b4bfbdc29c8b4b71fa56f55c9af91ee3b2ee9f547"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-0-candidate-5",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 93,
+            "height": 128,
+            "area": 11904,
+            "physical_tiles": 1989,
+            "turns": 248,
+            "tuple": [
+              11904,
+              1989,
+              248
+            ]
+          },
+          "validator_ms": 4.98075,
+          "input_io_ms": 4.51400000000001,
+          "validation_process_ms": 41.327208999999925,
+          "coverage_io_ms": 12.582749999999919,
+          "diagnostics": [],
+          "witness_sha256": "149337d3d26d622fd966580184c4b2b901b54d2814086fa44c9a7d2942f5f60f"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-0-candidate-6",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 93,
+            "height": 128,
+            "area": 11904,
+            "physical_tiles": 2001,
+            "turns": 248,
+            "tuple": [
+              11904,
+              2001,
+              248
+            ]
+          },
+          "validator_ms": 12.669042000000001,
+          "input_io_ms": 7.353582999999958,
+          "validation_process_ms": 55.24974999999995,
+          "coverage_io_ms": 5.619292000000087,
+          "diagnostics": [],
+          "witness_sha256": "7c483dfd2f8eea2b24b16680c679dc3490bf7752822040d3848be6c412726a43"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-0-candidate-7",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 93,
+            "height": 128,
+            "area": 11904,
+            "physical_tiles": 1979,
+            "turns": 248,
+            "tuple": [
+              11904,
+              1979,
+              248
+            ]
+          },
+          "validator_ms": 6.776333,
+          "input_io_ms": 3.887666999999965,
+          "validation_process_ms": 40.80387500000006,
+          "coverage_io_ms": 6.246832999999924,
+          "diagnostics": [],
+          "witness_sha256": "bf40c2caa122e6ea7c58da16a754495a99b1c8fb994d0f64cca6581252b1f261"
+        }
+      ],
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-0-candidate-0"
+    },
+    {
+      "node": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite:0",
+      "label": "F04",
+      "trials": 8,
+      "construction_ms": 166.568083,
+      "validation_output_ms": 192.56458299999997,
+      "failures": [],
+      "candidates": [
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-1-candidate-0",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 1988,
+            "turns": 248,
+            "tuple": [
+              12672,
+              1988,
+              248
+            ]
+          },
+          "validator_ms": 11.801917,
+          "input_io_ms": 7.298541999999998,
+          "validation_process_ms": 39.37804200000005,
+          "coverage_io_ms": 23.007208000000105,
+          "diagnostics": [],
+          "witness_sha256": "6ecdf10512409360645a092daba856d4aecc7a4e4d4720818f408edc5f5b5694"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-1-candidate-1",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 1989,
+            "turns": 248,
+            "tuple": [
+              12672,
+              1989,
+              248
+            ]
+          },
+          "validator_ms": 18.127833,
+          "input_io_ms": 6.850541000000021,
+          "validation_process_ms": 75.54716600000006,
+          "coverage_io_ms": 7.831042000000025,
+          "diagnostics": [],
+          "witness_sha256": "f1ea5591c1a4c8847fc1dc0724b989529fe55d3a9f86ae0de982f5d30b6d6715"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-1-candidate-2",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 1987,
+            "turns": 248,
+            "tuple": [
+              12672,
+              1987,
+              248
+            ]
+          },
+          "validator_ms": 10.327625,
+          "input_io_ms": 6.972500000000082,
+          "validation_process_ms": 52.53829200000007,
+          "coverage_io_ms": 7.963250000000016,
+          "diagnostics": [],
+          "witness_sha256": "e074d05dd8d104dc98debdc7fec4a130995150d0be167382e871ecee62023f5a"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-1-candidate-3",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 1990,
+            "turns": 248,
+            "tuple": [
+              12672,
+              1990,
+              248
+            ]
+          },
+          "validator_ms": 9.172125,
+          "input_io_ms": 8.548250000000053,
+          "validation_process_ms": 66.69066599999996,
+          "coverage_io_ms": 6.847083999999995,
+          "diagnostics": [],
+          "witness_sha256": "1a6342c3faa9a6223af8be489f5b77c5935e8827a6d95d81d0f8987b009cec70"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-1-candidate-4",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 1991,
+            "turns": 248,
+            "tuple": [
+              12672,
+              1991,
+              248
+            ]
+          },
+          "validator_ms": 4.13375,
+          "input_io_ms": 3.9032920000000786,
+          "validation_process_ms": 31.099500000000035,
+          "coverage_io_ms": 9.863042000000064,
+          "diagnostics": [],
+          "witness_sha256": "e7b47ab864e259202ced4a577d39562750f6cbf36b61c15dc89a6536961db1d7"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-1-candidate-5",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 1986,
+            "turns": 248,
+            "tuple": [
+              12672,
+              1986,
+              248
+            ]
+          },
+          "validator_ms": 11.935208,
+          "input_io_ms": 3.9497499999999945,
+          "validation_process_ms": 38.078750000000014,
+          "coverage_io_ms": 9.58404100000007,
+          "diagnostics": [],
+          "witness_sha256": "140e053629d932d9d57b43166422e3052ce320c97fa5bb23c64210d7a44ee78e"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-1-candidate-6",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 1994,
+            "turns": 248,
+            "tuple": [
+              12672,
+              1994,
+              248
+            ]
+          },
+          "validator_ms": 8.67525,
+          "input_io_ms": 8.237083000000098,
+          "validation_process_ms": 40.44429200000002,
+          "coverage_io_ms": 9.903167000000053,
+          "diagnostics": [],
+          "witness_sha256": "6db3c6ec9563178b142a226821b5c05946775cacfb03f4bf6a0232c106f84570"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-1-candidate-7",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 1986,
+            "turns": 248,
+            "tuple": [
+              12672,
+              1986,
+              248
+            ]
+          },
+          "validator_ms": 9.128625,
+          "input_io_ms": 4.0127089999999725,
+          "validation_process_ms": 47.29937499999994,
+          "coverage_io_ms": 9.49995899999999,
+          "diagnostics": [],
+          "witness_sha256": "942dfd5a180f8802bfee70d1f5bc155bc0c5011c2ea6f26a54d74e0440d50156"
+        }
+      ],
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-1-candidate-5"
+    },
+    {
+      "node": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+      "label": "F01",
+      "trials": 10,
+      "construction_ms": 242.02912500000002,
+      "validation_output_ms": 204.82108300000004,
+      "failures": [
+        {
+          "code": "closure-port-template-exhausted",
+          "message": "No unused port pair and collision-free corridor template",
+          "entity": {
+            "edge": "wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143",
+            "item": "item-liquid-xiranite",
+            "pairs": 4
+          },
+          "placement": {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+            "recipe": "pool-liquid-xiranite-poly-1",
+            "facility": "mix-pool-1-mode-liquid",
+            "x": 94,
+            "y": 10,
+            "width": 5,
+            "height": 5,
+            "rotation": 90
+          }
+        },
+        {
+          "code": "closure-port-template-exhausted",
+          "message": "No unused port pair and collision-free corridor template",
+          "entity": {
+            "edge": "wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143",
+            "item": "item-liquid-xiranite",
+            "pairs": 4
+          },
+          "placement": {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+            "recipe": "pool-liquid-xiranite-poly-1",
+            "facility": "mix-pool-1-mode-liquid",
+            "x": 93,
+            "y": 10,
+            "width": 5,
+            "height": 5,
+            "rotation": 90
+          }
+        }
+      ],
+      "candidates": [
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-2-candidate-0",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2000,
+            "turns": 249,
+            "tuple": [
+              12672,
+              2000,
+              249
+            ]
+          },
+          "validator_ms": 10.827708,
+          "input_io_ms": 5.459042000000181,
+          "validation_process_ms": 34.335959,
+          "coverage_io_ms": 17.920208000000002,
+          "diagnostics": [],
+          "witness_sha256": "306612e8878f18728b58f6f37512e8f6ae904cbbfefe0d41ed69da4734912208"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-2-candidate-1",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2000,
+            "turns": 249,
+            "tuple": [
+              12672,
+              2000,
+              249
+            ]
+          },
+          "validator_ms": 9.872334,
+          "input_io_ms": 4.201166999999941,
+          "validation_process_ms": 63.23816600000009,
+          "coverage_io_ms": 10.452291999999943,
+          "diagnostics": [],
+          "witness_sha256": "bc4a2f4a8b27eb7574678792614987ad0b33b38b7243b2f800de5216596359a4"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-2-candidate-2",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2002,
+            "turns": 249,
+            "tuple": [
+              12672,
+              2002,
+              249
+            ]
+          },
+          "validator_ms": 9.468542,
+          "input_io_ms": 8.998207999999977,
+          "validation_process_ms": 38.67995800000017,
+          "coverage_io_ms": 12.5542089999999,
+          "diagnostics": [],
+          "witness_sha256": "9dda80cd46fd9c7c3fdf9fad8212171ab206169449cceea0645e1fdd55b3bcc7"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-2-candidate-3",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2002,
+            "turns": 250,
+            "tuple": [
+              12672,
+              2002,
+              250
+            ]
+          },
+          "validator_ms": 8.574625000000001,
+          "input_io_ms": 9.570208000000093,
+          "validation_process_ms": 57.89858299999992,
+          "coverage_io_ms": 10.39020800000003,
+          "diagnostics": [],
+          "witness_sha256": "9aed27c7e26f1b54a907ab3e33538544745de3612d7f479e03f6d06fc8663de4"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-2-candidate-4",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2004,
+            "turns": 249,
+            "tuple": [
+              12672,
+              2004,
+              249
+            ]
+          },
+          "validator_ms": 13.829875,
+          "input_io_ms": 6.411250000000109,
+          "validation_process_ms": 40.18041599999992,
+          "coverage_io_ms": 13.93054200000006,
+          "diagnostics": [],
+          "witness_sha256": "8e628b9acff5406b2a991dde2180ef563de1988bdcde4cee980169bc2b60dfba"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-2-candidate-5",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2004,
+            "turns": 250,
+            "tuple": [
+              12672,
+              2004,
+              250
+            ]
+          },
+          "validator_ms": 8.355542,
+          "input_io_ms": 6.630333000000064,
+          "validation_process_ms": 48.91320799999994,
+          "coverage_io_ms": 11.07120800000007,
+          "diagnostics": [],
+          "witness_sha256": "336bc506384af13e44346dbd321503315c3bacc5ca1e95b1478c10c79b6af132"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-2-candidate-6",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2008,
+            "turns": 249,
+            "tuple": [
+              12672,
+              2008,
+              249
+            ]
+          },
+          "validator_ms": 9.9025,
+          "input_io_ms": 7.235124999999925,
+          "validation_process_ms": 53.47229100000004,
+          "coverage_io_ms": 10.785082999999986,
+          "diagnostics": [],
+          "witness_sha256": "954c1c9e65a4634ddc5a8e4a2d0a125e9133e3fcaf64d62f7865306129551499"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-2-candidate-7",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2008,
+            "turns": 250,
+            "tuple": [
+              12672,
+              2008,
+              250
+            ]
+          },
+          "validator_ms": 8.643875000000001,
+          "input_io_ms": 12.126250000000027,
+          "validation_process_ms": 53.06779199999983,
+          "coverage_io_ms": 10.66537500000004,
+          "diagnostics": [],
+          "witness_sha256": "502598bd3be2f9caa51d607088332fe9c670a0b5f9bb0b30f911cc8d10cc08f0"
+        }
+      ],
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-2-candidate-0"
+    },
+    {
+      "node": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+      "label": "F02",
+      "trials": 8,
+      "construction_ms": 211.51354199999992,
+      "validation_output_ms": 238.28537499999993,
+      "failures": [],
+      "candidates": [
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-3-candidate-0",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2068,
+            "turns": 250,
+            "tuple": [
+              12672,
+              2068,
+              250
+            ]
+          },
+          "validator_ms": 11.172416,
+          "input_io_ms": 7.501375000000053,
+          "validation_process_ms": 40.21166600000015,
+          "coverage_io_ms": 27.933250000000044,
+          "diagnostics": [],
+          "witness_sha256": "7b050f947b1da589722c201d568a9c8980b1e0d6cfab54011e05e0d5ba5e3591"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-3-candidate-1",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2068,
+            "turns": 250,
+            "tuple": [
+              12672,
+              2068,
+              250
+            ]
+          },
+          "validator_ms": 11.791375,
+          "input_io_ms": 7.147791999999981,
+          "validation_process_ms": 84.38420799999994,
+          "coverage_io_ms": 11.417042000000038,
+          "diagnostics": [],
+          "witness_sha256": "ee617aa4b658920aace057e488f34e41d4d7fba38d5d8de2758f5bc30550f874"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-3-candidate-2",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2068,
+            "turns": 250,
+            "tuple": [
+              12672,
+              2068,
+              250
+            ]
+          },
+          "validator_ms": 16.785167,
+          "input_io_ms": 7.537249999999858,
+          "validation_process_ms": 59.83487500000001,
+          "coverage_io_ms": 13.163499999999885,
+          "diagnostics": [],
+          "witness_sha256": "c2aa0e379bb074d6bfbc380a8fd12d1ca6e81acdf49c4b9427a0bd22ca3d1489"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-3-candidate-3",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2070,
+            "turns": 250,
+            "tuple": [
+              12672,
+              2070,
+              250
+            ]
+          },
+          "validator_ms": 9.489417,
+          "input_io_ms": 11.73587499999985,
+          "validation_process_ms": 75.24191600000017,
+          "coverage_io_ms": 10.28045800000018,
+          "diagnostics": [],
+          "witness_sha256": "1a7be27d1c7879a8704538e1bee55b12c166a85fd2e90e210004e49d2aab88f8"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-3-candidate-4",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2074,
+            "turns": 250,
+            "tuple": [
+              12672,
+              2074,
+              250
+            ]
+          },
+          "validator_ms": 10.046417,
+          "input_io_ms": 7.076917000000094,
+          "validation_process_ms": 41.6087500000001,
+          "coverage_io_ms": 16.71629199999984,
+          "diagnostics": [],
+          "witness_sha256": "bb146b93aa829d6bae4c023251cf6fb0b4a60093240ad51eb6aad6719e250266"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-3-candidate-5",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2079,
+            "turns": 250,
+            "tuple": [
+              12672,
+              2079,
+              250
+            ]
+          },
+          "validator_ms": 11.505542,
+          "input_io_ms": 7.214291000000003,
+          "validation_process_ms": 52.830708000000186,
+          "coverage_io_ms": 13.054458999999952,
+          "diagnostics": [],
+          "witness_sha256": "17daf28d0fd4bd999cab853e845250a4a5a01f3a9a1f1b27ced17758a045fb47"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-3-candidate-6",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2068,
+            "turns": 250,
+            "tuple": [
+              12672,
+              2068,
+              250
+            ]
+          },
+          "validator_ms": 12.953541000000001,
+          "input_io_ms": 9.071624999999813,
+          "validation_process_ms": 58.148332999999866,
+          "coverage_io_ms": 11.179374999999936,
+          "diagnostics": [],
+          "witness_sha256": "b8c50ff82b0c0fb7a1e7dc870c73a4f6ba3362373077c181f8413efe238f0feb"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-3-candidate-7",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2068,
+            "turns": 250,
+            "tuple": [
+              12672,
+              2068,
+              250
+            ]
+          },
+          "validator_ms": 12.425291,
+          "input_io_ms": 7.304709000000003,
+          "validation_process_ms": 62.814167,
+          "coverage_io_ms": 11.058082999999897,
+          "diagnostics": [],
+          "witness_sha256": "bb8188548e44e0bf638da810624d737013c016d3f97d145155ce19064c9f2c34"
+        }
+      ],
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-3-candidate-0"
+    },
+    {
+      "node": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1",
+      "label": "F03",
+      "trials": 8,
+      "construction_ms": 240.2299579999999,
+      "validation_output_ms": 159.66666599999962,
+      "failures": [],
+      "candidates": [
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-4-candidate-0",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2195,
+            "turns": 251,
+            "tuple": [
+              12672,
+              2195,
+              251
+            ]
+          },
+          "validator_ms": 7.489,
+          "input_io_ms": 7.682209000000057,
+          "validation_process_ms": 37.72233299999971,
+          "coverage_io_ms": 5.9716669999997976,
+          "diagnostics": [],
+          "witness_sha256": "b37b92a183bbf12833c2890844c2cf3fddc368fda3ee7f35989084366514a8fc"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-4-candidate-1",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2195,
+            "turns": 252,
+            "tuple": [
+              12672,
+              2195,
+              252
+            ]
+          },
+          "validator_ms": 6.09375,
+          "input_io_ms": 8.023709000000053,
+          "validation_process_ms": 35.62916600000017,
+          "coverage_io_ms": 7.4187080000001515,
+          "diagnostics": [],
+          "witness_sha256": "58b1cc755ed80da60db11878dc1423ac8752b06a843b32967c348218c9379789"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-4-candidate-2",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2195,
+            "turns": 252,
+            "tuple": [
+              12672,
+              2195,
+              252
+            ]
+          },
+          "validator_ms": 4.8774999999999995,
+          "input_io_ms": 9.469167000000198,
+          "validation_process_ms": 31.727582999999868,
+          "coverage_io_ms": 9.391458000000057,
+          "diagnostics": [],
+          "witness_sha256": "9019562e84a48213a0becb8219d2cd4c3d414fe79603575acdaef953174b05f6"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-4-candidate-3",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2197,
+            "turns": 251,
+            "tuple": [
+              12672,
+              2197,
+              251
+            ]
+          },
+          "validator_ms": 6.298417,
+          "input_io_ms": 6.27191700000003,
+          "validation_process_ms": 33.50395800000024,
+          "coverage_io_ms": 6.05133399999977,
+          "diagnostics": [],
+          "witness_sha256": "813bb42614b72aa8d1a1e07f4d4d794b7bc0c5fd5ab942ad6adcf881ce09ee08"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-4-candidate-4",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2201,
+            "turns": 251,
+            "tuple": [
+              12672,
+              2201,
+              251
+            ]
+          },
+          "validator_ms": 9.807791,
+          "input_io_ms": 4.172833000000082,
+          "validation_process_ms": 30.305499999999938,
+          "coverage_io_ms": 10.686375000000226,
+          "diagnostics": [],
+          "witness_sha256": "e7d753d0a03baf73fd966ca7f203a0d8f0bf573ce24581818357e64c366bdb4c"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-4-candidate-5",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2206,
+            "turns": 251,
+            "tuple": [
+              12672,
+              2206,
+              251
+            ]
+          },
+          "validator_ms": 11.9185,
+          "input_io_ms": 4.293916999999965,
+          "validation_process_ms": 37.942375000000084,
+          "coverage_io_ms": 8.290958000000046,
+          "diagnostics": [],
+          "witness_sha256": "cf750033d83c27393a6cdb417d718d89345faae798dee5409a77ea1ab21590fb"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-4-candidate-6",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2195,
+            "turns": 251,
+            "tuple": [
+              12672,
+              2195,
+              251
+            ]
+          },
+          "validator_ms": 9.7705,
+          "input_io_ms": 4.106041000000005,
+          "validation_process_ms": 43.617249999999785,
+          "coverage_io_ms": 7.646832999999788,
+          "diagnostics": [],
+          "witness_sha256": "b4126305ea45504416fa7c4e9271ea9dbd08c4daca3ff360c96f83e2757cbd19"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-4-candidate-7",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2195,
+            "turns": 251,
+            "tuple": [
+              12672,
+              2195,
+              251
+            ]
+          },
+          "validator_ms": 7.537625,
+          "input_io_ms": 6.965832999999748,
+          "validation_process_ms": 44.480375000000095,
+          "coverage_io_ms": 8.062917000000198,
+          "diagnostics": [],
+          "witness_sha256": "d58659e93ad45e2d726192888b4752424fbbccfedc63890f1d0f160d3f0d5e84"
+        }
+      ],
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-4-candidate-0"
+    },
+    {
+      "node": "facility-instance:recipe-occurrence:/target:0",
+      "label": "F00",
+      "trials": 8,
+      "construction_ms": 191.26187500000015,
+      "validation_output_ms": 208.724917,
+      "failures": [],
+      "candidates": [
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-5-candidate-0",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2285,
+            "turns": 252,
+            "tuple": [
+              12672,
+              2285,
+              252
+            ]
+          },
+          "validator_ms": 11.507667,
+          "input_io_ms": 7.96933399999989,
+          "validation_process_ms": 42.01304200000004,
+          "coverage_io_ms": 15.576207999999951,
+          "diagnostics": [],
+          "witness_sha256": "72ca39c0a8c1d06a102161f9b993984211199549735699862051538b0b6a6520"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-5-candidate-1",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2285,
+            "turns": 252,
+            "tuple": [
+              12672,
+              2285,
+              252
+            ]
+          },
+          "validator_ms": 11.281625,
+          "input_io_ms": 7.76104099999975,
+          "validation_process_ms": 50.951832999999624,
+          "coverage_io_ms": 9.405541999999969,
+          "diagnostics": [],
+          "witness_sha256": "967a650f65368b9e59fa9efd952438d872a0d4db42653ff2fc080615001d7b30"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-5-candidate-2",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2285,
+            "turns": 252,
+            "tuple": [
+              12672,
+              2285,
+              252
+            ]
+          },
+          "validator_ms": 14.919792,
+          "input_io_ms": 7.727167000000009,
+          "validation_process_ms": 53.652833999999984,
+          "coverage_io_ms": 9.220957999999882,
+          "diagnostics": [],
+          "witness_sha256": "c03cc0a59a260dc72d3126669297f651a2d74661734137478c11fcc4e18fa63b"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-5-candidate-3",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2287,
+            "turns": 252,
+            "tuple": [
+              12672,
+              2287,
+              252
+            ]
+          },
+          "validator_ms": 10.170125,
+          "input_io_ms": 11.370625000000018,
+          "validation_process_ms": 52.45049999999992,
+          "coverage_io_ms": 9.686959000000115,
+          "diagnostics": [],
+          "witness_sha256": "5d4b9f614688fd1da27f2babb14478c5a9620834d29ddd5ffccce3c3a54d49e7"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-5-candidate-4",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2291,
+            "turns": 252,
+            "tuple": [
+              12672,
+              2291,
+              252
+            ]
+          },
+          "validator_ms": 12.779125,
+          "input_io_ms": 7.6870420000000195,
+          "validation_process_ms": 42.173915999999736,
+          "coverage_io_ms": 14.962875000000167,
+          "diagnostics": [],
+          "witness_sha256": "8ded94c1049e4b3360c906bf3d50cf776ac71f2fea5ba254685c078ae12382c7"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-5-candidate-5",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2295,
+            "turns": 252,
+            "tuple": [
+              12672,
+              2295,
+              252
+            ]
+          },
+          "validator_ms": 9.946875,
+          "input_io_ms": 7.748167000000194,
+          "validation_process_ms": 50.907917,
+          "coverage_io_ms": 9.21954199999982,
+          "diagnostics": [],
+          "witness_sha256": "24a202e7386957ee7cbd26f10cd21b5ab1827a7e2075b78aa632962e32cdcc30"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-5-candidate-6",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2307,
+            "turns": 252,
+            "tuple": [
+              12672,
+              2307,
+              252
+            ]
+          },
+          "validator_ms": 15.439416,
+          "input_io_ms": 8.888542000000143,
+          "validation_process_ms": 67.20495900000014,
+          "coverage_io_ms": 8.626209000000017,
+          "diagnostics": [],
+          "witness_sha256": "4ef08edfe28cbfef449993927de236b1a167947c3c75fde4fb6ea324defa67d7"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-5-candidate-7",
+          "accepted": true,
+          "factory_validated": false,
+          "score": {
+            "width": 99,
+            "height": 128,
+            "area": 12672,
+            "physical_tiles": 2285,
+            "turns": 252,
+            "tuple": [
+              12672,
+              2285,
+              252
+            ]
+          },
+          "validator_ms": 10.238707999999999,
+          "input_io_ms": 9.930417000000034,
+          "validation_process_ms": 44.254207999999835,
+          "coverage_io_ms": 9.392541000000165,
+          "diagnostics": [],
+          "witness_sha256": "61d659b4e87fd86601f1ff11502cd1a757f8bdabbc8fa59adc27227a73de19f9"
+        }
+      ],
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/stage-5-candidate-0"
+    },
+    {
+      "node": null,
+      "label": "external-outputs",
+      "construction_ms": 39.97987499999999,
+      "candidates": [
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/complete-0",
+          "accepted": true,
+          "factory_validated": true,
+          "score": {
+            "width": 100,
+            "height": 129,
+            "area": 12900,
+            "physical_tiles": 2401,
+            "turns": 253,
+            "tuple": [
+              12900,
+              2401,
+              253
+            ]
+          },
+          "validator_ms": 10.378709,
+          "input_io_ms": 8.310249999999996,
+          "validation_process_ms": 38.125375000000076,
+          "coverage_io_ms": 10.406084000000192,
+          "diagnostics": [],
+          "witness_sha256": "446a0b122b5f322814d61de9b9917a30d872ad107d47ede4f883f62b4e6583b9"
+        },
+        {
+          "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/complete-1",
+          "accepted": true,
+          "factory_validated": true,
+          "score": {
+            "width": 100,
+            "height": 129,
+            "area": 12900,
+            "physical_tiles": 2401,
+            "turns": 253,
+            "tuple": [
+              12900,
+              2401,
+              253
+            ]
+          },
+          "validator_ms": 9.968708,
+          "input_io_ms": 8.553957999999966,
+          "validation_process_ms": 40.89979200000016,
+          "coverage_io_ms": 9.50545800000009,
+          "diagnostics": [],
+          "witness_sha256": "446a0b122b5f322814d61de9b9917a30d872ad107d47ede4f883f62b4e6583b9"
+        }
+      ],
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/factory-closure-selected-output/complete-0"
+    }
+  ],
+  "failures": [],
+  "provenance": [
+    {
+      "kind": "graph",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-chain-blocks/gap-1-placement.json",
+      "sha256": "5bc27708ce6b227dd78acef885032035fedd7e427fe16c9662f6e25d37670157"
+    },
+    {
+      "kind": "baseline",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-block-composition/matrix.json",
+      "sha256": "3f241ef78c9a4fedade7da14b48dc34d19f1139780ac7c58e470b0a565acfcf4"
+    },
+    {
+      "kind": "recipes",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+      "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+    },
+    {
+      "kind": "facilities",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+      "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+    },
+    {
+      "kind": "items",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+      "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+    },
+    {
+      "kind": "transports",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+      "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+    },
+    {
+      "kind": "components",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+      "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+    },
+    {
+      "kind": "validator",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+      "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+    }
+  ],
+  "source_hashes": {
+    "model.mjs": "f98b062c19491c2f5b6e7838ed24377ce497b9d9fa98df51737f3bb1d01b3bea",
+    "run.mjs": "ee12b6b96397e8eb2467f321099e55ec5de9334d2c100f18fe5d7dcebb346b32",
+    "../constructive-cycle-blocks/graph.mjs": "56da1be22c024ce6b270b8626ff7913cfde40557a53678d0753e6bc19206bcbe",
+    "../constructive-auto-interface/compact.mjs": "31be1364c1a7f7e702de2f426c9294efc2b87bb521e998b876f727a6dfea1ceb",
+    "../constructive-bound-interconnect/view.mjs": "634ac5b88679f4413aaedf8d1e818d272d5bb44f8855b15db4ca76d7bafd84f5"
+  }
+}
