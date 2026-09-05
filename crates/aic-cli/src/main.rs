@@ -391,6 +391,10 @@ enum LayoutsCommand {
         #[arg(long, default_value_t = 0)]
         nearby_candidates: usize,
 
+        /// Finish all internal outputs at each growth commit; external terminals remain a final stage.
+        #[arg(long)]
+        downstream_closed_growth: bool,
+
         /// Emit aggregate operation timings as one compact JSON record on stderr.
         #[arg(long)]
         profile: bool,
@@ -826,6 +830,7 @@ fn run() -> Result<CommandStatus> {
                 max_route_searches,
                 analysis_workers,
                 nearby_candidates,
+                downstream_closed_growth,
                 profile,
                 visualization_output,
                 report_output,
@@ -844,6 +849,7 @@ fn run() -> Result<CommandStatus> {
                     max_route_searches,
                     analysis_workers,
                     nearby_candidates,
+                    downstream_closed_growth,
                     visualization_output,
                     report_output,
                     localization_catalog,
@@ -1849,6 +1855,7 @@ fn construct_production_command(
     max_route_searches: u64,
     analysis_workers: usize,
     nearby_candidates: usize,
+    downstream_closed_growth: bool,
     visualization_output: PathBuf,
     report_output: PathBuf,
     localization_catalog: Option<PathBuf>,
@@ -1906,6 +1913,7 @@ fn construct_production_command(
         max_route_searches,
         analysis_workers,
         nearby_candidates,
+        downstream_closed_growth,
     };
     let report = construct_production(
         &wiring,

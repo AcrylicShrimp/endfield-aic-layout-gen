@@ -80,7 +80,117 @@ fn request(seed: &str) -> ConstructiveProductionRequest {
         max_route_searches: 512,
         analysis_workers: 1,
         nearby_candidates: 0,
+        downstream_closed_growth: false,
     }
+}
+
+#[test]
+fn downstream_groups_include_shared_consumers_and_cycles_but_stop_at_closed_nodes() {
+    let w = wiring(&[("a", "b"), ("a", "c"), ("c", "d"), ("d", "c")]);
+    let edges = w.edges.iter().collect::<Vec<_>>();
+    assert_eq!(
+        order::downstream_group("a", &["b".into()], &edges),
+        BTreeSet::from(["a".into(), "c".into(), "d".into()])
+    );
+    assert_eq!(
+        order::downstream_group("c", &[], &edges),
+        BTreeSet::from(["c".into(), "d".into()])
+    );
+    assert_eq!(
+        order::downstream_group("a", &["b".into(), "c".into(), "d".into()], &edges),
+        BTreeSet::from(["a".into()])
+    );
+}
+
+#[test]
+fn downstream_growth_closes_every_internal_output_before_commit() {
+    let (f, i, t, c) = catalogs();
+    for (edges, seed) in [
+        (vec![("a", "b"), ("b", "c")], "c"),
+        (vec![("a", "b"), ("a", "c"), ("b", "d"), ("c", "d")], "d"),
+        (vec![("a", "b"), ("a", "c")], "c"),
+        (vec![("a", "b"), ("b", "c"), ("c", "a")], "c"),
+    ] {
+        let w = wiring(&edges);
+        let mut req = request(seed);
+        req.downstream_closed_growth = true;
+        req.max_route_searches = 4096;
+        for nearby in [0, 4] {
+            req.nearby_candidates = nearby;
+            let r = construct_production(&w, &f, &i, &t, &c, &req);
+            assert!(
+                r.complete,
+                "{edges:?}, nearby={nearby}: {:?} {:?}",
+                r.diagnostics, r.rejected_reasons
+            );
+            for step in &r.steps {
+                network::validate(&step.node, &f, &t, &c).unwrap();
+                audit::validate_coverage(&step.node, &w, &i).unwrap();
+                // Assert directly against the original ledger, not the group-construction helper.
+                for e in &w.edges {
+                    if step.node.member_instances.contains(&e.source) {
+                        assert!(step.node.member_instances.contains(&e.target));
+                        assert!(step.node.internal_requirements.contains(&e.id));
+                    }
+                }
+                assert!(step.placement_attempts <= req.max_placement_attempts);
+                assert!(step.statistics.astar_searches <= req.max_route_searches);
+            }
+            let second = construct_production(&w, &f, &i, &t, &c, &req);
+            assert_eq!(r.final_node, second.final_node);
+            assert_eq!(r.growth_decisions, second.growth_decisions);
+            if edges.len() == 2 && edges[0].0 == edges[1].0 {
+                assert_eq!(r.steps[0].added_instances.len(), 2);
+                assert_eq!(r.steps[0].node.member_instances.len(), 3);
+            }
+        }
+    }
+}
+
+#[test]
+fn downstream_group_failure_never_commits_half_a_branch_or_private_seed_cycle() {
+    let (f, i, t, c) = catalogs();
+    for (edges, seed_is_closed) in [
+        (vec![("a", "b"), ("a", "c")], true),
+        (vec![("a", "b"), ("b", "c"), ("c", "a")], false),
+    ] {
+        let w = wiring(&edges);
+        let mut req = request("c");
+        req.downstream_closed_growth = true;
+        req.max_route_searches = 1;
+        let r = construct_production(&w, &f, &i, &t, &c, &req);
+        assert!(!r.complete);
+        assert!(r.steps.is_empty());
+        assert_eq!(r.final_node.is_some(), seed_is_closed);
+        if let Some(node) = r.final_node {
+            assert_eq!(node.member_instances, vec!["c"]);
+        }
+        assert!(r.failed_statistics.astar_searches <= 1);
+        assert!(!r.attempted_groups_at_failure.is_empty());
+    }
+}
+
+#[test]
+fn downstream_closure_audit_detects_unrouted_edges_between_placed_nodes() {
+    let (f, i, _, _) = catalogs();
+    let w = wiring(&[("a", "b")]);
+    let mut node = construct_facility_node(&w, &f, &i, "a").unwrap();
+    node.member_instances.push("b".into());
+    let edges = w.edges.iter().collect::<Vec<_>>();
+    assert_eq!(order::unclosed_outputs(&node, &edges), vec!["edge-0"]);
+    node.internal_requirements.push("edge-0".into());
+    assert!(order::unclosed_outputs(&node, &edges).is_empty());
+}
+
+#[test]
+fn downstream_order_is_opt_in_for_existing_request_files() {
+    let mut value = serde_json::to_value(request("c")).unwrap();
+    value
+        .as_object_mut()
+        .unwrap()
+        .remove("downstream_closed_growth");
+    let req: ConstructiveProductionRequest = serde_json::from_value(value).unwrap();
+    assert!(!req.downstream_closed_growth);
 }
 
 #[test]

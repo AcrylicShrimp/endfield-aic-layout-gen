@@ -135,6 +135,26 @@ fn partial_factory_summary_identifies_both_written_artifacts() {
 }
 
 #[test]
+fn downstream_growth_flag_records_order_diagnostics_without_expanding_stdout() {
+    let fixture = Fixture::new();
+    let output = fixture
+        .command("1", None)
+        .arg("--downstream-closed-growth")
+        .arg("--report-output")
+        .arg(fixture.directory.join("report.json"))
+        .arg("--visualization-output")
+        .arg(fixture.directory.join("history.html"))
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(summary(&output)["success"], false);
+    let report: Value =
+        serde_json::from_slice(&fs::read(fixture.directory.join("report.json")).unwrap()).unwrap();
+    assert_eq!(report["request"]["downstream_closed_growth"], true);
+    assert!(!report["growth_decisions"].as_array().unwrap().is_empty());
+}
+
+#[test]
 fn early_catalog_diagnostics_go_to_file_not_stdout() {
     for (name, flag) in [
         ("recipes", "--recipes"),

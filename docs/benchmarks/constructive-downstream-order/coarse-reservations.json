@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "stage": "offline-future-reservations",
+  "input": "/tmp/aic-downstream.kTgcr8/matrix/heavy-xiranite-0-closed-coarse.json",
+  "input_sha256": "7ad4bc4ef60ad57185326336644b5aa017c9fdbe2e7b5601656eb82501b074fe",
+  "corridor_length": 3,
+  "scope": "Pending new-port endpoints overlapped by another port reservation. The route engine exempts both selected endpoints by port identity; consider the chosen pair before inferring rejection.",
+  "conflicts": [
+    {
+      "endpoint": {
+        "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+        "facility": "grinder-1-mode-normal",
+        "port": "input-belt-0",
+        "direction": "input",
+        "transport": "belt",
+        "position": {
+          "x": 54,
+          "y": 24
+        },
+        "edge": "south",
+        "connection": {
+          "x": 54,
+          "y": 25
+        }
+      },
+      "requirements": [
+        "wiring-edge:1770726fc972d47bbfb77284fd3ce39582a2fea43bdf58f8f5a4c00150b5a2d3",
+        "wiring-edge:833307cbcd65b4b77a2d7ed1240b029edef6467bcd988efd99f99887d5900e5b"
+      ],
+      "reservation_owners": [
+        {
+          "port": {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:2",
+            "facility": "furnance-1-mode-normal",
+            "port": "input-belt-0",
+            "direction": "input",
+            "transport": "belt",
+            "position": {
+              "x": 55,
+              "y": 25
+            },
+            "edge": "west",
+            "connection": {
+              "x": 54,
+              "y": 25
+            }
+          },
+          "requirements": [
+            "wiring-edge:21c5b34ce05a1a6145f4451f9000d03a9184f3301407bb9ecb356b9339b77043"
+          ]
+        }
+      ]
+    },
+    {
+      "endpoint": {
+        "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:2",
+        "facility": "furnance-1-mode-normal",
+        "port": "input-belt-0",
+        "direction": "input",
+        "transport": "belt",
+        "position": {
+          "x": 55,
+          "y": 25
+        },
+        "edge": "west",
+        "connection": {
+          "x": 54,
+          "y": 25
+        }
+      },
+      "requirements": [
+        "wiring-edge:21c5b34ce05a1a6145f4451f9000d03a9184f3301407bb9ecb356b9339b77043"
+      ],
+      "reservation_owners": [
+        {
+          "port": {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+            "facility": "grinder-1-mode-normal",
+            "port": "input-belt-0",
+            "direction": "input",
+            "transport": "belt",
+            "position": {
+              "x": 54,
+              "y": 24
+            },
+            "edge": "south",
+            "connection": {
+              "x": 54,
+              "y": 25
+            }
+          },
+          "requirements": [
+            "wiring-edge:1770726fc972d47bbfb77284fd3ce39582a2fea43bdf58f8f5a4c00150b5a2d3",
+            "wiring-edge:833307cbcd65b4b77a2d7ed1240b029edef6467bcd988efd99f99887d5900e5b"
+          ]
+        }
+      ]
+    }
+  ]
+}

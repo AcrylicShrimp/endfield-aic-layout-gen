@@ -1,8 +1,10 @@
 //! Natural-footprint first-feasible construction, independent of rigid module composition.
 mod audit;
 mod boundary;
+mod order;
 mod placement;
 use boundary::blocked_boundaries;
+pub use order::ConstructiveGrowthDecision;
 pub use placement::ConstructivePlacementDecision;
 #[cfg(test)]
 mod tests;
@@ -38,6 +40,9 @@ pub struct ConstructiveProductionRequest {
     /// Number of valid nearby alternatives to compare; zero retains coarse first-feasible growth.
     #[serde(default)]
     pub nearby_candidates: usize,
+    /// Commit only internal downstream-closed growth; external terminals remain a final stage.
+    #[serde(default)]
+    pub downstream_closed_growth: bool,
 }
 
 fn default_analysis_workers() -> usize {
@@ -83,6 +88,7 @@ pub struct ConstructiveProductionReport {
     pub failed_statistics: ConstructiveCompositionStatistics,
     pub rejected_reasons: BTreeMap<String, u64>,
     pub placement_decisions: Vec<ConstructivePlacementDecision>,
+    pub growth_decisions: Vec<ConstructiveGrowthDecision>,
     pub attempted_groups_at_failure: Vec<Vec<String>>,
     pub last_obstruction: Option<ConstructiveProductionObstruction>,
     pub elapsed_ms: u64,
@@ -152,6 +158,7 @@ pub fn construct_production(
         failed_statistics: Default::default(),
         rejected_reasons: BTreeMap::new(),
         placement_decisions: Vec::new(),
+        growth_decisions: Vec::new(),
         attempted_groups_at_failure: Vec::new(),
         last_obstruction: None,
         elapsed_ms: 0,
@@ -267,6 +274,9 @@ pub fn construct_production(
         return report;
     }
     report.status = "step-limit".into();
+    // A seed with downstream obligations is private until its full dependency group closes.
+    let mut has_closed_incumbent = !request.downstream_closed_growth
+        || order::unclosed_outputs(&current, &internal).is_empty();
     for index in 0..request.max_steps {
         let unresolved = internal
             .iter()
@@ -298,20 +308,58 @@ pub fn construct_production(
                 e.id.clone(),
             )
         });
-        let mut chosen = None;
-        let mut tried = BTreeSet::new();
+        let mut groups = Vec::new();
         for edge in frontier {
             let new_id = if current.member_instances.contains(&edge.source) {
                 &edge.target
             } else {
                 &edge.source
             };
-            let group = strong_component(new_id, &internal);
+            let group = if request.downstream_closed_growth {
+                order::downstream_group(new_id, &current.member_instances, &internal)
+            } else {
+                strong_component(new_id, &internal)
+            };
+            groups.push((new_id.clone(), group));
+        }
+        if request.downstream_closed_growth {
+            if has_closed_incumbent {
+                // Stable sorting retains the existing pipe/upstream/ID order within group sizes.
+                groups.sort_by_key(|(_, group)| {
+                    group
+                        .iter()
+                        .filter(|id| !current.member_instances.contains(id))
+                        .count()
+                });
+            } else {
+                groups = vec![(
+                    request.target_instance.clone(),
+                    order::downstream_group(&request.target_instance, &[], &internal),
+                )];
+            }
+        }
+        let mut chosen = None;
+        let mut tried = BTreeSet::new();
+        for (root, group) in groups {
             if !tried.insert(group.clone()) {
                 continue;
             }
             for variant in 0..4 {
-                if let Some(candidate) = c.grow_group(&current, &group, variant) {
+                let candidate = c.grow_group(&current, &group, variant);
+                if request.downstream_closed_growth {
+                    report.growth_decisions.push(ConstructiveGrowthDecision {
+                        step: index,
+                        root: root.clone(),
+                        variant,
+                        new_members: group
+                            .iter()
+                            .filter(|id| !current.member_instances.contains(id))
+                            .cloned()
+                            .collect(),
+                        success: candidate.is_some(),
+                    });
+                }
+                if let Some(candidate) = candidate {
                     chosen = Some(candidate);
                     break;
                 }
@@ -332,7 +380,12 @@ pub fn construct_production(
             } else {
                 "production-growth-exhausted"
             };
-            report.diagnostics.push(failure(code,&request.target_instance,"no accepted facility/cycle transaction within the recorded candidate budget; prior state preserved"));
+            report.diagnostics.push(failure(code, &request.target_instance,
+                if !has_closed_incumbent {
+                    "private downstream seed transaction exhausted its candidates; no closed incumbent exists"
+                } else {
+                    "no accepted connected growth transaction within the recorded candidate budget; prior state preserved"
+                }));
             report.failed_placement_attempts = c.attempts;
             report.failed_statistics = c.statistics.clone();
             report.attempted_groups_at_failure =
@@ -348,6 +401,17 @@ pub fn construct_production(
             report.diagnostics.push(d);
             break;
         }
+        if request.downstream_closed_growth && !order::unclosed_outputs(&next, &internal).is_empty()
+        {
+            report.status = "validation-failed".into();
+            report.diagnostics.push(failure(
+                "production-downstream-closure-failed",
+                &request.target_instance,
+                "growth candidate retained uncovered internal output requirements",
+            ));
+            break;
+        }
+        has_closed_incumbent = true;
         let added = next
             .member_instances
             .iter()
@@ -474,7 +538,7 @@ pub fn construct_production(
             "growth transaction limit reached; returning a validated partial layout",
         ));
     }
-    report.final_node = Some(current);
+    report.final_node = has_closed_incumbent.then_some(current);
     report.rejected_reasons = c.reasons;
     report.placement_decisions = c.placement_decisions;
     report.elapsed_ms = millis(started);
