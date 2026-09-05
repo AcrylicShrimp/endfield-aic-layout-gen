@@ -1,7 +1,9 @@
 //! Natural-footprint first-feasible construction, independent of rigid module composition.
 mod audit;
 mod boundary;
+mod placement;
 use boundary::blocked_boundaries;
+pub use placement::ConstructivePlacementDecision;
 #[cfg(test)]
 mod tests;
 use super::composition::{canonicalize_node, merge_nodes, rotate_node, translate_node};
@@ -33,6 +35,9 @@ pub struct ConstructiveProductionRequest {
     pub max_route_searches: u64,
     #[serde(default = "default_analysis_workers")]
     pub analysis_workers: usize,
+    /// Number of valid nearby alternatives to compare; zero retains coarse first-feasible growth.
+    #[serde(default)]
+    pub nearby_candidates: usize,
 }
 
 fn default_analysis_workers() -> usize {
@@ -77,6 +82,7 @@ pub struct ConstructiveProductionReport {
     pub failed_placement_attempts: usize,
     pub failed_statistics: ConstructiveCompositionStatistics,
     pub rejected_reasons: BTreeMap<String, u64>,
+    pub placement_decisions: Vec<ConstructivePlacementDecision>,
     pub attempted_groups_at_failure: Vec<Vec<String>>,
     pub last_obstruction: Option<ConstructiveProductionObstruction>,
     pub elapsed_ms: u64,
@@ -95,6 +101,7 @@ struct Constructor<'a> {
     attempts: usize,
     last_obstruction: Option<ConstructiveProductionObstruction>,
     screen_failure: Option<ConstructiveFrontierDiagnostic>,
+    placement_decisions: Vec<ConstructivePlacementDecision>,
 }
 
 pub fn construct_production(
@@ -144,6 +151,7 @@ pub fn construct_production(
         failed_placement_attempts: 0,
         failed_statistics: Default::default(),
         rejected_reasons: BTreeMap::new(),
+        placement_decisions: Vec::new(),
         attempted_groups_at_failure: Vec::new(),
         last_obstruction: None,
         elapsed_ms: 0,
@@ -161,6 +169,7 @@ pub fn construct_production(
         attempts: 0,
         last_obstruction: None,
         screen_failure: None,
+        placement_decisions: Vec::new(),
     };
     if request.schema_version != CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION
         || !wiring.success
@@ -169,9 +178,10 @@ pub fn construct_production(
         || request.max_route_searches == 0
         || request.analysis_workers == 0
         || request.analysis_workers > 16
+        || request.nearby_candidates > 8
         || !ids.contains(&request.target_instance)
     {
-        report.diagnostics.push(failure("production-input-invalid",&request.target_instance,"expected valid wiring, supported schema, an existing seed, positive operation budgets and 1..=16 analysis workers"));
+        report.diagnostics.push(failure("production-input-invalid",&request.target_instance,"expected valid wiring, supported schema, an existing seed, positive operation budgets, 1..=16 analysis workers and 0..=8 nearby candidates"));
         return report;
     }
     let all_ids = wiring
@@ -466,6 +476,7 @@ pub fn construct_production(
     }
     report.final_node = Some(current);
     report.rejected_reasons = c.reasons;
+    report.placement_decisions = c.placement_decisions;
     report.elapsed_ms = millis(started);
     report
 }
@@ -643,6 +654,11 @@ impl Constructor<'_> {
         let target = translate_node(current, margin, margin);
         let parent = target.placements.iter().find(|p| p.instance == anchor)?;
         let occupied = super::first_pipe_frontier::occupied_cells(&target.placements);
+        if self.request.nearby_candidates > 0 {
+            if let Some(best) = self.select_nearby(&target, &fresh, anchor, variant, margin) {
+                return Some(best);
+            }
+        }
         for attempt in 0..32 {
             if self.exhausted() {
                 return None;
@@ -688,6 +704,12 @@ impl Constructor<'_> {
                 continue;
             }
             let mut merged = merge_nodes(&source, &target);
+            if self.request.nearby_candidates > 0
+                && !placement::future_corridors_clear(&merged, self.wiring)
+            {
+                self.reject("production-placement-future-corridor-blocked");
+                continue;
+            }
             network::normalize(&mut merged.transport_networks);
             merged = canonicalize_node(&merged);
             if let Some(result) = self.close_internal(merged) {

@@ -8,6 +8,7 @@ pub(super) use external::connect_external;
 #[cfg(test)]
 mod tests;
 mod validation;
+pub(super) use first::FUTURE_PORT_ESCAPE_CELLS;
 pub(super) use first::connect_first;
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 pub(super) use validation::validate;

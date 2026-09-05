@@ -32,8 +32,10 @@ indexed paths, dense boundary screening, independent reachability and bounded pa
 The [same-host checkpoint](docs/benchmarks/constructive-runtime-checkpoint/report.md) reduces
 Heavy Xiranite construction median from 21.52 to 3.14 s, or 23.22 to 4.83 s including full JSON/HTML,
 with identical factory/search choices. These are measured release results, not universal guarantees.
-Next is [Q1 transactional route improvement](docs/todos/2026-09-05.11-transactional-route-improvement.md);
-its contract is specified, but the improvement pass is not implemented yet.
+The [Q0 nearby-placement experiment](docs/benchmarks/constructive-nearby-placement/report.md) tests
+compact initial placement before Q1 route polishing. It improves a small complete cycle but does
+not complete the full graph, so the reliable coarse constructor remains the default. The next
+quality question is bounded reconsideration of recent growth choices; Q1 remains deferred.
 
 Construct connected facilities at their natural footprint, accepting the first valid local growth
 instead of optimizing compact modules before the factory is complete:
@@ -62,6 +64,12 @@ Boundary analysis defaults to a ceiling of four workers, capped by host availabi
 and aggregate workspace memory. `--analysis-workers 1` selects serial execution; valid ceilings
 are 1 through 16. Growth, route search and first-feasible acceptance remain ordered. Stdout is one
 short completion JSON line with file paths; full diagnostics/history use the report file.
+
+`--nearby-candidates N` is an opt-in experiment: compare up to N routed/validated nearby alternatives
+(1 through 8); zero is the unchanged default. It may stop earlier than the coarse constructor.
+Request schema 1 adds the optional default-zero field; report schema 2 adds `placement_decisions`.
+These diagnostics include private trials, not just committed growth. Do not mistake a small partial
+layout for a successful factory-quality improvement.
 
 The `construct-production` command uses request schema 1 and report schema 2. It replaces the removed
 `auto-assemble-process-modules` command and its automatic assembly API. There is no compatibility

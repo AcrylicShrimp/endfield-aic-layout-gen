@@ -1,6 +1,9 @@
 //! Bounded first-feasible connection search. No area incumbent or completed-bundle collection.
 use super::*;
 
+/// Constructive reservation policy, not a required game clearance.
+pub(in crate::layouts::constructive) const FUTURE_PORT_ESCAPE_CELLS: i64 = 3;
+
 pub(in crate::layouts::constructive) fn connect_first(
     node: &ConstructiveNode,
     edge: &FacilityInstanceWiringEdge,
@@ -109,7 +112,7 @@ fn search(
                     }
                     let dx = port.connection.x - port.position.x;
                     let dy = port.connection.y - port.position.y;
-                    for distance in 0..3 {
+                    for distance in 0..FUTURE_PORT_ESCAPE_CELLS {
                         blocked.insert((
                             port.connection.x + dx * distance,
                             port.connection.y + dy * distance,

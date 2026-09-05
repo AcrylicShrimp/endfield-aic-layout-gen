@@ -79,7 +79,90 @@ fn request(seed: &str) -> ConstructiveProductionRequest {
         max_placement_attempts: 128,
         max_route_searches: 512,
         analysis_workers: 1,
+        nearby_candidates: 0,
     }
+}
+
+#[test]
+fn nearby_selection_validates_growth_and_is_deterministic() {
+    let (f, i, t, c) = catalogs();
+    for edges in [
+        vec![("a", "b"), ("b", "c")],
+        vec![("a", "b"), ("a", "c")],
+        vec![("a", "b"), ("b", "c"), ("c", "a")],
+    ] {
+        let w = wiring(&edges);
+        let mut req = request("c");
+        req.nearby_candidates = 4;
+        req.max_route_searches = 4096;
+        let first = construct_production(&w, &f, &i, &t, &c, &req);
+        let second = construct_production(&w, &f, &i, &t, &c, &req);
+        assert!(
+            first.complete,
+            "{:?} {:?}",
+            first.diagnostics, first.rejected_reasons
+        );
+        assert_eq!(first.final_node, second.final_node);
+        assert_eq!(first.placement_decisions, second.placement_decisions);
+        for step in &first.steps {
+            network::validate(&step.node, &f, &t, &c).unwrap();
+            audit::validate_coverage(&step.node, &w, &i).unwrap();
+            assert!(placement::future_corridors_clear(&step.node, &w));
+            assert!(step.placement_attempts <= req.max_placement_attempts);
+            assert!(step.statistics.astar_searches <= req.max_route_searches);
+        }
+        assert!(!first.placement_decisions.is_empty());
+        for d in &first.placement_decisions {
+            assert!(d.valid <= 4 && d.attempted <= 32 && d.attempted <= d.shortlisted);
+            assert!(d.selected_score <= d.first_score);
+        }
+    }
+}
+
+#[test]
+fn nearby_limits_are_explicit_and_preserve_incumbents() {
+    let (f, i, t, c) = catalogs();
+    let w = wiring(&[("a", "b"), ("b", "c"), ("c", "a")]);
+    let mut req = request("c");
+    req.nearby_candidates = 9;
+    let invalid = construct_production(&w, &f, &i, &t, &c, &req);
+    assert_eq!(invalid.status, "invalid-input");
+    assert_eq!(invalid.diagnostics[0].code, "production-input-invalid");
+    req.nearby_candidates = 4;
+    req.max_route_searches = 1;
+    let limited = construct_production(&w, &f, &i, &t, &c, &req);
+    assert!(!limited.complete);
+    assert!(limited.steps.is_empty());
+    assert_eq!(
+        limited.final_node.as_ref().unwrap().member_instances,
+        vec!["c"]
+    );
+    assert!(limited.failed_statistics.astar_searches <= 1);
+    network::validate(limited.final_node.as_ref().unwrap(), &f, &t, &c).unwrap();
+}
+
+#[test]
+fn pending_port_corridors_block_footprints_but_not_induced_connections() {
+    let (f, i, _, _) = catalogs();
+    let w = wiring(&[("a", "b"), ("b", "c")]);
+    let mut node = construct_facility_node(&w, &f, &i, "c").unwrap();
+    node = translate_node(&node, 10, 10);
+    let p = node.boundary_requirements[0].attachments[0].port().clone();
+    let mut blocker = construct_facility_node(&w, &f, &i, "a")
+        .unwrap()
+        .placements
+        .remove(0);
+    blocker.x = p.connection.x + p.connection.x - p.position.x;
+    blocker.y = p.connection.y + p.connection.y - p.position.y;
+    // Keep the actual connection cell free while obstructing its reserved outward continuation.
+    blocker.width = 1;
+    blocker.height = 1;
+    node.placements.push(blocker);
+    node.member_instances.push("a".into());
+    assert!(!placement::future_corridors_clear(&node, &w));
+    // The corridor belongs to the edge that will close now, not a future-edge reservation.
+    node.member_instances.push("b".into());
+    assert!(placement::future_corridors_clear(&node, &w));
 }
 
 #[test]

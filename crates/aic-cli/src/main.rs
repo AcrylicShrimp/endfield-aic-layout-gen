@@ -387,6 +387,10 @@ enum LayoutsCommand {
         #[arg(long, default_value_t = 4)]
         analysis_workers: usize,
 
+        /// Compare up to this many routed nearby placements (0..=8); 0 keeps coarse first-feasible growth.
+        #[arg(long, default_value_t = 0)]
+        nearby_candidates: usize,
+
         /// Emit aggregate operation timings as one compact JSON record on stderr.
         #[arg(long)]
         profile: bool,
@@ -821,6 +825,7 @@ fn run() -> Result<CommandStatus> {
                 max_placement_attempts,
                 max_route_searches,
                 analysis_workers,
+                nearby_candidates,
                 profile,
                 visualization_output,
                 report_output,
@@ -838,6 +843,7 @@ fn run() -> Result<CommandStatus> {
                     max_placement_attempts,
                     max_route_searches,
                     analysis_workers,
+                    nearby_candidates,
                     visualization_output,
                     report_output,
                     localization_catalog,
@@ -1842,6 +1848,7 @@ fn construct_production_command(
     max_placement_attempts: usize,
     max_route_searches: u64,
     analysis_workers: usize,
+    nearby_candidates: usize,
     visualization_output: PathBuf,
     report_output: PathBuf,
     localization_catalog: Option<PathBuf>,
@@ -1898,6 +1905,7 @@ fn construct_production_command(
         max_placement_attempts,
         max_route_searches,
         analysis_workers,
+        nearby_candidates,
     };
     let report = construct_production(
         &wiring,
