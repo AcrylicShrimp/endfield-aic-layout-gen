@@ -1,0 +1,334 @@
+{
+  "schema_version": 1,
+  "factory_validated": true,
+  "status": "complete-factory-improved",
+  "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-compaction-xy-final/round-1-x",
+  "initial_score": {
+    "width": 99,
+    "height": 85,
+    "area": 8415,
+    "physical_tiles": 2056,
+    "turns": 261,
+    "tuple": [
+      8415,
+      2056,
+      261
+    ]
+  },
+  "score": {
+    "width": 91,
+    "height": 76,
+    "area": 6916,
+    "physical_tiles": 1802,
+    "turns": 261,
+    "tuple": [
+      6916,
+      1802,
+      261
+    ]
+  },
+  "axis_order": "xy",
+  "round_budget": 8,
+  "termination": "unimproved-axis-pair",
+  "elapsed_ms": 1032.543417,
+  "stages": [
+    {
+      "round": 0,
+      "axis": "x",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-compaction-xy-final/round-0-x",
+      "factory_validated": true,
+      "score": {
+        "width": 92,
+        "height": 85,
+        "area": 7820,
+        "physical_tiles": 1958,
+        "turns": 261,
+        "tuple": [
+          7820,
+          1958,
+          261
+        ]
+      },
+      "witness_sha256": "1921928ac2ff83adc262e98194776b1fdf7bea9239b272dc50e8650c9dcb1e72",
+      "validation_output_ms": 77.141708,
+      "validator_ms": 8.752958999999999,
+      "timings": {
+        "model_ms": 42.073834000000005,
+        "solve_ms": 2.294542000000007,
+        "lowering_and_copy_ms": 45.911709,
+        "total_ms": 90.291875
+      },
+      "certificate": {
+        "axis": "x",
+        "points": 3097,
+        "retained_points": 2317,
+        "groups": 152,
+        "constraints": 631,
+        "relaxations": 1205,
+        "examined": 3382,
+        "original_extent": 99,
+        "resulting_extent": 92,
+        "scope": "least extent for fixed perpendicular geometry, row order, layer coincidences and chain topology"
+      },
+      "diagnostics": [],
+      "selected": true
+    },
+    {
+      "round": 0,
+      "axis": "y",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-compaction-xy-final/round-0-y",
+      "factory_validated": true,
+      "score": {
+        "width": 92,
+        "height": 76,
+        "area": 6992,
+        "physical_tiles": 1815,
+        "turns": 261,
+        "tuple": [
+          6992,
+          1815,
+          261
+        ]
+      },
+      "witness_sha256": "af9a81fb453f6e92d73ab73ebf8ea71502cbdb1b4b5084051ea711a4d5affaf3",
+      "validation_output_ms": 77.08716699999997,
+      "validator_ms": 7.47225,
+      "timings": {
+        "model_ms": 45.95916600000004,
+        "solve_ms": 1.6389169999999922,
+        "lowering_and_copy_ms": 37.82724999999999,
+        "total_ms": 85.42916600000001
+      },
+      "certificate": {
+        "axis": "y",
+        "points": 2999,
+        "retained_points": 2258,
+        "groups": 112,
+        "constraints": 457,
+        "relaxations": 1277,
+        "examined": 3588,
+        "original_extent": 85,
+        "resulting_extent": 76,
+        "scope": "least extent for fixed perpendicular geometry, row order, layer coincidences and chain topology"
+      },
+      "diagnostics": [],
+      "selected": true
+    },
+    {
+      "round": 1,
+      "axis": "x",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-compaction-xy-final/round-1-x",
+      "factory_validated": true,
+      "score": {
+        "width": 91,
+        "height": 76,
+        "area": 6916,
+        "physical_tiles": 1802,
+        "turns": 261,
+        "tuple": [
+          6916,
+          1802,
+          261
+        ]
+      },
+      "witness_sha256": "bd2fa0966f27888788e8744a38e4bc2095a298589e40b58e0bf5c47440b9394a",
+      "validation_output_ms": 70.101042,
+      "validator_ms": 8.230875000000001,
+      "timings": {
+        "model_ms": 53.131708,
+        "solve_ms": 1.321042000000034,
+        "lowering_and_copy_ms": 37.922207999999955,
+        "total_ms": 92.37950000000001
+      },
+      "certificate": {
+        "axis": "x",
+        "points": 2860,
+        "retained_points": 2178,
+        "groups": 152,
+        "constraints": 612,
+        "relaxations": 1126,
+        "examined": 3036,
+        "original_extent": 92,
+        "resulting_extent": 91,
+        "scope": "least extent for fixed perpendicular geometry, row order, layer coincidences and chain topology"
+      },
+      "diagnostics": [],
+      "selected": true
+    },
+    {
+      "round": 1,
+      "axis": "y",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-compaction-xy-final/round-1-y",
+      "factory_validated": true,
+      "score": {
+        "width": 91,
+        "height": 76,
+        "area": 6916,
+        "physical_tiles": 1802,
+        "turns": 261,
+        "tuple": [
+          6916,
+          1802,
+          261
+        ]
+      },
+      "witness_sha256": "c62d3cbb362f8f0ddc81e56a4350e8b59cb7785ccefd8f920ce55aea76a46e07",
+      "validation_output_ms": 72.366667,
+      "validator_ms": 8.083333,
+      "timings": {
+        "model_ms": 42.81895799999995,
+        "solve_ms": 0.7297090000000708,
+        "lowering_and_copy_ms": 32.982749999999896,
+        "total_ms": 76.53429099999994
+      },
+      "certificate": {
+        "axis": "y",
+        "points": 2847,
+        "retained_points": 2245,
+        "groups": 112,
+        "constraints": 460,
+        "relaxations": 1251,
+        "examined": 3592,
+        "original_extent": 76,
+        "resulting_extent": 76,
+        "scope": "least extent for fixed perpendicular geometry, row order, layer coincidences and chain topology"
+      },
+      "diagnostics": [],
+      "selected": false
+    },
+    {
+      "round": 2,
+      "axis": "x",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-compaction-xy-final/round-2-x",
+      "factory_validated": true,
+      "score": {
+        "width": 91,
+        "height": 76,
+        "area": 6916,
+        "physical_tiles": 1802,
+        "turns": 261,
+        "tuple": [
+          6916,
+          1802,
+          261
+        ]
+      },
+      "witness_sha256": "bd2fa0966f27888788e8744a38e4bc2095a298589e40b58e0bf5c47440b9394a",
+      "validation_output_ms": 70.138958,
+      "validator_ms": 8.376041,
+      "timings": {
+        "model_ms": 33.12266699999998,
+        "solve_ms": 0.7436250000000655,
+        "lowering_and_copy_ms": 35.96129099999996,
+        "total_ms": 69.83083299999998
+      },
+      "certificate": {
+        "axis": "x",
+        "points": 2847,
+        "retained_points": 2178,
+        "groups": 152,
+        "constraints": 612,
+        "relaxations": 1126,
+        "examined": 3036,
+        "original_extent": 91,
+        "resulting_extent": 91,
+        "scope": "least extent for fixed perpendicular geometry, row order, layer coincidences and chain topology"
+      },
+      "diagnostics": [],
+      "selected": false
+    },
+    {
+      "round": 2,
+      "axis": "y",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-compaction-xy-final/round-2-y",
+      "factory_validated": true,
+      "score": {
+        "width": 91,
+        "height": 76,
+        "area": 6916,
+        "physical_tiles": 1802,
+        "turns": 261,
+        "tuple": [
+          6916,
+          1802,
+          261
+        ]
+      },
+      "witness_sha256": "c62d3cbb362f8f0ddc81e56a4350e8b59cb7785ccefd8f920ce55aea76a46e07",
+      "validation_output_ms": 72.23487499999987,
+      "validator_ms": 8.397165999999999,
+      "timings": {
+        "model_ms": 31.929458000000068,
+        "solve_ms": 0.9922090000000026,
+        "lowering_and_copy_ms": 32.790083000000095,
+        "total_ms": 65.71466599999997
+      },
+      "certificate": {
+        "axis": "y",
+        "points": 2847,
+        "retained_points": 2245,
+        "groups": 112,
+        "constraints": 460,
+        "relaxations": 1251,
+        "examined": 3592,
+        "original_extent": 76,
+        "resulting_extent": 76,
+        "scope": "least extent for fixed perpendicular geometry, row order, layer coincidences and chain topology"
+      },
+      "diagnostics": [],
+      "selected": false
+    }
+  ],
+  "failures": [],
+  "provenance": [
+    {
+      "kind": "graph",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-chain-blocks/gap-1-placement.json",
+      "sha256": "5bc27708ce6b227dd78acef885032035fedd7e427fe16c9662f6e25d37670157"
+    },
+    {
+      "kind": "baseline",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-cluster-packing/approach-final-matrix.json",
+      "sha256": "ac5ca2ad85388d4b057e80bf578b5e05add2213f99a5f6c3dadf300bddca2c5b"
+    },
+    {
+      "kind": "recipes",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+      "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+    },
+    {
+      "kind": "facilities",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+      "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+    },
+    {
+      "kind": "items",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+      "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+    },
+    {
+      "kind": "transports",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+      "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+    },
+    {
+      "kind": "components",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+      "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+    },
+    {
+      "kind": "validator",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+      "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+    }
+  ],
+  "source_hashes": {
+    "model.mjs": "80cc6c9f1d3087edb55574ec359a73969f3d908ea35b2e6297bda29e0d703bbe",
+    "run.mjs": "336f977a362f5ee1e84815cbc435aece6a9919ae668b656ba113d65ac6b270eb",
+    "../constructive-placement-only/model.mjs": "47f0798630d1063b4ea0521d47e746f3051eac9361b9779914ed1e3e530edce3",
+    "../constructive-bound-interconnect/view.mjs": "634ac5b88679f4413aaedf8d1e818d272d5bb44f8855b15db4ca76d7bafd84f5",
+    "../constructive-auto-interface/compact.mjs": "31be1364c1a7f7e702de2f426c9294efc2b87bb521e998b876f727a6dfea1ceb",
+    "../constructive-factory-closure/model.mjs": "2ac964a4c2198897a3c48bf35deee96346589b5d145e29c1545e778e519e29db",
+    "../constructive-cycle-blocks/graph.mjs": "56da1be22c024ce6b270b8626ff7913cfde40557a53678d0753e6bc19206bcbe"
+  }
+}
