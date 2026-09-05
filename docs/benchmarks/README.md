@@ -37,6 +37,12 @@ seed input. The report preserves both the accepted history and a separate reject
 witness; it makes no full-graph speedup or completion claim. The next slice is route-order/retry
 inside the uncommitted cycle, not compactness optimization of the accepted partial factory.
 
+`constructive-complete-graph/report.md` closes that checkpoint: catalog-backed independent-axis
+bridges, bridge-aware future access and physical external-I/O construction complete the unchanged
+Heavy Xiranite graph (59 facilities, 89 internal and seven external requirements). The directory
+contains a compact audit and losslessly compressed full JSON/HTML history. The next milestone is
+improvement of an already complete validated factory, not further premature compact module packing.
+
 ## Heavy Xiranite Known-Bad Baseline
 
 `heavy-xiranite-forge.iterative-scc.known-bad.json` records the behavior before the incremental optimizer cutover. Its `baseline_status` is `known-bad-diagnostic-only`. Tests and later implementations must not preserve its coordinates, perimeter routes, or score.
