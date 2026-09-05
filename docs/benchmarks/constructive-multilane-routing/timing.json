@@ -1,0 +1,27 @@
+{
+  "scope": "Fresh release processes; warm filesystem; no build/test overlap; probe excludes catalog IO and output IO",
+  "binary_sha256": "6512d3601377bfc2388e236e235b41eff849c1f6af588ff0badcf8d232cf053b",
+  "samples": [
+    {
+      "file": "/tmp/aic-multilane.djOP6U/run-0.json",
+      "probe_ms": 2795.99525,
+      "cli_wall_ms": 3275.3185,
+      "connected": 64,
+      "witness_sha256": "605e844f172a578f0986420617c946de4e216b80c478510f51e352b564d9325f"
+    },
+    {
+      "file": "/tmp/aic-multilane.djOP6U/run-1.json",
+      "probe_ms": 2788.065208,
+      "cli_wall_ms": 2827.223584,
+      "connected": 64,
+      "witness_sha256": "605e844f172a578f0986420617c946de4e216b80c478510f51e352b564d9325f"
+    },
+    {
+      "file": "/tmp/aic-multilane.djOP6U/run-2.json",
+      "probe_ms": 2776.992792,
+      "cli_wall_ms": 2816.4993749999994,
+      "connected": 64,
+      "witness_sha256": "605e844f172a578f0986420617c946de4e216b80c478510f51e352b564d9325f"
+    }
+  ]
+}

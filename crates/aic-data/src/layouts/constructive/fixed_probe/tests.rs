@@ -190,7 +190,7 @@ fn placement_then_neighbor_distance_overrides_shuffled_edge_input() {
             ("far", 2, Some(4))
         ]
     );
-    assert_eq!(r.schema_version, 2);
+    assert_eq!(r.schema_version, 3);
     for a in &r.attempts {
         assert_eq!(a.port_trials.len(), a.port_pairs);
         assert!(
@@ -238,7 +238,7 @@ fn later_straight_connections_do_not_preempt_earlier_detours() {
 }
 
 #[test]
-fn attempted_port_pairs_are_distance_sorted_not_catalog_cross_product_order() {
+fn multiple_lanes_use_distinct_nearest_pairs_and_roll_back_on_failure() {
     let (mut input, _, i, t, c) = fixture();
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let mut raw = crate::facilities::load_facility_catalog(
@@ -265,7 +265,7 @@ fn attempted_port_pairs_are_distance_sorted_not_catalog_cross_product_order() {
     let capacity = t.capacity(TransportKind::Belt);
     let rate =
         Rate::from_quantity_per_duration_ms(capacity.quantity, capacity.duration_ms).unwrap();
-    // Exceed one port's capacity so no single restricted pair can complete this fixture.
+    // Two lanes must choose distinct ports in the same atomic requirement.
     input.internal_requirements[0].rate = rate.checked_add(rate).unwrap();
     let r = probe_fixed_routing(&input, &f, &i, &t, &c, 4, 32).unwrap();
     assert_eq!(
@@ -274,7 +274,35 @@ fn attempted_port_pairs_are_distance_sorted_not_catalog_cross_product_order() {
             .iter()
             .map(|p| p.distance)
             .collect::<Vec<_>>(),
-        vec![0, 0, 2, 2]
+        vec![0, 0]
     );
-    assert_eq!(r.attempts[0].port_pairs, 4);
+    assert!(r.unresolved_internal.is_empty());
+    assert_eq!(r.attempts[0].stage, "straight-pairs");
+    assert_eq!(r.attempts[0].port_pairs, 2);
+    assert!(r.attempts[0].port_trials.iter().all(|t| t.connected));
+    assert_eq!(r.attempts[0].port_trials[1].lane, 1);
+    assert_eq!(r.attempts[0].port_trials[1].parent_trial, Some(0));
+    assert_eq!(r.final_node.transport_networks[0].terminals.len(), 4);
+    for limit in [1, 32] {
+        // One call cannot finish two lanes; three lanes cannot use only two ports.
+        if limit == 32 {
+            input.internal_requirements[0].rate =
+                rate.checked_add(rate).unwrap().checked_add(rate).unwrap();
+        }
+        let failed = probe_fixed_routing(&input, &f, &i, &t, &c, 4, limit).unwrap();
+        assert_eq!(failed.unresolved_internal, vec!["edge"]);
+        assert!(failed.final_node.transport_networks.is_empty());
+        assert!(failed.final_node.logistics_components.is_empty());
+        assert!(failed.final_node.attachment_events.is_empty());
+        assert!(failed.attempts[0].port_trials.iter().all(|t| !t.connected));
+        let trials = &failed.attempts[0].port_trials;
+        for parent in std::iter::once(None).chain((0..trials.len()).map(Some)) {
+            let distances = trials
+                .iter()
+                .filter(|t| t.parent_trial == parent)
+                .map(|t| t.distance)
+                .collect::<Vec<_>>();
+            assert!(distances.windows(2).all(|w| w[0] <= w[1]));
+        }
+    }
 }
