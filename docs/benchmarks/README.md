@@ -30,6 +30,13 @@ established as necessary and recommends restoring construction-first behavior be
 partial-layout compactness search. It includes JSON/HTML witnesses and a read-only accessibility
 probe under the repository's bridge model.
 
+`constructive-completion-first/report.md` records the hard cutover to first-feasible facility/cycle
+growth. Controlled reuse, port-residual splitting and separated moss fan-in pass, but the full graph
+currently stops at nine facilities while a three-facility moss/seed cycle obstructs an unfinished
+seed input. The report preserves both the accepted history and a separate rejected obstruction
+witness; it makes no full-graph speedup or completion claim. The next slice is route-order/retry
+inside the uncommitted cycle, not compactness optimization of the accepted partial factory.
+
 ## Heavy Xiranite Known-Bad Baseline
 
 `heavy-xiranite-forge.iterative-scc.known-bad.json` records the behavior before the incremental optimizer cutover. Its `baseline_status` is `known-bad-diagnostic-only`. Tests and later implementations must not preserve its coordinates, perimeter routes, or score.
