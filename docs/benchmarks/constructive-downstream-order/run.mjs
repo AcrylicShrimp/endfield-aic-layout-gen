@@ -10,6 +10,7 @@ const [baseline, candidate, output] = process.argv.slice(2).map(p => path.resolv
 if (process.argv.length !== 5) throw new Error('Expected baseline, candidate and new output directory');
 const rounds = Number(process.env.AIC_ORDER_ROUNDS ?? 1);
 const fixedFlow = process.env.AIC_FLOW_EXPERIMENT === '1';
+const directPlacement = process.env.AIC_DIRECT_EXPERIMENT === '1';
 if (!Number.isInteger(rounds) || rounds < 1 || rounds > 3) throw new Error('Expected 1..3 rounds');
 const hash = v => createHash('sha256').update(v).digest('hex');
 const files = ['data/game/normalized/recipes.json', 'data/game/normalized/facilities.json',
@@ -21,13 +22,15 @@ const result = { schema_version: 1, source_parent: execFileSync('git', ['rev-par
   tracked_diff_sha256: hash(execFileSync('git', ['diff', 'HEAD'], { cwd: root })),
   order_source_sha256: hash(fs.readFileSync(path.join(root, 'crates/aic-data/src/layouts/constructive/production/order.rs'))),
   ...(fixedFlow ? { flow_direction: 'east', orientation_source_sha256: hash(fs.readFileSync(path.join(root, 'crates/aic-data/src/layouts/constructive/production/orientation.rs'))) } : {}),
+  ...(directPlacement ? { direct_source_sha256: hash(fs.readFileSync(path.join(root, 'crates/aic-data/src/layouts/constructive/production/direct.rs'))) } : {}),
   binary_sha256: { baseline: hash(fs.readFileSync(baseline)), candidate: hash(fs.readFileSync(candidate)) },
   input_sha256: Object.fromEntries(files.map(f => [f, hash(fs.readFileSync(path.join(root, f)))])),
   build: 'release; no build/test overlap during measured runs',
   budgets: { steps: 256, placement_trials_per_growth: 256, astar_per_growth: 4096, wall_guard_seconds_per_run: 180 },
   runs: [] };
 fs.mkdirSync(output);
-const variants = fixedFlow ? [['baseline', baseline, 0, false], ['unchanged', candidate, 0, false],
+const variants = directPlacement ? [['baseline', baseline, 0, false], ['unchanged', candidate, 0, false],
+  ['direct-east', candidate, 0, true, 'east', true]] : fixedFlow ? [['baseline', baseline, 0, false], ['unchanged', candidate, 0, false],
   ['closed-coarse', baseline, 0, true], ['fixed-east-coarse', candidate, 0, true, 'east'],
   ['closed-nearby-4', baseline, 4, true], ['fixed-east-nearby-4', candidate, 4, true, 'east']]
   : [['baseline', baseline, 0, false], ['unchanged', candidate, 0, false],
@@ -53,7 +56,7 @@ for (const [workload, plan] of [['heavy-xiranite', files[5]], ['seed-cycle', fil
   const internal = wiring.edges.filter(e => ids.has(e.source) && ids.has(e.target));
   for (let round = 0; round < rounds; round++) {
     const shift = round % variants.length;
-    for (const [variant, binary, nearby, closed, flow] of [...variants.slice(shift), ...variants.slice(0, shift)]) {
+    for (const [variant, binary, nearby, closed, flow, direct] of [...variants.slice(shift), ...variants.slice(0, shift)]) {
       const prefix = path.join(output, `${workload}-${round}-${variant}`);
       const args = ['layouts', 'construct-production', '--recipes', files[0], '--facility-catalog', files[1],
         '--item-catalog', files[2], '--transport-catalog', files[3], '--logistics-component-catalog', files[4],
@@ -61,6 +64,7 @@ for (const [workload, plan] of [['heavy-xiranite', files[5]], ['seed-cycle', fil
         '--max-steps', '256', '--max-placement-attempts', '256', '--max-route-searches', '4096',
         '--nearby-candidates', String(nearby), ...(closed ? ['--downstream-closed-growth'] : []),
         ...(flow ? ['--flow-direction', flow] : []),
+        ...(direct ? ['--connection-first-placement'] : []),
         '--report-output', prefix + '.json', '--visualization-output', prefix + '.html'];
       const err = fs.openSync(prefix + '.stderr', 'wx');
       const chunks = []; let stdoutBytes = 0, timedOut = false;
@@ -87,6 +91,10 @@ for (const [workload, plan] of [['heavy-xiranite', files[5]], ['seed-cycle', fil
         const orientations = new Map((r.orientation_decisions ?? []).map(d => [d.instance, d.rotation]));
         if (flow && nodes.some(n => n.placements.some(p => orientations.get(p.instance) !== p.rotation)))
           throw new Error(`Fixed orientation violated: ${prefix}`);
+        if (direct && (r.placement_decisions.length || r.direct_placement_decisions.some(d =>
+          d.trials.some((t, i) => t.accepted && i !== d.trials.length - 1
+            || i > 0 && t.endpoint_distance < d.trials[i - 1].endpoint_distance))))
+          throw new Error(`Direct first-valid distance order violated: ${prefix}`);
         const witness = hash(JSON.stringify({ final: r.final_node, steps: r.steps.map(s => ({ node: s.node, statistics: s.statistics, placement_attempts: s.placement_attempts })),
           failed: r.failed_statistics, diagnostics: r.diagnostics }));
         const key = workload + ':' + (variant === 'unchanged' ? 'baseline' : variant);
@@ -105,6 +113,8 @@ for (const [workload, plan] of [['heavy-xiranite', files[5]], ['seed-cycle', fil
           placements: r.steps.reduce((s, step) => s + step.placement_attempts, r.failed_placement_attempts),
           internal_output_violation_occurrences: outputViolations,
           ...(flow ? { orientation_decisions: r.orientation_decisions, flow_direction: flow } : {}),
+          ...(direct ? { direct_placement_decisions: r.direct_placement_decisions,
+            direct_source_only: r.placement_decisions.length === 0 } : {}),
           failed_statistics: r.failed_statistics,
           pending_boundaries: (r.final_node?.boundary_requirements ?? []).map(b => ({
             requirement: b.requirement, item: b.item, direction: b.direction,

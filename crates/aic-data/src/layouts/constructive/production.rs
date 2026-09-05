@@ -1,10 +1,12 @@
 //! Natural-footprint first-feasible construction, independent of rigid module composition.
 mod audit;
 mod boundary;
+mod direct;
 mod order;
 mod orientation;
 mod placement;
 use boundary::blocked_boundaries;
+pub use direct::{ConstructiveDirectPlacementDecision, ConstructiveDirectPlacementTrial};
 pub use order::ConstructiveGrowthDecision;
 pub use orientation::ConstructiveOrientationDecision;
 pub use placement::ConstructivePlacementDecision;
@@ -48,6 +50,9 @@ pub struct ConstructiveProductionRequest {
     /// Fixed catalog-derived facility orientation along the desired material-flow axis.
     #[serde(default)]
     pub flow_direction: Option<FacilityPortEdge>,
+    /// Place beside direct graph neighbors and accept the first routable local position.
+    #[serde(default)]
+    pub connection_first_placement: bool,
 }
 
 fn default_analysis_workers() -> usize {
@@ -95,6 +100,7 @@ pub struct ConstructiveProductionReport {
     pub placement_decisions: Vec<ConstructivePlacementDecision>,
     pub growth_decisions: Vec<ConstructiveGrowthDecision>,
     pub orientation_decisions: Vec<ConstructiveOrientationDecision>,
+    pub direct_placement_decisions: Vec<ConstructiveDirectPlacementDecision>,
     pub attempted_groups_at_failure: Vec<Vec<String>>,
     pub last_obstruction: Option<ConstructiveProductionObstruction>,
     pub elapsed_ms: u64,
@@ -115,6 +121,7 @@ struct Constructor<'a> {
     last_obstruction: Option<ConstructiveProductionObstruction>,
     screen_failure: Option<ConstructiveFrontierDiagnostic>,
     placement_decisions: Vec<ConstructivePlacementDecision>,
+    direct_placement_decisions: Vec<ConstructiveDirectPlacementDecision>,
 }
 
 pub fn construct_production(
@@ -167,6 +174,7 @@ pub fn construct_production(
         placement_decisions: Vec::new(),
         growth_decisions: Vec::new(),
         orientation_decisions: Vec::new(),
+        direct_placement_decisions: Vec::new(),
         attempted_groups_at_failure: Vec::new(),
         last_obstruction: None,
         elapsed_ms: 0,
@@ -186,6 +194,7 @@ pub fn construct_production(
         last_obstruction: None,
         screen_failure: None,
         placement_decisions: Vec::new(),
+        direct_placement_decisions: Vec::new(),
     };
     if request.schema_version != CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION
         || !wiring.success
@@ -198,6 +207,16 @@ pub fn construct_production(
         || !ids.contains(&request.target_instance)
     {
         report.diagnostics.push(failure("production-input-invalid",&request.target_instance,"expected valid wiring, supported schema, an existing seed, positive operation budgets, 1..=16 analysis workers and 0..=8 nearby candidates"));
+        return report;
+    }
+    if request.connection_first_placement
+        && (request.flow_direction.is_none() || request.nearby_candidates != 0)
+    {
+        report.diagnostics.push(failure(
+            "production-direct-placement-options-invalid",
+            &request.target_instance,
+            "connection-first placement requires flow_direction and nearby_candidates = 0",
+        ));
         return report;
     }
     let all_ids = wiring
@@ -566,6 +585,7 @@ pub fn construct_production(
     report.final_node = has_closed_incumbent.then_some(current);
     report.rejected_reasons = c.reasons;
     report.placement_decisions = c.placement_decisions;
+    report.direct_placement_decisions = c.direct_placement_decisions;
     report.elapsed_ms = millis(started);
     report
 }
@@ -754,6 +774,9 @@ impl Constructor<'_> {
         let clearance = 4 + fresh.placements[0].width.max(fresh.placements[0].height);
         let margin = clearance + fresh.bounds.width.max(fresh.bounds.height) + 4;
         let target = translate_node(current, margin, margin);
+        if self.request.connection_first_placement {
+            return self.select_direct(&target, &fresh, variant);
+        }
         let parent = target.placements.iter().find(|p| p.instance == anchor)?;
         let occupied = super::first_pipe_frontier::occupied_cells(&target.placements);
         if self.request.nearby_candidates > 0 {

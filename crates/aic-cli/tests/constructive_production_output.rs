@@ -141,6 +141,7 @@ fn downstream_growth_flag_records_order_diagnostics_without_expanding_stdout() {
         .command("1", None)
         .arg("--downstream-closed-growth")
         .args(["--flow-direction", "east"])
+        .arg("--connection-first-placement")
         .arg("--report-output")
         .arg(fixture.directory.join("report.json"))
         .arg("--visualization-output")
@@ -153,6 +154,13 @@ fn downstream_growth_flag_records_order_diagnostics_without_expanding_stdout() {
         serde_json::from_slice(&fs::read(fixture.directory.join("report.json")).unwrap()).unwrap();
     assert_eq!(report["request"]["downstream_closed_growth"], true);
     assert_eq!(report["request"]["flow_direction"], "east");
+    assert_eq!(report["request"]["connection_first_placement"], true);
+    assert!(
+        !report["direct_placement_decisions"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
     assert!(
         !report["orientation_decisions"]
             .as_array()

@@ -19,6 +19,7 @@ mod assembly;
 mod production;
 pub use production::{
     CONSTRUCTIVE_PRODUCTION_REPORT_SCHEMA_VERSION, CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION,
+    ConstructiveDirectPlacementDecision, ConstructiveDirectPlacementTrial,
     ConstructiveGrowthDecision, ConstructiveOrientationDecision, ConstructivePlacementDecision,
     ConstructiveProductionObstruction, ConstructiveProductionReport, ConstructiveProductionRequest,
     ConstructiveProductionStep, construct_production, render_constructive_production_html,

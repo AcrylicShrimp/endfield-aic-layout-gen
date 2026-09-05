@@ -82,7 +82,171 @@ fn request(seed: &str) -> ConstructiveProductionRequest {
         nearby_candidates: 0,
         downstream_closed_growth: false,
         flow_direction: None,
+        connection_first_placement: false,
     }
+}
+
+#[test]
+fn direct_placement_uses_all_neighbors_but_never_unrelated_anchors() {
+    let (f, i, _, _) = catalogs();
+    let w = wiring(&[("a", "b"), ("a", "c"), ("unrelated", "elsewhere")]);
+    let a = construct_facility_node(&w, &f, &i, "a").unwrap();
+    let b = translate_node(&construct_facility_node(&w, &f, &i, "b").unwrap(), 30, 20);
+    let c = translate_node(&construct_facility_node(&w, &f, &i, "c").unwrap(), 40, 28);
+    let base = merge_nodes(&b, &c);
+    let (d, poses) = direct::proposals(&base, &a, &w, FacilityPortEdge::East, 0);
+    assert_eq!(d.consumers, ["b", "c"]);
+    assert!(d.suppliers.is_empty());
+    assert_eq!(d.requirements.len(), 2);
+    assert_eq!(poses.len(), 32);
+    assert!(poses.windows(2).all(|p| p[0].1 <= p[1].1));
+    assert!(poses.iter().all(|(p, _)| p[0] + a.bounds.width < 30));
+    let extra = translate_node(
+        &construct_facility_node(&w, &f, &i, "unrelated").unwrap(),
+        500,
+        500,
+    );
+    let (d2, poses2) = direct::proposals(
+        &merge_nodes(&base, &extra),
+        &a,
+        &w,
+        FacilityPortEdge::East,
+        0,
+    );
+    assert_eq!(d, d2);
+    assert_eq!(poses, poses2);
+
+    // A supplier-only frontier grows on the opposite side, even though the graph is identical.
+    let (d, poses) = direct::proposals(&a, &b, &w, FacilityPortEdge::East, 0);
+    assert_eq!(d.suppliers, ["a"]);
+    assert_eq!(d.placement_side, "downstream");
+    assert!(
+        poses
+            .iter()
+            .all(|(p, _)| b.placements[0].x + p[0] > a.bounds.width)
+    );
+}
+
+#[test]
+fn direct_placement_all_axes_and_both_chain_orders_are_first_valid() {
+    let (f, i, t, c) = catalogs();
+    let w = wiring(&[("a", "b"), ("b", "c")]);
+    for (direction, dx, dy) in [
+        (FacilityPortEdge::East, 1, 0),
+        (FacilityPortEdge::South, 0, 1),
+        (FacilityPortEdge::West, -1, 0),
+        (FacilityPortEdge::North, 0, -1),
+    ] {
+        for seed in ["a", "c"] {
+            let mut req = request(seed);
+            req.flow_direction = Some(direction);
+            req.connection_first_placement = true;
+            let r = construct_production(&w, &f, &i, &t, &c, &req);
+            assert!(r.complete, "{direction:?}/{seed}: {:?}", r.diagnostics);
+            let node = r.final_node.as_ref().unwrap();
+            for edge in &w.edges {
+                let a = node
+                    .placements
+                    .iter()
+                    .find(|p| p.instance == edge.source)
+                    .unwrap();
+                let b = node
+                    .placements
+                    .iter()
+                    .find(|p| p.instance == edge.target)
+                    .unwrap();
+                assert!(dx * (b.x - a.x) + dy * (b.y - a.y) > 0);
+            }
+            assert!(r.placement_decisions.is_empty());
+            for d in &r.direct_placement_decisions {
+                assert_eq!(d.termination, "first-valid");
+                assert!(d.trials.last().unwrap().accepted);
+                assert!(d.trials[..d.trials.len() - 1].iter().all(|t| !t.accepted));
+            }
+            for step in &r.steps {
+                network::validate(&step.node, &f, &t, &c).unwrap();
+                audit::validate_coverage(&step.node, &w, &i).unwrap();
+            }
+            let again = construct_production(&w, &f, &i, &t, &c, &req);
+            assert_eq!(r.final_node, again.final_node);
+            assert_eq!(
+                r.direct_placement_decisions,
+                again.direct_placement_decisions
+            );
+        }
+    }
+}
+
+#[test]
+fn direct_placement_cycles_and_shared_consumers_keep_transaction_invariants() {
+    let (f, i, t, c) = catalogs();
+    for edges in [
+        vec![("a", "b"), ("b", "c"), ("c", "a")],
+        vec![("a", "b"), ("a", "c")],
+    ] {
+        let w = wiring(&edges);
+        let mut req = request("c");
+        req.flow_direction = Some(FacilityPortEdge::East);
+        req.connection_first_placement = true;
+        req.downstream_closed_growth = true;
+        let r = construct_production(&w, &f, &i, &t, &c, &req);
+        assert!(r.complete, "{edges:?}: {:?}", r.diagnostics);
+        for step in &r.steps {
+            network::validate(&step.node, &f, &t, &c).unwrap();
+            audit::validate_coverage(&step.node, &w, &i).unwrap();
+            for e in &w.edges {
+                assert!(
+                    !step.node.member_instances.contains(&e.source)
+                        || step.node.internal_requirements.contains(&e.id)
+                );
+            }
+        }
+        if edges.len() == 3 {
+            assert!(
+                r.direct_placement_decisions
+                    .iter()
+                    .any(|d| d.mixed_neighbor_roles)
+            );
+        }
+    }
+}
+
+#[test]
+fn direct_placement_options_and_exhaustion_do_not_fall_back() {
+    let (f, i, t, c) = catalogs();
+    let w = wiring(&[("a", "b"), ("a", "c")]);
+    let mut req = request("c");
+    let mut json = serde_json::to_value(&req).unwrap();
+    json.as_object_mut()
+        .unwrap()
+        .remove("connection_first_placement");
+    assert!(
+        !serde_json::from_value::<ConstructiveProductionRequest>(json)
+            .unwrap()
+            .connection_first_placement
+    );
+    req.connection_first_placement = true;
+    for (direction, nearby) in [(None, 0), (Some(FacilityPortEdge::East), 4)] {
+        req.flow_direction = direction;
+        req.nearby_candidates = nearby;
+        let r = construct_production(&w, &f, &i, &t, &c, &req);
+        assert_eq!(
+            r.diagnostics[0].code,
+            "production-direct-placement-options-invalid"
+        );
+        assert!(r.final_node.is_none());
+    }
+    req.nearby_candidates = 0;
+    req.downstream_closed_growth = true;
+    req.max_route_searches = 1;
+    req.max_placement_attempts = 1;
+    let r = construct_production(&w, &f, &i, &t, &c, &req);
+    assert!(!r.complete);
+    assert!(r.placement_decisions.is_empty());
+    assert!(r.failed_placement_attempts <= 1);
+    assert!(r.failed_statistics.astar_searches <= 1);
+    assert_eq!(r.final_node.as_ref().unwrap().member_instances, ["c"]);
+    audit::validate_coverage(r.final_node.as_ref().unwrap(), &w, &i).unwrap();
 }
 
 #[test]

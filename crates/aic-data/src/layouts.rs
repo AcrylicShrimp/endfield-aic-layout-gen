@@ -13,6 +13,7 @@ pub use constructive::{
     ConstructiveAssemblyModuleRequest, ConstructiveAssemblyReport, ConstructiveAssemblyRequest,
     ConstructiveAssemblyStepReport, ConstructiveAttachmentEvent, ConstructiveBoundaryAttachment,
     ConstructiveCompositionReport, ConstructiveCompositionScore, ConstructiveCompositionStatistics,
+    ConstructiveDirectPlacementDecision, ConstructiveDirectPlacementTrial,
     ConstructiveFrontierDiagnostic, ConstructiveFrontierGrowthPhase,
     ConstructiveFrontierGrowthReport, ConstructiveFrontierGrowthStatistics,
     ConstructiveFrontierGrowthStatus, ConstructiveFrontierReport, ConstructiveFrontierStatistics,

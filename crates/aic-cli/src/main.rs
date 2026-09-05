@@ -399,6 +399,10 @@ enum LayoutsCommand {
         #[arg(long, value_parser = ["north", "east", "south", "west"])]
         flow_direction: Option<String>,
 
+        /// Place beside direct graph neighbors; requires a flow direction and zero nearby candidates.
+        #[arg(long, requires = "flow_direction")]
+        connection_first_placement: bool,
+
         /// Emit aggregate operation timings as one compact JSON record on stderr.
         #[arg(long)]
         profile: bool,
@@ -836,6 +840,7 @@ fn run() -> Result<CommandStatus> {
                 nearby_candidates,
                 downstream_closed_growth,
                 flow_direction,
+                connection_first_placement,
                 profile,
                 visualization_output,
                 report_output,
@@ -856,6 +861,7 @@ fn run() -> Result<CommandStatus> {
                     nearby_candidates,
                     downstream_closed_growth,
                     flow_direction,
+                    connection_first_placement,
                     visualization_output,
                     report_output,
                     localization_catalog,
@@ -1863,6 +1869,7 @@ fn construct_production_command(
     nearby_candidates: usize,
     downstream_closed_growth: bool,
     flow_direction: Option<String>,
+    connection_first_placement: bool,
     visualization_output: PathBuf,
     report_output: PathBuf,
     localization_catalog: Option<PathBuf>,
@@ -1921,6 +1928,7 @@ fn construct_production_command(
         analysis_workers,
         nearby_candidates,
         downstream_closed_growth,
+        connection_first_placement,
         flow_direction: flow_direction.as_deref().map(|direction| match direction {
             "north" => aic_data::facilities::FacilityPortEdge::North,
             "east" => aic_data::facilities::FacilityPortEdge::East,
