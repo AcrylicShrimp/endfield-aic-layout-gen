@@ -41,23 +41,32 @@ export function permutationModule(lanes, target, catalogs, maxSwaps = 10000) {
   // Bound diagnostic materialization independently of swap count; this is not a game limit.
   if (lanes.length * Math.max(1, swaps.length) * 16 > 200000)
     fail('interconnect-cell-budget', null, 'Conservative diagnostic path-cell budget exhausted; no infeasibility claim');
+  const stages = [], last = Array(lanes.length).fill(-1);
+  for (const [ordinal, upper] of swaps.entries()) {
+    const stage = Math.max(last[upper], last[upper + 1]) + 1;
+    (stages[stage] ??= []).push({ ordinal, upper }); last[upper] = last[upper + 1] = stage;
+  }
+  if (!stages.length) stages.push([]);
   const paths = new Map(lanes.map(l => [l.id, []])), current = lanes.map(l => l.id), modules = [], components = [];
-  for (const [stage, upper] of (swaps.length ? swaps : [null]).entries()) {
-    const x = stage * 6, y = upper * 3;
+  for (const [stage, active] of stages.entries()) {
+    const x = stage * 6, byPosition = new Map(active.flatMap(s => [[s.upper, s], [s.upper + 1, s]]));
     for (let i = 0; i < current.length; i++) {
-      const points = upper !== null && i === upper ? [[0, y], [2, y], [2, y + 3], [5, y + 3]] :
-        upper !== null && i === upper + 1 ? [[0, y + 3], [1, y + 3], [1, y + 5], [3, y + 5], [3, y], [5, y]] : [[0, i * 3], [5, i * 3]];
+      const swap = byPosition.get(i), upper = swap?.upper, y = upper * 3;
+      const points = swap && i === upper ? [[0, y], [2, y], [2, y + 3], [5, y + 3]] :
+        swap ? [[0, y + 3], [1, y + 3], [1, y + 5], [3, y + 5], [3, y], [5, y]] : [[0, i * 3], [5, i * 3]];
       paths.get(current[i]).push(...polyline(points).map(p => ({ x: p.x + x, y: p.y })));
     }
-    if (upper !== null) {
-      const id = `swap-${stage}`;
+    for (const { ordinal, upper } of active) {
+      const id = `swap-${ordinal}`, y = upper * 3;
       modules.push({ id, x, y, width: 6, height: 6, lanes: [current[upper], current[upper + 1]] });
       components.push({ id, component: bridge.id, kind: bridge.kind, transport, rotation: 0, position: { x: x + 3, y: y + 3 } });
       [current[upper], current[upper + 1]] = [current[upper + 1], current[upper]];
     }
   }
+  if (current.some((id, i) => id !== target[i])) fail('interconnect-stage-order', null, 'Scheduled swaps changed the target permutation');
   const result = { schema_version: 1, status: 'permutation-geometry-only', transport,
-    width: Math.max(1, swaps.length) * 6, height: (lanes.length - 1) * 3 + 3,
+    width: stages.length * 6, height: (lanes.length - 1) * 3 + 3,
+    schedule: { stages, stage_count: stages.length, serial_stage_count: Math.max(1, swaps.length), scope: 'minimum depth for the retained position-dependency order, not global minimum area' },
     source_order: lanes.map(l => l.id), target_order: target, modules, components,
     lanes: lanes.map(l => ({ ...l, cells: paths.get(l.id) })), game_validated: false, factory_validated: false,
     pending: ['capacity-aware-fanout-fanin', 'facility-port-binding', 'independent-production-validator'] };

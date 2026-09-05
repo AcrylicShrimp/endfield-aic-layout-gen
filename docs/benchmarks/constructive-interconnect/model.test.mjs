@@ -21,9 +21,31 @@ test('every distinct-item permutation through six lanes passes independent cell 
       assert.deepEqual(g.lanes.map(l => l.rate), lanes.map(l => l.rate));
       const inversions = target.reduce((s, t, i) => s + target.slice(i + 1).filter(u => Number(u) < Number(t)).length, 0);
       assert.equal(g.modules.length, inversions); checked++;
+      assert.ok(g.width <= Math.max(1, inversions) * 6);
+      const scheduled = g.schedule.stages.flatMap((ss, stage) => ss.map(s => ({ ...s, stage }))).sort((a, b) => a.ordinal - b.ordinal);
+      const depth = [];
+      for (let i = 0; i < scheduled.length; i++) {
+        const predecessors = scheduled.slice(0, i).map((s, j) => Math.abs(s.upper - scheduled[i].upper) <= 1 ? depth[j] : 0);
+        depth.push(1 + Math.max(0, ...predecessors));
+        assert.equal(scheduled[i].stage + 1, depth[i]);
+        assert.equal(scheduled[i].ordinal, i);
+      }
+      assert.equal(g.schedule.stage_count, Math.max(1, ...depth));
     }
   }
   assert.equal(checked, 873);
+});
+test('independent swaps share columns while shared-position dependencies retain their order', () => {
+  const lanes = Array.from({ length: 6 }, (_, i) => lane(String(i)));
+  const parallel = permutationModule(lanes, ['1', '0', '3', '2', '5', '4'], catalogs);
+  assert.equal(parallel.modules.length, 3); assert.equal(parallel.width, 6);
+  assert.equal(parallel.schedule.stage_count, 1); assert.equal(parallel.certificate.valid, true);
+  const dependent = permutationModule(lanes.slice(0, 3), ['2', '1', '0'], catalogs);
+  assert.equal(dependent.schedule.stage_count, 3); assert.equal(dependent.width, 18);
+  for (const g of [parallel, dependent]) for (const stage of g.schedule.stages) {
+    const positions = stage.flatMap(s => [s.upper, s.upper + 1]);
+    assert.equal(new Set(positions).size, positions.length);
+  }
 });
 test('stable same-commodity lanes reorder across other items without self-crossing', () => {
   const a = beltItems[0].id, b = beltItems[1].id;
