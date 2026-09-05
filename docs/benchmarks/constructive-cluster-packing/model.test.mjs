@@ -66,6 +66,17 @@ test('translated shelves preserve all 53 facilities and interior rate geometry w
       for (const p of r.detail.witness.placements) assert.deepEqual(d.witness.placements.find(v => v.instance === p.instance), { ...p, x: p.x + o.x, y: p.y + o.y });
     }
   }
+  const center = nested[0].packing_plan.offset;
+  const refined = nestingCandidates(graph, clusters, catalogs, 32, 'space', { dx: center.dx, dy: center.dy, radius: 2 });
+  assert.ok(refined.length > 0 && refined.length <= 25);
+  assert.equal(refined[0].packing_plan.search.tested_translations, 25);
+  assert.equal(refined[0].packing_plan.search.offset_separation, 1);
+  assert.equal(new Set(refined.map(d => JSON.stringify([d.packing_plan.offset.dx, d.packing_plan.offset.dy]))).size, refined.length);
+  for (const d of refined) {
+    assert.ok(Math.abs(d.packing_plan.offset.dx - center.dx) <= 2 && Math.abs(d.packing_plan.offset.dy - center.dy) <= 2);
+    assert.equal(d.witness.placements.length, 53); assert.equal(d.factory_validated, false);
+  }
+  assert.equal(JSON.stringify(clusters), original);
 });
 
 test('region placement rejects duplicate/unknown/noninteger translations instead of losing members', () => {

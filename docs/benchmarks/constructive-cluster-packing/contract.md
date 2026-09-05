@@ -43,3 +43,25 @@ layer in either translated region. Opposite-layer cells do not block it. Report 
 output-accessible counts separately, with low-area rejection examples and structured diagnostics.
 This necessary-condition screen is scoped to the fixed-interior unused-port strategy, not a proof
 against shared trunks, reassignment or rip-up. A free connection cell does not prove route reachability.
+
+The optional `space` screen extends `ports` with a necessary free-region size condition. For each
+unused source connection, flood four-neighbor cells avoiding fixed bodies and its transport layer.
+A new rectangular consumer of area A requires at least A+1 connected free cells before placement:
+its body plus at least one connection cell. Reaching the measured geometry's one-cell outer halo
+establishes unbounded free space, not a routable or feasible consumer placement. Existing consumers
+do not require new body space. Real external outputs require escape; an exhausted diagnostic flood
+budget is unknown and must remain eligible. Opposite-layer occupancy is deliberately relaxed here.
+
+Assign distinct unused source ports to per-edge lane demands by descending minimum free-cell
+requirement. Since compatibility is a nested size threshold, sorted matching is sufficient for this
+necessary condition. Report pocket rejections separately from immediate-port rejections, including
+source, required threshold, eligible port count and measured/capped region sizes. This cannot reject
+a layout merely because a bounded search failed to find a corridor, nor establish whole-factory
+infeasibility. Keep complete closure and independent validation as the only acceptance gates.
+
+Local refinement may enumerate a radius-one or radius-two integer translation neighborhood around
+an independently accepted complete packing. The referenced report must identify its winning offset
+and its retained cluster witness hashes must equal the newly reconstructed clusters. No display
+label or recipe-specific offset is embedded in code. Use one-cell separation in this neighborhood;
+report the exact domain and candidate budget. Even exhausting all 25 offsets is not local optimality:
+closure still uses bounded heuristic placement and corridor families, not an exact completion oracle.

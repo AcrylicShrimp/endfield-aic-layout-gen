@@ -23,12 +23,17 @@ try {
   const keys = ['graph', 'blocks', 'incumbent', 'recipes', 'facilities', 'items', 'transports', 'components', 'validator', 'output-directory'], options = {}, args = process.argv.slice(2);
   for (let i = 0; i < args.length; i += 2) {
     const k = args[i].slice(2);
-    if (!args[i].startsWith('--') || ![...keys, 'packing-family', 'nesting-limit'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
+    if (!args[i].startsWith('--') || ![...keys, 'packing-family', 'nesting-limit', 'nesting-screen', 'refine-from', 'refine-radius'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
     options[k] = args[i + 1];
   }
   for (const k of keys) if (!options[k]) throw new Error(`Missing --${k}`);
   const packingFamily = options['packing-family'] ?? 'shelf';
   if (!['shelf', 'nesting'].includes(packingFamily)) throw new Error('Expected --packing-family shelf or nesting');
+  const nestingLimit = Number(options['nesting-limit'] ?? (options['refine-from'] ? 32 : 12)), nestingScreen = options['nesting-screen'] ?? 'space';
+  if (!Number.isSafeInteger(nestingLimit) || nestingLimit < 1 || nestingLimit > 32) throw new Error('Expected --nesting-limit 1..32');
+  if (!['ports', 'space'].includes(nestingScreen)) throw new Error('Expected --nesting-screen ports or space');
+  const refineRadius = Number(options['refine-radius'] ?? 2);
+  if (![1, 2].includes(refineRadius) || (options['refine-radius'] && !options['refine-from']) || (options['refine-from'] && packingFamily !== 'nesting')) throw new Error('Refinement requires nesting, --refine-from and radius 1 or 2');
   output = path.resolve(options['output-directory']); fs.mkdirSync(output); const start = performance.now();
   const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k, read(options[k])]));
   const graph = normalizeGraph(read(options.graph), catalogs), baseline = read(options.incumbent), blocks = read(options.blocks);
@@ -65,7 +70,18 @@ try {
     if (targets.length || regions.length !== 1) throw new Error(`Cluster growth did not close for ${c.id}`);
     clusters.push(regions[0]); clusterReports.push({ id: c.id, sources: c.regions.map(r => r.id), members: regions[0].detail.witness.placements.map(p => p.instance), stages });
   }
-  const packStart = performance.now(), packed = packingFamily === 'shelf' ? packingCandidates(graph, clusters, catalogs) : nestingCandidates(graph, clusters, catalogs, Number(options['nesting-limit'] ?? 12)), packMs = performance.now() - packStart;
+  let neighborhood = null;
+  if (options['refine-from']) {
+    const previous = read(options['refine-from']), winner = previous.packings?.find(p => p.complete && p.complete_directory === previous.selected_directory);
+    if (!previous.factory_validated || !winner?.packing_plan?.offset) throw new Error('Refinement report must select a complete nested packing');
+    const clusterHashes = cs => cs.map(c => [c.id, c.stages.at(-1).candidates.find(p => p.directory === c.stages.at(-1).selected_directory)?.witness_sha256]);
+    if (JSON.stringify(clusterHashes(previous.clusters)) !== JSON.stringify(clusterHashes(clusterReports))) throw new Error('Refinement requires identical retained cluster witness hashes');
+    // Recheck the complete reference independently rather than trusting its report flags.
+    const reference = await validate(read(path.join(previous.selected_directory, 'detail.json')), path.join(output, 'refinement-reference'), true);
+    if (!reference.factory_validated) throw new Error('Refinement reference failed complete independent validation');
+    neighborhood = { dx: winner.packing_plan.offset.dx, dy: winner.packing_plan.offset.dy, radius: refineRadius };
+  }
+  const packStart = performance.now(), packed = packingFamily === 'shelf' ? packingCandidates(graph, clusters, catalogs) : nestingCandidates(graph, clusters, catalogs, nestingLimit, nestingScreen, neighborhood), packMs = performance.now() - packStart;
   const packReports = [];
   for (let i = 0; i < packed.length; i++) {
     const p = await validate(packed[i], path.join(output, `packing-${i}`));
@@ -103,8 +119,8 @@ try {
   const report = { schema_version: 1, status: improved.length ? 'complete-factory-improved' : 'complete-incumbent-retained', factory_validated: true,
     selected_directory: selectedDirectory, score, incumbent_score: incumbent.score, packing_family: packingFamily, elapsed_ms: performance.now() - start, packing_construction_ms: packMs,
     clusters: clusterReports, packings: packReports.map(({ detail, ...r }) => r),
-    provenance: keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
-    source_hashes: Object.fromEntries(['run.mjs', 'model.mjs', 'nesting.mjs', '../constructive-block-composition/model.mjs', '../constructive-factory-closure/model.mjs', '../constructive-factory-closure/run.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
+    provenance: [...keys.filter(k => k !== 'output-directory'), ...(options['refine-from'] ? ['refine-from'] : [])].map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
+    source_hashes: Object.fromEntries(['run.mjs', 'model.mjs', 'nesting.mjs', 'pockets.mjs', '../constructive-block-composition/model.mjs', '../constructive-factory-closure/model.mjs', '../constructive-factory-closure/run.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), report); fs.copyFileSync(path.join(selectedDirectory, 'index.html'), path.join(output, 'index.html'), fs.constants.COPYFILE_EXCL);
   console.log(JSON.stringify({ status: report.status, clusters: clusters.length, packings: packed.length, score: score.tuple, output }));
 } catch (e) {

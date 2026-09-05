@@ -62,5 +62,7 @@ test('nesting budgets and geometry reject unsupported inputs with stable diagnos
   assert.throws(() => footprint({ ...empty(), placements: [{ x: 0, y: 0, width: 1025, height: 1 }] }), { code: 'nesting-row-budget' });
   assert.throws(() => nestingCandidates({}, [], {}), { code: 'nesting-cluster-count' });
   assert.throws(() => nestingCandidates({}, [{}, {}], {}, 0), { code: 'nesting-candidate-budget' });
+  assert.throws(() => nestingCandidates({}, [{}, {}], {}, 12, 'unknown'), { code: 'nesting-screen-schema' });
+  assert.throws(() => nestingCandidates({}, [{}, {}], {}, 12, 'space', { dx: 0, dy: 0, radius: 3 }), { code: 'nesting-neighborhood-schema' });
   assert.throws(() => collides({}, {}, 0.1, 0), { code: 'nesting-offset-schema' });
 });
