@@ -42,7 +42,7 @@
             "x": 2,
             "y": 2
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "output-belt-0",
@@ -147,7 +147,7 @@
             "x": 5,
             "y": 3
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "output-belt-0",
@@ -292,7 +292,7 @@
             "x": 5,
             "y": 3
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "output-belt-0",
@@ -437,7 +437,7 @@
             "x": 5,
             "y": 3
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "input-pipe-6",
@@ -582,7 +582,7 @@
             "x": 5,
             "y": 3
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "input-pipe-6",
@@ -727,7 +727,7 @@
             "x": 5,
             "y": 3
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "output-belt-0",
@@ -832,7 +832,7 @@
             "x": 2,
             "y": 2
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "input-pipe-3",
@@ -927,7 +927,7 @@
             "x": 2,
             "y": 2
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "output-belt-0",
@@ -1057,7 +1057,7 @@
             "x": 2,
             "y": 2
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "output-belt-0",
@@ -1182,7 +1182,7 @@
             "x": 4,
             "y": 4
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "output-pipe-0",
@@ -1562,7 +1562,7 @@
             "x": 4,
             "y": 4
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "input-pipe-5",
@@ -1687,7 +1687,7 @@
             "x": 4,
             "y": 4
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "output-belt-0",
@@ -1802,7 +1802,7 @@
             "x": 4,
             "y": 4
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "output-belt-0",
@@ -1897,7 +1897,7 @@
             "x": 2,
             "y": 2
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "input-pipe-3",
@@ -1982,7 +1982,7 @@
             "x": 2,
             "y": 2
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "output-belt-0",
@@ -2087,7 +2087,7 @@
             "x": 5,
             "y": 3
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "output-belt-0",
@@ -2222,7 +2222,7 @@
             "x": 5,
             "y": 3
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "output-belt-0",
@@ -2607,7 +2607,7 @@
             "x": 5,
             "y": 3
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "output-belt-0",
@@ -2732,7 +2732,7 @@
             "x": 4,
             "y": 4
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "input-pipe-5",
@@ -2857,7 +2857,7 @@
             "x": 4,
             "y": 4
           },
-          "edge": "east"
+          "edge": "south"
         },
         {
           "id": "input-pipe-5",

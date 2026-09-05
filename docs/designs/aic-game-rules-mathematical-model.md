@@ -134,6 +134,13 @@ Each port `p in P_f` has a local boundary cell `pos_p = (a_p,b_p)`, direction
 `dir_p in {input, output}`, transport `tau_p in T`, and outward edge `edge_p in D`. Catalog
 validation requires `pos_p` to lie inside the canonical footprint and on the named edge.
 
+The source importer must derive this outward edge from factory-port transform yaw and role,
+not boundary-coordinate precedence: a corner cell touches two faces. In the pinned factory
+table, non-corner evidence gives input yaw 180 -> south, input yaw 90 -> west, output yaw
+180 -> north and output yaw 90 -> east. Factory and logistics-component transform conventions
+are separate. The September 5 source correction fixes 20 corner inputs previously imported
+as east instead of south; it changes catalog data, not this mathematical port contract.
+
 Clockwise rotation transforms the local port cell as follows:
 
 ```text

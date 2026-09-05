@@ -65,16 +65,30 @@ def flatten_amounts(groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
     ]
 
 
-def port_edge(x: int, y: int, width: int, height: int) -> str:
-    if y == 0:
-        return "north"
-    if x == width - 1:
-        return "east"
-    if y == height - 1:
-        return "south"
-    if x == 0:
-        return "west"
-    raise ValueError(f"port ({x}, {y}) is not on footprint {width}x{height}")
+def factory_port_edge(
+    raw_port: dict[str, Any], direction: str, width: int, height: int
+) -> str:
+    """Read factory transform semantics; position validates a normal but cannot select it."""
+    rotation = raw_port["trans"]["rotation"]
+    if direction not in ("input", "output") or raw_port["isOutput"] != int(direction == "output"):
+        raise ValueError(f"factory port {raw_port['index']} has inconsistent role {direction}")
+    # Factory transforms use the opposite yaw handedness from the logistics tables below.
+    input_normals = {0: "north", 90: "west", 180: "south", 270: "east"}
+    if rotation["x"] != 0 or rotation["z"] != 0 or rotation["y"] not in input_normals:
+        raise ValueError(f"factory port {raw_port['index']} has unsupported rotation {rotation}")
+    edge = input_normals[rotation["y"]]
+    if direction == "output":
+        edge = opposite(edge)
+    position = raw_port["trans"]["position"]
+    x, y = position["x"], position["z"]
+    on_face = {"north": y == 0, "east": x == width - 1,
+               "south": y == height - 1, "west": x == 0}
+    if not (0 <= x < width and 0 <= y < height and on_face[edge]):
+        raise ValueError(
+            f"factory port {raw_port['index']} at ({x}, {y}) with {direction} yaw "
+            f"{rotation['y']} implies {edge}, not a matching face of {width}x{height}"
+        )
+    return edge
 
 
 def normalized_port(
@@ -89,7 +103,7 @@ def normalized_port(
         "direction": direction,
         "transport": transport,
         "position": {"x": x, "y": y},
-        "edge": port_edge(x, y, width, height),
+        "edge": factory_port_edge(raw_port, direction, width, height),
     }
 
 

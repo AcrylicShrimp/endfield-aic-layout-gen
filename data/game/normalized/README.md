@@ -26,6 +26,10 @@ Current snapshot contents:
 - Every normalized recipe directly references its flattened facility ID.
 - Facility footprint width and height come from source `range.width` and `range.depth`.
 - Port 2D coordinates come from source position `x` and `z`.
+- Port outward edges come from the factory port's source transform yaw and input/output role;
+  footprint coordinates validate that edge but never break corner ties. Factory transforms and
+  logistics-component transforms use separate conventions. The 2026-09-05 correction changes 20
+  southeast corner input edges from east to south; older catalog-based search results need review.
 - Mode ports include only fixed input/output transport kinds used by recipes in that mode.
 - All four quarter-turn rotations are enabled for recipe-capable facilities.
 - Recipe duration is `progressRound * 1000` milliseconds.
