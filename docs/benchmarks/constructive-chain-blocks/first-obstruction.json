@@ -1,0 +1,413 @@
+{
+  "schema_version": 1,
+  "scope": "exact first-failure snapshot; no relocation or global infeasibility proof",
+  "snapshot_connections": 33,
+  "requirement": "wiring-edge:4cb849fc215cd655bf6c54a772c7fb48066d7ad879d4abc0c971f43749d5a231",
+  "source": "F22",
+  "target": "F16",
+  "transport": "belt",
+  "demand": {
+    "numerator": 1,
+    "denominator": 1
+  },
+  "capacity": {
+    "quantity": 1,
+    "duration_ms": 2000
+  },
+  "minimum_full_capacity_lanes": 2,
+  "endpoints": [
+    {
+      "role": "source",
+      "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+      "label": "F22",
+      "cells": [
+        {
+          "port": "output-belt-0",
+          "connection": {
+            "x": 42,
+            "y": 80
+          },
+          "occupied_by": []
+        },
+        {
+          "port": "output-belt-1",
+          "connection": {
+            "x": 42,
+            "y": 81
+          },
+          "occupied_by": []
+        },
+        {
+          "port": "output-belt-2",
+          "connection": {
+            "x": 42,
+            "y": 82
+          },
+          "occupied_by": []
+        }
+      ],
+      "geometrically_unoccupied": 3,
+      "attachment_domains": [
+        {
+          "attachments": [
+            {
+              "kind": "new-port",
+              "port": {
+                "connection": {
+                  "x": 58,
+                  "y": 96
+                },
+                "direction": "output",
+                "edge": "east",
+                "facility": "grinder-1-mode-normal",
+                "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+                "port": "output-belt-0",
+                "position": {
+                  "x": 57,
+                  "y": 96
+                },
+                "transport": "belt"
+              }
+            },
+            {
+              "kind": "new-port",
+              "port": {
+                "connection": {
+                  "x": 58,
+                  "y": 97
+                },
+                "direction": "output",
+                "edge": "east",
+                "facility": "grinder-1-mode-normal",
+                "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+                "port": "output-belt-1",
+                "position": {
+                  "x": 57,
+                  "y": 97
+                },
+                "transport": "belt"
+              }
+            },
+            {
+              "kind": "new-port",
+              "port": {
+                "connection": {
+                  "x": 58,
+                  "y": 98
+                },
+                "direction": "output",
+                "edge": "east",
+                "facility": "grinder-1-mode-normal",
+                "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+                "port": "output-belt-2",
+                "position": {
+                  "x": 57,
+                  "y": 98
+                },
+                "transport": "belt"
+              }
+            }
+          ],
+          "direction": "output",
+          "inside_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+          "item": "item-plant-moss-powder-2",
+          "rate": {
+            "denominator": 1,
+            "numerator": 1
+          },
+          "requirement": "wiring-edge:4cb849fc215cd655bf6c54a772c7fb48066d7ad879d4abc0c971f43749d5a231",
+          "transport": "belt"
+        }
+      ]
+    },
+    {
+      "role": "target",
+      "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+      "label": "F16",
+      "cells": [
+        {
+          "port": "input-belt-0",
+          "connection": {
+            "x": 47,
+            "y": 71
+          },
+          "occupied_by": [
+            {
+              "network": "commodity:belt:item-plant-moss-powder-3",
+              "item": "item-plant-moss-powder-3",
+              "requirements": [
+                {
+                  "requirement": "wiring-edge:037fa5b7aa8741db140fa41b381ee7f3dcc7fdbb9f88a57d76ff638f65de1acc",
+                  "source": "F26",
+                  "target": "F19"
+                },
+                {
+                  "requirement": "wiring-edge:731a02b8decf07cf1135f46b391405ce1e0465727cc8e9ed834b915addcbebb7",
+                  "source": "F23",
+                  "target": "F16"
+                },
+                {
+                  "requirement": "wiring-edge:8b27a55417191cb52ee2607ade8688babcf32aa5ffe0478269256232d620761d",
+                  "source": "F23",
+                  "target": "F17"
+                },
+                {
+                  "requirement": "wiring-edge:8f8d2ba860a8626044f5319f11ed5d50ea21278802bcf35a5c7312197647a7c9",
+                  "source": "F26",
+                  "target": "F18"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "port": "input-belt-1",
+          "connection": {
+            "x": 47,
+            "y": 72
+          },
+          "occupied_by": []
+        },
+        {
+          "port": "input-belt-2",
+          "connection": {
+            "x": 47,
+            "y": 73
+          },
+          "occupied_by": [
+            {
+              "network": "commodity:belt:item-plant-moss-powder-3",
+              "item": "item-plant-moss-powder-3",
+              "requirements": [
+                {
+                  "requirement": "wiring-edge:037fa5b7aa8741db140fa41b381ee7f3dcc7fdbb9f88a57d76ff638f65de1acc",
+                  "source": "F26",
+                  "target": "F19"
+                },
+                {
+                  "requirement": "wiring-edge:731a02b8decf07cf1135f46b391405ce1e0465727cc8e9ed834b915addcbebb7",
+                  "source": "F23",
+                  "target": "F16"
+                },
+                {
+                  "requirement": "wiring-edge:8b27a55417191cb52ee2607ade8688babcf32aa5ffe0478269256232d620761d",
+                  "source": "F23",
+                  "target": "F17"
+                },
+                {
+                  "requirement": "wiring-edge:8f8d2ba860a8626044f5319f11ed5d50ea21278802bcf35a5c7312197647a7c9",
+                  "source": "F26",
+                  "target": "F18"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "port": "input-belt-3",
+          "connection": {
+            "x": 47,
+            "y": 74
+          },
+          "occupied_by": [
+            {
+              "network": "commodity:belt:item-plant-moss-powder-3",
+              "item": "item-plant-moss-powder-3",
+              "requirements": [
+                {
+                  "requirement": "wiring-edge:037fa5b7aa8741db140fa41b381ee7f3dcc7fdbb9f88a57d76ff638f65de1acc",
+                  "source": "F26",
+                  "target": "F19"
+                },
+                {
+                  "requirement": "wiring-edge:731a02b8decf07cf1135f46b391405ce1e0465727cc8e9ed834b915addcbebb7",
+                  "source": "F23",
+                  "target": "F16"
+                },
+                {
+                  "requirement": "wiring-edge:8b27a55417191cb52ee2607ade8688babcf32aa5ffe0478269256232d620761d",
+                  "source": "F23",
+                  "target": "F17"
+                },
+                {
+                  "requirement": "wiring-edge:8f8d2ba860a8626044f5319f11ed5d50ea21278802bcf35a5c7312197647a7c9",
+                  "source": "F26",
+                  "target": "F18"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "port": "input-belt-4",
+          "connection": {
+            "x": 47,
+            "y": 75
+          },
+          "occupied_by": [
+            {
+              "network": "commodity:belt:item-plant-moss-powder-3",
+              "item": "item-plant-moss-powder-3",
+              "requirements": [
+                {
+                  "requirement": "wiring-edge:037fa5b7aa8741db140fa41b381ee7f3dcc7fdbb9f88a57d76ff638f65de1acc",
+                  "source": "F26",
+                  "target": "F19"
+                },
+                {
+                  "requirement": "wiring-edge:731a02b8decf07cf1135f46b391405ce1e0465727cc8e9ed834b915addcbebb7",
+                  "source": "F23",
+                  "target": "F16"
+                },
+                {
+                  "requirement": "wiring-edge:8b27a55417191cb52ee2607ade8688babcf32aa5ffe0478269256232d620761d",
+                  "source": "F23",
+                  "target": "F17"
+                },
+                {
+                  "requirement": "wiring-edge:8f8d2ba860a8626044f5319f11ed5d50ea21278802bcf35a5c7312197647a7c9",
+                  "source": "F26",
+                  "target": "F18"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "port": "input-belt-5",
+          "connection": {
+            "x": 47,
+            "y": 76
+          },
+          "occupied_by": [
+            {
+              "network": "commodity:belt:item-plant-moss-powder-3",
+              "item": "item-plant-moss-powder-3",
+              "requirements": [
+                {
+                  "requirement": "wiring-edge:037fa5b7aa8741db140fa41b381ee7f3dcc7fdbb9f88a57d76ff638f65de1acc",
+                  "source": "F26",
+                  "target": "F19"
+                },
+                {
+                  "requirement": "wiring-edge:731a02b8decf07cf1135f46b391405ce1e0465727cc8e9ed834b915addcbebb7",
+                  "source": "F23",
+                  "target": "F16"
+                },
+                {
+                  "requirement": "wiring-edge:8b27a55417191cb52ee2607ade8688babcf32aa5ffe0478269256232d620761d",
+                  "source": "F23",
+                  "target": "F17"
+                },
+                {
+                  "requirement": "wiring-edge:8f8d2ba860a8626044f5319f11ed5d50ea21278802bcf35a5c7312197647a7c9",
+                  "source": "F26",
+                  "target": "F18"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "geometrically_unoccupied": 1,
+      "attachment_domains": [
+        {
+          "attachments": [
+            {
+              "kind": "new-port",
+              "port": {
+                "connection": {
+                  "x": 63,
+                  "y": 88
+                },
+                "direction": "input",
+                "edge": "west",
+                "facility": "thickener-1-mode-normal",
+                "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+                "port": "input-belt-1",
+                "position": {
+                  "x": 64,
+                  "y": 88
+                },
+                "transport": "belt"
+              }
+            }
+          ],
+          "direction": "input",
+          "inside_instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+          "item": "item-plant-moss-powder-2",
+          "rate": {
+            "denominator": 1,
+            "numerator": 1
+          },
+          "requirement": "wiring-edge:4cb849fc215cd655bf6c54a772c7fb48066d7ad879d4abc0c971f43749d5a231",
+          "transport": "belt"
+        }
+      ]
+    }
+  ],
+  "attempt": {
+    "astar_searches": 3,
+    "connected": false,
+    "elapsed_ms": 8.100875,
+    "future_domain_rejections": 0,
+    "nearest_port_distance": 9,
+    "placement_index": 25,
+    "port_pairs": 3,
+    "port_trials": [
+      {
+        "astar_searches": 1,
+        "avoided_cells": [],
+        "connected": false,
+        "distance": 13,
+        "lane": 0,
+        "parent_trial": null,
+        "preservation_conflict": null,
+        "rate": {
+          "denominator": 2,
+          "numerator": 1
+        },
+        "source_port": "output-belt-0",
+        "straight": false,
+        "target_port": "input-belt-1"
+      },
+      {
+        "astar_searches": 1,
+        "avoided_cells": [],
+        "connected": false,
+        "distance": 14,
+        "lane": 0,
+        "parent_trial": null,
+        "preservation_conflict": null,
+        "rate": {
+          "denominator": 2,
+          "numerator": 1
+        },
+        "source_port": "output-belt-1",
+        "straight": false,
+        "target_port": "input-belt-1"
+      },
+      {
+        "astar_searches": 1,
+        "avoided_cells": [],
+        "connected": false,
+        "distance": 15,
+        "lane": 0,
+        "parent_trial": null,
+        "preservation_conflict": null,
+        "rate": {
+          "denominator": 2,
+          "numerator": 1
+        },
+        "source_port": "output-belt-2",
+        "straight": false,
+        "target_port": "input-belt-1"
+      }
+    ],
+    "rejected_future_requirements": [],
+    "requirement": "wiring-edge:4cb849fc215cd655bf6c54a772c7fb48066d7ad879d4abc0c971f43749d5a231",
+    "stage": "unresolved",
+    "validation_examples": [],
+    "witness_rejections": 0
+  }
+}

@@ -14,6 +14,7 @@ const safe = JSON.stringify(routing).replaceAll('<', '\\u003c').replaceAll('\u20
 const extra = `<script id="routing-data" type="application/json">${safe}</script><script>
 const routing=JSON.parse(document.getElementById('routing-data').textContent),shift=routing.search_translation;
 const requirements=new Map([...report.internal_requirements,...report.external_requirements].map(e=>[e.id,e]));
+graph.checked=false;
 document.title='Fixed placement · physical routing probe';
 document.querySelector('h1').textContent='Fixed placement · placement order → nearest connections → nearest ports per lane';
 document.querySelector('.notice').textContent='Covered routes validated · external connections pending · NOT A COMPLETE FACTORY';
@@ -47,7 +48,7 @@ draw=function(){originalDraw();svg.querySelectorAll('[data-port] title').forEach
  const count=routing.required_internal-routing.unresolved_internal.length;
  document.getElementById('status').textContent=report.placements.length+' facilities · '+count+' / '+routing.required_internal+' internal requirements connected · '+routing.unresolved_external.length+' external requirements pending · '+routing.elapsed_ms.toFixed(1)+' ms routing probe';
  if(displayedNode()!==routing.final_node)document.getElementById('status').textContent+=' · SHOWN SNAPSHOT: '+displayedNode().internal_requirements.length+' connections at the first failure (counts above are final).';
- if(selected)document.getElementById('selected-details').textContent=document.getElementById('selected-details').textContent.replace('No port assignments or physical route feasibility checks.','Physical routes shown; unresolved requirements and external wiring remain.').replace('Catalog ports (all unassigned):','Catalog port candidates:');
+ if(selected)document.getElementById('selected-details').textContent=document.getElementById('selected-details').textContent.replace('No port assignments or physical route feasibility checks.','Physical routes shown; unresolved requirements and external wiring remain.').replace('No assigned ports or validated routes.','Covered routes validated; unresolved requirements and external wiring remain.').replace('Catalog ports (all unassigned):','Catalog port candidates:');
 };
 function fitRouting(){const edge=requirements.get(selector.value);
  const points=edge?[byId.get(edge.source),byId.get(edge.target)].flatMap(p=>[{x:p.x-3,y:p.y-3},{x:p.x+p.width+3,y:p.y+p.height+3}]):

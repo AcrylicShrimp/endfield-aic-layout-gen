@@ -1,0 +1,357 @@
+{
+  "schema_version": 1,
+  "scope": "warm-file sequential fresh processes; three placement samples and one release routing run per cell; not factory validation",
+  "frozen_sha256": "e410d2f8600b0d2887ae914d4926d52204ab6b7722bb5d54bfd80abf3a1181e3",
+  "model_sha256": "0126f1cc696bb76293ce7a791c839fb92d79759a4ba17548336ad456fa0537c5",
+  "binary_sha256": "987e1a9f41f0b699aaa374dd72da87bce195a67eeca02a823b5729678cf3b835",
+  "rows": [
+    {
+      "name": "singletons-gap-1",
+      "contract": false,
+      "minimum_gap": 1,
+      "bounds": {
+        "width": 59,
+        "height": 76
+      },
+      "blocks": 59,
+      "chains": 0,
+      "contracted_edges": 0,
+      "chain_facilities": 0,
+      "facility_area": 4484,
+      "non_forward_requirements": 21,
+      "placements_sha256": "f8005362b8f5942c0a6558586a96782f2521633263d054bbe57ff02ca78ed9f5",
+      "samples": [
+        {
+          "placement_ms": 1067.972375,
+          "body_ms": 1093.407708,
+          "phases": {
+            "extraction_ms": 38.52529199999999,
+            "growth_ms": 175.951458,
+            "relocation_ms": 853.6284169999999
+          }
+        },
+        {
+          "placement_ms": 1060.259333,
+          "body_ms": 1085.306208,
+          "phases": {
+            "extraction_ms": 38.12637500000001,
+            "growth_ms": 175.95125000000002,
+            "relocation_ms": 846.3107909999999
+          }
+        },
+        {
+          "placement_ms": 1060.594083,
+          "body_ms": 1085.898917,
+          "phases": {
+            "extraction_ms": 38.00991599999999,
+            "growth_ms": 175.31383399999999,
+            "relocation_ms": 847.4065410000001
+          }
+        }
+      ],
+      "routing": {
+        "connected": 77,
+        "required": 89,
+        "elapsed_ms": 6112.035459000001,
+        "external_pending": 7,
+        "first_failure": [
+          "F46",
+          "F38"
+        ],
+        "astar_calls": 482,
+        "chain_links_connected": 0,
+        "invalid_witness_rejections": 0
+      }
+    },
+    {
+      "name": "singletons-gap-3",
+      "contract": false,
+      "minimum_gap": 3,
+      "bounds": {
+        "width": 70,
+        "height": 108
+      },
+      "blocks": 59,
+      "chains": 0,
+      "contracted_edges": 0,
+      "chain_facilities": 0,
+      "facility_area": 7560,
+      "non_forward_requirements": 21,
+      "placements_sha256": "7ff6a8cea8a9e28e92412bd395aa37551d50e18bc2da79cfbd1df54ed1973ba2",
+      "samples": [
+        {
+          "placement_ms": 1172.044667,
+          "body_ms": 1197.3785,
+          "phases": {
+            "extraction_ms": 38.448667,
+            "growth_ms": 224.62762500000002,
+            "relocation_ms": 909.0997499999999
+          }
+        },
+        {
+          "placement_ms": 1187.464708,
+          "body_ms": 1212.7953340000001,
+          "phases": {
+            "extraction_ms": 38.507166,
+            "growth_ms": 224.08575000000002,
+            "relocation_ms": 924.9999169999999
+          }
+        },
+        {
+          "placement_ms": 1186.680042,
+          "body_ms": 1212.148459,
+          "phases": {
+            "extraction_ms": 38.624374999999986,
+            "growth_ms": 223.86404199999998,
+            "relocation_ms": 924.319416
+          }
+        }
+      ],
+      "routing": {
+        "connected": 81,
+        "required": 89,
+        "elapsed_ms": 5975.590292,
+        "external_pending": 7,
+        "first_failure": [
+          "F22",
+          "F16"
+        ],
+        "astar_calls": 237,
+        "chain_links_connected": 0,
+        "invalid_witness_rejections": 0
+      }
+    },
+    {
+      "name": "singletons-gap-6",
+      "contract": false,
+      "minimum_gap": 6,
+      "bounds": {
+        "width": 97,
+        "height": 122
+      },
+      "blocks": 59,
+      "chains": 0,
+      "contracted_edges": 0,
+      "chain_facilities": 0,
+      "facility_area": 11834,
+      "non_forward_requirements": 21,
+      "placements_sha256": "e76034b3203d6517d923b7aa25a67f7e148b61465813461ac22444d889d7fc5f",
+      "samples": [
+        {
+          "placement_ms": 1180.9565,
+          "body_ms": 1206.147542,
+          "phases": {
+            "extraction_ms": 38.451167,
+            "growth_ms": 225.39124999999996,
+            "relocation_ms": 917.2448330000002
+          }
+        },
+        {
+          "placement_ms": 1190.098958,
+          "body_ms": 1215.384208,
+          "phases": {
+            "extraction_ms": 38.417833,
+            "growth_ms": 220.518042,
+            "relocation_ms": 931.2917919999999
+          }
+        },
+        {
+          "placement_ms": 1188.418083,
+          "body_ms": 1214.2770839999998,
+          "phases": {
+            "extraction_ms": 38.793082999999996,
+            "growth_ms": 221.34791700000002,
+            "relocation_ms": 928.4067909999999
+          }
+        }
+      ],
+      "routing": {
+        "connected": 85,
+        "required": 89,
+        "elapsed_ms": 6046.927667,
+        "external_pending": 7,
+        "first_failure": [
+          "F09",
+          "F04"
+        ],
+        "astar_calls": 268,
+        "chain_links_connected": 0,
+        "invalid_witness_rejections": 0
+      }
+    },
+    {
+      "name": "chains-gap-1",
+      "contract": true,
+      "minimum_gap": 1,
+      "bounds": {
+        "width": 57,
+        "height": 72
+      },
+      "blocks": 46,
+      "chains": 7,
+      "contracted_edges": 13,
+      "chain_facilities": 20,
+      "facility_area": 4104,
+      "non_forward_requirements": 21,
+      "placements_sha256": "73fb455e53b04cc7458163b2a78499e803cbe80a5f49fce27707328b637f82f7",
+      "samples": [
+        {
+          "placement_ms": 595.3702089999999,
+          "body_ms": 620.422042,
+          "phases": {
+            "extraction_ms": 40.398584,
+            "growth_ms": 103.75133300000002,
+            "relocation_ms": 451.34683299999995
+          }
+        },
+        {
+          "placement_ms": 599.939125,
+          "body_ms": 624.791208,
+          "phases": {
+            "extraction_ms": 40.44324999999999,
+            "growth_ms": 104.672792,
+            "relocation_ms": 454.9513749999999
+          }
+        },
+        {
+          "placement_ms": 589.903792,
+          "body_ms": 615.175667,
+          "phases": {
+            "extraction_ms": 40.608833000000004,
+            "growth_ms": 103.023417,
+            "relocation_ms": 446.398417
+          }
+        }
+      ],
+      "routing": {
+        "connected": 75,
+        "required": 89,
+        "elapsed_ms": 4849.408083,
+        "external_pending": 7,
+        "first_failure": [
+          "F46",
+          "F38"
+        ],
+        "astar_calls": 537,
+        "chain_links_connected": 13,
+        "invalid_witness_rejections": 0
+      }
+    },
+    {
+      "name": "chains-gap-3",
+      "contract": true,
+      "minimum_gap": 3,
+      "bounds": {
+        "width": 64,
+        "height": 109
+      },
+      "blocks": 46,
+      "chains": 7,
+      "contracted_edges": 13,
+      "chain_facilities": 20,
+      "facility_area": 6976,
+      "non_forward_requirements": 19,
+      "placements_sha256": "7b19f23edebc37f7daaa2bbbdb2c4fbfc08cf4f9ed49c0d18b6f4a5c575545a4",
+      "samples": [
+        {
+          "placement_ms": 689.2001670000001,
+          "body_ms": 714.244292,
+          "phases": {
+            "extraction_ms": 40.881625000000014,
+            "growth_ms": 111.93662499999999,
+            "relocation_ms": 536.516292
+          }
+        },
+        {
+          "placement_ms": 683.607125,
+          "body_ms": 708.645334,
+          "phases": {
+            "extraction_ms": 40.43316700000001,
+            "growth_ms": 110.95049999999999,
+            "relocation_ms": 532.383333
+          }
+        },
+        {
+          "placement_ms": 678.735583,
+          "body_ms": 703.729875,
+          "phases": {
+            "extraction_ms": 40.618624999999994,
+            "growth_ms": 110.55133300000001,
+            "relocation_ms": 527.6939580000001
+          }
+        }
+      ],
+      "routing": {
+        "connected": 84,
+        "required": 89,
+        "elapsed_ms": 3296.0832920000003,
+        "external_pending": 7,
+        "first_failure": [
+          "F46",
+          "F38"
+        ],
+        "astar_calls": 312,
+        "chain_links_connected": 13,
+        "invalid_witness_rejections": 0
+      }
+    },
+    {
+      "name": "chains-gap-6",
+      "contract": true,
+      "minimum_gap": 6,
+      "bounds": {
+        "width": 82,
+        "height": 109
+      },
+      "blocks": 46,
+      "chains": 7,
+      "contracted_edges": 13,
+      "chain_facilities": 20,
+      "facility_area": 8938,
+      "non_forward_requirements": 19,
+      "placements_sha256": "4a77651fea73ced69ef05b17d3929902d21bd24e2666b0a96cd4837d0a3e45ff",
+      "samples": [
+        {
+          "placement_ms": 643.680333,
+          "body_ms": 668.570417,
+          "phases": {
+            "extraction_ms": 40.143708000000004,
+            "growth_ms": 116.31566699999999,
+            "relocation_ms": 487.37141699999995
+          }
+        },
+        {
+          "placement_ms": 637.21675,
+          "body_ms": 662.144792,
+          "phases": {
+            "extraction_ms": 40.228667,
+            "growth_ms": 115.141208,
+            "relocation_ms": 481.97845900000004
+          }
+        },
+        {
+          "placement_ms": 625.1325840000001,
+          "body_ms": 650.106042,
+          "phases": {
+            "extraction_ms": 40.329875,
+            "growth_ms": 113.29191700000003,
+            "relocation_ms": 471.639042
+          }
+        }
+      ],
+      "routing": {
+        "connected": 85,
+        "required": 89,
+        "elapsed_ms": 5864.451458,
+        "external_pending": 7,
+        "first_failure": [
+          "F22",
+          "F16"
+        ],
+        "astar_calls": 307,
+        "chain_links_connected": 13,
+        "invalid_witness_rejections": 0
+      }
+    }
+  ]
+}
