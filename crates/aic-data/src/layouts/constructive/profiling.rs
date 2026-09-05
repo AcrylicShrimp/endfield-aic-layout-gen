@@ -21,6 +21,8 @@ pub enum ConstructiveProfileOperation {
     CrossingOptions,
     Astar,
     BoundaryEscape,
+    BoundaryWorkspace,
+    BoundaryFlood,
     NetworkValidation,
     CoverageAudit,
     PortDemand,
@@ -129,6 +131,24 @@ pub(super) struct Span {
 }
 
 impl Span {
+    pub(super) fn max_work(&self, key: &'static str, amount: u64) {
+        if self.enabled {
+            ACTIVE.with(|active| {
+                let mut active = active.borrow_mut();
+                let current = active
+                    .as_mut()
+                    .unwrap()
+                    .operations
+                    .entry(self.operation)
+                    .or_default()
+                    .work
+                    .entry(key)
+                    .or_default();
+                *current = (*current).max(amount);
+            });
+        }
+    }
+
     /// Aggregate work once per invocation, never borrow the collector in a traversal's inner loop.
     pub(super) fn add_work(&self, key: &'static str, amount: u64) {
         if self.enabled {

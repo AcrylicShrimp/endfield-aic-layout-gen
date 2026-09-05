@@ -99,6 +99,17 @@ fn profiling_preserves_nodes_choices_and_counts_actual_routes() {
         assert_eq!(before.placement_attempts, after.placement_attempts);
     }
     assert_eq!(profile.operations[&ProfileOp::Construction].calls, 1);
+    let screen = &profile.operations[&ProfileOp::BoundaryEscape];
+    assert!(screen.work["peak-workspace-bytes"] > 0);
+    assert!(screen.work["peak-workspace-bytes"] <= screen.work["workspace-bytes"]);
+    assert_eq!(
+        screen.work["neighbor-probes"],
+        4 * screen.work["cells-visited"]
+    );
+    assert_eq!(
+        screen.work["commodity-screens"],
+        profile.operations[&ProfileOp::BoundaryFlood].calls
+    );
     assert_eq!(
         profile.operations[&ProfileOp::Astar].calls,
         captured
@@ -131,6 +142,71 @@ fn completes_connected_chain_without_compact_module_discovery() {
     }
     let repeated = construct_production(&w, &f, &i, &t, &c, &request("c"));
     assert_eq!(r.final_node, repeated.final_node);
+}
+
+#[test]
+fn boundary_screen_matches_reference_across_growth_commodities_and_geometry_changes() {
+    let (f, i, t, c) = catalogs();
+    for edges in [
+        vec![("a", "b"), ("b", "c")],
+        vec![("a", "b"), ("a", "c")],
+        vec![("a", "b"), ("b", "c"), ("c", "a")],
+    ] {
+        let r = construct_production(&wiring(&edges), &f, &i, &t, &c, &request("c"));
+        assert!(r.complete, "{:?}: {:?}", edges, r.diagnostics);
+        for step in &r.steps {
+            for offset in [0, 3, -1] {
+                let mut node = translate_node(&step.node, offset, offset);
+                for variant in 0..4 {
+                    if variant == 1 {
+                        let mut extra = node.boundary_requirements.clone();
+                        for b in &mut extra {
+                            b.item.push_str("-other");
+                            b.requirement.push_str("-other");
+                        }
+                        node.boundary_requirements.extend(extra);
+                    } else if variant == 2 {
+                        for n in &mut node.transport_networks {
+                            n.transport = TransportKind::Pipe;
+                        }
+                    } else if variant == 3 {
+                        let facility = &node.placements[0];
+                        for b in &mut node.boundary_requirements {
+                            for a in &mut b.attachments {
+                                let p = match a {
+                                    ConstructiveBoundaryAttachment::NewPort { port } => {
+                                        &mut port.connection
+                                    }
+                                    ConstructiveBoundaryAttachment::ExistingNetwork {
+                                        branch_cell,
+                                        ..
+                                    } => branch_cell,
+                                };
+                                p.x = facility.x;
+                                p.y = facility.y;
+                            }
+                        }
+                    }
+                    assert_eq!(
+                        blocked_boundaries(&node, &t, &c).unwrap(),
+                        boundary::reference::blocked_boundaries(&node, &t, &c)
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn boundary_coordinate_failure_is_not_a_blocked_requirement() {
+    let (f, i, t, c) = catalogs();
+    let r = construct_production(&wiring(&[("a", "b")]), &f, &i, &t, &c, &request("b"));
+    let mut node = r.final_node.unwrap();
+    node.placements[0].x = i64::MAX;
+    assert_eq!(
+        blocked_boundaries(&node, &t, &c),
+        Err(boundary::ScreenError::Coordinates)
+    );
 }
 
 #[test]
@@ -322,7 +398,7 @@ fn separated_moss_fan_in_preserves_four_total_output_port_domains() {
         .node;
     assert_eq!(n.placements.len(), 3);
     assert_eq!(n.boundary_requirements.len(), 2);
-    assert!(blocked_boundaries(&n, &t, &c).is_empty());
+    assert!(blocked_boundaries(&n, &t, &c).unwrap().is_empty());
     let used = n
         .transport_networks
         .iter()

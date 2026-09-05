@@ -1,0 +1,852 @@
+{
+  "schema_version": 1,
+  "measurement_kind": "additional-profile-pairs",
+  "baseline_revision": "a7f29b4",
+  "source_parent_revision": "a7f29b4bba2f8522e3007b89af3a47bf908d735e",
+  "platform": {
+    "os": "Darwin",
+    "release": "25.6.0",
+    "arch": "arm64",
+    "cpus": 10
+  },
+  "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+  "build": "release, opt-level=3; no compiler/test overlap with timings",
+  "binary_sha256": {
+    "baseline": "949c874c954caeb6fff4bb1e92cf9775e97948ce21844a54f581cec5d2608bcc",
+    "candidate": "dfe72e25bd61151a76f8cc759fe978a51ad90f5ffb0ca06eb44210cacc7d0632"
+  },
+  "input_sha256": {
+    "data/game/normalized/recipes.json": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2",
+    "data/game/normalized/facilities.json": "db398048ac401024f7bae80c05ae59d4a9fb9a037f6836f33d26c5d08f0bcf96",
+    "data/game/normalized/items.json": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164",
+    "data/game/normalized/transports.json": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1",
+    "data/game/normalized/logistics-components.json": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608",
+    "data/examples/source-plan.game-heavy-xiranite-forge.request.json": "5302d96a5177ed2f3fde55fe13539187f7601b6667b0f0588980dca01ccd320c",
+    "data/examples/source-plan.game-seed-cycle-small.request.json": "321c74197018d231b2616d9a1de082e490290b6bb15783a97b6264bf7f2d347e",
+    "data/examples/constructive-boundary-screening.json": "97738cfc4d5601f2373b922ebbbdaf7d23253a34db0c1709df9c39e57ce9fb82"
+  },
+  "runs": [
+    {
+      "workload": "heavy-xiranite",
+      "round": 5,
+      "variant": "baseline",
+      "profile_enabled": true,
+      "exit_code": 0,
+      "wall_seconds": 13.630598542,
+      "planner_seconds": 11.927,
+      "user_seconds": 12.86,
+      "system_seconds": 0.38,
+      "rss_bytes": 285114368,
+      "stdout_bytes": 270,
+      "report_bytes": 96675829,
+      "html_bytes": 41029460,
+      "final_node_sha256": "acd24c232943a16a53455e6de1b6aea8d9bd95137ab5302568f5b15e9f2e6009",
+      "witness_and_choices_sha256": "8349374789095c182efea871db56b73b022e940361b0d5ef94f9d13707862077",
+      "facilities": 59,
+      "internal_requirements": 89,
+      "external_requirements": 7,
+      "steps": 47,
+      "astar_calls": 178,
+      "profile": {
+        "schema_version": 1,
+        "clock": "monotonic-wall-time",
+        "scope": "calling-thread-only",
+        "elapsed_ns": 13591652417,
+        "operations": {
+          "input-loading": {
+            "calls": 1,
+            "inclusive_ns": 10997125,
+            "exclusive_ns": 10997125,
+            "max_ns": 10997125
+          },
+          "construction": {
+            "calls": 1,
+            "inclusive_ns": 11927172792,
+            "exclusive_ns": 24942834,
+            "max_ns": 11927172792
+          },
+          "report-file": {
+            "calls": 1,
+            "inclusive_ns": 650434709,
+            "exclusive_ns": 650434709,
+            "max_ns": 650434709
+          },
+          "completion-summary": {
+            "calls": 1,
+            "inclusive_ns": 95667,
+            "exclusive_ns": 95667,
+            "max_ns": 95667
+          },
+          "html-rendering": {
+            "calls": 1,
+            "inclusive_ns": 971100958,
+            "exclusive_ns": 171873042,
+            "max_ns": 971100958
+          },
+          "html-writing": {
+            "calls": 1,
+            "inclusive_ns": 23957000,
+            "exclusive_ns": 23957000,
+            "max_ns": 23957000
+          },
+          "group-growth": {
+            "calls": 40,
+            "inclusive_ns": 11612426044,
+            "exclusive_ns": 10883631,
+            "max_ns": 1482920166
+          },
+          "facility-addition": {
+            "calls": 58,
+            "inclusive_ns": 11317331955,
+            "exclusive_ns": 36550656,
+            "max_ns": 1002995292
+          },
+          "internal-closure": {
+            "calls": 101,
+            "inclusive_ns": 11514413419,
+            "exclusive_ns": 293169556,
+            "max_ns": 999396375
+          },
+          "boundary-refresh": {
+            "calls": 108,
+            "inclusive_ns": 648874369,
+            "exclusive_ns": 65846827,
+            "max_ns": 69470125
+          },
+          "attachment-enumeration": {
+            "calls": 1380,
+            "inclusive_ns": 721938466,
+            "exclusive_ns": 475999818,
+            "max_ns": 41487709
+          },
+          "shared-path": {
+            "calls": 79779,
+            "inclusive_ns": 199873308,
+            "exclusive_ns": 199873308,
+            "max_ns": 1755417,
+            "work": {
+              "edges-examined": 6447913,
+              "vertices-visited": 6519732
+            }
+          },
+          "path-index-build": {
+            "calls": 217,
+            "inclusive_ns": 46065340,
+            "exclusive_ns": 46065340,
+            "max_ns": 948750,
+            "work": {
+              "segments-indexed": 81914,
+              "vertices-indexed": 82087
+            }
+          },
+          "crossing-options": {
+            "calls": 867,
+            "inclusive_ns": 1092008313,
+            "exclusive_ns": 1092008313,
+            "max_ns": 14883583
+          },
+          "astar": {
+            "calls": 178,
+            "inclusive_ns": 238286372,
+            "exclusive_ns": 238286372,
+            "max_ns": 23079000
+          },
+          "boundary-escape": {
+            "calls": 92,
+            "inclusive_ns": 8477634243,
+            "exclusive_ns": 7651428509,
+            "max_ns": 297911791
+          },
+          "network-validation": {
+            "calls": 200,
+            "inclusive_ns": 1546799490,
+            "exclusive_ns": 1546799490,
+            "max_ns": 32955083
+          },
+          "coverage-audit": {
+            "calls": 48,
+            "inclusive_ns": 16425834,
+            "exclusive_ns": 16425834,
+            "max_ns": 659584
+          },
+          "port-demand": {
+            "calls": 101,
+            "inclusive_ns": 48334665,
+            "exclusive_ns": 48334665,
+            "max_ns": 3903792
+          },
+          "capacity-report": {
+            "calls": 105,
+            "inclusive_ns": 12683378,
+            "exclusive_ns": 12683378,
+            "max_ns": 312208
+          },
+          "node-clone": {
+            "calls": 1007,
+            "inclusive_ns": 159622725,
+            "exclusive_ns": 159622725,
+            "max_ns": 9256459
+          },
+          "node-merge": {
+            "calls": 61,
+            "inclusive_ns": 18455290,
+            "exclusive_ns": 1336784,
+            "max_ns": 5264208
+          },
+          "node-rotation": {
+            "calls": 162,
+            "inclusive_ns": 595673,
+            "exclusive_ns": 99878,
+            "max_ns": 13333
+          },
+          "node-translation": {
+            "calls": 475,
+            "inclusive_ns": 78784253,
+            "exclusive_ns": 3674626,
+            "max_ns": 9295208
+          },
+          "node-canonicalization": {
+            "calls": 160,
+            "inclusive_ns": 49555586,
+            "exclusive_ns": 3140248,
+            "max_ns": 9326667
+          },
+          "html-capacity-inspection": {
+            "calls": 1,
+            "inclusive_ns": 799227916,
+            "exclusive_ns": 799227916,
+            "max_ns": 799227916
+          }
+        }
+      }
+    },
+    {
+      "workload": "heavy-xiranite",
+      "round": 5,
+      "variant": "candidate",
+      "profile_enabled": true,
+      "exit_code": 0,
+      "wall_seconds": 6.126865125,
+      "planner_seconds": 4.441,
+      "user_seconds": 5.73,
+      "system_seconds": 0.36,
+      "rss_bytes": 283656192,
+      "stdout_bytes": 272,
+      "report_bytes": 96675805,
+      "html_bytes": 41029460,
+      "final_node_sha256": "acd24c232943a16a53455e6de1b6aea8d9bd95137ab5302568f5b15e9f2e6009",
+      "witness_and_choices_sha256": "8349374789095c182efea871db56b73b022e940361b0d5ef94f9d13707862077",
+      "facilities": 59,
+      "internal_requirements": 89,
+      "external_requirements": 7,
+      "steps": 47,
+      "astar_calls": 178,
+      "profile": {
+        "schema_version": 1,
+        "clock": "monotonic-wall-time",
+        "scope": "calling-thread-only",
+        "elapsed_ns": 6088544750,
+        "operations": {
+          "input-loading": {
+            "calls": 1,
+            "inclusive_ns": 11325042,
+            "exclusive_ns": 11325042,
+            "max_ns": 11325042
+          },
+          "construction": {
+            "calls": 1,
+            "inclusive_ns": 4441858209,
+            "exclusive_ns": 24031166,
+            "max_ns": 4441858209
+          },
+          "report-file": {
+            "calls": 1,
+            "inclusive_ns": 641243666,
+            "exclusive_ns": 641243666,
+            "max_ns": 641243666
+          },
+          "completion-summary": {
+            "calls": 1,
+            "inclusive_ns": 89417,
+            "exclusive_ns": 89417,
+            "max_ns": 89417
+          },
+          "html-rendering": {
+            "calls": 1,
+            "inclusive_ns": 965429708,
+            "exclusive_ns": 172237625,
+            "max_ns": 965429708
+          },
+          "html-writing": {
+            "calls": 1,
+            "inclusive_ns": 20793125,
+            "exclusive_ns": 20793125,
+            "max_ns": 20793125
+          },
+          "group-growth": {
+            "calls": 40,
+            "inclusive_ns": 4129279581,
+            "exclusive_ns": 9515624,
+            "max_ns": 831886041
+          },
+          "facility-addition": {
+            "calls": 58,
+            "inclusive_ns": 3838145666,
+            "exclusive_ns": 34332465,
+            "max_ns": 576872750
+          },
+          "internal-closure": {
+            "calls": 101,
+            "inclusive_ns": 4043229081,
+            "exclusive_ns": 174197463,
+            "max_ns": 573796417
+          },
+          "boundary-refresh": {
+            "calls": 108,
+            "inclusive_ns": 625122211,
+            "exclusive_ns": 55877757,
+            "max_ns": 68129875
+          },
+          "attachment-enumeration": {
+            "calls": 1380,
+            "inclusive_ns": 706080581,
+            "exclusive_ns": 464354234,
+            "max_ns": 40650125
+          },
+          "shared-path": {
+            "calls": 79779,
+            "inclusive_ns": 196514519,
+            "exclusive_ns": 196514519,
+            "max_ns": 29459,
+            "work": {
+              "edges-examined": 6447913,
+              "vertices-visited": 6519732
+            }
+          },
+          "path-index-build": {
+            "calls": 217,
+            "inclusive_ns": 45211828,
+            "exclusive_ns": 45211828,
+            "max_ns": 927833,
+            "work": {
+              "segments-indexed": 81914,
+              "vertices-indexed": 82087
+            }
+          },
+          "crossing-options": {
+            "calls": 867,
+            "inclusive_ns": 1084019418,
+            "exclusive_ns": 1084019418,
+            "max_ns": 14911375
+          },
+          "astar": {
+            "calls": 178,
+            "inclusive_ns": 241277119,
+            "exclusive_ns": 241277119,
+            "max_ns": 23002041
+          },
+          "boundary-escape": {
+            "calls": 92,
+            "inclusive_ns": 1174628792,
+            "exclusive_ns": 52369994,
+            "max_ns": 32630375,
+            "work": {
+              "cells-visited": 7509261,
+              "commodity-screens": 689,
+              "crossing-hops": 629525,
+              "envelope-cells": 1157986,
+              "neighbor-probes": 30037044,
+              "peak-workspace-bytes": 258100,
+              "workspace-bytes": 11579860
+            }
+          },
+          "boundary-workspace": {
+            "calls": 92,
+            "inclusive_ns": 2356247,
+            "exclusive_ns": 2356247,
+            "max_ns": 54875
+          },
+          "boundary-flood": {
+            "calls": 689,
+            "inclusive_ns": 301515510,
+            "exclusive_ns": 301515510,
+            "max_ns": 985708
+          },
+          "network-validation": {
+            "calls": 200,
+            "inclusive_ns": 1541891911,
+            "exclusive_ns": 1541891911,
+            "max_ns": 32918250
+          },
+          "coverage-audit": {
+            "calls": 48,
+            "inclusive_ns": 16103253,
+            "exclusive_ns": 16103253,
+            "max_ns": 669167
+          },
+          "port-demand": {
+            "calls": 101,
+            "inclusive_ns": 48501289,
+            "exclusive_ns": 48501289,
+            "max_ns": 3914834
+          },
+          "capacity-report": {
+            "calls": 105,
+            "inclusive_ns": 12286252,
+            "exclusive_ns": 12286252,
+            "max_ns": 306916
+          },
+          "node-clone": {
+            "calls": 1007,
+            "inclusive_ns": 130022711,
+            "exclusive_ns": 130022711,
+            "max_ns": 882584
+          },
+          "node-merge": {
+            "calls": 61,
+            "inclusive_ns": 12456045,
+            "exclusive_ns": 1135503,
+            "max_ns": 538625
+          },
+          "node-rotation": {
+            "calls": 162,
+            "inclusive_ns": 569361,
+            "exclusive_ns": 82350,
+            "max_ns": 14875
+          },
+          "node-translation": {
+            "calls": 475,
+            "inclusive_ns": 60813834,
+            "exclusive_ns": 3514632,
+            "max_ns": 699958
+          },
+          "node-canonicalization": {
+            "calls": 160,
+            "inclusive_ns": 33832460,
+            "exclusive_ns": 2746964,
+            "max_ns": 741042
+          },
+          "html-capacity-inspection": {
+            "calls": 1,
+            "inclusive_ns": 793192083,
+            "exclusive_ns": 793192083,
+            "max_ns": 793192083
+          }
+        }
+      }
+    },
+    {
+      "workload": "seed-cycle",
+      "round": 5,
+      "variant": "baseline",
+      "profile_enabled": true,
+      "exit_code": 0,
+      "wall_seconds": 0.04121458299999722,
+      "planner_seconds": 0.003,
+      "user_seconds": 0.01,
+      "system_seconds": 0.01,
+      "rss_bytes": 8388608,
+      "stdout_bytes": 262,
+      "report_bytes": 158468,
+      "html_bytes": 56671,
+      "final_node_sha256": "5f17fd5cf8b78a55f25eace672dfaef63ed6197f9b2e3d758f5f4e182ccdda84",
+      "witness_and_choices_sha256": "6527bc288e801abcfbf729631bbc370726ba83297887070cb73f5dfe188a2872",
+      "facilities": 2,
+      "internal_requirements": 2,
+      "external_requirements": 1,
+      "steps": 2,
+      "astar_calls": 3,
+      "profile": {
+        "schema_version": 1,
+        "clock": "monotonic-wall-time",
+        "scope": "calling-thread-only",
+        "elapsed_ns": 14194542,
+        "operations": {
+          "input-loading": {
+            "calls": 1,
+            "inclusive_ns": 7519042,
+            "exclusive_ns": 7519042,
+            "max_ns": 7519042
+          },
+          "construction": {
+            "calls": 1,
+            "inclusive_ns": 3045833,
+            "exclusive_ns": 320875,
+            "max_ns": 3045833
+          },
+          "report-file": {
+            "calls": 1,
+            "inclusive_ns": 1958958,
+            "exclusive_ns": 1958958,
+            "max_ns": 1958958
+          },
+          "completion-summary": {
+            "calls": 1,
+            "inclusive_ns": 45708,
+            "exclusive_ns": 45708,
+            "max_ns": 45708
+          },
+          "html-rendering": {
+            "calls": 1,
+            "inclusive_ns": 1066416,
+            "exclusive_ns": 515333,
+            "max_ns": 1066416
+          },
+          "html-writing": {
+            "calls": 1,
+            "inclusive_ns": 400833,
+            "exclusive_ns": 400833,
+            "max_ns": 400833
+          },
+          "group-growth": {
+            "calls": 1,
+            "inclusive_ns": 2205667,
+            "exclusive_ns": 5541,
+            "max_ns": 2205667
+          },
+          "facility-addition": {
+            "calls": 1,
+            "inclusive_ns": 2058042,
+            "exclusive_ns": 82293,
+            "max_ns": 2058042
+          },
+          "internal-closure": {
+            "calls": 2,
+            "inclusive_ns": 2061500,
+            "exclusive_ns": 214997,
+            "max_ns": 1928291
+          },
+          "boundary-refresh": {
+            "calls": 3,
+            "inclusive_ns": 231250,
+            "exclusive_ns": 56916,
+            "max_ns": 184334
+          },
+          "attachment-enumeration": {
+            "calls": 9,
+            "inclusive_ns": 339042,
+            "exclusive_ns": 266169,
+            "max_ns": 162291
+          },
+          "shared-path": {
+            "calls": 42,
+            "inclusive_ns": 48789,
+            "exclusive_ns": 48789,
+            "max_ns": 2417,
+            "work": {
+              "edges-examined": 462,
+              "vertices-visited": 504
+            }
+          },
+          "path-index-build": {
+            "calls": 2,
+            "inclusive_ns": 24084,
+            "exclusive_ns": 24084,
+            "max_ns": 14167,
+            "work": {
+              "segments-indexed": 44,
+              "vertices-indexed": 46
+            }
+          },
+          "crossing-options": {
+            "calls": 5,
+            "inclusive_ns": 40000,
+            "exclusive_ns": 40000,
+            "max_ns": 18583
+          },
+          "astar": {
+            "calls": 3,
+            "inclusive_ns": 54542,
+            "exclusive_ns": 54542,
+            "max_ns": 32958
+          },
+          "boundary-escape": {
+            "calls": 2,
+            "inclusive_ns": 910959,
+            "exclusive_ns": 885709,
+            "max_ns": 485709
+          },
+          "network-validation": {
+            "calls": 6,
+            "inclusive_ns": 643500,
+            "exclusive_ns": 643500,
+            "max_ns": 133375
+          },
+          "coverage-audit": {
+            "calls": 3,
+            "inclusive_ns": 31792,
+            "exclusive_ns": 31792,
+            "max_ns": 12750
+          },
+          "port-demand": {
+            "calls": 3,
+            "inclusive_ns": 60710,
+            "exclusive_ns": 60710,
+            "max_ns": 29959
+          },
+          "capacity-report": {
+            "calls": 3,
+            "inclusive_ns": 31334,
+            "exclusive_ns": 31334,
+            "max_ns": 14458
+          },
+          "node-clone": {
+            "calls": 20,
+            "inclusive_ns": 242082,
+            "exclusive_ns": 242082,
+            "max_ns": 38542
+          },
+          "node-merge": {
+            "calls": 1,
+            "inclusive_ns": 17208,
+            "exclusive_ns": 14208,
+            "max_ns": 17208
+          },
+          "node-rotation": {
+            "calls": 1,
+            "inclusive_ns": 4041,
+            "exclusive_ns": 1499,
+            "max_ns": 4041
+          },
+          "node-translation": {
+            "calls": 9,
+            "inclusive_ns": 120042,
+            "exclusive_ns": 5335,
+            "max_ns": 39333
+          },
+          "node-canonicalization": {
+            "calls": 4,
+            "inclusive_ns": 75000,
+            "exclusive_ns": 15458,
+            "max_ns": 41375
+          },
+          "html-capacity-inspection": {
+            "calls": 1,
+            "inclusive_ns": 551083,
+            "exclusive_ns": 551083,
+            "max_ns": 551083
+          }
+        }
+      }
+    },
+    {
+      "workload": "seed-cycle",
+      "round": 5,
+      "variant": "candidate",
+      "profile_enabled": true,
+      "exit_code": 0,
+      "wall_seconds": 0.03916924999999901,
+      "planner_seconds": 0.002,
+      "user_seconds": 0.01,
+      "system_seconds": 0.01,
+      "rss_bytes": 8437760,
+      "stdout_bytes": 264,
+      "report_bytes": 158468,
+      "html_bytes": 56671,
+      "final_node_sha256": "5f17fd5cf8b78a55f25eace672dfaef63ed6197f9b2e3d758f5f4e182ccdda84",
+      "witness_and_choices_sha256": "6527bc288e801abcfbf729631bbc370726ba83297887070cb73f5dfe188a2872",
+      "facilities": 2,
+      "internal_requirements": 2,
+      "external_requirements": 1,
+      "steps": 2,
+      "astar_calls": 3,
+      "profile": {
+        "schema_version": 1,
+        "clock": "monotonic-wall-time",
+        "scope": "calling-thread-only",
+        "elapsed_ns": 13131625,
+        "operations": {
+          "input-loading": {
+            "calls": 1,
+            "inclusive_ns": 7359791,
+            "exclusive_ns": 7359791,
+            "max_ns": 7359791
+          },
+          "construction": {
+            "calls": 1,
+            "inclusive_ns": 2180583,
+            "exclusive_ns": 320332,
+            "max_ns": 2180583
+          },
+          "report-file": {
+            "calls": 1,
+            "inclusive_ns": 1903250,
+            "exclusive_ns": 1903250,
+            "max_ns": 1903250
+          },
+          "completion-summary": {
+            "calls": 1,
+            "inclusive_ns": 42750,
+            "exclusive_ns": 42750,
+            "max_ns": 42750
+          },
+          "html-rendering": {
+            "calls": 1,
+            "inclusive_ns": 1090542,
+            "exclusive_ns": 526125,
+            "max_ns": 1090542
+          },
+          "html-writing": {
+            "calls": 1,
+            "inclusive_ns": 390458,
+            "exclusive_ns": 390458,
+            "max_ns": 390458
+          },
+          "group-growth": {
+            "calls": 1,
+            "inclusive_ns": 1318375,
+            "exclusive_ns": 8083,
+            "max_ns": 1318375
+          },
+          "facility-addition": {
+            "calls": 1,
+            "inclusive_ns": 1169917,
+            "exclusive_ns": 78543,
+            "max_ns": 1169917
+          },
+          "internal-closure": {
+            "calls": 2,
+            "inclusive_ns": 1178958,
+            "exclusive_ns": 205081,
+            "max_ns": 1051750
+          },
+          "boundary-refresh": {
+            "calls": 3,
+            "inclusive_ns": 220375,
+            "exclusive_ns": 62293,
+            "max_ns": 173750
+          },
+          "attachment-enumeration": {
+            "calls": 9,
+            "inclusive_ns": 321041,
+            "exclusive_ns": 246753,
+            "max_ns": 146833
+          },
+          "shared-path": {
+            "calls": 42,
+            "inclusive_ns": 49121,
+            "exclusive_ns": 49121,
+            "max_ns": 2792,
+            "work": {
+              "edges-examined": 462,
+              "vertices-visited": 504
+            }
+          },
+          "path-index-build": {
+            "calls": 2,
+            "inclusive_ns": 25167,
+            "exclusive_ns": 25167,
+            "max_ns": 15792,
+            "work": {
+              "segments-indexed": 44,
+              "vertices-indexed": 46
+            }
+          },
+          "crossing-options": {
+            "calls": 5,
+            "inclusive_ns": 36041,
+            "exclusive_ns": 36041,
+            "max_ns": 14750
+          },
+          "astar": {
+            "calls": 3,
+            "inclusive_ns": 54959,
+            "exclusive_ns": 54959,
+            "max_ns": 31792
+          },
+          "boundary-escape": {
+            "calls": 2,
+            "inclusive_ns": 88000,
+            "exclusive_ns": 14331,
+            "max_ns": 52583,
+            "work": {
+              "cells-visited": 1029,
+              "commodity-screens": 2,
+              "crossing-hops": 21,
+              "envelope-cells": 1170,
+              "neighbor-probes": 4116,
+              "peak-workspace-bytes": 5940,
+              "workspace-bytes": 11700
+            }
+          },
+          "boundary-workspace": {
+            "calls": 2,
+            "inclusive_ns": 5668,
+            "exclusive_ns": 5668,
+            "max_ns": 3959
+          },
+          "boundary-flood": {
+            "calls": 2,
+            "inclusive_ns": 46501,
+            "exclusive_ns": 46501,
+            "max_ns": 24834
+          },
+          "network-validation": {
+            "calls": 6,
+            "inclusive_ns": 635626,
+            "exclusive_ns": 635626,
+            "max_ns": 139000
+          },
+          "coverage-audit": {
+            "calls": 3,
+            "inclusive_ns": 32417,
+            "exclusive_ns": 32417,
+            "max_ns": 13583
+          },
+          "port-demand": {
+            "calls": 3,
+            "inclusive_ns": 52833,
+            "exclusive_ns": 52833,
+            "max_ns": 28125
+          },
+          "capacity-report": {
+            "calls": 3,
+            "inclusive_ns": 36543,
+            "exclusive_ns": 36543,
+            "max_ns": 13334
+          },
+          "node-clone": {
+            "calls": 20,
+            "inclusive_ns": 238373,
+            "exclusive_ns": 238373,
+            "max_ns": 30125
+          },
+          "node-merge": {
+            "calls": 1,
+            "inclusive_ns": 15625,
+            "exclusive_ns": 12542,
+            "max_ns": 15625
+          },
+          "node-rotation": {
+            "calls": 1,
+            "inclusive_ns": 5333,
+            "exclusive_ns": 2583,
+            "max_ns": 5333
+          },
+          "node-translation": {
+            "calls": 9,
+            "inclusive_ns": 96461,
+            "exclusive_ns": 4878,
+            "max_ns": 27834
+          },
+          "node-canonicalization": {
+            "calls": 4,
+            "inclusive_ns": 63208,
+            "exclusive_ns": 11915,
+            "max_ns": 27500
+          },
+          "html-capacity-inspection": {
+            "calls": 1,
+            "inclusive_ns": 564417,
+            "exclusive_ns": 564417,
+            "max_ns": 564417
+          }
+        }
+      }
+    }
+  ],
+  "distributions": {
+    "heavy-xiranite": {},
+    "seed-cycle": {}
+  }
+}

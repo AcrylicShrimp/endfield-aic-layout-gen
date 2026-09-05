@@ -1,5 +1,7 @@
 //! Natural-footprint first-feasible construction, independent of rigid module composition.
 mod audit;
+mod boundary;
+use boundary::blocked_boundaries;
 #[cfg(test)]
 mod tests;
 use super::composition::{canonicalize_node, merge_nodes, rotate_node, translate_node};
@@ -13,7 +15,7 @@ use crate::recipes::{
     FacilityInstanceWiringEdge, FacilityInstanceWiringNode, FacilityInstanceWiringReport,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet, HashSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::time::Instant;
 
 pub const CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION: u32 = 1;
@@ -86,6 +88,7 @@ struct Constructor<'a> {
     statistics: ConstructiveCompositionStatistics,
     attempts: usize,
     last_obstruction: Option<ConstructiveProductionObstruction>,
+    screen_failure: Option<ConstructiveFrontierDiagnostic>,
 }
 
 pub fn construct_production(
@@ -151,6 +154,7 @@ pub fn construct_production(
         statistics: Default::default(),
         attempts: 0,
         last_obstruction: None,
+        screen_failure: None,
     };
     if request.schema_version != CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION
         || !wiring.success
@@ -257,6 +261,7 @@ pub fn construct_production(
         c.statistics = Default::default();
         c.attempts = 0;
         c.last_obstruction = None;
+        c.screen_failure = None;
         let step_started = Instant::now();
         let mut frontier = unresolved
             .iter()
@@ -315,6 +320,9 @@ pub fn construct_production(
             report.attempted_groups_at_failure =
                 tried.into_iter().map(|g| g.into_iter().collect()).collect();
             report.last_obstruction = c.last_obstruction.take();
+            if let Some(diagnostic) = c.screen_failure.take() {
+                report.diagnostics.push(diagnostic);
+            }
             break;
         };
         if let Err(d) = audit::validate_coverage(&next, wiring, items) {
@@ -719,6 +727,7 @@ impl Constructor<'_> {
             let components = self.components;
             let reasons = &mut self.reasons;
             let last_obstruction = &mut self.last_obstruction;
+            let screen_failure = &mut self.screen_failure;
             let mut accept = |n: &ConstructiveNode| {
                 if let Err(d) = network::validate(n, facilities, transports, components) {
                     *reasons.entry(d.message).or_default() += 1;
@@ -734,7 +743,18 @@ impl Constructor<'_> {
                     *reasons.entry("remaining capacity".into()).or_default() += 1;
                     return false;
                 }
-                let blocked_requirements = blocked_boundaries(n, transports, components);
+                let blocked_requirements = match blocked_boundaries(n, transports, components) {
+                    Ok(blocked) => blocked,
+                    Err(error) => {
+                        *reasons.entry(error.code().into()).or_default() += 1;
+                        *screen_failure = Some(failure(
+                            error.code(),
+                            &edge.id,
+                            "boundary screening could not allocate or represent its candidate-local workspace; this is not an inaccessible-boundary or infeasibility result",
+                        ));
+                        return false;
+                    }
+                };
                 if !blocked_requirements.is_empty() {
                     *reasons
                         .entry("remaining boundary escape".into())
@@ -778,98 +798,6 @@ impl Constructor<'_> {
         }
         Some(node)
     }
-}
-
-fn blocked_boundaries(
-    node: &ConstructiveNode,
-    transports: &ValidatedTransportCatalog,
-    components: &ValidatedLogisticsComponentCatalog,
-) -> Vec<String> {
-    let _span = profile_span(ProfileOp::BoundaryEscape);
-    let mut blocked_requirements = Vec::new();
-    let facilities = super::first_pipe_frontier::occupied_cells(&node.placements);
-    let max_x = node
-        .placements
-        .iter()
-        .map(|p| p.x + p.width)
-        .chain(
-            node.transport_networks
-                .iter()
-                .flat_map(|n| n.cells.iter().map(|p| p.x + 1)),
-        )
-        .max()
-        .unwrap_or(0)
-        + 3;
-    let max_y = node
-        .placements
-        .iter()
-        .map(|p| p.y + p.height)
-        .chain(
-            node.transport_networks
-                .iter()
-                .flat_map(|n| n.cells.iter().map(|p| p.y + 1)),
-        )
-        .max()
-        .unwrap_or(0)
-        + 3;
-    let commodities = node
-        .boundary_requirements
-        .iter()
-        .map(|b| (b.transport, b.item.clone()))
-        .collect::<BTreeSet<_>>();
-    for (transport, item) in commodities {
-        let mut blocked = facilities.clone();
-        blocked.extend(
-            node.transport_networks
-                .iter()
-                .filter(|n| n.transport == transport)
-                .flat_map(|n| n.cells.iter().map(|p| (p.x, p.y))),
-        );
-        let cap = transports.capacity(transport);
-        let rate = Rate::from_quantity_per_duration_ms(cap.quantity, cap.duration_ms).unwrap();
-        let crossings = network::crossings::options(node, transport, &item, rate, components);
-        let mut seen = HashSet::from([(-1, -1)]);
-        let mut queue = VecDeque::from([(-1, -1)]);
-        while let Some((x, y)) = queue.pop_front() {
-            for (dx, dy) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
-                let mut p = (x + dx, y + dy);
-                while crossings
-                    .get(&p)
-                    .is_some_and(|(horizontal, _)| *horizontal == (dy == 0))
-                {
-                    p = (p.0 + dx, p.1 + dy);
-                }
-                if p.0 >= -1
-                    && p.1 >= -1
-                    && p.0 <= max_x
-                    && p.1 <= max_y
-                    && !blocked.contains(&p)
-                    && seen.insert(p)
-                {
-                    queue.push_back(p);
-                }
-            }
-        }
-        for b in node
-            .boundary_requirements
-            .iter()
-            .filter(|b| b.transport == transport && b.item == item)
-        {
-            if !b.attachments.iter().any(|a| match a {
-                ConstructiveBoundaryAttachment::NewPort { port } => {
-                    seen.contains(&(port.connection.x, port.connection.y))
-                }
-                ConstructiveBoundaryAttachment::ExistingNetwork { branch_cell, .. } => {
-                    seen.contains(&(branch_cell.x, branch_cell.y))
-                }
-            }) {
-                blocked_requirements.push(b.requirement.clone());
-            }
-        }
-    }
-    blocked_requirements.sort();
-    blocked_requirements.dedup();
-    blocked_requirements
 }
 
 pub fn render_constructive_production_html(
