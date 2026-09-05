@@ -14,7 +14,7 @@ const wiring = pairs => ({ schema_version: 1, success: true,
   edges: pairs.map(([source, target, item = 'solid'], i) => ({ id: `edge-${i}`, source, target, item,
     rate: { numerator: 1, denominator: 5 } })),
 });
-test('one-to-one chains remain top-aligned with one empty cell despite port offsets', () => {
+test('one-to-one chains align actual offset ports with one empty cell', () => {
   const catalog = structuredClone(base), f = catalog.facilities[0];
   f.footprint = { width: 3, height: 5 };
   f.ports[0].position = { x: 0, y: 4 };
@@ -22,8 +22,12 @@ test('one-to-one chains remain top-aligned with one empty cell despite port offs
   const w = wiring([['a', 'b'], ['b', 'c'], ['c', 'd']]);
   const r = placeOnly(w, catalog, items, 'd');
   assert.equal(r.placements.length, 4);
-  assert.equal(new Set(r.placements.map(p => p.y)).size, 1);
-  for (let i = 1; i < 4; i++) assert.equal(r.placements[i].x + r.placements[i].width + 1, r.placements[i - 1].x);
+  for (let i = 1; i < 4; i++) {
+    const source = r.placements[i], target = r.placements[i - 1];
+    assert.equal(source.x + source.width + 1, target.x);
+    assert.deepEqual(source.catalog_ports.find(p => p.direction === 'output').connection,
+      target.catalog_ports.find(p => p.direction === 'input').connection);
+  }
   assert.equal(r.routing_performed, false);
   assert.equal(r.factory_validated, false);
   assert.deepEqual(r.transport_networks, []);
@@ -65,7 +69,56 @@ test('north-facing pipe inputs attract upstream suppliers north; west-facing inp
   f.ports.find(p => p.id === 'fluid-in').edge = 'west';
   const west = placeOnly(w, catalog, items, 'target');
   assert.equal(west.pipe_relations[0].north_preference_applicable, false);
-  assert.equal(west.placements[0].y, west.placements[1].y);
+  assert.equal(west.placements[1].catalog_ports.find(p => p.id === 'fluid-out').connection.y,
+    west.placements[0].catalog_ports.find(p => p.id === 'fluid-in').connection.y);
+});
+
+function siblingFixture(withBlocker = false) {
+  const catalog = structuredClone(base);
+  const make = (id, size) => ({ ...structuredClone(base.facilities[0]), id, allowed_rotations: [0],
+    footprint: { width: size, height: size }, ports: ['input', 'output'].flatMap(direction =>
+      Array.from({ length: size }, (_, y) => ({ id: `${direction}-${y}`, direction, transport: 'belt',
+        position: { x: direction === 'input' ? 0 : size - 1, y }, edge: direction === 'input' ? 'west' : 'east' }))) });
+  catalog.facilities = [make('supplier', 3), make('consumer', 5)];
+  const w = wiring([['a', 'target'], ['b', 'target'], ...(withBlocker ? [['blocker', 'target', 'fluid']] : [])]);
+  for (const node of w.nodes) node.facility = node.id === 'target' ? 'consumer' : 'supplier';
+  return { catalog, w };
+}
+test('two exclusive suppliers straddle the actual consumer input span without detours', () => {
+  const { catalog, w } = siblingFixture();
+  const r = placeOnly(w, catalog, items, 'target');
+  const [target, a, b] = r.placements;
+  assert.deepEqual([a.y - target.y, b.y - target.y], [-1, 3]);
+  assert.equal(a.y + a.height + 1, b.y);
+  for (const source of [a, b]) {
+    assert.equal(source.x + source.width + 1, target.x);
+    assert(source.catalog_ports.some(p => p.direction === 'output' && target.catalog_ports.some(q =>
+      q.direction === 'input' && p.connection.x === q.connection.x && p.connection.y === q.connection.y)));
+  }
+  assert.deepEqual(r.placement_decisions[1].supplier_group, ['a', 'b']);
+  assert.equal(r.placement_decisions[1].row_choice.port_distance_sum, 0);
+  assert.equal(r.placement_decisions[1].row_choice.interface_center_distance, 0);
+  w.edges.reverse();
+  assert.deepEqual(placeOnly(w, catalog, items, 'target').placements, r.placements);
+});
+test('an obstacle shifts the supplier group together, preserving sibling spacing', () => {
+  const { catalog, w } = siblingFixture(true);
+  const r = placeOnly(w, catalog, items, 'target');
+  const [a, b] = ['a', 'b'].map(id => r.placements.find(p => p.instance === id));
+  const [da, db] = ['a', 'b'].map(id => r.placement_decisions.find(p => p.instance === id));
+  assert.equal(a.y + a.height + 1, b.y);
+  assert.notEqual(da.row_shift, 0);
+  assert.equal(da.row_shift, db.row_shift);
+  assert.equal(r.placement_geometry_valid, true);
+});
+test('shared producers are not silently packed as exclusive siblings', () => {
+  const { catalog, w } = siblingFixture();
+  w.nodes.push({ id: 'other', kind: 'facility', recipe: 'fixture', facility: 'consumer' });
+  w.edges.push({ ...w.edges[0], id: 'shared', target: 'other' });
+  const r = placeOnly(w, catalog, items, 'target');
+  assert.deepEqual(r.placement_decisions.find(d => d.instance === 'a').supplier_group, ['a']);
+  assert.equal(r.placements.length, 4);
+  assert.equal(r.placement_geometry_valid, true);
 });
 test('impossible cyclic north preferences stay soft and are diagnosed', () => {
   const catalog = structuredClone(base), f = catalog.facilities[0];
