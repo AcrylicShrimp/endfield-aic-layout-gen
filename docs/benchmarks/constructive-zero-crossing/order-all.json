@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "kind": "zero-crossing-local-order-oracle",
+  "scope": "all-forward",
+  "placement_sha256": "d7a8879f79ac865846acff5772403cb6d2090b5b9d90d8d55b67a6c59d0677d7",
+  "transports_sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1",
+  "selected_corridors": [
+    "11:16",
+    "11:38",
+    "16:21",
+    "22:27",
+    "27:32",
+    "33:38",
+    "36:41",
+    "42:47",
+    "5:10",
+    "5:32",
+    "54:59",
+    "60:65",
+    "71:76"
+  ],
+  "unmodeled_corridors": [],
+  "global_routing_allowed": false,
+  "factory_validated": false,
+  "semantics": "Rigid block order and distinct facing ports for independent lanes in selected forward corridors only; no merge/split networks, return paths, pipes, coordinates or path embedding.",
+  "ortools_version": "9.15.6755",
+  "status": "INFEASIBLE",
+  "time_limit_seconds": 5,
+  "workers": 1,
+  "variables": 653,
+  "constraints": 1068,
+  "build_ms": 27.86770835518837,
+  "search_ms": 991.123,
+  "conflicts": 1300,
+  "branches": 20601,
+  "sufficient_corridor_assumption_core": [
+    "33:38"
+  ],
+  "proof_scope": "This selected independent-lane model only. The sufficient ordering-assumption core retains all background port constraints; it is not necessarily minimal and is not global factory infeasibility."
+}

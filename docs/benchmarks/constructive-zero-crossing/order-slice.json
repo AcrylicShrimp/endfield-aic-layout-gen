@@ -1,0 +1,887 @@
+{
+  "schema_version": 1,
+  "kind": "zero-crossing-local-order-oracle",
+  "scope": "orderable-slice",
+  "placement_sha256": "d7a8879f79ac865846acff5772403cb6d2090b5b9d90d8d55b67a6c59d0677d7",
+  "transports_sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1",
+  "selected_corridors": [
+    "11:16",
+    "11:38",
+    "16:21",
+    "22:27",
+    "27:32",
+    "36:41",
+    "42:47",
+    "5:10",
+    "5:32",
+    "54:59",
+    "60:65",
+    "71:76"
+  ],
+  "unmodeled_corridors": [
+    "33:38"
+  ],
+  "global_routing_allowed": false,
+  "factory_validated": false,
+  "semantics": "Rigid block order and distinct facing ports for independent lanes in selected forward corridors only; no merge/split networks, return paths, pipes, coordinates or path embedding.",
+  "ortools_version": "9.15.6755",
+  "status": "OPTIMAL",
+  "time_limit_seconds": 5,
+  "workers": 1,
+  "variables": 522,
+  "constraints": 813,
+  "build_ms": 22.26116694509983,
+  "search_ms": 786.5080000000002,
+  "conflicts": 887,
+  "branches": 17323,
+  "block_order": [
+    "B09",
+    "B10",
+    "B02",
+    "B00",
+    "B03",
+    "B11",
+    "B05",
+    "B06",
+    "B28",
+    "B29",
+    "B12",
+    "B13",
+    "B04",
+    "B01",
+    "B07",
+    "B14",
+    "B17",
+    "B18",
+    "B15",
+    "B16",
+    "B19",
+    "B20",
+    "B21",
+    "B22",
+    "B23",
+    "B24",
+    "B25",
+    "B26",
+    "B08",
+    "B27",
+    "B43",
+    "B30",
+    "B31",
+    "B32",
+    "B33",
+    "B37",
+    "B34",
+    "B35",
+    "B36",
+    "B38",
+    "B40",
+    "B39",
+    "B41",
+    "B42",
+    "B44",
+    "B45"
+  ],
+  "corridors": [
+    {
+      "id": "11:16",
+      "lanes": [
+        {
+          "requirement": "wiring-edge:61ec62214a08362a0a8b358c464d7945f804d1e3244f495a9fafcde49c1ff38c",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 4
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:1",
+          "source_port": "output-belt-4",
+          "source_order": 123,
+          "target_port": "input-belt-0",
+          "target_order": 224
+        },
+        {
+          "requirement": "wiring-edge:b3fb65b95afcca55b597d2acc42d1987847162feb6118278b7e1814df060fccf",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 4
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:4",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:2",
+          "source_port": "output-belt-0",
+          "source_order": 203,
+          "target_port": "input-belt-0",
+          "target_order": 266
+        },
+        {
+          "requirement": "wiring-edge:cf8f3e6b04090971387f188d40562f59d36fac41b7d4be7f1d1c4170f4727482",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 4
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+          "source_port": "output-belt-0",
+          "source_order": 161,
+          "target_port": "input-belt-0",
+          "target_order": 252
+        },
+        {
+          "requirement": "wiring-edge:e7929709aa7dc38fb69ed2f1204d4c94d39acc0648e62e6a6d2224e3ec57c4d8",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 4
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:6",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:3",
+          "source_port": "output-belt-1",
+          "source_order": 176,
+          "target_port": "input-belt-0",
+          "target_order": 259
+        }
+      ],
+      "strict_order_violations": 0
+    },
+    {
+      "id": "11:38",
+      "lanes": [
+        {
+          "requirement": "wiring-edge:7fc77ee8775d9ef812755ee30c15cafee5c07b9143518c8957979e01218f5966",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 4
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:4",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:2",
+          "source_port": "output-belt-3",
+          "source_order": 206,
+          "target_port": "input-belt-0",
+          "target_order": 105
+        },
+        {
+          "requirement": "wiring-edge:833307cbcd65b4b77a2d7ed1240b029edef6467bcd988efd99f99887d5900e5b",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 4
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+          "source_port": "output-belt-0",
+          "source_order": 119,
+          "target_port": "input-belt-0",
+          "target_order": 0
+        },
+        {
+          "requirement": "wiring-edge:c0e6db51beefe6b35bf7c1e765925ffe562f12700cd77ffb549410051417cd66",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 4
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:0",
+          "source_port": "output-belt-3",
+          "source_order": 164,
+          "target_port": "input-belt-0",
+          "target_order": 35
+        },
+        {
+          "requirement": "wiring-edge:e9fc130bf5b1870946d736f205f920d602f372e315321255e3341e05aa2339cc",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 4
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:6",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:3",
+          "source_port": "output-belt-0",
+          "source_order": 175,
+          "target_port": "input-belt-0",
+          "target_order": 70
+        }
+      ],
+      "strict_order_violations": 0
+    },
+    {
+      "id": "16:21",
+      "lanes": [
+        {
+          "requirement": "wiring-edge:124ca8bb0ec201dc0491433c2e8ca3d33e97724d62e3401f73a30ef2ab477550",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 3
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+          "source_port": "output-belt-0",
+          "source_order": 308,
+          "target_port": "input-belt-0",
+          "target_order": 287
+        },
+        {
+          "requirement": "wiring-edge:5d6d2061e48b95de7f407e49ff3983bb13a4d878af2762edcc7bff0d57f7a17a",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:1",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3",
+          "source_port": "output-belt-0",
+          "source_order": 315,
+          "target_port": "input-belt-0",
+          "target_order": 294
+        },
+        {
+          "requirement": "wiring-edge:c5595d9353f4e21e1280a4db8a81cde22b7d23d2904459be386824f35eddffab",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1",
+          "source_port": "output-belt-0",
+          "source_order": 210,
+          "target_port": "input-belt-0",
+          "target_order": 245
+        }
+      ],
+      "strict_order_violations": 0
+    },
+    {
+      "id": "22:27",
+      "lanes": [
+        {
+          "requirement": "wiring-edge:0be201325caeabf1683782a12d2d3660403a476b17a357123e8865b659e71d69",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1",
+          "source_port": "output-belt-0",
+          "source_order": 252,
+          "target_port": "input-belt-0",
+          "target_order": 154
+        },
+        {
+          "requirement": "wiring-edge:3073f262ba6a73a03be13f16252fb4f619c76ff48699d96c38e6a97ffa94e709",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:3",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:7",
+          "source_port": "output-belt-0",
+          "source_order": 259,
+          "target_port": "input-belt-0",
+          "target_order": 168
+        },
+        {
+          "requirement": "wiring-edge:70095713dfd8c4a3d4399875663398ff7ac801f935165f7881420ff47c7ccaeb",
+          "lane": 0,
+          "rate": {
+            "numerator": 2,
+            "denominator": 9
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+          "source_port": "output-belt-4",
+          "source_order": 235,
+          "target_port": "input-belt-0",
+          "target_order": 147
+        },
+        {
+          "requirement": "wiring-edge:93fa7a1f2cb1a71d583344ca01da0728bfa93f2372c51982eda230ead140b1c1",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:2",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:5",
+          "source_port": "output-belt-0",
+          "source_order": 266,
+          "target_port": "input-belt-0",
+          "target_order": 189
+        },
+        {
+          "requirement": "wiring-edge:aa4b306421503217f491f121e8d3dfb57aa6ac4d4d7512e8e7064aa58a7e233c",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:1",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:2",
+          "source_port": "output-belt-0",
+          "source_order": 224,
+          "target_port": "input-belt-0",
+          "target_order": 112
+        },
+        {
+          "requirement": "wiring-edge:cd92412b8527ddb129374a432e3d273c3a300ef83f9a1518a8149966f8fe85ac",
+          "lane": 0,
+          "rate": {
+            "numerator": 4,
+            "denominator": 9
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+          "source_port": "output-belt-3",
+          "source_order": 234,
+          "target_port": "input-belt-0",
+          "target_order": 140
+        }
+      ],
+      "strict_order_violations": 0
+    },
+    {
+      "id": "27:32",
+      "lanes": [
+        {
+          "requirement": "wiring-edge:00fda8d6ffd9b9a5783bfae3c91843eae4030d40605b06d8e45397f90d94f22a",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 4
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:0",
+          "source_port": "output-belt-0",
+          "source_order": 245,
+          "target_port": "input-belt-1",
+          "target_order": 57
+        },
+        {
+          "requirement": "wiring-edge:23cf9522756c2fcc73104be9956ba289611ee66e9552745aac44345829c3ef1e",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 6
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+          "source_port": "output-belt-0",
+          "source_order": 287,
+          "target_port": "input-belt-1",
+          "target_order": 64
+        },
+        {
+          "requirement": "wiring-edge:52970b2f21b2d9c266aa04de180f670ee44230815569f282a87388335969675f",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 4
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+          "source_port": "output-belt-0",
+          "source_order": 294,
+          "target_port": "input-belt-1",
+          "target_order": 218
+        }
+      ],
+      "strict_order_violations": 0
+    },
+    {
+      "id": "36:41",
+      "lanes": [
+        {
+          "requirement": "wiring-edge:091c5a06bf6f7deebb33f108bd8c9f6235f5b2b88776f594d711e491bba96133",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+          "source_port": "output-belt-1",
+          "source_order": 64,
+          "target_port": "input-belt-3",
+          "target_order": 136
+        },
+        {
+          "requirement": "wiring-edge:2c69b95684e822f9b56e5dea7340ea10ad030c8966ce79f4e266ef8c53ef7c03",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+          "source_port": "output-belt-1",
+          "source_order": 218,
+          "target_port": "input-belt-5",
+          "target_order": 138
+        },
+        {
+          "requirement": "wiring-edge:2c69b95684e822f9b56e5dea7340ea10ad030c8966ce79f4e266ef8c53ef7c03",
+          "lane": 1,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+          "source_port": "output-belt-0",
+          "source_order": 217,
+          "target_port": "input-belt-4",
+          "target_order": 137
+        },
+        {
+          "requirement": "wiring-edge:6b0699f3bc1d6ad293cc3181cfca4608a125014b88fd40d09247a414e7aa06ea",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+          "source_port": "output-belt-0",
+          "source_order": 56,
+          "target_port": "input-belt-0",
+          "target_order": 126
+        },
+        {
+          "requirement": "wiring-edge:6b0699f3bc1d6ad293cc3181cfca4608a125014b88fd40d09247a414e7aa06ea",
+          "lane": 1,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+          "source_port": "output-belt-1",
+          "source_order": 57,
+          "target_port": "input-belt-1",
+          "target_order": 127
+        },
+        {
+          "requirement": "wiring-edge:768e8574c4dec25251756b1502ab15e61f022a994234a7648172e749666ae204",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+          "source_port": "output-belt-0",
+          "source_order": 63,
+          "target_port": "input-belt-4",
+          "target_order": 130
+        }
+      ],
+      "strict_order_violations": 0
+    },
+    {
+      "id": "42:47",
+      "lanes": [
+        {
+          "requirement": "wiring-edge:037fa5b7aa8741db140fa41b381ee7f3dcc7fdbb9f88a57d76ff638f65de1acc",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+          "source_port": "output-belt-1",
+          "source_order": 78,
+          "target_port": "input-belt-0",
+          "target_order": 196
+        },
+        {
+          "requirement": "wiring-edge:3983a3f0da829b97c5d3c106f0351691e80e0230f280e9f65743f23a1dad2e2d",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:3",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:3",
+          "source_port": "output-belt-1",
+          "source_order": 71,
+          "target_port": "input-belt-4",
+          "target_order": 102
+        },
+        {
+          "requirement": "wiring-edge:3983a3f0da829b97c5d3c106f0351691e80e0230f280e9f65743f23a1dad2e2d",
+          "lane": 1,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:3",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:3",
+          "source_port": "output-belt-0",
+          "source_order": 70,
+          "target_port": "input-belt-0",
+          "target_order": 98
+        },
+        {
+          "requirement": "wiring-edge:4cb849fc215cd655bf6c54a772c7fb48066d7ad879d4abc0c971f43749d5a231",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+          "source_port": "output-belt-1",
+          "source_order": 1,
+          "target_port": "input-belt-2",
+          "target_order": 44
+        },
+        {
+          "requirement": "wiring-edge:4cb849fc215cd655bf6c54a772c7fb48066d7ad879d4abc0c971f43749d5a231",
+          "lane": 1,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+          "source_port": "output-belt-0",
+          "source_order": 0,
+          "target_port": "input-belt-0",
+          "target_order": 42
+        },
+        {
+          "requirement": "wiring-edge:731a02b8decf07cf1135f46b391405ce1e0465727cc8e9ed834b915addcbebb7",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+          "source_port": "output-belt-0",
+          "source_order": 7,
+          "target_port": "input-belt-3",
+          "target_order": 45
+        },
+        {
+          "requirement": "wiring-edge:8b27a55417191cb52ee2607ade8688babcf32aa5ffe0478269256232d620761d",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+          "source_port": "output-belt-1",
+          "source_order": 8,
+          "target_port": "input-belt-0",
+          "target_order": 49
+        },
+        {
+          "requirement": "wiring-edge:8f8d2ba860a8626044f5319f11ed5d50ea21278802bcf35a5c7312197647a7c9",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:3",
+          "source_port": "output-belt-0",
+          "source_order": 77,
+          "target_port": "input-belt-5",
+          "target_order": 103
+        },
+        {
+          "requirement": "wiring-edge:91a73c19364287329744ef050fd41643c1c2e5b90810c181bb7f847f49586f2d",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:2",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+          "source_port": "output-belt-0",
+          "source_order": 105,
+          "target_port": "input-belt-4",
+          "target_order": 200
+        },
+        {
+          "requirement": "wiring-edge:91a73c19364287329744ef050fd41643c1c2e5b90810c181bb7f847f49586f2d",
+          "lane": 1,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:2",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+          "source_port": "output-belt-1",
+          "source_order": 106,
+          "target_port": "input-belt-5",
+          "target_order": 201
+        },
+        {
+          "requirement": "wiring-edge:b29b99f922b4bd62d909c888f5e91be5c9be2528ff6c97709741f4633a3ef9a1",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+          "source_port": "output-belt-1",
+          "source_order": 36,
+          "target_port": "input-belt-2",
+          "target_order": 51
+        },
+        {
+          "requirement": "wiring-edge:b29b99f922b4bd62d909c888f5e91be5c9be2528ff6c97709741f4633a3ef9a1",
+          "lane": 1,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+          "source_port": "output-belt-0",
+          "source_order": 35,
+          "target_port": "input-belt-1",
+          "target_order": 50
+        }
+      ],
+      "strict_order_violations": 0
+    },
+    {
+      "id": "5:10",
+      "lanes": [
+        {
+          "requirement": "wiring-edge:1003da2b445bf096be6e477aca68ee82a516cc7b002f3fb2123b6d31759f0801",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 4
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+          "source_port": "output-belt-1",
+          "source_order": 274,
+          "target_port": "input-belt-0",
+          "target_order": 210
+        },
+        {
+          "requirement": "wiring-edge:5548acc5371cafb786474a7d043d8d7664622c358d110625e1370006bf7f1539",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 6
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+          "source_port": "output-belt-1",
+          "source_order": 281,
+          "target_port": "input-belt-0",
+          "target_order": 308
+        },
+        {
+          "requirement": "wiring-edge:ebfaef505b7f9f0691912a0fe67c8f808aa90a77b677ed79690aaa3653732a4f",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 4
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:2",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:1",
+          "source_port": "output-belt-1",
+          "source_order": 302,
+          "target_port": "input-belt-0",
+          "target_order": 315
+        }
+      ],
+      "strict_order_violations": 0
+    },
+    {
+      "id": "5:32",
+      "lanes": [
+        {
+          "requirement": "wiring-edge:6e0ca3f3617c2ddf8d530f45ab78e316ca36cc5811becb602be362e63b642a76",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 4
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:0",
+          "source_port": "output-belt-0",
+          "source_order": 273,
+          "target_port": "input-belt-0",
+          "target_order": 56
+        },
+        {
+          "requirement": "wiring-edge:712d90bf4027ee3036582e62f42b9c560a503aa2e6f40e641c1fe33f665d468b",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 4
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:2",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+          "source_port": "output-belt-0",
+          "source_order": 301,
+          "target_port": "input-belt-0",
+          "target_order": 217
+        },
+        {
+          "requirement": "wiring-edge:9cbdc044457525444ef16212e5b415249456717648b66876b2d21a4bfe5963ed",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 6
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+          "source_port": "output-belt-0",
+          "source_order": 280,
+          "target_port": "input-belt-0",
+          "target_order": 63
+        }
+      ],
+      "strict_order_violations": 0
+    },
+    {
+      "id": "54:59",
+      "lanes": [
+        {
+          "requirement": "wiring-edge:1c3388567cd48974f7170595086002b57ec96fdde0e92e65ab539fbaee613881",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder:0",
+          "source_port": "output-belt-0",
+          "source_order": 127,
+          "target_port": "input-belt-3",
+          "target_order": 87
+        },
+        {
+          "requirement": "wiring-edge:4d2d96e80fe684a2fd6bbca955963306c0ca06348fa1a237af5e7b79b2df7149",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder:0",
+          "source_port": "output-belt-0",
+          "source_order": 134,
+          "target_port": "input-belt-4",
+          "target_order": 88
+        }
+      ],
+      "strict_order_violations": 0
+    },
+    {
+      "id": "60:65",
+      "lanes": [
+        {
+          "requirement": "wiring-edge:6e7e886bb2527e399bae69e67687b6f9beb004bff7efb16be97d8673a711103f",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:3",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1",
+          "source_port": "output-belt-0",
+          "source_order": 99,
+          "target_port": "input-belt-0",
+          "target_order": 28
+        },
+        {
+          "requirement": "wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+          "source_port": "output-belt-0",
+          "source_order": 43,
+          "target_port": "input-belt-0",
+          "target_order": 14
+        },
+        {
+          "requirement": "wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+          "source_port": "output-belt-0",
+          "source_order": 50,
+          "target_port": "input-belt-1",
+          "target_order": 15
+        },
+        {
+          "requirement": "wiring-edge:a563c1d10bb90b3f8ae65556cc7b5977a8dea90da3838074406d85e46967aa63",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:2",
+          "target": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1",
+          "source_port": "output-belt-0",
+          "source_order": 197,
+          "target_port": "input-belt-3",
+          "target_order": 31
+        }
+      ],
+      "strict_order_violations": 0
+    },
+    {
+      "id": "71:76",
+      "lanes": [
+        {
+          "requirement": "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+          "target": "facility-instance:recipe-occurrence:/target:0",
+          "source_port": "output-belt-0",
+          "source_order": 14,
+          "target_port": "input-belt-3",
+          "target_order": 24
+        },
+        {
+          "requirement": "wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e",
+          "lane": 0,
+          "rate": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "source": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1",
+          "target": "facility-instance:recipe-occurrence:/target:0",
+          "source_port": "output-belt-0",
+          "source_order": 28,
+          "target_port": "input-belt-4",
+          "target_order": 25
+        }
+      ],
+      "strict_order_violations": 0
+    }
+  ]
+}
