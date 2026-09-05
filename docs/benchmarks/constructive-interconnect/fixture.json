@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "minimum_case": {
+    "recipe": "thickener-plant-moss-enr-powder-2-1",
+    "consumer_instances": 2,
+    "utilization": { "numerator": 1, "denominator": 4 }
+  },
+  "catalog_max_case": {
+    "select": "input_belt_minimum_lanes",
+    "consumer_instances": 2,
+    "utilization": { "numerator": 1, "denominator": 1 }
+  }
+}
