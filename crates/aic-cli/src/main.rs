@@ -224,6 +224,10 @@ enum LayoutsCommand {
         #[arg(long, value_name = "FILE")]
         transport_catalog: PathBuf,
 
+        /// Runtime splitter and converger catalog.
+        #[arg(long, value_name = "FILE")]
+        logistics_component_catalog: PathBuf,
+
         /// Facility instance at the output side of the local process module.
         #[arg(long)]
         root_instance: String,
@@ -261,6 +265,10 @@ enum LayoutsCommand {
         /// Transport capacity catalog JSON file to load.
         #[arg(long, value_name = "FILE")]
         transport_catalog: PathBuf,
+
+        /// Runtime splitter and converger catalog.
+        #[arg(long, value_name = "FILE")]
+        logistics_component_catalog: PathBuf,
 
         /// Facility instance at the output side of the source process module.
         #[arg(long)]
@@ -312,6 +320,10 @@ enum LayoutsCommand {
         #[arg(long, value_name = "FILE")]
         transport_catalog: PathBuf,
 
+        /// Runtime splitter and converger catalog.
+        #[arg(long, value_name = "FILE")]
+        logistics_component_catalog: PathBuf,
+
         /// Recursive module-assembly request JSON file.
         #[arg(long, value_name = "FILE")]
         assembly_request: PathBuf,
@@ -349,6 +361,10 @@ enum LayoutsCommand {
         /// Belt and pipe capacity catalog JSON file to load.
         #[arg(long, value_name = "FILE")]
         transport_catalog: PathBuf,
+
+        /// Runtime splitter and converger catalog.
+        #[arg(long, value_name = "FILE")]
+        logistics_component_catalog: PathBuf,
 
         /// Seed facility instance whose unresolved inputs drive discovery.
         #[arg(long)]
@@ -707,6 +723,7 @@ fn run() -> Result<CommandStatus> {
                 facility_catalog,
                 item_catalog,
                 transport_catalog,
+                logistics_component_catalog,
                 root_instance,
                 internal_item,
                 visualization_output,
@@ -717,6 +734,7 @@ fn run() -> Result<CommandStatus> {
                 facility_catalog,
                 item_catalog,
                 transport_catalog,
+                logistics_component_catalog,
                 root_instance,
                 internal_item,
                 visualization_output,
@@ -728,6 +746,7 @@ fn run() -> Result<CommandStatus> {
                 facility_catalog,
                 item_catalog,
                 transport_catalog,
+                logistics_component_catalog,
                 module_root_instance,
                 module_internal_item,
                 target_instance,
@@ -741,6 +760,7 @@ fn run() -> Result<CommandStatus> {
                 facility_catalog,
                 item_catalog,
                 transport_catalog,
+                logistics_component_catalog,
                 module_root_instance,
                 module_internal_item,
                 target_instance,
@@ -755,6 +775,7 @@ fn run() -> Result<CommandStatus> {
                 facility_catalog,
                 item_catalog,
                 transport_catalog,
+                logistics_component_catalog,
                 assembly_request,
                 visualization_output,
                 report_output,
@@ -765,6 +786,7 @@ fn run() -> Result<CommandStatus> {
                 facility_catalog,
                 item_catalog,
                 transport_catalog,
+                logistics_component_catalog,
                 assembly_request,
                 visualization_output,
                 report_output,
@@ -776,6 +798,7 @@ fn run() -> Result<CommandStatus> {
                 facility_catalog,
                 item_catalog,
                 transport_catalog,
+                logistics_component_catalog,
                 target_instance,
                 max_steps,
                 visualization_output,
@@ -787,6 +810,7 @@ fn run() -> Result<CommandStatus> {
                 facility_catalog,
                 item_catalog,
                 transport_catalog,
+                logistics_component_catalog,
                 target_instance,
                 max_steps,
                 visualization_output,
@@ -1510,11 +1534,22 @@ fn construct_process_module_command(
     facility_catalog: PathBuf,
     item_catalog: PathBuf,
     transport_catalog: PathBuf,
+    logistics_component_catalog: PathBuf,
     root_instance: String,
     internal_item: String,
     visualization_output: PathBuf,
     localization_catalog: Option<PathBuf>,
 ) -> Result<CommandStatus> {
+    let components = ValidatedLogisticsComponentCatalog::try_from_catalog(
+        load_logistics_component_catalog(&logistics_component_catalog)?,
+    )
+    .map_err(|report| {
+        anyhow::anyhow!(
+            "invalid logistics component catalog '{}': {:?}",
+            logistics_component_catalog.display(),
+            report.diagnostics
+        )
+    })?;
     let localization = load_visualization_localization(localization_catalog.as_deref())?;
     let Some((wiring, facilities, items)) =
         load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
@@ -1535,6 +1570,7 @@ fn construct_process_module_command(
         &facilities,
         &items,
         &transports,
+        &components,
         &root_instance,
         &internal_item,
     );
@@ -1564,6 +1600,7 @@ fn compose_process_module_command(
     facility_catalog: PathBuf,
     item_catalog: PathBuf,
     transport_catalog: PathBuf,
+    logistics_component_catalog: PathBuf,
     module_root_instance: String,
     module_internal_item: String,
     target_instance: String,
@@ -1572,6 +1609,16 @@ fn compose_process_module_command(
     report_output: PathBuf,
     localization_catalog: Option<PathBuf>,
 ) -> Result<CommandStatus> {
+    let components = ValidatedLogisticsComponentCatalog::try_from_catalog(
+        load_logistics_component_catalog(&logistics_component_catalog)?,
+    )
+    .map_err(|report| {
+        anyhow::anyhow!(
+            "invalid logistics component catalog '{}': {:?}",
+            logistics_component_catalog.display(),
+            report.diagnostics
+        )
+    })?;
     let localization = load_visualization_localization(localization_catalog.as_deref())?;
     let Some((wiring, facilities, items)) =
         load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
@@ -1592,6 +1639,7 @@ fn compose_process_module_command(
         &facilities,
         &items,
         &transports,
+        &components,
         &module_root_instance,
         &module_internal_item,
     );
@@ -1601,6 +1649,7 @@ fn compose_process_module_command(
             &facilities,
             &items,
             &transports,
+            &components,
             &module,
             &target_instance,
             &requirement,
@@ -1645,11 +1694,22 @@ fn assemble_process_modules_command(
     facility_catalog: PathBuf,
     item_catalog: PathBuf,
     transport_catalog: PathBuf,
+    logistics_component_catalog: PathBuf,
     assembly_request: PathBuf,
     visualization_output: PathBuf,
     report_output: PathBuf,
     localization_catalog: Option<PathBuf>,
 ) -> Result<CommandStatus> {
+    let components = ValidatedLogisticsComponentCatalog::try_from_catalog(
+        load_logistics_component_catalog(&logistics_component_catalog)?,
+    )
+    .map_err(|report| {
+        anyhow::anyhow!(
+            "invalid logistics component catalog '{}': {:?}",
+            logistics_component_catalog.display(),
+            report.diagnostics
+        )
+    })?;
     let localization = load_visualization_localization(localization_catalog.as_deref())?;
     let Some((wiring, facilities, items)) =
         load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
@@ -1678,7 +1738,14 @@ fn assemble_process_modules_command(
                 assembly_request.display()
             )
         })?;
-    let report = assemble_constructive_modules(&wiring, &facilities, &items, &transports, &request);
+    let report = assemble_constructive_modules(
+        &wiring,
+        &facilities,
+        &items,
+        &transports,
+        &components,
+        &request,
+    );
     let success = report.success;
     let html = render_constructive_assembly_html(&report, localization.as_ref()).map_err(
         |diagnostic| {
@@ -1706,12 +1773,23 @@ fn auto_assemble_process_modules_command(
     facility_catalog: PathBuf,
     item_catalog: PathBuf,
     transport_catalog: PathBuf,
+    logistics_component_catalog: PathBuf,
     target_instance: String,
     max_steps: usize,
     visualization_output: PathBuf,
     report_output: PathBuf,
     localization_catalog: Option<PathBuf>,
 ) -> Result<CommandStatus> {
+    let components = ValidatedLogisticsComponentCatalog::try_from_catalog(
+        load_logistics_component_catalog(&logistics_component_catalog)?,
+    )
+    .map_err(|report| {
+        anyhow::anyhow!(
+            "invalid logistics component catalog '{}': {:?}",
+            logistics_component_catalog.display(),
+            report.diagnostics
+        )
+    })?;
     let localization = load_visualization_localization(localization_catalog.as_deref())?;
     let Some((wiring, facilities, items)) =
         load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
@@ -1737,6 +1815,7 @@ fn auto_assemble_process_modules_command(
         &facilities,
         &items,
         &transports,
+        &components,
         &request,
     );
     let success = report.success;
@@ -2640,6 +2719,8 @@ mod tests {
             "items.json",
             "--transport-catalog",
             "transports.json",
+            "--logistics-component-catalog",
+            "components.json",
             "--root-instance",
             "root",
             "--internal-item",
@@ -2684,6 +2765,8 @@ mod tests {
             "items.json",
             "--transport-catalog",
             "transports.json",
+            "--logistics-component-catalog",
+            "components.json",
             "--module-root-instance",
             "module-root",
             "--module-internal-item",
@@ -2740,6 +2823,8 @@ mod tests {
             "items.json",
             "--transport-catalog",
             "transports.json",
+            "--logistics-component-catalog",
+            "components.json",
             "--assembly-request",
             "assembly.json",
             "--visualization-output",
@@ -2784,6 +2869,8 @@ mod tests {
             "items.json",
             "--transport-catalog",
             "transports.json",
+            "--logistics-component-catalog",
+            "components.json",
             "--target-instance",
             "target",
             "--max-steps",

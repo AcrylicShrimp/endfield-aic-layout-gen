@@ -9,7 +9,7 @@ use crate::logistics::{ValidatedItemCatalog, ValidatedTransportCatalog};
 use crate::recipes::{FacilityInstanceWiringNode, FacilityInstanceWiringReport, Rate};
 
 use super::capacity::split_rate_into_lanes;
-use super::first_pipe_frontier::{FacilityInstance, occupied_cells, validate_inputs};
+use super::first_pipe_frontier::{FacilityInstance, validate_inputs};
 use super::pipe_chain::{GrowthEdge, construct_selected_growth};
 use super::{
     CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION, CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION,
@@ -17,12 +17,18 @@ use super::{
     ConstructiveFrontierGrowthStatistics, ConstructiveFrontierGrowthStatus,
     ConstructiveProcessModuleBoundary, ConstructiveProcessModuleReport,
 };
+use super::{
+    ConstructiveBoundaryAttachment as Attachment, ConstructiveCompositionStatistics,
+    ConstructiveNode, network,
+};
+use crate::logistics::ValidatedLogisticsComponentCatalog;
 
 pub fn construct_process_module(
     wiring: &FacilityInstanceWiringReport,
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
     transports: &ValidatedTransportCatalog,
+    components: &ValidatedLogisticsComponentCatalog,
     root_instance: &str,
     internal_item: &str,
 ) -> ConstructiveProcessModuleReport {
@@ -134,6 +140,7 @@ pub fn construct_process_module(
             facilities,
             items,
             transports,
+            components,
             &member_instances,
             &growth,
         ) {
@@ -166,6 +173,7 @@ fn project_boundary_requirements(
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
     transports: &ValidatedTransportCatalog,
+    components: &ValidatedLogisticsComponentCatalog,
     member_instances: &[String],
     growth: &ConstructiveFrontierGrowthReport,
 ) -> Result<Vec<ConstructiveProcessModuleBoundary>, ConstructiveFrontierDiagnostic> {
@@ -222,29 +230,6 @@ fn project_boundary_requirements(
         port.connection.y -= 1;
     }
 
-    let occupied_facilities = occupied_cells(&growth.placements);
-    let occupied_transport = growth
-        .transport_networks
-        .iter()
-        .flat_map(|network| {
-            network
-                .cells
-                .iter()
-                .map(move |cell| (network.transport, cell.x, cell.y))
-        })
-        .collect::<BTreeSet<_>>();
-    let used_ports = growth
-        .transport_networks
-        .iter()
-        .flat_map(|network| &network.terminals)
-        .filter_map(|terminal| match &terminal.endpoint {
-            crate::layouts::TransportNetworkEndpoint::Facility { instance, port } => {
-                Some((instance.as_str(), port.as_str()))
-            }
-            crate::layouts::TransportNetworkEndpoint::External { .. } => None,
-        })
-        .collect::<BTreeSet<_>>();
-
     let mut boundary = Vec::new();
     for edge in &wiring.edges {
         let source_inside = members.contains(edge.source.as_str());
@@ -275,13 +260,6 @@ fn project_boundary_requirements(
                 port.instance == inside_instance
                     && port.direction == direction
                     && port.transport == item.transport
-                    && !used_ports.contains(&(port.instance.as_str(), port.port.as_str()))
-                    && !occupied_facilities.contains(&(port.connection.x, port.connection.y))
-                    && !occupied_transport.contains(&(
-                        port.transport,
-                        port.connection.x,
-                        port.connection.y,
-                    ))
             })
             .cloned()
             .collect::<Vec<_>>();
@@ -295,12 +273,42 @@ fn project_boundary_requirements(
             },
             direction,
             inside_instance: inside_instance.to_string(),
-            port_options,
+            attachments: port_options
+                .into_iter()
+                .map(|port| Attachment::NewPort { port })
+                .collect(),
         });
     }
     boundary.sort_by(|left, right| left.requirement.cmp(&right.requirement));
+    let mut node = ConstructiveNode {
+        id: "process-module-boundary".to_string(),
+        bounds: bounds.clone(),
+        member_instances: member_instances.to_vec(),
+        internal_requirements: growth
+            .transport_networks
+            .iter()
+            .flat_map(|n| n.requirement_ids.iter().cloned())
+            .collect::<BTreeSet<_>>()
+            .into_iter()
+            .collect(),
+        placements: growth.placements.clone(),
+        transport_networks: growth.transport_networks.clone(),
+        logistics_components: Vec::new(),
+        boundary_requirements: boundary,
+        network_capacity: Vec::new(),
+        attachment_events: Vec::new(),
+    };
+    network::normalize(&mut node.transport_networks);
+    network::refresh(
+        &mut node,
+        transports,
+        components,
+        &mut ConstructiveCompositionStatistics::default(),
+    );
+    network::validate(&node, facilities, transports, components)?;
+    let boundary = node.boundary_requirements;
     let analysis =
-        super::analyze_constructive_port_demands(&boundary, &growth.transport_networks, transports);
+        super::analyze_constructive_port_demands(&boundary, &node.transport_networks, transports);
     if !analysis.success {
         return Err(analysis.diagnostics.into_iter().next().unwrap_or_else(|| {
             ConstructiveFrontierDiagnostic::error(
@@ -485,6 +493,7 @@ mod tests {
             &facilities,
             &items,
             &transports(),
+            &super::super::test_components(),
             "root",
             "internal",
         );
@@ -497,7 +506,7 @@ mod tests {
             report
                 .boundary_requirements
                 .iter()
-                .all(|boundary| !boundary.port_options.is_empty())
+                .all(|boundary| !boundary.attachments.is_empty())
         );
 
         let html = super::super::render_constructive_process_module_html(&report, None)

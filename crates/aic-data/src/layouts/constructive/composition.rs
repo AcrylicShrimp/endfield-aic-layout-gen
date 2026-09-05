@@ -5,23 +5,24 @@ use crate::facilities::{FacilityPortDirection, ValidatedFacilityCatalog};
 use crate::layouts::{
     FacilityPlacement, FacilityPlacementBounds, FacilityPlacementReport, FacilityPlacementRequest,
     FacilityPlacementStatus, PlacedFacilityPort, SUPPORTED_FACILITY_PLACEMENT_SCHEMA_VERSION,
-    TransportNetwork, TransportNetworkEndpoint, TransportNetworkSegment, TransportNetworkTerminal,
     WorldGridPosition, project_facility_ports,
 };
 use crate::logistics::{TransportKind, ValidatedItemCatalog, ValidatedTransportCatalog};
 use crate::recipes::{
-    FacilityInstanceWiringEdge, FacilityInstanceWiringNode, FacilityInstanceWiringReport, Rate,
+    FacilityInstanceWiringEdge, FacilityInstanceWiringNode, FacilityInstanceWiringReport,
 };
 
-use super::capacity::{lane_id, split_rate_into_lanes};
+use super::capacity::split_rate_into_lanes;
 use super::first_pipe_frontier::{bounds_for, occupied_cells, rectangles_overlap};
-use super::routing::{RouteWorkspace, count_turns};
+use super::routing::RouteWorkspace;
 use super::{
     CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION, ConstructiveCompositionReport,
     ConstructiveCompositionScore, ConstructiveCompositionStatistics,
     ConstructiveFrontierDiagnostic, ConstructiveNode, ConstructiveProcessModuleBoundary,
     ConstructiveProcessModuleReport,
 };
+use super::{ConstructiveBoundaryAttachment as Attachment, network};
+use crate::logistics::ValidatedLogisticsComponentCatalog;
 
 const TARGET_OFFSET: i64 = 4;
 
@@ -30,32 +31,7 @@ struct CandidateOrder {
     rotation: usize,
     y: i64,
     x: i64,
-    source_port: usize,
-    target_port: usize,
-}
-
-#[derive(Debug)]
-struct LaneBundle {
-    source_ports: Vec<PlacedFacilityPort>,
-    target_ports: Vec<PlacedFacilityPort>,
-    port_pairs: Vec<(usize, usize)>,
-    networks: Vec<TransportNetwork>,
-}
-
-#[derive(Debug, Clone, Copy)]
-enum CombineFailure {
-    BoundaryOptionsExhausted,
-    BoundaryCapacityInsufficient,
-}
-
-#[derive(Debug, Clone, Copy)]
-enum GeometryFailure {
-    FacilityOverlap,
-    EmptyNetwork,
-    FacilityTransportOverlap,
-    NonContiguousRoute,
-    SameLayerTransportOverlap,
-    TerminalMismatch,
+    bundle: usize,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -110,6 +86,7 @@ fn ranges_overlap(left_start: i64, left_end: i64, right_start: i64, right_end: i
 
 pub fn constructive_node_from_process_module(
     report: &ConstructiveProcessModuleReport,
+    transports: &ValidatedTransportCatalog,
 ) -> Result<ConstructiveNode, ConstructiveFrontierDiagnostic> {
     if !report.success {
         return Err(ConstructiveFrontierDiagnostic::error(
@@ -127,7 +104,7 @@ pub fn constructive_node_from_process_module(
             "successful process module has no used bounds",
         ));
     };
-    Ok(ConstructiveNode {
+    let mut node = ConstructiveNode {
         id: format!(
             "process-module:{}:{}",
             report.root_instance, report.internal_item
@@ -136,9 +113,18 @@ pub fn constructive_node_from_process_module(
         member_instances: report.member_instances.clone(),
         internal_requirements: report.internal_requirements.clone(),
         placements: report.growth.placements.clone(),
-        transport_networks: report.growth.transport_networks.clone(),
+        transport_networks: {
+            let mut networks = report.growth.transport_networks.clone();
+            network::normalize(&mut networks);
+            networks
+        },
+        logistics_components: Vec::new(),
+        network_capacity: Vec::new(),
+        attachment_events: Vec::new(),
         boundary_requirements: report.boundary_requirements.clone(),
-    })
+    };
+    network::report_capacity(&mut node, transports)?;
+    Ok(node)
 }
 
 pub fn construct_facility_node(
@@ -277,7 +263,10 @@ pub fn construct_facility_node(
             rate: edge.rate,
             direction,
             inside_instance: inside.to_string(),
-            port_options,
+            attachments: port_options
+                .into_iter()
+                .map(|port| Attachment::NewPort { port })
+                .collect(),
         });
     }
     boundaries.sort_by(|left, right| left.requirement.cmp(&right.requirement));
@@ -288,6 +277,9 @@ pub fn construct_facility_node(
         internal_requirements: Vec::new(),
         placements: vec![placement],
         transport_networks: Vec::new(),
+        logistics_components: Vec::new(),
+        network_capacity: Vec::new(),
+        attachment_events: Vec::new(),
         boundary_requirements: boundaries,
     })
 }
@@ -297,11 +289,12 @@ pub fn compose_process_module_with_facility(
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
     transports: &ValidatedTransportCatalog,
+    components: &ValidatedLogisticsComponentCatalog,
     source_module: &ConstructiveProcessModuleReport,
     target_instance: &str,
     requirement: &str,
 ) -> ConstructiveCompositionReport {
-    let source = match constructive_node_from_process_module(source_module) {
+    let source = match constructive_node_from_process_module(source_module, transports) {
         Ok(source) => source,
         Err(diagnostic) => {
             return failed_report(
@@ -331,7 +324,7 @@ pub fn compose_process_module_with_facility(
             ),
         );
     };
-    compose_constructive_nodes(&source, &target, edge, transports, facilities)
+    compose_constructive_nodes(&source, &target, edge, transports, facilities, components)
 }
 
 pub fn compose_constructive_nodes(
@@ -340,10 +333,11 @@ pub fn compose_constructive_nodes(
     edge: &FacilityInstanceWiringEdge,
     transports: &ValidatedTransportCatalog,
     facilities: &ValidatedFacilityCatalog,
+    components: &ValidatedLogisticsComponentCatalog,
 ) -> ConstructiveCompositionReport {
     let best_area = AtomicUsize::new(usize::MAX);
     compose_constructive_nodes_with_area_incumbent(
-        source, target, edge, transports, facilities, &best_area,
+        source, target, edge, transports, facilities, components, &best_area,
     )
 }
 
@@ -353,8 +347,31 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
     edge: &FacilityInstanceWiringEdge,
     transports: &ValidatedTransportCatalog,
     facilities: &ValidatedFacilityCatalog,
+    components: &ValidatedLogisticsComponentCatalog,
     best_area: &AtomicUsize,
 ) -> ConstructiveCompositionReport {
+    for node in [source, target] {
+        if let Err(diagnostic) = network::validate(node, facilities, transports, components) {
+            return failed_report(&edge.id, &source.id, &target.id, diagnostic);
+        }
+    }
+    if source
+        .member_instances
+        .iter()
+        .any(|id| target.member_instances.contains(id))
+    {
+        return failed_report(
+            &edge.id,
+            &source.id,
+            &target.id,
+            ConstructiveFrontierDiagnostic::error(
+                "overlapping-constructive-composition-members",
+                "/composition",
+                Some(edge.id.clone()),
+                "nodes contain the same facility instance",
+            ),
+        );
+    }
     if !source.member_instances.contains(&edge.source)
         || !target.member_instances.contains(&edge.target)
     {
@@ -392,6 +409,11 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
     };
     if source_boundary.transport != target_boundary.transport
         || source_boundary.item != target_boundary.item
+        || source_boundary.item != edge.item
+        || source_boundary.rate != edge.rate
+        || target_boundary.rate != edge.rate
+        || source_boundary.inside_instance != edge.source
+        || target_boundary.inside_instance != edge.target
     {
         return failed_report(
             &edge.id,
@@ -401,7 +423,7 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
                 "composition-boundary-mismatch",
                 "/requirement",
                 Some(edge.id.clone()),
-                "composition boundary item or transport kind does not match",
+                "composition boundary instance, item, transport, or rate does not match",
             ),
         );
     }
@@ -427,7 +449,13 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
     for (rotation_index, rotation) in [0, 90, 180, 270].into_iter().enumerate() {
         statistics.rotations_considered += 1;
         let rotated = rotate_node(source, rotation);
-        if !node_rotations_are_legal(&rotated, facilities) {
+        if !node_rotations_are_legal(&rotated, facilities)
+            || rotated.logistics_components.iter().any(|c| {
+                components
+                    .component(&c.component)
+                    .is_none_or(|d| !d.allowed_rotations.contains(&c.rotation))
+            })
+        {
             continue;
         }
         let source_bounds = &rotated.bounds;
@@ -458,95 +486,52 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
                 statistics.colliding_placements_rejected += 1;
                 continue;
             }
-            let blocked = routing_blocked_cells(
-                &source_candidate,
-                &target_candidate,
-                source_boundary.transport,
-            );
-            let source_ports = transformed_boundary(&source_candidate, &edge.id)
-                .map(|boundary| boundary.port_options.clone())
-                .unwrap_or_default();
-            let target_ports = transformed_boundary(&target_candidate, &edge.id)
-                .map(|boundary| boundary.port_options.clone())
-                .unwrap_or_default();
-            if source_ports.len() < lane_rates.len() || target_ports.len() < lane_rates.len() {
-                continue;
-            }
-
-            let mut lane_bundles = Vec::new();
-            let mut selected_source_ports = Vec::new();
-            let mut selected_target_ports = Vec::new();
-            let mut selected_routes = Vec::new();
-            let mut selected_pairs = Vec::new();
-            let mut target_used = vec![false; target_ports.len()];
-            enumerate_lane_bundles(
+            let mut merged = merge_nodes(&source_candidate, &target_candidate);
+            network::normalize(&mut merged.transport_networks);
+            let bundles = network::connect(
+                &merged,
                 edge,
                 source_boundary.transport,
                 &lane_rates,
-                &source_ports,
-                &target_ports,
-                0,
-                0,
+                transports,
+                components,
                 &mut route_workspace,
-                &blocked,
-                &mut target_used,
-                &mut selected_source_ports,
-                &mut selected_target_ports,
-                &mut selected_routes,
-                &mut selected_pairs,
                 &mut statistics,
-                &mut lane_bundles,
             );
-
-            for bundle in lane_bundles {
-                let Some((source_port_index, target_port_index)) =
-                    bundle.port_pairs.first().copied()
-                else {
-                    continue;
-                };
-                let (composite, blocked_options) = match combine_nodes(
-                    &source_candidate,
-                    &target_candidate,
-                    edge,
-                    transports,
-                    &bundle.source_ports,
-                    &bundle.target_ports,
-                    bundle.networks,
-                ) {
-                    Ok(composite) => composite,
-                    Err(CombineFailure::BoundaryOptionsExhausted) => {
-                        statistics.boundary_dead_ends_rejected += 1;
-                        statistics.boundary_option_dead_ends_rejected += 1;
-                        continue;
-                    }
-                    Err(CombineFailure::BoundaryCapacityInsufficient) => {
-                        statistics.boundary_dead_ends_rejected += 1;
-                        statistics.boundary_capacity_dead_ends_rejected += 1;
-                        continue;
-                    }
-                };
-                if let Err(failure) = validate_node_geometry(&composite) {
+            for (bundle_index, composite) in bundles.into_iter().enumerate() {
+                let mut composite = canonicalize_node(&composite);
+                if let Err(diagnostic) =
+                    network::validate(&composite, facilities, transports, components)
+                {
                     statistics.geometry_rejections += 1;
-                    match failure {
-                        GeometryFailure::FacilityOverlap => {
-                            statistics.facility_overlap_geometry_rejections += 1;
-                        }
-                        GeometryFailure::EmptyNetwork => {
-                            statistics.empty_network_geometry_rejections += 1;
-                        }
-                        GeometryFailure::FacilityTransportOverlap => {
-                            statistics.facility_transport_overlap_geometry_rejections += 1;
-                        }
-                        GeometryFailure::NonContiguousRoute => {
-                            statistics.non_contiguous_route_geometry_rejections += 1;
-                        }
-                        GeometryFailure::SameLayerTransportOverlap => {
-                            statistics.same_layer_overlap_geometry_rejections += 1;
-                        }
-                        GeometryFailure::TerminalMismatch => {
-                            statistics.terminal_mismatch_geometry_rejections += 1;
-                        }
-                    }
+                    *statistics
+                        .geometry_failure_reasons
+                        .entry(diagnostic.message)
+                        .or_default() += 1;
+                    continue;
+                }
+                if composite.logistics_components.len()
+                    > source.logistics_components.len() + target.logistics_components.len()
+                {
+                    statistics.network_attachment_candidates_validated += 1;
+                }
+                let options_before = source
+                    .boundary_requirements
+                    .iter()
+                    .chain(&target.boundary_requirements)
+                    .filter(|b| b.requirement != edge.id)
+                    .flat_map(|b| &b.attachments)
+                    .filter(|a| matches!(a, Attachment::NewPort { .. }))
+                    .count();
+                let options_after = composite
+                    .boundary_requirements
+                    .iter()
+                    .flat_map(|b| &b.attachments)
+                    .filter(|a| matches!(a, Attachment::NewPort { .. }))
+                    .count();
+                let blocked_options = options_before.saturating_sub(options_after);
+                if network::report_capacity(&mut composite, transports).is_err() {
+                    statistics.attachment_capacity_rejections += 1;
                     continue;
                 }
                 statistics.valid_candidates_scored += 1;
@@ -556,8 +541,7 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
                     rotation: rotation_index,
                     y: placement.y,
                     x: placement.x,
-                    source_port: source_port_index,
-                    target_port: target_port_index,
+                    bundle: bundle_index,
                 };
                 if best.as_ref().is_none_or(|(current, current_order, _)| {
                     (score, candidate_order) < (*current, *current_order)
@@ -569,6 +553,48 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
     }
 
     let Some((score, _, composite)) = best else {
+        let mut diagnostics = Vec::new();
+        for requirement in statistics.boundary_requirement_rejections.keys() {
+            diagnostics.push(ConstructiveFrontierDiagnostic::error(
+                "constructive-network-attachment-unavailable",
+                "/boundary_requirements",
+                Some(requirement.clone()),
+                "no unoccupied compatible port or realizable catalog branch anchor remains",
+            ));
+        }
+        for (count, code, message) in [
+            (
+                statistics.attachment_capacity_rejections
+                    + statistics.boundary_capacity_dead_ends_rejected,
+                "constructive-network-attachment-capacity-insufficient",
+                "shared segment, component, or remaining port capacity rejected attachment candidates",
+            ),
+            (
+                statistics.branch_route_failures,
+                "constructive-network-branch-route-unavailable",
+                "branch anchors were available but branch routing failed",
+            ),
+            (
+                statistics.geometry_rejections,
+                "constructive-network-attachment-geometry-invalid",
+                "independent network validation rejected completed candidates",
+            ),
+        ] {
+            if count > 0 {
+                diagnostics.push(ConstructiveFrontierDiagnostic::error(
+                    code,
+                    "/composition",
+                    Some(edge.id.clone()),
+                    message,
+                ));
+            }
+        }
+        diagnostics.push(ConstructiveFrontierDiagnostic::error(
+            "constructive-composition-exhausted",
+            "/composition",
+            Some(edge.id.clone()),
+            "exhausted rigid placement, attachment, and shortest-path lane candidates",
+        ));
         return ConstructiveCompositionReport {
             schema_version: CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION,
             success: false,
@@ -578,12 +604,7 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
             score: None,
             composite: None,
             statistics,
-            diagnostics: vec![ConstructiveFrontierDiagnostic::error(
-                "constructive-composition-exhausted",
-                "/composition",
-                Some(edge.id.clone()),
-                "exhausted block placement, rotation, port, and route candidates",
-            )],
+            diagnostics,
         };
     };
     ConstructiveCompositionReport {
@@ -602,251 +623,29 @@ pub(super) fn compose_constructive_nodes_with_area_incumbent(
     }
 }
 
-fn combine_nodes(
-    source: &ConstructiveNode,
-    target: &ConstructiveNode,
-    edge: &FacilityInstanceWiringEdge,
-    transports: &ValidatedTransportCatalog,
-    source_ports: &[PlacedFacilityPort],
-    target_ports: &[PlacedFacilityPort],
-    routes: Vec<TransportNetwork>,
-) -> Result<(ConstructiveNode, usize), CombineFailure> {
-    let mut placements = target.placements.clone();
-    placements.extend(source.placements.clone());
-    let mut networks = target.transport_networks.clone();
-    networks.extend(source.transport_networks.clone());
-    networks.extend(routes);
-    let mut member_instances = target.member_instances.clone();
-    member_instances.extend(source.member_instances.clone());
-    member_instances.sort();
-    member_instances.dedup();
-    let mut internal_requirements = target.internal_requirements.clone();
-    internal_requirements.extend(source.internal_requirements.clone());
-    internal_requirements.push(edge.id.clone());
-    internal_requirements.sort();
-    internal_requirements.dedup();
-    let mut boundaries = target
-        .boundary_requirements
-        .iter()
-        .chain(&source.boundary_requirements)
-        .filter(|boundary| boundary.requirement != edge.id)
-        .cloned()
-        .collect::<Vec<_>>();
-    let options_before = boundaries
-        .iter()
-        .map(|boundary| boundary.port_options.len())
-        .sum::<usize>();
-    let facility_cells = occupied_cells(&placements);
-    let transport_cells = networks
-        .iter()
-        .flat_map(|network| {
-            network
-                .cells
-                .iter()
-                .map(move |cell| (layer_key(network.transport), cell.x, cell.y))
-        })
-        .collect::<HashSet<_>>();
-    for boundary in &mut boundaries {
-        boundary.port_options.retain(|port| {
-            !source_ports.iter().any(|source_port| {
-                source_port.instance == port.instance && source_port.port == port.port
-            }) && !target_ports.iter().any(|target_port| {
-                target_port.instance == port.instance && target_port.port == port.port
-            }) && !facility_cells.contains(&(port.connection.x, port.connection.y))
-                && !transport_cells.contains(&(
-                    layer_key(port.transport),
-                    port.connection.x,
-                    port.connection.y,
-                ))
-        });
-        if boundary.port_options.is_empty() {
-            return Err(CombineFailure::BoundaryOptionsExhausted);
-        }
-    }
-    boundaries.sort_by(|left, right| left.requirement.cmp(&right.requirement));
-    if !super::analyze_constructive_port_demands(&boundaries, &networks, transports).success {
-        return Err(CombineFailure::BoundaryCapacityInsufficient);
-    }
-    let options_after = boundaries
-        .iter()
-        .map(|boundary| boundary.port_options.len())
-        .sum::<usize>();
-    let node = ConstructiveNode {
-        id: format!("composite:{}+{}", target.id, source.id),
-        bounds: bounds_for(
-            &placements,
-            &networks
-                .iter()
-                .flat_map(|network| network.cells.iter().cloned())
-                .collect::<Vec<_>>(),
-        ),
-        member_instances,
-        internal_requirements,
-        placements,
-        transport_networks: networks,
-        boundary_requirements: boundaries,
-    };
-    Ok((canonicalize_node(&node), options_before - options_after))
+fn merge_nodes(source: &ConstructiveNode, target: &ConstructiveNode) -> ConstructiveNode {
+    let mut node = target.clone();
+    node.id = format!("composite:{}+{}", target.id, source.id);
+    node.placements.extend(source.placements.clone());
+    node.member_instances
+        .extend(source.member_instances.clone());
+    node.member_instances.sort();
+    node.internal_requirements
+        .extend(source.internal_requirements.clone());
+    node.internal_requirements.sort();
+    node.transport_networks
+        .extend(source.transport_networks.clone());
+    node.logistics_components
+        .extend(source.logistics_components.clone());
+    node.attachment_events
+        .extend(source.attachment_events.clone());
+    node.network_capacity.clear();
+    node.boundary_requirements
+        .extend(source.boundary_requirements.clone());
+    node
 }
 
-fn connection_network(
-    edge: &FacilityInstanceWiringEdge,
-    transport: TransportKind,
-    rate: Rate,
-    lane_index: usize,
-    lane_count: usize,
-    source: &PlacedFacilityPort,
-    target: &PlacedFacilityPort,
-    cells: Vec<WorldGridPosition>,
-) -> TransportNetwork {
-    let lane = if lane_count == 1 {
-        edge.id.clone()
-    } else {
-        lane_id(&edge.id, lane_index)
-    };
-    TransportNetwork {
-        id: format!("constructive-composition:{lane}"),
-        requirement_ids: vec![edge.id.clone()],
-        item: edge.item.clone(),
-        transport,
-        segments: cells
-            .windows(2)
-            .map(|pair| TransportNetworkSegment {
-                from: pair[0].clone(),
-                to: pair[1].clone(),
-                rate,
-            })
-            .collect(),
-        cells,
-        terminals: vec![
-            TransportNetworkTerminal {
-                id: format!("{lane}:source"),
-                node: source.instance.clone(),
-                direction: FacilityPortDirection::Output,
-                endpoint: TransportNetworkEndpoint::Facility {
-                    instance: source.instance.clone(),
-                    port: source.port.clone(),
-                },
-                position: source.connection.clone(),
-                rate,
-            },
-            TransportNetworkTerminal {
-                id: format!("{lane}:target"),
-                node: target.instance.clone(),
-                direction: FacilityPortDirection::Input,
-                endpoint: TransportNetworkEndpoint::Facility {
-                    instance: target.instance.clone(),
-                    port: target.port.clone(),
-                },
-                position: target.connection.clone(),
-                rate,
-            },
-        ],
-        component_ids: Vec::new(),
-    }
-}
-
-fn enumerate_lane_bundles(
-    edge: &FacilityInstanceWiringEdge,
-    transport: TransportKind,
-    lane_rates: &[Rate],
-    source_ports: &[PlacedFacilityPort],
-    target_ports: &[PlacedFacilityPort],
-    source_start: usize,
-    lane_index: usize,
-    route_workspace: &mut RouteWorkspace,
-    blocked: &HashSet<(i64, i64)>,
-    target_used: &mut [bool],
-    selected_source_ports: &mut Vec<PlacedFacilityPort>,
-    selected_target_ports: &mut Vec<PlacedFacilityPort>,
-    selected_routes: &mut Vec<TransportNetwork>,
-    selected_pairs: &mut Vec<(usize, usize)>,
-    statistics: &mut ConstructiveCompositionStatistics,
-    bundles: &mut Vec<LaneBundle>,
-) {
-    if lane_index == lane_rates.len() {
-        bundles.push(LaneBundle {
-            source_ports: selected_source_ports.clone(),
-            target_ports: selected_target_ports.clone(),
-            port_pairs: selected_pairs.clone(),
-            networks: selected_routes.clone(),
-        });
-        return;
-    }
-
-    for source_port_index in source_start..source_ports.len() {
-        let source_port = &source_ports[source_port_index];
-        for (target_port_index, target_port) in target_ports.iter().enumerate() {
-            if target_used[target_port_index] {
-                continue;
-            }
-            statistics.port_pairs_considered += 1;
-            if blocked.contains(&(source_port.connection.x, source_port.connection.y))
-                || blocked.contains(&(target_port.connection.x, target_port.connection.y))
-            {
-                statistics.blocked_port_pairs_rejected += 1;
-                continue;
-            }
-            statistics.astar_searches += 1;
-            let Some(path) =
-                route_workspace.route(blocked, &source_port.connection, &target_port.connection)
-            else {
-                statistics.astar_failures += 1;
-                continue;
-            };
-
-            let route = connection_network(
-                edge,
-                transport,
-                lane_rates[lane_index],
-                lane_index,
-                lane_rates.len(),
-                source_port,
-                target_port,
-                path,
-            );
-            selected_source_ports.push(source_port.clone());
-            selected_target_ports.push(target_port.clone());
-            selected_pairs.push((source_port_index, target_port_index));
-            selected_routes.push(route);
-            target_used[target_port_index] = true;
-
-            let mut next_blocked = blocked.clone();
-            let route_cells = selected_routes
-                .last()
-                .expect("route was just pushed")
-                .cells
-                .clone();
-            next_blocked.extend(route_cells.iter().map(|cell| (cell.x, cell.y)));
-            enumerate_lane_bundles(
-                edge,
-                transport,
-                lane_rates,
-                source_ports,
-                target_ports,
-                source_port_index + 1,
-                lane_index + 1,
-                route_workspace,
-                &next_blocked,
-                target_used,
-                selected_source_ports,
-                selected_target_ports,
-                selected_routes,
-                selected_pairs,
-                statistics,
-                bundles,
-            );
-
-            target_used[target_port_index] = false;
-            selected_routes.pop();
-            selected_source_ports.pop();
-            selected_target_ports.pop();
-            selected_pairs.pop();
-        }
-    }
-}
-
-fn rotate_node(node: &ConstructiveNode, rotation: i64) -> ConstructiveNode {
+pub(super) fn rotate_node(node: &ConstructiveNode, rotation: i64) -> ConstructiveNode {
     let mut rotated = node.clone();
     for placement in &mut rotated.placements {
         let (x, y, width, height) = rotate_rectangle(
@@ -886,8 +685,42 @@ fn rotate_node(node: &ConstructiveNode, rotation: i64) -> ConstructiveNode {
             );
         }
     }
+    for component in &mut rotated.logistics_components {
+        component.position = rotate_point(
+            &component.position,
+            node.bounds.width,
+            node.bounds.height,
+            rotation,
+        );
+        component.rotation = (component.rotation + rotation) % 360;
+    }
+    for capacity in &mut rotated.network_capacity {
+        for segment in &mut capacity.segments {
+            segment.from = rotate_point(
+                &segment.from,
+                node.bounds.width,
+                node.bounds.height,
+                rotation,
+            );
+            segment.to = rotate_point(&segment.to, node.bounds.width, node.bounds.height, rotation);
+        }
+    }
     for boundary in &mut rotated.boundary_requirements {
-        for port in &mut boundary.port_options {
+        for attachment in &mut boundary.attachments {
+            if let Attachment::ExistingNetwork {
+                anchor,
+                branch_cell,
+                component,
+                ..
+            } = attachment
+            {
+                *anchor = rotate_point(anchor, node.bounds.width, node.bounds.height, rotation);
+                *branch_cell =
+                    rotate_point(branch_cell, node.bounds.width, node.bounds.height, rotation);
+                component.position = anchor.clone();
+                component.rotation = (component.rotation + rotation) % 360;
+            }
+            let port = attachment.port_mut();
             port.position = rotate_point(
                 &port.position,
                 node.bounds.width,
@@ -959,7 +792,7 @@ fn rotate_point(
     }
 }
 
-fn translate_node(node: &ConstructiveNode, dx: i64, dy: i64) -> ConstructiveNode {
+pub(super) fn translate_node(node: &ConstructiveNode, dx: i64, dy: i64) -> ConstructiveNode {
     let mut translated = node.clone();
     for placement in &mut translated.placements {
         placement.x += dx;
@@ -981,9 +814,34 @@ fn translate_node(node: &ConstructiveNode, dx: i64, dy: i64) -> ConstructiveNode
             terminal.position.y += dy;
         }
     }
+    for component in &mut translated.logistics_components {
+        component.position.x += dx;
+        component.position.y += dy;
+    }
+    for capacity in &mut translated.network_capacity {
+        for segment in &mut capacity.segments {
+            segment.from.x += dx;
+            segment.from.y += dy;
+            segment.to.x += dx;
+            segment.to.y += dy;
+        }
+    }
     for boundary in &mut translated.boundary_requirements {
-        for port in &mut boundary.port_options {
-            translate_port(port, dx, dy);
+        for attachment in &mut boundary.attachments {
+            if let Attachment::ExistingNetwork {
+                anchor,
+                branch_cell,
+                component,
+                ..
+            } = attachment
+            {
+                anchor.x += dx;
+                anchor.y += dy;
+                branch_cell.x += dx;
+                branch_cell.y += dy;
+                component.position = anchor.clone();
+            }
+            translate_port(attachment.port_mut(), dx, dy);
         }
     }
     translated
@@ -1071,33 +929,6 @@ fn nodes_collide(left: &ConstructiveNode, right: &ConstructiveNode) -> bool {
     })
 }
 
-fn routing_blocked_cells(
-    source: &ConstructiveNode,
-    target: &ConstructiveNode,
-    transport: TransportKind,
-) -> HashSet<(i64, i64)> {
-    let mut blocked = occupied_cells(&source.placements);
-    blocked.extend(occupied_cells(&target.placements));
-    blocked.extend(
-        source
-            .transport_networks
-            .iter()
-            .chain(&target.transport_networks)
-            .filter(|network| network.transport == transport)
-            .flat_map(|network| network.cells.iter().map(|cell| (cell.x, cell.y))),
-    );
-    blocked
-}
-
-fn transformed_boundary<'a>(
-    node: &'a ConstructiveNode,
-    requirement: &str,
-) -> Option<&'a ConstructiveProcessModuleBoundary> {
-    node.boundary_requirements
-        .iter()
-        .find(|boundary| boundary.requirement == requirement)
-}
-
 fn node_rotations_are_legal(
     node: &ConstructiveNode,
     facilities: &ValidatedFacilityCatalog,
@@ -1107,51 +938,6 @@ fn node_rotations_are_legal(
             .facility(&placement.facility)
             .is_some_and(|definition| definition.allowed_rotations.contains(&placement.rotation))
     })
-}
-
-fn validate_node_geometry(node: &ConstructiveNode) -> Result<(), GeometryFailure> {
-    for (index, left) in node.placements.iter().enumerate() {
-        if node.placements[index + 1..]
-            .iter()
-            .any(|right| rectangles_overlap(left, right))
-        {
-            return Err(GeometryFailure::FacilityOverlap);
-        }
-    }
-    let facilities = occupied_cells(&node.placements);
-    let mut transport = HashSet::new();
-    for network in &node.transport_networks {
-        if network.cells.is_empty() {
-            return Err(GeometryFailure::EmptyNetwork);
-        }
-        if network
-            .cells
-            .iter()
-            .any(|cell| facilities.contains(&(cell.x, cell.y)))
-        {
-            return Err(GeometryFailure::FacilityTransportOverlap);
-        }
-        if network
-            .cells
-            .windows(2)
-            .any(|pair| pair[0].x.abs_diff(pair[1].x) + pair[0].y.abs_diff(pair[1].y) != 1)
-        {
-            return Err(GeometryFailure::NonContiguousRoute);
-        }
-        if network
-            .cells
-            .iter()
-            .any(|cell| !transport.insert((layer_key(network.transport), cell.x, cell.y)))
-        {
-            return Err(GeometryFailure::SameLayerTransportOverlap);
-        }
-        if network.terminals.first().map(|terminal| &terminal.position) != network.cells.first()
-            || network.terminals.last().map(|terminal| &terminal.position) != network.cells.last()
-        {
-            return Err(GeometryFailure::TerminalMismatch);
-        }
-    }
-    Ok(())
 }
 
 fn composition_score(
@@ -1174,11 +960,7 @@ fn composition_score(
         used_bounding_box_area: usize::try_from(node.bounds.width * node.bounds.height)
             .unwrap_or(usize::MAX),
         transport_tiles,
-        route_turns: node
-            .transport_networks
-            .iter()
-            .map(|network| count_turns(&network.cells))
-            .sum(),
+        route_turns: node.transport_networks.iter().map(network::turns).sum(),
     }
 }
 
@@ -1382,6 +1164,7 @@ mod tests {
             &facilities,
             &items,
             &transports(),
+            &super::super::test_components(),
             "root",
             "internal",
         );
@@ -1391,6 +1174,7 @@ mod tests {
             &facilities,
             &items,
             &transports(),
+            &super::super::test_components(),
             &module,
             "target",
             "root-target",
@@ -1401,24 +1185,18 @@ mod tests {
         assert!(report.statistics.area_lower_bound_rejections > 0);
         let composite = report.composite.as_ref().expect("composite node");
         assert_eq!(composite.placements.len(), 4);
-        assert_eq!(composite.transport_networks.len(), 4);
-        let composed_lanes = composite
+        assert_eq!(composite.transport_networks.len(), 2);
+        let product_network = composite
             .transport_networks
             .iter()
-            .filter(|network| {
-                network
-                    .id
-                    .starts_with("constructive-composition:root-target:lane:")
-            })
-            .collect::<Vec<_>>();
-        assert_eq!(composed_lanes.len(), 2);
-        assert!(composed_lanes.iter().all(|network| {
-            network.terminals[0].rate
-                == Rate {
-                    numerator: 1,
-                    denominator: 1,
-                }
-        }));
+            .find(|n| n.item == "product")
+            .unwrap();
+        assert_eq!(product_network.terminals.len(), 4);
+        assert!(product_network.terminals.iter().all(|t| t.rate
+            == Rate {
+                numerator: 1,
+                denominator: 1
+            }));
         assert_eq!(composite.internal_requirements.len(), 3);
         assert!(
             composite
@@ -1430,7 +1208,7 @@ mod tests {
             composite
                 .boundary_requirements
                 .iter()
-                .all(|boundary| !boundary.port_options.is_empty())
+                .all(|boundary| !boundary.attachments.is_empty())
         );
         let html = render_constructive_composition_html(&report, None)
             .expect("constructive composition should render");

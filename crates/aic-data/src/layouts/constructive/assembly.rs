@@ -1,4 +1,5 @@
 use crate::facilities::ValidatedFacilityCatalog;
+use crate::logistics::ValidatedLogisticsComponentCatalog;
 use crate::logistics::{ValidatedItemCatalog, ValidatedTransportCatalog};
 use crate::recipes::FacilityInstanceWiringReport;
 
@@ -16,6 +17,7 @@ pub fn assemble_constructive_modules(
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
     transports: &ValidatedTransportCatalog,
+    components: &ValidatedLogisticsComponentCatalog,
     request: &ConstructiveAssemblyRequest,
 ) -> ConstructiveAssemblyReport {
     if request.schema_version != CONSTRUCTIVE_ASSEMBLY_REQUEST_SCHEMA_VERSION {
@@ -59,6 +61,7 @@ pub fn assemble_constructive_modules(
             facilities,
             items,
             transports,
+            components,
             &module_request.root_instance,
             &module_request.internal_item,
         );
@@ -86,7 +89,7 @@ pub fn assemble_constructive_modules(
             });
             return failed_report(request, steps, Some(current), diagnostic);
         }
-        let source = match constructive_node_from_process_module(&module) {
+        let source = match constructive_node_from_process_module(&module, transports) {
             Ok(source) => source,
             Err(diagnostic) => {
                 steps.push(ConstructiveAssemblyStepReport {
@@ -149,7 +152,7 @@ pub fn assemble_constructive_modules(
         };
         let module_member_instances = source.member_instances.clone();
         let composition =
-            compose_constructive_nodes(&source, &current, edge, transports, facilities);
+            compose_constructive_nodes(&source, &current, edge, transports, facilities, components);
         let Some(composite) = composition.composite.clone() else {
             let diagnostic = composition.diagnostics.first().cloned().unwrap_or_else(|| {
                 ConstructiveFrontierDiagnostic::error(
@@ -415,15 +418,21 @@ pub(super) mod tests {
     fn recursively_assembles_two_modules_into_the_same_target_node() {
         let (wiring, facilities, items, transports, request) = two_module_fixture();
 
-        let report =
-            assemble_constructive_modules(&wiring, &facilities, &items, &transports, &request);
+        let report = assemble_constructive_modules(
+            &wiring,
+            &facilities,
+            &items,
+            &transports,
+            &super::super::test_components(),
+            &request,
+        );
 
         assert!(report.success, "{:?}", report.diagnostics);
         assert_eq!(report.completed_modules, 2);
         assert_eq!(report.steps.len(), 2);
         let final_node = report.final_node.as_ref().expect("final composite node");
         assert_eq!(final_node.placements.len(), 5);
-        assert_eq!(final_node.transport_networks.len(), 4);
+        assert_eq!(final_node.transport_networks.len(), 3);
         assert_eq!(final_node.internal_requirements.len(), 4);
         let html = render_constructive_assembly_html(&report, None)
             .expect("recursive assembly should render");

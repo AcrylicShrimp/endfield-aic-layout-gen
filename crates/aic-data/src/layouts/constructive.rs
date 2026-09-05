@@ -20,10 +20,21 @@ mod automatic_assembly;
 mod capacity;
 mod composition;
 mod first_pipe_frontier;
+mod network;
 mod pipe_chain;
 mod port_demand;
 mod process_module;
 mod routing;
+
+#[cfg(test)]
+fn test_components() -> crate::logistics::ValidatedLogisticsComponentCatalog {
+    let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../data/game/normalized/logistics-components.json");
+    crate::logistics::ValidatedLogisticsComponentCatalog::try_from_catalog(
+        crate::logistics::load_logistics_component_catalog(path).unwrap(),
+    )
+    .unwrap()
+}
 
 pub use assembly::assemble_constructive_modules;
 pub use automatic_assembly::automatically_assemble_constructive_modules;
@@ -185,8 +196,9 @@ pub fn render_constructive_process_module_html(
         .iter()
         .flat_map(|boundary| {
             boundary
-                .port_options
+                .attachments
                 .iter()
+                .map(ConstructiveBoundaryAttachment::port)
                 .enumerate()
                 .map(move |(option_index, port)| TransportNetwork {
                     id: format!(
@@ -251,7 +263,11 @@ pub fn render_constructive_composition_html(
         },
         bounds,
         placements,
-        logistics_components: Vec::new(),
+        logistics_components: report
+            .composite
+            .as_ref()
+            .map(|n| n.logistics_components.clone())
+            .unwrap_or_default(),
         transport_networks,
         phases: Vec::new(),
         exact: None,
@@ -268,7 +284,56 @@ pub fn render_constructive_composition_html(
             })
             .collect(),
     };
-    render_integrated_layout_html_with_localization(&integrated, localization)
+    let html = render_integrated_layout_html_with_localization(&integrated, localization)?;
+    Ok(add_capacity_inspection(
+        html,
+        &report.composite.iter().collect::<Vec<_>>(),
+    ))
+}
+
+fn add_capacity_inspection(mut html: String, nodes: &[&ConstructiveNode]) -> String {
+    let pages = nodes.iter().map(|node| {
+        node.transport_networks.iter().flat_map(|network| {
+            let capacity = node.network_capacity.iter().find(|c| c.network == network.id);
+            network.cells.iter().map(move |cell| {
+                let rate = |r: Rate| format!("{}/{} per second", r.numerator, r.denominator);
+                let mut details = format!("Network {} | Item {} | Cell {},{}", network.id, network.item, cell.x, cell.y);
+                if let Some(capacity) = capacity {
+                    details.push_str(&format!(" | Line capacity {}", rate(capacity.line_capacity)));
+                    for segment in capacity.segments.iter().filter(|s| s.from == *cell || s.to == *cell) {
+                        details.push_str(&format!(" | ({},{}) -> ({},{}): load {}; residual {}", segment.from.x, segment.from.y, segment.to.x, segment.to.y, rate(segment.load), rate(segment.residual)));
+                    }
+                }
+                for component in node.logistics_components.iter().filter(|c| c.transport == network.transport && c.position == *cell) {
+                    details.push_str(&format!(" | {:?}: {} rotation {}", component.kind, component.component, component.rotation));
+                }
+                serde_json::json!({"x":cell.x,"y":cell.y,"layer": if network.transport == TransportKind::Belt {"belt-layer"} else {"pipe-layer"},"details":details})
+            })
+        }).collect::<Vec<_>>()
+    }).collect::<Vec<_>>();
+    let data = serde_json::to_string(&pages)
+        .expect("capacity inspection serializes")
+        .replace('<', "\\u003c");
+    let script = format!(
+        r#"<script>
+(() => {{
+  const capacityPages = {data};
+  document.querySelectorAll('.phase-page').forEach((page, index) => {{
+    const records = new Map((capacityPages[index] || []).map(r => [`${{r.layer}}:${{r.x}}:${{r.y}}`, r.details]));
+    for (const layer of ['belt-layer', 'pipe-layer']) {{
+      page.querySelectorAll(`.${{layer}} .route-cell`).forEach(cell => {{
+        const details = records.get(`${{layer}}:${{cell.getAttribute('x')}}:${{cell.getAttribute('y')}}`);
+        if (details) cell.dataset.inspect = details;
+      }});
+    }}
+  }});
+}})();
+</script>"#
+    );
+    if let Some(index) = html.rfind("</body>") {
+        html.insert_str(index, &script);
+    }
+    html
 }
 
 pub fn render_constructive_assembly_html(
@@ -350,7 +415,7 @@ fn render_constructive_assembly_history_html(
             LayoutVisualizationPage {
                 bounds: &node.bounds,
                 placements: &node.placements,
-                logistics_components: &[],
+                logistics_components: &node.logistics_components,
                 transport_networks: networks,
                 introduced_facilities: step
                     .module_member_instances
@@ -371,7 +436,12 @@ fn render_constructive_assembly_history_html(
             }
         })
         .collect::<Vec<_>>();
-    render_layout_history_html(&pages, visual_success, localization)
+    let html = render_layout_history_html(&pages, visual_success, localization)?;
+    let nodes = successful_steps
+        .iter()
+        .filter_map(|s| s.composition.composite.as_ref())
+        .collect::<Vec<_>>();
+    Ok(add_capacity_inspection(html, &nodes))
 }
 
 pub fn render_constructive_automatic_assembly_html(
@@ -393,8 +463,9 @@ fn boundary_visualization_networks(
         .iter()
         .flat_map(|boundary| {
             boundary
-                .port_options
+                .attachments
                 .iter()
+                .map(ConstructiveBoundaryAttachment::port)
                 .enumerate()
                 .map(move |(option_index, port)| TransportNetwork {
                     id: format!("{id_prefix}:{}:option:{option_index}", boundary.requirement),
@@ -423,13 +494,13 @@ fn boundary_visualization_networks(
 const STAGE: &str = "constructive-planner";
 pub const CONSTRUCTIVE_FRONTIER_SCHEMA_VERSION: u32 = 1;
 pub const CONSTRUCTIVE_FRONTIER_GROWTH_SCHEMA_VERSION: u32 = 4;
-pub const CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION: u32 = 1;
-pub const CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION: u32 = 4;
+pub const CONSTRUCTIVE_PROCESS_MODULE_SCHEMA_VERSION: u32 = 2;
+pub const CONSTRUCTIVE_COMPOSITION_SCHEMA_VERSION: u32 = 5;
 pub const CONSTRUCTIVE_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
-pub const CONSTRUCTIVE_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 1;
+pub const CONSTRUCTIVE_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 2;
 pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REQUEST_SCHEMA_VERSION: u32 = 1;
-pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 4;
-pub const CONSTRUCTIVE_PORT_DEMAND_ANALYSIS_SCHEMA_VERSION: u32 = 1;
+pub const CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REPORT_SCHEMA_VERSION: u32 = 5;
+pub const CONSTRUCTIVE_PORT_DEMAND_ANALYSIS_SCHEMA_VERSION: u32 = 2;
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
@@ -526,7 +597,38 @@ pub struct ConstructiveProcessModuleBoundary {
     pub rate: Rate,
     pub direction: FacilityPortDirection,
     pub inside_instance: String,
-    pub port_options: Vec<PlacedFacilityPort>,
+    pub attachments: Vec<ConstructiveBoundaryAttachment>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(tag = "kind", rename_all = "kebab-case")]
+pub enum ConstructiveBoundaryAttachment {
+    NewPort {
+        port: PlacedFacilityPort,
+    },
+    ExistingNetwork {
+        port: PlacedFacilityPort,
+        network: String,
+        terminal: String,
+        anchor: WorldGridPosition,
+        branch_cell: WorldGridPosition,
+        component: crate::layouts::PlacedLogisticsComponent,
+        shared_segments: Vec<usize>,
+        residual_capacity: Rate,
+    },
+}
+
+impl ConstructiveBoundaryAttachment {
+    pub fn port(&self) -> &PlacedFacilityPort {
+        match self {
+            Self::NewPort { port } | Self::ExistingNetwork { port, .. } => port,
+        }
+    }
+    pub(super) fn port_mut(&mut self) -> &mut PlacedFacilityPort {
+        match self {
+            Self::NewPort { port } | Self::ExistingNetwork { port, .. } => port,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
@@ -549,7 +651,35 @@ pub struct ConstructiveNode {
     pub internal_requirements: Vec<String>,
     pub placements: Vec<FacilityPlacement>,
     pub transport_networks: Vec<TransportNetwork>,
+    pub logistics_components: Vec<crate::layouts::PlacedLogisticsComponent>,
+    pub network_capacity: Vec<ConstructiveNetworkCapacity>,
+    pub attachment_events: Vec<ConstructiveAttachmentEvent>,
     pub boundary_requirements: Vec<ConstructiveProcessModuleBoundary>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructiveNetworkCapacity {
+    pub network: String,
+    pub line_capacity: Rate,
+    pub segments: Vec<ConstructiveSegmentCapacity>,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructiveSegmentCapacity {
+    pub from: WorldGridPosition,
+    pub to: WorldGridPosition,
+    pub load: Rate,
+    pub residual: Rate,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+pub struct ConstructiveAttachmentEvent {
+    pub requirement: String,
+    pub rate: Rate,
+    pub source_kind: &'static str,
+    pub target_kind: &'static str,
+    pub network: String,
+    pub component_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq, PartialOrd, Ord)]
@@ -562,6 +692,18 @@ pub struct ConstructiveCompositionScore {
 
 #[derive(Debug, Clone, Default, Serialize, PartialEq, Eq)]
 pub struct ConstructiveCompositionStatistics {
+    pub completed_lane_bundles: u64,
+    pub boundary_requirement_rejections: std::collections::BTreeMap<String, u64>,
+    pub geometry_failure_reasons: std::collections::BTreeMap<String, u64>,
+    pub new_port_attempts: u64,
+    pub existing_network_attempts: u64,
+    pub attachment_anchors_considered: u64,
+    pub splitter_candidates_considered: u64,
+    pub converger_candidates_considered: u64,
+    pub attachment_capacity_rejections: u64,
+    pub component_topology_rejections: u64,
+    pub branch_route_failures: u64,
+    pub network_attachment_candidates_validated: u64,
     pub rotations_considered: u64,
     pub placements_considered: u64,
     pub additive_placements_considered: u64,
@@ -575,12 +717,6 @@ pub struct ConstructiveCompositionStatistics {
     pub boundary_option_dead_ends_rejected: u64,
     pub boundary_capacity_dead_ends_rejected: u64,
     pub geometry_rejections: u64,
-    pub facility_overlap_geometry_rejections: u64,
-    pub empty_network_geometry_rejections: u64,
-    pub facility_transport_overlap_geometry_rejections: u64,
-    pub non_contiguous_route_geometry_rejections: u64,
-    pub same_layer_overlap_geometry_rejections: u64,
-    pub terminal_mismatch_geometry_rejections: u64,
     pub valid_candidates_scored: u64,
 }
 
@@ -691,6 +827,10 @@ pub struct ConstructivePortDemandGroup {
     pub logical_requirements: Vec<String>,
     pub total_rate: Rate,
     pub line_capacity: Rate,
+    /// Optimistic aggregate of realizable anchor residuals, deduplicated per terminal.
+    /// This is a local boundary screen, not a simultaneous future-routing reservation.
+    pub reusable_terminal_capacity: Rate,
+    pub rate_requiring_new_ports: Rate,
     pub edge_implied_ports: usize,
     pub required_ports: usize,
     pub available_distinct_ports: usize,

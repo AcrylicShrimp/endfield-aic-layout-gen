@@ -1,3 +1,4 @@
+use super::ConstructiveBoundaryAttachment as Attachment;
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::facilities::FacilityPortDirection;
@@ -30,6 +31,7 @@ struct GroupAccumulator {
     requirements: BTreeSet<String>,
     total_rate: Rate,
     ports: BTreeSet<String>,
+    residuals: BTreeMap<String, Rate>,
 }
 
 struct ScopeAccumulator {
@@ -59,6 +61,7 @@ pub fn analyze_constructive_port_demands(
             requirements: BTreeSet::new(),
             total_rate: Rate::zero(),
             ports: BTreeSet::new(),
+            residuals: BTreeMap::new(),
         });
         accumulator
             .requirements
@@ -72,22 +75,60 @@ pub fn analyze_constructive_port_demands(
                 error.message,
             )),
         }
-        for port in &boundary.port_options {
-            if port.instance == boundary.inside_instance
-                && port.direction == boundary.direction
-                && port.transport == boundary.transport
+        for attachment in &boundary.attachments {
+            let port = attachment.port();
+            if port.instance != boundary.inside_instance
+                || port.direction != boundary.direction
+                || port.transport != boundary.transport
             {
-                accumulator.ports.insert(port.port.clone());
-            } else {
                 diagnostics.push(ConstructiveFrontierDiagnostic::error(
                     "constructive-port-demand-option-mismatch",
-                    format!("/boundary_requirements/{boundary_index}/port_options"),
+                    format!("/boundary_requirements/{boundary_index}/attachments"),
                     Some(boundary.requirement.clone()),
-                    format!(
-                        "port option '{}' does not match boundary instance, direction, and transport",
-                        port.port
-                    ),
+                    "attachment port does not match boundary instance, direction, and transport",
                 ));
+                continue;
+            }
+            match attachment {
+                Attachment::NewPort { .. } => {
+                    accumulator.ports.insert(port.port.clone());
+                }
+                Attachment::ExistingNetwork {
+                    network,
+                    terminal,
+                    residual_capacity,
+                    shared_segments,
+                    ..
+                } => {
+                    let definition = transports.capacity(boundary.transport);
+                    let capacity = Rate::from_quantity_per_duration_ms(
+                        definition.quantity,
+                        definition.duration_ms,
+                    )
+                    .ok();
+                    let valid = networks.iter().find(|n| n.id == *network && n.item == boundary.item && n.transport == boundary.transport).is_some_and(|n| {
+                        let terminal_valid = n.terminals.iter().any(|t| {
+                            t.id == *terminal && t.node == boundary.inside_instance && t.direction == boundary.direction
+                                && matches!(&t.endpoint, crate::layouts::TransportNetworkEndpoint::Facility {instance, port:p} if instance == &port.instance && p == &port.port)
+                                && capacity.and_then(|c|c.checked_sub(t.rate).ok()).is_some_and(|r| r >= *residual_capacity)
+                        });
+                        terminal_valid && shared_segments.iter().all(|i| n.segments.get(*i).is_some_and(|s|capacity.and_then(|c|c.checked_sub(s.rate).ok()).is_some_and(|r| r >= *residual_capacity)))
+                    });
+                    if !valid || *residual_capacity <= Rate::zero() {
+                        diagnostics.push(ConstructiveFrontierDiagnostic::error(
+                            "constructive-network-attachment-capacity-insufficient",
+                            format!("/boundary_requirements/{boundary_index}/attachments"),
+                            Some(network.clone()),
+                            "attachment capacity evidence does not match its current network",
+                        ));
+                        continue;
+                    }
+                    let r = accumulator
+                        .residuals
+                        .entry(terminal.clone())
+                        .or_insert(Rate::zero());
+                    *r = (*r).max(*residual_capacity);
+                }
             }
         }
     }
@@ -115,7 +156,16 @@ pub fn analyze_constructive_port_demands(
                 continue;
             }
         };
-        let required_ports = match required_port_count(accumulator.total_rate, line_capacity) {
+        let residual = accumulator
+            .residuals
+            .values()
+            .try_fold(Rate::zero(), |sum, r| sum.checked_add(*r))
+            .unwrap_or(Rate::zero());
+        let unassigned_rate = accumulator
+            .total_rate
+            .checked_sub(residual.min(accumulator.total_rate))
+            .unwrap_or(accumulator.total_rate);
+        let required_ports = match required_port_count(unassigned_rate, line_capacity) {
             Some(required_ports) => required_ports,
             None => {
                 diagnostics.push(ConstructiveFrontierDiagnostic::error(
@@ -152,6 +202,8 @@ pub fn analyze_constructive_port_demands(
         scope.required_ports = scope_required_ports;
         scope.ports.extend(accumulator.ports.iter().cloned());
         groups.push(ConstructivePortDemandGroup {
+            reusable_terminal_capacity: residual,
+            rate_requiring_new_ports: unassigned_rate,
             inside_instance: key.inside_instance,
             direction: accumulator.direction,
             item: key.item,
@@ -376,7 +428,7 @@ mod tests {
             rate,
             direction: FacilityPortDirection::Input,
             inside_instance: "machine".to_string(),
-            port_options: ["input-1", "input-2"]
+            attachments: ["input-1", "input-2"]
                 .into_iter()
                 .map(|port| PlacedFacilityPort {
                     instance: "machine".to_string(),
@@ -388,6 +440,7 @@ mod tests {
                     edge: FacilityPortEdge::West,
                     connection: WorldGridPosition { x: -1, y: 0 },
                 })
+                .map(|port| Attachment::NewPort { port })
                 .collect(),
         }
     }

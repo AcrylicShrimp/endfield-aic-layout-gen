@@ -1,0 +1,14 @@
+{
+  "schema_version": 3,
+  "facilities": [
+    {
+      "id": "network-fixture-machine",
+      "footprint": { "width": 1, "height": 1 },
+      "allowed_rotations": [0, 90, 180, 270],
+      "ports": [
+        { "id": "in", "direction": "input", "transport": "belt", "position": { "x": 0, "y": 0 }, "edge": "west" },
+        { "id": "out", "direction": "output", "transport": "belt", "position": { "x": 0, "y": 0 }, "edge": "east" }
+      ]
+    }
+  ]
+}

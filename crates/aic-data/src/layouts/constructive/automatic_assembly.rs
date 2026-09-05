@@ -1,3 +1,4 @@
+use crate::logistics::ValidatedLogisticsComponentCatalog;
 use std::collections::BTreeSet;
 use std::sync::atomic::AtomicUsize;
 use std::time::Instant;
@@ -49,6 +50,7 @@ pub fn automatically_assemble_constructive_modules(
     facilities: &ValidatedFacilityCatalog,
     items: &ValidatedItemCatalog,
     transports: &ValidatedTransportCatalog,
+    components: &ValidatedLogisticsComponentCatalog,
     request: &ConstructiveAutomaticAssemblyRequest,
 ) -> ConstructiveAutomaticAssemblyReport {
     if request.schema_version != CONSTRUCTIVE_AUTOMATIC_ASSEMBLY_REQUEST_SCHEMA_VERSION {
@@ -120,6 +122,7 @@ pub fn automatically_assemble_constructive_modules(
                     facilities,
                     items,
                     transports,
+                    components,
                     &edge.source,
                     &internal_item,
                 );
@@ -135,7 +138,7 @@ pub fn automatically_assemble_constructive_modules(
                     });
                     continue;
                 }
-                let source = match constructive_node_from_process_module(&module) {
+                let source = match constructive_node_from_process_module(&module, transports) {
                     Ok(source) => source,
                     Err(diagnostic) => {
                         module_constructions_failed += 1;
@@ -182,7 +185,7 @@ pub fn automatically_assemble_constructive_modules(
             }
         }
         let (composition_workers, composition_outcome) =
-            compose_candidates_parallel(&prepared, &current, transports, facilities);
+            compose_candidates_parallel(&prepared, &current, transports, facilities, components);
         let compositions_failed = composition_outcome.failures.len();
         candidate_failures.extend(composition_outcome.failures);
         let mut candidates = composition_outcome.candidates;
@@ -277,6 +280,7 @@ fn compose_candidates_parallel(
     current: &ConstructiveNode,
     transports: &ValidatedTransportCatalog,
     facilities: &ValidatedFacilityCatalog,
+    components: &ValidatedLogisticsComponentCatalog,
 ) -> (usize, CompositionWorkerOutcome) {
     if prepared.is_empty() {
         return (0, CompositionWorkerOutcome::default());
@@ -300,6 +304,7 @@ fn compose_candidates_parallel(
                             &prepared.edge,
                             transports,
                             facilities,
+                            components,
                             best_area,
                         );
                         if !composition.success {
@@ -568,6 +573,7 @@ mod tests {
             &facilities,
             &items,
             &transports(),
+            &super::super::test_components(),
             &request,
         );
 
