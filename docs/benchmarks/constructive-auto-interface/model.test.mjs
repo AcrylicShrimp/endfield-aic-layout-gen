@@ -39,20 +39,48 @@ test('IDs and recipe family do not select hardcoded geometry', () => {
   assert.ok(carbon.witness.placements.some(p => p.facility.startsWith('furnance')));
 });
 
-test('ordered approaches are disjoint for 3136 mixed upward/downward endpoint sequences', () => {
+test('ordered approaches have minimum disjoint bend depth for 3136 endpoint sequences', () => {
   const sequences = [];
   for (let a = 0; a < 8; a++) for (let b = a + 1; b < 8; b++) for (let c = b + 1; c < 8; c++) sequences.push([a, b, c]);
   let count = 0;
-  for (const a of sequences) for (const b of sequences) {
-    const paths = orderedApproach(a.map((y, i) => ({ id: `${i}`, start: { x: 0, y }, end: { x: 5, y: b[i] } })));
+  const disjoint = paths => {
     const used = new Set();
-    for (const points of paths.values()) for (const p of polyline(points)) {
-      const k = `${p.x},${p.y}`; assert.ok(!used.has(k)); used.add(k);
+    for (const points of paths) for (const p of polyline(points)) {
+      const k = `${p.x},${p.y}`; if (used.has(k)) return false; used.add(k);
+    }
+    return true;
+  };
+  for (const a of sequences) for (const b of sequences) {
+    const lanes = a.map((y, i) => ({ id: `${i}`, start: { x: 0, y }, end: { x: 5, y: b[i] } }));
+    const before = structuredClone(lanes), paths = orderedApproach(lanes);
+    assert.ok(disjoint(paths.values())); assert.deepEqual(lanes, before);
+    assert.deepEqual(orderedApproach([...lanes].reverse()), paths);
+    const depth = Math.max(0, ...[...paths.values()].filter(p => p.length === 4).map(p => p[1][0]));
+    assert.ok(disjoint(orderedApproach(lanes.map(l => ({ ...l, end: { ...l.end, x: depth + 1 } }))).values()));
+    // Independent brute force: enumerate all smaller interior-column assignments,
+    // then inspect unit-cell intersections without using precedence or interval rules.
+    for (let width = 1; width < depth; width++) for (let assignment = 0; assignment < width ** lanes.length; assignment++) {
+      const candidate = lanes.map((l, i) => {
+        const x = 1 + Math.floor(assignment / width ** i) % width;
+        return l.start.y === l.end.y ? [[0, l.start.y], [width + 1, l.end.y]] :
+          [[0, l.start.y], [x, l.start.y], [x, l.end.y], [width + 1, l.end.y]];
+      });
+      assert.equal(disjoint(candidate), false);
     }
     count++;
   }
   assert.equal(count, 3136);
-  assert.throws(() => orderedApproach([{ id: 'a', start: { x: 0, y: 1 }, end: { x: 1, y: 1 } }]), { code: 'interface-approach-order' });
+  assert.deepEqual(orderedApproach([{ id: 'a', start: { x: 0, y: 1 }, end: { x: 1, y: 1 } }]).get('a'), [[0, 1], [1, 1]]);
+  assert.throws(() => orderedApproach([{ id: 'a', start: { x: 0, y: 1 }, end: { x: 1, y: 2 } }]), { code: 'interface-approach-order' });
+});
+
+test('disjoint bend intervals share columns but touching intervals cannot', () => {
+  const make = pairs => pairs.map(([a, b], i) => ({ id: String(i), start: { x: 4, y: a }, end: { x: 9, y: b } }));
+  assert.deepEqual([...orderedApproach(make([[0, 1], [3, 4], [6, 7]])).values()].map(p => p[1][0]), [5, 5, 5]);
+  assert.deepEqual([...orderedApproach(make([[0, 2], [2, 4], [4, 6]])).values()].map(p => p[1][0]), [7, 6, 5]);
+  assert.deepEqual([...orderedApproach(make([[2, 0], [4, 2], [6, 4]])).values()].map(p => p[1][0]), [5, 6, 7]);
+  const duplicate = make([[0, 1], [3, 4]]); duplicate[1].id = duplicate[0].id;
+  assert.throws(() => orderedApproach(duplicate), { code: 'interface-approach-order' });
 });
 
 test('four consumers share three source capacity ports through fixed splitter trees', () => {

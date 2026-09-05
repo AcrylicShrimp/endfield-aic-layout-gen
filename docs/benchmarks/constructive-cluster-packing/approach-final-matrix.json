@@ -1,0 +1,3273 @@
+{
+  "schema_version": 1,
+  "status": "complete-incumbent-retained",
+  "factory_validated": true,
+  "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/incumbent",
+  "score": {
+    "width": 99,
+    "height": 85,
+    "area": 8415,
+    "physical_tiles": 2056,
+    "turns": 261,
+    "tuple": [
+      8415,
+      2056,
+      261
+    ]
+  },
+  "incumbent_score": {
+    "width": 99,
+    "height": 85,
+    "area": 8415,
+    "physical_tiles": 2056,
+    "turns": 261,
+    "tuple": [
+      8415,
+      2056,
+      261
+    ]
+  },
+  "packing_family": "nesting",
+  "placement_family": "two-sided",
+  "elapsed_ms": 57112.4675,
+  "packing_construction_ms": 95.63645900000006,
+  "clusters": [
+    {
+      "id": "cluster-0",
+      "sources": [
+        "cycle-0",
+        "cycle-1",
+        "cycle-2"
+      ],
+      "members": [
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:2",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:1",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:1",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1"
+      ],
+      "stages": [
+        {
+          "frontier": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1"
+          ],
+          "construction_ms": 39.114958,
+          "failures": [],
+          "candidates": [
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-0-stage-0-0",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 37,
+                "height": 44,
+                "area": 1628,
+                "physical_tiles": 373,
+                "turns": 56,
+                "tuple": [
+                  1628,
+                  373,
+                  56
+                ]
+              },
+              "witness_sha256": "1c55dd53365aa57bff64e6467b17ab7ae36a4e945286ff6fab4af90a1113c330",
+              "validator_ms": 2.427667,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-0-stage-0-1",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 37,
+                "height": 44,
+                "area": 1628,
+                "physical_tiles": 373,
+                "turns": 56,
+                "tuple": [
+                  1628,
+                  373,
+                  56
+                ]
+              },
+              "witness_sha256": "1c55dd53365aa57bff64e6467b17ab7ae36a4e945286ff6fab4af90a1113c330",
+              "validator_ms": 2.9905830000000004,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-0-stage-0-2",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 30,
+                "height": 43,
+                "area": 1290,
+                "physical_tiles": 330,
+                "turns": 56,
+                "tuple": [
+                  1290,
+                  330,
+                  56
+                ]
+              },
+              "witness_sha256": "bce6143a2418c0e7538d2d248f208caa62bfb3514c654d014a662b46faf1c069",
+              "validator_ms": 3.658625,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-0-stage-0-3",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 30,
+                "height": 43,
+                "area": 1290,
+                "physical_tiles": 330,
+                "turns": 56,
+                "tuple": [
+                  1290,
+                  330,
+                  56
+                ]
+              },
+              "witness_sha256": "bce6143a2418c0e7538d2d248f208caa62bfb3514c654d014a662b46faf1c069",
+              "validator_ms": 1.929833,
+              "diagnostics": []
+            }
+          ],
+          "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-0-stage-0-2"
+        },
+        {
+          "frontier": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:1"
+          ],
+          "construction_ms": 14.337333000000001,
+          "failures": [],
+          "candidates": [
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-0-stage-1-0",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 34,
+                "height": 43,
+                "area": 1462,
+                "physical_tiles": 332,
+                "turns": 56,
+                "tuple": [
+                  1462,
+                  332,
+                  56
+                ]
+              },
+              "witness_sha256": "6310e13154df7960800201aa66e437ec0c1b1d54c3f1eb5348e2125f96e51e19",
+              "validator_ms": 1.8790829999999998,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-0-stage-1-1",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 34,
+                "height": 43,
+                "area": 1462,
+                "physical_tiles": 332,
+                "turns": 56,
+                "tuple": [
+                  1462,
+                  332,
+                  56
+                ]
+              },
+              "witness_sha256": "6310e13154df7960800201aa66e437ec0c1b1d54c3f1eb5348e2125f96e51e19",
+              "validator_ms": 2.644291,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-0-stage-1-2",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 34,
+                "height": 43,
+                "area": 1462,
+                "physical_tiles": 332,
+                "turns": 56,
+                "tuple": [
+                  1462,
+                  332,
+                  56
+                ]
+              },
+              "witness_sha256": "6310e13154df7960800201aa66e437ec0c1b1d54c3f1eb5348e2125f96e51e19",
+              "validator_ms": 1.505667,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-0-stage-1-3",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 34,
+                "height": 43,
+                "area": 1462,
+                "physical_tiles": 332,
+                "turns": 56,
+                "tuple": [
+                  1462,
+                  332,
+                  56
+                ]
+              },
+              "witness_sha256": "6310e13154df7960800201aa66e437ec0c1b1d54c3f1eb5348e2125f96e51e19",
+              "validator_ms": 4.076917,
+              "diagnostics": []
+            }
+          ],
+          "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-0-stage-1-0"
+        },
+        {
+          "frontier": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1"
+          ],
+          "construction_ms": 14.158124999999984,
+          "failures": [],
+          "candidates": [
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-0-stage-2-0",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 38,
+                "height": 43,
+                "area": 1634,
+                "physical_tiles": 334,
+                "turns": 56,
+                "tuple": [
+                  1634,
+                  334,
+                  56
+                ]
+              },
+              "witness_sha256": "75916e820f3b8ba538b5ba344071a2719ec47439569c6ecb4deaebbb05669b9f",
+              "validator_ms": 1.4895,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-0-stage-2-1",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 38,
+                "height": 43,
+                "area": 1634,
+                "physical_tiles": 334,
+                "turns": 56,
+                "tuple": [
+                  1634,
+                  334,
+                  56
+                ]
+              },
+              "witness_sha256": "75916e820f3b8ba538b5ba344071a2719ec47439569c6ecb4deaebbb05669b9f",
+              "validator_ms": 1.508084,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-0-stage-2-2",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 38,
+                "height": 43,
+                "area": 1634,
+                "physical_tiles": 334,
+                "turns": 56,
+                "tuple": [
+                  1634,
+                  334,
+                  56
+                ]
+              },
+              "witness_sha256": "75916e820f3b8ba538b5ba344071a2719ec47439569c6ecb4deaebbb05669b9f",
+              "validator_ms": 1.834458,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-0-stage-2-3",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 38,
+                "height": 43,
+                "area": 1634,
+                "physical_tiles": 334,
+                "turns": 56,
+                "tuple": [
+                  1634,
+                  334,
+                  56
+                ]
+              },
+              "witness_sha256": "75916e820f3b8ba538b5ba344071a2719ec47439569c6ecb4deaebbb05669b9f",
+              "validator_ms": 1.894584,
+              "diagnostics": []
+            }
+          ],
+          "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-0-stage-2-0"
+        }
+      ]
+    },
+    {
+      "id": "cluster-1",
+      "sources": [
+        "cycle-3",
+        "cycle-4",
+        "cycle-5",
+        "cycle-6",
+        "cycle-7"
+      ],
+      "members": [
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:2",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:1",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:4",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:5",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:2",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:2",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:6",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:7",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:3",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:3",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:3",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:1",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:2",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:3",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:2",
+        "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:3"
+      ],
+      "stages": [
+        {
+          "frontier": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:3",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2"
+          ],
+          "construction_ms": 180.79329200000006,
+          "failures": [],
+          "candidates": [
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-1-stage-0-0",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 81,
+                "height": 86,
+                "area": 6966,
+                "physical_tiles": 1931,
+                "turns": 196,
+                "tuple": [
+                  6966,
+                  1931,
+                  196
+                ]
+              },
+              "witness_sha256": "06e5995c819e85ab50398fb079ed20654925f8f0048c8a16faee79467de63b00",
+              "validator_ms": 9.409458,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-1-stage-0-1",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 81,
+                "height": 86,
+                "area": 6966,
+                "physical_tiles": 1423,
+                "turns": 182,
+                "tuple": [
+                  6966,
+                  1423,
+                  182
+                ]
+              },
+              "witness_sha256": "7f1d76902eed2bc655b2e2fe8363aa86fa77fbce198f50d70ec5a65cc970d9c2",
+              "validator_ms": 6.0035,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-1-stage-0-2",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 70,
+                "height": 84,
+                "area": 5880,
+                "physical_tiles": 1784,
+                "turns": 196,
+                "tuple": [
+                  5880,
+                  1784,
+                  196
+                ]
+              },
+              "witness_sha256": "512f89a86f66890bccdd8b4940a1da2cfb10b364ab6123ac639925561698d099",
+              "validator_ms": 8.738459,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-1-stage-0-3",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 53,
+                "height": 85,
+                "area": 4505,
+                "physical_tiles": 1085,
+                "turns": 182,
+                "tuple": [
+                  4505,
+                  1085,
+                  182
+                ]
+              },
+              "witness_sha256": "3e00080fcc6fab149d9e3ff30ecec13783a434d74867abf9fca1ea381cff157d",
+              "validator_ms": 4.63125,
+              "diagnostics": []
+            }
+          ],
+          "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-1-stage-0-3"
+        },
+        {
+          "frontier": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:3",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:2"
+          ],
+          "construction_ms": 34.362333000000035,
+          "failures": [],
+          "candidates": [
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-1-stage-1-0",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 57,
+                "height": 85,
+                "area": 4845,
+                "physical_tiles": 1089,
+                "turns": 182,
+                "tuple": [
+                  4845,
+                  1089,
+                  182
+                ]
+              },
+              "witness_sha256": "e454e9456ad599cb3f056a76fec4f71dca799a4780376d8067a4d9b4a3c57e9b",
+              "validator_ms": 5.656166,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-1-stage-1-1",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 57,
+                "height": 85,
+                "area": 4845,
+                "physical_tiles": 1089,
+                "turns": 182,
+                "tuple": [
+                  4845,
+                  1089,
+                  182
+                ]
+              },
+              "witness_sha256": "e454e9456ad599cb3f056a76fec4f71dca799a4780376d8067a4d9b4a3c57e9b",
+              "validator_ms": 4.741084,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-1-stage-1-2",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 57,
+                "height": 85,
+                "area": 4845,
+                "physical_tiles": 1089,
+                "turns": 182,
+                "tuple": [
+                  4845,
+                  1089,
+                  182
+                ]
+              },
+              "witness_sha256": "e454e9456ad599cb3f056a76fec4f71dca799a4780376d8067a4d9b4a3c57e9b",
+              "validator_ms": 6.928166,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-1-stage-1-3",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 57,
+                "height": 85,
+                "area": 4845,
+                "physical_tiles": 1089,
+                "turns": 182,
+                "tuple": [
+                  4845,
+                  1089,
+                  182
+                ]
+              },
+              "witness_sha256": "e454e9456ad599cb3f056a76fec4f71dca799a4780376d8067a4d9b4a3c57e9b",
+              "validator_ms": 5.695584,
+              "diagnostics": []
+            }
+          ],
+          "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-1-stage-1-0"
+        },
+        {
+          "frontier": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:3",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:2"
+          ],
+          "construction_ms": 32.852750000000015,
+          "failures": [],
+          "candidates": [
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-1-stage-2-0",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 61,
+                "height": 85,
+                "area": 5185,
+                "physical_tiles": 1093,
+                "turns": 182,
+                "tuple": [
+                  5185,
+                  1093,
+                  182
+                ]
+              },
+              "witness_sha256": "e9082251b7ec292f2eee7bb924be3b3bec1e521066eb8b9bb0f28420f7ab37c1",
+              "validator_ms": 4.843833,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-1-stage-2-1",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 61,
+                "height": 85,
+                "area": 5185,
+                "physical_tiles": 1093,
+                "turns": 182,
+                "tuple": [
+                  5185,
+                  1093,
+                  182
+                ]
+              },
+              "witness_sha256": "e9082251b7ec292f2eee7bb924be3b3bec1e521066eb8b9bb0f28420f7ab37c1",
+              "validator_ms": 11.099333,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-1-stage-2-2",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 61,
+                "height": 85,
+                "area": 5185,
+                "physical_tiles": 1093,
+                "turns": 182,
+                "tuple": [
+                  5185,
+                  1093,
+                  182
+                ]
+              },
+              "witness_sha256": "e9082251b7ec292f2eee7bb924be3b3bec1e521066eb8b9bb0f28420f7ab37c1",
+              "validator_ms": 4.927625,
+              "diagnostics": []
+            },
+            {
+              "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-1-stage-2-3",
+              "accepted": true,
+              "factory_validated": false,
+              "score": {
+                "width": 61,
+                "height": 85,
+                "area": 5185,
+                "physical_tiles": 1093,
+                "turns": 182,
+                "tuple": [
+                  5185,
+                  1093,
+                  182
+                ]
+              },
+              "witness_sha256": "e9082251b7ec292f2eee7bb924be3b3bec1e521066eb8b9bb0f28420f7ab37c1",
+              "validator_ms": 5.401083,
+              "diagnostics": []
+            }
+          ],
+          "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/cluster-1-stage-2-0"
+        }
+      ]
+    }
+  ],
+  "packings": [
+    {
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-0",
+      "accepted": true,
+      "factory_validated": false,
+      "score": {
+        "width": 89,
+        "height": 85,
+        "area": 7565,
+        "physical_tiles": 1427,
+        "turns": 238,
+        "tuple": [
+          7565,
+          1427,
+          238
+        ]
+      },
+      "witness_sha256": "c93ab86749ca92742ea7cdf5f8c72201cf79da1484a1cbe660058298a13a2845",
+      "validator_ms": 6.721583,
+      "diagnostics": [],
+      "packing_plan": {
+        "family": "occupied-cell-nesting",
+        "translations": [
+          {
+            "region": "cluster-0",
+            "x": 0,
+            "y": 42
+          },
+          {
+            "region": "cluster-1",
+            "x": 28,
+            "y": 0
+          }
+        ],
+        "offset": {
+          "dx": 28,
+          "dy": -42,
+          "width": 89,
+          "height": 85,
+          "area": 7565
+        },
+        "search": {
+          "tested_translations": 25,
+          "collision_free": 17,
+          "output_accessible": 15,
+          "output_obstructed": 2,
+          "screen": "space",
+          "space_checked": 15,
+          "space_rejected": 0,
+          "lowest_area_pockets": [],
+          "minimum_selected_partial_area": 7565,
+          "minimum_collision_free_partial_area": 7565,
+          "lowest_area_obstructions": [
+            {
+              "dx": 28,
+              "dy": -41,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            },
+            {
+              "dx": 28,
+              "dy": -40,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            }
+          ],
+          "selected": 15,
+          "candidate_limit": 32,
+          "offset_separation": 1,
+          "minimum_sampled_partial_area": 7565,
+          "enumeration_ms": 18.066709000000174,
+          "domain": {
+            "min_dx": 28,
+            "max_dx": 32,
+            "min_dy": -42,
+            "max_dy": -38
+          },
+          "neighborhood": {
+            "dx": 30,
+            "dy": -40,
+            "radius": 2
+          }
+        }
+      },
+      "closures": [
+        {
+          "family": "simple",
+          "placement_family": "two-sided",
+          "elapsed_ms": 2514.477,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-0/closure-simple/report.json",
+          "covered_facilities": 56,
+          "partial_or_complete_score": {
+            "width": 90,
+            "height": 85,
+            "area": 7650,
+            "physical_tiles": 1647,
+            "turns": 253,
+            "tuple": [
+              7650,
+              1647,
+              253
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        },
+        {
+          "family": "perimeter",
+          "placement_family": "two-sided",
+          "elapsed_ms": 3301.7914999999994,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-0/closure-perimeter/report.json",
+          "covered_facilities": 56,
+          "partial_or_complete_score": {
+            "width": 90,
+            "height": 85,
+            "area": 7650,
+            "physical_tiles": 1647,
+            "turns": 253,
+            "tuple": [
+              7650,
+              1647,
+              253
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        }
+      ],
+      "complete": false
+    },
+    {
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-1",
+      "accepted": true,
+      "factory_validated": false,
+      "score": {
+        "width": 90,
+        "height": 85,
+        "area": 7650,
+        "physical_tiles": 1427,
+        "turns": 238,
+        "tuple": [
+          7650,
+          1427,
+          238
+        ]
+      },
+      "witness_sha256": "0c72f4d524d497b03c4ee6194ee8f0793ebd5861e2d88f318f261914fe884c56",
+      "validator_ms": 6.7745,
+      "diagnostics": [],
+      "packing_plan": {
+        "family": "occupied-cell-nesting",
+        "translations": [
+          {
+            "region": "cluster-0",
+            "x": 0,
+            "y": 42
+          },
+          {
+            "region": "cluster-1",
+            "x": 29,
+            "y": 0
+          }
+        ],
+        "offset": {
+          "dx": 29,
+          "dy": -42,
+          "width": 90,
+          "height": 85,
+          "area": 7650
+        },
+        "search": {
+          "tested_translations": 25,
+          "collision_free": 17,
+          "output_accessible": 15,
+          "output_obstructed": 2,
+          "screen": "space",
+          "space_checked": 15,
+          "space_rejected": 0,
+          "lowest_area_pockets": [],
+          "minimum_selected_partial_area": 7565,
+          "minimum_collision_free_partial_area": 7565,
+          "lowest_area_obstructions": [
+            {
+              "dx": 28,
+              "dy": -41,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            },
+            {
+              "dx": 28,
+              "dy": -40,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            }
+          ],
+          "selected": 15,
+          "candidate_limit": 32,
+          "offset_separation": 1,
+          "minimum_sampled_partial_area": 7565,
+          "enumeration_ms": 18.066709000000174,
+          "domain": {
+            "min_dx": 28,
+            "max_dx": 32,
+            "min_dy": -42,
+            "max_dy": -38
+          },
+          "neighborhood": {
+            "dx": 30,
+            "dy": -40,
+            "radius": 2
+          }
+        }
+      },
+      "closures": [
+        {
+          "family": "simple",
+          "placement_family": "two-sided",
+          "elapsed_ms": 2156.2322079999994,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-1/closure-simple/report.json",
+          "covered_facilities": 56,
+          "partial_or_complete_score": {
+            "width": 91,
+            "height": 85,
+            "area": 7735,
+            "physical_tiles": 1642,
+            "turns": 253,
+            "tuple": [
+              7735,
+              1642,
+              253
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        },
+        {
+          "family": "perimeter",
+          "placement_family": "two-sided",
+          "elapsed_ms": 2617.564083,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-1/closure-perimeter/report.json",
+          "covered_facilities": 56,
+          "partial_or_complete_score": {
+            "width": 91,
+            "height": 85,
+            "area": 7735,
+            "physical_tiles": 1642,
+            "turns": 253,
+            "tuple": [
+              7735,
+              1642,
+              253
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        }
+      ],
+      "complete": false
+    },
+    {
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-2",
+      "accepted": true,
+      "factory_validated": false,
+      "score": {
+        "width": 90,
+        "height": 85,
+        "area": 7650,
+        "physical_tiles": 1427,
+        "turns": 238,
+        "tuple": [
+          7650,
+          1427,
+          238
+        ]
+      },
+      "witness_sha256": "78f97dd5b6cf5bddde85ae7875c89643262f22632124bcabb021858399419730",
+      "validator_ms": 6.834625000000001,
+      "diagnostics": [],
+      "packing_plan": {
+        "family": "occupied-cell-nesting",
+        "translations": [
+          {
+            "region": "cluster-0",
+            "x": 0,
+            "y": 41
+          },
+          {
+            "region": "cluster-1",
+            "x": 29,
+            "y": 0
+          }
+        ],
+        "offset": {
+          "dx": 29,
+          "dy": -41,
+          "width": 90,
+          "height": 85,
+          "area": 7650
+        },
+        "search": {
+          "tested_translations": 25,
+          "collision_free": 17,
+          "output_accessible": 15,
+          "output_obstructed": 2,
+          "screen": "space",
+          "space_checked": 15,
+          "space_rejected": 0,
+          "lowest_area_pockets": [],
+          "minimum_selected_partial_area": 7565,
+          "minimum_collision_free_partial_area": 7565,
+          "lowest_area_obstructions": [
+            {
+              "dx": 28,
+              "dy": -41,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            },
+            {
+              "dx": 28,
+              "dy": -40,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            }
+          ],
+          "selected": 15,
+          "candidate_limit": 32,
+          "offset_separation": 1,
+          "minimum_sampled_partial_area": 7565,
+          "enumeration_ms": 18.066709000000174,
+          "domain": {
+            "min_dx": 28,
+            "max_dx": 32,
+            "min_dy": -42,
+            "max_dy": -38
+          },
+          "neighborhood": {
+            "dx": 30,
+            "dy": -40,
+            "radius": 2
+          }
+        }
+      },
+      "closures": [
+        {
+          "family": "simple",
+          "placement_family": "two-sided",
+          "elapsed_ms": 2131.6127909999996,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-2/closure-simple/report.json",
+          "covered_facilities": 56,
+          "partial_or_complete_score": {
+            "width": 91,
+            "height": 85,
+            "area": 7735,
+            "physical_tiles": 1641,
+            "turns": 253,
+            "tuple": [
+              7735,
+              1641,
+              253
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        },
+        {
+          "family": "perimeter",
+          "placement_family": "two-sided",
+          "elapsed_ms": 2846.924959,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-2/closure-perimeter/report.json",
+          "covered_facilities": 56,
+          "partial_or_complete_score": {
+            "width": 91,
+            "height": 85,
+            "area": 7735,
+            "physical_tiles": 1641,
+            "turns": 253,
+            "tuple": [
+              7735,
+              1641,
+              253
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        }
+      ],
+      "complete": false
+    },
+    {
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-3",
+      "accepted": true,
+      "factory_validated": false,
+      "score": {
+        "width": 90,
+        "height": 85,
+        "area": 7650,
+        "physical_tiles": 1427,
+        "turns": 238,
+        "tuple": [
+          7650,
+          1427,
+          238
+        ]
+      },
+      "witness_sha256": "59caeeb8315c6c6da44aa06304a79b8622d41a0dce482d2ff4ce9d80bc72e098",
+      "validator_ms": 6.796749999999999,
+      "diagnostics": [],
+      "packing_plan": {
+        "family": "occupied-cell-nesting",
+        "translations": [
+          {
+            "region": "cluster-0",
+            "x": 0,
+            "y": 40
+          },
+          {
+            "region": "cluster-1",
+            "x": 29,
+            "y": 0
+          }
+        ],
+        "offset": {
+          "dx": 29,
+          "dy": -40,
+          "width": 90,
+          "height": 85,
+          "area": 7650
+        },
+        "search": {
+          "tested_translations": 25,
+          "collision_free": 17,
+          "output_accessible": 15,
+          "output_obstructed": 2,
+          "screen": "space",
+          "space_checked": 15,
+          "space_rejected": 0,
+          "lowest_area_pockets": [],
+          "minimum_selected_partial_area": 7565,
+          "minimum_collision_free_partial_area": 7565,
+          "lowest_area_obstructions": [
+            {
+              "dx": 28,
+              "dy": -41,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            },
+            {
+              "dx": 28,
+              "dy": -40,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            }
+          ],
+          "selected": 15,
+          "candidate_limit": 32,
+          "offset_separation": 1,
+          "minimum_sampled_partial_area": 7565,
+          "enumeration_ms": 18.066709000000174,
+          "domain": {
+            "min_dx": 28,
+            "max_dx": 32,
+            "min_dy": -42,
+            "max_dy": -38
+          },
+          "neighborhood": {
+            "dx": 30,
+            "dy": -40,
+            "radius": 2
+          }
+        }
+      },
+      "closures": [
+        {
+          "family": "simple",
+          "placement_family": "two-sided",
+          "elapsed_ms": 3148.261207999999,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-3/closure-simple/report.json",
+          "covered_facilities": 58,
+          "partial_or_complete_score": {
+            "width": 91,
+            "height": 85,
+            "area": 7735,
+            "physical_tiles": 1789,
+            "turns": 256,
+            "tuple": [
+              7735,
+              1789,
+              256
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        },
+        {
+          "family": "perimeter",
+          "placement_family": "two-sided",
+          "elapsed_ms": 5299.850082999999,
+          "exit_code": 0,
+          "complete": true,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-3/closure-perimeter/report.json",
+          "covered_facilities": 59,
+          "partial_or_complete_score": {
+            "width": 99,
+            "height": 85,
+            "area": 8415,
+            "physical_tiles": 2065,
+            "turns": 262,
+            "tuple": [
+              8415,
+              2065,
+              262
+            ]
+          },
+          "failures": [],
+          "diagnostics": []
+        }
+      ],
+      "complete": true,
+      "complete_score": {
+        "width": 99,
+        "height": 85,
+        "area": 8415,
+        "physical_tiles": 2065,
+        "turns": 262,
+        "tuple": [
+          8415,
+          2065,
+          262
+        ]
+      },
+      "complete_hash": "a22deb0f9959459ce1afe4778e25991d8be30d0ec733688952b7501a13e56f3c",
+      "complete_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-3/closure-perimeter/complete-0",
+      "selected_family": "perimeter"
+    },
+    {
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-4",
+      "accepted": true,
+      "factory_validated": false,
+      "score": {
+        "width": 91,
+        "height": 85,
+        "area": 7735,
+        "physical_tiles": 1427,
+        "turns": 238,
+        "tuple": [
+          7735,
+          1427,
+          238
+        ]
+      },
+      "witness_sha256": "8f322afd5a898519a05de25acad45c1839400220ec6055256f3ee4534ec31fdc",
+      "validator_ms": 6.917000000000001,
+      "diagnostics": [],
+      "packing_plan": {
+        "family": "occupied-cell-nesting",
+        "translations": [
+          {
+            "region": "cluster-0",
+            "x": 0,
+            "y": 42
+          },
+          {
+            "region": "cluster-1",
+            "x": 30,
+            "y": 0
+          }
+        ],
+        "offset": {
+          "dx": 30,
+          "dy": -42,
+          "width": 91,
+          "height": 85,
+          "area": 7735
+        },
+        "search": {
+          "tested_translations": 25,
+          "collision_free": 17,
+          "output_accessible": 15,
+          "output_obstructed": 2,
+          "screen": "space",
+          "space_checked": 15,
+          "space_rejected": 0,
+          "lowest_area_pockets": [],
+          "minimum_selected_partial_area": 7565,
+          "minimum_collision_free_partial_area": 7565,
+          "lowest_area_obstructions": [
+            {
+              "dx": 28,
+              "dy": -41,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            },
+            {
+              "dx": 28,
+              "dy": -40,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            }
+          ],
+          "selected": 15,
+          "candidate_limit": 32,
+          "offset_separation": 1,
+          "minimum_sampled_partial_area": 7565,
+          "enumeration_ms": 18.066709000000174,
+          "domain": {
+            "min_dx": 28,
+            "max_dx": 32,
+            "min_dy": -42,
+            "max_dy": -38
+          },
+          "neighborhood": {
+            "dx": 30,
+            "dy": -40,
+            "radius": 2
+          }
+        }
+      },
+      "closures": [
+        {
+          "family": "simple",
+          "placement_family": "two-sided",
+          "elapsed_ms": 2641.1797080000015,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-4/closure-simple/report.json",
+          "covered_facilities": 56,
+          "partial_or_complete_score": {
+            "width": 92,
+            "height": 85,
+            "area": 7820,
+            "physical_tiles": 1640,
+            "turns": 253,
+            "tuple": [
+              7820,
+              1640,
+              253
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        },
+        {
+          "family": "perimeter",
+          "placement_family": "two-sided",
+          "elapsed_ms": 3177.2087919999994,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-4/closure-perimeter/report.json",
+          "covered_facilities": 56,
+          "partial_or_complete_score": {
+            "width": 92,
+            "height": 85,
+            "area": 7820,
+            "physical_tiles": 1640,
+            "turns": 253,
+            "tuple": [
+              7820,
+              1640,
+              253
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        }
+      ],
+      "complete": false
+    },
+    {
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-5",
+      "accepted": true,
+      "factory_validated": false,
+      "score": {
+        "width": 91,
+        "height": 85,
+        "area": 7735,
+        "physical_tiles": 1427,
+        "turns": 238,
+        "tuple": [
+          7735,
+          1427,
+          238
+        ]
+      },
+      "witness_sha256": "6add720ed160832f60cad1fd8af8ff2cc9b0703c3581b4a5377299e49b460c41",
+      "validator_ms": 6.762834,
+      "diagnostics": [],
+      "packing_plan": {
+        "family": "occupied-cell-nesting",
+        "translations": [
+          {
+            "region": "cluster-0",
+            "x": 0,
+            "y": 41
+          },
+          {
+            "region": "cluster-1",
+            "x": 30,
+            "y": 0
+          }
+        ],
+        "offset": {
+          "dx": 30,
+          "dy": -41,
+          "width": 91,
+          "height": 85,
+          "area": 7735
+        },
+        "search": {
+          "tested_translations": 25,
+          "collision_free": 17,
+          "output_accessible": 15,
+          "output_obstructed": 2,
+          "screen": "space",
+          "space_checked": 15,
+          "space_rejected": 0,
+          "lowest_area_pockets": [],
+          "minimum_selected_partial_area": 7565,
+          "minimum_collision_free_partial_area": 7565,
+          "lowest_area_obstructions": [
+            {
+              "dx": 28,
+              "dy": -41,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            },
+            {
+              "dx": 28,
+              "dy": -40,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            }
+          ],
+          "selected": 15,
+          "candidate_limit": 32,
+          "offset_separation": 1,
+          "minimum_sampled_partial_area": 7565,
+          "enumeration_ms": 18.066709000000174,
+          "domain": {
+            "min_dx": 28,
+            "max_dx": 32,
+            "min_dy": -42,
+            "max_dy": -38
+          },
+          "neighborhood": {
+            "dx": 30,
+            "dy": -40,
+            "radius": 2
+          }
+        }
+      },
+      "closures": [
+        {
+          "family": "simple",
+          "placement_family": "two-sided",
+          "elapsed_ms": 2550.2076659999984,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-5/closure-simple/report.json",
+          "covered_facilities": 56,
+          "partial_or_complete_score": {
+            "width": 92,
+            "height": 85,
+            "area": 7820,
+            "physical_tiles": 1639,
+            "turns": 253,
+            "tuple": [
+              7820,
+              1639,
+              253
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        },
+        {
+          "family": "perimeter",
+          "placement_family": "two-sided",
+          "elapsed_ms": 3458.175374999999,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-5/closure-perimeter/report.json",
+          "covered_facilities": 56,
+          "partial_or_complete_score": {
+            "width": 92,
+            "height": 85,
+            "area": 7820,
+            "physical_tiles": 1639,
+            "turns": 253,
+            "tuple": [
+              7820,
+              1639,
+              253
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        }
+      ],
+      "complete": false
+    },
+    {
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-6",
+      "accepted": true,
+      "factory_validated": false,
+      "score": {
+        "width": 91,
+        "height": 85,
+        "area": 7735,
+        "physical_tiles": 1427,
+        "turns": 238,
+        "tuple": [
+          7735,
+          1427,
+          238
+        ]
+      },
+      "witness_sha256": "266ef8666b1462b6353e7ba1abcb4531734e0384813226791b66eda6839d9890",
+      "validator_ms": 6.752375,
+      "diagnostics": [],
+      "packing_plan": {
+        "family": "occupied-cell-nesting",
+        "translations": [
+          {
+            "region": "cluster-0",
+            "x": 0,
+            "y": 40
+          },
+          {
+            "region": "cluster-1",
+            "x": 30,
+            "y": 0
+          }
+        ],
+        "offset": {
+          "dx": 30,
+          "dy": -40,
+          "width": 91,
+          "height": 85,
+          "area": 7735
+        },
+        "search": {
+          "tested_translations": 25,
+          "collision_free": 17,
+          "output_accessible": 15,
+          "output_obstructed": 2,
+          "screen": "space",
+          "space_checked": 15,
+          "space_rejected": 0,
+          "lowest_area_pockets": [],
+          "minimum_selected_partial_area": 7565,
+          "minimum_collision_free_partial_area": 7565,
+          "lowest_area_obstructions": [
+            {
+              "dx": 28,
+              "dy": -41,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            },
+            {
+              "dx": 28,
+              "dy": -40,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            }
+          ],
+          "selected": 15,
+          "candidate_limit": 32,
+          "offset_separation": 1,
+          "minimum_sampled_partial_area": 7565,
+          "enumeration_ms": 18.066709000000174,
+          "domain": {
+            "min_dx": 28,
+            "max_dx": 32,
+            "min_dy": -42,
+            "max_dy": -38
+          },
+          "neighborhood": {
+            "dx": 30,
+            "dy": -40,
+            "radius": 2
+          }
+        }
+      },
+      "closures": [
+        {
+          "family": "simple",
+          "placement_family": "two-sided",
+          "elapsed_ms": 3701.736041,
+          "exit_code": 0,
+          "complete": true,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-6/closure-simple/report.json",
+          "covered_facilities": 59,
+          "partial_or_complete_score": {
+            "width": 99,
+            "height": 85,
+            "area": 8415,
+            "physical_tiles": 2056,
+            "turns": 261,
+            "tuple": [
+              8415,
+              2056,
+              261
+            ]
+          },
+          "failures": [],
+          "diagnostics": []
+        },
+        {
+          "family": "perimeter",
+          "placement_family": "two-sided",
+          "elapsed_ms": 5052.213958,
+          "exit_code": 0,
+          "complete": true,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-6/closure-perimeter/report.json",
+          "covered_facilities": 59,
+          "partial_or_complete_score": {
+            "width": 99,
+            "height": 85,
+            "area": 8415,
+            "physical_tiles": 2056,
+            "turns": 261,
+            "tuple": [
+              8415,
+              2056,
+              261
+            ]
+          },
+          "failures": [],
+          "diagnostics": []
+        }
+      ],
+      "complete": true,
+      "complete_score": {
+        "width": 99,
+        "height": 85,
+        "area": 8415,
+        "physical_tiles": 2056,
+        "turns": 261,
+        "tuple": [
+          8415,
+          2056,
+          261
+        ]
+      },
+      "complete_hash": "bff0a38de471d6afa8e106ea84d774facdd2d92ab3637b9e0f00b8276f5b0d37",
+      "complete_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-6/closure-simple/complete-0",
+      "selected_family": "simple"
+    },
+    {
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-7",
+      "accepted": true,
+      "factory_validated": false,
+      "score": {
+        "width": 92,
+        "height": 85,
+        "area": 7820,
+        "physical_tiles": 1427,
+        "turns": 238,
+        "tuple": [
+          7820,
+          1427,
+          238
+        ]
+      },
+      "witness_sha256": "d30e9b84d95a0b0f8cd9898527e928727d6ce66510f20bb9e10aebb0c84383d7",
+      "validator_ms": 6.815417,
+      "diagnostics": [],
+      "packing_plan": {
+        "family": "occupied-cell-nesting",
+        "translations": [
+          {
+            "region": "cluster-0",
+            "x": 0,
+            "y": 42
+          },
+          {
+            "region": "cluster-1",
+            "x": 31,
+            "y": 0
+          }
+        ],
+        "offset": {
+          "dx": 31,
+          "dy": -42,
+          "width": 92,
+          "height": 85,
+          "area": 7820
+        },
+        "search": {
+          "tested_translations": 25,
+          "collision_free": 17,
+          "output_accessible": 15,
+          "output_obstructed": 2,
+          "screen": "space",
+          "space_checked": 15,
+          "space_rejected": 0,
+          "lowest_area_pockets": [],
+          "minimum_selected_partial_area": 7565,
+          "minimum_collision_free_partial_area": 7565,
+          "lowest_area_obstructions": [
+            {
+              "dx": 28,
+              "dy": -41,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            },
+            {
+              "dx": 28,
+              "dy": -40,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            }
+          ],
+          "selected": 15,
+          "candidate_limit": 32,
+          "offset_separation": 1,
+          "minimum_sampled_partial_area": 7565,
+          "enumeration_ms": 18.066709000000174,
+          "domain": {
+            "min_dx": 28,
+            "max_dx": 32,
+            "min_dy": -42,
+            "max_dy": -38
+          },
+          "neighborhood": {
+            "dx": 30,
+            "dy": -40,
+            "radius": 2
+          }
+        }
+      },
+      "closures": [
+        {
+          "family": "simple",
+          "placement_family": "two-sided",
+          "elapsed_ms": 2187.0614590000005,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-7/closure-simple/report.json",
+          "covered_facilities": 56,
+          "partial_or_complete_score": {
+            "width": 93,
+            "height": 85,
+            "area": 7905,
+            "physical_tiles": 1638,
+            "turns": 249,
+            "tuple": [
+              7905,
+              1638,
+              249
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        },
+        {
+          "family": "perimeter",
+          "placement_family": "two-sided",
+          "elapsed_ms": 2657.298665999999,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-7/closure-perimeter/report.json",
+          "covered_facilities": 56,
+          "partial_or_complete_score": {
+            "width": 93,
+            "height": 85,
+            "area": 7905,
+            "physical_tiles": 1638,
+            "turns": 249,
+            "tuple": [
+              7905,
+              1638,
+              249
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        }
+      ],
+      "complete": false
+    },
+    {
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-8",
+      "accepted": true,
+      "factory_validated": false,
+      "score": {
+        "width": 92,
+        "height": 85,
+        "area": 7820,
+        "physical_tiles": 1427,
+        "turns": 238,
+        "tuple": [
+          7820,
+          1427,
+          238
+        ]
+      },
+      "witness_sha256": "2eecc557b0ca3ea6e6eba7441d928985e4bde63512e2f4d6654c19f293572759",
+      "validator_ms": 6.759666999999999,
+      "diagnostics": [],
+      "packing_plan": {
+        "family": "occupied-cell-nesting",
+        "translations": [
+          {
+            "region": "cluster-0",
+            "x": 0,
+            "y": 41
+          },
+          {
+            "region": "cluster-1",
+            "x": 31,
+            "y": 0
+          }
+        ],
+        "offset": {
+          "dx": 31,
+          "dy": -41,
+          "width": 92,
+          "height": 85,
+          "area": 7820
+        },
+        "search": {
+          "tested_translations": 25,
+          "collision_free": 17,
+          "output_accessible": 15,
+          "output_obstructed": 2,
+          "screen": "space",
+          "space_checked": 15,
+          "space_rejected": 0,
+          "lowest_area_pockets": [],
+          "minimum_selected_partial_area": 7565,
+          "minimum_collision_free_partial_area": 7565,
+          "lowest_area_obstructions": [
+            {
+              "dx": 28,
+              "dy": -41,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            },
+            {
+              "dx": 28,
+              "dy": -40,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            }
+          ],
+          "selected": 15,
+          "candidate_limit": 32,
+          "offset_separation": 1,
+          "minimum_sampled_partial_area": 7565,
+          "enumeration_ms": 18.066709000000174,
+          "domain": {
+            "min_dx": 28,
+            "max_dx": 32,
+            "min_dy": -42,
+            "max_dy": -38
+          },
+          "neighborhood": {
+            "dx": 30,
+            "dy": -40,
+            "radius": 2
+          }
+        }
+      },
+      "closures": [
+        {
+          "family": "simple",
+          "placement_family": "two-sided",
+          "elapsed_ms": 2270.3199170000007,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-8/closure-simple/report.json",
+          "covered_facilities": 56,
+          "partial_or_complete_score": {
+            "width": 93,
+            "height": 85,
+            "area": 7905,
+            "physical_tiles": 1637,
+            "turns": 249,
+            "tuple": [
+              7905,
+              1637,
+              249
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        },
+        {
+          "family": "perimeter",
+          "placement_family": "two-sided",
+          "elapsed_ms": 2835.1760410000024,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-8/closure-perimeter/report.json",
+          "covered_facilities": 56,
+          "partial_or_complete_score": {
+            "width": 93,
+            "height": 85,
+            "area": 7905,
+            "physical_tiles": 1637,
+            "turns": 249,
+            "tuple": [
+              7905,
+              1637,
+              249
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        }
+      ],
+      "complete": false
+    },
+    {
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-9",
+      "accepted": true,
+      "factory_validated": false,
+      "score": {
+        "width": 92,
+        "height": 85,
+        "area": 7820,
+        "physical_tiles": 1427,
+        "turns": 238,
+        "tuple": [
+          7820,
+          1427,
+          238
+        ]
+      },
+      "witness_sha256": "7d6936254c7e60e7a805ff1c17bc44775444aa24d21579991e912435c0950b51",
+      "validator_ms": 6.7993749999999995,
+      "diagnostics": [],
+      "packing_plan": {
+        "family": "occupied-cell-nesting",
+        "translations": [
+          {
+            "region": "cluster-0",
+            "x": 0,
+            "y": 40
+          },
+          {
+            "region": "cluster-1",
+            "x": 31,
+            "y": 0
+          }
+        ],
+        "offset": {
+          "dx": 31,
+          "dy": -40,
+          "width": 92,
+          "height": 85,
+          "area": 7820
+        },
+        "search": {
+          "tested_translations": 25,
+          "collision_free": 17,
+          "output_accessible": 15,
+          "output_obstructed": 2,
+          "screen": "space",
+          "space_checked": 15,
+          "space_rejected": 0,
+          "lowest_area_pockets": [],
+          "minimum_selected_partial_area": 7565,
+          "minimum_collision_free_partial_area": 7565,
+          "lowest_area_obstructions": [
+            {
+              "dx": 28,
+              "dy": -41,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            },
+            {
+              "dx": 28,
+              "dy": -40,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            }
+          ],
+          "selected": 15,
+          "candidate_limit": 32,
+          "offset_separation": 1,
+          "minimum_sampled_partial_area": 7565,
+          "enumeration_ms": 18.066709000000174,
+          "domain": {
+            "min_dx": 28,
+            "max_dx": 32,
+            "min_dy": -42,
+            "max_dy": -38
+          },
+          "neighborhood": {
+            "dx": 30,
+            "dy": -40,
+            "radius": 2
+          }
+        }
+      },
+      "closures": [
+        {
+          "family": "simple",
+          "placement_family": "two-sided",
+          "elapsed_ms": 3299.745999999999,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-9/closure-simple/report.json",
+          "covered_facilities": 58,
+          "partial_or_complete_score": {
+            "width": 93,
+            "height": 85,
+            "area": 7905,
+            "physical_tiles": 1783,
+            "turns": 256,
+            "tuple": [
+              7905,
+              1783,
+              256
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        },
+        {
+          "family": "perimeter",
+          "placement_family": "two-sided",
+          "elapsed_ms": 5468.541375000001,
+          "exit_code": 0,
+          "complete": true,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-9/closure-perimeter/report.json",
+          "covered_facilities": 59,
+          "partial_or_complete_score": {
+            "width": 101,
+            "height": 85,
+            "area": 8585,
+            "physical_tiles": 2056,
+            "turns": 262,
+            "tuple": [
+              8585,
+              2056,
+              262
+            ]
+          },
+          "failures": [],
+          "diagnostics": []
+        }
+      ],
+      "complete": true,
+      "complete_score": {
+        "width": 101,
+        "height": 85,
+        "area": 8585,
+        "physical_tiles": 2056,
+        "turns": 262,
+        "tuple": [
+          8585,
+          2056,
+          262
+        ]
+      },
+      "complete_hash": "7afaf4f581646e00dcf3c4729064324401d6982b206481bc390dfd37a09634b9",
+      "complete_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-9/closure-perimeter/complete-0",
+      "selected_family": "perimeter"
+    },
+    {
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-10",
+      "accepted": true,
+      "factory_validated": false,
+      "score": {
+        "width": 93,
+        "height": 85,
+        "area": 7905,
+        "physical_tiles": 1427,
+        "turns": 238,
+        "tuple": [
+          7905,
+          1427,
+          238
+        ]
+      },
+      "witness_sha256": "9a5fdb97c1be4d2141c72fa931466dff74ae234de455629a6c4628bd2288ad99",
+      "validator_ms": 6.796041,
+      "diagnostics": [],
+      "packing_plan": {
+        "family": "occupied-cell-nesting",
+        "translations": [
+          {
+            "region": "cluster-0",
+            "x": 0,
+            "y": 42
+          },
+          {
+            "region": "cluster-1",
+            "x": 32,
+            "y": 0
+          }
+        ],
+        "offset": {
+          "dx": 32,
+          "dy": -42,
+          "width": 93,
+          "height": 85,
+          "area": 7905
+        },
+        "search": {
+          "tested_translations": 25,
+          "collision_free": 17,
+          "output_accessible": 15,
+          "output_obstructed": 2,
+          "screen": "space",
+          "space_checked": 15,
+          "space_rejected": 0,
+          "lowest_area_pockets": [],
+          "minimum_selected_partial_area": 7565,
+          "minimum_collision_free_partial_area": 7565,
+          "lowest_area_obstructions": [
+            {
+              "dx": 28,
+              "dy": -41,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            },
+            {
+              "dx": 28,
+              "dy": -40,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            }
+          ],
+          "selected": 15,
+          "candidate_limit": 32,
+          "offset_separation": 1,
+          "minimum_sampled_partial_area": 7565,
+          "enumeration_ms": 18.066709000000174,
+          "domain": {
+            "min_dx": 28,
+            "max_dx": 32,
+            "min_dy": -42,
+            "max_dy": -38
+          },
+          "neighborhood": {
+            "dx": 30,
+            "dy": -40,
+            "radius": 2
+          }
+        }
+      },
+      "closures": [
+        {
+          "family": "simple",
+          "placement_family": "two-sided",
+          "elapsed_ms": 3117.484958000001,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-10/closure-simple/report.json",
+          "covered_facilities": 58,
+          "partial_or_complete_score": {
+            "width": 94,
+            "height": 85,
+            "area": 7990,
+            "physical_tiles": 1778,
+            "turns": 252,
+            "tuple": [
+              7990,
+              1778,
+              252
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        },
+        {
+          "family": "perimeter",
+          "placement_family": "two-sided",
+          "elapsed_ms": 5234.5075,
+          "exit_code": 0,
+          "complete": true,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-10/closure-perimeter/report.json",
+          "covered_facilities": 59,
+          "partial_or_complete_score": {
+            "width": 102,
+            "height": 85,
+            "area": 8670,
+            "physical_tiles": 2048,
+            "turns": 258,
+            "tuple": [
+              8670,
+              2048,
+              258
+            ]
+          },
+          "failures": [],
+          "diagnostics": []
+        }
+      ],
+      "complete": true,
+      "complete_score": {
+        "width": 102,
+        "height": 85,
+        "area": 8670,
+        "physical_tiles": 2048,
+        "turns": 258,
+        "tuple": [
+          8670,
+          2048,
+          258
+        ]
+      },
+      "complete_hash": "94f64eebc470be00b2139d128bc7c9fa0acd9deabb3e1aa3db815509d72ec9fd",
+      "complete_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-10/closure-perimeter/complete-0",
+      "selected_family": "perimeter"
+    },
+    {
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-11",
+      "accepted": true,
+      "factory_validated": false,
+      "score": {
+        "width": 93,
+        "height": 85,
+        "area": 7905,
+        "physical_tiles": 1427,
+        "turns": 238,
+        "tuple": [
+          7905,
+          1427,
+          238
+        ]
+      },
+      "witness_sha256": "b2cfcb510393369f9f31dd4962a7d3bbca06b97114b4b076de75c424a35c78d0",
+      "validator_ms": 6.896167,
+      "diagnostics": [],
+      "packing_plan": {
+        "family": "occupied-cell-nesting",
+        "translations": [
+          {
+            "region": "cluster-0",
+            "x": 0,
+            "y": 41
+          },
+          {
+            "region": "cluster-1",
+            "x": 32,
+            "y": 0
+          }
+        ],
+        "offset": {
+          "dx": 32,
+          "dy": -41,
+          "width": 93,
+          "height": 85,
+          "area": 7905
+        },
+        "search": {
+          "tested_translations": 25,
+          "collision_free": 17,
+          "output_accessible": 15,
+          "output_obstructed": 2,
+          "screen": "space",
+          "space_checked": 15,
+          "space_rejected": 0,
+          "lowest_area_pockets": [],
+          "minimum_selected_partial_area": 7565,
+          "minimum_collision_free_partial_area": 7565,
+          "lowest_area_obstructions": [
+            {
+              "dx": 28,
+              "dy": -41,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            },
+            {
+              "dx": 28,
+              "dy": -40,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            }
+          ],
+          "selected": 15,
+          "candidate_limit": 32,
+          "offset_separation": 1,
+          "minimum_sampled_partial_area": 7565,
+          "enumeration_ms": 18.066709000000174,
+          "domain": {
+            "min_dx": 28,
+            "max_dx": 32,
+            "min_dy": -42,
+            "max_dy": -38
+          },
+          "neighborhood": {
+            "dx": 30,
+            "dy": -40,
+            "radius": 2
+          }
+        }
+      },
+      "closures": [
+        {
+          "family": "simple",
+          "placement_family": "two-sided",
+          "elapsed_ms": 3650.5938749999987,
+          "exit_code": 0,
+          "complete": true,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-11/closure-simple/report.json",
+          "covered_facilities": 59,
+          "partial_or_complete_score": {
+            "width": 101,
+            "height": 85,
+            "area": 8585,
+            "physical_tiles": 2049,
+            "turns": 257,
+            "tuple": [
+              8585,
+              2049,
+              257
+            ]
+          },
+          "failures": [],
+          "diagnostics": []
+        },
+        {
+          "family": "perimeter",
+          "placement_family": "two-sided",
+          "elapsed_ms": 4954.704041999998,
+          "exit_code": 0,
+          "complete": true,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-11/closure-perimeter/report.json",
+          "covered_facilities": 59,
+          "partial_or_complete_score": {
+            "width": 101,
+            "height": 85,
+            "area": 8585,
+            "physical_tiles": 2049,
+            "turns": 257,
+            "tuple": [
+              8585,
+              2049,
+              257
+            ]
+          },
+          "failures": [],
+          "diagnostics": []
+        }
+      ],
+      "complete": true,
+      "complete_score": {
+        "width": 101,
+        "height": 85,
+        "area": 8585,
+        "physical_tiles": 2049,
+        "turns": 257,
+        "tuple": [
+          8585,
+          2049,
+          257
+        ]
+      },
+      "complete_hash": "35350414cb188881609e28c37d5e1ef27593750aebed87668eaa97443fd295ad",
+      "complete_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-11/closure-simple/complete-0",
+      "selected_family": "simple"
+    },
+    {
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-12",
+      "accepted": true,
+      "factory_validated": false,
+      "score": {
+        "width": 93,
+        "height": 85,
+        "area": 7905,
+        "physical_tiles": 1427,
+        "turns": 238,
+        "tuple": [
+          7905,
+          1427,
+          238
+        ]
+      },
+      "witness_sha256": "7b6ed0aeccb582f27f3f5ee61e15f59eebd3ce21a4cc8d46d0b39d3757d16fd8",
+      "validator_ms": 6.810957999999999,
+      "diagnostics": [],
+      "packing_plan": {
+        "family": "occupied-cell-nesting",
+        "translations": [
+          {
+            "region": "cluster-0",
+            "x": 0,
+            "y": 40
+          },
+          {
+            "region": "cluster-1",
+            "x": 32,
+            "y": 0
+          }
+        ],
+        "offset": {
+          "dx": 32,
+          "dy": -40,
+          "width": 93,
+          "height": 85,
+          "area": 7905
+        },
+        "search": {
+          "tested_translations": 25,
+          "collision_free": 17,
+          "output_accessible": 15,
+          "output_obstructed": 2,
+          "screen": "space",
+          "space_checked": 15,
+          "space_rejected": 0,
+          "lowest_area_pockets": [],
+          "minimum_selected_partial_area": 7565,
+          "minimum_collision_free_partial_area": 7565,
+          "lowest_area_obstructions": [
+            {
+              "dx": 28,
+              "dy": -41,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            },
+            {
+              "dx": 28,
+              "dy": -40,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            }
+          ],
+          "selected": 15,
+          "candidate_limit": 32,
+          "offset_separation": 1,
+          "minimum_sampled_partial_area": 7565,
+          "enumeration_ms": 18.066709000000174,
+          "domain": {
+            "min_dx": 28,
+            "max_dx": 32,
+            "min_dy": -42,
+            "max_dy": -38
+          },
+          "neighborhood": {
+            "dx": 30,
+            "dy": -40,
+            "radius": 2
+          }
+        }
+      },
+      "closures": [
+        {
+          "family": "simple",
+          "placement_family": "two-sided",
+          "elapsed_ms": 3160.516291,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-12/closure-simple/report.json",
+          "covered_facilities": 58,
+          "partial_or_complete_score": {
+            "width": 94,
+            "height": 85,
+            "area": 7990,
+            "physical_tiles": 1778,
+            "turns": 252,
+            "tuple": [
+              7990,
+              1778,
+              252
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        },
+        {
+          "family": "perimeter",
+          "placement_family": "two-sided",
+          "elapsed_ms": 5173.209416999998,
+          "exit_code": 0,
+          "complete": true,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-12/closure-perimeter/report.json",
+          "covered_facilities": 59,
+          "partial_or_complete_score": {
+            "width": 102,
+            "height": 85,
+            "area": 8670,
+            "physical_tiles": 2048,
+            "turns": 258,
+            "tuple": [
+              8670,
+              2048,
+              258
+            ]
+          },
+          "failures": [],
+          "diagnostics": []
+        }
+      ],
+      "complete": true,
+      "complete_score": {
+        "width": 102,
+        "height": 85,
+        "area": 8670,
+        "physical_tiles": 2048,
+        "turns": 258,
+        "tuple": [
+          8670,
+          2048,
+          258
+        ]
+      },
+      "complete_hash": "1eedb20840b07eb143ba49bf5f5ae8bf262aa0497219126e32238d14faf95505",
+      "complete_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-12/closure-perimeter/complete-0",
+      "selected_family": "perimeter"
+    },
+    {
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-13",
+      "accepted": true,
+      "factory_validated": false,
+      "score": {
+        "width": 93,
+        "height": 85,
+        "area": 7905,
+        "physical_tiles": 1427,
+        "turns": 238,
+        "tuple": [
+          7905,
+          1427,
+          238
+        ]
+      },
+      "witness_sha256": "d16b52bccd5b2a0a5c6476f0f7120a4951353684f736dca6ebfa54982a02b838",
+      "validator_ms": 6.913291,
+      "diagnostics": [],
+      "packing_plan": {
+        "family": "occupied-cell-nesting",
+        "translations": [
+          {
+            "region": "cluster-0",
+            "x": 0,
+            "y": 39
+          },
+          {
+            "region": "cluster-1",
+            "x": 32,
+            "y": 0
+          }
+        ],
+        "offset": {
+          "dx": 32,
+          "dy": -39,
+          "width": 93,
+          "height": 85,
+          "area": 7905
+        },
+        "search": {
+          "tested_translations": 25,
+          "collision_free": 17,
+          "output_accessible": 15,
+          "output_obstructed": 2,
+          "screen": "space",
+          "space_checked": 15,
+          "space_rejected": 0,
+          "lowest_area_pockets": [],
+          "minimum_selected_partial_area": 7565,
+          "minimum_collision_free_partial_area": 7565,
+          "lowest_area_obstructions": [
+            {
+              "dx": 28,
+              "dy": -41,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            },
+            {
+              "dx": 28,
+              "dy": -40,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            }
+          ],
+          "selected": 15,
+          "candidate_limit": 32,
+          "offset_separation": 1,
+          "minimum_sampled_partial_area": 7565,
+          "enumeration_ms": 18.066709000000174,
+          "domain": {
+            "min_dx": 28,
+            "max_dx": 32,
+            "min_dy": -42,
+            "max_dy": -38
+          },
+          "neighborhood": {
+            "dx": 30,
+            "dy": -40,
+            "radius": 2
+          }
+        }
+      },
+      "closures": [
+        {
+          "family": "simple",
+          "placement_family": "two-sided",
+          "elapsed_ms": 3152.3125,
+          "exit_code": 2,
+          "complete": false,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-13/closure-simple/report.json",
+          "covered_facilities": 58,
+          "partial_or_complete_score": {
+            "width": 94,
+            "height": 85,
+            "area": 7990,
+            "physical_tiles": 1787,
+            "turns": 252,
+            "tuple": [
+              7990,
+              1787,
+              252
+            ]
+          },
+          "failures": [
+            {
+              "code": "closure-all-frontiers-exhausted",
+              "severity": "error",
+              "stage": "frontier"
+            }
+          ]
+        },
+        {
+          "family": "perimeter",
+          "placement_family": "two-sided",
+          "elapsed_ms": 5234.877500000002,
+          "exit_code": 0,
+          "complete": true,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-13/closure-perimeter/report.json",
+          "covered_facilities": 59,
+          "partial_or_complete_score": {
+            "width": 102,
+            "height": 86,
+            "area": 8772,
+            "physical_tiles": 2081,
+            "turns": 258,
+            "tuple": [
+              8772,
+              2081,
+              258
+            ]
+          },
+          "failures": [],
+          "diagnostics": []
+        }
+      ],
+      "complete": true,
+      "complete_score": {
+        "width": 102,
+        "height": 86,
+        "area": 8772,
+        "physical_tiles": 2081,
+        "turns": 258,
+        "tuple": [
+          8772,
+          2081,
+          258
+        ]
+      },
+      "complete_hash": "e30111f063132429a3b4a5339adab50c44421d6bda2b60452c25bf062974c591",
+      "complete_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-13/closure-perimeter/complete-0",
+      "selected_family": "perimeter"
+    },
+    {
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-14",
+      "accepted": true,
+      "factory_validated": false,
+      "score": {
+        "width": 93,
+        "height": 85,
+        "area": 7905,
+        "physical_tiles": 1427,
+        "turns": 238,
+        "tuple": [
+          7905,
+          1427,
+          238
+        ]
+      },
+      "witness_sha256": "ff8a77e38a7a430980188364791565b1340fdb70b84d015d7645ba0132671d6e",
+      "validator_ms": 6.728375,
+      "diagnostics": [],
+      "packing_plan": {
+        "family": "occupied-cell-nesting",
+        "translations": [
+          {
+            "region": "cluster-0",
+            "x": 0,
+            "y": 38
+          },
+          {
+            "region": "cluster-1",
+            "x": 32,
+            "y": 0
+          }
+        ],
+        "offset": {
+          "dx": 32,
+          "dy": -38,
+          "width": 93,
+          "height": 85,
+          "area": 7905
+        },
+        "search": {
+          "tested_translations": 25,
+          "collision_free": 17,
+          "output_accessible": 15,
+          "output_obstructed": 2,
+          "screen": "space",
+          "space_checked": 15,
+          "space_rejected": 0,
+          "lowest_area_pockets": [],
+          "minimum_selected_partial_area": 7565,
+          "minimum_collision_free_partial_area": 7565,
+          "lowest_area_obstructions": [
+            {
+              "dx": 28,
+              "dy": -41,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            },
+            {
+              "dx": 28,
+              "dy": -40,
+              "area": 7565,
+              "failures": [
+                {
+                  "code": "nesting-pending-output-obstructed",
+                  "severity": "info",
+                  "stage": "cluster-nesting",
+                  "message": "Insufficient free unused output connections for the fixed-interior closure strategy",
+                  "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+                  "transport": "belt",
+                  "required": 1,
+                  "available": 0
+                }
+              ]
+            }
+          ],
+          "selected": 15,
+          "candidate_limit": 32,
+          "offset_separation": 1,
+          "minimum_sampled_partial_area": 7565,
+          "enumeration_ms": 18.066709000000174,
+          "domain": {
+            "min_dx": 28,
+            "max_dx": 32,
+            "min_dy": -42,
+            "max_dy": -38
+          },
+          "neighborhood": {
+            "dx": 30,
+            "dy": -40,
+            "radius": 2
+          }
+        }
+      },
+      "closures": [
+        {
+          "family": "simple",
+          "placement_family": "two-sided",
+          "elapsed_ms": 3733.263791000005,
+          "exit_code": 0,
+          "complete": true,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-14/closure-simple/report.json",
+          "covered_facilities": 59,
+          "partial_or_complete_score": {
+            "width": 101,
+            "height": 85,
+            "area": 8585,
+            "physical_tiles": 2054,
+            "turns": 257,
+            "tuple": [
+              8585,
+              2054,
+              257
+            ]
+          },
+          "failures": [],
+          "diagnostics": []
+        },
+        {
+          "family": "perimeter",
+          "placement_family": "two-sided",
+          "elapsed_ms": 4711.386459000001,
+          "exit_code": 0,
+          "complete": true,
+          "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-14/closure-perimeter/report.json",
+          "covered_facilities": 59,
+          "partial_or_complete_score": {
+            "width": 101,
+            "height": 85,
+            "area": 8585,
+            "physical_tiles": 2054,
+            "turns": 257,
+            "tuple": [
+              8585,
+              2054,
+              257
+            ]
+          },
+          "failures": [],
+          "diagnostics": []
+        }
+      ],
+      "complete": true,
+      "complete_score": {
+        "width": 101,
+        "height": 85,
+        "area": 8585,
+        "physical_tiles": 2054,
+        "turns": 257,
+        "tuple": [
+          8585,
+          2054,
+          257
+        ]
+      },
+      "complete_hash": "f791f6654acd943b4c076c13497d7f8a7ea9bb29d4c7ea0194158a43ac06b656",
+      "complete_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-refine/packing-14/closure-simple/complete-0",
+      "selected_family": "simple"
+    }
+  ],
+  "provenance": [
+    {
+      "kind": "graph",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-chain-blocks/gap-1-placement.json",
+      "sha256": "5bc27708ce6b227dd78acef885032035fedd7e427fe16c9662f6e25d37670157"
+    },
+    {
+      "kind": "blocks",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-cycles/report.json",
+      "sha256": "c73736feb237c53d5449d1a174533a7be0fbb8bd45e359e1b7beaaaec38b408d"
+    },
+    {
+      "kind": "incumbent",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-nesting/report.json",
+      "sha256": "a5e83dcdc8dc58b1c593b4f0338f73f5ed370e8004a1467733c703a7d6504e53"
+    },
+    {
+      "kind": "recipes",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+      "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+    },
+    {
+      "kind": "facilities",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+      "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+    },
+    {
+      "kind": "items",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+      "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+    },
+    {
+      "kind": "transports",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+      "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+    },
+    {
+      "kind": "components",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+      "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+    },
+    {
+      "kind": "validator",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+      "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+    },
+    {
+      "kind": "refine-from",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-fresh-nesting/report.json",
+      "sha256": "a5e83dcdc8dc58b1c593b4f0338f73f5ed370e8004a1467733c703a7d6504e53"
+    }
+  ],
+  "source_hashes": {
+    "run.mjs": "8b0657534cadd0e79d7350677762a5dfa833a877824a0dc83b67c333b6106e52",
+    "model.mjs": "dfc672bbe7dca7782fb10594662ad6cceb6374ba2a18ab4a5831e587a20d17df",
+    "nesting.mjs": "757a2399c525b59abf31b982e82a5adb349de7f5b5d0387597db7fa1b8ac40e6",
+    "pockets.mjs": "16a6085755a0da58f6ec94a425aeb0630171dff59336d2f5f132f0f0a602c81f",
+    "../constructive-block-composition/model.mjs": "e404ba7d8ce26ea1c37b4d91933f6546b17ddc2efb5fd72b0c025853d513dd2c",
+    "../constructive-factory-closure/model.mjs": "2ac964a4c2198897a3c48bf35deee96346589b5d145e29c1545e778e519e29db",
+    "../constructive-factory-closure/run.mjs": "7d4bbbff2cc8fa127f67784b2c5971df733521dc872351fb6e94689cb15897e7",
+    "../constructive-interconnect/geometry.mjs": "a232ee3dca2efa946015269685049233f0bb4039e5139aeb44baeb3da29ecbe6",
+    "../constructive-auto-interface/embedding.mjs": "1817ba1194c8cc875872cb401012294ad99d93a48798b2aba5a2f2fd7343a191",
+    "../constructive-auto-interface/model.mjs": "4a54a79cbf79099ff7593d16a9ffeba814fb97087fcd01963c0f472034abcfe5"
+  }
+}

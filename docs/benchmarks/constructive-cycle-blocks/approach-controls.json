@@ -1,0 +1,919 @@
+{
+  "schema_version": 1,
+  "all_passed": true,
+  "cases": [
+    {
+      "name": "broken-return-segment",
+      "passed": true,
+      "covered_geometry_validated": false,
+      "cycle_coverage_accepted": false,
+      "diagnostics": [
+        {
+          "code": "constructive-network-attachment-geometry-invalid",
+          "entity": "network:item-plant-moss-seed-3",
+          "message": "cell flow conservation or capacity failure",
+          "path": "/composite",
+          "severity": "error",
+          "stage": "constructive-planner"
+        },
+        {
+          "code": "cycle-geometry-rejected",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Independent covered-geometry validation failed",
+          "entity": "cycle-7"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0\",\"input\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0\",\"output\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1\",\"input\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1\",\"output\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2\",\"input\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2\",\"output\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0\",\"output\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1\",\"output\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0\",\"output\",\"item-plant-moss-powder-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1\",\"output\",\"item-plant-moss-powder-3\"]"
+        },
+        {
+          "code": "cycle-cut-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Outgoing graph obligation has no matching recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0\",\"output\",\"item-plant-moss-powder-3\"]"
+        },
+        {
+          "code": "cycle-cut-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Outgoing graph obligation has no matching recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1\",\"output\",\"item-plant-moss-powder-3\"]"
+        }
+      ],
+      "witness_sha256": "9b5cfb4141cb22706975103cc6439fcace1d54c301b45bf2feb803aa33dc5cea"
+    },
+    {
+      "name": "missing-return-network",
+      "passed": true,
+      "covered_geometry_validated": true,
+      "cycle_coverage_accepted": false,
+      "diagnostics": [
+        {
+          "code": "cycle-pending-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Pending recipe rate differs from declared outgoing graph obligations",
+          "entity": {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+            "direction": "output",
+            "item": "item-plant-moss-seed-3",
+            "expected": {
+              "numerator": 0,
+              "denominator": 1
+            },
+            "actual": {
+              "denominator": 3,
+              "numerator": 2
+            }
+          }
+        },
+        {
+          "code": "cycle-pending-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Pending recipe rate differs from declared outgoing graph obligations",
+          "entity": {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1",
+            "direction": "output",
+            "item": "item-plant-moss-seed-3",
+            "expected": {
+              "numerator": 0,
+              "denominator": 1
+            },
+            "actual": {
+              "denominator": 3,
+              "numerator": 2
+            }
+          }
+        },
+        {
+          "code": "cycle-pending-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Pending recipe rate differs from declared outgoing graph obligations",
+          "entity": {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+            "direction": "input",
+            "item": "item-plant-moss-seed-3",
+            "expected": {
+              "numerator": 0,
+              "denominator": 1
+            },
+            "actual": {
+              "denominator": 9,
+              "numerator": 4
+            }
+          }
+        },
+        {
+          "code": "cycle-pending-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Pending recipe rate differs from declared outgoing graph obligations",
+          "entity": {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+            "direction": "input",
+            "item": "item-plant-moss-seed-3",
+            "expected": {
+              "numerator": 0,
+              "denominator": 1
+            },
+            "actual": {
+              "denominator": 9,
+              "numerator": 4
+            }
+          }
+        },
+        {
+          "code": "cycle-pending-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Pending recipe rate differs from declared outgoing graph obligations",
+          "entity": {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2",
+            "direction": "input",
+            "item": "item-plant-moss-seed-3",
+            "expected": {
+              "numerator": 0,
+              "denominator": 1
+            },
+            "actual": {
+              "denominator": 9,
+              "numerator": 4
+            }
+          }
+        }
+      ],
+      "witness_sha256": "62b94090d6aa50f9fe58fa6557cd9ce7ed0b2c2644bf65c7d19d6ad95694099e"
+    },
+    {
+      "name": "fake-external-return",
+      "passed": true,
+      "covered_geometry_validated": true,
+      "cycle_coverage_accepted": false,
+      "diagnostics": [
+        {
+          "code": "cycle-fake-external",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Cycle block must not replace internal return flow or pending outputs with external terminals",
+          "entity": "external:[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0\",\"input-belt-0\"]"
+        },
+        {
+          "code": "cycle-fake-external",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Cycle block must not replace internal return flow or pending outputs with external terminals",
+          "entity": "external:[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1\",\"input-belt-0\"]"
+        },
+        {
+          "code": "cycle-fake-external",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Cycle block must not replace internal return flow or pending outputs with external terminals",
+          "entity": "external:[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2\",\"input-belt-0\"]"
+        },
+        {
+          "code": "cycle-fake-external",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Cycle block must not replace internal return flow or pending outputs with external terminals",
+          "entity": "external:[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0\",\"output-belt-0\"]"
+        },
+        {
+          "code": "cycle-fake-external",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Cycle block must not replace internal return flow or pending outputs with external terminals",
+          "entity": "external:[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0\",\"output-belt-1\"]"
+        },
+        {
+          "code": "cycle-fake-external",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Cycle block must not replace internal return flow or pending outputs with external terminals",
+          "entity": "external:[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1\",\"output-belt-0\"]"
+        },
+        {
+          "code": "cycle-fake-external",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Cycle block must not replace internal return flow or pending outputs with external terminals",
+          "entity": "external:[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1\",\"output-belt-1\"]"
+        },
+        {
+          "code": "cycle-fake-external",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Cycle block must not replace internal return flow or pending outputs with external terminals",
+          "entity": "external:[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0\",\"output-belt-0\"]"
+        },
+        {
+          "code": "cycle-fake-external",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Cycle block must not replace internal return flow or pending outputs with external terminals",
+          "entity": "external:[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0\",\"output-belt-1\"]"
+        },
+        {
+          "code": "cycle-fake-external",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Cycle block must not replace internal return flow or pending outputs with external terminals",
+          "entity": "external:[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1\",\"output-belt-0\"]"
+        },
+        {
+          "code": "cycle-fake-external",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Cycle block must not replace internal return flow or pending outputs with external terminals",
+          "entity": "external:[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1\",\"output-belt-1\"]"
+        },
+        {
+          "code": "cycle-pending-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Pending recipe rate differs from declared outgoing graph obligations",
+          "entity": {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+            "direction": "output",
+            "item": "item-plant-moss-powder-3",
+            "expected": {
+              "numerator": 1,
+              "denominator": 1
+            },
+            "actual": {
+              "denominator": 1,
+              "numerator": 0
+            }
+          }
+        },
+        {
+          "code": "cycle-pending-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Pending recipe rate differs from declared outgoing graph obligations",
+          "entity": {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+            "direction": "output",
+            "item": "item-plant-moss-powder-3",
+            "expected": {
+              "numerator": 1,
+              "denominator": 1
+            },
+            "actual": {
+              "denominator": 1,
+              "numerator": 0
+            }
+          }
+        }
+      ],
+      "witness_sha256": "24dc136a0a6e83b132cffaf17ae205dace72f97e6cf4064add74088b5371440b"
+    },
+    {
+      "name": "undeclared-pending-output",
+      "passed": true,
+      "covered_geometry_validated": true,
+      "cycle_coverage_accepted": false,
+      "diagnostics": [
+        {
+          "code": "cycle-pending-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Pending recipe rate differs from declared outgoing graph obligations",
+          "entity": {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+            "direction": "output",
+            "item": "item-plant-moss-powder-3",
+            "expected": {
+              "numerator": 0,
+              "denominator": 1
+            },
+            "actual": {
+              "denominator": 1,
+              "numerator": 1
+            }
+          }
+        },
+        {
+          "code": "cycle-pending-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Pending recipe rate differs from declared outgoing graph obligations",
+          "entity": {
+            "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+            "direction": "output",
+            "item": "item-plant-moss-powder-3",
+            "expected": {
+              "numerator": 0,
+              "denominator": 1
+            },
+            "actual": {
+              "denominator": 1,
+              "numerator": 1
+            }
+          }
+        }
+      ],
+      "witness_sha256": "44203779695a2f8db30a69c03da293f369a5f516a06128e9df4f9297410d3283"
+    },
+    {
+      "name": "duplicate-facility-owner",
+      "passed": true,
+      "covered_geometry_validated": false,
+      "cycle_coverage_accepted": false,
+      "diagnostics": [
+        {
+          "code": "witness-probe-invalid",
+          "entity": "input",
+          "message": "Unsupported schema, duplicate membership or diagnostic count bound",
+          "path": "/witness",
+          "severity": "error",
+          "stage": "constructive-planner"
+        },
+        {
+          "code": "cycle-geometry-rejected",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Independent covered-geometry validation failed",
+          "entity": "cycle-7"
+        },
+        {
+          "code": "cycle-membership-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Witness membership must match original block ownership exactly",
+          "entity": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1"
+          ]
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0\",\"input\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0\",\"output\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1\",\"input\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1\",\"output\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2\",\"input\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2\",\"output\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0\",\"output\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1\",\"output\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0\",\"output\",\"item-plant-moss-powder-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1\",\"output\",\"item-plant-moss-powder-3\"]"
+        },
+        {
+          "code": "cycle-cut-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Outgoing graph obligation has no matching recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0\",\"output\",\"item-plant-moss-powder-3\"]"
+        },
+        {
+          "code": "cycle-cut-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Outgoing graph obligation has no matching recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1\",\"output\",\"item-plant-moss-powder-3\"]"
+        }
+      ],
+      "witness_sha256": "4d343b2da1940cc439dd315a535599f9986ee5b4830e04d675fc6f87eb51e31b"
+    },
+    {
+      "name": "missing-facility-owner",
+      "passed": true,
+      "covered_geometry_validated": false,
+      "cycle_coverage_accepted": false,
+      "diagnostics": [
+        {
+          "code": "witness-probe-invalid",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1\",\"input-belt-0\"]",
+          "message": "Terminal commodity/direction is absent from its recipe",
+          "path": "/witness",
+          "severity": "error",
+          "stage": "constructive-planner"
+        },
+        {
+          "code": "cycle-geometry-rejected",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Independent covered-geometry validation failed",
+          "entity": "cycle-7"
+        },
+        {
+          "code": "cycle-membership-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Witness membership must match original block ownership exactly",
+          "entity": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1"
+          ]
+        },
+        {
+          "code": "cycle-recipe-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Witness recipe and utilization must match original graph margins",
+          "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0\",\"input\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0\",\"output\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1\",\"input\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1\",\"output\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2\",\"input\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2\",\"output\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0\",\"output\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1\",\"output\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0\",\"output\",\"item-plant-moss-powder-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1\",\"output\",\"item-plant-moss-powder-3\"]"
+        },
+        {
+          "code": "cycle-cut-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Outgoing graph obligation has no matching recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0\",\"output\",\"item-plant-moss-powder-3\"]"
+        },
+        {
+          "code": "cycle-cut-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Outgoing graph obligation has no matching recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1\",\"output\",\"item-plant-moss-powder-3\"]"
+        }
+      ],
+      "witness_sha256": "8fa94e896614c9834c370648e595528f9f568b801f8349513d4ff6ab0c9e3600"
+    },
+    {
+      "name": "changed-utilization",
+      "passed": true,
+      "covered_geometry_validated": false,
+      "cycle_coverage_accepted": false,
+      "diagnostics": [
+        {
+          "code": "witness-probe-invalid",
+          "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+          "message": "Routed flow exceeds recipe utilization",
+          "path": "/witness",
+          "severity": "error",
+          "stage": "constructive-planner"
+        },
+        {
+          "code": "cycle-geometry-rejected",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Independent covered-geometry validation failed",
+          "entity": "cycle-7"
+        },
+        {
+          "code": "cycle-recipe-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Witness recipe and utilization must match original graph margins",
+          "entity": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0\",\"input\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0\",\"output\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1\",\"input\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1\",\"output\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2\",\"input\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2\",\"output\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0\",\"output\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1\",\"output\",\"item-plant-moss-seed-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0\",\"output\",\"item-plant-moss-powder-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1\",\"input\",\"item-plant-moss-3\"]"
+        },
+        {
+          "code": "cycle-terminal-report-shape",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Missing validated recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1\",\"output\",\"item-plant-moss-powder-3\"]"
+        },
+        {
+          "code": "cycle-cut-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Outgoing graph obligation has no matching recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0\",\"output\",\"item-plant-moss-powder-3\"]"
+        },
+        {
+          "code": "cycle-cut-mismatch",
+          "severity": "error",
+          "stage": "cycle-coverage",
+          "message": "Outgoing graph obligation has no matching recipe terminal",
+          "entity": "[\"facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1\",\"output\",\"item-plant-moss-powder-3\"]"
+        }
+      ],
+      "witness_sha256": "ddd119a99e88c422667ca0f7ea1f704093ed95c2988e809d12f013c54b6c547e"
+    },
+    {
+      "name": "unchanged-cycle",
+      "passed": true,
+      "covered_geometry_validated": true,
+      "cycle_coverage_accepted": true,
+      "diagnostics": [],
+      "witness_sha256": "44203779695a2f8db30a69c03da293f369a5f516a06128e9df4f9297410d3283"
+    }
+  ],
+  "provenance": [
+    {
+      "kind": "baseline",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/approach-columns-cycles/report.json",
+      "sha256": "c73736feb237c53d5449d1a174533a7be0fbb8bd45e359e1b7beaaaec38b408d"
+    },
+    {
+      "kind": "recipes",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+      "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+    },
+    {
+      "kind": "facilities",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+      "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+    },
+    {
+      "kind": "items",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+      "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+    },
+    {
+      "kind": "transports",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+      "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+    },
+    {
+      "kind": "components",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+      "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+    },
+    {
+      "kind": "validator",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+      "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+    }
+  ],
+  "source_hashes": {
+    "audit.mjs": "a476fbabe24c87192195b6030c1eaf94b285e89187b8f8c33c8f5605b785d5d7",
+    "model.mjs": "4e72ba99d1913a4603f100a9008ba297fd97a0d31a850707a9ca2e288c87563d",
+    "graph.mjs": "56da1be22c024ce6b270b8626ff7913cfde40557a53678d0753e6bc19206bcbe"
+  }
+}

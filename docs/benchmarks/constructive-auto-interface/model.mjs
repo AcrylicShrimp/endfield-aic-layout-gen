@@ -11,17 +11,32 @@ const fail = (code, stage, message, entity = null) => {
 const exactKeys = (o, keys) => o && typeof o === 'object' && !Array.isArray(o) &&
   Object.keys(o).length === keys.length && keys.every(k => Object.hasOwn(o, k));
 
-// Strictly ordered endpoints admit disjoint one-column bends: upward lanes first,
-// then downward lanes in reverse order. There is one distinct interior column per lane.
+// Overlapping closed vertical intervals impose strict bend-column precedence.
+// Disjoint intervals can share columns; longest-path ranks minimize this route family's depth.
 export function orderedApproach(lanes) {
   const sorted = [...lanes].sort((a, b) => a.start.y - b.start.y);
-  if (!sorted.length || sorted.some((l, i) => l.start.x !== sorted[0].start.x ||
-      l.end.x !== sorted[0].end.x || l.end.x - l.start.x <= lanes.length ||
+  if (!sorted.length || new Set(sorted.map(l => l.id)).size !== sorted.length || sorted.some((l, i) =>
+      ![l.start.x, l.start.y, l.end.x, l.end.y].every(Number.isSafeInteger) ||
+      l.start.x !== sorted[0].start.x || l.end.x !== sorted[0].end.x || l.end.x <= l.start.x ||
       (i && (l.start.y <= sorted[i - 1].start.y || l.end.y <= sorted[i - 1].end.y))))
     fail('interface-approach-order', 'geometry', 'Approach endpoints must be strictly ordered on two separated faces');
-  const bends = [...sorted.filter(l => l.end.y < l.start.y), ...sorted.filter(l => l.end.y >= l.start.y).reverse()];
-  return new Map(bends.map((l, i) => [l.id, [[l.start.x, l.start.y],
-    [l.start.x + i + 1, l.start.y], [l.start.x + i + 1, l.end.y], [l.end.x, l.end.y]]]));
+  const columns = new Map();
+  for (const bends of [sorted.filter(l => l.end.y < l.start.y), sorted.filter(l => l.end.y > l.start.y).reverse()]) {
+    for (let i = 0; i < bends.length; i++) {
+      const l = bends[i], lo = Math.min(l.start.y, l.end.y), hi = Math.max(l.start.y, l.end.y);
+      let column = 1;
+      for (const other of bends.slice(0, i))
+        if (Math.max(other.start.y, other.end.y) >= lo && Math.min(other.start.y, other.end.y) <= hi)
+          column = Math.max(column, columns.get(other.id) + 1);
+      columns.set(l.id, column);
+    }
+  }
+  const depth = Math.max(0, ...columns.values());
+  if (sorted[0].end.x - sorted[0].start.x <= depth)
+    fail('interface-approach-order', 'geometry', `Approach needs ${depth} interior bend columns`);
+  return new Map(sorted.map(l => [l.id, columns.has(l.id) ? [[l.start.x, l.start.y],
+    [l.start.x + columns.get(l.id), l.start.y], [l.start.x + columns.get(l.id), l.end.y], [l.end.x, l.end.y]] :
+    [[l.start.x, l.start.y], [l.end.x, l.end.y]]]));
 }
 
 export function constructInterface(catalogs, request, embedding = 'leaf') {
