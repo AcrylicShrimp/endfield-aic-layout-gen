@@ -21,13 +21,22 @@ function bounds(w) {
 }
 
 function stack(regions, order, catalogs) {
-  const witness = { schema_version: 1, placements: [], utilizations: Object.create(null), transport_networks: [], logistics_components: [] };
   const sizes = new Map(regions.map(r => [r.id, bounds(r.detail.witness)])), width = Math.max(...[...sizes.values()].map(b => b.width));
-  const translations = [], ports = Object.create(null), rowRight = new Map(), used = new Set(), networks = new Map(); let cursor = 0;
+  let cursor = 0;
+  const offsets = order.map(id => { const b = sizes.get(id), offset = { region: id, x: width - b.width - b.x, y: cursor - b.y }; cursor += b.height + 1; return offset; });
+  return { ...placeRegions(regions, offsets, catalogs), width };
+}
+
+// Translate concrete regions under an explicit placement-level packing decision.
+export function placeRegions(regions, offsets, catalogs) {
+  if (new Set(regions.map(r => r.id)).size !== regions.length || offsets.length !== regions.length ||
+      new Set(offsets.map(o => o.region)).size !== regions.length || offsets.some(o => !regions.some(r => r.id === o.region) || !Number.isSafeInteger(o.x) || !Number.isSafeInteger(o.y)))
+    fail('composition-region-placement-schema', 'Expected one integer translation per unique retained region');
+  const witness = { schema_version: 1, placements: [], utilizations: Object.create(null), transport_networks: [], logistics_components: [] };
+  const translations = [], ports = Object.create(null), rowRight = new Map(), used = new Set(), networks = new Map();
   const occupy = (x, y) => rowRight.set(y, Math.max(rowRight.get(y) ?? -Infinity, x));
-  for (const id of order) {
-    const region = regions.find(r => r.id === id), b = sizes.get(id), dx = width - b.width - b.x, dy = cursor - b.y;
-    cursor += b.height + 1; translations.push({ region: id, x: dx, y: dy });
+  for (const { region: id, x: dx, y: dy } of offsets) {
+    const region = regions.find(r => r.id === id); translations.push({ region: id, x: dx, y: dy });
     const move = p => ({ ...p, x: p.x + dx, y: p.y + dy }), w = region.detail.witness;
     // Reindex this concrete region once; never recursively encode prior namespace strings.
     const componentIds = new Map(w.logistics_components.map((c, i) => [c.id, JSON.stringify(['region', id, 'component', i])])), requirementIds = new Map();
@@ -57,8 +66,8 @@ function stack(regions, order, catalogs) {
       if (m.transport !== n.transport || catalogs.items.items.find(i => i.id === n.item)?.transport !== n.transport)
         fail('composition-network-transport', 'Retained commodity transport must match the runtime catalog', n.item);
       m.requirement_ids.push(...n.requirement_ids.map(requirementId)); m.cells.push(...n.cells.map(move));
-      m.segments.push(...n.segments.map(s => ({ ...s, from: move(s.from), to: move(s.to) })));
-      m.terminals.push(...n.terminals.map(t => ({ ...t, position: move(t.position) })));
+      m.segments.push(...n.segments.map(s => ({ ...s, rate: { ...s.rate }, from: move(s.from), to: move(s.to) })));
+      m.terminals.push(...n.terminals.map(t => ({ ...t, rate: { ...t.rate }, endpoint: { ...t.endpoint }, position: move(t.position) })));
       m.component_ids.push(...n.component_ids.map(componentId));
       for (const t of n.terminals) {
         if (t.endpoint.kind !== 'facility') fail('composition-external-in-region', 'Input regions must retain true pending cuts instead of external terminals', id);
@@ -68,7 +77,7 @@ function stack(regions, order, catalogs) {
     }
   }
   witness.transport_networks = [...networks.values()];
-  return { witness, ports, rowRight, used, width, translations };
+  return { witness, ports, rowRight, used, translations };
 }
 
 export function readyConsumers(graph, members, catalogs) {
