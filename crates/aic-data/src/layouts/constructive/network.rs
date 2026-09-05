@@ -3,6 +3,7 @@ use super::{ProfileOp, profile_span};
 pub(super) mod crossings;
 mod external;
 mod first;
+mod paths;
 pub(super) use external::connect_external;
 #[cfg(test)]
 mod tests;
@@ -131,41 +132,6 @@ pub(super) fn report_capacity(
     Ok(())
 }
 
-/// Directed simple path, used only as a constructive choice, never an infeasibility proof.
-fn shared_path(
-    n: &TransportNetwork,
-    start: &WorldGridPosition,
-    end: &WorldGridPosition,
-) -> Option<Vec<usize>> {
-    let _span = profile_span(ProfileOp::SharedPath);
-    let mut queue = VecDeque::from([xy(start)]);
-    let mut seen = BTreeMap::from([(xy(start), None)]);
-    while let Some(p) = queue.pop_front() {
-        if p == xy(end) {
-            break;
-        }
-        for (i, s) in n
-            .segments
-            .iter()
-            .enumerate()
-            .filter(|(_, s)| xy(&s.from) == p)
-        {
-            if let std::collections::btree_map::Entry::Vacant(e) = seen.entry(xy(&s.to)) {
-                e.insert(Some((p, i)));
-                queue.push_back(xy(&s.to));
-            }
-        }
-    }
-    let mut cursor = xy(end);
-    let mut path = Vec::new();
-    while let Some((previous, i)) = *seen.get(&cursor)? {
-        path.push(i);
-        cursor = previous;
-    }
-    path.reverse();
-    Some(path)
-}
-
 fn arms(
     n: &TransportNetwork,
     p: &WorldGridPosition,
@@ -264,6 +230,7 @@ fn attachments(
         .iter()
         .filter(|n| n.item == b.item && n.transport == b.transport)
     {
+        let mut paths = None;
         for terminal in n
             .terminals
             .iter()
@@ -293,15 +260,16 @@ fn attachments(
             else {
                 continue;
             };
+            let paths = paths.get_or_insert_with(|| paths::DirectedPaths::new(&n.segments));
             for anchor in &n.cells {
                 stats.attachment_anchors_considered += 1;
                 if n.terminals.iter().any(|t| t.position == *anchor) {
                     continue;
                 }
                 let path = if b.direction == FacilityPortDirection::Output {
-                    shared_path(n, &terminal.position, anchor)
+                    paths.path(&terminal.position, anchor)
                 } else {
-                    shared_path(n, anchor, &terminal.position)
+                    paths.path(anchor, &terminal.position)
                 };
                 let Some(path) = path else {
                     continue;

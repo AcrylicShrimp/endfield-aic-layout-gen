@@ -17,6 +17,7 @@ pub enum ConstructiveProfileOperation {
     BoundaryRefresh,
     AttachmentEnumeration,
     SharedPath,
+    PathIndexBuild,
     CrossingOptions,
     Astar,
     BoundaryEscape,
@@ -38,6 +39,8 @@ pub struct ConstructiveOperationTiming {
     pub inclusive_ns: u128,
     pub exclusive_ns: u128,
     pub max_ns: u128,
+    #[serde(skip_serializing_if = "BTreeMap::is_empty")]
+    pub work: BTreeMap<&'static str, u64>,
 }
 
 impl ConstructiveOperationTiming {
@@ -123,6 +126,25 @@ pub(super) struct Span {
     enabled: bool,
     // Guards must be dropped on the thread whose stack they entered.
     _thread: PhantomData<Rc<()>>,
+}
+
+impl Span {
+    /// Aggregate work once per invocation, never borrow the collector in a traversal's inner loop.
+    pub(super) fn add_work(&self, key: &'static str, amount: u64) {
+        if self.enabled {
+            ACTIVE.with(|active| {
+                let mut active = active.borrow_mut();
+                let collector = active.as_mut().unwrap();
+                *collector
+                    .operations
+                    .entry(self.operation)
+                    .or_default()
+                    .work
+                    .entry(key)
+                    .or_default() += amount;
+            });
+        }
+    }
 }
 
 pub(super) fn span(operation: ConstructiveProfileOperation) -> Span {

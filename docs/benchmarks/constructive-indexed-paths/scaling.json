@@ -1,0 +1,288 @@
+{
+  "schema_version": 1,
+  "fixture": "data/examples/constructive-path-queries.json",
+  "build": "release",
+  "index_build_included": true,
+  "runs": [
+    {
+      "elapsed_ns": 317208,
+      "indexed": false,
+      "length": 8,
+      "queries": 64,
+      "round": 0
+    },
+    {
+      "elapsed_ns": 181875,
+      "indexed": true,
+      "length": 8,
+      "queries": 64,
+      "round": 0
+    },
+    {
+      "elapsed_ns": 42708,
+      "indexed": true,
+      "length": 8,
+      "queries": 64,
+      "round": 1
+    },
+    {
+      "elapsed_ns": 94709,
+      "indexed": false,
+      "length": 8,
+      "queries": 64,
+      "round": 1
+    },
+    {
+      "elapsed_ns": 117083,
+      "indexed": false,
+      "length": 8,
+      "queries": 64,
+      "round": 2
+    },
+    {
+      "elapsed_ns": 132666,
+      "indexed": true,
+      "length": 8,
+      "queries": 64,
+      "round": 2
+    },
+    {
+      "elapsed_ns": 168375,
+      "indexed": true,
+      "length": 8,
+      "queries": 64,
+      "round": 3
+    },
+    {
+      "elapsed_ns": 171500,
+      "indexed": false,
+      "length": 8,
+      "queries": 64,
+      "round": 3
+    },
+    {
+      "elapsed_ns": 232292,
+      "indexed": false,
+      "length": 8,
+      "queries": 64,
+      "round": 4
+    },
+    {
+      "elapsed_ns": 45208,
+      "indexed": true,
+      "length": 8,
+      "queries": 64,
+      "round": 4
+    },
+    {
+      "elapsed_ns": 715875,
+      "indexed": false,
+      "length": 32,
+      "queries": 64,
+      "round": 0
+    },
+    {
+      "elapsed_ns": 127583,
+      "indexed": true,
+      "length": 32,
+      "queries": 64,
+      "round": 0
+    },
+    {
+      "elapsed_ns": 157125,
+      "indexed": true,
+      "length": 32,
+      "queries": 64,
+      "round": 1
+    },
+    {
+      "elapsed_ns": 510167,
+      "indexed": false,
+      "length": 32,
+      "queries": 64,
+      "round": 1
+    },
+    {
+      "elapsed_ns": 448583,
+      "indexed": false,
+      "length": 32,
+      "queries": 64,
+      "round": 2
+    },
+    {
+      "elapsed_ns": 137458,
+      "indexed": true,
+      "length": 32,
+      "queries": 64,
+      "round": 2
+    },
+    {
+      "elapsed_ns": 117542,
+      "indexed": true,
+      "length": 32,
+      "queries": 64,
+      "round": 3
+    },
+    {
+      "elapsed_ns": 518458,
+      "indexed": false,
+      "length": 32,
+      "queries": 64,
+      "round": 3
+    },
+    {
+      "elapsed_ns": 445709,
+      "indexed": false,
+      "length": 32,
+      "queries": 64,
+      "round": 4
+    },
+    {
+      "elapsed_ns": 121875,
+      "indexed": true,
+      "length": 32,
+      "queries": 64,
+      "round": 4
+    },
+    {
+      "elapsed_ns": 3957667,
+      "indexed": false,
+      "length": 128,
+      "queries": 64,
+      "round": 0
+    },
+    {
+      "elapsed_ns": 363583,
+      "indexed": true,
+      "length": 128,
+      "queries": 64,
+      "round": 0
+    },
+    {
+      "elapsed_ns": 364791,
+      "indexed": true,
+      "length": 128,
+      "queries": 64,
+      "round": 1
+    },
+    {
+      "elapsed_ns": 4016167,
+      "indexed": false,
+      "length": 128,
+      "queries": 64,
+      "round": 1
+    },
+    {
+      "elapsed_ns": 3887708,
+      "indexed": false,
+      "length": 128,
+      "queries": 64,
+      "round": 2
+    },
+    {
+      "elapsed_ns": 400875,
+      "indexed": true,
+      "length": 128,
+      "queries": 64,
+      "round": 2
+    },
+    {
+      "elapsed_ns": 355167,
+      "indexed": true,
+      "length": 128,
+      "queries": 64,
+      "round": 3
+    },
+    {
+      "elapsed_ns": 3966458,
+      "indexed": false,
+      "length": 128,
+      "queries": 64,
+      "round": 3
+    },
+    {
+      "elapsed_ns": 3903958,
+      "indexed": false,
+      "length": 128,
+      "queries": 64,
+      "round": 4
+    },
+    {
+      "elapsed_ns": 365833,
+      "indexed": true,
+      "length": 128,
+      "queries": 64,
+      "round": 4
+    },
+    {
+      "elapsed_ns": 42117084,
+      "indexed": false,
+      "length": 512,
+      "queries": 64,
+      "round": 0
+    },
+    {
+      "elapsed_ns": 1313916,
+      "indexed": true,
+      "length": 512,
+      "queries": 64,
+      "round": 0
+    },
+    {
+      "elapsed_ns": 1281791,
+      "indexed": true,
+      "length": 512,
+      "queries": 64,
+      "round": 1
+    },
+    {
+      "elapsed_ns": 41875667,
+      "indexed": false,
+      "length": 512,
+      "queries": 64,
+      "round": 1
+    },
+    {
+      "elapsed_ns": 41753916,
+      "indexed": false,
+      "length": 512,
+      "queries": 64,
+      "round": 2
+    },
+    {
+      "elapsed_ns": 1267084,
+      "indexed": true,
+      "length": 512,
+      "queries": 64,
+      "round": 2
+    },
+    {
+      "elapsed_ns": 1248333,
+      "indexed": true,
+      "length": 512,
+      "queries": 64,
+      "round": 3
+    },
+    {
+      "elapsed_ns": 41746625,
+      "indexed": false,
+      "length": 512,
+      "queries": 64,
+      "round": 3
+    },
+    {
+      "elapsed_ns": 41736625,
+      "indexed": false,
+      "length": 512,
+      "queries": 64,
+      "round": 4
+    },
+    {
+      "elapsed_ns": 1249667,
+      "indexed": true,
+      "length": 512,
+      "queries": 64,
+      "round": 4
+    }
+  ]
+}

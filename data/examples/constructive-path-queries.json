@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "rate": { "numerator": 1, "denominator": 1 },
+  "absent_positions": [[99, 99], [-99, -99]],
+  "cases": [
+    { "name": "empty", "edges": [] },
+    { "name": "chain", "edges": [[[0, 0], [1, 0]], [[1, 0], [2, 0]], [[2, 0], [3, 0]]] },
+    { "name": "branch-convergence-tie", "edges": [[[0, 0], [0, 1]], [[0, 0], [1, 0]], [[1, 0], [1, 1]], [[0, 1], [1, 1]], [[1, 1], [2, 1]]] },
+    { "name": "cycle", "edges": [[[0, 0], [1, 0]], [[1, 0], [1, 1]], [[1, 1], [0, 1]], [[0, 1], [0, 0]], [[0, 1], [-1, 1]]] },
+    { "name": "disconnected-negative", "edges": [[[-2, 0], [-1, 0]], [[2, 0], [3, 0]]] },
+    { "name": "duplicate-segment", "edges": [[[0, 0], [1, 0]], [[0, 0], [1, 0]], [[1, 0], [2, 0]]] },
+    { "name": "self-loop", "edges": [[[0, 0], [0, 0]], [[0, 0], [1, 0]]] }
+  ],
+  "scaling": {
+    "lengths": [8, 32, 128, 512],
+    "query_repetitions": 64,
+    "benchmark_rounds": 5
+  }
+}
