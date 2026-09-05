@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "producers": [
+    {
+      "id": "A0",
+      "recipe": "grinder-plant-moss-powder-2-1",
+      "utilization": {
+        "numerator": 1,
+        "denominator": 1
+      }
+    },
+    {
+      "id": "B",
+      "recipe": "grinder-plant-moss-powder-3-1",
+      "utilization": {
+        "numerator": 1,
+        "denominator": 3
+      }
+    }
+  ],
+  "consumers": [
+    {
+      "id": "C0",
+      "recipe": "thickener-plant-moss-enr-powder-2-1",
+      "utilization": {
+        "numerator": 1,
+        "denominator": 4
+      }
+    },
+    {
+      "id": "C1",
+      "recipe": "thickener-plant-moss-enr-powder-2-1",
+      "utilization": {
+        "numerator": 1,
+        "denominator": 4
+      }
+    },
+    {
+      "id": "C2",
+      "recipe": "thickener-plant-moss-enr-powder-2-1",
+      "utilization": {
+        "numerator": 1,
+        "denominator": 4
+      }
+    },
+    {
+      "id": "C3",
+      "recipe": "thickener-plant-moss-enr-powder-2-1",
+      "utilization": {
+        "numerator": 1,
+        "denominator": 4
+      }
+    }
+  ]
+}

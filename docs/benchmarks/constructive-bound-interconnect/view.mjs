@@ -10,7 +10,7 @@ export function render(detail, validation, catalogs) {
 const {detail,validation,catalogs}=JSON.parse(document.getElementById('data').textContent),w=detail.witness,svg=document.getElementById('diagram');let overload=false;
 const el=(name,attrs={},text='')=>{const e=document.createElementNS('http://www.w3.org/2000/svg',name);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,v);e.textContent=text;return e;};
 const value=r=>r.numerator/r.denominator,rateText=r=>r.denominator===1?String(r.numerator):r.numerator+'/'+r.denominator;
-const sources=['A0','B'].map(id=>w.transport_networks.find(n=>n.terminals.some(t=>t.node===id&&t.direction==='output'))?.item);
+const sources=w.transport_networks.filter(n=>n.terminals.some(t=>t.endpoint.kind==='facility'&&t.direction==='output')&&n.terminals.some(t=>t.endpoint.kind==='facility'&&t.direction==='input')).map(n=>n.item);
 document.getElementById('itemA').textContent='A: '+sources[0];document.getElementById('itemB').textContent='B: '+sources[1];
 const color=item=>item===sources[0]?'var(--a)':item===sources[1]?'var(--b)':'var(--other)';
 function draw(){svg.replaceChildren();const points=w.transport_networks.flatMap(n=>n.cells),width=Math.max(...w.placements.map(p=>p.x+p.width),...points.map(p=>p.x+1)),height=Math.max(...w.placements.map(p=>p.y+p.height),...points.map(p=>p.y+1));

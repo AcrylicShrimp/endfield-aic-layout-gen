@@ -1,0 +1,842 @@
+{
+  "schema_version": 1,
+  "scope": "automatic local belt interfaces; no full-factory or global optimality claim",
+  "provenance": [
+    {
+      "kind": "recipes",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+      "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+    },
+    {
+      "kind": "facilities",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+      "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+    },
+    {
+      "kind": "items",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+      "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+    },
+    {
+      "kind": "transports",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+      "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+    },
+    {
+      "kind": "components",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+      "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+    },
+    {
+      "kind": "validator",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+      "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+    }
+  ],
+  "all_passed": true,
+  "cases": [
+    {
+      "name": "four",
+      "passed": true,
+      "facilities": 4,
+      "lanes": 4,
+      "bridges": 1,
+      "bounds": {
+        "height": 16,
+        "width": 29
+      },
+      "physical_tiles": 99,
+      "pending_recipe_terminals": 0,
+      "fresh_process_construction_ms": 12.956374999999994,
+      "validator_ms": 0.333083,
+      "warm_construction": {
+        "samples": 20,
+        "min_ms": 0.7676670000000172,
+        "median_ms": 1.1622495000000015,
+        "p95_ms": 1.9291660000000093
+      },
+      "decisions": {
+        "producer_order": [
+          "A0",
+          "B"
+        ],
+        "consumer_order": [
+          "C0",
+          "C1"
+        ],
+        "source_order": [
+          "lane-0",
+          "lane-1",
+          "lane-2",
+          "lane-3"
+        ],
+        "target_order": [
+          "lane-0",
+          "lane-2",
+          "lane-1",
+          "lane-3"
+        ],
+        "inversions": 1,
+        "order_trials": 5,
+        "order_budget": 512,
+        "order_budget_exhausted": false
+      },
+      "request_sha256": "937f3e750ac7ce9fd735a7eaca6cd4989d7afbfcb85f60ef36d97c7adb62b614",
+      "witness_sha256": "99658d69e4b6ef8d8fb0f271ed295ce5988e064f052fbf4c9637822e010b09c0"
+    },
+    {
+      "name": "five",
+      "passed": true,
+      "facilities": 5,
+      "lanes": 6,
+      "bridges": 0,
+      "bounds": {
+        "height": 16,
+        "width": 20
+      },
+      "physical_tiles": 71,
+      "pending_recipe_terminals": 0,
+      "fresh_process_construction_ms": 10.836250000000007,
+      "validator_ms": 0.36354200000000003,
+      "warm_construction": {
+        "samples": 20,
+        "min_ms": 0.7102090000000203,
+        "median_ms": 1.1576040000000205,
+        "p95_ms": 2.4090830000000096
+      },
+      "decisions": {
+        "producer_order": [
+          "A1",
+          "B",
+          "A0"
+        ],
+        "consumer_order": [
+          "C0",
+          "C1"
+        ],
+        "source_order": [
+          "lane-0",
+          "lane-1",
+          "lane-4",
+          "lane-5",
+          "lane-2",
+          "lane-3"
+        ],
+        "target_order": [
+          "lane-0",
+          "lane-1",
+          "lane-4",
+          "lane-5",
+          "lane-2",
+          "lane-3"
+        ],
+        "inversions": 0,
+        "order_trials": 17,
+        "order_budget": 512,
+        "order_budget_exhausted": false
+      },
+      "request_sha256": "a28fc90b943ff3ba6bf86a4470dc73b319925e685f84dfb8a00d9eff4bc2618c",
+      "witness_sha256": "00d512109a7692cdcca3973164da0330bf1a48d155809a3f61f335129f48662a"
+    },
+    {
+      "name": "carbon",
+      "passed": true,
+      "facilities": 4,
+      "lanes": 4,
+      "bridges": 1,
+      "bounds": {
+        "height": 16,
+        "width": 29
+      },
+      "physical_tiles": 99,
+      "pending_recipe_terminals": 0,
+      "fresh_process_construction_ms": 8.661625,
+      "validator_ms": 0.24616599999999997,
+      "warm_construction": {
+        "samples": 20,
+        "min_ms": 0.611582999999996,
+        "median_ms": 1.248416499999962,
+        "p95_ms": 2.623625000000061
+      },
+      "decisions": {
+        "producer_order": [
+          "Carbon",
+          "Moss"
+        ],
+        "consumer_order": [
+          "Enrich0",
+          "Enrich1"
+        ],
+        "source_order": [
+          "lane-0",
+          "lane-1",
+          "lane-2",
+          "lane-3"
+        ],
+        "target_order": [
+          "lane-0",
+          "lane-2",
+          "lane-1",
+          "lane-3"
+        ],
+        "inversions": 1,
+        "order_trials": 5,
+        "order_budget": 512,
+        "order_budget_exhausted": false
+      },
+      "request_sha256": "e9e4689ac70c65a70bacb7e37c836e809561f35ddffc535f064c6a4438d277f2",
+      "witness_sha256": "30109612e7776dbbf396c5a4c561bfb8193c420dbe7cbe45ff760f17ecc59794"
+    },
+    {
+      "name": "renamed",
+      "passed": true,
+      "facilities": 4,
+      "lanes": 4,
+      "bridges": 1,
+      "bounds": {
+        "height": 16,
+        "width": 29
+      },
+      "physical_tiles": 99,
+      "pending_recipe_terminals": 0,
+      "fresh_process_construction_ms": 16.393958999999995,
+      "validator_ms": 0.5108750000000001,
+      "warm_construction": {
+        "samples": 20,
+        "min_ms": 1.5568339999999807,
+        "median_ms": 1.6283744999999499,
+        "p95_ms": 2.141458000000057
+      },
+      "decisions": {
+        "producer_order": [
+          "node-8",
+          "node-9"
+        ],
+        "consumer_order": [
+          "node-6",
+          "node-7"
+        ],
+        "source_order": [
+          "lane-2",
+          "lane-3",
+          "lane-0",
+          "lane-1"
+        ],
+        "target_order": [
+          "lane-2",
+          "lane-0",
+          "lane-3",
+          "lane-1"
+        ],
+        "inversions": 1,
+        "order_trials": 5,
+        "order_budget": 512,
+        "order_budget_exhausted": false
+      },
+      "request_sha256": "52befe91d4edfd2678bf1be33eee78d1cd131fe84ed961be5b04151c3e0f3fec",
+      "witness_sha256": "8a112130d8afd00a662e76f3d0138c8a08c9e38c88c90938558f1b682c44e46a"
+    },
+    {
+      "name": "fanout-3",
+      "passed": true,
+      "facilities": 5,
+      "lanes": 6,
+      "bridges": 3,
+      "bounds": {
+        "height": 24,
+        "width": 45
+      },
+      "physical_tiles": 275,
+      "pending_recipe_terminals": 0,
+      "fresh_process_construction_ms": 20.08654200000001,
+      "validator_ms": 1.022916,
+      "warm_construction": {
+        "samples": 20,
+        "min_ms": 2.658999999999878,
+        "median_ms": 2.9193334999999934,
+        "p95_ms": 3.6638329999998405
+      },
+      "decisions": {
+        "producer_order": [
+          "A0",
+          "B"
+        ],
+        "consumer_order": [
+          "C0",
+          "C1",
+          "C2"
+        ],
+        "source_order": [
+          "lane-0",
+          "lane-1",
+          "lane-2",
+          "lane-3",
+          "lane-4",
+          "lane-5"
+        ],
+        "target_order": [
+          "lane-0",
+          "lane-3",
+          "lane-1",
+          "lane-4",
+          "lane-2",
+          "lane-5"
+        ],
+        "inversions": 3,
+        "order_trials": 9,
+        "order_budget": 512,
+        "order_budget_exhausted": false
+      },
+      "request_sha256": "0156bd218857877de68c988d919652703e45bdae0c56779acd561c853ec249a2",
+      "witness_sha256": "36cb2da8b70b89242d3f40878b792ef0646ebe593b257b73da639b30b8db76dc"
+    },
+    {
+      "name": "fanout-4",
+      "passed": true,
+      "failure": {
+        "code": "interface-port-pressure",
+        "severity": "error",
+        "stage": "port-assignment",
+        "message": "Independent pair lanes exceed facing ports after 15 order trials; fanout/fanin is not synthesized",
+        "entity": [
+          {
+            "id": "A0",
+            "direction": "output",
+            "count": 4,
+            "available_ports": 3
+          },
+          {
+            "id": "B",
+            "direction": "output",
+            "count": 4,
+            "available_ports": 3
+          }
+        ],
+        "evidence": {
+          "producer_order": [
+            "A0",
+            "B"
+          ],
+          "consumer_order": [
+            "C0",
+            "C1",
+            "C2",
+            "C3"
+          ],
+          "lanes": [
+            {
+              "id": "lane-0",
+              "source": "A0",
+              "target": "C0",
+              "item": "item-plant-moss-powder-2",
+              "transport": "belt",
+              "rate": {
+                "numerator": 1,
+                "denominator": 4
+              }
+            },
+            {
+              "id": "lane-1",
+              "source": "A0",
+              "target": "C1",
+              "item": "item-plant-moss-powder-2",
+              "transport": "belt",
+              "rate": {
+                "numerator": 1,
+                "denominator": 4
+              }
+            },
+            {
+              "id": "lane-2",
+              "source": "A0",
+              "target": "C2",
+              "item": "item-plant-moss-powder-2",
+              "transport": "belt",
+              "rate": {
+                "numerator": 1,
+                "denominator": 4
+              }
+            },
+            {
+              "id": "lane-3",
+              "source": "A0",
+              "target": "C3",
+              "item": "item-plant-moss-powder-2",
+              "transport": "belt",
+              "rate": {
+                "numerator": 1,
+                "denominator": 4
+              }
+            },
+            {
+              "id": "lane-4",
+              "source": "B",
+              "target": "C0",
+              "item": "item-plant-moss-powder-3",
+              "transport": "belt",
+              "rate": {
+                "numerator": 1,
+                "denominator": 8
+              }
+            },
+            {
+              "id": "lane-5",
+              "source": "B",
+              "target": "C1",
+              "item": "item-plant-moss-powder-3",
+              "transport": "belt",
+              "rate": {
+                "numerator": 1,
+                "denominator": 8
+              }
+            },
+            {
+              "id": "lane-6",
+              "source": "B",
+              "target": "C2",
+              "item": "item-plant-moss-powder-3",
+              "transport": "belt",
+              "rate": {
+                "numerator": 1,
+                "denominator": 8
+              }
+            },
+            {
+              "id": "lane-7",
+              "source": "B",
+              "target": "C3",
+              "item": "item-plant-moss-powder-3",
+              "transport": "belt",
+              "rate": {
+                "numerator": 1,
+                "denominator": 8
+              }
+            }
+          ],
+          "instances": [
+            {
+              "id": "A0",
+              "recipe": "grinder-plant-moss-powder-2-1",
+              "facility": "grinder-1-mode-normal",
+              "facing_input_ports": 3,
+              "facing_output_ports": 3,
+              "inputs": [
+                {
+                  "item": "item-plant-moss-2",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "item": "item-plant-moss-powder-2",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 1
+                  }
+                }
+              ]
+            },
+            {
+              "id": "B",
+              "recipe": "grinder-plant-moss-powder-3-1",
+              "facility": "grinder-1-mode-normal",
+              "facing_input_ports": 3,
+              "facing_output_ports": 3,
+              "inputs": [
+                {
+                  "item": "item-plant-moss-3",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 6
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "item": "item-plant-moss-powder-3",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 2
+                  }
+                }
+              ]
+            },
+            {
+              "id": "C0",
+              "recipe": "thickener-plant-moss-enr-powder-2-1",
+              "facility": "thickener-1-mode-normal",
+              "facing_input_ports": 6,
+              "facing_output_ports": 6,
+              "inputs": [
+                {
+                  "item": "item-plant-moss-powder-2",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 4
+                  }
+                },
+                {
+                  "item": "item-plant-moss-powder-3",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 8
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "item": "item-plant-moss-enr-powder-2",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 8
+                  }
+                }
+              ]
+            },
+            {
+              "id": "C1",
+              "recipe": "thickener-plant-moss-enr-powder-2-1",
+              "facility": "thickener-1-mode-normal",
+              "facing_input_ports": 6,
+              "facing_output_ports": 6,
+              "inputs": [
+                {
+                  "item": "item-plant-moss-powder-2",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 4
+                  }
+                },
+                {
+                  "item": "item-plant-moss-powder-3",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 8
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "item": "item-plant-moss-enr-powder-2",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 8
+                  }
+                }
+              ]
+            },
+            {
+              "id": "C2",
+              "recipe": "thickener-plant-moss-enr-powder-2-1",
+              "facility": "thickener-1-mode-normal",
+              "facing_input_ports": 6,
+              "facing_output_ports": 6,
+              "inputs": [
+                {
+                  "item": "item-plant-moss-powder-2",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 4
+                  }
+                },
+                {
+                  "item": "item-plant-moss-powder-3",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 8
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "item": "item-plant-moss-enr-powder-2",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 8
+                  }
+                }
+              ]
+            },
+            {
+              "id": "C3",
+              "recipe": "thickener-plant-moss-enr-powder-2-1",
+              "facility": "thickener-1-mode-normal",
+              "facing_input_ports": 6,
+              "facing_output_ports": 6,
+              "inputs": [
+                {
+                  "item": "item-plant-moss-powder-2",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 4
+                  }
+                },
+                {
+                  "item": "item-plant-moss-powder-3",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 8
+                  }
+                }
+              ],
+              "outputs": [
+                {
+                  "item": "item-plant-moss-enr-powder-2",
+                  "rate": {
+                    "numerator": 1,
+                    "denominator": 8
+                  }
+                }
+              ]
+            }
+          ],
+          "lane_capacity": {
+            "numerator": 1,
+            "denominator": 2
+          },
+          "order_trials": 15,
+          "geometry_constructed": false,
+          "global_infeasibility_proven": false
+        },
+        "request": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/auto-interface-audit-final/fanout-4.json",
+        "candidate_preserved": false
+      }
+    },
+    {
+      "name": "replicas-2",
+      "passed": true,
+      "facilities": 8,
+      "lanes": 8,
+      "bridges": 2,
+      "bounds": {
+        "height": 32,
+        "width": 43
+      },
+      "physical_tiles": 330,
+      "pending_recipe_terminals": 0,
+      "fresh_process_construction_ms": 34.34349999999999,
+      "validator_ms": 1.3034999999999999,
+      "warm_construction": {
+        "samples": 20,
+        "min_ms": 4.879500000000007,
+        "median_ms": 6.325937500000009,
+        "p95_ms": 9.095375000000104
+      },
+      "decisions": {
+        "producer_order": [
+          "A0-1",
+          "B-0",
+          "A0-0",
+          "B-1"
+        ],
+        "consumer_order": [
+          "C0-0",
+          "C0-1",
+          "C1-0",
+          "C1-1"
+        ],
+        "source_order": [
+          "lane-0",
+          "lane-1",
+          "lane-4",
+          "lane-5",
+          "lane-2",
+          "lane-3",
+          "lane-6",
+          "lane-7"
+        ],
+        "target_order": [
+          "lane-0",
+          "lane-4",
+          "lane-1",
+          "lane-5",
+          "lane-2",
+          "lane-6",
+          "lane-3",
+          "lane-7"
+        ],
+        "inversions": 2,
+        "order_trials": 49,
+        "order_budget": 512,
+        "order_budget_exhausted": false
+      },
+      "request_sha256": "683f374c8b741f6874b596c098c7774a69000cd7dfea1e0d82e138f9af600195",
+      "witness_sha256": "0fac9e2066df21732039254358af8ca6ffe515cf81c0cf07e41879589f702760"
+    },
+    {
+      "name": "replicas-3",
+      "passed": true,
+      "facilities": 12,
+      "lanes": 12,
+      "bridges": 3,
+      "bounds": {
+        "height": 48,
+        "width": 57
+      },
+      "physical_tiles": 697,
+      "pending_recipe_terminals": 0,
+      "fresh_process_construction_ms": 41.43454200000001,
+      "validator_ms": 2.5154579999999997,
+      "warm_construction": {
+        "samples": 20,
+        "min_ms": 13.369499999999789,
+        "median_ms": 16.040145500000108,
+        "p95_ms": 18.842499999999973
+      },
+      "decisions": {
+        "producer_order": [
+          "A0-2",
+          "B-0",
+          "A0-1",
+          "B-1",
+          "A0-0",
+          "B-2"
+        ],
+        "consumer_order": [
+          "C0-0",
+          "C0-1",
+          "C0-2",
+          "C1-0",
+          "C1-1",
+          "C1-2"
+        ],
+        "source_order": [
+          "lane-0",
+          "lane-1",
+          "lane-6",
+          "lane-7",
+          "lane-2",
+          "lane-3",
+          "lane-8",
+          "lane-9",
+          "lane-4",
+          "lane-5",
+          "lane-10",
+          "lane-11"
+        ],
+        "target_order": [
+          "lane-0",
+          "lane-6",
+          "lane-1",
+          "lane-7",
+          "lane-2",
+          "lane-8",
+          "lane-3",
+          "lane-9",
+          "lane-4",
+          "lane-10",
+          "lane-5",
+          "lane-11"
+        ],
+        "inversions": 3,
+        "order_trials": 181,
+        "order_budget": 512,
+        "order_budget_exhausted": false
+      },
+      "request_sha256": "7545336351148208fdb5377072802840f7cb8b1fd4db953d747df07e4a20a5e0",
+      "witness_sha256": "719ee10071af3d6767370a12573e27ef842a9a326e6762ea5387ff3fad6eb4e7"
+    },
+    {
+      "name": "replicas-4",
+      "passed": true,
+      "facilities": 16,
+      "lanes": 16,
+      "bridges": 4,
+      "bounds": {
+        "height": 64,
+        "width": 71
+      },
+      "physical_tiles": 1200,
+      "pending_recipe_terminals": 0,
+      "fresh_process_construction_ms": 72.860292,
+      "validator_ms": 4.098667000000001,
+      "warm_construction": {
+        "samples": 20,
+        "min_ms": 30.317000000000007,
+        "median_ms": 36.65468749999991,
+        "p95_ms": 41.70216699999992
+      },
+      "decisions": {
+        "producer_order": [
+          "A0-3",
+          "B-0",
+          "A0-2",
+          "B-1",
+          "A0-1",
+          "B-2",
+          "A0-0",
+          "B-3"
+        ],
+        "consumer_order": [
+          "C0-0",
+          "C0-1",
+          "C0-2",
+          "C0-3",
+          "C1-0",
+          "C1-1",
+          "C1-2",
+          "C1-3"
+        ],
+        "source_order": [
+          "lane-0",
+          "lane-1",
+          "lane-8",
+          "lane-9",
+          "lane-2",
+          "lane-3",
+          "lane-10",
+          "lane-11",
+          "lane-4",
+          "lane-5",
+          "lane-12",
+          "lane-13",
+          "lane-6",
+          "lane-7",
+          "lane-14",
+          "lane-15"
+        ],
+        "target_order": [
+          "lane-0",
+          "lane-8",
+          "lane-1",
+          "lane-9",
+          "lane-2",
+          "lane-10",
+          "lane-3",
+          "lane-11",
+          "lane-4",
+          "lane-12",
+          "lane-5",
+          "lane-13",
+          "lane-6",
+          "lane-14",
+          "lane-7",
+          "lane-15"
+        ],
+        "inversions": 4,
+        "order_trials": 449,
+        "order_budget": 512,
+        "order_budget_exhausted": false
+      },
+      "request_sha256": "7f5af8e325f8afefc1d26c172a3ccc16d4905ecbf44ab13b903a7ea6cb3316f9",
+      "witness_sha256": "d0d5f799ff66a361a5bc01b9a1c34191ca81347ca6f79709c983ac8a1eccbeb9"
+    },
+    {
+      "name": "missing-bridge-control",
+      "passed": true,
+      "diagnostics": [
+        {
+          "code": "constructive-network-attachment-geometry-invalid",
+          "entity": "network:item-plant-moss-powder-3",
+          "message": "transport collision",
+          "path": "/composite",
+          "severity": "error",
+          "stage": "constructive-planner"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "producers": [
+    {"id":"Carbon","recipe":"furnance-carbon-powder-4","utilization":{"numerator":1,"denominator":1}},
+    {"id":"Moss","recipe":"grinder-plant-moss-powder-3-1","utilization":{"numerator":1,"denominator":3}}
+  ],
+  "consumers": [
+    {"id":"Enrich0","recipe":"thickener-carbon-enr-powder-1","utilization":{"numerator":1,"denominator":2}},
+    {"id":"Enrich1","recipe":"thickener-carbon-enr-powder-1","utilization":{"numerator":1,"denominator":2}}
+  ]
+}
