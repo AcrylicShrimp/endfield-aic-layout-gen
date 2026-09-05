@@ -155,20 +155,30 @@ export function growCandidates(catalogs, graph, base, node, budget = 64, routeFa
   if (!Number.isSafeInteger(budget) || budget < 1 || budget > 512) fail('closure-candidate-budget', 'Expected placement trial budget 1..512');
   if (!ready(graph, base.witness).some(n => n.id === node.id)) fail('closure-frontier-unready', 'Internal predecessors must already be retained', node.id);
   const start = performance.now(), candidates = [], failures = []; let trials = 0;
+  const copying = { draft_count: 0, draft_ms: 0, materialized_count: 0, materialize_ms: 0 };
+  const retainedPorts = project(base.witness, catalogs);
   for (const p of placements(node, graph, base, catalogs, placementFamily).slice(0, budget)) {
     trials++;
-    const w = structuredClone(base.witness); w.placements.push(p);
-    w.utilizations = Object.fromEntries([...Object.entries(w.utilizations), [node.id, structuredClone(node.utilization)]]);
-    const ports = project(w, catalogs), occupied = index(w), routes = [];
+    const draftStart = performance.now();
+    // connect/append only push into these private containers; retained nested DTOs are read-only.
+    const w = { ...base.witness, placements: [...base.witness.placements, p],
+      utilizations: { ...base.witness.utilizations, [node.id]: node.utilization },
+      transport_networks: base.witness.transport_networks.map(n => ({ ...n,
+        requirement_ids: [...n.requirement_ids], cells: [...n.cells], segments: [...n.segments],
+        terminals: [...n.terminals], component_ids: [...n.component_ids] })) };
+    copying.draft_count++; copying.draft_ms += performance.now() - draftStart;
+    const ports = { ...retainedPorts, ...project({ placements: [p] }, catalogs) }, occupied = index(w), routes = [];
     try {
       const edges = graph.edges.filter(e => e.target === node.id).sort((a, b) => (a.transport === 'pipe' ? 0 : 1) - (b.transport === 'pipe' ? 0 : 1) || a.id.localeCompare(b.id));
       for (const edge of edges) routes.push(...connect(w, ports, occupied, edge, catalogs, null, routeFamily));
-      candidates.push({ schema_version: 1, case: 'actual-graph-factory-closure', embedding: 'closure', witness: w, catalog_ports: ports, labels: { ...base.labels },
-        accepted: false, factory_validated: false, port_groups: { sources: [], targets: [] }, closure_plan: { added: node.id, placement: p, routes, trials, route_family: routeFamily, placement_family: placementFamily } });
+      const materializeStart = performance.now();
+      candidates.push(structuredClone({ schema_version: 1, case: 'actual-graph-factory-closure', embedding: 'closure', witness: w, catalog_ports: ports, labels: { ...base.labels },
+        accepted: false, factory_validated: false, port_groups: { sources: [], targets: [] }, closure_plan: { added: node.id, placement: p, routes, trials, route_family: routeFamily, placement_family: placementFamily } }));
+      copying.materialized_count++; copying.materialize_ms += performance.now() - materializeStart;
       if (candidates.length === 8) break;
     } catch (e) { failures.push({ code: e.code ?? 'closure-candidate-failed', message: e.message, entity: e.entity, placement: p }); }
   }
-  return { candidates, failures, trials, construction_ms: performance.now() - start };
+  return { candidates, failures, trials, copying, construction_ms: performance.now() - start };
 }
 export function finishOutputs(catalogs, graph, base, routeFamily = 'simple') {
   const start = performance.now(), w = structuredClone(base.witness), ports = project(w, catalogs), occupied = index(w), routes = [];

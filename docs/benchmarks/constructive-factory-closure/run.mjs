@@ -68,7 +68,7 @@ try {
       const checked = [];
       for (let i = 0; i < generated.candidates.length; i += 4) checked.push(...await Promise.all(generated.candidates.slice(i, i + 4).map((d, j) => validate(d, `stage-${stages.length}-candidate-${i + j}`))));
       const valid = checked.filter(c => c.accepted).sort((a, b) => better(a.score.tuple, b.score.tuple) ? -1 : better(b.score.tuple, a.score.tuple) ? 1 : 0);
-      stages.push({ node: node.id, label: node.label, trials: generated.trials, construction_ms: generated.construction_ms, validation_output_ms: performance.now() - validationStart, failures: generated.failures,
+      stages.push({ node: node.id, label: node.label, trials: generated.trials, copying: generated.copying, construction_ms: generated.construction_ms, validation_output_ms: performance.now() - validationStart, failures: generated.failures,
         candidates: checked.map(({ detail, ...r }) => r), selected_directory: valid[0]?.directory ?? null });
       if (valid.length) { selected = valid[0]; current = selected.detail; publish(selected); accepted = true; break; }
     }

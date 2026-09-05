@@ -96,3 +96,35 @@ test('perimeter transfer approaches a north input around its body without weaken
   occupied.layers.pipe.add('2,6'); assert.equal(routeTemplates(a, b, occupied, 'pipe', extent, null, 'perimeter'), null);
   assert.throws(() => routeTemplates(a, b, occupied, 'pipe', extent, null, 'unknown'), { code: 'closure-route-family' });
 });
+
+test('append-only drafts support frozen inputs and return fully detached successful object graphs', () => {
+  const objects = value => { const seen = new Set(); const visit = o => {
+    if (!o || typeof o !== 'object' || seen.has(o)) return; seen.add(o); Object.values(o).forEach(visit);
+  }; visit(value); return seen; };
+  const frozen = value => { for (const o of objects(value)) Object.freeze(o); return value; };
+  const base = frozen(structuredClone(baseline())), cats = frozen(structuredClone(catalogs)), g = frozen(structuredClone(graph));
+  const node = ready(g, base.witness)[0], original = JSON.stringify(base);
+  const result = growCandidates(cats, g, base, node, 64, 'simple', 'two-sided');
+  assert.ok(result.candidates.length >= 2);
+  assert.equal(result.copying.draft_count, result.trials);
+  assert.equal(result.copying.materialized_count, result.candidates.length);
+  const forbidden = objects({ base, cats, g });
+  for (const c of result.candidates) for (const o of objects(c)) {
+    assert.equal(forbidden.has(o), false); forbidden.add(o);
+  }
+  const second = JSON.stringify(result.candidates[1]);
+  const first = result.candidates[0];
+  first.witness.transport_networks[0].segments[0].rate.numerator++;
+  first.witness.transport_networks[0].terminals[0].endpoint.instance = 'mutated';
+  first.witness.logistics_components[0].position.x++;
+  first.witness.placements[0].x++; first.witness.utilizations[node.id].numerator++;
+  Object.values(first.catalog_ports)[0][0].connection.x++;
+  assert.equal(JSON.stringify(result.candidates[1]), second); assert.equal(JSON.stringify(base), original);
+
+  const broken = structuredClone(g);
+  for (const e of broken.edges.filter(e => e.target === node.id)) e.rate = { numerator: 1000, denominator: 1 };
+  const failed = growCandidates(cats, frozen(broken), base, broken.nodes.find(n => n.id === node.id), 4, 'simple', 'two-sided');
+  assert.equal(failed.candidates.length, 0); assert.equal(failed.copying.materialized_count, 0);
+  assert.ok(failed.trials > 0); assert.ok(failed.failures.every(f => f.code === 'closure-port-template-exhausted'));
+  assert.equal(JSON.stringify(base), original);
+});

@@ -58,3 +58,14 @@ checks. Negative offsets are relative to the anchor, not negative world coordina
 production flow. The diagnostic trial budget and eight-success limit still apply after area/distance
 ranking. Report the family at run and candidate levels; a larger candidate family is not guaranteed
 to improve the complete greedy construction. Retain the complete incumbent in comparative runs.
+
+Growth trials may use a private append-only draft: copy mutable array containers and the utilization
+map, while reading retained nested DTOs without modification. Route construction may only append new
+cells, segments, terminals and requirement IDs to those private arrays. Discard a failed draft.
+Materialize a fully detached successful candidate with a deep copy before returning it; no object
+may be shared with the input, catalogs, graph or another returned candidate. No draft escapes through
+diagnostics. Keep trial order, bounds, route choices and witness serialization unchanged. Report draft
+and successful materialization counts/times separately. Frozen-input, late-failure and full candidate
+object-isolation tests are required, together with before/after witness-hash comparisons.
+Retained catalog-projected ports may be computed once per growth call and read by each draft; only
+the new placement is reprojected. The final deep materialization must detach these cached ports too.

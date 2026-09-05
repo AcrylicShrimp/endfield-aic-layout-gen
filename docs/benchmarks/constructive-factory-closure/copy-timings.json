@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "5327fda",
+  "method": "Three sequential fresh-process runs per phase, before then draft then cached; same catalogs, partial witness, budgets, placement and route families; identical clone timing preload; not interleaved",
+  "baseline": "target/cluster-pocket-refine-2/packing-4/baseline.json",
+  "placement_family": "two-sided",
+  "route_family": "simple",
+  "phases": [
+    {
+      "name": "before",
+      "reports": ["target/clone-before-1/report.json", "target/clone-before-2/report.json", "target/clone-before-3/report.json"],
+      "clone_profiles": ["target/clone-before-1.json", "target/clone-before-2.json", "target/clone-before-3.json"],
+      "elapsed_ms": [4971.8232499999995, 5082.625125, 4922.265958],
+      "generation_ms": [3471.0055410000004, 3626.281332999999, 3482.3235399999994],
+      "witness_clone_calls": 149,
+      "candidate_clone_calls": 0,
+      "port_clone_calls": 8867
+    },
+    {
+      "name": "append_only_draft",
+      "reports": ["target/clone-after-1/report.json", "target/clone-after-2/report.json", "target/clone-after-3/report.json"],
+      "clone_profiles": ["target/clone-after-1.json", "target/clone-after-2.json", "target/clone-after-3.json"],
+      "elapsed_ms": [3618.699083, 3539.690625, 3558.2733749999998],
+      "generation_ms": [2298.1229580000004, 2229.6352890000003, 2233.217251],
+      "witness_clone_calls": 1,
+      "candidate_clone_calls": 42,
+      "port_clone_calls": 8867
+    },
+    {
+      "name": "draft_and_retained_port_cache",
+      "reports": ["target/clone-cached-1/report.json", "target/clone-cached-2/report.json", "target/clone-cached-3/report.json"],
+      "clone_profiles": ["target/clone-cached-1.json", "target/clone-cached-2.json", "target/clone-cached-3.json"],
+      "elapsed_ms": [3305.5198339999997, 3233.979083, 3271.1436670000003],
+      "generation_ms": [1903.3202499999998, 1921.1429180000002, 1939.2938319999996],
+      "witness_clone_calls": 1,
+      "candidate_clone_calls": 42,
+      "port_clone_calls": 956
+    }
+  ]
+}
