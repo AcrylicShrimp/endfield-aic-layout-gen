@@ -9,6 +9,126 @@ use crate::recipes::{
     FacilityInstanceWiringProjection, FacilityInstanceWiringReport,
 };
 
+// Every validator assertion in this module also checks the unchanged diagnostic oracle.
+fn validate(
+    node: &ConstructiveNode,
+    facilities: &ValidatedFacilityCatalog,
+    transports: &ValidatedTransportCatalog,
+    components: &ValidatedLogisticsComponentCatalog,
+) -> Result<(), ConstructiveFrontierDiagnostic> {
+    let actual = super::validate(node, facilities, transports, components);
+    let reference =
+        super::validation::reference::validate(node, facilities, transports, components);
+    assert_eq!(actual, reference, "validator result/first diagnostic drift");
+    actual
+}
+
+#[test]
+fn validator_preserves_first_diagnostics_for_corrupt_witnesses() {
+    let (_, report) = fixture(
+        false,
+        Rate {
+            numerator: 1,
+            denominator: 5,
+        },
+    );
+    let node = report.composite.unwrap();
+    let (f, _, t, c) = catalogs();
+    let mut variants = Vec::new();
+    let mut bad = node.clone();
+    bad.placements.push(bad.placements[0].clone());
+    variants.push(bad);
+    let mut bad = node.clone();
+    bad.placements[0].facility.push_str("-missing");
+    variants.push(bad);
+    let mut bad = node.clone();
+    bad.placements[0].width += 1;
+    variants.push(bad);
+    let mut bad = node.clone();
+    bad.member_instances.pop();
+    variants.push(bad);
+    let mut bad = node.clone();
+    bad.internal_requirements.clear();
+    variants.push(bad);
+    let mut bad = node.clone();
+    bad.transport_networks
+        .push(bad.transport_networks[0].clone());
+    variants.push(bad);
+    let mut bad = node.clone();
+    let n = &mut bad.transport_networks[0];
+    n.cells.push(n.cells[0].clone());
+    variants.push(bad);
+    let mut bad = node.clone();
+    bad.transport_networks[0].cells.clear();
+    variants.push(bad);
+    let mut bad = node.clone();
+    let n = &mut bad.transport_networks[0];
+    n.segments.push(n.segments[0].clone());
+    variants.push(bad);
+    let mut bad = node.clone();
+    bad.transport_networks[0].segments[0].rate = Rate::zero();
+    variants.push(bad);
+    let mut bad = node.clone();
+    bad.transport_networks[0].segments.pop();
+    variants.push(bad);
+    let mut bad = node.clone();
+    bad.transport_networks[0].terminals[0]
+        .node
+        .push_str("-missing");
+    variants.push(bad);
+    let mut bad = node.clone();
+    bad.logistics_components
+        .push(bad.logistics_components[0].clone());
+    variants.push(bad);
+    let mut bad = node.clone();
+    bad.transport_networks[0].component_ids.clear();
+    variants.push(bad);
+    for bad in variants {
+        assert!(validate(&bad, &f, &t, &c).is_err());
+    }
+    let mut uncached = node;
+    uncached.network_capacity.clear();
+    validate(&uncached, &f, &t, &c).unwrap();
+}
+
+#[test]
+fn validator_rejects_disconnected_balanced_circulation_after_other_checks() {
+    let (_, report) = fixture(
+        false,
+        Rate {
+            numerator: 1,
+            denominator: 5,
+        },
+    );
+    let mut node = report.composite.unwrap();
+    let data: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(root().join("data/examples/constructive-validation-queries.json")).unwrap(),
+    )
+    .unwrap();
+    let cycle = data["cases"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["name"] == "cycle-connected-to-terminals")
+        .unwrap();
+    let offset = &data["circulation_offset"];
+    let n = &mut node.transport_networks[0];
+    let rate = n.segments[0].rate;
+    for edge in cycle["edges"].as_array().unwrap() {
+        let point = |p: &serde_json::Value| WorldGridPosition {
+            x: p[0].as_i64().unwrap() + offset[0].as_i64().unwrap(),
+            y: p[1].as_i64().unwrap() + offset[1].as_i64().unwrap(),
+        };
+        let from = point(&edge[0]);
+        let to = point(&edge[1]);
+        n.cells.push(from.clone());
+        n.segments.push(TransportNetworkSegment { from, to, rate });
+    }
+    let (f, _, t, c) = catalogs();
+    let error = validate(&node, &f, &t, &c).unwrap_err();
+    assert_eq!(error.message, "unreachable network geometry");
+}
+
 fn root() -> std::path::PathBuf {
     std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }

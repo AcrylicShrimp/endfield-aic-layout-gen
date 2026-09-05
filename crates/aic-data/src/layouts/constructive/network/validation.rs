@@ -1,5 +1,9 @@
 //! Independent validation of the committed grid witness, without route-search state.
 use super::*;
+mod reachability;
+
+#[cfg(test)]
+pub(super) mod reference;
 
 pub(in crate::layouts::constructive) fn validate(
     node: &ConstructiveNode,
@@ -16,6 +20,7 @@ pub(in crate::layouts::constructive) fn validate(
             message,
         )
     };
+    let setup_span = profile_span(ProfileOp::ValidationSetup);
     let mut occupied = HashSet::new();
     let mut members = BTreeSet::new();
     let mut ports = BTreeMap::<(String, String), PlacedFacilityPort>::new();
@@ -117,10 +122,12 @@ pub(in crate::layouts::constructive) fn validate(
             "commodity networks are not normalized",
         ));
     }
+    drop(setup_span);
     let mut used_ports = BTreeSet::new();
     let mut component_ids = BTreeSet::new();
     let mut bridge_axes = BTreeMap::<String, Vec<bool>>::new();
     for n in &node.transport_networks {
+        let cells_span = profile_span(ProfileOp::ValidationCells);
         let mut network_components = BTreeSet::new();
         let Some(cap) = line_capacity(n.transport, transports) else {
             return Err(fail(n.id.clone(), "invalid line capacity"));
@@ -144,6 +151,8 @@ pub(in crate::layouts::constructive) fn validate(
             }
             flow.insert(*p, (Rate::zero(), Rate::zero(), Vec::new(), Vec::new()));
         }
+        drop(cells_span);
+        let segments_span = profile_span(ProfileOp::ValidationSegments);
         let mut segments = BTreeSet::new();
         for s in &n.segments {
             if s.rate <= Rate::zero()
@@ -171,6 +180,8 @@ pub(in crate::layouts::constructive) fn validate(
                     .map_err(|_| fail(n.id.clone(), "flow arithmetic overflow"))?;
             f.2.push(rotate(out, 180));
         }
+        drop(segments_span);
+        let terminals_span = profile_span(ProfileOp::ValidationTerminals);
         for t in &n.terminals {
             if let TransportNetworkEndpoint::External {
                 node: external_node,
@@ -280,6 +291,8 @@ pub(in crate::layouts::constructive) fn validate(
                 f.3.push(d);
             }
         }
+        drop(terminals_span);
+        let topology_span = profile_span(ProfileOp::ValidationTopology);
         for (p, (incoming, outgoing, inputs, outputs)) in &flow {
             if incoming != outgoing || incoming.is_zero() || *incoming > cap {
                 return Err(fail(
@@ -367,28 +380,19 @@ pub(in crate::layouts::constructive) fn validate(
         }
         // No disconnected circulation-only geometry: each physical cell must be reachable from
         // a supply and able to reach a demand. This constructor emits no circulation.
+        drop(topology_span);
+        let reach_span = profile_span(ProfileOp::ValidationReachability);
+        let mut reachability = reachability::Reachability::new(&cells, &n.segments);
         for reverse in [false, true] {
-            let mut seen = BTreeSet::new();
-            let mut queue = VecDeque::new();
-            for t in &n.terminals {
-                if (t.direction == FacilityPortDirection::Input) == reverse {
-                    seen.insert(xy(&t.position));
-                    queue.push_back(xy(&t.position));
-                }
-            }
-            while let Some(p) = queue.pop_front() {
-                for s in &n.segments {
-                    let (a, b) = if reverse {
-                        (&s.to, &s.from)
-                    } else {
-                        (&s.from, &s.to)
-                    };
-                    if xy(a) == p && seen.insert(xy(b)) {
-                        queue.push_back(xy(b));
-                    }
-                }
-            }
-            if seen != cells {
+            let roots = n
+                .terminals
+                .iter()
+                .filter(|t| (t.direction == FacilityPortDirection::Input) == reverse)
+                .map(|t| xy(&t.position));
+            let (covered, visited, examined) = reachability.covers(roots, reverse);
+            reach_span.add_work("vertices-visited", visited);
+            reach_span.add_work("segment-probes", examined);
+            if !covered {
                 return Err(fail(n.id.clone(), "unreachable network geometry"));
             }
         }

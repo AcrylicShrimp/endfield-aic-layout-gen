@@ -9,7 +9,7 @@ pub(super) use external::connect_external;
 mod tests;
 mod validation;
 pub(super) use first::connect_first;
-use std::collections::{BTreeMap, BTreeSet, HashSet, VecDeque};
+use std::collections::{BTreeMap, BTreeSet, HashSet};
 pub(super) use validation::validate;
 
 use super::first_pipe_frontier::occupied_cells;

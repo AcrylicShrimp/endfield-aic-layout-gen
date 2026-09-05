@@ -28,8 +28,8 @@ cargo run -p aic-cli -- recipes graph --file data/examples/recipes.graph.json --
 ## Production Construction
 
 The [active milestones](docs/todos/2026-09-05.05-fast-construction-milestones.md) start with faster
-complete construction, followed by transactional layout improvement. Indexed path queries and dense
-boundary screening are complete; independent validation is the next measured runtime target.
+complete construction, followed by transactional layout improvement. Indexed path queries, dense
+boundary screening and independent reachability are complete; bounded parallel analysis is next.
 
 Construct connected facilities at their natural footprint, accepting the first valid local growth
 instead of optimizing compact modules before the factory is complete:

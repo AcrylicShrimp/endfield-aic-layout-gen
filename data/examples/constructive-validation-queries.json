@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "rate": { "numerator": 1, "denominator": 5 },
+  "cases": [
+    { "name": "single-cell", "edges": [], "cells": [[0,0]], "supplies": [[0,0]], "demands": [[0,0]] },
+    { "name": "chain", "edges": [[[0,0],[1,0]],[[1,0],[2,0]]], "cells": [], "supplies": [[0,0]], "demands": [[2,0]] },
+    { "name": "branch", "edges": [[[0,0],[1,0]],[[1,0],[2,0]],[[1,0],[1,1]]], "cells": [], "supplies": [[0,0]], "demands": [[2,0],[1,1]] },
+    { "name": "merge", "edges": [[[0,0],[1,0]],[[0,1],[1,1]],[[1,1],[1,0]],[[1,0],[2,0]]], "cells": [], "supplies": [[0,0],[0,1]], "demands": [[2,0]] },
+    { "name": "cycle-connected-to-terminals", "edges": [[[0,0],[1,0]],[[1,0],[1,1]],[[1,1],[0,1]],[[0,1],[0,0]]], "cells": [], "supplies": [[0,0]], "demands": [[1,1]] },
+    { "name": "disconnected-cycle", "edges": [[[0,0],[1,0]],[[4,0],[5,0]],[[5,0],[5,1]],[[5,1],[4,1]],[[4,1],[4,0]]], "cells": [], "supplies": [[0,0]], "demands": [[1,0]] },
+    { "name": "isolated-cell", "edges": [[[0,0],[1,0]]], "cells": [[-3,-3]], "supplies": [[0,0]], "demands": [[1,0]] },
+    { "name": "no-supply", "edges": [[[0,0],[1,0]]], "cells": [], "supplies": [], "demands": [[1,0]] },
+    { "name": "no-demand", "edges": [[[0,0],[1,0]]], "cells": [], "supplies": [[0,0]], "demands": [] },
+    { "name": "duplicate-roots-negative", "edges": [[[-2,0],[-1,0]],[[-1,0],[0,0]]], "cells": [], "supplies": [[-2,0],[-2,0]], "demands": [[0,0],[0,0]] }
+  ],
+  "scaling_lengths": [8,32,128,512],
+  "circulation_offset": [100,100]
+}
