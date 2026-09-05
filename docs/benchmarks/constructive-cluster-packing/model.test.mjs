@@ -6,6 +6,7 @@ import { constructCycle } from '../constructive-cycle-blocks/model.mjs';
 import { compactInterface, witnessScore } from '../constructive-auto-interface/compact.mjs';
 import { composeBlocks, readyConsumers, placeRegions } from '../constructive-block-composition/model.mjs';
 import { discoverClusters, packingCandidates } from './model.mjs';
+import { nestingCandidates, pendingPorts, footprint, accessFailures } from './nesting.mjs';
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k,
   read(`../../../data/game/normalized/${k === 'components' ? 'logistics-components' : k}.json`)]));
@@ -51,6 +52,20 @@ test('translated shelves preserve all 53 facilities and interior rate geometry w
   }
   candidates[0].witness.transport_networks[0].segments[0].rate.numerator += 1;
   assert.equal(JSON.stringify(clusters), original);
+  const nested = nestingCandidates(graph, clusters, catalogs, 4);
+  assert.equal(nested.length, 4); assert.equal(JSON.stringify(clusters), original);
+  assert.deepEqual(nested.map(d => d.packing_plan.offset), nestingCandidates(graph, [...clusters].reverse(), catalogs, 4).map(d => d.packing_plan.offset));
+  for (const d of nested) {
+    assert.equal(d.witness.placements.length, 53); assert.equal(d.factory_validated, false);
+    const search = d.packing_plan.search;
+    assert.equal(search.collision_free, search.output_accessible + search.output_obstructed);
+    for (const r of clusters) {
+      const other = clusters.find(c => c.id !== r.id), o = d.packing_plan.translations.find(t => t.region === r.id), q = d.packing_plan.translations.find(t => t.region === other.id);
+      const a = footprint(r.detail.witness), b = footprint(other.detail.witness);
+      assert.deepEqual(accessFailures(pendingPorts(graph, r, catalogs), b, q.x + b.x - o.x - a.x, q.y + b.y - o.y - a.y), []);
+      for (const p of r.detail.witness.placements) assert.deepEqual(d.witness.placements.find(v => v.instance === p.instance), { ...p, x: p.x + o.x, y: p.y + o.y });
+    }
+  }
 });
 
 test('region placement rejects duplicate/unknown/noninteger translations instead of losing members', () => {

@@ -7,6 +7,7 @@ import { composeBlocks, readyConsumers } from '../constructive-block-composition
 import { compactInterface, witnessScore } from '../constructive-auto-interface/compact.mjs';
 import { inspectCoverage, better } from '../constructive-factory-closure/model.mjs';
 import { discoverClusters, packingCandidates } from './model.mjs';
+import { nestingCandidates } from './nesting.mjs';
 import { render } from '../constructive-bound-interconnect/view.mjs';
 const read = p => JSON.parse(fs.readFileSync(p)), hash = p => createHash('sha256').update(fs.readFileSync(p)).digest('hex');
 const write = (p, v) => fs.writeFileSync(p, JSON.stringify(v, null, 2) + '\n', { flag: 'wx' });
@@ -22,10 +23,12 @@ try {
   const keys = ['graph', 'blocks', 'incumbent', 'recipes', 'facilities', 'items', 'transports', 'components', 'validator', 'output-directory'], options = {}, args = process.argv.slice(2);
   for (let i = 0; i < args.length; i += 2) {
     const k = args[i].slice(2);
-    if (!args[i].startsWith('--') || !keys.includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
+    if (!args[i].startsWith('--') || ![...keys, 'packing-family', 'nesting-limit'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
     options[k] = args[i + 1];
   }
   for (const k of keys) if (!options[k]) throw new Error(`Missing --${k}`);
+  const packingFamily = options['packing-family'] ?? 'shelf';
+  if (!['shelf', 'nesting'].includes(packingFamily)) throw new Error('Expected --packing-family shelf or nesting');
   output = path.resolve(options['output-directory']); fs.mkdirSync(output); const start = performance.now();
   const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k, read(options[k])]));
   const graph = normalizeGraph(read(options.graph), catalogs), baseline = read(options.incumbent), blocks = read(options.blocks);
@@ -62,7 +65,7 @@ try {
     if (targets.length || regions.length !== 1) throw new Error(`Cluster growth did not close for ${c.id}`);
     clusters.push(regions[0]); clusterReports.push({ id: c.id, sources: c.regions.map(r => r.id), members: regions[0].detail.witness.placements.map(p => p.instance), stages });
   }
-  const packStart = performance.now(), packed = packingCandidates(graph, clusters, catalogs), packMs = performance.now() - packStart;
+  const packStart = performance.now(), packed = packingFamily === 'shelf' ? packingCandidates(graph, clusters, catalogs) : nestingCandidates(graph, clusters, catalogs, Number(options['nesting-limit'] ?? 12)), packMs = performance.now() - packStart;
   const packReports = [];
   for (let i = 0; i < packed.length; i++) {
     const p = await validate(packed[i], path.join(output, `packing-${i}`));
@@ -98,10 +101,10 @@ try {
     .sort((a, b) => better(a.complete_score.tuple, b.complete_score.tuple) ? -1 : better(b.complete_score.tuple, a.complete_score.tuple) ? 1 : 0);
   const selectedDirectory = improved[0]?.complete_directory ?? incumbent.directory, score = improved[0]?.complete_score ?? incumbent.score;
   const report = { schema_version: 1, status: improved.length ? 'complete-factory-improved' : 'complete-incumbent-retained', factory_validated: true,
-    selected_directory: selectedDirectory, score, incumbent_score: incumbent.score, elapsed_ms: performance.now() - start, packing_construction_ms: packMs,
+    selected_directory: selectedDirectory, score, incumbent_score: incumbent.score, packing_family: packingFamily, elapsed_ms: performance.now() - start, packing_construction_ms: packMs,
     clusters: clusterReports, packings: packReports.map(({ detail, ...r }) => r),
     provenance: keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
-    source_hashes: Object.fromEntries(['run.mjs', 'model.mjs', '../constructive-block-composition/model.mjs', '../constructive-factory-closure/model.mjs', '../constructive-factory-closure/run.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
+    source_hashes: Object.fromEntries(['run.mjs', 'model.mjs', 'nesting.mjs', '../constructive-block-composition/model.mjs', '../constructive-factory-closure/model.mjs', '../constructive-factory-closure/run.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), report); fs.copyFileSync(path.join(selectedDirectory, 'index.html'), path.join(output, 'index.html'), fs.constants.COPYFILE_EXCL);
   console.log(JSON.stringify({ status: report.status, clusters: clusters.length, packings: packed.length, score: score.tuple, output }));
 } catch (e) {

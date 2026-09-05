@@ -26,3 +26,20 @@ Revalidate a purported complete child result independently before it enters the 
 Keep partial closure scores explicitly labelled partial/complete observations, never complete scores.
 Whole-region translation is shared with the existing stack constructor; generated geometry DTOs are
 detached so candidate mutation cannot alter another retained region.
+
+The optional occupied-cell nesting family enumerates integer relative translations of exactly two
+fixed concrete clusters in a measured contact neighborhood. Row bitsets reject body/body, body/any
+transport and same-layer collisions; independent belt/pipe overlap remains legal. Select a bounded,
+spatially diverse low-area shortlist for full closure, without claiming globally optimal placement.
+The complete incumbent remains available even if every shortlisted partial packing fails to close.
+Record the exact search domain, number of tested/collision-free translations, shortlist policy and
+separate enumeration/closure times. Bitset extent and shortlist bounds are diagnostic resource limits,
+not game geometry limits. Full independent geometry and graph-margin checks remain mandatory.
+
+Before shortlisting, screen the remaining outgoing edges against catalog-projected unused output
+ports. Each edge needs ceil(rate / transport capacity) ports in the current separate-edge closure;
+count these per source and transport. A connection cell must avoid both bodies and its own transport
+layer in either translated region. Opposite-layer cells do not block it. Report collision-free and
+output-accessible counts separately, with low-area rejection examples and structured diagnostics.
+This necessary-condition screen is scoped to the fixed-interior unused-port strategy, not a proof
+against shared trunks, reassignment or rip-up. A free connection cell does not prove route reachability.
