@@ -18,6 +18,8 @@ use super::integrated::{LayoutVisualizationPage, render_layout_history_html};
 mod assembly;
 mod fixed_probe;
 pub use fixed_probe::{FixedRoutingInput, FixedRoutingReport, probe_fixed_routing};
+mod witness_probe;
+pub use witness_probe::{WitnessProbeInput, WitnessProbeReport, probe_constructive_witness};
 mod production;
 pub use production::{
     CONSTRUCTIVE_PRODUCTION_REPORT_SCHEMA_VERSION, CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION,

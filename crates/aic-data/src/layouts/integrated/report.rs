@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::facilities::{FacilityPortDirection, FacilityPortEdge};
 use crate::layouts::{FacilityPlacement, FacilityPlacementBounds};
@@ -176,7 +176,7 @@ pub struct IntegratedLayoutPhase {
     pub exact: ExactSolveReport,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct PlacedLogisticsComponent {
     pub id: String,
     pub component: String,
@@ -186,7 +186,7 @@ pub struct PlacedLogisticsComponent {
     pub rotation: i64,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct TransportNetwork {
     pub id: String,
     pub requirement_ids: Vec<String>,
@@ -198,14 +198,14 @@ pub struct TransportNetwork {
     pub component_ids: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct TransportNetworkSegment {
     pub from: WorldGridPosition,
     pub to: WorldGridPosition,
     pub rate: Rate,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct TransportNetworkTerminal {
     pub id: String,
     pub node: String,
@@ -215,7 +215,7 @@ pub struct TransportNetworkTerminal {
     pub rate: Rate,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum TransportNetworkEndpoint {
     Facility {

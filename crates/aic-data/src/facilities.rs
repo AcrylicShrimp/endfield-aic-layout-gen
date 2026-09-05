@@ -57,7 +57,7 @@ pub struct FacilityPortDefinition {
     pub edge: FacilityPortEdge,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 #[serde(rename_all = "kebab-case")]
 pub enum FacilityPortDirection {
     Input,

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "source_recipes": ["grinder-plant-moss-powder-2-1", "grinder-plant-moss-powder-3-1"],
+  "consumer_recipe": "thickener-plant-moss-enr-powder-2-1",
+  "consumer_utilization": { "numerator": 1, "denominator": 4 },
+  "placements": { "A0": [2, 2], "A1": [2, 7], "B": [2, 16], "C0": [27, 2], "C1": [27, 16] },
+  "rotation": 90,
+  "consumer_input_ports": ["input-belt-0", "input-belt-2"],
+  "source_output_port": "output-belt-0",
+  "points": { "merge": [8, 2], "splitA": [10, 2], "splitB": [10, 16], "module": [14, 6] },
+  "external_east": 34,
+  "routes": {
+    "A1_merge": [[8, 7]],
+    "splitA_module": [[10, 6]],
+    "module_C1": [[24, 9], [24, 16]],
+    "splitB_module": [[10, 9]],
+    "module_C0": [[22, 6], [22, 4]],
+    "splitB_C1": [[10, 18]]
+  }
+}
