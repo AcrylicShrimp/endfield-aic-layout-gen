@@ -3,7 +3,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { constructInterface, orderedApproach } from './model.mjs';
 import { polyline } from '../constructive-interconnect/geometry.mjs';
-import { renderFailure } from './failure-view.mjs';
+import { treeModule } from './trees.mjs';
+import { rate, multiply, capacity, dto, parseRate, add, compare } from '../constructive-interconnect/rates.mjs';
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k =>
   [k, read(`../../../data/game/normalized/${k === 'components' ? 'logistics-components' : k}.json`)]));
@@ -12,7 +13,7 @@ const result = name => constructInterface(catalogs, request(name));
 
 test('geometry-free recipe input discovers removable and unavoidable local crossings', () => {
   const four = result('four'), five = result('five');
-  assert.equal(four.witness.logistics_components.length, 1);
+  assert.equal(four.witness.logistics_components.filter(c => c.kind === 'bridge').length, 1);
   assert.equal(five.witness.logistics_components.length, 0);
   assert.equal(four.bindings.length, 4); assert.equal(five.bindings.length, 6);
   assert.equal(five.decisions.producer_order[1], 'B');
@@ -31,9 +32,9 @@ test('input array order does not change the constructed witness', () => {
 test('IDs and recipe family do not select hardcoded geometry', () => {
   const q = request('four');
   [...q.producers, ...q.consumers].forEach((n, i) => { n.id = `renamed-${9 - i}`; });
-  assert.equal(constructInterface(catalogs, q).witness.logistics_components.length, 1);
+  assert.equal(constructInterface(catalogs, q).witness.logistics_components.filter(c => c.kind === 'bridge').length, 1);
   const carbon = result('carbon');
-  assert.equal(carbon.witness.logistics_components.length, 1);
+  assert.equal(carbon.witness.logistics_components.filter(c => c.kind === 'bridge').length, 1);
   assert.ok(carbon.witness.placements.some(p => p.facility.startsWith('furnance')));
 });
 
@@ -53,18 +54,48 @@ test('ordered approaches are disjoint for 3136 mixed upward/downward endpoint se
   assert.throws(() => orderedApproach([{ id: 'a', start: { x: 0, y: 1 }, end: { x: 1, y: 1 } }]), { code: 'interface-approach-order' });
 });
 
-test('four consumer fragments expose port pressure, not a false global impossibility', () => {
-  const q = request('four');
-  q.consumers = Array.from({ length: 4 }, (_, i) => ({ ...q.consumers[0], id: `C${i}`, utilization: { numerator: 1, denominator: 4 } }));
-  assert.throws(() => constructInterface(catalogs, q), e => e.code === 'interface-port-pressure' && e.entity.length === 2 && e.entity.every(p => p.count === 4));
-  try { constructInterface(catalogs, q); } catch (e) {
-    assert.equal(e.evidence.geometry_constructed, false);
-    assert.equal(e.evidence.global_infeasibility_proven, false);
-    assert.equal(e.evidence.lanes.length, 8);
-    assert.ok(e.entity.every(p => p.available_ports < p.count));
-    const html = renderFailure({ message: '</script><script>unsafe()</script>', code: e.code, entity: e.entity, evidence: e.evidence });
-    assert.ok(html.includes('\\u003c/script>')); assert.ok(!html.includes('<script>unsafe()'));
+test('four consumers share three source capacity ports through fixed splitter trees', () => {
+  const r = result('port-pressure');
+  assert.equal(r.port_groups.sources.length, 3);
+  assert.equal(r.port_groups.targets.length, 8);
+  assert.equal(r.witness.logistics_components.filter(c => c.kind === 'splitter').length, 5);
+  assert.equal(r.witness.logistics_components.filter(c => c.kind === 'bridge').length, 6);
+  assert.equal(r.accepted, false);
+  assert.equal(new Set(r.witness.transport_networks.flatMap(n => n.terminals.filter(t => t.endpoint.kind === 'facility').map(t => t.id))).size,
+    r.witness.transport_networks.reduce((s, n) => s + n.terminals.filter(t => t.endpoint.kind === 'facility').length, 0));
+});
+
+test('merge and combined recipes generate capacity-safe roots and exact leaf sums', () => {
+  const merge = result('merge'), combined = result('combined');
+  assert.equal(merge.witness.logistics_components.filter(c => c.kind === 'converger').length, 1);
+  assert.equal(merge.witness.logistics_components.filter(c => c.kind === 'splitter').length, 0);
+  assert.ok(['splitter', 'converger', 'bridge'].every(kind => combined.witness.logistics_components.some(c => c.kind === kind)));
+  const cap = capacity(catalogs.transports.transports.find(t => t.kind === 'belt').capacity);
+  for (const r of [merge, combined]) for (const g of [...r.port_groups.sources, ...r.port_groups.targets]) {
+    const total = r.bindings.filter(l => g.lanes.includes(l.id)).reduce((s, l) => add(s, parseRate(l.rate)), rate(0));
+    assert.deepEqual(dto(total), g.rate); assert.ok(compare(total, cap) <= 0);
   }
+});
+
+test('fixed combs support 1..12 leaves on both layers and reject invalid capacity/catalogs', () => {
+  for (const transport of ['belt', 'pipe']) for (const kind of ['splitter', 'converger']) for (let count = 1; count <= 12; count++) {
+    const cap = capacity(catalogs.transports.transports.find(t => t.kind === transport).capacity);
+    const item = catalogs.items.items.find(i => i.transport === transport).id;
+    const group = { id: 'tree', item, lanes: Array.from({ length: count }, (_, i) => ({ id: `leaf${i}`, item, transport, rate: dto(multiply(cap, rate(1, count))) })) };
+    const tree = treeModule(group, kind, { x: 3, y: 2 }, catalogs);
+    assert.equal(tree.components.length, count - 1); assert.deepEqual(tree.root_rate, dto(cap));
+    assert.ok(tree.paths.every(p => p.cells.every(c => c.x >= tree.x && c.x < tree.x + tree.width && c.y >= tree.y && c.y < tree.y + tree.height)));
+    const overload = structuredClone(group); overload.lanes[0].rate = dto(multiply(cap, rate(2)));
+    assert.throws(() => treeModule(overload, kind, { x: 3, y: 2 }, catalogs), { code: 'interface-tree-capacity' });
+    if (count > 1) assert.throws(() => treeModule(group, kind, { x: 3, y: 2 }, { ...catalogs, components: { components: [] } }), { code: 'interface-tree-catalog-unsupported' });
+  }
+});
+
+test('aggregate capacity pressure stays explicit after sharing is introduced', () => {
+  const changed = structuredClone(catalogs), q = request('four');
+  const facility = changed.facilities.facilities.find(f => f.id === changed.recipes.recipes.find(r => r.id === q.producers[0].recipe).facility);
+  let kept = false; facility.ports = facility.ports.filter(p => p.direction !== 'output' || p.transport !== 'belt' || (!kept && (kept = true)));
+  assert.throws(() => constructInterface(changed, q), { code: 'interface-aggregate-port-pressure' });
 });
 
 test('invalid, fixed-geometry and imbalanced requests fail explicitly', () => {

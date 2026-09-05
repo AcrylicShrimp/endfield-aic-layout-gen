@@ -1,13 +1,9 @@
 import { rotateFacility } from '../constructive-placement-only/model.mjs';
-import { permutationModule } from '../constructive-interconnect/geometry.mjs';
-import { rate, add, multiply, compare, parseRate, dto, capacity, lanesFor } from '../constructive-interconnect/rates.mjs';
-import { buildDedicated } from '../constructive-bound-interconnect/dedicated.mjs';
+import { rate, add, multiply, parseRate, dto, compare, capacity } from '../constructive-interconnect/rates.mjs';
+import { allocateBuckets } from './allocation.mjs';
+import { embedInterface } from './embedding.mjs';
 
-const subtract = (a, b) => rate(a.n * b.d - b.n * a.d, a.d * b.d);
-const minimum = (a, b) => compare(a, b) < 0 ? a : b;
-const divide = (a, b) => rate(a.n * b.d, a.d * b.n);
 const sum = xs => xs.reduce(add, rate(0));
-const key = p => `${p.x},${p.y}`;
 const fail = (code, stage, message, entity = null) => {
   throw Object.assign(new Error(message), { code, severity: 'error', stage, entity });
 };
@@ -44,6 +40,7 @@ export function constructInterface(catalogs, request) {
   const transport = catalogs.transports.transports.find(t => t.kind === 'belt');
   if (!transport) fail('interface-missing-transport', 'input', 'Runtime belt transport is missing');
   const cap = capacity(transport.capacity), nodes = new Map();
+  if (!cap.n) fail('interface-invalid-capacity', 'input', 'Runtime transport capacity must be positive');
   for (const n of all) {
     const recipe = catalogs.recipes.recipes.find(r => r.id === n.recipe);
     if (!recipe) fail('interface-unknown-recipe', 'input', `Unknown runtime recipe ${n.recipe}`, n.id);
@@ -70,33 +67,7 @@ export function constructInterface(catalogs, request) {
     if (compare(supply, demand)) fail('interface-item-imbalance', 'allocation', 'Producer supply and consumer demand must balance exactly', item);
   }
   timings.input_ms = performance.now() - start;
-  function allocate(producers, consumers) {
-    const lanes = [];
-    for (const item of items) {
-      const supplies = producers.flatMap(id => nodes.get(id).outputs.filter(a => a.item === item).map(a => ({ id, left: a.value })));
-      const demands = consumers.flatMap(id => nodes.get(id).inputs.filter(a => a.item === item).map(a => ({ id, left: a.value })));
-      let i = 0, j = 0;
-      while (i < supplies.length && j < demands.length) {
-        const s = supplies[i], d = demands[j], value = minimum(s.left, d.left);
-        if (lanesFor(value, cap) + lanes.length > 384) fail('interface-lane-budget', 'allocation', 'Diagnostic lane budget exceeded');
-        let left = value;
-        while (left.n) { const v = minimum(left, cap); lanes.push({ id: `lane-${lanes.length}`, source: s.id, target: d.id, item, transport: 'belt', rate: dto(v) }); left = subtract(left, v); }
-        s.left = subtract(s.left, value); d.left = subtract(d.left, value);
-        if (!s.left.n) i++; if (!d.left.n) j++;
-      }
-      if (i !== supplies.length || j !== demands.length) throw new Error('Internal allocation failed conservation');
-    }
-    const sourceOrder = producers.flatMap(id => lanes.filter(l => l.source === id).sort((a, b) => consumers.indexOf(a.target) - consumers.indexOf(b.target)));
-    const targetOrder = consumers.flatMap(id => lanes.filter(l => l.target === id).sort((a, b) => producers.indexOf(a.source) - producers.indexOf(b.source)));
-    const pressure = [...producers.map(id => ({ id, direction: 'output', count: lanes.filter(l => l.source === id).length })),
-      ...consumers.map(id => ({ id, direction: 'input', count: lanes.filter(l => l.target === id).length }))]
-      .map(p => ({ ...p, available_ports: nodes.get(p.id)[p.direction].length }))
-      .filter(p => p.count > p.available_ports);
-    let inversions = 0;
-    for (let i = 0; i < sourceOrder.length; i++) for (let j = i + 1; j < sourceOrder.length; j++)
-      if (targetOrder.indexOf(sourceOrder[i]) > targetOrder.indexOf(sourceOrder[j])) inversions++;
-    return { producers, consumers, lanes, sourceOrder, targetOrder, inversions, pressure };
-  }
+  const allocate = (producers, consumers) => allocateBuckets(nodes, items, producers, consumers, cap);
   const orderStart = performance.now();
   let best = allocate(producerIds, consumerIds), trials = 1;
   const score = a => [a.pressure.reduce((n, p) => n + p.count - nodes.get(p.id)[p.direction].length, 0), a.inversions, a.lanes.length];
@@ -113,8 +84,8 @@ export function constructInterface(catalogs, request) {
     if (next === best) break; best = next;
   }
   if (best.pressure.length) {
-    const message = `Independent pair lanes exceed facing ports after ${trials} order trials; fanout/fanin is not synthesized`;
-    throw Object.assign(new Error(message), { code: 'interface-port-pressure', severity: 'error', stage: 'port-assignment', entity: best.pressure,
+    const message = `Capacity buckets exceed facing ports after ${trials} order trials`;
+    throw Object.assign(new Error(message), { code: 'interface-aggregate-port-pressure', severity: 'error', stage: 'port-assignment', entity: best.pressure,
       evidence: { producer_order: best.producers, consumer_order: best.consumers, lanes: best.lanes,
         instances: [...nodes.values()].map(n => ({ id: n.id, recipe: n.recipe.id, facility: n.recipe.facility,
           facing_input_ports: n.input.length, facing_output_ports: n.output.length,
@@ -122,49 +93,19 @@ export function constructInterface(catalogs, request) {
         lane_capacity: dto(cap), order_trials: trials, geometry_constructed: false, global_infeasibility_proven: false } });
   }
   timings.order_ms = performance.now() - orderStart;
-  const geometryStart = performance.now();
-  const pack = ids => { let y = 2; for (const id of ids) { const n = nodes.get(id); n.y = y; y += n.shape.height + 2; } };
-  pack(best.producers); pack(best.consumers);
-  for (const [bank, direction, order] of [[best.producers, 'output', best.sourceOrder], [best.consumers, 'input', best.targetOrder]])
-    for (const id of bank) order.filter(l => l[direction === 'output' ? 'source' : 'target'] === id).forEach((l, i) => {
-      const n = nodes.get(id), p = n[direction][i]; l[direction === 'output' ? 'source_port' : 'target_port'] = p.id;
-      l[direction === 'output' ? 'source_y' : 'target_y'] = n.y + p.position.y;
-    });
-  const leftWidth = Math.max(...best.producers.map(id => nodes.get(id).shape.width)), sx = 2 + leftWidth;
-  const module = best.inversions ? permutationModule(best.sourceOrder, best.targetOrder.map(l => l.id), catalogs) : null;
-  const origin = { x: sx + best.lanes.length + 2, y: 2 };
-  const tx = module ? origin.x + module.width - 1 + best.lanes.length + 2 : sx + best.lanes.length + 2;
-  const shiftedLanes = module?.lanes.map(l => ({ ...l, cells: l.cells.map(p => ({ x: p.x + origin.x, y: p.y + origin.y })) }));
-  let paths;
-  if (module) {
-    const left = orderedApproach(best.sourceOrder.map((l, i) => ({ id: l.id, start: { x: sx, y: l.source_y }, end: { x: origin.x, y: origin.y + i * 3 } })));
-    const right = orderedApproach(best.targetOrder.map((l, i) => ({ id: l.id, start: { x: origin.x + module.width - 1, y: origin.y + i * 3 }, end: { x: tx, y: l.target_y } })));
-    paths = new Map(shiftedLanes.map(l => [l.id, [...left.get(l.id), ...l.cells.map(p => [p.x, p.y]), ...right.get(l.id)]]));
-  } else paths = orderedApproach(best.sourceOrder.map(l => ({ id: l.id, start: { x: sx, y: l.source_y }, end: { x: tx, y: l.target_y } })));
-  const spec = { schema_version: 1, crossing_bundle: null,
-    external_east: tx + 2 + Math.max(...best.consumers.map(id => nodes.get(id).shape.width)),
-    nodes: [...best.producers, ...best.consumers].map(id => { const n = nodes.get(id); return { id, recipe: n.recipe.id,
-      utilization: n.utilization, rotation: n.shape.rotation, position: [best.producers.includes(id) ? sx - n.shape.width : tx + 1, n.y] }; }),
-    links: best.lanes.map(l => ({ id: l.id, source: l.source, target: l.target, source_port: l.source_port, target_port: l.target_port,
-      target_fraction: dto(divide(parseRate(l.rate), nodes.get(l.target).inputs.find(a => a.item === l.item).value)), via: paths.get(l.id).slice(1, -1) })) };
-  timings.geometry_ms = performance.now() - geometryStart;
-  const lowerStart = performance.now();
   let result;
-  try { result = buildDedicated(catalogs, spec); }
-  catch (e) { fail('interface-binding-failed', 'lowering', e.message); }
-  for (const c of module?.components ?? []) {
-    const moved = { ...c, position: { x: c.position.x + origin.x, y: c.position.y + origin.y } };
-    result.witness.logistics_components.push(moved);
-    for (const l of shiftedLanes.filter(l => l.cells.some(p => key(p) === key(moved.position)))) {
-      const net = result.witness.transport_networks.find(n => n.item === l.item);
-      if (!net.component_ids.includes(c.id)) net.component_ids.push(c.id);
-    }
+  try { result = embedInterface(catalogs, nodes, best, orderedApproach); }
+  catch (e) {
+    e.evidence = { ...e.evidence, fragment_count: best.lanes.length, source_ports: best.sourceGroups.length,
+      target_ports: best.targetGroups.length, requested_inversions: best.inversions,
+      producer_order: best.producers, consumer_order: best.consumers, global_infeasibility_proven: false };
+    throw e;
   }
-  timings.lowering_ms = performance.now() - lowerStart;
-  return { ...result, case: 'automatic-two-bank-interface', accepted: false, factory_validated: false,
-    pending: ['independent-geometry-and-complete-recipe-validation'], generated_spec: spec,
+  timings.geometry_ms = result.geometry_ms; timings.lowering_ms = result.lowering_ms;
+  return { ...result, schema_version: 2, case: 'automatic-two-bank-interface', accepted: false, factory_validated: false,
+    pending: ['independent-geometry-and-complete-recipe-validation'],
     decisions: { producer_order: best.producers, consumer_order: best.consumers,
       source_order: best.sourceOrder.map(l => l.id), target_order: best.targetOrder.map(l => l.id),
       inversions: best.inversions, order_trials: trials, order_budget: budget, order_budget_exhausted: trials >= budget },
-    permutation: module, timings, construction_ms: performance.now() - start };
+    timings, construction_ms: performance.now() - start };
 }

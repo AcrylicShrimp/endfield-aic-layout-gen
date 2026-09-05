@@ -3,7 +3,6 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { constructInterface } from './model.mjs';
 import { render } from '../constructive-bound-interconnect/view.mjs';
-import { renderFailure } from './failure-view.mjs';
 
 try {
   const keys = ['request', 'recipes', 'facilities', 'items', 'transports', 'components', 'validator', 'output-directory'];
@@ -35,17 +34,18 @@ try {
       accepted, factory_validated: false, request: path.resolve(options.request),
       construction_ms: detail.construction_ms, validation_process_ms: performance.now() - validationStart,
       facilities: detail.witness.placements.length, lanes: detail.bindings.length,
-      bridges: detail.witness.logistics_components.length, decisions: detail.decisions,
+      bridges: detail.witness.logistics_components.filter(c => c.kind === 'bridge').length,
+      splitters: detail.witness.logistics_components.filter(c => c.kind === 'splitter').length,
+      convergers: detail.witness.logistics_components.filter(c => c.kind === 'converger').length, decisions: detail.decisions,
       pending_recipe_terminals: validation.recipe_terminals.filter(t => t.pending_rate.numerator > 0).length };
     write('report.json', report);
     fs.writeFileSync(path.join(output, 'index.html'), render(detail, validation, catalogs), { flag: 'wx' });
     console.log(JSON.stringify({ status: report.status, facilities: report.facilities, lanes: report.lanes,
-      bridges: report.bridges, construction_ms: report.construction_ms, output }));
+      bridges: report.bridges, splitters: report.splitters, convergers: report.convergers, construction_ms: report.construction_ms, output }));
     if (!accepted) process.exitCode = 2;
   } catch (e) {
     const diagnostic = { code: e.code ?? 'interface-execution-failed', severity: 'error', stage: e.stage ?? 'execution',
       message: e.message, entity: e.entity ?? null, evidence: e.evidence ?? null, request: path.resolve(options.request), candidate_preserved: Boolean(detail) };
-    if (e.code === 'interface-port-pressure') fs.writeFileSync(path.join(output, 'index.html'), renderFailure(diagnostic), { flag: 'wx' });
     write('failure.json', diagnostic); throw e;
   }
 } catch (e) {

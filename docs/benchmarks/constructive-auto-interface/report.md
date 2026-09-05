@@ -1,5 +1,9 @@
 # Geometry-free automatic interface construction
 
+Historical exclusive-port baseline at `e4de275`. Current implementation and DTOs are described in
+`tree-report.md` and `contract.md`; reproduce this baseline from that commit. Its retained matrix
+is unchanged. In particular, the former `port-pressure.json` request now succeeds through trees.
+
 ## Outcome
 
 The common JavaScript constructor takes recipe instance IDs and exact utilizations only. It
