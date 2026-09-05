@@ -58,11 +58,11 @@ export function compactInterface(detail, catalogs) {
     ports[p.instance] = shape.ports.map(q => ({ ...q, position: { x: p.x + q.position.x, y: p.y + q.position.y },
       connection: { x: p.x + q.position.x + delta[q.edge][0], y: p.y + q.position.y + delta[q.edge][1] } }));
   }
-  const { tree_modules, trunk_plan, permutation, permutation_origin, ...base } = detail;
+  const { tree_modules, trunk_plan, return_plan, permutation, permutation_origin, ...base } = detail;
   return { ...base, embedding: detail.embedding + '-compacted', witness: y.witness, catalog_ports: ports,
     port_groups: Object.fromEntries(Object.entries(detail.port_groups).map(([side, gs]) => [side, gs.map(({ row, root_row, ...g }) => ({ ...g,
-      port_y: y.translate(g.port_y) }))])),
-    pre_compaction_plan: { tree_modules, trunk_plan, permutation, permutation_origin, port_groups: detail.port_groups },
+      port_y: y.translate(g.port_y), ...(g.port_x !== undefined ? { port_x: x.translate(g.port_x) } : {}) }))])),
+    pre_compaction_plan: { tree_modules, trunk_plan, return_plan, permutation, permutation_origin, port_groups: detail.port_groups },
     compaction: { removed_columns: x.removed, removed_rows: y.removed, elapsed_ms: performance.now() - start,
       scope: 'event-free whole-grid strip contraction; not global minimum area' }, accepted: false };
 }

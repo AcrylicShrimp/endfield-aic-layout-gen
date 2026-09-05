@@ -1,0 +1,984 @@
+{
+  "schema_version": 1,
+  "status": "covered-cycle-blocks-validated",
+  "factory_validated": false,
+  "graph_preparation_ms": 16.880375,
+  "inventory_io_ms": 2.746458000000004,
+  "construction_ms": 89.41645900000002,
+  "elapsed_ms": 738.576458,
+  "total_facilities": 59,
+  "covered_facilities": 35,
+  "remaining_facilities": 24,
+  "selected": [
+    {
+      "block": "cycle-0",
+      "embedding": "cycle-leaf-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-0-cycle-leaf-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.444417,
+      "diagnostics": [],
+      "witness_sha256": "b2c758970aa0d43a0a2bf2ef845ccba16d775a693cb16748e688cf65f1f36660"
+    },
+    {
+      "block": "cycle-1",
+      "embedding": "cycle-leaf-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-1-cycle-leaf-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.2545,
+      "diagnostics": [],
+      "witness_sha256": "ff31e51e3ecc1a107d6eed2751f24dca2073e6e29798cc9d1ade75d4d3054f3f"
+    },
+    {
+      "block": "cycle-2",
+      "embedding": "cycle-root-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-2-cycle-root-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 24,
+        "height": 14,
+        "area": 336,
+        "physical_tiles": 91,
+        "turns": 20,
+        "tuple": [
+          336,
+          91,
+          20
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.297916,
+      "diagnostics": [],
+      "witness_sha256": "a7362a7c208fd09564aa2a772309f15eb367561c9a89bff599131f34e6387b7a"
+    },
+    {
+      "block": "cycle-3",
+      "embedding": "cycle-leaf-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-3-cycle-leaf-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.236042,
+      "diagnostics": [],
+      "witness_sha256": "d866ee1b2a550b00deb6faa1eeae43eaf3229eef20e03febef30ad4b8a79d93e"
+    },
+    {
+      "block": "cycle-4",
+      "embedding": "cycle-leaf-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-4-cycle-leaf-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.335291,
+      "diagnostics": [],
+      "witness_sha256": "ab75281f02687f44898ea0631108a02b7897d3ff9fad2c6740b08ceb2b6cf233"
+    },
+    {
+      "block": "cycle-5",
+      "embedding": "cycle-leaf-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-5-cycle-leaf-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.8605419999999999,
+      "diagnostics": [],
+      "witness_sha256": "13a127379574a130a3ecc12dd8d771f8e39a30a3174ef80b8f1ec118ec4614ca"
+    },
+    {
+      "block": "cycle-6",
+      "embedding": "cycle-leaf-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-6-cycle-leaf-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.6164999999999999,
+      "diagnostics": [],
+      "witness_sha256": "9573e721f78fc293f5dd0f4705fc3e1567e9eec94ab0986affc60546c60f0667"
+    },
+    {
+      "block": "cycle-7",
+      "embedding": "cycle-root-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-7-cycle-root-compacted",
+      "accepted": true,
+      "facilities": 7,
+      "score": {
+        "width": 38,
+        "height": 26,
+        "area": 988,
+        "physical_tiles": 324,
+        "turns": 60,
+        "tuple": [
+          988,
+          324,
+          60
+        ]
+      },
+      "pending_terminals": 2,
+      "validator_ms": 1.029125,
+      "diagnostics": [],
+      "witness_sha256": "7a7303beb600c8cef46ab21d83b2549f4364174377564e5822d028b2ef804672"
+    }
+  ],
+  "candidates": [
+    {
+      "block": "cycle-0",
+      "embedding": "cycle-leaf",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-0-cycle-leaf",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 29,
+        "height": 16,
+        "area": 464,
+        "physical_tiles": 110,
+        "turns": 16,
+        "tuple": [
+          464,
+          110,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.541167,
+      "diagnostics": [],
+      "witness_sha256": "8ca3ad7857e826d90c2c343c7a115151bf7554462cd9077a86e73acbc4c91cae"
+    },
+    {
+      "block": "cycle-0",
+      "embedding": "cycle-leaf-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-0-cycle-leaf-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.444417,
+      "diagnostics": [],
+      "witness_sha256": "b2c758970aa0d43a0a2bf2ef845ccba16d775a693cb16748e688cf65f1f36660"
+    },
+    {
+      "block": "cycle-0",
+      "embedding": "cycle-root",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-0-cycle-root",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 30,
+        "height": 16,
+        "area": 480,
+        "physical_tiles": 114,
+        "turns": 16,
+        "tuple": [
+          480,
+          114,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.540667,
+      "diagnostics": [],
+      "witness_sha256": "3b6c311ba1f15f1f18b63f82e063ac0cf1ee7a1e95fb48b6d68747024cb02d2f"
+    },
+    {
+      "block": "cycle-0",
+      "embedding": "cycle-root-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-0-cycle-root-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.571542,
+      "diagnostics": [],
+      "witness_sha256": "b2c758970aa0d43a0a2bf2ef845ccba16d775a693cb16748e688cf65f1f36660"
+    },
+    {
+      "block": "cycle-1",
+      "embedding": "cycle-leaf",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-1-cycle-leaf",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 29,
+        "height": 16,
+        "area": 464,
+        "physical_tiles": 110,
+        "turns": 16,
+        "tuple": [
+          464,
+          110,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.261667,
+      "diagnostics": [],
+      "witness_sha256": "739693dc2ae85603b69b4ba8e67b4c1d3ad8781fa78351a64133784ee7ff3768"
+    },
+    {
+      "block": "cycle-1",
+      "embedding": "cycle-leaf-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-1-cycle-leaf-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.2545,
+      "diagnostics": [],
+      "witness_sha256": "ff31e51e3ecc1a107d6eed2751f24dca2073e6e29798cc9d1ade75d4d3054f3f"
+    },
+    {
+      "block": "cycle-1",
+      "embedding": "cycle-root",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-1-cycle-root",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 30,
+        "height": 16,
+        "area": 480,
+        "physical_tiles": 114,
+        "turns": 16,
+        "tuple": [
+          480,
+          114,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.307792,
+      "diagnostics": [],
+      "witness_sha256": "297c46ff1d92cdc2c0389a5cea38a531a823cb034fc2cb450e5f533a7f8e9936"
+    },
+    {
+      "block": "cycle-1",
+      "embedding": "cycle-root-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-1-cycle-root-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.26275000000000004,
+      "diagnostics": [],
+      "witness_sha256": "ff31e51e3ecc1a107d6eed2751f24dca2073e6e29798cc9d1ade75d4d3054f3f"
+    },
+    {
+      "block": "cycle-2",
+      "embedding": "cycle-leaf",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-2-cycle-leaf",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 35,
+        "height": 17,
+        "area": 595,
+        "physical_tiles": 178,
+        "turns": 24,
+        "tuple": [
+          595,
+          178,
+          24
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 1.44875,
+      "diagnostics": [],
+      "witness_sha256": "a50ae31ce36d1b8bc5b6cdc0d40bd120e9739135aadf4d4b50e9643392b5c6d7"
+    },
+    {
+      "block": "cycle-2",
+      "embedding": "cycle-leaf-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-2-cycle-leaf-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 26,
+        "height": 15,
+        "area": 390,
+        "physical_tiles": 129,
+        "turns": 24,
+        "tuple": [
+          390,
+          129,
+          24
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.597291,
+      "diagnostics": [],
+      "witness_sha256": "2d08e669ee606ab6b576719e60c0c08b8c00e2616f7fe39491f0fde4612df44e"
+    },
+    {
+      "block": "cycle-2",
+      "embedding": "cycle-root",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-2-cycle-root",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 34,
+        "height": 16,
+        "area": 544,
+        "physical_tiles": 135,
+        "turns": 20,
+        "tuple": [
+          544,
+          135,
+          20
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.332959,
+      "diagnostics": [],
+      "witness_sha256": "70121809b3c86cee90c14794d3d697d1eb3486f5e76d6294a45d7cf69913e3ae"
+    },
+    {
+      "block": "cycle-2",
+      "embedding": "cycle-root-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-2-cycle-root-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 24,
+        "height": 14,
+        "area": 336,
+        "physical_tiles": 91,
+        "turns": 20,
+        "tuple": [
+          336,
+          91,
+          20
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.297916,
+      "diagnostics": [],
+      "witness_sha256": "a7362a7c208fd09564aa2a772309f15eb367561c9a89bff599131f34e6387b7a"
+    },
+    {
+      "block": "cycle-3",
+      "embedding": "cycle-leaf",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-3-cycle-leaf",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 29,
+        "height": 16,
+        "area": 464,
+        "physical_tiles": 110,
+        "turns": 16,
+        "tuple": [
+          464,
+          110,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.29075,
+      "diagnostics": [],
+      "witness_sha256": "44693bc76b406be0c6f814060220d96b1770f51c47a8f86094072bee30632ceb"
+    },
+    {
+      "block": "cycle-3",
+      "embedding": "cycle-leaf-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-3-cycle-leaf-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.236042,
+      "diagnostics": [],
+      "witness_sha256": "d866ee1b2a550b00deb6faa1eeae43eaf3229eef20e03febef30ad4b8a79d93e"
+    },
+    {
+      "block": "cycle-3",
+      "embedding": "cycle-root",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-3-cycle-root",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 30,
+        "height": 16,
+        "area": 480,
+        "physical_tiles": 114,
+        "turns": 16,
+        "tuple": [
+          480,
+          114,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.459292,
+      "diagnostics": [],
+      "witness_sha256": "eacb05a0d2ffb58becf8ed07f36023d10aca21f1ed870105f94f09994c716360"
+    },
+    {
+      "block": "cycle-3",
+      "embedding": "cycle-root-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-3-cycle-root-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.381834,
+      "diagnostics": [],
+      "witness_sha256": "d866ee1b2a550b00deb6faa1eeae43eaf3229eef20e03febef30ad4b8a79d93e"
+    },
+    {
+      "block": "cycle-4",
+      "embedding": "cycle-leaf",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-4-cycle-leaf",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 29,
+        "height": 16,
+        "area": 464,
+        "physical_tiles": 110,
+        "turns": 16,
+        "tuple": [
+          464,
+          110,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.526209,
+      "diagnostics": [],
+      "witness_sha256": "de9715c9ea21d897d617f6d0ed5fb6a947736a481cb3942fe6e497cffbcea69c"
+    },
+    {
+      "block": "cycle-4",
+      "embedding": "cycle-leaf-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-4-cycle-leaf-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.335291,
+      "diagnostics": [],
+      "witness_sha256": "ab75281f02687f44898ea0631108a02b7897d3ff9fad2c6740b08ceb2b6cf233"
+    },
+    {
+      "block": "cycle-4",
+      "embedding": "cycle-root",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-4-cycle-root",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 30,
+        "height": 16,
+        "area": 480,
+        "physical_tiles": 114,
+        "turns": 16,
+        "tuple": [
+          480,
+          114,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.32537499999999997,
+      "diagnostics": [],
+      "witness_sha256": "f7c3eb4d7b8e46df4235539337366c81efe6bd2746adf5458a91357a830b6bf1"
+    },
+    {
+      "block": "cycle-4",
+      "embedding": "cycle-root-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-4-cycle-root-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.345792,
+      "diagnostics": [],
+      "witness_sha256": "ab75281f02687f44898ea0631108a02b7897d3ff9fad2c6740b08ceb2b6cf233"
+    },
+    {
+      "block": "cycle-5",
+      "embedding": "cycle-leaf",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-5-cycle-leaf",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 29,
+        "height": 16,
+        "area": 464,
+        "physical_tiles": 110,
+        "turns": 16,
+        "tuple": [
+          464,
+          110,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.266042,
+      "diagnostics": [],
+      "witness_sha256": "d6ba4ae8c2b6b7b97efbf8df26e29c2195768ce8bcfc336da50ad60ea9d231f7"
+    },
+    {
+      "block": "cycle-5",
+      "embedding": "cycle-leaf-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-5-cycle-leaf-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.8605419999999999,
+      "diagnostics": [],
+      "witness_sha256": "13a127379574a130a3ecc12dd8d771f8e39a30a3174ef80b8f1ec118ec4614ca"
+    },
+    {
+      "block": "cycle-5",
+      "embedding": "cycle-root",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-5-cycle-root",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 30,
+        "height": 16,
+        "area": 480,
+        "physical_tiles": 114,
+        "turns": 16,
+        "tuple": [
+          480,
+          114,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.266833,
+      "diagnostics": [],
+      "witness_sha256": "07b326a1f1b8835c5b9d2216fc1d7b8a29e7b3ee43ea9bca9541e1ec43ab9317"
+    },
+    {
+      "block": "cycle-5",
+      "embedding": "cycle-root-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-5-cycle-root-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.26483300000000004,
+      "diagnostics": [],
+      "witness_sha256": "13a127379574a130a3ecc12dd8d771f8e39a30a3174ef80b8f1ec118ec4614ca"
+    },
+    {
+      "block": "cycle-6",
+      "embedding": "cycle-leaf",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-6-cycle-leaf",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 29,
+        "height": 16,
+        "area": 464,
+        "physical_tiles": 110,
+        "turns": 16,
+        "tuple": [
+          464,
+          110,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.520083,
+      "diagnostics": [],
+      "witness_sha256": "fdc1e3a537ca191f9f9ab92c4637e9040c6ee96ed71704d5b2fbd65824d78bb8"
+    },
+    {
+      "block": "cycle-6",
+      "embedding": "cycle-leaf-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-6-cycle-leaf-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.6164999999999999,
+      "diagnostics": [],
+      "witness_sha256": "9573e721f78fc293f5dd0f4705fc3e1567e9eec94ab0986affc60546c60f0667"
+    },
+    {
+      "block": "cycle-6",
+      "embedding": "cycle-root",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-6-cycle-root",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 30,
+        "height": 16,
+        "area": 480,
+        "physical_tiles": 114,
+        "turns": 16,
+        "tuple": [
+          480,
+          114,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.25354099999999996,
+      "diagnostics": [],
+      "witness_sha256": "a28a66fe2c437fe87c4cec2d156de588d5f42d6b3777f31ed1bbc24163ecf054"
+    },
+    {
+      "block": "cycle-6",
+      "embedding": "cycle-root-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-6-cycle-root-compacted",
+      "accepted": true,
+      "facilities": 4,
+      "score": {
+        "width": 22,
+        "height": 14,
+        "area": 308,
+        "physical_tiles": 80,
+        "turns": 16,
+        "tuple": [
+          308,
+          80,
+          16
+        ]
+      },
+      "pending_terminals": 1,
+      "validator_ms": 0.204875,
+      "diagnostics": [],
+      "witness_sha256": "9573e721f78fc293f5dd0f4705fc3e1567e9eec94ab0986affc60546c60f0667"
+    },
+    {
+      "block": "cycle-7",
+      "embedding": "cycle-leaf",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-7-cycle-leaf",
+      "accepted": true,
+      "facilities": 7,
+      "score": {
+        "width": 57,
+        "height": 30,
+        "area": 1710,
+        "physical_tiles": 621,
+        "turns": 68,
+        "tuple": [
+          1710,
+          621,
+          68
+        ]
+      },
+      "pending_terminals": 2,
+      "validator_ms": 1.126333,
+      "diagnostics": [],
+      "witness_sha256": "a7c45ea5539a076c28014bbe40f83422fe46cf90e9f2d959dbfd1264718b887b"
+    },
+    {
+      "block": "cycle-7",
+      "embedding": "cycle-leaf-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-7-cycle-leaf-compacted",
+      "accepted": true,
+      "facilities": 7,
+      "score": {
+        "width": 42,
+        "height": 28,
+        "area": 1176,
+        "physical_tiles": 456,
+        "turns": 68,
+        "tuple": [
+          1176,
+          456,
+          68
+        ]
+      },
+      "pending_terminals": 2,
+      "validator_ms": 1.832333,
+      "diagnostics": [],
+      "witness_sha256": "324ca959269fe7836ea2384fb8676dca9f6901b33656ff44c6d561eb7e8ec97d"
+    },
+    {
+      "block": "cycle-7",
+      "embedding": "cycle-root",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-7-cycle-root",
+      "accepted": true,
+      "facilities": 7,
+      "score": {
+        "width": 54,
+        "height": 28,
+        "area": 1512,
+        "physical_tiles": 467,
+        "turns": 60,
+        "tuple": [
+          1512,
+          467,
+          60
+        ]
+      },
+      "pending_terminals": 2,
+      "validator_ms": 1.676458,
+      "diagnostics": [],
+      "witness_sha256": "2d9a9375d0b3c01baf8c6e8ded68ac943056bfb19d6810ed19bc520bb5b229e3"
+    },
+    {
+      "block": "cycle-7",
+      "embedding": "cycle-root-compacted",
+      "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/cycle-blocks-release-audit/cycle-7-cycle-root-compacted",
+      "accepted": true,
+      "facilities": 7,
+      "score": {
+        "width": 38,
+        "height": 26,
+        "area": 988,
+        "physical_tiles": 324,
+        "turns": 60,
+        "tuple": [
+          988,
+          324,
+          60
+        ]
+      },
+      "pending_terminals": 2,
+      "validator_ms": 1.029125,
+      "diagnostics": [],
+      "witness_sha256": "7a7303beb600c8cef46ab21d83b2549f4364174377564e5822d028b2ef804672"
+    }
+  ],
+  "failures": [],
+  "provenance": [
+    {
+      "kind": "graph",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-chain-blocks/gap-1-placement.json",
+      "sha256": "5bc27708ce6b227dd78acef885032035fedd7e427fe16c9662f6e25d37670157"
+    },
+    {
+      "kind": "recipes",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+      "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+    },
+    {
+      "kind": "facilities",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+      "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+    },
+    {
+      "kind": "items",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+      "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+    },
+    {
+      "kind": "transports",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+      "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+    },
+    {
+      "kind": "components",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+      "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+    },
+    {
+      "kind": "validator",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+      "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+    }
+  ],
+  "source_hashes": {
+    "graph.mjs": "56da1be22c024ce6b270b8626ff7913cfde40557a53678d0753e6bc19206bcbe",
+    "model.mjs": "c0bb38f4711fbe5bdcb6a222466f80abe3aa4b62c10aae884d339d320138a735",
+    "run.mjs": "a4624f0b1f50bdc5bcd3938b1931ed19fe6d5523502be49f40839e8f02ec7587",
+    "../constructive-auto-interface/compact.mjs": "21adcb79982965e6707ef4f1da6ed13888518a6b7ff0327f582eaab09517082f",
+    "../constructive-auto-interface/trees.mjs": "2e9133ccb493ee76c7c5d4bfe3b9ecdd5cddee63bd854d7520aac054d3f56c8b",
+    "../constructive-auto-interface/model.mjs": "c727234570e8c7fefcb3ef3a705698809cbe48d945fc11a2ea0cb8b53085d0cb",
+    "../constructive-auto-interface/embedding.mjs": "e92719e50db29b1ccd8a9fe3ec4c7df02dfbc7ddb6ea84650732942d224e033c",
+    "../constructive-auto-interface/lower.mjs": "32ae1b0f221213467fab2e1d3501bebb55c5d7956a65e0119151356ce5c5f82b"
+  }
+}

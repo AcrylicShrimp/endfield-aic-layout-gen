@@ -21,13 +21,13 @@ for(const n of w.transport_networks){const cap=catalogs.transports.transports.fi
 for(const segment of n.segments){const a=xy(segment.from),b=xy(segment.to),bad=value(segment.rate)*(overload?4:1)>limit;svg.append(el('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:bad?'var(--bad)':color(n.item),'stroke-width':Math.max(1.5,s*.16)}));}
 for(const t of n.terminals)if(t.endpoint.kind==='external'){const a=xy(t.position);svg.append(el('circle',{cx:a.x,cy:a.y,r:Math.max(2,s*.17),fill:color(n.item)}));}}
 for(const p of w.placements){svg.append(el('rect',{x:x+p.x*s,y:y+p.y*s,width:p.width*s,height:p.height*s,fill:'var(--facility)',stroke:'var(--fg)','stroke-width':1}));
-svg.append(el('text',{x:x+(p.x+p.width/2)*s,y:y+(p.y+p.height/2)*s,'text-anchor':'middle','font-size':Math.max(11,Math.min(22,s*.8))},p.instance));
+svg.append(el('text',{x:x+(p.x+p.width/2)*s,y:y+(p.y+p.height/2)*s,'text-anchor':'middle','font-size':Math.max(11,Math.min(22,s*.8))},detail.labels?.[p.instance]??p.instance));
 if(s>16)svg.append(el('text',{x:x+(p.x+p.width/2)*s,y:y+(p.y+p.height/2)*s+18,'text-anchor':'middle','font-size':11},p.facility.split('-')[0]));
 for(const q of detail.catalog_ports[p.instance]){const a=xy(q.position),b=xy(q.connection);svg.append(el('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:q.direction==='input'?'var(--b)':'var(--a)','stroke-width':Math.max(1,s*.06)}));}}
 for(const c of w.logistics_components){const a=xy(c.position),r=Math.max(5,s*.35);svg.append(el('rect',{x:a.x-r,y:a.y-r,width:2*r,height:2*r,fill:'var(--bg)',stroke:'var(--component)','stroke-width':2}));svg.append(el('text',{x:a.x,y:a.y+4,'text-anchor':'middle','font-size':12},c.kind==='bridge'?'X':c.kind==='splitter'?'S':'M'));}
 document.getElementById('status').textContent=w.placements.length+' facilities · '+w.logistics_components.length+' components · '+width+' × '+height+' used bounds · '+(overload?'SCALED CAPACITY VIOLATION':'independent validator '+(validation.covered_geometry_validated?'PASS':'REJECTED'));
 document.getElementById('explanation').textContent=overload?'RED: single-lane capacity exceeded when rates are multiplied by four. This is the retained geometry, not proof that the recipe request is impossible.':'Actual unit-grid paths. Independent validation checks recipe rates, facility ports, component arms, capacity and reachability.';
-document.getElementById('scope').textContent='Pending recipe terminals: '+validation.recipe_terminals.filter(t=>value(t.pending_rate)>0).length+'. This local fixture is not the complete heavy-xiranite production graph.';}
+document.getElementById('scope').textContent='Pending recipe terminals: '+validation.recipe_terminals.filter(t=>value(t.pending_rate)>0).length+'. '+(detail.block?'Actual graph cycle: internal return flow is closed; outgoing graph products remain pending. ':'')+'This local fixture is not the complete heavy-xiranite production graph.';}
 document.getElementById('normal').onclick=()=>{overload=false;draw();};document.getElementById('overload').onclick=()=>{overload=true;draw();};new ResizeObserver(draw).observe(svg);draw();
 </script></html>`;
 }
