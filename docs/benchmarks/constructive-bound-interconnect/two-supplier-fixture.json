@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "external_east": 34,
+  "nodes": [
+    {"id":"A0","recipe":"grinder-plant-moss-powder-2-1","position":[2,2],"rotation":90,"utilization":"derived"},
+    {"id":"B","recipe":"grinder-plant-moss-powder-3-1","position":[2,12],"rotation":90,"utilization":"derived"},
+    {"id":"C0","recipe":"thickener-plant-moss-enr-powder-2-1","position":[27,2],"rotation":90,"utilization":{"numerator":1,"denominator":2}},
+    {"id":"C1","recipe":"thickener-plant-moss-enr-powder-2-1","position":[27,12],"rotation":90,"utilization":{"numerator":1,"denominator":2}}
+  ],
+  "links": [
+    {"id":"A0-C0","source":"A0","target":"C0","source_port":"output-belt-0","target_port":"input-belt-0","target_fraction":{"numerator":1,"denominator":1},"via":[]},
+    {"id":"A0-C1","source":"A0","target":"C1","source_port":"output-belt-1","target_port":"input-belt-0","target_fraction":{"numerator":1,"denominator":1},"via":[[10,3],[10,12]]},
+    {"id":"B-C0","source":"B","target":"C0","source_port":"output-belt-0","target_port":"input-belt-1","target_fraction":{"numerator":1,"denominator":1},"via":[[8,12],[8,5],[14,5],[14,3]]},
+    {"id":"B-C1","source":"B","target":"C1","source_port":"output-belt-1","target_port":"input-belt-1","target_fraction":{"numerator":1,"denominator":1},"via":[]}
+  ],
+  "crossing_bundle": {"origin":[10,5],"horizontal_links":["B-C0"],"vertical_links":["A0-C1"]}
+}

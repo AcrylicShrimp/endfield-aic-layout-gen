@@ -1,0 +1,736 @@
+{
+  "schema_version": 1,
+  "status": "negative-controls-passed",
+  "cases": [
+    {
+      "name": "original",
+      "expected_valid": true,
+      "expected_complete": true,
+      "witness_sha256": "9040697c54cc7687b6b6070823ba5dbec51a63bbc00ca898c7950c3358b4aaed",
+      "validation": {
+        "bounds": {
+          "height": 22,
+          "width": 35
+        },
+        "covered_geometry_validated": true,
+        "diagnostics": [],
+        "elapsed_ms": 0.705459,
+        "factory_validated": false,
+        "provenance": {
+          "inputs": [
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/bound-full-audit-1/original.json",
+              "sha256": "9040697c54cc7687b6b6070823ba5dbec51a63bbc00ca898c7950c3358b4aaed"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+              "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+              "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+              "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+              "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+              "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+            }
+          ]
+        },
+        "recipe_coverage_complete": true,
+        "recipe_terminals": [
+          {
+            "direction": "input",
+            "instance": "A0",
+            "item": "item-plant-moss-2",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 2,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 2,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "output",
+            "instance": "A0",
+            "item": "item-plant-moss-powder-2",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 1,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 1,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "input",
+            "instance": "A1",
+            "item": "item-plant-moss-2",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 2,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 2,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "output",
+            "instance": "A1",
+            "item": "item-plant-moss-powder-2",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 1,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 1,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "input",
+            "instance": "B",
+            "item": "item-plant-moss-3",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 3,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 3,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "output",
+            "instance": "B",
+            "item": "item-plant-moss-powder-3",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 1,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 1,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "input",
+            "instance": "C0",
+            "item": "item-plant-moss-powder-2",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 1,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 1,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "input",
+            "instance": "C0",
+            "item": "item-plant-moss-powder-3",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 2,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 2,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "output",
+            "instance": "C0",
+            "item": "item-plant-moss-enr-powder-2",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 2,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 2,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "input",
+            "instance": "C1",
+            "item": "item-plant-moss-powder-2",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 1,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 1,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "input",
+            "instance": "C1",
+            "item": "item-plant-moss-powder-3",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 2,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 2,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "output",
+            "instance": "C1",
+            "item": "item-plant-moss-enr-powder-2",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 2,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 2,
+              "numerator": 1
+            }
+          }
+        ],
+        "schema_version": 1,
+        "status": "covered-witness-valid"
+      },
+      "process_wall_ms": 23.010125000000002
+    },
+    {
+      "name": "without-bridge",
+      "expected_valid": false,
+      "expected_complete": false,
+      "witness_sha256": "1c0d586ed8887dcbd236b06f6f0ff6450527afb53013a5a98971abdb84831c70",
+      "validation": {
+        "bounds": null,
+        "covered_geometry_validated": false,
+        "diagnostics": [
+          {
+            "code": "constructive-network-attachment-geometry-invalid",
+            "entity": "network:item-plant-moss-powder-3",
+            "message": "transport collision",
+            "path": "/composite",
+            "severity": "error",
+            "stage": "constructive-planner"
+          }
+        ],
+        "elapsed_ms": 0.5042500000000001,
+        "factory_validated": false,
+        "provenance": {
+          "inputs": [
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/bound-full-audit-1/without-bridge.json",
+              "sha256": "1c0d586ed8887dcbd236b06f6f0ff6450527afb53013a5a98971abdb84831c70"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+              "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+              "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+              "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+              "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+              "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+            }
+          ]
+        },
+        "recipe_coverage_complete": false,
+        "recipe_terminals": [],
+        "schema_version": 1,
+        "status": "witness-rejected"
+      },
+      "process_wall_ms": 19.072958
+    },
+    {
+      "name": "wrong-port",
+      "expected_valid": false,
+      "expected_complete": false,
+      "witness_sha256": "b14c929a57dac31e989f099c4e3540db2a2f5ca0f15be225d7dc8322bfeafe6e",
+      "validation": {
+        "bounds": null,
+        "covered_geometry_validated": false,
+        "diagnostics": [
+          {
+            "code": "constructive-network-attachment-geometry-invalid",
+            "entity": "A0/output-belt-0",
+            "message": "terminal direction, geometry, capacity, or port reuse mismatch",
+            "path": "/composite",
+            "severity": "error",
+            "stage": "constructive-planner"
+          }
+        ],
+        "elapsed_ms": 0.399041,
+        "factory_validated": false,
+        "provenance": {
+          "inputs": [
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/bound-full-audit-1/wrong-port.json",
+              "sha256": "b14c929a57dac31e989f099c4e3540db2a2f5ca0f15be225d7dc8322bfeafe6e"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+              "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+              "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+              "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+              "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+              "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+            }
+          ]
+        },
+        "recipe_coverage_complete": false,
+        "recipe_terminals": [],
+        "schema_version": 1,
+        "status": "witness-rejected"
+      },
+      "process_wall_ms": 19.790999999999997
+    },
+    {
+      "name": "unknown-item",
+      "expected_valid": false,
+      "expected_complete": false,
+      "witness_sha256": "9204d6b28b68b8e291382adc4b28fd57a73db82386b3148b541983d419d79590",
+      "validation": {
+        "bounds": null,
+        "covered_geometry_validated": false,
+        "diagnostics": [
+          {
+            "code": "witness-probe-invalid",
+            "entity": "network:item-plant-moss-powder-2",
+            "message": "Unknown item or incompatible transport",
+            "path": "/witness",
+            "severity": "error",
+            "stage": "constructive-planner"
+          }
+        ],
+        "elapsed_ms": 0.037167,
+        "factory_validated": false,
+        "provenance": {
+          "inputs": [
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/bound-full-audit-1/unknown-item.json",
+              "sha256": "9204d6b28b68b8e291382adc4b28fd57a73db82386b3148b541983d419d79590"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+              "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+              "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+              "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+              "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+              "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+            }
+          ]
+        },
+        "recipe_coverage_complete": false,
+        "recipe_terminals": [],
+        "schema_version": 1,
+        "status": "witness-rejected"
+      },
+      "process_wall_ms": 18.549041999999986
+    },
+    {
+      "name": "missing-whole-network",
+      "expected_valid": true,
+      "expected_complete": false,
+      "witness_sha256": "aab5e8f0c0d82a183b423d395603a95301f051f4bb1f5822937d56b43d052978",
+      "validation": {
+        "bounds": {
+          "height": 22,
+          "width": 35
+        },
+        "covered_geometry_validated": true,
+        "diagnostics": [],
+        "elapsed_ms": 0.716333,
+        "factory_validated": false,
+        "provenance": {
+          "inputs": [
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/bound-full-audit-1/missing-whole-network.json",
+              "sha256": "aab5e8f0c0d82a183b423d395603a95301f051f4bb1f5822937d56b43d052978"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+              "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+              "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+              "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+              "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+              "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+            }
+          ]
+        },
+        "recipe_coverage_complete": false,
+        "recipe_terminals": [
+          {
+            "direction": "input",
+            "instance": "A0",
+            "item": "item-plant-moss-2",
+            "pending_rate": {
+              "denominator": 2,
+              "numerator": 1
+            },
+            "required_rate": {
+              "denominator": 2,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 1,
+              "numerator": 0
+            }
+          },
+          {
+            "direction": "output",
+            "instance": "A0",
+            "item": "item-plant-moss-powder-2",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 1,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 1,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "input",
+            "instance": "A1",
+            "item": "item-plant-moss-2",
+            "pending_rate": {
+              "denominator": 2,
+              "numerator": 1
+            },
+            "required_rate": {
+              "denominator": 2,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 1,
+              "numerator": 0
+            }
+          },
+          {
+            "direction": "output",
+            "instance": "A1",
+            "item": "item-plant-moss-powder-2",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 1,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 1,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "input",
+            "instance": "B",
+            "item": "item-plant-moss-3",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 3,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 3,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "output",
+            "instance": "B",
+            "item": "item-plant-moss-powder-3",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 1,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 1,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "input",
+            "instance": "C0",
+            "item": "item-plant-moss-powder-2",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 1,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 1,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "input",
+            "instance": "C0",
+            "item": "item-plant-moss-powder-3",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 2,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 2,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "output",
+            "instance": "C0",
+            "item": "item-plant-moss-enr-powder-2",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 2,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 2,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "input",
+            "instance": "C1",
+            "item": "item-plant-moss-powder-2",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 1,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 1,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "input",
+            "instance": "C1",
+            "item": "item-plant-moss-powder-3",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 2,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 2,
+              "numerator": 1
+            }
+          },
+          {
+            "direction": "output",
+            "instance": "C1",
+            "item": "item-plant-moss-enr-powder-2",
+            "pending_rate": {
+              "denominator": 1,
+              "numerator": 0
+            },
+            "required_rate": {
+              "denominator": 2,
+              "numerator": 1
+            },
+            "routed_rate": {
+              "denominator": 2,
+              "numerator": 1
+            }
+          }
+        ],
+        "schema_version": 1,
+        "status": "covered-witness-valid"
+      },
+      "process_wall_ms": 20.197750000000013
+    },
+    {
+      "name": "four-times-rate",
+      "expected_valid": false,
+      "expected_complete": false,
+      "witness_sha256": "a7351af1a756f18bc5b382edc4b2559468d61560a24020a971e09d5d169c4072",
+      "validation": {
+        "bounds": null,
+        "covered_geometry_validated": false,
+        "diagnostics": [
+          {
+            "code": "witness-probe-invalid",
+            "entity": "A0",
+            "message": "Recipe/facility mismatch or utilization outside (0,1]",
+            "path": "/witness",
+            "severity": "error",
+            "stage": "constructive-planner"
+          }
+        ],
+        "elapsed_ms": 0.012417,
+        "factory_validated": false,
+        "provenance": {
+          "inputs": [
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/bound-full-audit-1/four-times-rate.json",
+              "sha256": "a7351af1a756f18bc5b382edc4b2559468d61560a24020a971e09d5d169c4072"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+              "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+              "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+              "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+              "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+            },
+            {
+              "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+              "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+            }
+          ]
+        },
+        "recipe_coverage_complete": false,
+        "recipe_terminals": [],
+        "schema_version": 1,
+        "status": "witness-rejected"
+      },
+      "process_wall_ms": 20.01754199999999
+    }
+  ],
+  "validator_sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8",
+  "input_sha256": "1e9815cabad918863ec4478d3a255e6cc20a419b8317f2292e58c16f5ccb8eea"
+}

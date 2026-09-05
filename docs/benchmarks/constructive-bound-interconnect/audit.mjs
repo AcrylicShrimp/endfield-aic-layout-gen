@@ -12,7 +12,7 @@ try {
   const omitComponent=kind=>w=>{const removed=w.logistics_components.filter(c=>c.kind===kind).map(c=>c.id);w.logistics_components=w.logistics_components.filter(c=>c.kind!==kind);for(const n of w.transport_networks)n.component_ids=n.component_ids.filter(id=>!removed.includes(id));};
   const cases=[
     ['original',()=>{},true,true],
-    ...['bridge','splitter','converger'].map(kind=>['without-'+kind,omitComponent(kind),false,false]),
+    ...['bridge','splitter','converger'].filter(kind=>original.logistics_components.some(c=>c.kind===kind)).map(kind=>['without-'+kind,omitComponent(kind),false,false]),
     ['wrong-port',w=>{w.transport_networks[0].terminals[0].endpoint.port='input-belt-0';},false,false],
     ['unknown-item',w=>{w.transport_networks[0].item='unknown';},false,false],
     ['missing-whole-network',w=>{w.transport_networks.splice(w.transport_networks.findIndex(n=>!n.component_ids.length),1);},true,false],
