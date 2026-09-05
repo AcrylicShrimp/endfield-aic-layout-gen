@@ -46,6 +46,7 @@ pub fn analyze_constructive_port_demands(
     networks: &[TransportNetwork],
     transports: &ValidatedTransportCatalog,
 ) -> ConstructivePortDemandAnalysis {
+    let _span = super::profile_span(super::ProfileOp::PortDemand);
     let mut diagnostics = Vec::new();
     let mut accumulators = BTreeMap::<GroupKey, GroupAccumulator>::new();
 

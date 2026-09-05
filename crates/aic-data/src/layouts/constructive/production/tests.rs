@@ -82,6 +82,42 @@ fn request(seed: &str) -> ConstructiveProductionRequest {
 }
 
 #[test]
+fn profiling_preserves_nodes_choices_and_counts_actual_routes() {
+    let (f, i, t, c) = catalogs();
+    let w = wiring(&[("a", "b"), ("b", "c")]);
+    let request = request("c");
+    let baseline = construct_production(&w, &f, &i, &t, &c, &request);
+    let (captured, profile) =
+        collect_constructive_profile(|| construct_production(&w, &f, &i, &t, &c, &request))
+            .unwrap();
+    assert!(captured.complete);
+    assert_eq!(baseline.final_node, captured.final_node);
+    assert_eq!(baseline.steps.len(), captured.steps.len());
+    for (before, after) in baseline.steps.iter().zip(&captured.steps) {
+        assert_eq!(before.node, after.node);
+        assert_eq!(before.statistics, after.statistics);
+        assert_eq!(before.placement_attempts, after.placement_attempts);
+    }
+    assert_eq!(profile.operations[&ProfileOp::Construction].calls, 1);
+    assert_eq!(
+        profile.operations[&ProfileOp::Astar].calls,
+        captured
+            .steps
+            .iter()
+            .map(|s| s.statistics.astar_searches)
+            .sum::<u64>()
+    );
+    assert_eq!(
+        profile
+            .operations
+            .values()
+            .map(|r| r.exclusive_ns)
+            .sum::<u128>(),
+        profile.operations[&ProfileOp::Construction].inclusive_ns
+    );
+}
+
+#[test]
 fn completes_connected_chain_without_compact_module_discovery() {
     let (f, i, t, c) = catalogs();
     let w = wiring(&[("a", "b"), ("b", "c")]);

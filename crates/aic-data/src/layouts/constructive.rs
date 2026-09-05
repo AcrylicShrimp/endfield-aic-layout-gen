@@ -29,6 +29,12 @@ mod network;
 mod pipe_chain;
 mod port_demand;
 mod process_module;
+mod profiling;
+pub use profiling::{
+    ConstructiveOperationTiming, ConstructiveProfileOperation, ConstructiveRuntimeProfile,
+    collect_constructive_profile, measure_constructive_operation,
+};
+use profiling::{ConstructiveProfileOperation as ProfileOp, span as profile_span};
 mod routing;
 
 #[cfg(test)]
@@ -296,6 +302,7 @@ pub fn render_constructive_composition_html(
 }
 
 fn add_capacity_inspection(mut html: String, nodes: &[&ConstructiveNode]) -> String {
+    let _span = profile_span(ProfileOp::HtmlCapacityInspection);
     let pages = nodes.iter().map(|node| {
         node.transport_networks.iter().flat_map(|network| {
             let capacity = node.network_capacity.iter().find(|c| c.network == network.id);
@@ -638,7 +645,7 @@ pub struct ConstructiveProcessModuleReport {
     pub growth: ConstructiveFrontierGrowthReport,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Serialize, PartialEq, Eq)]
 pub struct ConstructiveNode {
     pub id: String,
     pub bounds: FacilityPlacementBounds,
@@ -651,6 +658,25 @@ pub struct ConstructiveNode {
     pub network_capacity: Vec<ConstructiveNetworkCapacity>,
     pub attachment_events: Vec<ConstructiveAttachmentEvent>,
     pub boundary_requirements: Vec<ConstructiveProcessModuleBoundary>,
+}
+
+impl Clone for ConstructiveNode {
+    fn clone(&self) -> Self {
+        let _span = profile_span(ProfileOp::NodeClone);
+        Self {
+            id: self.id.clone(),
+            bounds: self.bounds.clone(),
+            member_instances: self.member_instances.clone(),
+            internal_requirements: self.internal_requirements.clone(),
+            external_requirements: self.external_requirements.clone(),
+            placements: self.placements.clone(),
+            transport_networks: self.transport_networks.clone(),
+            logistics_components: self.logistics_components.clone(),
+            network_capacity: self.network_capacity.clone(),
+            attachment_events: self.attachment_events.clone(),
+            boundary_requirements: self.boundary_requirements.clone(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]

@@ -629,6 +629,7 @@ pub(super) fn merge_nodes(
     source: &ConstructiveNode,
     target: &ConstructiveNode,
 ) -> ConstructiveNode {
+    let _span = super::profile_span(super::ProfileOp::NodeMerge);
     let mut node = target.clone();
     node.id = format!("composite:{}+{}", target.id, source.id);
     node.placements.extend(source.placements.clone());
@@ -654,6 +655,7 @@ pub(super) fn merge_nodes(
 }
 
 pub(super) fn rotate_node(node: &ConstructiveNode, rotation: i64) -> ConstructiveNode {
+    let _span = super::profile_span(super::ProfileOp::NodeRotation);
     let mut rotated = node.clone();
     for placement in &mut rotated.placements {
         let (x, y, width, height) = rotate_rectangle(
@@ -806,6 +808,7 @@ fn rotate_point(
 }
 
 pub(super) fn translate_node(node: &ConstructiveNode, dx: i64, dy: i64) -> ConstructiveNode {
+    let _span = super::profile_span(super::ProfileOp::NodeTranslation);
     let mut translated = node.clone();
     for placement in &mut translated.placements {
         placement.x += dx;
@@ -868,6 +871,7 @@ fn translate_port(port: &mut PlacedFacilityPort, dx: i64, dy: i64) {
 }
 
 pub(super) fn canonicalize_node(node: &ConstructiveNode) -> ConstructiveNode {
+    let _span = super::profile_span(super::ProfileOp::NodeCanonicalization);
     let minimum_x = node
         .placements
         .iter()

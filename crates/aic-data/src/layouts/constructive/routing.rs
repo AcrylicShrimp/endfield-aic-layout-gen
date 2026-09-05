@@ -158,6 +158,7 @@ impl RouteWorkspace {
         start: &WorldGridPosition,
         goal: &WorldGridPosition,
     ) -> Option<Vec<WorldGridPosition>> {
+        let _span = super::profile_span(super::ProfileOp::Astar);
         let width = self.width;
         let height = self.height;
         if !inside(width, height, start.x, start.y)

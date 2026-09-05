@@ -11,15 +11,17 @@ use aic_data::facilities::{
 use aic_data::layouts::{
     ConstructiveAssemblyReport, ConstructiveAssemblyRequest, ConstructiveCompositionReport,
     ConstructiveFrontierGrowthReport, ConstructiveFrontierReport, ConstructiveProcessModuleReport,
-    ConstructiveProductionReport, ConstructiveProductionRequest, FacilityPlacementDiagnostic,
+    ConstructiveProductionReport, ConstructiveProductionRequest,
+    ConstructiveProfileOperation as ProfileOp, FacilityPlacementDiagnostic,
     FacilityPlacementReport, FacilityPlacementRequest, IntegratedLayoutDiagnostic,
-    IntegratedLayoutReport, assemble_constructive_modules, compose_process_module_with_facility,
-    construct_first_pipe_frontier, construct_frontier_growth, construct_process_module,
-    construct_production, render_constructive_assembly_html, render_constructive_composition_html,
-    render_constructive_frontier_growth_html, render_constructive_frontier_html,
-    render_constructive_process_module_html, render_constructive_production_html,
-    render_integrated_layout_html_with_localization, solve_facility_placement,
-    solve_integrated_layout_with_time_limit,
+    IntegratedLayoutReport, assemble_constructive_modules, collect_constructive_profile,
+    compose_process_module_with_facility, construct_first_pipe_frontier, construct_frontier_growth,
+    construct_process_module, construct_production,
+    measure_constructive_operation as measure_operation, render_constructive_assembly_html,
+    render_constructive_composition_html, render_constructive_frontier_growth_html,
+    render_constructive_frontier_html, render_constructive_process_module_html,
+    render_constructive_production_html, render_integrated_layout_html_with_localization,
+    solve_facility_placement, solve_integrated_layout_with_time_limit,
 };
 use aic_data::localization::{
     LocalizationCatalogValidationReport, ValidatedLocalizationCatalog, load_localization_catalog,
@@ -380,6 +382,10 @@ enum LayoutsCommand {
         /// Maximum A* calls in one growth transaction.
         #[arg(long, default_value_t = 4096)]
         max_route_searches: u64,
+
+        /// Emit aggregate operation timings as one compact JSON record on stderr.
+        #[arg(long)]
+        profile: bool,
 
         /// Standalone paginated HTML history of validated construction states.
         #[arg(long, value_name = "FILE")]
@@ -810,24 +816,27 @@ fn run() -> Result<CommandStatus> {
                 max_steps,
                 max_placement_attempts,
                 max_route_searches,
+                profile,
                 visualization_output,
                 report_output,
                 localization_catalog,
-            } => construct_production_command(
-                recipes,
-                source_plan,
-                facility_catalog,
-                item_catalog,
-                transport_catalog,
-                logistics_component_catalog,
-                target_instance,
-                max_steps,
-                max_placement_attempts,
-                max_route_searches,
-                visualization_output,
-                report_output,
-                localization_catalog,
-            ),
+            } => with_constructive_profile(profile, || {
+                construct_production_command(
+                    recipes,
+                    source_plan,
+                    facility_catalog,
+                    item_catalog,
+                    transport_catalog,
+                    logistics_component_catalog,
+                    target_instance,
+                    max_steps,
+                    max_placement_attempts,
+                    max_route_searches,
+                    visualization_output,
+                    report_output,
+                    localization_catalog,
+                )
+            }),
             LayoutsCommand::PlaceFacilities {
                 recipes,
                 throughput_request,
@@ -1777,6 +1786,28 @@ fn assemble_process_modules_command(
     }
 }
 
+fn with_constructive_profile<T>(enabled: bool, action: impl FnOnce() -> Result<T>) -> Result<T> {
+    if !enabled {
+        return action();
+    }
+    let (result, profile) = collect_constructive_profile(action)?;
+    let write_result = (|| -> Result<()> {
+        use std::io::Write;
+        let mut stderr = std::io::stderr().lock();
+        serde_json::to_writer(&mut stderr, &profile)
+            .context("failed to write constructive runtime profile to stderr")?;
+        stderr
+            .write_all(b"\n")
+            .context("failed to finish constructive runtime profile on stderr")?;
+        Ok(())
+    })();
+    match (result, write_result) {
+        (Err(error), Err(write_error)) => Err(error.context(write_error)),
+        (Err(error), Ok(())) => Err(error),
+        (Ok(value), result) => result.map(|()| value),
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 fn construct_production_command(
     recipes: PathBuf,
@@ -1793,30 +1824,43 @@ fn construct_production_command(
     report_output: PathBuf,
     localization_catalog: Option<PathBuf>,
 ) -> Result<CommandStatus> {
-    let components = ValidatedLogisticsComponentCatalog::try_from_catalog(
-        load_logistics_component_catalog(&logistics_component_catalog)?,
-    )
-    .map_err(|report| {
-        anyhow::anyhow!(
-            "invalid logistics component catalog '{}': {:?}",
-            logistics_component_catalog.display(),
-            report.diagnostics
+    let loaded = measure_operation(ProfileOp::InputLoading, || -> Result<_> {
+        let components = ValidatedLogisticsComponentCatalog::try_from_catalog(
+            load_logistics_component_catalog(&logistics_component_catalog)?,
         )
+        .map_err(|report| {
+            anyhow::anyhow!(
+                "invalid logistics component catalog '{}': {:?}",
+                logistics_component_catalog.display(),
+                report.diagnostics
+            )
+        })?;
+        let localization = load_visualization_localization(localization_catalog.as_deref())?;
+        let Some((wiring, facilities, items)) =
+            load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
+        else {
+            return Ok(None);
+        };
+        let transports = match ValidatedTransportCatalog::try_from_catalog(load_transport_catalog(
+            &transport_catalog,
+        )?) {
+            Ok(catalog) => catalog,
+            Err(report) => {
+                write_transport_catalog_validation_report(&report)?;
+                return Ok(None);
+            }
+        };
+        Ok(Some((
+            components,
+            localization,
+            wiring,
+            facilities,
+            items,
+            transports,
+        )))
     })?;
-    let localization = load_visualization_localization(localization_catalog.as_deref())?;
-    let Some((wiring, facilities, items)) =
-        load_constructive_inputs(&recipes, &source_plan, &facility_catalog, &item_catalog)?
-    else {
+    let Some((components, localization, wiring, facilities, items, transports)) = loaded else {
         return Ok(CommandStatus::Failure);
-    };
-    let transports = match ValidatedTransportCatalog::try_from_catalog(load_transport_catalog(
-        &transport_catalog,
-    )?) {
-        Ok(catalog) => catalog,
-        Err(report) => {
-            write_transport_catalog_validation_report(&report)?;
-            return Ok(CommandStatus::Failure);
-        }
     };
     let request = ConstructiveProductionRequest {
         schema_version: aic_data::layouts::CONSTRUCTIVE_PRODUCTION_SCHEMA_VERSION,
@@ -1835,8 +1879,12 @@ fn construct_production_command(
     );
     let success = report.success;
     // Preserve structured input/construction failures even when there is no geometry to render.
-    write_constructive_production_report_file(&report_output, &report)?;
-    write_constructive_production_report(&report)?;
+    measure_operation(ProfileOp::ReportFile, || {
+        write_constructive_production_report_file(&report_output, &report)
+    })?;
+    measure_operation(ProfileOp::ReportStdout, || {
+        write_constructive_production_report(&report)
+    })?;
     if report.final_node.is_none() {
         return Ok(CommandStatus::Failure);
     }
@@ -1849,7 +1897,9 @@ fn construct_production_command(
             )
         },
     )?;
-    write_constructive_visualization(&visualization_output, html)?;
+    measure_operation(ProfileOp::HtmlWriting, || {
+        write_constructive_visualization(&visualization_output, html)
+    })?;
     if success {
         Ok(CommandStatus::Success)
     } else {
@@ -2904,6 +2954,7 @@ mod tests {
             "production.html",
             "--report-output",
             "production.json",
+            "--profile",
         ])
         .expect("completion-first production CLI should parse");
 
@@ -2914,6 +2965,7 @@ mod tests {
                     max_steps,
                     max_placement_attempts,
                     max_route_searches,
+                    profile,
                     transport_catalog,
                     visualization_output,
                     report_output,
@@ -2927,6 +2979,7 @@ mod tests {
         assert_eq!(max_steps, 2);
         assert_eq!(max_placement_attempts, 256);
         assert_eq!(max_route_searches, 4096);
+        assert!(profile);
         assert_eq!(transport_catalog, PathBuf::from("transports.json"));
         assert_eq!(visualization_output, PathBuf::from("production.html"));
         assert_eq!(report_output, PathBuf::from("production.json"));

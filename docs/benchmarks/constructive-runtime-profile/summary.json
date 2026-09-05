@@ -1,0 +1,382 @@
+{
+  "schema_version": 1,
+  "base_revision": "5cfe2ed03d94b4322ef153f4d5313a5e627ca736",
+  "build": "target/release/aic-cli; build separately, no compiler/test overlap",
+  "runs": [
+    {
+      "index": 0,
+      "profile_enabled": false,
+      "exit_code": 0,
+      "wall_seconds": 31.098967792,
+      "user_seconds": 24.87,
+      "system_seconds": 5.68,
+      "max_rss_bytes": 284770304,
+      "planner_seconds": 21.504,
+      "final_node_sha256": "acd24c232943a16a53455e6de1b6aea8d9bd95137ab5302568f5b15e9f2e6009",
+      "layout_and_choices_sha256": "25ebb56c0e17b7840525e3d29a8c10f8ca03dab3119b9d9c6a1cb3639f01e751",
+      "report_bytes": 96675829,
+      "html_bytes": 41029460,
+      "steps": 47,
+      "facilities": 59,
+      "internal_requirements": 89,
+      "external_requirements": 7,
+      "astar_calls": 178,
+      "operation_profile": null
+    },
+    {
+      "index": 1,
+      "profile_enabled": true,
+      "exit_code": 0,
+      "wall_seconds": 30.628683583999997,
+      "user_seconds": 24.9,
+      "system_seconds": 5.68,
+      "max_rss_bytes": 285310976,
+      "planner_seconds": 21.535,
+      "final_node_sha256": "acd24c232943a16a53455e6de1b6aea8d9bd95137ab5302568f5b15e9f2e6009",
+      "layout_and_choices_sha256": "25ebb56c0e17b7840525e3d29a8c10f8ca03dab3119b9d9c6a1cb3639f01e751",
+      "report_bytes": 96675829,
+      "html_bytes": 41029460,
+      "steps": 47,
+      "facilities": 59,
+      "internal_requirements": 89,
+      "external_requirements": 7,
+      "astar_calls": 178,
+      "operation_profile": {
+        "schema_version": 1,
+        "clock": "monotonic-wall-time",
+        "scope": "calling-thread-only",
+        "elapsed_ns": 30593230000,
+        "operations": {
+          "input-loading": {
+            "calls": 1,
+            "inclusive_ns": 11301500,
+            "exclusive_ns": 11301500,
+            "max_ns": 11301500
+          },
+          "construction": {
+            "calls": 1,
+            "inclusive_ns": 21535687584,
+            "exclusive_ns": 24894456,
+            "max_ns": 21535687584
+          },
+          "report-file": {
+            "calls": 1,
+            "inclusive_ns": 651835250,
+            "exclusive_ns": 651835250,
+            "max_ns": 651835250
+          },
+          "report-stdout": {
+            "calls": 1,
+            "inclusive_ns": 7391838584,
+            "exclusive_ns": 7391838584,
+            "max_ns": 7391838584
+          },
+          "html-rendering": {
+            "calls": 1,
+            "inclusive_ns": 973754500,
+            "exclusive_ns": 174810708,
+            "max_ns": 973754500
+          },
+          "html-writing": {
+            "calls": 1,
+            "inclusive_ns": 21142416,
+            "exclusive_ns": 21142416,
+            "max_ns": 21142416
+          },
+          "group-growth": {
+            "calls": 40,
+            "inclusive_ns": 21220449292,
+            "exclusive_ns": 10414913,
+            "max_ns": 7197803208
+          },
+          "facility-addition": {
+            "calls": 58,
+            "inclusive_ns": 20929345170,
+            "exclusive_ns": 35471996,
+            "max_ns": 5778565667
+          },
+          "internal-closure": {
+            "calls": 101,
+            "inclusive_ns": 21128950453,
+            "exclusive_ns": 181206949,
+            "max_ns": 5775065167
+          },
+          "boundary-refresh": {
+            "calls": 108,
+            "inclusive_ns": 8297693498,
+            "exclusive_ns": 56177715,
+            "max_ns": 1418481125
+          },
+          "attachment-enumeration": {
+            "calls": 1380,
+            "inclusive_ns": 10608054777,
+            "exclusive_ns": 494719451,
+            "max_ns": 958323250
+          },
+          "shared-path": {
+            "calls": 79779,
+            "inclusive_ns": 10113335326,
+            "exclusive_ns": 10113335326,
+            "max_ns": 9532083
+          },
+          "crossing-options": {
+            "calls": 867,
+            "inclusive_ns": 1094444468,
+            "exclusive_ns": 1094444468,
+            "max_ns": 14770333
+          },
+          "astar": {
+            "calls": 178,
+            "inclusive_ns": 243311449,
+            "exclusive_ns": 243311449,
+            "max_ns": 22951583
+          },
+          "boundary-escape": {
+            "calls": 92,
+            "inclusive_ns": 8328322666,
+            "exclusive_ns": 7498286954,
+            "max_ns": 181906542
+          },
+          "network-validation": {
+            "calls": 200,
+            "inclusive_ns": 1552988956,
+            "exclusive_ns": 1552988956,
+            "max_ns": 32921125
+          },
+          "coverage-audit": {
+            "calls": 48,
+            "inclusive_ns": 16133210,
+            "exclusive_ns": 16133210,
+            "max_ns": 676542
+          },
+          "port-demand": {
+            "calls": 101,
+            "inclusive_ns": 49430998,
+            "exclusive_ns": 49430998,
+            "max_ns": 3979875
+          },
+          "capacity-report": {
+            "calls": 105,
+            "inclusive_ns": 12598465,
+            "exclusive_ns": 12598465,
+            "max_ns": 315042
+          },
+          "node-clone": {
+            "calls": 1007,
+            "inclusive_ns": 144407922,
+            "exclusive_ns": 144407922,
+            "max_ns": 1038083
+          },
+          "node-merge": {
+            "calls": 61,
+            "inclusive_ns": 13731713,
+            "exclusive_ns": 1276006,
+            "max_ns": 693958
+          },
+          "node-rotation": {
+            "calls": 162,
+            "inclusive_ns": 604830,
+            "exclusive_ns": 83502,
+            "max_ns": 16875
+          },
+          "node-translation": {
+            "calls": 475,
+            "inclusive_ns": 67970998,
+            "exclusive_ns": 3560547,
+            "max_ns": 1065833
+          },
+          "node-canonicalization": {
+            "calls": 160,
+            "inclusive_ns": 38541627,
+            "exclusive_ns": 2944301,
+            "max_ns": 1109750
+          },
+          "html-capacity-inspection": {
+            "calls": 1,
+            "inclusive_ns": 798943792,
+            "exclusive_ns": 798943792,
+            "max_ns": 798943792
+          }
+        }
+      }
+    },
+    {
+      "index": 2,
+      "profile_enabled": true,
+      "exit_code": 0,
+      "wall_seconds": 30.726378000000004,
+      "user_seconds": 24.98,
+      "system_seconds": 5.7,
+      "max_rss_bytes": 285474816,
+      "planner_seconds": 21.601,
+      "final_node_sha256": "acd24c232943a16a53455e6de1b6aea8d9bd95137ab5302568f5b15e9f2e6009",
+      "layout_and_choices_sha256": "25ebb56c0e17b7840525e3d29a8c10f8ca03dab3119b9d9c6a1cb3639f01e751",
+      "report_bytes": 96675829,
+      "html_bytes": 41029460,
+      "steps": 47,
+      "facilities": 59,
+      "internal_requirements": 89,
+      "external_requirements": 7,
+      "astar_calls": 178,
+      "operation_profile": {
+        "schema_version": 1,
+        "clock": "monotonic-wall-time",
+        "scope": "calling-thread-only",
+        "elapsed_ns": 30690453750,
+        "operations": {
+          "input-loading": {
+            "calls": 1,
+            "inclusive_ns": 11353000,
+            "exclusive_ns": 11353000,
+            "max_ns": 11353000
+          },
+          "construction": {
+            "calls": 1,
+            "inclusive_ns": 21601140916,
+            "exclusive_ns": 24851880,
+            "max_ns": 21601140916
+          },
+          "report-file": {
+            "calls": 1,
+            "inclusive_ns": 643421667,
+            "exclusive_ns": 643421667,
+            "max_ns": 643421667
+          },
+          "report-stdout": {
+            "calls": 1,
+            "inclusive_ns": 7434862542,
+            "exclusive_ns": 7434862542,
+            "max_ns": 7434862542
+          },
+          "html-rendering": {
+            "calls": 1,
+            "inclusive_ns": 971700333,
+            "exclusive_ns": 176111999,
+            "max_ns": 971700333
+          },
+          "html-writing": {
+            "calls": 1,
+            "inclusive_ns": 20327792,
+            "exclusive_ns": 20327792,
+            "max_ns": 20327792
+          },
+          "group-growth": {
+            "calls": 40,
+            "inclusive_ns": 21286044457,
+            "exclusive_ns": 10424374,
+            "max_ns": 7227126209
+          },
+          "facility-addition": {
+            "calls": 58,
+            "inclusive_ns": 20992407460,
+            "exclusive_ns": 35397919,
+            "max_ns": 5820601125
+          },
+          "internal-closure": {
+            "calls": 101,
+            "inclusive_ns": 21193761455,
+            "exclusive_ns": 181654688,
+            "max_ns": 5817285916
+          },
+          "boundary-refresh": {
+            "calls": 108,
+            "inclusive_ns": 8357969744,
+            "exclusive_ns": 56526034,
+            "max_ns": 1431744625
+          },
+          "attachment-enumeration": {
+            "calls": 1380,
+            "inclusive_ns": 10668650367,
+            "exclusive_ns": 508365011,
+            "max_ns": 960401208
+          },
+          "shared-path": {
+            "calls": 79779,
+            "inclusive_ns": 10160285356,
+            "exclusive_ns": 10160285356,
+            "max_ns": 1338583
+          },
+          "crossing-options": {
+            "calls": 867,
+            "inclusive_ns": 1093817596,
+            "exclusive_ns": 1093817596,
+            "max_ns": 14580125
+          },
+          "astar": {
+            "calls": 178,
+            "inclusive_ns": 242917258,
+            "exclusive_ns": 242917258,
+            "max_ns": 23089083
+          },
+          "boundary-escape": {
+            "calls": 92,
+            "inclusive_ns": 8327335537,
+            "exclusive_ns": 7498942854,
+            "max_ns": 179841958
+          },
+          "network-validation": {
+            "calls": 200,
+            "inclusive_ns": 1555231131,
+            "exclusive_ns": 1555231131,
+            "max_ns": 32926375
+          },
+          "coverage-audit": {
+            "calls": 48,
+            "inclusive_ns": 16302837,
+            "exclusive_ns": 16302837,
+            "max_ns": 663792
+          },
+          "port-demand": {
+            "calls": 101,
+            "inclusive_ns": 49449079,
+            "exclusive_ns": 49449079,
+            "max_ns": 3988666
+          },
+          "capacity-report": {
+            "calls": 105,
+            "inclusive_ns": 12611622,
+            "exclusive_ns": 12611622,
+            "max_ns": 304083
+          },
+          "node-clone": {
+            "calls": 1007,
+            "inclusive_ns": 146335446,
+            "exclusive_ns": 146335446,
+            "max_ns": 999833
+          },
+          "node-merge": {
+            "calls": 61,
+            "inclusive_ns": 14002170,
+            "exclusive_ns": 1348717,
+            "max_ns": 604208
+          },
+          "node-rotation": {
+            "calls": 162,
+            "inclusive_ns": 580831,
+            "exclusive_ns": 77332,
+            "max_ns": 11750
+          },
+          "node-translation": {
+            "calls": 475,
+            "inclusive_ns": 68841457,
+            "exclusive_ns": 3608163,
+            "max_ns": 896959
+          },
+          "node-canonicalization": {
+            "calls": 160,
+            "inclusive_ns": 38998366,
+            "exclusive_ns": 2993619,
+            "max_ns": 940333
+          },
+          "html-capacity-inspection": {
+            "calls": 1,
+            "inclusive_ns": 795588334,
+            "exclusive_ns": 795588334,
+            "max_ns": 795588334
+          }
+        }
+      }
+    }
+  ],
+  "native_sample_sha256": "bc2a3a6d4c876b24ac99642cfb6690ac0af989e20d326d2ddba9690d294ebb06"
+}

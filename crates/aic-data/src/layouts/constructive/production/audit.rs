@@ -6,6 +6,7 @@ pub(super) fn validate_coverage(
     wiring: &FacilityInstanceWiringReport,
     items: &ValidatedItemCatalog,
 ) -> Result<(), ConstructiveFrontierDiagnostic> {
+    let _span = profile_span(ProfileOp::CoverageAudit);
     let routed = node
         .internal_requirements
         .iter()

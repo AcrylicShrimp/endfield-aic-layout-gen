@@ -1,4 +1,5 @@
 //! Commodity-network attachment and independent constructive witness validation.
+use super::{ProfileOp, profile_span};
 pub(super) mod crossings;
 mod external;
 mod first;
@@ -94,6 +95,7 @@ pub(super) fn report_capacity(
     node: &mut ConstructiveNode,
     transports: &ValidatedTransportCatalog,
 ) -> Result<(), ConstructiveFrontierDiagnostic> {
+    let _span = profile_span(ProfileOp::CapacityReport);
     node.network_capacity = node
         .transport_networks
         .iter()
@@ -135,6 +137,7 @@ fn shared_path(
     start: &WorldGridPosition,
     end: &WorldGridPosition,
 ) -> Option<Vec<usize>> {
+    let _span = profile_span(ProfileOp::SharedPath);
     let mut queue = VecDeque::from([xy(start)]);
     let mut seen = BTreeMap::from([(xy(start), None)]);
     while let Some(p) = queue.pop_front() {
@@ -229,6 +232,7 @@ fn attachments(
     occupancy: &Occupancy,
     stats: &mut ConstructiveCompositionStatistics,
 ) -> Vec<Attachment> {
+    let _span = profile_span(ProfileOp::AttachmentEnumeration);
     let Some(capacity) = line_capacity(b.transport, transports) else {
         return Vec::new();
     };
@@ -437,6 +441,7 @@ pub(super) fn refresh(
     components: &ValidatedLogisticsComponentCatalog,
     stats: &mut ConstructiveCompositionStatistics,
 ) -> bool {
+    let _span = profile_span(ProfileOp::BoundaryRefresh);
     let occupancy = Occupancy::new(node);
     let updated = node
         .boundary_requirements

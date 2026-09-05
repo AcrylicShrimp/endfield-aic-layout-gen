@@ -96,6 +96,7 @@ pub fn construct_production(
     components: &ValidatedLogisticsComponentCatalog,
     request: &ConstructiveProductionRequest,
 ) -> ConstructiveProductionReport {
+    let _span = profile_span(ProfileOp::Construction);
     let started = Instant::now();
     let ids = wiring
         .nodes
@@ -561,6 +562,7 @@ impl Constructor<'_> {
         group: &BTreeSet<String>,
         variant: usize,
     ) -> Option<ConstructiveNode> {
+        let _span = profile_span(ProfileOp::GroupGrowth);
         let mut candidate = base.clone();
         while group
             .iter()
@@ -612,6 +614,7 @@ impl Constructor<'_> {
         anchor: &str,
         variant: usize,
     ) -> Option<ConstructiveNode> {
+        let _span = profile_span(ProfileOp::FacilityAddition);
         let fresh = match self.fresh(id, variant) {
             Ok(n) => n,
             Err(d) => {
@@ -679,6 +682,7 @@ impl Constructor<'_> {
     }
 
     fn close_internal(&mut self, mut node: ConstructiveNode) -> Option<ConstructiveNode> {
+        let _span = profile_span(ProfileOp::InternalClosure);
         let mut edges = self
             .wiring
             .edges
@@ -781,6 +785,7 @@ fn blocked_boundaries(
     transports: &ValidatedTransportCatalog,
     components: &ValidatedLogisticsComponentCatalog,
 ) -> Vec<String> {
+    let _span = profile_span(ProfileOp::BoundaryEscape);
     let mut blocked_requirements = Vec::new();
     let facilities = super::first_pipe_frontier::occupied_cells(&node.placements);
     let max_x = node
@@ -871,6 +876,7 @@ pub fn render_constructive_production_html(
     report: &ConstructiveProductionReport,
     localization: Option<&ValidatedLocalizationCatalog>,
 ) -> Result<String, IntegratedLayoutDiagnostic> {
+    let _span = profile_span(ProfileOp::HtmlRendering);
     let nodes = if report.steps.is_empty() {
         report.final_node.iter().collect::<Vec<_>>()
     } else {

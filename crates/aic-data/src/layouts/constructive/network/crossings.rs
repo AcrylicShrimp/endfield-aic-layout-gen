@@ -8,6 +8,7 @@ pub(in crate::layouts::constructive) fn options(
     rate: Rate,
     components: &ValidatedLogisticsComponentCatalog,
 ) -> BTreeMap<(i64, i64), (bool, PlacedLogisticsComponent)> {
+    let _span = profile_span(ProfileOp::CrossingOptions);
     let Some(def) = components.catalog().components.iter().find(|d| {
         d.kind == LogisticsComponentKind::Bridge
             && d.transport == transport

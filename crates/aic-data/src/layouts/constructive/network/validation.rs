@@ -7,6 +7,7 @@ pub(in crate::layouts::constructive) fn validate(
     transports: &ValidatedTransportCatalog,
     components: &ValidatedLogisticsComponentCatalog,
 ) -> Result<(), ConstructiveFrontierDiagnostic> {
+    let _span = profile_span(ProfileOp::NetworkValidation);
     let fail = |entity: String, message: &str| {
         ConstructiveFrontierDiagnostic::error(
             "constructive-network-attachment-geometry-invalid",
