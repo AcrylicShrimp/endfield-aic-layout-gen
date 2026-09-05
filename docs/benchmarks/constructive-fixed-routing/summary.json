@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "coordinates_verified": true,
+  "connected": 60,
+  "straight": 30,
+  "detour": 30,
+  "unresolved_internal": 29,
+  "pending_external": 7,
+  "astar": 832,
+  "future_rejections": 526,
+  "invalid_rejections": 0,
+  "logical_networks": 11,
+  "components": 25,
+  "network_cell_sum": 746,
+  "used_footprint": {
+    "x": -5,
+    "y": -2,
+    "width": 57,
+    "height": 101
+  },
+  "search_canvas": {
+    "height": 130,
+    "width": 84
+  },
+  "scope": "Used footprint excludes unused search padding. final_node geometry is in translated search coordinates; its bounds are the search envelope, not a blueprint size.",
+  "probe_ms": {
+    "median": 9349.139333000001,
+    "min": 9315.860875,
+    "max": 9349.238958000002
+  },
+  "binary_sha256": "1c88ae96e7dee052236f8e5c41069cf434d8d83a06c14d4c8d5fc526a6d5543d",
+  "routing_json_bytes": 864087,
+  "html_bytes": 1173530
+}

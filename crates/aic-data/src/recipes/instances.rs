@@ -1,6 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
 use crate::recipes::{
@@ -138,7 +138,7 @@ impl FacilityInstanceWiringNode {
     }
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct FacilityInstanceWiringEdge {
     pub id: String,
     pub source: String,
@@ -173,7 +173,7 @@ impl FacilityInstanceWiringEdge {
     }
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum FacilityInstanceWiringProjection {
     Original,
@@ -183,7 +183,7 @@ pub enum FacilityInstanceWiringProjection {
     },
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum FacilityInstanceWiringProjectedEndpoint {
     Source,

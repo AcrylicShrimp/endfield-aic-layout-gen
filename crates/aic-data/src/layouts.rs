@@ -3,6 +3,7 @@ mod growth;
 mod integrated;
 mod placement;
 mod ports;
+pub use constructive::{FixedRoutingInput, FixedRoutingReport, probe_fixed_routing};
 
 pub use constructive::{
     CONSTRUCTIVE_ASSEMBLY_REPORT_SCHEMA_VERSION, CONSTRUCTIVE_ASSEMBLY_REQUEST_SCHEMA_VERSION,

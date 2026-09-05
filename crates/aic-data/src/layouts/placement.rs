@@ -43,7 +43,7 @@ pub struct FacilityPlacementBounds {
     pub height: i64,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct FacilityPlacement {
     pub instance: String,
     pub recipe: String,

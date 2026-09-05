@@ -44,7 +44,7 @@ pub struct ThroughputTarget {
     pub duration_ms: i64,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Rate {
     pub numerator: i64,
     pub denominator: i64,
