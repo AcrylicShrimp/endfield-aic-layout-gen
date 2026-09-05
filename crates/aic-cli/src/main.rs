@@ -395,6 +395,10 @@ enum LayoutsCommand {
         #[arg(long)]
         downstream_closed_growth: bool,
 
+        /// Fix facility orientations along this flow axis; mixed-face exceptions are reported.
+        #[arg(long, value_parser = ["north", "east", "south", "west"])]
+        flow_direction: Option<String>,
+
         /// Emit aggregate operation timings as one compact JSON record on stderr.
         #[arg(long)]
         profile: bool,
@@ -831,6 +835,7 @@ fn run() -> Result<CommandStatus> {
                 analysis_workers,
                 nearby_candidates,
                 downstream_closed_growth,
+                flow_direction,
                 profile,
                 visualization_output,
                 report_output,
@@ -850,6 +855,7 @@ fn run() -> Result<CommandStatus> {
                     analysis_workers,
                     nearby_candidates,
                     downstream_closed_growth,
+                    flow_direction,
                     visualization_output,
                     report_output,
                     localization_catalog,
@@ -1856,6 +1862,7 @@ fn construct_production_command(
     analysis_workers: usize,
     nearby_candidates: usize,
     downstream_closed_growth: bool,
+    flow_direction: Option<String>,
     visualization_output: PathBuf,
     report_output: PathBuf,
     localization_catalog: Option<PathBuf>,
@@ -1914,6 +1921,13 @@ fn construct_production_command(
         analysis_workers,
         nearby_candidates,
         downstream_closed_growth,
+        flow_direction: flow_direction.as_deref().map(|direction| match direction {
+            "north" => aic_data::facilities::FacilityPortEdge::North,
+            "east" => aic_data::facilities::FacilityPortEdge::East,
+            "south" => aic_data::facilities::FacilityPortEdge::South,
+            "west" => aic_data::facilities::FacilityPortEdge::West,
+            _ => unreachable!("clap validates flow directions"),
+        }),
     };
     let report = construct_production(
         &wiring,

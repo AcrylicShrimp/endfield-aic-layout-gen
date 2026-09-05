@@ -9,6 +9,7 @@ const root = fileURLToPath(new URL('../../../', import.meta.url));
 const [baseline, candidate, output] = process.argv.slice(2).map(p => path.resolve(p));
 if (process.argv.length !== 5) throw new Error('Expected baseline, candidate and new output directory');
 const rounds = Number(process.env.AIC_ORDER_ROUNDS ?? 1);
+const fixedFlow = process.env.AIC_FLOW_EXPERIMENT === '1';
 if (!Number.isInteger(rounds) || rounds < 1 || rounds > 3) throw new Error('Expected 1..3 rounds');
 const hash = v => createHash('sha256').update(v).digest('hex');
 const files = ['data/game/normalized/recipes.json', 'data/game/normalized/facilities.json',
@@ -19,13 +20,17 @@ const files = ['data/game/normalized/recipes.json', 'data/game/normalized/facili
 const result = { schema_version: 1, source_parent: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
   tracked_diff_sha256: hash(execFileSync('git', ['diff', 'HEAD'], { cwd: root })),
   order_source_sha256: hash(fs.readFileSync(path.join(root, 'crates/aic-data/src/layouts/constructive/production/order.rs'))),
+  ...(fixedFlow ? { flow_direction: 'east', orientation_source_sha256: hash(fs.readFileSync(path.join(root, 'crates/aic-data/src/layouts/constructive/production/orientation.rs'))) } : {}),
   binary_sha256: { baseline: hash(fs.readFileSync(baseline)), candidate: hash(fs.readFileSync(candidate)) },
   input_sha256: Object.fromEntries(files.map(f => [f, hash(fs.readFileSync(path.join(root, f)))])),
   build: 'release; no build/test overlap during measured runs',
   budgets: { steps: 256, placement_trials_per_growth: 256, astar_per_growth: 4096, wall_guard_seconds_per_run: 180 },
   runs: [] };
 fs.mkdirSync(output);
-const variants = [['baseline', baseline, 0, false], ['unchanged', candidate, 0, false],
+const variants = fixedFlow ? [['baseline', baseline, 0, false], ['unchanged', candidate, 0, false],
+  ['closed-coarse', baseline, 0, true], ['fixed-east-coarse', candidate, 0, true, 'east'],
+  ['closed-nearby-4', baseline, 4, true], ['fixed-east-nearby-4', candidate, 4, true, 'east']]
+  : [['baseline', baseline, 0, false], ['unchanged', candidate, 0, false],
   ['closed-coarse', candidate, 0, true], ['nearby-4', candidate, 4, false], ['closed-nearby-4', candidate, 4, true]];
 const witnesses = new Map();
 function score(node) {
@@ -48,13 +53,14 @@ for (const [workload, plan] of [['heavy-xiranite', files[5]], ['seed-cycle', fil
   const internal = wiring.edges.filter(e => ids.has(e.source) && ids.has(e.target));
   for (let round = 0; round < rounds; round++) {
     const shift = round % variants.length;
-    for (const [variant, binary, nearby, closed] of [...variants.slice(shift), ...variants.slice(0, shift)]) {
+    for (const [variant, binary, nearby, closed, flow] of [...variants.slice(shift), ...variants.slice(0, shift)]) {
       const prefix = path.join(output, `${workload}-${round}-${variant}`);
       const args = ['layouts', 'construct-production', '--recipes', files[0], '--facility-catalog', files[1],
         '--item-catalog', files[2], '--transport-catalog', files[3], '--logistics-component-catalog', files[4],
         '--source-plan', plan, '--target-instance', 'facility-instance:recipe-occurrence:/target:0',
         '--max-steps', '256', '--max-placement-attempts', '256', '--max-route-searches', '4096',
         '--nearby-candidates', String(nearby), ...(closed ? ['--downstream-closed-growth'] : []),
+        ...(flow ? ['--flow-direction', flow] : []),
         '--report-output', prefix + '.json', '--visualization-output', prefix + '.html'];
       const err = fs.openSync(prefix + '.stderr', 'wx');
       const chunks = []; let stdoutBytes = 0, timedOut = false;
@@ -78,6 +84,9 @@ for (const [workload, plan] of [['heavy-xiranite', files[5]], ['seed-cycle', fil
         const outputViolations = nodes.reduce((n, node) => n + internal.filter(e =>
           node.member_instances.includes(e.source) && !node.internal_requirements.includes(e.id)).length, 0);
         if (closed && outputViolations) throw new Error(`Internal output closure violated: ${prefix}`);
+        const orientations = new Map((r.orientation_decisions ?? []).map(d => [d.instance, d.rotation]));
+        if (flow && nodes.some(n => n.placements.some(p => orientations.get(p.instance) !== p.rotation)))
+          throw new Error(`Fixed orientation violated: ${prefix}`);
         const witness = hash(JSON.stringify({ final: r.final_node, steps: r.steps.map(s => ({ node: s.node, statistics: s.statistics, placement_attempts: s.placement_attempts })),
           failed: r.failed_statistics, diagnostics: r.diagnostics }));
         const key = workload + ':' + (variant === 'unchanged' ? 'baseline' : variant);
@@ -95,6 +104,7 @@ for (const [workload, plan] of [['heavy-xiranite', files[5]], ['seed-cycle', fil
           astar_calls: r.steps.reduce((s, step) => s + step.statistics.astar_searches, r.failed_statistics.astar_searches),
           placements: r.steps.reduce((s, step) => s + step.placement_attempts, r.failed_placement_attempts),
           internal_output_violation_occurrences: outputViolations,
+          ...(flow ? { orientation_decisions: r.orientation_decisions, flow_direction: flow } : {}),
           failed_statistics: r.failed_statistics,
           pending_boundaries: (r.final_node?.boundary_requirements ?? []).map(b => ({
             requirement: b.requirement, item: b.item, direction: b.direction,

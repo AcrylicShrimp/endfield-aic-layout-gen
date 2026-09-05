@@ -1,0 +1,3452 @@
+{
+  "schema_version": 1,
+  "source_parent": "2c5edb8e525fd017396448249690aebdbe7043f6",
+  "tracked_diff_sha256": "00781a50e20bbbcfaa86a16132573c753edc39e1069b330b88ea67c15ca24675",
+  "order_source_sha256": "df276e6fe3f0d9d0d7e2dab26ae188583ef369721dac813d3d3d80c65f6a339d",
+  "flow_direction": "east",
+  "orientation_source_sha256": "c78e5e6d0cfd06fce7fec58099aa25df72e019c81bfb841e01b9a5d32bd3ef1d",
+  "binary_sha256": {
+    "baseline": "3db161debe60d89c034440ab0af5b90f8aed7843a2acb87913ef4bfe68367fb7",
+    "candidate": "5360d7ae25301ca2f106700d7ce0573a3472b7ea5987b4c7feed8ca8970d7319"
+  },
+  "input_sha256": {
+    "data/game/normalized/recipes.json": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2",
+    "data/game/normalized/facilities.json": "db398048ac401024f7bae80c05ae59d4a9fb9a037f6836f33d26c5d08f0bcf96",
+    "data/game/normalized/items.json": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164",
+    "data/game/normalized/transports.json": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1",
+    "data/game/normalized/logistics-components.json": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608",
+    "data/examples/source-plan.game-heavy-xiranite-forge.request.json": "5302d96a5177ed2f3fde55fe13539187f7601b6667b0f0588980dca01ccd320c",
+    "data/examples/source-plan.game-seed-cycle-small.request.json": "321c74197018d231b2616d9a1de082e490290b6bb15783a97b6264bf7f2d347e"
+  },
+  "build": "release; no build/test overlap during measured runs",
+  "budgets": {
+    "steps": 256,
+    "placement_trials_per_growth": 256,
+    "astar_per_growth": 4096,
+    "wall_guard_seconds_per_run": 180
+  },
+  "runs": [
+    {
+      "workload": "heavy-xiranite",
+      "round": 0,
+      "variant": "baseline",
+      "exit_code": 0,
+      "complete": true,
+      "internal_complete": true,
+      "status": "complete",
+      "facilities": 59,
+      "internal_requirements": 89,
+      "external_requirements": 7,
+      "score": [
+        23100,
+        4265,
+        298
+      ],
+      "bounds": {
+        "width": 165,
+        "height": 140
+      },
+      "planner_seconds": 3.316,
+      "wall_seconds": 5.353611333000001,
+      "rss_bytes": 286457856,
+      "steps": 47,
+      "group_sizes": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        3,
+        1,
+        3,
+        1,
+        1,
+        1,
+        3,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        5,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        3,
+        1,
+        1,
+        1,
+        1,
+        3
+      ],
+      "group_trials": 0,
+      "last_group_trials": [],
+      "astar_calls": 178,
+      "placements": 162,
+      "internal_output_violation_occurrences": 33,
+      "failed_statistics": {
+        "completed_lane_bundles": 0,
+        "boundary_requirement_rejections": {},
+        "geometry_failure_reasons": {},
+        "new_port_attempts": 0,
+        "existing_network_attempts": 0,
+        "attachment_anchors_considered": 0,
+        "splitter_candidates_considered": 0,
+        "converger_candidates_considered": 0,
+        "attachment_capacity_rejections": 0,
+        "component_topology_rejections": 0,
+        "branch_route_failures": 0,
+        "network_attachment_candidates_validated": 0,
+        "rotations_considered": 0,
+        "placements_considered": 0,
+        "additive_placements_considered": 0,
+        "area_lower_bound_rejections": 0,
+        "colliding_placements_rejected": 0,
+        "port_pairs_considered": 0,
+        "blocked_port_pairs_rejected": 0,
+        "astar_searches": 0,
+        "astar_failures": 0,
+        "boundary_dead_ends_rejected": 0,
+        "boundary_option_dead_ends_rejected": 0,
+        "boundary_capacity_dead_ends_rejected": 0,
+        "geometry_rejections": 0,
+        "valid_candidates_scored": 0
+      },
+      "pending_boundaries": [],
+      "diagnostics": [],
+      "rejected_reasons": {
+        "connection failed: wiring-edge:3983a3f0da829b97c5d3c106f0351691e80e0230f280e9f65743f23a1dad2e2d": 1,
+        "connection failed: wiring-edge:a563c1d10bb90b3f8ae65556cc7b5977a8dea90da3838074406d85e46967aa63": 1,
+        "connection failed: wiring-edge:ebfaef505b7f9f0691912a0fe67c8f808aa90a77b677ed79690aaa3653732a4f": 1,
+        "production-placement-collision": 101,
+        "remaining boundary escape": 1,
+        "remaining capacity": 2
+      },
+      "failed_groups": [],
+      "obstruction": null,
+      "final_node_sha256": "acd24c232943a16a53455e6de1b6aea8d9bd95137ab5302568f5b15e9f2e6009",
+      "witness_sha256": "ab5fe65d28c5bd9fbf706f96e0a727cd22478be5feab2565dbac94a7a0a01d91",
+      "stdout_bytes": 270
+    },
+    {
+      "workload": "heavy-xiranite",
+      "round": 0,
+      "variant": "unchanged",
+      "exit_code": 0,
+      "complete": true,
+      "internal_complete": true,
+      "status": "complete",
+      "facilities": 59,
+      "internal_requirements": 89,
+      "external_requirements": 7,
+      "score": [
+        23100,
+        4265,
+        298
+      ],
+      "bounds": {
+        "width": 165,
+        "height": 140
+      },
+      "planner_seconds": 3.149,
+      "wall_seconds": 4.840172666,
+      "rss_bytes": 286982144,
+      "steps": 47,
+      "group_sizes": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        3,
+        1,
+        3,
+        1,
+        1,
+        1,
+        3,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        5,
+        1,
+        3,
+        1,
+        1,
+        3,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        3,
+        1,
+        1,
+        1,
+        1,
+        3
+      ],
+      "group_trials": 0,
+      "last_group_trials": [],
+      "astar_calls": 178,
+      "placements": 162,
+      "internal_output_violation_occurrences": 33,
+      "failed_statistics": {
+        "completed_lane_bundles": 0,
+        "boundary_requirement_rejections": {},
+        "geometry_failure_reasons": {},
+        "new_port_attempts": 0,
+        "existing_network_attempts": 0,
+        "attachment_anchors_considered": 0,
+        "splitter_candidates_considered": 0,
+        "converger_candidates_considered": 0,
+        "attachment_capacity_rejections": 0,
+        "component_topology_rejections": 0,
+        "branch_route_failures": 0,
+        "network_attachment_candidates_validated": 0,
+        "rotations_considered": 0,
+        "placements_considered": 0,
+        "additive_placements_considered": 0,
+        "area_lower_bound_rejections": 0,
+        "colliding_placements_rejected": 0,
+        "port_pairs_considered": 0,
+        "blocked_port_pairs_rejected": 0,
+        "astar_searches": 0,
+        "astar_failures": 0,
+        "boundary_dead_ends_rejected": 0,
+        "boundary_option_dead_ends_rejected": 0,
+        "boundary_capacity_dead_ends_rejected": 0,
+        "geometry_rejections": 0,
+        "valid_candidates_scored": 0
+      },
+      "pending_boundaries": [],
+      "diagnostics": [],
+      "rejected_reasons": {
+        "connection failed: wiring-edge:3983a3f0da829b97c5d3c106f0351691e80e0230f280e9f65743f23a1dad2e2d": 1,
+        "connection failed: wiring-edge:a563c1d10bb90b3f8ae65556cc7b5977a8dea90da3838074406d85e46967aa63": 1,
+        "connection failed: wiring-edge:ebfaef505b7f9f0691912a0fe67c8f808aa90a77b677ed79690aaa3653732a4f": 1,
+        "production-placement-collision": 101,
+        "remaining boundary escape": 1,
+        "remaining capacity": 2
+      },
+      "failed_groups": [],
+      "obstruction": null,
+      "final_node_sha256": "acd24c232943a16a53455e6de1b6aea8d9bd95137ab5302568f5b15e9f2e6009",
+      "witness_sha256": "ab5fe65d28c5bd9fbf706f96e0a727cd22478be5feab2565dbac94a7a0a01d91",
+      "stdout_bytes": 272
+    },
+    {
+      "workload": "heavy-xiranite",
+      "round": 0,
+      "variant": "closed-coarse",
+      "exit_code": 1,
+      "complete": false,
+      "internal_complete": false,
+      "status": "growth-exhausted",
+      "facilities": 30,
+      "internal_requirements": 31,
+      "external_requirements": 0,
+      "score": [
+        5913,
+        659,
+        53
+      ],
+      "bounds": {
+        "width": 73,
+        "height": 81
+      },
+      "planner_seconds": 0.425,
+      "wall_seconds": 0.6377247500000012,
+      "rss_bytes": 46022656,
+      "steps": 29,
+      "group_sizes": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ],
+      "group_trials": 37,
+      "last_group_trials": [
+        {
+          "step": 29,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+          "variant": 0,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2"
+          ],
+          "success": false
+        },
+        {
+          "step": 29,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+          "variant": 1,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2"
+          ],
+          "success": false
+        },
+        {
+          "step": 29,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+          "variant": 2,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2"
+          ],
+          "success": false
+        },
+        {
+          "step": 29,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+          "variant": 3,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2"
+          ],
+          "success": false
+        }
+      ],
+      "astar_calls": 182,
+      "placements": 313,
+      "internal_output_violation_occurrences": 0,
+      "failed_statistics": {
+        "completed_lane_bundles": 0,
+        "boundary_requirement_rejections": {},
+        "geometry_failure_reasons": {},
+        "new_port_attempts": 144,
+        "existing_network_attempts": 0,
+        "attachment_anchors_considered": 0,
+        "splitter_candidates_considered": 0,
+        "converger_candidates_considered": 0,
+        "attachment_capacity_rejections": 0,
+        "component_topology_rejections": 0,
+        "branch_route_failures": 0,
+        "network_attachment_candidates_validated": 0,
+        "rotations_considered": 0,
+        "placements_considered": 0,
+        "additive_placements_considered": 0,
+        "area_lower_bound_rejections": 0,
+        "colliding_placements_rejected": 0,
+        "port_pairs_considered": 144,
+        "blocked_port_pairs_rejected": 0,
+        "astar_searches": 144,
+        "astar_failures": 144,
+        "boundary_dead_ends_rejected": 0,
+        "boundary_option_dead_ends_rejected": 0,
+        "boundary_capacity_dead_ends_rejected": 0,
+        "geometry_rejections": 0,
+        "valid_candidates_scored": 0
+      },
+      "pending_boundaries": [
+        {
+          "requirement": "wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de",
+          "item": "item-xiranite-enr-powder",
+          "direction": "output",
+          "kind": "target-output",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:9cc78f5ad1c5a03a94a533fe26e35517c481fb4860303ff01217159ff2418b09",
+          "item": "item-liquid-xiranite-lowpoly",
+          "direction": "output",
+          "kind": "surplus-output",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "east"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:f959dd05789fc16f35b1e91f011554b72379039ba540182c0003a2974fcc13e6",
+          "item": "item-liquid-sewage",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:477be53964427bd4f6019a2d169a428dbf72ad621333d501c9161299fe7755d4",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:d99c6bb230d20783d0bad99d0d0a5ba34943863858d5eff76f5d428e02727fd3",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:00fda8d6ffd9b9a5783bfae3c91843eae4030d40605b06d8e45397f90d94f22a",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:6e0ca3f3617c2ddf8d530f45ab78e316ca36cc5811becb602be362e63b642a76",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:23cf9522756c2fcc73104be9956ba289611ee66e9552745aac44345829c3ef1e",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:9cbdc044457525444ef16212e5b415249456717648b66876b2d21a4bfe5963ed",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:52970b2f21b2d9c266aa04de180f670ee44230815569f282a87388335969675f",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:712d90bf4027ee3036582e62f42b9c560a503aa2e6f40e641c1fe33f665d468b",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:73f36e90398b68aa42387f2354fff999d50989d1bbd721fd6ffd65ba7ad03c42",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:5a9af8f3d1163bafe7f49e2f839343e277ff30c7f49398ac71aaf47de6fc823f",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:c0e6db51beefe6b35bf7c1e765925ffe562f12700cd77ffb549410051417cd66",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:1770726fc972d47bbfb77284fd3ce39582a2fea43bdf58f8f5a4c00150b5a2d3",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:833307cbcd65b4b77a2d7ed1240b029edef6467bcd988efd99f99887d5900e5b",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:2eba72009a6db0c65081acfd1fc6085ba1c4d9ebe5600bd06cffbcc8ed53f4b6",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:d710dd2e30425cb0223acf030178bee2757ecb030a2580b0a68b57ebb5320528",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:69633717796936784c129d497cbe8656045bbefe2609ca7610fcc41f1044d548",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:8f8d2ba860a8626044f5319f11ed5d50ea21278802bcf35a5c7312197647a7c9",
+          "item": "item-plant-moss-powder-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:a50ef86cef9c91323da65e81aa7da6b4196616d2b7341a88277b554bd579d254",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:e9fc130bf5b1870946d736f205f920d602f372e315321255e3341e05aa2339cc",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:21c5b34ce05a1a6145f4451f9000d03a9184f3301407bb9ecb356b9339b77043",
+          "item": "item-plant-moss-enr-powder-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        }
+      ],
+      "diagnostics": [
+        {
+          "stage": "constructive-planner",
+          "severity": "error",
+          "code": "production-placement-budget-exhausted",
+          "path": "/production",
+          "entity": "facility-instance:recipe-occurrence:/target:0",
+          "message": "no accepted connected growth transaction within the recorded candidate budget; prior state preserved"
+        }
+      ],
+      "rejected_reasons": {
+        "connection failed: wiring-edge:21c5b34ce05a1a6145f4451f9000d03a9184f3301407bb9ecb356b9339b77043": 144,
+        "connection failed: wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8": 1,
+        "connection failed: wiring-edge:a9f18ba528e2f61bcb2d6a90a5d8822f8fefb1752757551a25c23056a3fed78f": 1,
+        "connection failed: wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e": 1,
+        "production-placement-collision": 137
+      },
+      "failed_groups": [
+        [
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2"
+        ],
+        [
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2"
+        ]
+      ],
+      "obstruction": null,
+      "final_node_sha256": "1029ab833b267b08749ab17672b2acfcc45e71c2e56733fc40aef577473bbe47",
+      "witness_sha256": "c612b4a3fbb6c54ca44c415b5cb199bc12e87e6c68b8d4d53d2bb94b8e6d13ae",
+      "stdout_bytes": 289
+    },
+    {
+      "workload": "heavy-xiranite",
+      "round": 0,
+      "variant": "fixed-east-coarse",
+      "exit_code": 1,
+      "complete": false,
+      "internal_complete": false,
+      "status": "growth-exhausted",
+      "facilities": 54,
+      "internal_requirements": 77,
+      "external_requirements": 0,
+      "score": [
+        18487,
+        2641,
+        202
+      ],
+      "bounds": {
+        "width": 139,
+        "height": 133
+      },
+      "planner_seconds": 124.047,
+      "wall_seconds": 124.574469333,
+      "rss_bytes": 110788608,
+      "steps": 39,
+      "group_sizes": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "group_trials": 43,
+      "last_group_trials": [
+        {
+          "step": 39,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+          "variant": 0,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2"
+          ],
+          "success": false
+        },
+        {
+          "step": 39,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+          "variant": 1,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2"
+          ],
+          "success": false
+        },
+        {
+          "step": 39,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+          "variant": 2,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2"
+          ],
+          "success": false
+        },
+        {
+          "step": 39,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+          "variant": 3,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2"
+          ],
+          "success": false
+        }
+      ],
+      "astar_calls": 1646,
+      "placements": 149,
+      "internal_output_violation_occurrences": 0,
+      "orientation_decisions": [
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 2,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 2,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite:0",
+          "rotation": 0,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+          "rotation": 0,
+          "aligned_output_groups": 2,
+          "output_groups": 2,
+          "aligned_input_groups": 2,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:3",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:4",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:5",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:6",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:7",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:3",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 2,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 2,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 2,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:3",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 2,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:3",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:3",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 2
+        }
+      ],
+      "flow_direction": "east",
+      "failed_statistics": {
+        "completed_lane_bundles": 1551,
+        "boundary_requirement_rejections": {
+          "wiring-edge:cd92412b8527ddb129374a432e3d273c3a300ef83f9a1518a8149966f8fe85ac": 3
+        },
+        "geometry_failure_reasons": {},
+        "new_port_attempts": 11,
+        "existing_network_attempts": 1540,
+        "attachment_anchors_considered": 2731802,
+        "splitter_candidates_considered": 697775,
+        "converger_candidates_considered": 598005,
+        "attachment_capacity_rejections": 0,
+        "component_topology_rejections": 2485380,
+        "branch_route_failures": 0,
+        "network_attachment_candidates_validated": 4,
+        "rotations_considered": 0,
+        "placements_considered": 0,
+        "additive_placements_considered": 0,
+        "area_lower_bound_rejections": 0,
+        "colliding_placements_rejected": 0,
+        "port_pairs_considered": 1551,
+        "blocked_port_pairs_rejected": 0,
+        "astar_searches": 1551,
+        "astar_failures": 0,
+        "boundary_dead_ends_rejected": 1539,
+        "boundary_option_dead_ends_rejected": 0,
+        "boundary_capacity_dead_ends_rejected": 0,
+        "geometry_rejections": 0,
+        "valid_candidates_scored": 0
+      },
+      "pending_boundaries": [
+        {
+          "requirement": "wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de",
+          "item": "item-xiranite-enr-powder",
+          "direction": "output",
+          "kind": "target-output",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "east"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:9cc78f5ad1c5a03a94a533fe26e35517c481fb4860303ff01217159ff2418b09",
+          "item": "item-liquid-xiranite-lowpoly",
+          "direction": "output",
+          "kind": "surplus-output",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "east"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:f959dd05789fc16f35b1e91f011554b72379039ba540182c0003a2974fcc13e6",
+          "item": "item-liquid-sewage",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:477be53964427bd4f6019a2d169a428dbf72ad621333d501c9161299fe7755d4",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:d99c6bb230d20783d0bad99d0d0a5ba34943863858d5eff76f5d428e02727fd3",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:73f36e90398b68aa42387f2354fff999d50989d1bbd721fd6ffd65ba7ad03c42",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:2eba72009a6db0c65081acfd1fc6085ba1c4d9ebe5600bd06cffbcc8ed53f4b6",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:d710dd2e30425cb0223acf030178bee2757ecb030a2580b0a68b57ebb5320528",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:69633717796936784c129d497cbe8656045bbefe2609ca7610fcc41f1044d548",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:3d2504ee25f64ffb790dd3830de2021227476c0368e9bc09fc95e39b817823f5",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:7d145257ade5f632eff06b73d3926770da6d64210ef7ebb0b169749103c32bfb",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        }
+      ],
+      "diagnostics": [
+        {
+          "stage": "constructive-planner",
+          "severity": "error",
+          "code": "production-growth-exhausted",
+          "path": "/production",
+          "entity": "facility-instance:recipe-occurrence:/target:0",
+          "message": "no accepted connected growth transaction within the recorded candidate budget; prior state preserved"
+        }
+      ],
+      "rejected_reasons": {
+        "connection failed: wiring-edge:0b2ecbe6f78d9201e786e19d3eabf513386600d28b038af939c226d493766d46": 24,
+        "connection failed: wiring-edge:2eba72009a6db0c65081acfd1fc6085ba1c4d9ebe5600bd06cffbcc8ed53f4b6": 3,
+        "connection failed: wiring-edge:a9f18ba528e2f61bcb2d6a90a5d8822f8fefb1752757551a25c23056a3fed78f": 1,
+        "production-placement-collision": 60,
+        "remaining capacity": 1536
+      },
+      "failed_groups": [
+        [
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1",
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2"
+        ]
+      ],
+      "obstruction": null,
+      "final_node_sha256": "63d47c8bd5f989aa5fee565730417b2be8e7cc49627796ed151197f840feca88",
+      "witness_sha256": "2c3d7cac7b5ec45aaf88606661823bf63b82f241e08ca738d1a91131e6d7c976",
+      "stdout_bytes": 297
+    },
+    {
+      "workload": "heavy-xiranite",
+      "round": 0,
+      "variant": "closed-nearby-4",
+      "exit_code": 1,
+      "complete": false,
+      "internal_complete": false,
+      "status": "growth-exhausted",
+      "facilities": 36,
+      "internal_requirements": 41,
+      "external_requirements": 0,
+      "score": [
+        2700,
+        1040,
+        84
+      ],
+      "bounds": {
+        "width": 108,
+        "height": 25
+      },
+      "planner_seconds": 12.85,
+      "wall_seconds": 13.09057158399999,
+      "rss_bytes": 54198272,
+      "steps": 33,
+      "group_sizes": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        3
+      ],
+      "group_trials": 37,
+      "last_group_trials": [
+        {
+          "step": 33,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:5",
+          "variant": 0,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:2",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:4",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:5"
+          ],
+          "success": false
+        },
+        {
+          "step": 33,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:5",
+          "variant": 1,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:2",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:4",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:5"
+          ],
+          "success": false
+        },
+        {
+          "step": 33,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:5",
+          "variant": 2,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:2",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:4",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:5"
+          ],
+          "success": false
+        },
+        {
+          "step": 33,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:5",
+          "variant": 3,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:2",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:4",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:5"
+          ],
+          "success": false
+        }
+      ],
+      "astar_calls": 1266,
+      "placements": 598,
+      "internal_output_violation_occurrences": 0,
+      "failed_statistics": {
+        "completed_lane_bundles": 0,
+        "boundary_requirement_rejections": {},
+        "geometry_failure_reasons": {},
+        "new_port_attempts": 190,
+        "existing_network_attempts": 0,
+        "attachment_anchors_considered": 0,
+        "splitter_candidates_considered": 0,
+        "converger_candidates_considered": 0,
+        "attachment_capacity_rejections": 0,
+        "component_topology_rejections": 0,
+        "branch_route_failures": 0,
+        "network_attachment_candidates_validated": 0,
+        "rotations_considered": 0,
+        "placements_considered": 0,
+        "additive_placements_considered": 0,
+        "area_lower_bound_rejections": 0,
+        "colliding_placements_rejected": 0,
+        "port_pairs_considered": 190,
+        "blocked_port_pairs_rejected": 0,
+        "astar_searches": 190,
+        "astar_failures": 190,
+        "boundary_dead_ends_rejected": 0,
+        "boundary_option_dead_ends_rejected": 0,
+        "boundary_capacity_dead_ends_rejected": 0,
+        "geometry_rejections": 0,
+        "valid_candidates_scored": 0
+      },
+      "pending_boundaries": [
+        {
+          "requirement": "wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de",
+          "item": "item-xiranite-enr-powder",
+          "direction": "output",
+          "kind": "target-output",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:9cc78f5ad1c5a03a94a533fe26e35517c481fb4860303ff01217159ff2418b09",
+          "item": "item-liquid-xiranite-lowpoly",
+          "direction": "output",
+          "kind": "surplus-output",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:f959dd05789fc16f35b1e91f011554b72379039ba540182c0003a2974fcc13e6",
+          "item": "item-liquid-sewage",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:477be53964427bd4f6019a2d169a428dbf72ad621333d501c9161299fe7755d4",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "east"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:d99c6bb230d20783d0bad99d0d0a5ba34943863858d5eff76f5d428e02727fd3",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:23cf9522756c2fcc73104be9956ba289611ee66e9552745aac44345829c3ef1e",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:9cbdc044457525444ef16212e5b415249456717648b66876b2d21a4bfe5963ed",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:52970b2f21b2d9c266aa04de180f670ee44230815569f282a87388335969675f",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:712d90bf4027ee3036582e62f42b9c560a503aa2e6f40e641c1fe33f665d468b",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:73f36e90398b68aa42387f2354fff999d50989d1bbd721fd6ffd65ba7ad03c42",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "east"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:5a9af8f3d1163bafe7f49e2f839343e277ff30c7f49398ac71aaf47de6fc823f",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:c0e6db51beefe6b35bf7c1e765925ffe562f12700cd77ffb549410051417cd66",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:1770726fc972d47bbfb77284fd3ce39582a2fea43bdf58f8f5a4c00150b5a2d3",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:833307cbcd65b4b77a2d7ed1240b029edef6467bcd988efd99f99887d5900e5b",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:2eba72009a6db0c65081acfd1fc6085ba1c4d9ebe5600bd06cffbcc8ed53f4b6",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "east"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:d710dd2e30425cb0223acf030178bee2757ecb030a2580b0a68b57ebb5320528",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "east"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:69633717796936784c129d497cbe8656045bbefe2609ca7610fcc41f1044d548",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "east"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:a50ef86cef9c91323da65e81aa7da6b4196616d2b7341a88277b554bd579d254",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "east"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:e9fc130bf5b1870946d736f205f920d602f372e315321255e3341e05aa2339cc",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "east"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:3d2504ee25f64ffb790dd3830de2021227476c0368e9bc09fc95e39b817823f5",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:7d145257ade5f632eff06b73d3926770da6d64210ef7ebb0b169749103c32bfb",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "south"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:05e089285ba40fa7965113fad2d6e3c58db56ee47bade60deef31023d6c6a1e8",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:7fc77ee8775d9ef812755ee30c15cafee5c07b9143518c8957979e01218f5966",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        }
+      ],
+      "diagnostics": [
+        {
+          "stage": "constructive-planner",
+          "severity": "error",
+          "code": "production-placement-budget-exhausted",
+          "path": "/production",
+          "entity": "facility-instance:recipe-occurrence:/target:0",
+          "message": "no accepted connected growth transaction within the recorded candidate budget; prior state preserved"
+        }
+      ],
+      "rejected_reasons": {
+        "connection failed: wiring-edge:00fda8d6ffd9b9a5783bfae3c91843eae4030d40605b06d8e45397f90d94f22a": 7,
+        "connection failed: wiring-edge:037fa5b7aa8741db140fa41b381ee7f3dcc7fdbb9f88a57d76ff638f65de1acc": 24,
+        "connection failed: wiring-edge:05e089285ba40fa7965113fad2d6e3c58db56ee47bade60deef31023d6c6a1e8": 208,
+        "connection failed: wiring-edge:08f6e8c977535a8ac16c6a33077ddcac41d1030d31043546e1a345036dc06da3": 3,
+        "connection failed: wiring-edge:1003da2b445bf096be6e477aca68ee82a516cc7b002f3fb2123b6d31759f0801": 9,
+        "connection failed: wiring-edge:121c0d63102c8c4f409587a74e73fbc957b60f98e7976c6cc0c3ab11971344a2": 4,
+        "connection failed: wiring-edge:15d6ce06d7ea0fef8004f44de714fa58df799033df2fea749cf4c29dded2e64f": 1,
+        "connection failed: wiring-edge:21c5b34ce05a1a6145f4451f9000d03a9184f3301407bb9ecb356b9339b77043": 25,
+        "connection failed: wiring-edge:2c69b95684e822f9b56e5dea7340ea10ad030c8966ce79f4e266ef8c53ef7c03": 7,
+        "connection failed: wiring-edge:3983a3f0da829b97c5d3c106f0351691e80e0230f280e9f65743f23a1dad2e2d": 16,
+        "connection failed: wiring-edge:4cb849fc215cd655bf6c54a772c7fb48066d7ad879d4abc0c971f43749d5a231": 2,
+        "connection failed: wiring-edge:4d2d96e80fe684a2fd6bbca955963306c0ca06348fa1a237af5e7b79b2df7149": 4,
+        "connection failed: wiring-edge:6a3c9cb8b6801d699a1752f09f622e035b42f899651f3a50feb4530a02eb319a": 6,
+        "connection failed: wiring-edge:6b0699f3bc1d6ad293cc3181cfca4608a125014b88fd40d09247a414e7aa06ea": 3,
+        "connection failed: wiring-edge:6e0ca3f3617c2ddf8d530f45ab78e316ca36cc5811becb602be362e63b642a76": 8,
+        "connection failed: wiring-edge:6e7e886bb2527e399bae69e67687b6f9beb004bff7efb16be97d8673a711103f": 6,
+        "connection failed: wiring-edge:731a02b8decf07cf1135f46b391405ce1e0465727cc8e9ed834b915addcbebb7": 3,
+        "connection failed: wiring-edge:83991942665a713b812f1f152e6c7eff67fdc93c2b73c285ae55a236d466a0cb": 27,
+        "connection failed: wiring-edge:8b27a55417191cb52ee2607ade8688babcf32aa5ffe0478269256232d620761d": 1,
+        "connection failed: wiring-edge:8c3d3a80e7c0e9aaa21f2a8d2c1450783462f7ec68f2161cde8a774ebca5cee8": 2,
+        "connection failed: wiring-edge:8f8d2ba860a8626044f5319f11ed5d50ea21278802bcf35a5c7312197647a7c9": 8,
+        "connection failed: wiring-edge:91a73c19364287329744ef050fd41643c1c2e5b90810c181bb7f847f49586f2d": 8,
+        "connection failed: wiring-edge:a563c1d10bb90b3f8ae65556cc7b5977a8dea90da3838074406d85e46967aa63": 10,
+        "connection failed: wiring-edge:a9f18ba528e2f61bcb2d6a90a5d8822f8fefb1752757551a25c23056a3fed78f": 7,
+        "connection failed: wiring-edge:b29b99f922b4bd62d909c888f5e91be5c9be2528ff6c97709741f4633a3ef9a1": 1,
+        "connection failed: wiring-edge:be409b83dcda429b63d3cff74e39303d606c18592119e62b47d57d7296e7e698": 2,
+        "connection failed: wiring-edge:d72810c0fad84b45bdb10aa34a5d8c7fee14b9097d1ff4431705762aeba3ae35": 2,
+        "connection failed: wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6": 5,
+        "connection failed: wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e": 3,
+        "production-placement-collision": 49,
+        "remaining boundary escape": 244,
+        "remaining capacity": 65
+      },
+      "failed_groups": [
+        [
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:2",
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:4",
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:5"
+        ]
+      ],
+      "obstruction": null,
+      "final_node_sha256": "44a3faf9fa7acda5d6f6a149ea5b4c9ad71e36e1bbe1d90a095d67391efff74a",
+      "witness_sha256": "5c644943ebad16164c46d66ee8908b86a224eb638a495dd1ccc11bb366edaa2e",
+      "stdout_bytes": 293
+    },
+    {
+      "workload": "heavy-xiranite",
+      "round": 0,
+      "variant": "fixed-east-nearby-4",
+      "exit_code": 1,
+      "complete": false,
+      "internal_complete": false,
+      "status": "growth-exhausted",
+      "facilities": 42,
+      "internal_requirements": 53,
+      "external_requirements": 0,
+      "score": [
+        3927,
+        1428,
+        149
+      ],
+      "bounds": {
+        "width": 51,
+        "height": 77
+      },
+      "planner_seconds": 51.653,
+      "wall_seconds": 51.97414475000001,
+      "rss_bytes": 70533120,
+      "steps": 35,
+      "group_sizes": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        3,
+        3,
+        3
+      ],
+      "group_trials": 58,
+      "last_group_trials": [
+        {
+          "step": 35,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3",
+          "variant": 3,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:1",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:2",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3"
+          ],
+          "success": false
+        },
+        {
+          "step": 35,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1",
+          "variant": 0,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1"
+          ],
+          "success": false
+        },
+        {
+          "step": 35,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1",
+          "variant": 1,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1"
+          ],
+          "success": false
+        },
+        {
+          "step": 35,
+          "root": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1",
+          "variant": 2,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+            "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1"
+          ],
+          "success": false
+        }
+      ],
+      "astar_calls": 6398,
+      "placements": 1121,
+      "internal_output_violation_occurrences": 0,
+      "orientation_decisions": [
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 2,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 2,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite:0",
+          "rotation": 0,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly:0",
+          "rotation": 0,
+          "aligned_output_groups": 2,
+          "output_groups": 2,
+          "aligned_input_groups": 2,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:3",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:4",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:5",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:6",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:7",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2:3",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3/recipe:grinder-plant-moss-powder-3-1/input:item-plant-moss-3:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-3:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 2,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 2,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 2,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:3",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 2,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder:3",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:2",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr:3",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder:1",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 2
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 2
+        }
+      ],
+      "flow_direction": "east",
+      "failed_statistics": {
+        "completed_lane_bundles": 108,
+        "boundary_requirement_rejections": {},
+        "geometry_failure_reasons": {},
+        "new_port_attempts": 180,
+        "existing_network_attempts": 0,
+        "attachment_anchors_considered": 68588,
+        "splitter_candidates_considered": 10497,
+        "converger_candidates_considered": 10497,
+        "attachment_capacity_rejections": 0,
+        "component_topology_rejections": 67488,
+        "branch_route_failures": 0,
+        "network_attachment_candidates_validated": 0,
+        "rotations_considered": 0,
+        "placements_considered": 0,
+        "additive_placements_considered": 0,
+        "area_lower_bound_rejections": 0,
+        "colliding_placements_rejected": 0,
+        "port_pairs_considered": 180,
+        "blocked_port_pairs_rejected": 0,
+        "astar_searches": 180,
+        "astar_failures": 72,
+        "boundary_dead_ends_rejected": 108,
+        "boundary_option_dead_ends_rejected": 0,
+        "boundary_capacity_dead_ends_rejected": 0,
+        "geometry_rejections": 0,
+        "valid_candidates_scored": 0
+      },
+      "pending_boundaries": [
+        {
+          "requirement": "wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de",
+          "item": "item-xiranite-enr-powder",
+          "direction": "output",
+          "kind": "target-output",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "east"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:9cc78f5ad1c5a03a94a533fe26e35517c481fb4860303ff01217159ff2418b09",
+          "item": "item-liquid-xiranite-lowpoly",
+          "direction": "output",
+          "kind": "surplus-output",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "east"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:f959dd05789fc16f35b1e91f011554b72379039ba540182c0003a2974fcc13e6",
+          "item": "item-liquid-sewage",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:477be53964427bd4f6019a2d169a428dbf72ad621333d501c9161299fe7755d4",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:d99c6bb230d20783d0bad99d0d0a5ba34943863858d5eff76f5d428e02727fd3",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:00fda8d6ffd9b9a5783bfae3c91843eae4030d40605b06d8e45397f90d94f22a",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:6e0ca3f3617c2ddf8d530f45ab78e316ca36cc5811becb602be362e63b642a76",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:52970b2f21b2d9c266aa04de180f670ee44230815569f282a87388335969675f",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:712d90bf4027ee3036582e62f42b9c560a503aa2e6f40e641c1fe33f665d468b",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:73f36e90398b68aa42387f2354fff999d50989d1bbd721fd6ffd65ba7ad03c42",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:5a9af8f3d1163bafe7f49e2f839343e277ff30c7f49398ac71aaf47de6fc823f",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:c0e6db51beefe6b35bf7c1e765925ffe562f12700cd77ffb549410051417cd66",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:2eba72009a6db0c65081acfd1fc6085ba1c4d9ebe5600bd06cffbcc8ed53f4b6",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:d710dd2e30425cb0223acf030178bee2757ecb030a2580b0a68b57ebb5320528",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:69633717796936784c129d497cbe8656045bbefe2609ca7610fcc41f1044d548",
+          "item": "item-liquid-water",
+          "direction": "input",
+          "kind": "external-input",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "north"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:a50ef86cef9c91323da65e81aa7da6b4196616d2b7341a88277b554bd579d254",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:e9fc130bf5b1870946d736f205f920d602f372e315321255e3341e05aa2339cc",
+          "item": "item-plant-moss-2",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:3d2504ee25f64ffb790dd3830de2021227476c0368e9bc09fc95e39b817823f5",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        },
+        {
+          "requirement": "wiring-edge:7d145257ade5f632eff06b73d3926770da6d64210ef7ebb0b169749103c32bfb",
+          "item": "item-plant-moss-3",
+          "direction": "input",
+          "kind": "recipe-flow",
+          "attachments": 1,
+          "attachment_kinds": [
+            "new-port"
+          ],
+          "port_edges": [
+            "west"
+          ]
+        }
+      ],
+      "diagnostics": [
+        {
+          "stage": "constructive-planner",
+          "severity": "error",
+          "code": "production-placement-budget-exhausted",
+          "path": "/production",
+          "entity": "facility-instance:recipe-occurrence:/target:0",
+          "message": "no accepted connected growth transaction within the recorded candidate budget; prior state preserved"
+        }
+      ],
+      "rejected_reasons": {
+        "connection failed: wiring-edge:00fda8d6ffd9b9a5783bfae3c91843eae4030d40605b06d8e45397f90d94f22a": 381,
+        "connection failed: wiring-edge:037fa5b7aa8741db140fa41b381ee7f3dcc7fdbb9f88a57d76ff638f65de1acc": 2,
+        "connection failed: wiring-edge:091c5a06bf6f7deebb33f108bd8c9f6235f5b2b88776f594d711e491bba96133": 3,
+        "connection failed: wiring-edge:1003da2b445bf096be6e477aca68ee82a516cc7b002f3fb2123b6d31759f0801": 111,
+        "connection failed: wiring-edge:124ca8bb0ec201dc0491433c2e8ca3d33e97724d62e3401f73a30ef2ab477550": 11,
+        "connection failed: wiring-edge:1770726fc972d47bbfb77284fd3ce39582a2fea43bdf58f8f5a4c00150b5a2d3": 5,
+        "connection failed: wiring-edge:23cf9522756c2fcc73104be9956ba289611ee66e9552745aac44345829c3ef1e": 3,
+        "connection failed: wiring-edge:2c69b95684e822f9b56e5dea7340ea10ad030c8966ce79f4e266ef8c53ef7c03": 4,
+        "connection failed: wiring-edge:4b51612081025bca14e8175eb68811e3c63b945f36e2035ff971b6fad9cef5e1": 19,
+        "connection failed: wiring-edge:52970b2f21b2d9c266aa04de180f670ee44230815569f282a87388335969675f": 85,
+        "connection failed: wiring-edge:52f906ed850f95209b3253222fd38f53f004b2da6fea328c4625bca9b3dd4058": 17,
+        "connection failed: wiring-edge:5548acc5371cafb786474a7d043d8d7664622c358d110625e1370006bf7f1539": 11,
+        "connection failed: wiring-edge:5a9af8f3d1163bafe7f49e2f839343e277ff30c7f49398ac71aaf47de6fc823f": 46,
+        "connection failed: wiring-edge:61ec62214a08362a0a8b358c464d7945f804d1e3244f495a9fafcde49c1ff38c": 10,
+        "connection failed: wiring-edge:6b0699f3bc1d6ad293cc3181cfca4608a125014b88fd40d09247a414e7aa06ea": 4,
+        "connection failed: wiring-edge:6e0ca3f3617c2ddf8d530f45ab78e316ca36cc5811becb602be362e63b642a76": 25,
+        "connection failed: wiring-edge:6e7e886bb2527e399bae69e67687b6f9beb004bff7efb16be97d8673a711103f": 5,
+        "connection failed: wiring-edge:731a02b8decf07cf1135f46b391405ce1e0465727cc8e9ed834b915addcbebb7": 1,
+        "connection failed: wiring-edge:7fc77ee8775d9ef812755ee30c15cafee5c07b9143518c8957979e01218f5966": 5,
+        "connection failed: wiring-edge:833307cbcd65b4b77a2d7ed1240b029edef6467bcd988efd99f99887d5900e5b": 7,
+        "connection failed: wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8": 1,
+        "connection failed: wiring-edge:8c3d3a80e7c0e9aaa21f2a8d2c1450783462f7ec68f2161cde8a774ebca5cee8": 4,
+        "connection failed: wiring-edge:91a73c19364287329744ef050fd41643c1c2e5b90810c181bb7f847f49586f2d": 19,
+        "connection failed: wiring-edge:93fa7a1f2cb1a71d583344ca01da0728bfa93f2372c51982eda230ead140b1c1": 4,
+        "connection failed: wiring-edge:9cbdc044457525444ef16212e5b415249456717648b66876b2d21a4bfe5963ed": 5,
+        "connection failed: wiring-edge:a2a0229a8f1ef3a02e2dd7e3708e0738d25f9e4c8dbc4470858708e296dba230": 41,
+        "connection failed: wiring-edge:a9f18ba528e2f61bcb2d6a90a5d8822f8fefb1752757551a25c23056a3fed78f": 8,
+        "connection failed: wiring-edge:aa4b306421503217f491f121e8d3dfb57aa6ac4d4d7512e8e7064aa58a7e233c": 2,
+        "connection failed: wiring-edge:b65b2f33f0ed666ff22c3c2dd875a38620d66269690f8b1e1bc3f900e4c226e9": 6,
+        "connection failed: wiring-edge:be409b83dcda429b63d3cff74e39303d606c18592119e62b47d57d7296e7e698": 2,
+        "connection failed: wiring-edge:d72810c0fad84b45bdb10aa34a5d8c7fee14b9097d1ff4431705762aeba3ae35": 4,
+        "connection failed: wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6": 2,
+        "connection failed: wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e": 2,
+        "production-placement-collision": 72,
+        "remaining boundary escape": 800,
+        "remaining capacity": 90
+      },
+      "failed_groups": [
+        [
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1"
+        ],
+        [
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:1",
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:2",
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-liquid-xiranite-poly/recipe:pool-liquid-xiranite-poly-1/input:item-liquid-xiranite/recipe:pool-liquid-liquid-xiranite-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:3"
+        ],
+        [
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2/recipe:planter-plant-moss-2-1/input:item-plant-moss-seed-2:0",
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:0",
+          "facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2/recipe:thickener-plant-moss-enr-powder-2-1/input:item-plant-moss-powder-2/recipe:grinder-plant-moss-powder-2-1/input:item-plant-moss-2:1"
+        ]
+      ],
+      "obstruction": {
+        "connection": "wiring-edge:5a9af8f3d1163bafe7f49e2f839343e277ff30c7f49398ac71aaf47de6fc823f",
+        "blocked": [
+          "wiring-edge:00fda8d6ffd9b9a5783bfae3c91843eae4030d40605b06d8e45397f90d94f22a",
+          "wiring-edge:52970b2f21b2d9c266aa04de180f670ee44230815569f282a87388335969675f",
+          "wiring-edge:6e0ca3f3617c2ddf8d530f45ab78e316ca36cc5811becb602be362e63b642a76",
+          "wiring-edge:712d90bf4027ee3036582e62f42b9c560a503aa2e6f40e641c1fe33f665d468b"
+        ]
+      },
+      "final_node_sha256": "131caa1acde183cedef2b92be351e3e511a1d60c099c72f04cdd53793dda9715",
+      "witness_sha256": "5501b9a324573e498fac9ff046288399a23a5087a6dc977254b538ce73c79891",
+      "stdout_bytes": 301
+    },
+    {
+      "workload": "seed-cycle",
+      "round": 0,
+      "variant": "baseline",
+      "exit_code": 0,
+      "complete": true,
+      "internal_complete": true,
+      "status": "complete",
+      "facilities": 2,
+      "internal_requirements": 2,
+      "external_requirements": 1,
+      "score": [
+        294,
+        40,
+        2
+      ],
+      "bounds": {
+        "width": 14,
+        "height": 21
+      },
+      "planner_seconds": 0.002,
+      "wall_seconds": 0.031147750000003725,
+      "rss_bytes": 8421376,
+      "steps": 2,
+      "group_sizes": [
+        1
+      ],
+      "group_trials": 0,
+      "last_group_trials": [],
+      "astar_calls": 3,
+      "placements": 1,
+      "internal_output_violation_occurrences": 0,
+      "failed_statistics": {
+        "completed_lane_bundles": 0,
+        "boundary_requirement_rejections": {},
+        "geometry_failure_reasons": {},
+        "new_port_attempts": 0,
+        "existing_network_attempts": 0,
+        "attachment_anchors_considered": 0,
+        "splitter_candidates_considered": 0,
+        "converger_candidates_considered": 0,
+        "attachment_capacity_rejections": 0,
+        "component_topology_rejections": 0,
+        "branch_route_failures": 0,
+        "network_attachment_candidates_validated": 0,
+        "rotations_considered": 0,
+        "placements_considered": 0,
+        "additive_placements_considered": 0,
+        "area_lower_bound_rejections": 0,
+        "colliding_placements_rejected": 0,
+        "port_pairs_considered": 0,
+        "blocked_port_pairs_rejected": 0,
+        "astar_searches": 0,
+        "astar_failures": 0,
+        "boundary_dead_ends_rejected": 0,
+        "boundary_option_dead_ends_rejected": 0,
+        "boundary_capacity_dead_ends_rejected": 0,
+        "geometry_rejections": 0,
+        "valid_candidates_scored": 0
+      },
+      "pending_boundaries": [],
+      "diagnostics": [],
+      "rejected_reasons": {},
+      "failed_groups": [],
+      "obstruction": null,
+      "final_node_sha256": "5f17fd5cf8b78a55f25eace672dfaef63ed6197f9b2e3d758f5f4e182ccdda84",
+      "witness_sha256": "87569f89ef41cbc46950820cca3be6977d0f050b41dce56a420f1be4606540cd",
+      "stdout_bytes": 262
+    },
+    {
+      "workload": "seed-cycle",
+      "round": 0,
+      "variant": "unchanged",
+      "exit_code": 0,
+      "complete": true,
+      "internal_complete": true,
+      "status": "complete",
+      "facilities": 2,
+      "internal_requirements": 2,
+      "external_requirements": 1,
+      "score": [
+        294,
+        40,
+        2
+      ],
+      "bounds": {
+        "width": 14,
+        "height": 21
+      },
+      "planner_seconds": 0.002,
+      "wall_seconds": 0.03036362499999814,
+      "rss_bytes": 8470528,
+      "steps": 2,
+      "group_sizes": [
+        1
+      ],
+      "group_trials": 0,
+      "last_group_trials": [],
+      "astar_calls": 3,
+      "placements": 1,
+      "internal_output_violation_occurrences": 0,
+      "failed_statistics": {
+        "completed_lane_bundles": 0,
+        "boundary_requirement_rejections": {},
+        "geometry_failure_reasons": {},
+        "new_port_attempts": 0,
+        "existing_network_attempts": 0,
+        "attachment_anchors_considered": 0,
+        "splitter_candidates_considered": 0,
+        "converger_candidates_considered": 0,
+        "attachment_capacity_rejections": 0,
+        "component_topology_rejections": 0,
+        "branch_route_failures": 0,
+        "network_attachment_candidates_validated": 0,
+        "rotations_considered": 0,
+        "placements_considered": 0,
+        "additive_placements_considered": 0,
+        "area_lower_bound_rejections": 0,
+        "colliding_placements_rejected": 0,
+        "port_pairs_considered": 0,
+        "blocked_port_pairs_rejected": 0,
+        "astar_searches": 0,
+        "astar_failures": 0,
+        "boundary_dead_ends_rejected": 0,
+        "boundary_option_dead_ends_rejected": 0,
+        "boundary_capacity_dead_ends_rejected": 0,
+        "geometry_rejections": 0,
+        "valid_candidates_scored": 0
+      },
+      "pending_boundaries": [],
+      "diagnostics": [],
+      "rejected_reasons": {},
+      "failed_groups": [],
+      "obstruction": null,
+      "final_node_sha256": "5f17fd5cf8b78a55f25eace672dfaef63ed6197f9b2e3d758f5f4e182ccdda84",
+      "witness_sha256": "87569f89ef41cbc46950820cca3be6977d0f050b41dce56a420f1be4606540cd",
+      "stdout_bytes": 264
+    },
+    {
+      "workload": "seed-cycle",
+      "round": 0,
+      "variant": "closed-coarse",
+      "exit_code": 0,
+      "complete": true,
+      "internal_complete": true,
+      "status": "complete",
+      "facilities": 2,
+      "internal_requirements": 2,
+      "external_requirements": 1,
+      "score": [
+        294,
+        40,
+        2
+      ],
+      "bounds": {
+        "width": 14,
+        "height": 21
+      },
+      "planner_seconds": 0.002,
+      "wall_seconds": 0.030371041999984298,
+      "rss_bytes": 8388608,
+      "steps": 2,
+      "group_sizes": [
+        1
+      ],
+      "group_trials": 1,
+      "last_group_trials": [
+        {
+          "step": 0,
+          "root": "facility-instance:recipe-occurrence:/target:0",
+          "variant": 0,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0"
+          ],
+          "success": true
+        }
+      ],
+      "astar_calls": 3,
+      "placements": 1,
+      "internal_output_violation_occurrences": 0,
+      "failed_statistics": {
+        "completed_lane_bundles": 0,
+        "boundary_requirement_rejections": {},
+        "geometry_failure_reasons": {},
+        "new_port_attempts": 0,
+        "existing_network_attempts": 0,
+        "attachment_anchors_considered": 0,
+        "splitter_candidates_considered": 0,
+        "converger_candidates_considered": 0,
+        "attachment_capacity_rejections": 0,
+        "component_topology_rejections": 0,
+        "branch_route_failures": 0,
+        "network_attachment_candidates_validated": 0,
+        "rotations_considered": 0,
+        "placements_considered": 0,
+        "additive_placements_considered": 0,
+        "area_lower_bound_rejections": 0,
+        "colliding_placements_rejected": 0,
+        "port_pairs_considered": 0,
+        "blocked_port_pairs_rejected": 0,
+        "astar_searches": 0,
+        "astar_failures": 0,
+        "boundary_dead_ends_rejected": 0,
+        "boundary_option_dead_ends_rejected": 0,
+        "boundary_capacity_dead_ends_rejected": 0,
+        "geometry_rejections": 0,
+        "valid_candidates_scored": 0
+      },
+      "pending_boundaries": [],
+      "diagnostics": [],
+      "rejected_reasons": {},
+      "failed_groups": [],
+      "obstruction": null,
+      "final_node_sha256": "5f17fd5cf8b78a55f25eace672dfaef63ed6197f9b2e3d758f5f4e182ccdda84",
+      "witness_sha256": "87569f89ef41cbc46950820cca3be6977d0f050b41dce56a420f1be4606540cd",
+      "stdout_bytes": 272
+    },
+    {
+      "workload": "seed-cycle",
+      "round": 0,
+      "variant": "fixed-east-coarse",
+      "exit_code": 0,
+      "complete": true,
+      "internal_complete": true,
+      "status": "complete",
+      "facilities": 2,
+      "internal_requirements": 2,
+      "external_requirements": 1,
+      "score": [
+        304,
+        51,
+        5
+      ],
+      "bounds": {
+        "width": 16,
+        "height": 19
+      },
+      "planner_seconds": 0.002,
+      "wall_seconds": 0.03155879099998856,
+      "rss_bytes": 8716288,
+      "steps": 2,
+      "group_sizes": [
+        1
+      ],
+      "group_trials": 1,
+      "last_group_trials": [
+        {
+          "step": 0,
+          "root": "facility-instance:recipe-occurrence:/target:0",
+          "variant": 0,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0"
+          ],
+          "success": true
+        }
+      ],
+      "astar_calls": 3,
+      "placements": 1,
+      "internal_output_violation_occurrences": 0,
+      "orientation_decisions": [
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        }
+      ],
+      "flow_direction": "east",
+      "failed_statistics": {
+        "completed_lane_bundles": 0,
+        "boundary_requirement_rejections": {},
+        "geometry_failure_reasons": {},
+        "new_port_attempts": 0,
+        "existing_network_attempts": 0,
+        "attachment_anchors_considered": 0,
+        "splitter_candidates_considered": 0,
+        "converger_candidates_considered": 0,
+        "attachment_capacity_rejections": 0,
+        "component_topology_rejections": 0,
+        "branch_route_failures": 0,
+        "network_attachment_candidates_validated": 0,
+        "rotations_considered": 0,
+        "placements_considered": 0,
+        "additive_placements_considered": 0,
+        "area_lower_bound_rejections": 0,
+        "colliding_placements_rejected": 0,
+        "port_pairs_considered": 0,
+        "blocked_port_pairs_rejected": 0,
+        "astar_searches": 0,
+        "astar_failures": 0,
+        "boundary_dead_ends_rejected": 0,
+        "boundary_option_dead_ends_rejected": 0,
+        "boundary_capacity_dead_ends_rejected": 0,
+        "geometry_rejections": 0,
+        "valid_candidates_scored": 0
+      },
+      "pending_boundaries": [],
+      "diagnostics": [],
+      "rejected_reasons": {},
+      "failed_groups": [],
+      "obstruction": null,
+      "final_node_sha256": "7a70a122bff72d7d874df5532e41976c2eb58c5325c7a07ec4bf744a0176bc6d",
+      "witness_sha256": "03257a035ce8dd282896f4711b29048a0b30a04b7bf8cdb3fe0cf92c94ab9497",
+      "stdout_bytes": 280
+    },
+    {
+      "workload": "seed-cycle",
+      "round": 0,
+      "variant": "closed-nearby-4",
+      "exit_code": 0,
+      "complete": true,
+      "internal_complete": true,
+      "status": "complete",
+      "facilities": 2,
+      "internal_requirements": 2,
+      "external_requirements": 1,
+      "score": [
+        182,
+        24,
+        2
+      ],
+      "bounds": {
+        "width": 14,
+        "height": 13
+      },
+      "planner_seconds": 0.004,
+      "wall_seconds": 0.0316473330000008,
+      "rss_bytes": 8421376,
+      "steps": 2,
+      "group_sizes": [
+        1
+      ],
+      "group_trials": 1,
+      "last_group_trials": [
+        {
+          "step": 0,
+          "root": "facility-instance:recipe-occurrence:/target:0",
+          "variant": 0,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0"
+          ],
+          "success": true
+        }
+      ],
+      "astar_calls": 9,
+      "placements": 4,
+      "internal_output_violation_occurrences": 0,
+      "failed_statistics": {
+        "completed_lane_bundles": 0,
+        "boundary_requirement_rejections": {},
+        "geometry_failure_reasons": {},
+        "new_port_attempts": 0,
+        "existing_network_attempts": 0,
+        "attachment_anchors_considered": 0,
+        "splitter_candidates_considered": 0,
+        "converger_candidates_considered": 0,
+        "attachment_capacity_rejections": 0,
+        "component_topology_rejections": 0,
+        "branch_route_failures": 0,
+        "network_attachment_candidates_validated": 0,
+        "rotations_considered": 0,
+        "placements_considered": 0,
+        "additive_placements_considered": 0,
+        "area_lower_bound_rejections": 0,
+        "colliding_placements_rejected": 0,
+        "port_pairs_considered": 0,
+        "blocked_port_pairs_rejected": 0,
+        "astar_searches": 0,
+        "astar_failures": 0,
+        "boundary_dead_ends_rejected": 0,
+        "boundary_option_dead_ends_rejected": 0,
+        "boundary_capacity_dead_ends_rejected": 0,
+        "geometry_rejections": 0,
+        "valid_candidates_scored": 0
+      },
+      "pending_boundaries": [],
+      "diagnostics": [],
+      "rejected_reasons": {},
+      "failed_groups": [],
+      "obstruction": null,
+      "final_node_sha256": "2f6bff23b064819c6ec39884cc2f746001f3c97a58c5ef6e2f0ef1dfe3231b1e",
+      "witness_sha256": "8e239489d34c42df7e0fa2067bba2ff93dd273c68996a543daf34a45336b1348",
+      "stdout_bytes": 276
+    },
+    {
+      "workload": "seed-cycle",
+      "round": 0,
+      "variant": "fixed-east-nearby-4",
+      "exit_code": 0,
+      "complete": true,
+      "internal_complete": true,
+      "status": "complete",
+      "facilities": 2,
+      "internal_requirements": 2,
+      "external_requirements": 1,
+      "score": [
+        126,
+        24,
+        2
+      ],
+      "bounds": {
+        "width": 21,
+        "height": 6
+      },
+      "planner_seconds": 0.004,
+      "wall_seconds": 0.03130825000000186,
+      "rss_bytes": 8519680,
+      "steps": 2,
+      "group_sizes": [
+        1
+      ],
+      "group_trials": 1,
+      "last_group_trials": [
+        {
+          "step": 0,
+          "root": "facility-instance:recipe-occurrence:/target:0",
+          "variant": 0,
+          "new_members": [
+            "facility-instance:recipe-occurrence:/target/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0"
+          ],
+          "success": true
+        }
+      ],
+      "astar_calls": 9,
+      "placements": 4,
+      "internal_output_violation_occurrences": 0,
+      "orientation_decisions": [
+        {
+          "instance": "facility-instance:recipe-occurrence:/target/recipe:planter-plant-moss-3-1/input:item-plant-moss-seed-3:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        },
+        {
+          "instance": "facility-instance:recipe-occurrence:/target:0",
+          "rotation": 90,
+          "aligned_output_groups": 1,
+          "output_groups": 1,
+          "aligned_input_groups": 1,
+          "input_groups": 1
+        }
+      ],
+      "flow_direction": "east",
+      "failed_statistics": {
+        "completed_lane_bundles": 0,
+        "boundary_requirement_rejections": {},
+        "geometry_failure_reasons": {},
+        "new_port_attempts": 0,
+        "existing_network_attempts": 0,
+        "attachment_anchors_considered": 0,
+        "splitter_candidates_considered": 0,
+        "converger_candidates_considered": 0,
+        "attachment_capacity_rejections": 0,
+        "component_topology_rejections": 0,
+        "branch_route_failures": 0,
+        "network_attachment_candidates_validated": 0,
+        "rotations_considered": 0,
+        "placements_considered": 0,
+        "additive_placements_considered": 0,
+        "area_lower_bound_rejections": 0,
+        "colliding_placements_rejected": 0,
+        "port_pairs_considered": 0,
+        "blocked_port_pairs_rejected": 0,
+        "astar_searches": 0,
+        "astar_failures": 0,
+        "boundary_dead_ends_rejected": 0,
+        "boundary_option_dead_ends_rejected": 0,
+        "boundary_capacity_dead_ends_rejected": 0,
+        "geometry_rejections": 0,
+        "valid_candidates_scored": 0
+      },
+      "pending_boundaries": [],
+      "diagnostics": [],
+      "rejected_reasons": {},
+      "failed_groups": [],
+      "obstruction": null,
+      "final_node_sha256": "a55708049181b3bc2730f316bcea201a60186e2a9816cd3c5f464d4cc0f6fe5b",
+      "witness_sha256": "0b9085dc7c3821b839660307a66c3c50f45c68b3218df336ad375fbebf9df8f2",
+      "stdout_bytes": 284
+    }
+  ]
+}

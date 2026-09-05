@@ -91,6 +91,7 @@ fn shortlist(
     margin: i64,
     facilities: &ValidatedFacilityCatalog,
     wiring: &FacilityInstanceWiringReport,
+    fixed_orientation: bool,
 ) -> Vec<(i64, i64, i64)> {
     let parent = target
         .placements
@@ -118,6 +119,9 @@ fn shortlist(
     let mut candidates = BTreeMap::new();
     for r in 0..4 {
         let rotation = ((r + variant) % 4) as i64 * 90;
+        if fixed_orientation && rotation != 0 {
+            continue;
+        }
         let shape = rotate_node(fresh, rotation);
         if !facilities
             .facility(&shape.placements[0].facility)
@@ -206,6 +210,7 @@ impl Constructor<'_> {
             margin,
             self.facilities,
             self.wiring,
+            self.request.flow_direction.is_some(),
         );
         let mut decision = ConstructivePlacementDecision {
             facility: fresh.member_instances[0].clone(),

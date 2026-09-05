@@ -2,16 +2,18 @@
 mod audit;
 mod boundary;
 mod order;
+mod orientation;
 mod placement;
 use boundary::blocked_boundaries;
 pub use order::ConstructiveGrowthDecision;
+pub use orientation::ConstructiveOrientationDecision;
 pub use placement::ConstructivePlacementDecision;
 #[cfg(test)]
 mod tests;
 use super::composition::{canonicalize_node, merge_nodes, rotate_node, translate_node};
 use super::routing::RouteWorkspace;
 use super::*;
-use crate::facilities::ValidatedFacilityCatalog;
+use crate::facilities::{FacilityPortEdge, ValidatedFacilityCatalog};
 use crate::logistics::{
     ValidatedItemCatalog, ValidatedLogisticsComponentCatalog, ValidatedTransportCatalog,
 };
@@ -43,6 +45,9 @@ pub struct ConstructiveProductionRequest {
     /// Commit only internal downstream-closed growth; external terminals remain a final stage.
     #[serde(default)]
     pub downstream_closed_growth: bool,
+    /// Fixed catalog-derived facility orientation along the desired material-flow axis.
+    #[serde(default)]
+    pub flow_direction: Option<FacilityPortEdge>,
 }
 
 fn default_analysis_workers() -> usize {
@@ -89,6 +94,7 @@ pub struct ConstructiveProductionReport {
     pub rejected_reasons: BTreeMap<String, u64>,
     pub placement_decisions: Vec<ConstructivePlacementDecision>,
     pub growth_decisions: Vec<ConstructiveGrowthDecision>,
+    pub orientation_decisions: Vec<ConstructiveOrientationDecision>,
     pub attempted_groups_at_failure: Vec<Vec<String>>,
     pub last_obstruction: Option<ConstructiveProductionObstruction>,
     pub elapsed_ms: u64,
@@ -96,6 +102,7 @@ pub struct ConstructiveProductionReport {
 }
 
 struct Constructor<'a> {
+    fixed_rotations: BTreeMap<String, i64>,
     wiring: &'a FacilityInstanceWiringReport,
     facilities: &'a ValidatedFacilityCatalog,
     items: &'a ValidatedItemCatalog,
@@ -159,12 +166,14 @@ pub fn construct_production(
         rejected_reasons: BTreeMap::new(),
         placement_decisions: Vec::new(),
         growth_decisions: Vec::new(),
+        orientation_decisions: Vec::new(),
         attempted_groups_at_failure: Vec::new(),
         last_obstruction: None,
         elapsed_ms: 0,
         diagnostics: Vec::new(),
     };
     let mut c = Constructor {
+        fixed_rotations: BTreeMap::new(),
         wiring,
         facilities,
         items,
@@ -260,6 +269,22 @@ pub fn construct_production(
                 "external endpoint role/item mismatch or external-to-external edge",
             ));
             return report;
+        }
+    }
+    if let Some(direction) = request.flow_direction {
+        for id in &ids {
+            let decision = construct_facility_node(wiring, facilities, items, id)
+                .and_then(|node| orientation::choose(&node, facilities, direction));
+            match decision {
+                Ok(decision) => {
+                    c.fixed_rotations.insert(id.clone(), decision.rotation);
+                    report.orientation_decisions.push(decision);
+                }
+                Err(d) => {
+                    report.diagnostics.push(d);
+                    return report;
+                }
+            }
         }
     }
     let mut current = match c.fresh(&request.target_instance, 0) {
@@ -588,6 +613,10 @@ impl Constructor<'_> {
         variant: usize,
     ) -> Result<ConstructiveNode, ConstructiveFrontierDiagnostic> {
         let mut node = construct_facility_node(self.wiring, self.facilities, self.items, id)?;
+        if let Some(rotation) = self.fixed_rotations.get(id) {
+            let delta = (rotation - node.placements[0].rotation).rem_euclid(360);
+            node = rotate_node(&node, delta);
+        }
         let mut groups =
             BTreeMap::<(u8, TransportKind, String), (Rate, Vec<PlacedFacilityPort>)>::new();
         for b in &node.boundary_requirements {
@@ -615,6 +644,15 @@ impl Constructor<'_> {
             if !ports.is_empty() {
                 let offset = variant % ports.len();
                 ports.rotate_left(offset);
+            }
+            if let Some(direction) = self.request.flow_direction {
+                let side = if key.0 == 1 {
+                    direction
+                } else {
+                    direction.rotated_clockwise(180)
+                };
+                // Stable: variants reorder ports within aligned/nonaligned faces, not across them.
+                ports.sort_by_key(|p| p.edge != side);
             }
             let lanes =
                 super::capacity::split_rate_into_lanes(rate, key.1, self.transports, id)?.len();
@@ -727,8 +765,11 @@ impl Constructor<'_> {
             if self.exhausted() {
                 return None;
             }
-            self.attempts += 1;
             let rotation = ((attempt / 4 + variant) % 4) as i64 * 90;
+            if self.request.flow_direction.is_some() && rotation != 0 {
+                continue;
+            }
+            self.attempts += 1;
             let rotated = rotate_node(&fresh, rotation);
             if !self
                 .facilities

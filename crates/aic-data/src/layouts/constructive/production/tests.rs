@@ -81,6 +81,7 @@ fn request(seed: &str) -> ConstructiveProductionRequest {
         analysis_workers: 1,
         nearby_candidates: 0,
         downstream_closed_growth: false,
+        flow_direction: None,
     }
 }
 
@@ -100,6 +101,121 @@ fn downstream_groups_include_shared_consumers_and_cycles_but_stop_at_closed_node
         order::downstream_group("a", &["b".into(), "c".into(), "d".into()], &edges),
         BTreeSet::from(["a".into()])
     );
+}
+
+#[test]
+fn fixed_flow_rotation_uses_required_port_normals_and_reports_side_groups() {
+    let (f, i, _, _) = catalogs();
+    let w = wiring(&[("a", "b"), ("b", "a")]);
+    let mut node = construct_facility_node(&w, &f, &i, "a").unwrap();
+    for (direction, expected) in [
+        (FacilityPortEdge::East, 0),
+        (FacilityPortEdge::South, 90),
+        (FacilityPortEdge::West, 180),
+        (FacilityPortEdge::North, 270),
+    ] {
+        let d = orientation::choose(&node, &f, direction).unwrap();
+        assert_eq!(d.rotation, expected);
+        assert_eq!((d.aligned_input_groups, d.aligned_output_groups), (1, 1));
+    }
+    let mut side = node
+        .boundary_requirements
+        .iter()
+        .find(|b| b.direction == FacilityPortDirection::Output)
+        .unwrap()
+        .clone();
+    side.item = "side-output".into();
+    side.transport = TransportKind::Pipe;
+    for a in &mut side.attachments {
+        a.port_mut().edge = FacilityPortEdge::North;
+    }
+    node.boundary_requirements.push(side);
+    let d = orientation::choose(&node, &f, FacilityPortEdge::East).unwrap();
+    assert_eq!(d.rotation, 0); // Output tie is broken by upstream-facing inputs.
+    assert_eq!((d.aligned_output_groups, d.output_groups), (1, 2));
+}
+
+#[test]
+fn fixed_flow_growth_never_retries_a_different_orientation() {
+    let (f, i, t, c) = catalogs();
+    for edges in [
+        vec![("a", "b"), ("b", "c")],
+        vec![("a", "b"), ("a", "c")],
+        vec![("a", "b"), ("b", "c"), ("c", "a")],
+    ] {
+        let w = wiring(&edges);
+        for nearby in [0, 4] {
+            let mut req = request("c");
+            req.downstream_closed_growth = true;
+            req.flow_direction = Some(FacilityPortEdge::South);
+            req.nearby_candidates = nearby;
+            let r = construct_production(&w, &f, &i, &t, &c, &req);
+            assert!(r.complete, "{edges:?}/{nearby}: {:?}", r.diagnostics);
+            assert_eq!(r.orientation_decisions.len(), w.nodes.len());
+            for step in &r.steps {
+                assert!(step.node.placements.iter().all(|p| p.rotation == 90));
+                network::validate(&step.node, &f, &t, &c).unwrap();
+                audit::validate_coverage(&step.node, &w, &i).unwrap();
+                assert!(step.placement_attempts <= req.max_placement_attempts);
+                assert!(step.statistics.astar_searches <= req.max_route_searches);
+            }
+            assert!(
+                r.placement_decisions
+                    .iter()
+                    .filter_map(|d| d.selected_pose)
+                    .all(|p| p[0] == 0)
+            );
+            let repeated = construct_production(&w, &f, &i, &t, &c, &req);
+            assert_eq!(r.final_node, repeated.final_node);
+            assert_eq!(r.orientation_decisions, repeated.orientation_decisions);
+        }
+    }
+}
+
+#[test]
+fn fixed_flow_handles_nonzero_catalog_default_and_nonsquare_footprint() {
+    let (f, i, t, c) = catalogs();
+    let mut raw = f.catalog().clone();
+    raw.facilities[0].footprint.width = 3;
+    raw.facilities[0].footprint.height = 2;
+    raw.facilities[0].allowed_rotations = vec![180, 90, 270];
+    raw.facilities[0].ports[1].position.x = 2;
+    let f = ValidatedFacilityCatalog::try_from_catalog(raw).unwrap();
+    let w = wiring(&[("a", "b")]);
+    let mut req = request("b");
+    req.flow_direction = Some(FacilityPortEdge::North);
+    let r = construct_production(&w, &f, &i, &t, &c, &req);
+    assert!(r.complete, "{:?}", r.diagnostics);
+    assert!(
+        r.final_node
+            .unwrap()
+            .placements
+            .iter()
+            .all(|p| p.rotation == 270 && p.width == 2 && p.height == 3)
+    );
+}
+
+#[test]
+fn fixed_flow_is_optional_and_budget_failure_retains_fixed_seed() {
+    let mut value = serde_json::to_value(request("b")).unwrap();
+    value.as_object_mut().unwrap().remove("flow_direction");
+    assert!(
+        serde_json::from_value::<ConstructiveProductionRequest>(value)
+            .unwrap()
+            .flow_direction
+            .is_none()
+    );
+    let (f, i, t, c) = catalogs();
+    let w = wiring(&[("a", "b"), ("a", "c")]);
+    let mut req = request("c");
+    req.flow_direction = Some(FacilityPortEdge::West);
+    req.downstream_closed_growth = true;
+    req.max_route_searches = 1;
+    let r = construct_production(&w, &f, &i, &t, &c, &req);
+    assert!(!r.complete);
+    assert!(r.steps.is_empty());
+    assert_eq!(r.final_node.unwrap().placements[0].rotation, 180);
+    assert!(r.failed_statistics.astar_searches <= 1);
 }
 
 #[test]

@@ -140,6 +140,7 @@ fn downstream_growth_flag_records_order_diagnostics_without_expanding_stdout() {
     let output = fixture
         .command("1", None)
         .arg("--downstream-closed-growth")
+        .args(["--flow-direction", "east"])
         .arg("--report-output")
         .arg(fixture.directory.join("report.json"))
         .arg("--visualization-output")
@@ -151,6 +152,13 @@ fn downstream_growth_flag_records_order_diagnostics_without_expanding_stdout() {
     let report: Value =
         serde_json::from_slice(&fs::read(fixture.directory.join("report.json")).unwrap()).unwrap();
     assert_eq!(report["request"]["downstream_closed_growth"], true);
+    assert_eq!(report["request"]["flow_direction"], "east");
+    assert!(
+        !report["orientation_decisions"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
     assert!(!report["growth_decisions"].as_array().unwrap().is_empty());
 }
 
