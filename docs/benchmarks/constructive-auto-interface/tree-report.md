@@ -1,5 +1,9 @@
 # Automatic capacity-aware split/merge interfaces
 
+Historical `cee25bf` binary-comb baseline. See `compact-report.md` for the later three-way
+geometry, shared-trunk and area-first compaction experiment. This report and `tree-matrix.json`
+retain their original measurements; current code no longer constructs the binary comb.
+
 ## Outcome
 
 The former four-consumer `port-pressure.json` request now produces a complete local witness.

@@ -23,14 +23,24 @@ This is a local two-layer boundary, not a whole production graph, cycle resolver
    by their first target and target buckets by their first source. Stable same-item order must
    survive grouping. Minimize capacity-port pressure, residual inversions and fragment count
    at this interface-order stage, not the production layout objective. Report the search budget.
-4. Pack catalog facility bodies into two banks. Construct disjoint ordered approaches, fixed
-   splitter combs, the preplanned lane permutation, fixed converger combs and ordered exits.
-   Tree roots sum at most one lane of a single item. The same five-column, pitch-three template
-   applies to every arity; check every active arm, rotation and capacity against the catalog.
-   Direct single-leaf zero-inversion connections bypass tree/permutation envelopes.
+4. Construct two geometry families with the same allocations. The leaf family uses disjoint
+   ordered approaches, three-way splitter trees, a preplanned leaf permutation, converger trees
+   and ordered exits. The trunk family retains shared descending source trunks, taps them at
+   target leaf rows and preplans crossings only at different-item straight intersections.
+   Trunk taps can use two active arms when this yields a smaller overall layout. Tree roots
+   sum at most one lane of a single item; all active arms, rotations and capacities come from
+   runtime catalogs. Tree width follows its recursive depth, not a fixed five-column comb.
+   Direct single-leaf zero-inversion connections bypass leaf tree/permutation envelopes.
 5. Lower bucket terminals and fragment paths into one network per compatible commodity. Sum
    rates on shared segments; connect external recipe requirements on as many capacity lanes
    as needed, with explicit external port-pressure failure. Require independent Rust validation.
+6. Optionally compact each candidate by contracting whole grid strips containing no facility
+   body, component, terminal, turn, branch, merge, transverse segment or rate change. Transform
+   all remaining geometry and regenerate catalog port coordinates. This preserves directed
+   topology and rates, but remains an unaccepted candidate until independent validation.
+7. Select only complete, independently validated candidates, lexicographically by actual used
+   area, unique physical transport tiles and route turns. Component count is diagnostic only.
+   Preserve rejected candidates and family construction failures. No global area optimum is claimed.
 
 Output detail schema v2 includes fragment bindings, port groups with exact rates and membership,
 tree reservations/paths, permutation plus absolute origin, stage timings and witness v1.
@@ -40,6 +50,32 @@ v1 are unchanged. The automatic constructor no longer calls the historical fixtu
 Candidates are not accepted until independent
 covered-geometry validation AND complete recipe-terminal coverage pass. Bounds are measured output.
 Detailed results go to files; stdout has one short completion summary.
+
+CLI `--embedding portfolio` is the default and compares raw and compacted leaf/trunk families.
+Explicit `--embedding leaf` or `trunk` runs that raw family only for controlled experiments.
+The helper API defaults to `leaf`; callers requesting the portfolio receive an unvalidated
+candidate collection, never a selected layout. Report schema v2 adds per-candidate scores,
+validation status, construction failures and selected embedding. The request and witness schemas
+are unchanged. Compacted details replace pre-contraction tree/permutation coordinates with a
+clearly named `pre_compaction_plan`; witness, port groups and catalog ports describe the new state.
+In compacted port groups, `port_y` remains an actual transformed port coordinate. Reservation-only
+`row` and `root_row` are deliberately removed from these groups and retained in
+`pre_compaction_plan.port_groups`; bypassed tree reservations need not lie inside used bounds.
+Raw `detail.accepted` stays false: the authoritative acceptance result is in `report.json` and
+`validation.json`, not in the generator's pre-validation detail DTO.
+
+Three-way trees support 1..384 leaves. At pitch one a three-leaf module occupies 3x3 including
+the root/leaf connection cells. `ceil((L-1)/2)` is a junction-count lower bound for a rooted
+tree with at most three children, not a minimum-area bound or a candidate-selection objective.
+Integrated leaf lanes still start at pitch three for compatibility with the crossing template;
+strip compaction removes spacing only when the complete geometry allows it.
+
+Construction timing includes candidate generation and compaction, excludes independent validation
+and output. Per-candidate reports separate input JSON I/O, validator process wall time, and render
+plus HTML I/O. Validator-internal time remains in `validation.json`; process wall times overlap
+because independent validators run concurrently. The audit's warm construction statistics exclude
+validation and file I/O. `elapsed_before_report_ms` includes selected output, excludes catalog load
+and the final report write. No timing includes compilation.
 
 ## Invariants and failures
 
@@ -55,6 +91,8 @@ global infeasibility proofs. `interface-aggregate-port-pressure` now means capac
 facing ports even with sharing; the obsolete pair-count `interface-port-pressure` code is removed.
 Resource caps are diagnostic safeguards, not game limits. Keep all generated geometry unaccepted
 if validation fails; preserve it for visual diagnosis.
+No generated candidate yields `interface-generation-failed`, not an independent-validation rejection.
+Candidate processing errors are isolated so they cannot discard another independently valid candidate.
 
 ## Completion and verification
 

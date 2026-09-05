@@ -3,7 +3,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { constructInterface, orderedApproach } from './model.mjs';
 import { polyline } from '../constructive-interconnect/geometry.mjs';
-import { treeModule } from './trees.mjs';
+import { treeModule, treeShape } from './trees.mjs';
+import { compactInterface, witnessScore } from './compact.mjs';
 import { rate, multiply, capacity, dto, parseRate, add, compare } from '../constructive-interconnect/rates.mjs';
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k =>
@@ -58,7 +59,7 @@ test('four consumers share three source capacity ports through fixed splitter tr
   const r = result('port-pressure');
   assert.equal(r.port_groups.sources.length, 3);
   assert.equal(r.port_groups.targets.length, 8);
-  assert.equal(r.witness.logistics_components.filter(c => c.kind === 'splitter').length, 5);
+  assert.equal(r.witness.logistics_components.filter(c => c.kind === 'splitter').length, 4);
   assert.equal(r.witness.logistics_components.filter(c => c.kind === 'bridge').length, 6);
   assert.equal(r.accepted, false);
   assert.equal(new Set(r.witness.transport_networks.flatMap(n => n.terminals.filter(t => t.endpoint.kind === 'facility').map(t => t.id))).size,
@@ -77,18 +78,62 @@ test('merge and combined recipes generate capacity-safe roots and exact leaf sum
   }
 });
 
-test('fixed combs support 1..12 leaves on both layers and reject invalid capacity/catalogs', () => {
+test('ternary trees attain the junction-count bound for 1..12 leaves on both layers', () => {
   for (const transport of ['belt', 'pipe']) for (const kind of ['splitter', 'converger']) for (let count = 1; count <= 12; count++) {
     const cap = capacity(catalogs.transports.transports.find(t => t.kind === transport).capacity);
     const item = catalogs.items.items.find(i => i.transport === transport).id;
     const group = { id: 'tree', item, lanes: Array.from({ length: count }, (_, i) => ({ id: `leaf${i}`, item, transport, rate: dto(multiply(cap, rate(1, count))) })) };
     const tree = treeModule(group, kind, { x: 3, y: 2 }, catalogs);
-    assert.equal(tree.components.length, count - 1); assert.deepEqual(tree.root_rate, dto(cap));
+    assert.equal(tree.components.length, Math.ceil((count - 1) / 2)); assert.deepEqual(tree.root_rate, dto(cap));
+    assert.equal(tree.minimum_junction_count, true);
+    if (count === 3) {
+      assert.deepEqual(treeShape(count), { width: 3, height: 3, root_index: 1 });
+      const junction = tree.components[0].position, arms = new Set();
+      for (const p of tree.paths) for (let i = 0; i < p.cells.length; i++) if (p.cells[i].x === junction.x && p.cells[i].y === junction.y) {
+        const q = p.cells[i + (kind === 'splitter' ? 1 : -1)];
+        arms.add(`${q.x - junction.x},${q.y - junction.y}`);
+      }
+      assert.equal(arms.size, 3);
+    }
     assert.ok(tree.paths.every(p => p.cells.every(c => c.x >= tree.x && c.x < tree.x + tree.width && c.y >= tree.y && c.y < tree.y + tree.height)));
     const overload = structuredClone(group); overload.lanes[0].rate = dto(multiply(cap, rate(2)));
     assert.throws(() => treeModule(overload, kind, { x: 3, y: 2 }, catalogs), { code: 'interface-tree-capacity' });
     if (count > 1) assert.throws(() => treeModule(group, kind, { x: 3, y: 2 }, { ...catalogs, components: { components: [] } }), { code: 'interface-tree-catalog-unsupported' });
   }
+});
+
+test('portfolio preserves allocations; strip compaction is idempotent and preserves terminal rates', () => {
+  for (const name of ['four', 'five', 'merge', 'combined', 'port-pressure']) {
+    const r = constructInterface(catalogs, request(name), 'portfolio');
+    assert.equal(r.accepted, false); assert.deepEqual(r.failures, []);
+    assert.deepEqual(r.candidates.map(c => c.embedding), ['leaf', 'trunk']);
+    assert.deepEqual(r.candidates[0].bindings, r.candidates[1].bindings);
+    for (const c of r.candidates) {
+      const original = structuredClone(c), compacted = compactInterface(c, catalogs);
+      assert.deepEqual(structuredClone(c), original);
+      assert.deepEqual(compactInterface(compacted, catalogs).witness, compacted.witness);
+      assert.ok(witnessScore(compacted.witness).area <= witnessScore(c.witness).area);
+      assert.ok(witnessScore(compacted.witness).physical_tiles <= witnessScore(c.witness).physical_tiles);
+      assert.deepEqual(compacted.witness.utilizations, c.witness.utilizations);
+      for (const g of [...compacted.port_groups.sources, ...compacted.port_groups.targets]) {
+        assert.equal(Object.hasOwn(g, 'row'), false); assert.equal(Object.hasOwn(g, 'root_row'), false);
+        assert.ok(Number.isSafeInteger(g.port_y));
+      }
+      assert.deepEqual(compacted.pre_compaction_plan.port_groups, c.port_groups);
+      const signature = w => w.transport_networks.map(n => ({ id: n.id, item: n.item, transport: n.transport,
+        terminals: n.terminals.map(({ position, ...t }) => t) }));
+      assert.deepEqual(signature(compacted.witness), signature(c.witness));
+      assert.deepEqual(compacted.witness.logistics_components.map(({ position, ...q }) => q), c.witness.logistics_components.map(({ position, ...q }) => q));
+      for (const n of compacted.witness.transport_networks) for (const s of n.segments)
+        assert.equal(Math.abs(s.to.x - s.from.x) + Math.abs(s.to.y - s.from.y), 1);
+    }
+  }
+});
+
+test('score handles large cell sets without argument-spread stack overflow', () => {
+  const w = { placements: [], logistics_components: [], transport_networks: [{ transport: 'belt',
+    cells: Array.from({ length: 150000 }, (_, x) => ({ x, y: 0 })), segments: [] }] };
+  assert.deepEqual(witnessScore(w).tuple, [150000, 150000, 0]);
 });
 
 test('aggregate capacity pressure stays explicit after sharing is introduced', () => {

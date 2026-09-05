@@ -2,6 +2,7 @@ import { rotateFacility } from '../constructive-placement-only/model.mjs';
 import { rate, add, multiply, parseRate, dto, compare, capacity } from '../constructive-interconnect/rates.mjs';
 import { allocateBuckets } from './allocation.mjs';
 import { embedInterface } from './embedding.mjs';
+import { embedTrunks } from './trunk-embedding.mjs';
 
 const sum = xs => xs.reduce(add, rate(0));
 const fail = (code, stage, message, entity = null) => {
@@ -23,7 +24,8 @@ export function orderedApproach(lanes) {
     [l.start.x + i + 1, l.start.y], [l.start.x + i + 1, l.end.y], [l.end.x, l.end.y]]]));
 }
 
-export function constructInterface(catalogs, request) {
+export function constructInterface(catalogs, request, embedding = 'leaf') {
+  if (!['leaf', 'trunk', 'portfolio'].includes(embedding)) fail('interface-unknown-embedding', 'input', 'Expected leaf, trunk or portfolio geometry', embedding);
   const start = performance.now(), timings = {};
   if (!exactKeys(request, ['schema_version', 'producers', 'consumers']) || request.schema_version !== 1 ||
       !Array.isArray(request.producers) || !Array.isArray(request.consumers) ||
@@ -93,8 +95,24 @@ export function constructInterface(catalogs, request) {
         lane_capacity: dto(cap), order_trials: trials, geometry_constructed: false, global_infeasibility_proven: false } });
   }
   timings.order_ms = performance.now() - orderStart;
+  if (embedding === 'portfolio') {
+    const candidates = [], failures = [];
+    for (const family of ['leaf', 'trunk']) {
+      const candidateStart = performance.now();
+      try {
+        const result = (family === 'leaf' ? embedInterface : embedTrunks)(catalogs, structuredClone(nodes), structuredClone(best), orderedApproach);
+        candidates.push({ ...result, schema_version: 2, case: 'automatic-two-bank-interface', embedding: family, accepted: false, factory_validated: false,
+          pending: ['independent-geometry-and-complete-recipe-validation'], decisions: { producer_order: best.producers, consumer_order: best.consumers,
+            source_order: best.sourceOrder.map(l => l.id), target_order: best.targetOrder.map(l => l.id), inversions: best.inversions,
+            order_trials: trials, order_budget: budget, order_budget_exhausted: trials >= budget },
+          timings: { ...timings, geometry_ms: result.geometry_ms, lowering_ms: result.lowering_ms }, construction_ms: performance.now() - candidateStart });
+      } catch (e) { failures.push({ embedding: family, code: e.code ?? 'interface-generation-failed', severity: 'error', stage: e.stage ?? 'geometry', message: e.message, entity: e.entity ?? null }); }
+    }
+    return { schema_version: 1, kind: 'unvalidated-interface-portfolio', candidates, failures, construction_ms: performance.now() - start,
+      shared_timings: timings, accepted: false };
+  }
   let result;
-  try { result = embedInterface(catalogs, nodes, best, orderedApproach); }
+  try { result = (embedding === 'leaf' ? embedInterface : embedTrunks)(catalogs, nodes, best, orderedApproach); }
   catch (e) {
     e.evidence = { ...e.evidence, fragment_count: best.lanes.length, source_ports: best.sourceGroups.length,
       target_ports: best.targetGroups.length, requested_inversions: best.inversions,
@@ -102,7 +120,7 @@ export function constructInterface(catalogs, request) {
     throw e;
   }
   timings.geometry_ms = result.geometry_ms; timings.lowering_ms = result.lowering_ms;
-  return { ...result, schema_version: 2, case: 'automatic-two-bank-interface', accepted: false, factory_validated: false,
+  return { ...result, schema_version: 2, case: 'automatic-two-bank-interface', embedding, accepted: false, factory_validated: false,
     pending: ['independent-geometry-and-complete-recipe-validation'],
     decisions: { producer_order: best.producers, consumer_order: best.consumers,
       source_order: best.sourceOrder.map(l => l.id), target_order: best.targetOrder.map(l => l.id),

@@ -19,11 +19,11 @@ export function treeBoundaryWitness(catalogs, anchorRecipe, transport, kind, cou
   const terminal = (id, position, direction, side, value) => terminals.push({ id, node: id, direction, position,
     endpoint: { kind: 'external', node: id, side }, rate: dto(value) });
   const split = kind === 'splitter';
-  terminal('root', { x: split ? 0 : east, y: module.y }, split ? 'output' : 'input', split ? 'west' : 'east', cap);
+  terminal('root', { x: split ? 0 : east, y: module.root.y }, split ? 'output' : 'input', split ? 'west' : 'east', cap);
   for (const [i, p] of module.paths.entries()) {
-    const value = parseRate(group.lanes[i].rate), y = module.y + i * 3;
+    const value = parseRate(group.lanes.find(l => l.id === p.id).rate), y = split ? p.cells.at(-1).y : p.cells[0].y;
     terminal(`leaf-${i}`, { x: split ? east : 0, y }, split ? 'input' : 'output', split ? 'east' : 'west', value);
-    const line = polyline([[0, split ? module.y : y], ...p.cells.map(p => [p.x, p.y]), [east, split ? y : module.y]]);
+    const line = polyline([[0, split ? module.root.y : y], ...p.cells.map(p => [p.x, p.y]), [east, split ? y : module.root.y]]);
     for (const p of line) cells.set(key(p), p);
     for (let j = 1; j < line.length; j++) {
       const from = line[j - 1], to = line[j], tag = key(from) + '>' + key(to), previous = segments.get(tag);
