@@ -1,0 +1,654 @@
+{
+  "schema_version": 1,
+  "kind": "placement-only-timing",
+  "runs": 20,
+  "scope": "Release graph CLI including JSON file output, then a fresh Node process through placement JSON and HTML output. No routing. Build and tests excluded. Warm filesystem; no cold-cache claim. First run retained, not discarded.",
+  "node_version": "v26.5.0",
+  "platform": "darwin",
+  "architecture": "arm64",
+  "inputs": [
+    {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-cli",
+      "sha256": "7c895b062b2efd0722c3dd70bc102c1b15dfcb912a8dc827bf9bd618a41bd656"
+    },
+    {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-placement-only/place.mjs",
+      "sha256": "c86eaa1fa9d6015a12efc8ab377af4043e39ad1fd559bc706431749d0ebd2b63"
+    },
+    {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/examples/source-plan.game-heavy-xiranite-forge.request.json",
+      "sha256": "5302d96a5177ed2f3fde55fe13539187f7601b6667b0f0588980dca01ccd320c"
+    },
+    {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+      "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+    },
+    {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+      "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+    },
+    {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+      "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+    }
+  ],
+  "raw_directory": "/tmp/aic-pipe-north.83Sq17/timing",
+  "statistics": {
+    "graph_cli_wall_ms": {
+      "min": 36.90608400000019,
+      "median": 38.057291499999906,
+      "p95": 39.16699999999997,
+      "max": 39.854625
+    },
+    "placement_cli_wall_ms": {
+      "min": 158.06145800000013,
+      "median": 165.47483299999996,
+      "p95": 169.3778339999999,
+      "max": 169.63283299999966
+    },
+    "pipeline_wall_ms": {
+      "min": 197.24362500000007,
+      "median": 204.41093750000005,
+      "p95": 209.04287499999964,
+      "max": 209.05570799999998
+    },
+    "input_loading_ms": {
+      "min": 4.802625000000006,
+      "median": 4.943166499999997,
+      "p95": 5.175957999999994,
+      "max": 5.207915999999997
+    },
+    "placement_ms": {
+      "min": 25.063083000000006,
+      "median": 25.6614795,
+      "p95": 25.967624999999998,
+      "max": 26.518291999999988
+    },
+    "provenance_ms": {
+      "min": 0.596665999999999,
+      "median": 0.6491664999999998,
+      "p95": 0.8310829999999925,
+      "max": 0.843874999999997
+    },
+    "report_serialization_ms": {
+      "min": 1.7845419999999876,
+      "median": 2.343896000000001,
+      "p95": 2.3840409999999963,
+      "max": 2.3858749999999986
+    },
+    "report_write_ms": {
+      "min": 1.060417000000001,
+      "median": 1.2885619999999989,
+      "p95": 1.5102920000000069,
+      "max": 1.5554169999999914
+    },
+    "html_render_ms": {
+      "min": 0.710125000000005,
+      "median": 1.1121665000000007,
+      "p95": 1.2240000000000038,
+      "max": 1.2261670000000038
+    },
+    "html_write_ms": {
+      "min": 1.5399170000000026,
+      "median": 2.4318540000000084,
+      "p95": 2.8095,
+      "max": 3.139415999999997
+    },
+    "measured_body_ms": {
+      "min": 36.448334,
+      "median": 38.656417,
+      "p95": 39.445457999999995,
+      "max": 40.034
+    }
+  },
+  "repeat_statistics_excluding_first": {
+    "graph_cli_wall_ms": {
+      "min": 36.90608400000019,
+      "median": 38.00808299999994,
+      "p95": 39.16699999999997,
+      "max": 39.16699999999997
+    },
+    "placement_cli_wall_ms": {
+      "min": 158.06145800000013,
+      "median": 165.599666,
+      "p95": 169.63283299999966,
+      "max": 169.63283299999966
+    },
+    "pipeline_wall_ms": {
+      "min": 197.24362500000007,
+      "median": 204.26825000000008,
+      "p95": 209.05570799999998,
+      "max": 209.05570799999998
+    },
+    "input_loading_ms": {
+      "min": 4.802625000000006,
+      "median": 4.947290999999993,
+      "p95": 5.207915999999997,
+      "max": 5.207915999999997
+    },
+    "placement_ms": {
+      "min": 25.063083000000006,
+      "median": 25.668374999999997,
+      "p95": 26.518291999999988,
+      "max": 26.518291999999988
+    },
+    "provenance_ms": {
+      "min": 0.596665999999999,
+      "median": 0.6496250000000003,
+      "p95": 0.843874999999997,
+      "max": 0.843874999999997
+    },
+    "report_serialization_ms": {
+      "min": 1.7845419999999876,
+      "median": 2.3436669999999964,
+      "p95": 2.3858749999999986,
+      "max": 2.3858749999999986
+    },
+    "report_write_ms": {
+      "min": 1.060417000000001,
+      "median": 1.2888329999999968,
+      "p95": 1.5554169999999914,
+      "max": 1.5554169999999914
+    },
+    "html_render_ms": {
+      "min": 0.710125000000005,
+      "median": 1.1129999999999995,
+      "p95": 1.2261670000000038,
+      "max": 1.2261670000000038
+    },
+    "html_write_ms": {
+      "min": 1.5399170000000026,
+      "median": 2.4298750000000098,
+      "p95": 3.139415999999997,
+      "max": 3.139415999999997
+    },
+    "measured_body_ms": {
+      "min": 36.448334,
+      "median": 38.866834,
+      "p95": 40.034,
+      "max": 40.034
+    }
+  },
+  "samples": [
+    {
+      "run": 0,
+      "graph_cli_wall_ms": 39.854625,
+      "placement_cli_wall_ms": 163.956708,
+      "pipeline_wall_ms": 205.06683299999997,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 4.924042,
+      "placement_ms": 25.549125000000004,
+      "provenance_ms": 0.6487079999999992,
+      "report_serialization_ms": 2.3659999999999997,
+      "report_write_ms": 1.2747919999999908,
+      "html_render_ms": 1.111333000000002,
+      "html_write_ms": 2.469166999999999,
+      "measured_body_ms": 38.446,
+      "report_bytes": 420963,
+      "html_bytes": 304249,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 1,
+      "graph_cli_wall_ms": 39.16699999999997,
+      "placement_cli_wall_ms": 165.599666,
+      "pipeline_wall_ms": 205.87675000000002,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 4.9323750000000075,
+      "placement_ms": 25.370917000000006,
+      "provenance_ms": 0.6142909999999944,
+      "report_serialization_ms": 2.308290999999997,
+      "report_write_ms": 1.3258340000000004,
+      "html_render_ms": 1.0925000000000011,
+      "html_write_ms": 2.3501250000000056,
+      "measured_body_ms": 38.08850000000001,
+      "report_bytes": 420963,
+      "html_bytes": 304249,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 2,
+      "graph_cli_wall_ms": 39.117166999999995,
+      "placement_cli_wall_ms": 168.77779099999998,
+      "pipeline_wall_ms": 209.05570799999998,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 4.960250000000002,
+      "placement_ms": 25.654584,
+      "provenance_ms": 0.6027090000000044,
+      "report_serialization_ms": 2.300416999999996,
+      "report_write_ms": 1.2182499999999976,
+      "html_render_ms": 1.0955829999999906,
+      "html_write_ms": 2.392583000000002,
+      "measured_body_ms": 38.318375,
+      "report_bytes": 420954,
+      "html_bytes": 304240,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 3,
+      "graph_cli_wall_ms": 38.509624999999915,
+      "placement_cli_wall_ms": 167.942583,
+      "pipeline_wall_ms": 207.484958,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 4.870500000000007,
+      "placement_ms": 25.409374999999997,
+      "provenance_ms": 0.596665999999999,
+      "report_serialization_ms": 2.3503749999999997,
+      "report_write_ms": 1.288291000000001,
+      "html_render_ms": 1.1133329999999972,
+      "html_write_ms": 2.372957999999997,
+      "measured_body_ms": 38.094958000000005,
+      "report_bytes": 420963,
+      "html_bytes": 304249,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 4,
+      "graph_cli_wall_ms": 38.00808299999994,
+      "placement_cli_wall_ms": 169.3778339999999,
+      "pipeline_wall_ms": 208.51083399999993,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 4.890749999999997,
+      "placement_ms": 25.799000000000007,
+      "provenance_ms": 0.8310829999999925,
+      "report_serialization_ms": 2.3436669999999964,
+      "report_write_ms": 1.3545830000000052,
+      "html_render_ms": 1.1444580000000002,
+      "html_write_ms": 2.4074169999999953,
+      "measured_body_ms": 38.870999999999995,
+      "report_bytes": 420963,
+      "html_bytes": 304249,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 5,
+      "graph_cli_wall_ms": 37.868791999999985,
+      "placement_cli_wall_ms": 163.26650000000018,
+      "pipeline_wall_ms": 202.23420800000008,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 4.818875000000006,
+      "placement_ms": 25.351167000000004,
+      "provenance_ms": 0.6278340000000071,
+      "report_serialization_ms": 2.3650420000000025,
+      "report_write_ms": 1.2253340000000037,
+      "html_render_ms": 1.0884170000000069,
+      "html_write_ms": 2.433833000000007,
+      "measured_body_ms": 38.004417000000004,
+      "report_bytes": 420963,
+      "html_bytes": 304249,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 6,
+      "graph_cli_wall_ms": 37.86349999999993,
+      "placement_cli_wall_ms": 165.3499999999999,
+      "pipeline_wall_ms": 204.26825000000008,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 4.876125000000002,
+      "placement_ms": 25.210375,
+      "provenance_ms": 0.6366660000000053,
+      "report_serialization_ms": 2.381999999999991,
+      "report_write_ms": 1.2504589999999922,
+      "html_render_ms": 1.0934579999999983,
+      "html_write_ms": 2.7891249999999985,
+      "measured_body_ms": 38.335832999999994,
+      "report_bytes": 420954,
+      "html_bytes": 304240,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 7,
+      "graph_cli_wall_ms": 38.303499999999985,
+      "placement_cli_wall_ms": 164.75358400000005,
+      "pipeline_wall_ms": 204.18141600000013,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 4.91579200000001,
+      "placement_ms": 25.299375000000012,
+      "provenance_ms": 0.6194169999999986,
+      "report_serialization_ms": 2.3098329999999976,
+      "report_write_ms": 1.231624999999994,
+      "html_render_ms": 1.1480829999999997,
+      "html_write_ms": 2.423124999999999,
+      "measured_body_ms": 38.044,
+      "report_bytes": 420963,
+      "html_bytes": 304249,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 8,
+      "graph_cli_wall_ms": 38.300083000000086,
+      "placement_cli_wall_ms": 162.28887499999996,
+      "pipeline_wall_ms": 201.66491700000006,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 4.853958000000006,
+      "placement_ms": 25.063083000000006,
+      "provenance_ms": 0.6323330000000027,
+      "report_serialization_ms": 2.320292000000009,
+      "report_write_ms": 1.3205839999999966,
+      "html_render_ms": 1.1066250000000082,
+      "html_write_ms": 2.344875000000002,
+      "measured_body_ms": 37.73687500000001,
+      "report_bytes": 420963,
+      "html_bytes": 304249,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 9,
+      "graph_cli_wall_ms": 37.364667000000054,
+      "placement_cli_wall_ms": 166.93587499999967,
+      "pipeline_wall_ms": 205.50308400000017,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 5.010540999999989,
+      "placement_ms": 26.518291999999988,
+      "provenance_ms": 0.6461669999999913,
+      "report_serialization_ms": 2.300875000000005,
+      "report_write_ms": 1.2888329999999968,
+      "html_render_ms": 1.100750000000005,
+      "html_write_ms": 2.3814999999999884,
+      "measured_body_ms": 39.345459000000005,
+      "report_bytes": 420963,
+      "html_bytes": 304249,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 10,
+      "graph_cli_wall_ms": 37.92079100000001,
+      "placement_cli_wall_ms": 167.72304099999974,
+      "pipeline_wall_ms": 206.70749999999998,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 4.802625000000006,
+      "placement_ms": 25.124834000000007,
+      "provenance_ms": 0.6105000000000018,
+      "report_serialization_ms": 2.3725000000000023,
+      "report_write_ms": 1.2695000000000078,
+      "html_render_ms": 1.0820000000000078,
+      "html_write_ms": 2.8095,
+      "measured_body_ms": 38.16858400000001,
+      "report_bytes": 420963,
+      "html_bytes": 304249,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 11,
+      "graph_cli_wall_ms": 38.10649999999987,
+      "placement_cli_wall_ms": 158.06145800000013,
+      "pipeline_wall_ms": 197.24362500000007,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 5.1325,
+      "placement_ms": 25.846667000000004,
+      "provenance_ms": 0.6832079999999934,
+      "report_serialization_ms": 2.341791999999998,
+      "report_write_ms": 1.5102920000000069,
+      "html_render_ms": 1.2261670000000038,
+      "html_write_ms": 2.604292000000001,
+      "measured_body_ms": 39.445457999999995,
+      "report_bytes": 420963,
+      "html_bytes": 304249,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 12,
+      "graph_cli_wall_ms": 38.129249999999956,
+      "placement_cli_wall_ms": 159.9271249999997,
+      "pipeline_wall_ms": 199.23041700000022,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 4.949207999999999,
+      "placement_ms": 25.83854199999999,
+      "provenance_ms": 0.843874999999997,
+      "report_serialization_ms": 2.3463330000000013,
+      "report_write_ms": 1.2648329999999959,
+      "html_render_ms": 1.1129999999999995,
+      "html_write_ms": 2.473917,
+      "measured_body_ms": 38.927959,
+      "report_bytes": 420962,
+      "html_bytes": 304248,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 13,
+      "graph_cli_wall_ms": 36.90608400000019,
+      "placement_cli_wall_ms": 166.03637500000013,
+      "pipeline_wall_ms": 204.06074999999964,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 4.9722909999999985,
+      "placement_ms": 25.870542,
+      "provenance_ms": 0.6801669999999973,
+      "report_serialization_ms": 2.3441250000000053,
+      "report_write_ms": 1.3798749999999984,
+      "html_render_ms": 1.1152919999999966,
+      "html_write_ms": 2.707874999999987,
+      "measured_body_ms": 39.172084,
+      "report_bytes": 420954,
+      "html_bytes": 304240,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 14,
+      "graph_cli_wall_ms": 37.38983300000018,
+      "placement_cli_wall_ms": 161.05899999999974,
+      "pipeline_wall_ms": 200.11524999999983,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 5.059749999999994,
+      "placement_ms": 25.967624999999998,
+      "provenance_ms": 0.7038340000000005,
+      "report_serialization_ms": 2.355542,
+      "report_write_ms": 1.4723749999999995,
+      "html_render_ms": 1.2240000000000038,
+      "html_write_ms": 3.139415999999997,
+      "measured_body_ms": 40.034,
+      "report_bytes": 420963,
+      "html_bytes": 304249,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 15,
+      "graph_cli_wall_ms": 36.94812499999989,
+      "placement_cli_wall_ms": 160.6434589999999,
+      "pipeline_wall_ms": 198.7945840000002,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 5.059875000000005,
+      "placement_ms": 25.92524999999999,
+      "provenance_ms": 0.7848749999999995,
+      "report_serialization_ms": 2.2961249999999893,
+      "report_write_ms": 1.3756249999999994,
+      "html_render_ms": 1.1144589999999965,
+      "html_write_ms": 2.4132079999999974,
+      "measured_body_ms": 39.07158299999999,
+      "report_bytes": 420962,
+      "html_bytes": 304248,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 16,
+      "graph_cli_wall_ms": 37.22854200000029,
+      "placement_cli_wall_ms": 165.84870899999987,
+      "pipeline_wall_ms": 204.553625,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 4.939042000000001,
+      "placement_ms": 25.79950000000001,
+      "provenance_ms": 0.6496250000000003,
+      "report_serialization_ms": 2.3858749999999986,
+      "report_write_ms": 1.3133749999999935,
+      "html_render_ms": 1.1163330000000116,
+      "html_write_ms": 2.6255000000000024,
+      "measured_body_ms": 38.929625,
+      "report_bytes": 420962,
+      "html_bytes": 304248,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 17,
+      "graph_cli_wall_ms": 37.374583999999686,
+      "placement_cli_wall_ms": 168.18170800000007,
+      "pipeline_wall_ms": 206.66616699999986,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 5.175957999999994,
+      "placement_ms": 25.854,
+      "provenance_ms": 0.7244169999999883,
+      "report_serialization_ms": 2.297792000000001,
+      "report_write_ms": 1.19212499999999,
+      "html_render_ms": 1.0968749999999972,
+      "html_write_ms": 2.4298750000000098,
+      "measured_body_ms": 38.866834,
+      "report_bytes": 420951,
+      "html_bytes": 304237,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 18,
+      "graph_cli_wall_ms": 38.2660420000002,
+      "placement_cli_wall_ms": 169.63283299999966,
+      "pipeline_wall_ms": 209.04287499999964,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 5.207915999999997,
+      "placement_ms": 25.668374999999997,
+      "provenance_ms": 0.6821670000000069,
+      "report_serialization_ms": 2.3840409999999963,
+      "report_write_ms": 1.5554169999999914,
+      "html_render_ms": 1.1558749999999947,
+      "html_write_ms": 2.5711669999999884,
+      "measured_body_ms": 39.33912500000001,
+      "report_bytes": 420963,
+      "html_bytes": 304249,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    },
+    {
+      "run": 19,
+      "graph_cli_wall_ms": 38.57083300000022,
+      "placement_cli_wall_ms": 159.90662500000008,
+      "pipeline_wall_ms": 199.6239169999999,
+      "schema_version": 1,
+      "clock": "monotonic-wall-time",
+      "scope": "input-loading-through-artifact-writes; excludes process startup and timing-file write",
+      "input_loading_ms": 4.947290999999993,
+      "placement_ms": 25.64412499999999,
+      "provenance_ms": 0.6755840000000006,
+      "report_serialization_ms": 1.7845419999999876,
+      "report_write_ms": 1.060417000000001,
+      "html_render_ms": 0.710125000000005,
+      "html_write_ms": 1.5399170000000026,
+      "measured_body_ms": 36.448334,
+      "report_bytes": 420962,
+      "html_bytes": 304248,
+      "geometry_sha256": "22cd7b1fbd29890168887b984abbb8b4d119cbc41b108391b874775063f53fec",
+      "bounds": {
+        "width": 52,
+        "height": 98
+      }
+    }
+  ]
+}

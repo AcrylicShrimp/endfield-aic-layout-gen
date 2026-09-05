@@ -86,6 +86,22 @@ export function placeOnly(wiring, catalog, items, target) {
   }
   const edges = wiring.edges.filter(e => byId.has(e.source) && byId.has(e.target))
     .map(e => ({ ...e, transport: byItem.get(e.item).transport }));
+  const incoming = new Map(facilities.map(n => [n.id, []]));
+  for (const e of edges) incoming.get(e.target).push(e.source);
+  const pipeEdges = edges.filter(e => e.transport === 'pipe');
+  const branchPriority = new Map(facilities.map(n => {
+    const ancestors = new Set(), pending = [n.id];
+    while (pending.length) {
+      const id = pending.pop();
+      if (ancestors.has(id)) continue;
+      ancestors.add(id);
+      pending.push(...incoming.get(id));
+    }
+    return [n.id, pipeEdges.filter(e => ancestors.has(e.source)).length];
+  }));
+  const northInput = id => shapes.get(id).ports.some(p => p.transport === 'pipe'
+    && p.direction === 'input' && p.edge === 'north');
+  const northEdges = pipeEdges.filter(e => northInput(e.target));
   const placed = new Map(), decisions = [], queue = [];
   const place = id => {
     const node = byId.get(id), shape = shapes.get(id);
@@ -98,11 +114,28 @@ export function placeOnly(wiring, catalog, items, target) {
     const x = peers.length ? upstream ? Math.min(...peers.map(p => p.x)) - shape.width - 1
       : Math.max(...peers.map(p => p.x + p.width)) + 1 : 0;
     const p = { instance: id, recipe: node.recipe, facility: node.facility,
-      x, y: row, width: shape.width, height: shape.height, rotation: shape.rotation };
+      x, y: row, width: shape.width, height: shape.height, rotation: shape.rotation,
+      branch_pipe_outputs: branchPriority.get(id) };
     const blockers = [...placed.values()].filter(b => x < b.x + b.width + 1 && x + p.width + 1 > b.x);
-    const events = [...new Set([row, ...blockers.flatMap(b => [b.y - p.height - 1, b.y + b.height + 1])])]
-      .sort((a, b) => Math.abs(a - row) - Math.abs(b - row) || a - b);
-    const y = events.find(y => blockers.every(b => !overlapsWithGap({ ...p, y }, b)));
+    const relations = northEdges.filter(e => e.source === id && placed.has(e.target)
+      || e.target === id && placed.has(e.source));
+    const anchors = relations.map(e => e.source === id ? placed.get(e.target).y - p.height - 1
+      : placed.get(e.source).y + placed.get(e.source).height + 1);
+    const events = [...new Set([row, ...anchors,
+      ...blockers.flatMap(b => [b.y - p.height - 1, b.y + b.height + 1])])];
+    const rankRow = y => ({ y,
+      north_pipe_violations: relations.filter(e => e.source === id
+        ? y + p.height + 1 > placed.get(e.target).y
+        : placed.get(e.source).y + placed.get(e.source).height + 1 > y).length,
+      branch_priority_inversions: blockers.filter(b => p.branch_pipe_outputs > b.branch_pipe_outputs
+        ? y + p.height + 1 > b.y
+        : p.branch_pipe_outputs < b.branch_pipe_outputs && b.y + b.height + 1 > y).length,
+      row_distance: Math.abs(y - row) });
+    const candidates = events.filter(y => blockers.every(b => !overlapsWithGap({ ...p, y }, b)))
+      .map(rankRow).sort((a, b) => a.north_pipe_violations - b.north_pipe_violations
+        || a.branch_priority_inversions - b.branch_priority_inversions
+        || a.row_distance - b.row_distance || a.y - b.y);
+    const chosen = candidates[0], y = chosen?.y;
     if (y === undefined) fail('placement-probe-row-exhausted', id, 'No collision-free obstacle-edge row');
     p.y = y;
     if (![p.x, p.y, p.x + p.width, p.y + p.height].every(integer))
@@ -110,6 +143,8 @@ export function placeOnly(wiring, catalog, items, target) {
     placed.set(id, p);
     decisions.push({ instance: id, consumers, suppliers, side: peers.length ? upstream ? 'upstream' : 'downstream' : 'component-seed',
       preferred_row: row, row_shift: y - row, row_events: events.length, aligned_row: row === y,
+      branch_pipe_outputs: p.branch_pipe_outputs, north_pipe_relations: relations.map(e => e.id),
+      row_choice: chosen,
       mixed_neighbor_roles: consumers.length > 0 && suppliers.length > 0 });
     queue.push(id);
   };
@@ -120,7 +155,8 @@ export function placeOnly(wiring, catalog, items, target) {
       const frontier = edges.filter(e => e.source === current || e.target === current).map(e => ({
         id: e.source === current ? e.target : e.source, upstream: e.target === current,
         transport: e.transport, edge: e.id,
-      })).sort((a, b) => Number(a.transport === 'pipe') - Number(b.transport === 'pipe')
+      })).sort((a, b) => branchPriority.get(b.id) - branchPriority.get(a.id)
+        || Number(a.transport === 'pipe') - Number(b.transport === 'pipe')
         || Number(!a.upstream) - Number(!b.upstream) || (a.edge < b.edge ? -1 : a.edge > b.edge ? 1 : 0));
       for (const next of frontier) if (!placed.has(next.id)) place(next.id);
     }
@@ -140,16 +176,29 @@ export function placeOnly(wiring, catalog, items, target) {
   for (let i = 0; i < placements.length; i++) for (let j = i + 1; j < placements.length; j++)
     if (overlapsWithGap(placements[i], placements[j])) fail('placement-probe-overlap', placements[i].instance, 'Facility clearance check failed');
   const pById = new Map(placements.map(p => [p.instance, p]));
+  const pipeRelations = pipeEdges.map(e => {
+    const a = pById.get(e.source), b = pById.get(e.target);
+    return { edge: e.id, source: e.source, target: e.target,
+      consumer_input_faces: [...new Set(b.catalog_ports.filter(p => p.transport === 'pipe' && p.direction === 'input').map(p => p.edge))],
+      north_preference_applicable: northInput(e.target), supplier_north: a.y + a.height + 1 <= b.y };
+  });
   const diagnostics = placements.filter(p => Object.values(p.alignment).some(g => g.aligned < g.required))
     .map(p => ({ code: 'placement-probe-mixed-port-faces', severity: 'warning', stage: 'placement-only',
       entity: p.instance, message: 'Some required interfaces do not face the global belt-flow direction; no port assignment or routing has been tested.' }));
+  for (const r of pipeRelations) if (r.north_preference_applicable && !r.supplier_north)
+    diagnostics.push({ code: 'placement-probe-north-pipe-preference-unmet', severity: 'warning',
+      stage: 'placement-only', entity: r.edge, message: 'Supplier is not north of this north-input consumer. Soft placement preference only; routing is untested.' });
   return { schema_version: 1, kind: 'placement-only-visual-diagnostic', success: true,
     routing_performed: false, factory_validated: false, placement_geometry_valid: true,
-    policy: { flow_direction: 'east', orientation_priority: 'belt-before-pipe', traversal: 'output-first-breadth-first-belt-priority',
-      row_alignment: 'top-edge', empty_cell_gap: 1, port_assignment: 'none' },
+    policy: { flow_direction: 'east', orientation_priority: 'belt-before-pipe', traversal: 'output-first-breadth-first-pipe-branch-priority',
+      branch_priority: 'distinct-internal-pipe-outputs-in-upstream-closure',
+      row_priority: ['north-input-pipe-supply', 'pipe-branch-north-order', 'top-edge-distance', 'north-tie-break'],
+      row_alignment: 'top-edge-unless-pipe-preference-or-collision', empty_cell_gap: 1, port_assignment: 'none' },
     target_instance: target, required_facilities: facilities.length, placements,
     bounds: { width: Math.max(...placements.map(p => p.x + p.width)), height: Math.max(...placements.map(p => p.y + p.height)) },
-    placement_decisions: decisions.map(d => ({ ...d, preferred_row: d.preferred_row - minY })),
+    placement_decisions: decisions.map(d => ({ ...d, preferred_row: d.preferred_row - minY,
+      row_choice: { ...d.row_choice, y: d.row_choice.y - minY } })),
+    pipe_relations: pipeRelations,
     internal_requirements: edges, external_requirements: wiring.edges.filter(e => !byId.has(e.source) || !byId.has(e.target)),
     non_forward_requirements: edges.filter(e => {
       const a = pById.get(e.source), b = pById.get(e.target);

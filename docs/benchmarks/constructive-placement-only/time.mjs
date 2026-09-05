@@ -58,7 +58,7 @@ const stats = rows => Object.fromEntries(metrics.map(key => {
   return [key, { min: values[0], median: (values[Math.floor((n - 1) / 2)] + values[Math.floor(n / 2)]) / 2,
     p95: values[Math.ceil(n * .95) - 1], max: values.at(-1) }];
 }));
-const summary = { schema_version: 1, kind: 'corrected-port-placement-timing', runs: count,
+const summary = { schema_version: 1, kind: 'placement-only-timing', runs: count,
   scope: 'Release graph CLI including JSON file output, then a fresh Node process through placement JSON and HTML output. No routing. Build and tests excluded. Warm filesystem; no cold-cache claim. First run retained, not discarded.',
   node_version: process.version, platform: process.platform, architecture: process.arch,
   inputs: [cli, probe, request, facilities, items, recipes].map(file => ({ path: file, sha256: sha(fs.readFileSync(file)) })),

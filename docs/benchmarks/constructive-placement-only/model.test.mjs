@@ -29,14 +29,53 @@ test('one-to-one chains remain top-aligned with one empty cell despite port offs
   assert.deepEqual(r.transport_networks, []);
   assert.deepEqual(r, placeOnly(w, catalog, items, 'd'));
 });
-test('breadth-first belts precede pipes; branches slide only to clear rows', () => {
+test('pipe-supply branches precede belt-only branches and stay north in the same column', () => {
   const w = wiring([['pipe', 'target', 'fluid'], ['belt', 'target'], ['upstream', 'belt'], ['other', 'target']]);
   const r = placeOnly(w, base, items, 'target');
-  assert.deepEqual(r.placements.map(p => p.instance), ['target', 'belt', 'other', 'pipe', 'upstream']);
+  assert.deepEqual(r.placements.map(p => p.instance), ['target', 'pipe', 'belt', 'other', 'upstream']);
   assert.equal(r.placement_decisions[1].row_shift, 0);
   assert.notEqual(r.placement_decisions[2].row_shift, 0);
   assert.equal(r.placement_decisions[4].row_shift, 0);
   assert.equal(r.placement_geometry_valid, true);
+  const pipe = r.placements.find(p => p.instance === 'pipe');
+  for (const id of ['belt', 'other']) {
+    const p = r.placements.find(p => p.instance === id);
+    assert(pipe.y + pipe.height + 1 <= p.y);
+  }
+});
+test('branch priority sees upstream pipe outputs and counts shared/cyclic edges once', () => {
+  const w = wiring([['left', 'target'], ['right', 'target'], ['up', 'right'],
+    ['source', 'up', 'fluid'], ['source', 'right', 'fluid'], ['up', 'source']]);
+  const r = placeOnly(w, base, items, 'target');
+  assert.deepEqual(r.placements.slice(0, 3).map(p => p.instance), ['target', 'right', 'left']);
+  const priorities = Object.fromEntries(r.placements.map(p => [p.instance, p.branch_pipe_outputs]));
+  assert.deepEqual(priorities, { target: 2, right: 2, left: 0, up: 2, source: 2 });
+  assert.deepEqual(r, placeOnly(w, base, items, 'target'));
+});
+test('north-facing pipe inputs attract upstream suppliers north; west-facing inputs do not', () => {
+  const catalog = structuredClone(base), f = catalog.facilities[0];
+  f.allowed_rotations = [0];
+  f.ports.push({ id: 'fluid-in', direction: 'input', transport: 'pipe', position: { x: 0, y: 0 }, edge: 'north' },
+    { id: 'fluid-out', direction: 'output', transport: 'pipe', position: { x: 0, y: 0 }, edge: 'north' });
+  const w = wiring([['source', 'target', 'fluid']]);
+  const north = placeOnly(w, catalog, items, 'target');
+  assert.equal(north.pipe_relations[0].north_preference_applicable, true);
+  assert.equal(north.pipe_relations[0].supplier_north, true);
+  assert.equal(north.placement_decisions[1].row_choice.north_pipe_violations, 0);
+  f.ports.find(p => p.id === 'fluid-in').edge = 'west';
+  const west = placeOnly(w, catalog, items, 'target');
+  assert.equal(west.pipe_relations[0].north_preference_applicable, false);
+  assert.equal(west.placements[0].y, west.placements[1].y);
+});
+test('impossible cyclic north preferences stay soft and are diagnosed', () => {
+  const catalog = structuredClone(base), f = catalog.facilities[0];
+  f.allowed_rotations = [0];
+  f.ports.push({ id: 'fluid-in', direction: 'input', transport: 'pipe', position: { x: 0, y: 0 }, edge: 'north' });
+  const r = placeOnly(wiring([['a', 'b', 'fluid'], ['b', 'a', 'fluid']]), catalog, items, 'a');
+  assert.equal(r.placements.length, 2);
+  assert.equal(r.placement_geometry_valid, true);
+  assert(r.diagnostics.some(d => d.code === 'placement-probe-north-pipe-preference-unmet'));
+  assert.equal(r.factory_validated, false);
 });
 test('cycles, shared consumers and disconnected components all terminate with full coverage', () => {
   const w = wiring([['a', 'b'], ['b', 'a'], ['a', 'c'], ['d', 'e'], ['self', 'self']]);
