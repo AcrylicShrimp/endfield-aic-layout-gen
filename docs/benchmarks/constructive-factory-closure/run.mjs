@@ -13,7 +13,7 @@ try {
   const keys = ['graph', 'baseline', 'recipes', 'facilities', 'items', 'transports', 'components', 'validator', 'output-directory'], options = {}, args = process.argv.slice(2);
   for (let i = 0; i < args.length; i += 2) {
     const k = args[i].slice(2);
-    if (!args[i].startsWith('--') || ![...keys, 'candidate-budget'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
+    if (!args[i].startsWith('--') || ![...keys, 'candidate-budget', 'route-family'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
     options[k] = args[i + 1];
   }
   for (const k of keys) if (!options[k]) throw new Error(`Missing --${k}`);
@@ -59,7 +59,7 @@ try {
     let accepted = false;
     for (const node of frontier) {
       let generated;
-      try { generated = growCandidates(catalogs, graph, current, node, Number(options['candidate-budget'] ?? 64)); }
+      try { generated = growCandidates(catalogs, graph, current, node, Number(options['candidate-budget'] ?? 64), options['route-family'] ?? 'simple'); }
       catch (e) { stages.push({ node: node.id, label: node.label, candidates: [], selected_directory: null,
         failures: [{ code: e.code ?? 'closure-generation-failed', severity: 'error', stage: e.stage ?? 'generation', message: e.message, entity: e.entity }] }); continue; }
       const validationStart = performance.now();
@@ -74,7 +74,7 @@ try {
   }
   if (current.witness.placements.length === graph.nodes.length) {
     try {
-      const detail = finishOutputs(catalogs, graph, current), candidates = [detail, compactInterface(detail, catalogs)];
+      const detail = finishOutputs(catalogs, graph, current, options['route-family'] ?? 'simple'), candidates = [detail, compactInterface(detail, catalogs)];
       const checked = await Promise.all(candidates.map((d, i) => validate(d, `complete-${i}`, true)));
       const valid = checked.filter(c => c.factory_validated).sort((a, b) => better(a.score.tuple, b.score.tuple) ? -1 : better(b.score.tuple, a.score.tuple) ? 1 : 0);
       stages.push({ node: null, label: 'external-outputs', construction_ms: detail.construction_ms, candidates: checked.map(({ detail, ...r }) => r), selected_directory: valid[0]?.directory ?? null });
@@ -84,7 +84,7 @@ try {
   publish(selected);
   const report = { schema_version: 1, status: selected.factory_validated ? 'complete-graph-validated' : 'factory-closure-stopped', factory_validated: selected.factory_validated,
     covered_facilities: current.witness.placements.length, total_facilities: graph.nodes.length, selected_directory: selected.directory,
-    elapsed_ms: performance.now() - start, selected_output_ms: selectedOutputMs, score: selected.score, stages, failures,
+    elapsed_ms: performance.now() - start, route_family: options['route-family'] ?? 'simple', selected_output_ms: selectedOutputMs, score: selected.score, stages, failures,
     provenance: keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
     source_hashes: Object.fromEntries(['model.mjs', 'run.mjs', '../constructive-cycle-blocks/graph.mjs', '../constructive-auto-interface/compact.mjs', '../constructive-bound-interconnect/view.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), report); fs.copyFileSync(path.join(selected.directory, 'index.html'), path.join(output, 'index.html'), fs.constants.COPYFILE_EXCL);

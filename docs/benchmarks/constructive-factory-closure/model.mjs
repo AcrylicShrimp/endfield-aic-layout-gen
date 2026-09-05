@@ -46,13 +46,23 @@ function portsFor(ports, occupied, id, direction, transport) {
 }
 
 // Enumerate a small family of orthogonal corridor templates, never a cell-search router.
-export function routeTemplates(a, b, occupied, transport, extent, boundary = null) {
+export function routeTemplates(a, b, occupied, transport, extent, boundary = null, family = 'simple') {
+  if (!['simple', 'perimeter'].includes(family)) fail('closure-route-family', 'Expected simple or perimeter corridor templates', family);
   const templates = [[pair(a), [b.x, a.y], pair(b)], [pair(a), [a.x, b.y], pair(b)]];
   const xs = new Set([a.x, b.x, Math.floor((a.x + b.x) / 2)]), ys = new Set([a.y, b.y, Math.floor((a.y + b.y) / 2)]);
   for (const d of [-8, -4, -2, -1, 1, 2, 4, 8]) { xs.add(a.x + d); xs.add(b.x + d); ys.add(a.y + d); ys.add(b.y + d); }
   xs.add(extent.width); ys.add(extent.height);
   for (const x of xs) if (x >= 0) templates.push([pair(a), [x, a.y], [x, b.y], pair(b)]);
   for (const y of ys) if (y >= 0) templates.push([pair(a), [a.x, y], [b.x, y], pair(b)]);
+  // A reserved transfer row plus a separate ingress/egress column avoids approaching
+  // a north-facing input through the consumer body from below (and the dual case).
+  if (family === 'perimeter') for (const y of new Set([0, extent.height, Math.max(a.y, b.y) + 1, Math.min(a.y, b.y) - 1])) {
+    if (y < 0) continue;
+    for (const d of [-8, -4, -2, -1, 1, 2, 4, 8]) {
+      if (b.x + d >= 0) templates.push([pair(a), [a.x, y], [b.x + d, y], [b.x + d, b.y], pair(b)]);
+      if (a.x + d >= 0) templates.push([pair(a), [a.x + d, a.y], [a.x + d, y], [b.x, y], pair(b)]);
+    }
+  }
   let selected;
   for (const corners of templates) {
     const length = corners.slice(1).reduce((s, p, i) => s + Math.abs(p[0] - corners[i][0]) + Math.abs(p[1] - corners[i][1]), 1);
@@ -82,7 +92,7 @@ function append(w, occupied, edge, source, target, value, path, ordinal) {
   for (let i = 1; i < path.cells.length; i++) n.segments.push({ from: path.cells[i - 1], to: path.cells[i], rate: dto(value) });
   return { edge: edge.id, source: source.external ? source.node : [source.node, source.id], target: target.external ? target.node : [target.node, target.id], rate: dto(value), corners: path.corners };
 }
-function connect(w, ports, occupied, edge, catalogs, boundary = null) {
+function connect(w, ports, occupied, edge, catalogs, boundary = null, family = 'simple') {
   let left = parseRate(edge.rate), ordinal = 0; const routes = [];
   const cap = capacity(catalogs.transports.transports.find(t => t.kind === edge.transport).capacity);
   while (left.n) {
@@ -109,7 +119,7 @@ function connect(w, ports, occupied, edge, catalogs, boundary = null) {
     for (const { a, b } of pairs) {
       const minimum = [areaWith(extent, [a.connection, b.connection]), distance(a.connection, b.connection) + 1, 0];
       if (selected && !better(minimum, selected.path.score)) continue;
-      const path = routeTemplates(a.connection, b.connection, occupied, edge.transport, extent, boundary);
+      const path = routeTemplates(a.connection, b.connection, occupied, edge.transport, extent, boundary, family);
       if (path && (!selected || better(path.score, selected.path.score))) selected = { a, b, path };
     }
     if (!selected) fail('closure-port-template-exhausted', 'No unused port pair and collision-free corridor template', { edge: edge.id, item: edge.item, pairs: pairs.length });
@@ -137,7 +147,8 @@ function placements(node, graph, base, catalogs) {
   positions.sort((a, b) => a.area - b.area || a.distance - b.distance || a.p.y - b.p.y);
   return positions.map(c => c.p);
 }
-export function growCandidates(catalogs, graph, base, node, budget = 64) {
+export function growCandidates(catalogs, graph, base, node, budget = 64, routeFamily = 'simple') {
+  if (!['simple', 'perimeter'].includes(routeFamily)) fail('closure-route-family', 'Expected simple or perimeter corridor templates', routeFamily);
   if (!Number.isSafeInteger(budget) || budget < 1 || budget > 512) fail('closure-candidate-budget', 'Expected placement trial budget 1..512');
   if (!ready(graph, base.witness).some(n => n.id === node.id)) fail('closure-frontier-unready', 'Internal predecessors must already be retained', node.id);
   const start = performance.now(), candidates = [], failures = []; let trials = 0;
@@ -148,21 +159,21 @@ export function growCandidates(catalogs, graph, base, node, budget = 64) {
     const ports = project(w, catalogs), occupied = index(w), routes = [];
     try {
       const edges = graph.edges.filter(e => e.target === node.id).sort((a, b) => (a.transport === 'pipe' ? 0 : 1) - (b.transport === 'pipe' ? 0 : 1) || a.id.localeCompare(b.id));
-      for (const edge of edges) routes.push(...connect(w, ports, occupied, edge, catalogs));
+      for (const edge of edges) routes.push(...connect(w, ports, occupied, edge, catalogs, null, routeFamily));
       candidates.push({ schema_version: 1, case: 'actual-graph-factory-closure', embedding: 'closure', witness: w, catalog_ports: ports, labels: { ...base.labels },
-        accepted: false, factory_validated: false, port_groups: { sources: [], targets: [] }, closure_plan: { added: node.id, placement: p, routes, trials } });
+        accepted: false, factory_validated: false, port_groups: { sources: [], targets: [] }, closure_plan: { added: node.id, placement: p, routes, trials, route_family: routeFamily } });
       if (candidates.length === 8) break;
     } catch (e) { failures.push({ code: e.code ?? 'closure-candidate-failed', message: e.message, entity: e.entity, placement: p }); }
   }
   return { candidates, failures, trials, construction_ms: performance.now() - start };
 }
-export function finishOutputs(catalogs, graph, base) {
+export function finishOutputs(catalogs, graph, base, routeFamily = 'simple') {
   const start = performance.now(), w = structuredClone(base.witness), ports = project(w, catalogs), occupied = index(w), routes = [];
   const extent = extentOf(w), boundary = { width: extent.width + 1, height: extent.height + 1 };
   if (w.placements.length !== graph.nodes.length) fail('closure-incomplete-membership', 'All original facilities are required before final exports');
   for (const edge of graph.edges.filter(e => !e.internal && graph.nodes.some(n => n.id === e.source)).sort((a, b) => a.id.localeCompare(b.id)))
-    routes.push(...connect(w, ports, occupied, edge, catalogs, boundary));
-  return { ...base, witness: w, catalog_ports: ports, accepted: false, factory_validated: false, closure_plan: { added: null, routes }, construction_ms: performance.now() - start };
+    routes.push(...connect(w, ports, occupied, edge, catalogs, boundary, routeFamily));
+  return { ...base, witness: w, catalog_ports: ports, accepted: false, factory_validated: false, closure_plan: { added: null, routes, route_family: routeFamily }, construction_ms: performance.now() - start };
 }
 
 // Compare against the original graph, never a candidate-supplied list of remaining obligations.

@@ -66,3 +66,14 @@ test('coverage cannot accept a complete claim or an empty terminal report for a 
   assert.ok(c.diagnostics.some(d => d.code === 'closure-member-mismatch'));
   assert.ok(c.diagnostics.some(d => d.code === 'closure-missing-terminal-report'));
 });
+
+test('perimeter transfer approaches a north input around its body without weakening collisions', () => {
+  const occupied = { body: new Set(['1,6', '3,6', '2,5', ...Array.from({ length: 6 }, (_, i) => `12,${i + 1}`)]), layers: { belt: new Set(), pipe: new Set() } };
+  const a = { x: 2, y: 6 }, b = { x: 12, y: 0 }, extent = { width: 15, height: 8 };
+  assert.equal(routeTemplates(a, b, occupied, 'pipe', extent), null);
+  const p = routeTemplates(a, b, occupied, 'pipe', extent, null, 'perimeter'); assert.ok(p);
+  assert.equal(new Set(p.cells.map(p => `${p.x},${p.y}`)).size, p.cells.length);
+  assert.ok(p.cells.every(p => !occupied.body.has(`${p.x},${p.y}`)));
+  occupied.layers.pipe.add('2,6'); assert.equal(routeTemplates(a, b, occupied, 'pipe', extent, null, 'perimeter'), null);
+  assert.throws(() => routeTemplates(a, b, occupied, 'pipe', extent, null, 'unknown'), { code: 'closure-route-family' });
+});

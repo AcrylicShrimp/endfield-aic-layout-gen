@@ -43,3 +43,10 @@ Publish duplicated detail JSON and rendered HTML only for selected states. The r
 candidate hashes, selected paths, failures, generation time, validator process time, input/coverage IO
 and selected rendering IO. Full raw candidate diagrams can be regenerated from the retained witnesses
 and runtime catalogs; their absence is not deletion of validation evidence.
+
+`--route-family simple` remains the default two-turn corridor family. The explicit `perimeter`
+family includes those templates and additionally reserves a transfer row plus a separate entry/exit
+column (up to three turns). This can approach a north-facing input around its body after travelling
+below other regions. It uses the same occupancy, capacity, exact-score pruning and independent gates;
+no extra crossing permission is introduced. The richer local family can still lead to different later
+greedy choices, so compare complete factory candidates, not just locally shorter paths.
