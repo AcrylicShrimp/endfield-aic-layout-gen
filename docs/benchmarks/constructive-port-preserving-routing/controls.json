@@ -1,0 +1,31 @@
+{
+  "samples": [
+    {
+      "file": "/tmp/aic-preserve-controls.FLzc2E/p16-a256.json",
+      "padding": 16,
+      "limit": 256,
+      "connected": 63,
+      "first_failure": "F32 -> F23",
+      "first_astar": 15,
+      "probe_ms": 5332.219042000001
+    },
+    {
+      "file": "/tmp/aic-preserve-controls.FLzc2E/p32-a64.json",
+      "padding": 32,
+      "limit": 64,
+      "connected": 63,
+      "first_failure": "F32 -> F23",
+      "first_astar": 15,
+      "probe_ms": 8051.123292
+    },
+    {
+      "file": "/tmp/aic-preserve-controls.FLzc2E/p32-a256.json",
+      "padding": 32,
+      "limit": 256,
+      "connected": 63,
+      "first_failure": "F32 -> F23",
+      "first_astar": 15,
+      "probe_ms": 9602.859708
+    }
+  ]
+}

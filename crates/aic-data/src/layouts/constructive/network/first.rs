@@ -3,6 +3,7 @@ use super::*;
 
 /// Constructive reservation policy, not a required game clearance.
 pub(in crate::layouts::constructive) const FUTURE_PORT_ESCAPE_CELLS: i64 = 3;
+pub(in crate::layouts::constructive) const PORT_PRESERVATION_VARIANTS: usize = 8;
 
 /// One physical search in a nearest-port, atomic requirement transaction.
 #[derive(Debug, serde::Serialize)]
@@ -16,12 +17,20 @@ pub struct PortPairTrial {
     pub straight: bool,
     pub connected: bool,
     pub astar_searches: u64,
+    pub preservation_conflict: Option<String>,
+    pub avoided_cells: Vec<WorldGridPosition>,
+}
+
+pub(in crate::layouts::constructive) struct PortDomainGuard {
+    pub requirement: String,
+    pub cells: Vec<WorldGridPosition>,
 }
 
 /// Unassigned alternatives are choices, not simultaneous escape-corridor reservations.
 #[derive(Default)]
 pub(in crate::layouts::constructive) struct NearestPortSearch {
     pub trials: Vec<PortPairTrial>,
+    pub guards: Vec<PortDomainGuard>,
 }
 
 pub(in crate::layouts::constructive) fn connect_nearest(
@@ -179,45 +188,92 @@ fn search(
                 }
             }
         }
-        stats.port_pairs_considered += 1;
         let shared = matches!(source, Attachment::ExistingNetwork { .. })
             || matches!(target, Attachment::ExistingNetwork { .. });
-        if shared {
-            stats.existing_network_attempts += 1;
-        } else {
-            stats.new_port_attempts += 1;
-        }
-        stats.astar_searches += 1;
-        let trial_index = nearest.as_deref_mut().map(|trace| {
-            let index = trace.trials.len();
-            trace.trials.push(PortPairTrial {
-                lane,
-                parent_trial,
-                source_port: source.port().port.clone(),
-                target_port: target.port().port.clone(),
-                distance: distance(source, target),
-                rate,
-                straight: false,
-                connected: false,
-                astar_searches: 1,
-            });
-            index
-        });
         let choices = crossings::options(node, transport, &edge.item, rate, components);
         let axes = choices.iter().map(|(p, (axis, _))| (*p, *axis)).collect();
-        let Some(path) =
-            workspace.route_crossings(&blocked, &axes, endpoint(source), endpoint(target))
-        else {
-            stats.astar_failures += 1;
-            if shared {
-                stats.branch_route_failures += 1;
+        let mut variants = std::collections::VecDeque::from([BTreeSet::<(i64, i64)>::new()]);
+        let mut seen = BTreeSet::from([BTreeSet::<(i64, i64)>::new()]);
+        let mut routed = None;
+        for _ in 0..PORT_PRESERVATION_VARIANTS {
+            let Some(avoided) = variants.pop_front() else {
+                break;
+            };
+            if stats.astar_searches >= limit {
+                break;
             }
+            stats.port_pairs_considered += 1;
+            if shared {
+                stats.existing_network_attempts += 1;
+            } else {
+                stats.new_port_attempts += 1;
+            }
+            stats.astar_searches += 1;
+            let trial_index = nearest.as_deref_mut().map(|trace| {
+                let index = trace.trials.len();
+                trace.trials.push(PortPairTrial {
+                    lane,
+                    parent_trial,
+                    source_port: source.port().port.clone(),
+                    target_port: target.port().port.clone(),
+                    distance: distance(source, target),
+                    rate,
+                    straight: false,
+                    connected: false,
+                    astar_searches: 1,
+                    preservation_conflict: None,
+                    avoided_cells: avoided
+                        .iter()
+                        .map(|&(x, y)| WorldGridPosition { x, y })
+                        .collect(),
+                });
+                index
+            });
+            let mut mask = blocked.clone();
+            mask.extend(&avoided);
+            let Some(path) =
+                workspace.route_crossings(&mask, &axes, endpoint(source), endpoint(target))
+            else {
+                stats.astar_failures += 1;
+                if shared {
+                    stats.branch_route_failures += 1;
+                }
+                continue;
+            };
+            if let (Some(trace), Some(index)) = (nearest.as_deref_mut(), trial_index) {
+                trace.trials[index].straight = !shared
+                    && (path.iter().all(|p| p.x == path[0].x)
+                        || path.iter().all(|p| p.y == path[0].y));
+                let path_cells = path.iter().map(xy).collect::<HashSet<_>>();
+                let lost = trace.guards.iter().find_map(|guard| {
+                    let free = guard
+                        .cells
+                        .iter()
+                        .map(xy)
+                        .filter(|p| !occupancy.layers[&transport].contains(p))
+                        .collect::<BTreeSet<_>>();
+                    (!free.is_empty() && free.iter().all(|p| path_cells.contains(p)))
+                        .then(|| (guard.requirement.clone(), free))
+                });
+                if let Some((requirement, free)) = lost {
+                    trace.trials[index].preservation_conflict = Some(requirement);
+                    // Branch on preserving one approach, not reserving every alternative.
+                    for cell in free {
+                        let mut variant = avoided.clone();
+                        variant.insert(cell);
+                        if seen.insert(variant.clone()) {
+                            variants.push_back(variant);
+                        }
+                    }
+                    continue;
+                }
+            }
+            routed = Some((path, trial_index));
+            break;
+        }
+        let Some((path, trial_index)) = routed else {
             continue;
         };
-        if let (Some(trace), Some(index)) = (nearest.as_deref_mut(), trial_index) {
-            trace.trials[index].straight = !shared
-                && (path.iter().all(|p| p.x == path[0].x) || path.iter().all(|p| p.y == path[0].y));
-        }
         let mut next = node.clone();
         if !next
             .transport_networks

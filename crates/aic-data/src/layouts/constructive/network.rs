@@ -10,7 +10,9 @@ mod tests;
 mod validation;
 pub(super) use first::FUTURE_PORT_ESCAPE_CELLS;
 pub(super) use first::connect_first;
-pub(super) use first::{NearestPortSearch, PortPairTrial, connect_nearest};
+pub(super) use first::{
+    NearestPortSearch, PORT_PRESERVATION_VARIANTS, PortDomainGuard, PortPairTrial, connect_nearest,
+};
 use std::collections::{BTreeMap, BTreeSet, HashSet};
 pub(super) use validation::validate;
 

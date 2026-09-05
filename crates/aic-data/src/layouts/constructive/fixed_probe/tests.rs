@@ -125,7 +125,7 @@ fn invalid_geometry_rates_membership_and_resource_bounds_fail() {
 }
 
 #[test]
-fn rejects_a_shortest_path_that_consumes_the_last_pending_external_port() {
+fn retries_a_shortest_path_that_consumes_the_last_pending_external_port() {
     let (mut input, f, i, t, c) = fixture();
     input.placements[1].x = 4;
     let mut future = input.placements[0].clone();
@@ -142,11 +142,19 @@ fn rejects_a_shortest_path_that_consumes_the_last_pending_external_port() {
     input.external_requirements.push(external);
     let r = probe_fixed_routing(&input, &f, &i, &t, &c, 4, 32).unwrap();
     assert!(r.initial_empty_domains.is_empty());
-    assert!(r.attempts.iter().any(|a| {
-        a.future_domain_rejections > 0
-            && a.rejected_future_requirements
-                .contains(&"pending-external".to_string())
-    }));
+    assert!(r.unresolved_internal.is_empty());
+    assert!(
+        r.attempts[0]
+            .port_trials
+            .iter()
+            .any(|t| t.preservation_conflict.as_deref() == Some("pending-external"))
+    );
+    assert!(
+        r.attempts[0]
+            .port_trials
+            .iter()
+            .any(|t| t.connected && !t.avoided_cells.is_empty())
+    );
     assert_eq!(r.unresolved_external, vec!["pending-external"]);
     assert!(
         r.final_node
@@ -213,6 +221,67 @@ fn placement_then_neighbor_distance_overrides_shuffled_edge_input() {
             .map(|a| &a.requirement)
             .collect::<Vec<_>>()
     );
+}
+
+#[test]
+fn preservation_keeps_one_alternative_not_every_unused_port() {
+    let (mut input, _, i, t, c) = fixture();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut raw = crate::facilities::load_facility_catalog(
+        root.join("data/examples/constructive-network.facilities.json"),
+    )
+    .unwrap();
+    let spec = &mut raw.facilities[0];
+    spec.footprint.height = 2;
+    let mut extra = spec.ports[0].clone();
+    extra.id += "-second";
+    extra.position.y = 1;
+    let mut future_spec = spec.clone();
+    future_spec.id = "future-fixture".into();
+    future_spec.ports.push(extra);
+    raw.facilities.push(future_spec);
+    let f = ValidatedFacilityCatalog::try_from_catalog(raw).unwrap();
+    for p in &mut input.placements {
+        p.height = 2;
+    }
+    // The selected target connection is also one of the future facility's candidate cells.
+    // Reserving both future candidates would make this connection impossible.
+    input.placements[1].x = 4;
+    let mut future = input.placements[0].clone();
+    future.instance = "future".into();
+    future.x = 2;
+    future.y = 1;
+    future.width = 2;
+    future.height = 1;
+    future.rotation = 90;
+    future.facility = "future-fixture".into();
+    input.placements.push(future);
+    input.required_facilities = 3;
+    let mut external = input.internal_requirements[0].clone();
+    external.id = "pending-external".into();
+    external.source = "external".into();
+    external.target = "future".into();
+    input.external_requirements.push(external);
+    let r = probe_fixed_routing(&input, &f, &i, &t, &c, 4, 32).unwrap();
+    assert!(r.unresolved_internal.is_empty());
+    assert!(
+        r.attempts[0]
+            .port_trials
+            .iter()
+            .any(|t| t.connected && t.avoided_cells.len() == 1)
+    );
+    let cells = &r.final_node.transport_networks[0].cells;
+    let used = [2, 3]
+        .iter()
+        .filter(|&&x| cells.contains(&crate::layouts::WorldGridPosition { x: x + 4, y: 4 }))
+        .count();
+    assert_eq!(
+        used, 1,
+        "one future input may be covered while another stays free"
+    );
+    let limited = probe_fixed_routing(&input, &f, &i, &t, &c, 4, 1).unwrap();
+    assert_eq!(limited.attempts[0].astar_searches, 1);
+    assert!(limited.final_node.transport_networks.is_empty());
 }
 
 #[test]

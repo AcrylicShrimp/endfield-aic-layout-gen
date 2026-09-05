@@ -62,6 +62,7 @@ pub struct FixedRoutingReport {
     pub search_translation: i64,
     pub search_canvas: FacilityPlacementBounds,
     pub per_connection_astar_limit: u64,
+    pub per_pair_path_variant_limit: usize,
     pub connection_order: &'static str,
     pub required_internal: usize,
     pub unresolved_internal: Vec<String>,
@@ -318,6 +319,30 @@ pub fn probe_fixed_routing(
             .filter(|b| b.requirement != edge.id && !b.attachments.is_empty())
             .map(key)
             .collect::<BTreeSet<_>>();
+        let mut nearest = network::NearestPortSearch {
+            guards: domains
+                .iter()
+                .filter(|b| {
+                    b.requirement != edge.id
+                        && b.inside_instance != edge.source
+                        && b.inside_instance != edge.target
+                        && b.transport == items.item(&edge.item).unwrap().transport
+                        && !b.attachments.is_empty()
+                        && b.attachments
+                            .iter()
+                            .all(|a| matches!(a, Attachment::NewPort { .. }))
+                })
+                .map(|b| network::PortDomainGuard {
+                    requirement: b.requirement.clone(),
+                    cells: b
+                        .attachments
+                        .iter()
+                        .map(|a| a.port().connection.clone())
+                        .collect(),
+                })
+                .collect(),
+            ..Default::default()
+        };
         let mut trial = node.clone();
         // Retain every compatible port for the remaining lanes of this requirement.
         trial.boundary_requirements = domains
@@ -325,7 +350,6 @@ pub fn probe_fixed_routing(
             .filter(|b| b.requirement == edge.id)
             .collect();
         let mut stats = ConstructiveCompositionStatistics::default();
-        let mut nearest = network::NearestPortSearch::default();
         let mut invalid = 0;
         let mut lost = 0;
         let mut rejected_future = BTreeSet::new();
@@ -407,6 +431,7 @@ pub fn probe_fixed_routing(
         search_translation: padding,
         search_canvas: canvas,
         per_connection_astar_limit: limit,
+        per_pair_path_variant_limit: network::PORT_PRESERVATION_VARIANTS,
         connection_order: "placement-index/nearest-port-distance/transport-tie/stable-id",
         required_internal: input.internal_requirements.len(),
         unresolved_internal: attempts

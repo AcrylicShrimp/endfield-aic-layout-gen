@@ -37,7 +37,9 @@ draw=function(){originalDraw();svg.querySelectorAll('[data-port] title').forEach
  if(edge){const a=byId.get(edge.source),b=byId.get(edge.target);svg.append(el('path',{d:'M'+(a.x+a.width/2)+' '+(a.y+a.height/2)+' L'+(b.x+b.width/2)+' '+(b.y+b.height/2),fill:'none',stroke:'light-dark(#b72d32,#ff8790)','stroke-width':.14,'stroke-dasharray':'.3 .25'}));
   const attempt=routing.attempts.findLast(t=>t.requirement===edge.id);failures.textContent='Unresolved '+a.label+' → '+b.label+': '+attempt.port_pairs+' lane/attachment trials, '+attempt.astar_searches+' A* calls, '+attempt.witness_rejections+' invalid-witness rejections, '+attempt.future_domain_rejections+' future-domain rejections. Bounded search failure, not infeasibility.';
   failures.textContent+=' Placement index '+attempt.placement_index+', nearest port distance '+attempt.nearest_port_distance+'.';
-  const affected=attempt.rejected_future_requirements.map(id=>requirements.get(id)).filter(Boolean);
+  const preservation=attempt.port_trials.filter(t=>t.preservation_conflict).map(t=>t.preservation_conflict);
+  failures.textContent+=' '+preservation.length+' last-port path rejections before materialization.';
+  const affected=[...new Set([...attempt.rejected_future_requirements,...preservation])].map(id=>requirements.get(id)).filter(Boolean);
   if(affected.length)failures.textContent+=' Rejected candidates would remove the last attachment option for: '+affected.map(e=>(byId.get(e.source)?.label??'external')+' → '+(byId.get(e.target)?.label??'external')).join(', ')+'.';
  }else failures.textContent='Choose an unresolved requirement to inspect its endpoints and final attempt. No facility relocation was performed.';
  const count=routing.required_internal-routing.unresolved_internal.length;
