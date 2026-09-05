@@ -6,7 +6,7 @@ const [placementFile, routingFile, output] = process.argv.slice(2);
 if (process.argv.length !== 5) throw new Error('Usage: node route-view.mjs FROZEN_PLACEMENT ROUTING_REPORT NEW_HTML');
 const bytes = fs.readFileSync(placementFile), placement = JSON.parse(bytes);
 const routing = JSON.parse(fs.readFileSync(routingFile));
-if (routing.kind !== 'fixed-placement-routing-probe' || !routing.covered_routes_validated
+if (routing.schema_version !== 2 || routing.kind !== 'fixed-placement-routing-probe' || !routing.covered_routes_validated
     || !routing.coordinates_frozen || routing.factory_validated
     || routing.provenance.placement_sha256 !== createHash('sha256').update(bytes).digest('hex'))
   throw new Error('Expected a validated covered-route witness for this exact frozen placement, not a factory-success claim');
@@ -15,7 +15,7 @@ const extra = `<script id="routing-data" type="application/json">${safe}</script
 const routing=JSON.parse(document.getElementById('routing-data').textContent),shift=routing.search_translation;
 const requirements=new Map([...report.internal_requirements,...report.external_requirements].map(e=>[e.id,e]));
 document.title='Fixed placement · physical routing probe';
-document.querySelector('h1').textContent='Fixed placement · belts first · physical routing probe';
+document.querySelector('h1').textContent='Fixed placement · placement order → nearest connections → nearest ports';
 document.querySelector('.notice').textContent='Covered routes validated · external connections pending · NOT A COMPLETE FACTORY';
 document.querySelector('.controls').style.display='none';stage.value=report.placements.length;
 document.querySelector('label:has(#show-ports)').lastChild.textContent=' Catalog ports (some assigned)';
@@ -36,6 +36,7 @@ draw=function(){originalDraw();svg.querySelectorAll('[data-port] title').forEach
  svg.append(group);const edge=requirements.get(selector.value);
  if(edge){const a=byId.get(edge.source),b=byId.get(edge.target);svg.append(el('path',{d:'M'+(a.x+a.width/2)+' '+(a.y+a.height/2)+' L'+(b.x+b.width/2)+' '+(b.y+b.height/2),fill:'none',stroke:'light-dark(#b72d32,#ff8790)','stroke-width':.14,'stroke-dasharray':'.3 .25'}));
   const attempt=routing.attempts.findLast(t=>t.requirement===edge.id);failures.textContent='Unresolved '+a.label+' → '+b.label+': '+attempt.port_pairs+' port pairs, '+attempt.astar_searches+' A* calls, '+attempt.witness_rejections+' invalid-witness rejections, '+attempt.future_domain_rejections+' future-domain rejections. Bounded search failure, not infeasibility.';
+  failures.textContent+=' Placement index '+attempt.placement_index+', nearest port distance '+attempt.nearest_port_distance+'.';
   const affected=attempt.rejected_future_requirements.map(id=>requirements.get(id)).filter(Boolean);
   if(affected.length)failures.textContent+=' Rejected candidates would remove the last attachment option for: '+affected.map(e=>(byId.get(e.source)?.label??'external')+' → '+(byId.get(e.target)?.label??'external')).join(', ')+'.';
  }else failures.textContent='Choose an unresolved requirement to inspect its endpoints and final attempt. No facility relocation was performed.';

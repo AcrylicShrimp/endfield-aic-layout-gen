@@ -1,0 +1,27 @@
+{
+  "scope": "Three fresh release processes; warm filesystem, no build/test overlap; probe excludes catalog IO and report serialization",
+  "binary_sha256": "1ed30819d8c9cc41080558efa2b4c0ee31e823cf1ec173c20995af15eb023b60",
+  "samples": [
+    {
+      "file": "/tmp/aic-ordered-routing.zfb3Ca/run-0.json",
+      "probe_ms": 3245.350708,
+      "cli_wall_ms": 3733.026292,
+      "connected": 55,
+      "witness_sha256": "510bc217db1535913908a0eb1b607cec8d461d71a67a82212c82e6b9236e0a3f"
+    },
+    {
+      "file": "/tmp/aic-ordered-routing.zfb3Ca/run-1.json",
+      "probe_ms": 3247.980083,
+      "cli_wall_ms": 3292.0624580000003,
+      "connected": 55,
+      "witness_sha256": "510bc217db1535913908a0eb1b607cec8d461d71a67a82212c82e6b9236e0a3f"
+    },
+    {
+      "file": "/tmp/aic-ordered-routing.zfb3Ca/run-2.json",
+      "probe_ms": 3258.544042,
+      "cli_wall_ms": 3302.2317919999996,
+      "connected": 55,
+      "witness_sha256": "510bc217db1535913908a0eb1b607cec8d461d71a67a82212c82e6b9236e0a3f"
+    }
+  ]
+}

@@ -89,9 +89,9 @@ fn offset_ports_fall_through_to_validated_astar_detour() {
     input.placements[1].y = 2;
     let r = probe_fixed_routing(&input, &f, &i, &t, &c, 4, 32).unwrap();
     assert!(r.unresolved_internal.is_empty());
-    assert!(!r.attempts[0].connected);
-    assert_eq!(r.attempts[1].stage, "alternate-ports-astar");
-    assert!(r.attempts[1].connected);
+    assert_eq!(r.attempts.len(), 1);
+    assert_eq!(r.attempts[0].stage, "alternate-ports-astar");
+    assert!(r.attempts[0].connected);
 }
 
 #[test]
@@ -155,4 +155,126 @@ fn rejects_a_shortest_path_that_consumes_the_last_pending_external_port() {
             .all(|b| !b.attachments.is_empty())
     );
     assert!(!r.factory_validated);
+}
+
+#[test]
+fn placement_then_neighbor_distance_overrides_shuffled_edge_input() {
+    let (mut input, f, i, t, c) = fixture();
+    let mut third = input.placements[1].clone();
+    third.instance = "c".into();
+    third.x = 4;
+    third.y = 2;
+    input.placements.push(third);
+    input.required_facilities = 3;
+    let mut far = input.internal_requirements[0].clone();
+    far.id = "far".into();
+    far.target = "c".into();
+    let mut near = far.clone();
+    near.id = "near".into();
+    near.source = "b".into();
+    input.internal_requirements.insert(0, far);
+    input.internal_requirements.push(near);
+    let r = probe_fixed_routing(&input, &f, &i, &t, &c, 4, 32).unwrap();
+    assert_eq!(
+        r.attempts
+            .iter()
+            .map(|a| (
+                a.requirement.as_str(),
+                a.placement_index,
+                a.nearest_port_distance
+            ))
+            .collect::<Vec<_>>(),
+        vec![
+            ("edge", 1, Some(0)),
+            ("near", 2, Some(2)),
+            ("far", 2, Some(4))
+        ]
+    );
+    assert_eq!(r.schema_version, 2);
+    for a in &r.attempts {
+        assert_eq!(a.port_trials.len(), a.port_pairs);
+        assert!(
+            a.port_trials
+                .windows(2)
+                .all(|p| p[0].distance <= p[1].distance)
+        );
+        assert!(a.astar_searches <= 32);
+    }
+    input.internal_requirements.reverse();
+    let reordered = probe_fixed_routing(&input, &f, &i, &t, &c, 4, 32).unwrap();
+    assert_eq!(
+        r.attempts
+            .iter()
+            .map(|a| &a.requirement)
+            .collect::<Vec<_>>(),
+        reordered
+            .attempts
+            .iter()
+            .map(|a| &a.requirement)
+            .collect::<Vec<_>>()
+    );
+}
+
+#[test]
+fn later_straight_connections_do_not_preempt_earlier_detours() {
+    let (mut input, f, i, t, c) = fixture();
+    input.placements[1].x = 4;
+    input.placements[1].y = 2;
+    let mut third = input.placements[1].clone();
+    third.instance = "c".into();
+    third.x = 6;
+    input.placements.push(third);
+    input.required_facilities = 3;
+    let mut later = input.internal_requirements[0].clone();
+    later.id = "later-straight".into();
+    later.source = "b".into();
+    later.target = "c".into();
+    input.internal_requirements.insert(0, later);
+    let r = probe_fixed_routing(&input, &f, &i, &t, &c, 4, 32).unwrap();
+    assert_eq!(r.attempts[0].requirement, "edge");
+    assert_eq!(r.attempts[0].stage, "alternate-ports-astar");
+    assert_eq!(r.attempts[1].requirement, "later-straight");
+    assert_eq!(r.attempts[1].stage, "straight-pairs");
+}
+
+#[test]
+fn attempted_port_pairs_are_distance_sorted_not_catalog_cross_product_order() {
+    let (mut input, _, i, t, c) = fixture();
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let mut raw = crate::facilities::load_facility_catalog(
+        root.join("data/examples/constructive-network.facilities.json"),
+    )
+    .unwrap();
+    let f = &mut raw.facilities[0];
+    f.footprint.width = 3;
+    f.footprint.height = 3;
+    f.ports[1].position.x = 2;
+    let mut lower_in = f.ports[0].clone();
+    lower_in.id += "-lower";
+    lower_in.position.y = 2;
+    let mut lower_out = f.ports[1].clone();
+    lower_out.id += "-lower";
+    lower_out.position.y = 2;
+    f.ports.extend([lower_in, lower_out]);
+    let f = ValidatedFacilityCatalog::try_from_catalog(raw).unwrap();
+    for p in &mut input.placements {
+        p.width = 3;
+        p.height = 3;
+    }
+    input.placements[1].x = 4;
+    let capacity = t.capacity(TransportKind::Belt);
+    let rate =
+        Rate::from_quantity_per_duration_ms(capacity.quantity, capacity.duration_ms).unwrap();
+    // Exceed one port's capacity so no single restricted pair can complete this fixture.
+    input.internal_requirements[0].rate = rate.checked_add(rate).unwrap();
+    let r = probe_fixed_routing(&input, &f, &i, &t, &c, 4, 32).unwrap();
+    assert_eq!(
+        r.attempts[0]
+            .port_trials
+            .iter()
+            .map(|p| p.distance)
+            .collect::<Vec<_>>(),
+        vec![0, 0, 2, 2]
+    );
+    assert_eq!(r.attempts[0].port_pairs, 4);
 }

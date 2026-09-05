@@ -1,0 +1,211 @@
+{
+  "schema_version": 1,
+  "connected": 55,
+  "straight": 30,
+  "detour": 25,
+  "astar": 640,
+  "future_rejections": 405,
+  "validation_rejections": 0,
+  "network_cell_sum": 528,
+  "first_attempts": [
+    {
+      "from": "F01",
+      "to": "F00",
+      "index": 1,
+      "distance": 5,
+      "connected": true,
+      "stage": "alternate-ports-astar"
+    },
+    {
+      "from": "F02",
+      "to": "F00",
+      "index": 2,
+      "distance": 0,
+      "connected": true,
+      "stage": "straight-pairs"
+    },
+    {
+      "from": "F03",
+      "to": "F00",
+      "index": 3,
+      "distance": 2,
+      "connected": true,
+      "stage": "alternate-ports-astar"
+    },
+    {
+      "from": "F04",
+      "to": "F01",
+      "index": 4,
+      "distance": 4,
+      "connected": true,
+      "stage": "alternate-ports-astar"
+    },
+    {
+      "from": "F05",
+      "to": "F02",
+      "index": 5,
+      "distance": 0,
+      "connected": true,
+      "stage": "straight-pairs"
+    },
+    {
+      "from": "F06",
+      "to": "F02",
+      "index": 6,
+      "distance": 0,
+      "connected": true,
+      "stage": "straight-pairs"
+    },
+    {
+      "from": "F07",
+      "to": "F03",
+      "index": 7,
+      "distance": 0,
+      "connected": true,
+      "stage": "straight-pairs"
+    },
+    {
+      "from": "F08",
+      "to": "F03",
+      "index": 8,
+      "distance": 2,
+      "connected": true,
+      "stage": "alternate-ports-astar"
+    },
+    {
+      "from": "F09",
+      "to": "F04",
+      "index": 9,
+      "distance": 0,
+      "connected": true,
+      "stage": "straight-pairs"
+    },
+    {
+      "from": "F10",
+      "to": "F05",
+      "index": 10,
+      "distance": 0,
+      "connected": true,
+      "stage": "straight-pairs"
+    },
+    {
+      "from": "F11",
+      "to": "F06",
+      "index": 11,
+      "distance": 0,
+      "connected": true,
+      "stage": "straight-pairs"
+    },
+    {
+      "from": "F12",
+      "to": "F07",
+      "index": 12,
+      "distance": 0,
+      "connected": true,
+      "stage": "straight-pairs"
+    }
+  ],
+  "first_failure": {
+    "astar_searches": 12,
+    "connected": false,
+    "elapsed_ms": 52.4785,
+    "future_domain_rejections": 12,
+    "nearest_port_distance": 2,
+    "placement_index": 15,
+    "port_pairs": 12,
+    "port_trials": [
+      {
+        "astar_searches": 1,
+        "connected": false,
+        "distance": 3,
+        "source_port": "output-belt-2",
+        "target_port": "input-belt-1"
+      },
+      {
+        "astar_searches": 1,
+        "connected": false,
+        "distance": 4,
+        "source_port": "output-belt-1",
+        "target_port": "input-belt-1"
+      },
+      {
+        "astar_searches": 1,
+        "connected": false,
+        "distance": 4,
+        "source_port": "output-belt-2",
+        "target_port": "input-belt-2"
+      },
+      {
+        "astar_searches": 1,
+        "connected": false,
+        "distance": 5,
+        "source_port": "output-belt-0",
+        "target_port": "input-belt-1"
+      },
+      {
+        "astar_searches": 1,
+        "connected": false,
+        "distance": 5,
+        "source_port": "output-belt-1",
+        "target_port": "input-belt-2"
+      },
+      {
+        "astar_searches": 1,
+        "connected": false,
+        "distance": 5,
+        "source_port": "output-belt-2",
+        "target_port": "input-belt-3"
+      },
+      {
+        "astar_searches": 1,
+        "connected": false,
+        "distance": 6,
+        "source_port": "output-belt-0",
+        "target_port": "input-belt-2"
+      },
+      {
+        "astar_searches": 1,
+        "connected": false,
+        "distance": 6,
+        "source_port": "output-belt-1",
+        "target_port": "input-belt-3"
+      },
+      {
+        "astar_searches": 1,
+        "connected": false,
+        "distance": 6,
+        "source_port": "output-belt-2",
+        "target_port": "input-belt-4"
+      },
+      {
+        "astar_searches": 1,
+        "connected": false,
+        "distance": 7,
+        "source_port": "output-belt-0",
+        "target_port": "input-belt-3"
+      },
+      {
+        "astar_searches": 1,
+        "connected": false,
+        "distance": 7,
+        "source_port": "output-belt-1",
+        "target_port": "input-belt-4"
+      },
+      {
+        "astar_searches": 1,
+        "connected": false,
+        "distance": 8,
+        "source_port": "output-belt-0",
+        "target_port": "input-belt-4"
+      }
+    ],
+    "rejected_future_requirements": [
+      "wiring-edge:15d6ce06d7ea0fef8004f44de714fa58df799033df2fea749cf4c29dded2e64f"
+    ],
+    "requirement": "wiring-edge:4d2d96e80fe684a2fd6bbca955963306c0ca06348fa1a237af5e7b79b2df7149",
+    "stage": "unresolved",
+    "validation_examples": [],
+    "witness_rejections": 0
+  },
+  "all_input_port_pairs_distance_sorted": true
+}
