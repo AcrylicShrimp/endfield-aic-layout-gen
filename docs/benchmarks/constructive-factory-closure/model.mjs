@@ -127,7 +127,8 @@ function connect(w, ports, occupied, edge, catalogs, boundary = null, family = '
   }
   return routes;
 }
-function placements(node, graph, base, catalogs) {
+export function placements(node, graph, base, catalogs, family = 'forward') {
+  if (!['forward', 'two-sided'].includes(family)) fail('closure-placement-family', 'Expected forward or two-sided placement family', family);
   const s = shape(node, catalogs), ports = project(base.witness, catalogs), incoming = graph.edges.filter(e => e.internal && e.target === node.id);
   const supplierPorts = incoming.flatMap(e => ports[e.source].filter(p => p.direction === 'output' && p.transport === e.transport));
   const belt = supplierPorts.filter(p => p.transport === 'belt'), anchors = belt.length ? belt : supplierPorts;
@@ -135,7 +136,9 @@ function placements(node, graph, base, catalogs) {
   const x = belt.length ? Math.max(...anchors.map(p => p.connection.x)) + 1 : median(anchors.map(p => p.connection.x)) - Math.floor(s.width / 2);
   const y = belt.length ? Math.max(1, median(anchors.map(p => p.connection.y)) - Math.floor(s.height / 2)) : Math.max(...anchors.map(p => p.connection.y)) + 1;
   const positions = [], seen = new Set(), occupied = index(base.witness), bounds = extentOf(base.witness);
-  for (const dx of [0, 1, 2, 3, 4, 6, 8, 12, 16, 24]) for (const dy of [0, -1, 1, -2, 2, -4, 4, -8, 8, -12, 12, -24, 24]) {
+  const offsets = [0, 1, 2, 3, 4, 6, 8, 12, 16, 24];
+  if (family === 'two-sided') offsets.push(...offsets.filter(x => x > 0).map(x => -x));
+  for (const dx of offsets) for (const dy of [0, -1, 1, -2, 2, -4, 4, -8, 8, -12, 12, -24, 24]) {
     const p = { instance: node.id, recipe: node.recipe, facility: s.recipe.facility, x: x + dx, y: y + dy, width: s.width, height: s.height, rotation: s.rotation };
     if (p.x < 0 || p.y < 1 || seen.has(key(p))) continue; seen.add(key(p));
     let collision = false;
@@ -147,12 +150,12 @@ function placements(node, graph, base, catalogs) {
   positions.sort((a, b) => a.area - b.area || a.distance - b.distance || a.p.y - b.p.y);
   return positions.map(c => c.p);
 }
-export function growCandidates(catalogs, graph, base, node, budget = 64, routeFamily = 'simple') {
+export function growCandidates(catalogs, graph, base, node, budget = 64, routeFamily = 'simple', placementFamily = 'forward') {
   if (!['simple', 'perimeter'].includes(routeFamily)) fail('closure-route-family', 'Expected simple or perimeter corridor templates', routeFamily);
   if (!Number.isSafeInteger(budget) || budget < 1 || budget > 512) fail('closure-candidate-budget', 'Expected placement trial budget 1..512');
   if (!ready(graph, base.witness).some(n => n.id === node.id)) fail('closure-frontier-unready', 'Internal predecessors must already be retained', node.id);
   const start = performance.now(), candidates = [], failures = []; let trials = 0;
-  for (const p of placements(node, graph, base, catalogs).slice(0, budget)) {
+  for (const p of placements(node, graph, base, catalogs, placementFamily).slice(0, budget)) {
     trials++;
     const w = structuredClone(base.witness); w.placements.push(p);
     w.utilizations = Object.fromEntries([...Object.entries(w.utilizations), [node.id, structuredClone(node.utilization)]]);
@@ -161,7 +164,7 @@ export function growCandidates(catalogs, graph, base, node, budget = 64, routeFa
       const edges = graph.edges.filter(e => e.target === node.id).sort((a, b) => (a.transport === 'pipe' ? 0 : 1) - (b.transport === 'pipe' ? 0 : 1) || a.id.localeCompare(b.id));
       for (const edge of edges) routes.push(...connect(w, ports, occupied, edge, catalogs, null, routeFamily));
       candidates.push({ schema_version: 1, case: 'actual-graph-factory-closure', embedding: 'closure', witness: w, catalog_ports: ports, labels: { ...base.labels },
-        accepted: false, factory_validated: false, port_groups: { sources: [], targets: [] }, closure_plan: { added: node.id, placement: p, routes, trials, route_family: routeFamily } });
+        accepted: false, factory_validated: false, port_groups: { sources: [], targets: [] }, closure_plan: { added: node.id, placement: p, routes, trials, route_family: routeFamily, placement_family: placementFamily } });
       if (candidates.length === 8) break;
     } catch (e) { failures.push({ code: e.code ?? 'closure-candidate-failed', message: e.message, entity: e.entity, placement: p }); }
   }

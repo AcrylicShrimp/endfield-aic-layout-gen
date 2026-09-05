@@ -5,7 +5,7 @@ import { normalizeGraph, extractCycles } from '../constructive-cycle-blocks/grap
 import { constructCycle } from '../constructive-cycle-blocks/model.mjs';
 import { composeBlocks, readyConsumers } from '../constructive-block-composition/model.mjs';
 import { compactInterface, witnessScore } from '../constructive-auto-interface/compact.mjs';
-import { growCandidates, ready, routeTemplates, inspectCoverage } from './model.mjs';
+import { growCandidates, ready, routeTemplates, inspectCoverage, placements } from './model.mjs';
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k,
   read(`../../../data/game/normalized/${k === 'components' ? 'logistics-components' : k}.json`)]));
@@ -57,6 +57,25 @@ test('corridor templates respect layers, bodies, fixed output reservations and o
   occupied.body.add('1,2'); assert.equal(routeTemplates(a, b, occupied, 'pipe', extent), null);
   occupied.body.clear(); assert.equal(routeTemplates(a, a, occupied, 'pipe', extent).cells.length, 1);
   assert.equal(routeTemplates(a, { x: 7, y: 2 }, occupied, 'pipe', extent, extent), null);
+});
+
+test('two-sided placement includes every forward slot, preserves orientation and rejects all occupied geometry', () => {
+  const base = baseline(), original = JSON.stringify(base); let additional = 0;
+  for (const node of ready(graph, base.witness)) {
+    const forward = placements(node, graph, base, catalogs), expanded = placements(node, graph, base, catalogs, 'two-sided');
+    assert.deepEqual(forward, placements(node, graph, base, catalogs, 'forward'));
+    const ids = new Set(expanded.map(p => JSON.stringify(p)));
+    for (const p of forward) assert.ok(ids.has(JSON.stringify(p)));
+    additional += expanded.length - forward.length;
+    assert.equal(ids.size, expanded.length);
+    for (const p of expanded) {
+      assert.ok(p.x >= 0 && p.y >= 1); assert.equal(p.rotation, forward[0].rotation);
+      assert.ok(base.witness.placements.every(q => p.x + p.width <= q.x || q.x + q.width <= p.x || p.y + p.height <= q.y || q.y + q.height <= p.y));
+      assert.ok(base.witness.transport_networks.flatMap(n => n.cells).every(q => q.x < p.x || q.x >= p.x + p.width || q.y < p.y || q.y >= p.y + p.height));
+    }
+  }
+  assert.ok(additional > 0); assert.equal(JSON.stringify(base), original);
+  assert.throws(() => placements(ready(graph, base.witness)[0], graph, base, catalogs, 'unknown'), { code: 'closure-placement-family' });
 });
 
 test('coverage cannot accept a complete claim or an empty terminal report for a partial factory', () => {

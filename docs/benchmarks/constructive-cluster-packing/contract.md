@@ -65,3 +65,8 @@ and its retained cluster witness hashes must equal the newly reconstructed clust
 label or recipe-specific offset is embedded in code. Use one-cell separation in this neighborhood;
 report the exact domain and candidate budget. Even exhausting all 25 offsets is not local optimality:
 closure still uses bounded heuristic placement and corridor families, not an exact completion oracle.
+
+`--placement-family forward|two-sided` selects the closure placement experiment for each packed
+candidate, independently of the route family. Forward remains the default. Record the selection in
+each closure attempt and the parent report. A broader local family can alter later greedy choices;
+only a complete independently checked factory may replace the incumbent.

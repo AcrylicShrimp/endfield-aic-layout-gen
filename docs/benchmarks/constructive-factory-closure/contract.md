@@ -50,3 +50,11 @@ column (up to three turns). This can approach a north-facing input around its bo
 below other regions. It uses the same occupancy, capacity, exact-score pruning and independent gates;
 no extra crossing permission is introduced. The richer local family can still lead to different later
 greedy choices, so compare complete factory candidates, not just locally shorter paths.
+
+`--placement-family forward` preserves the original supplier-exit anchor and nonnegative horizontal
+offsets. The explicit `two-sided` experiment adds the mirrored negative offsets while keeping the
+same catalog orientation, vertical offsets, nonnegative coordinates and body/transport collision
+checks. Negative offsets are relative to the anchor, not negative world coordinates or a rotated
+production flow. The diagnostic trial budget and eight-success limit still apply after area/distance
+ranking. Report the family at run and candidate levels; a larger candidate family is not guaranteed
+to improve the complete greedy construction. Retain the complete incumbent in comparative runs.

@@ -23,12 +23,14 @@ try {
   const keys = ['graph', 'blocks', 'incumbent', 'recipes', 'facilities', 'items', 'transports', 'components', 'validator', 'output-directory'], options = {}, args = process.argv.slice(2);
   for (let i = 0; i < args.length; i += 2) {
     const k = args[i].slice(2);
-    if (!args[i].startsWith('--') || ![...keys, 'packing-family', 'nesting-limit', 'nesting-screen', 'refine-from', 'refine-radius'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
+    if (!args[i].startsWith('--') || ![...keys, 'packing-family', 'nesting-limit', 'nesting-screen', 'refine-from', 'refine-radius', 'placement-family'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
     options[k] = args[i + 1];
   }
   for (const k of keys) if (!options[k]) throw new Error(`Missing --${k}`);
   const packingFamily = options['packing-family'] ?? 'shelf';
   if (!['shelf', 'nesting'].includes(packingFamily)) throw new Error('Expected --packing-family shelf or nesting');
+  const placementFamily = options['placement-family'] ?? 'forward';
+  if (!['forward', 'two-sided'].includes(placementFamily)) throw new Error('Expected --placement-family forward or two-sided');
   const nestingLimit = Number(options['nesting-limit'] ?? (options['refine-from'] ? 32 : 12)), nestingScreen = options['nesting-screen'] ?? 'space';
   if (!Number.isSafeInteger(nestingLimit) || nestingLimit < 1 || nestingLimit > 32) throw new Error('Expected --nesting-limit 1..32');
   if (!['ports', 'space'].includes(nestingScreen)) throw new Error('Expected --nesting-screen ports or space');
@@ -96,9 +98,9 @@ try {
       for (const family of ['simple', 'perimeter']) {
         const closureStart = performance.now(), directory = path.join(p.directory, `closure-${family}`);
         const code = await execute(process.execPath, [new URL('../constructive-factory-closure/run.mjs', import.meta.url).pathname,
-          '--graph', options.graph, '--baseline', path.join(p.directory, 'baseline.json'), '--route-family', family, ...catalogArgs,
+          '--graph', options.graph, '--baseline', path.join(p.directory, 'baseline.json'), '--route-family', family, '--placement-family', placementFamily, ...catalogArgs,
           '--validator', options.validator, '--output-directory', directory], path.join(p.directory, `closure-${family}.log`), 120000);
-        const attempt = { family, elapsed_ms: performance.now() - closureStart, exit_code: code, complete: false }; p.closures.push(attempt);
+        const attempt = { family, placement_family: placementFamily, elapsed_ms: performance.now() - closureStart, exit_code: code, complete: false }; p.closures.push(attempt);
         if (fs.existsSync(path.join(directory, 'report.json'))) {
           const r = read(path.join(directory, 'report.json')); attempt.report = path.join(directory, 'report.json');
           attempt.covered_facilities = r.covered_facilities; attempt.partial_or_complete_score = r.score; attempt.failures = r.failures;
@@ -117,7 +119,7 @@ try {
     .sort((a, b) => better(a.complete_score.tuple, b.complete_score.tuple) ? -1 : better(b.complete_score.tuple, a.complete_score.tuple) ? 1 : 0);
   const selectedDirectory = improved[0]?.complete_directory ?? incumbent.directory, score = improved[0]?.complete_score ?? incumbent.score;
   const report = { schema_version: 1, status: improved.length ? 'complete-factory-improved' : 'complete-incumbent-retained', factory_validated: true,
-    selected_directory: selectedDirectory, score, incumbent_score: incumbent.score, packing_family: packingFamily, elapsed_ms: performance.now() - start, packing_construction_ms: packMs,
+    selected_directory: selectedDirectory, score, incumbent_score: incumbent.score, packing_family: packingFamily, placement_family: placementFamily, elapsed_ms: performance.now() - start, packing_construction_ms: packMs,
     clusters: clusterReports, packings: packReports.map(({ detail, ...r }) => r),
     provenance: [...keys.filter(k => k !== 'output-directory'), ...(options['refine-from'] ? ['refine-from'] : [])].map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
     source_hashes: Object.fromEntries(['run.mjs', 'model.mjs', 'nesting.mjs', 'pockets.mjs', '../constructive-block-composition/model.mjs', '../constructive-factory-closure/model.mjs', '../constructive-factory-closure/run.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
