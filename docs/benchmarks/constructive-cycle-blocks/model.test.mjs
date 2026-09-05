@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeGraph, extractCycles } from './graph.mjs';
-import { constructCycle, inspectCycleCoverage } from './model.mjs';
+import { constructCycle, inspectBlockCoverage } from './model.mjs';
 import { rate, add, multiply, parseRate, dto } from '../constructive-interconnect/rates.mjs';
 import { compactInterface, witnessScore } from '../constructive-auto-interface/compact.mjs';
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
@@ -73,7 +73,7 @@ test('coverage diagnostics reject independent mutations of an otherwise accepted
         routed_rate: dto(rate(total.n * pending.d - pending.n * total.d, total.d * pending.d)) };
     }));
   }) };
-  assert.equal(inspectCycleCoverage(d, report, catalogs).accepted, true);
+  assert.equal(inspectBlockCoverage(d, report, catalogs).accepted, true);
   for (const [code, mutate] of [
     ['cycle-membership-mismatch', x => x.witness.placements.pop()],
     ['cycle-membership-mismatch', x => x.witness.placements.push(x.witness.placements[0])],
@@ -81,11 +81,11 @@ test('coverage diagnostics reject independent mutations of an otherwise accepted
     ['cycle-pending-mismatch', x => { x.block.pending_edges[0].rate.numerator++; }],
   ]) {
     const changed = structuredClone(d); mutate(changed);
-    const result = inspectCycleCoverage(changed, report, catalogs);
+    const result = inspectBlockCoverage(changed, report, catalogs);
     assert.equal(result.accepted, false); assert.ok(result.diagnostics.some(d => d.code === code), JSON.stringify({ expected: code, diagnostics: result.diagnostics }));
   }
   const missing = structuredClone(report); missing.recipe_terminals.pop();
-  assert.ok(inspectCycleCoverage(d, missing, catalogs).diagnostics.some(d => d.code === 'cycle-terminal-report-shape'));
+  assert.ok(inspectBlockCoverage(d, missing, catalogs).diagnostics.some(d => d.code === 'cycle-terminal-report-shape'));
 });
 
 test('root return geometry delays splitting and reduces large-cycle footprint', () => {

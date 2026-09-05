@@ -40,7 +40,7 @@ Independent Rust validation must accept the covered geometry. Additionally requi
 terminals, all recipe inputs fully covered, and pending outputs exactly equal the declared cut
 edges. Original pair flows may be redistributed only within a compatible commodity while preserving
 every instance/direction/item margin. A completed local cycle is not a completed factory.
-`inspectCycleCoverage` returns acceptance plus structured diagnostics; the CLI persists these in
+`inspectBlockCoverage` returns acceptance plus structured diagnostics; the CLI persists these in
 `coverage.json` and the candidate report. It checks exact membership, immutable recipe/utilization
 snapshots and the full set of expected recipe terminal rows against runtime catalogs. A rejected
 graph coverage check cannot be hidden behind a successful covered-geometry validator result.

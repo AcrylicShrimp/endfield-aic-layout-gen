@@ -96,7 +96,7 @@ export function constructCycle(catalogs, graph, block, family = 'leaf') {
 }
 
 // Recipe coverage alone is insufficient: check exactly which graph obligations remain.
-export function inspectCycleCoverage(detail, validation, catalogs) {
+export function inspectBlockCoverage(detail, validation, catalogs) {
   const diagnostics = [], error = (code, message, entity) => diagnostics.push({ code, severity: 'error', stage: 'cycle-coverage', message, entity });
   if (!validation.covered_geometry_validated) error('cycle-geometry-rejected', 'Independent covered-geometry validation failed', detail.block.id);
   for (const n of detail.witness.transport_networks) for (const t of n.terminals) if (t.endpoint.kind === 'external')

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { constructInterface } from '../constructive-auto-interface/model.mjs';
-import { inspectCycleCoverage } from './model.mjs';
+import { inspectBlockCoverage } from './model.mjs';
 const read = p => JSON.parse(fs.readFileSync(p));
 const write = (p, v) => fs.writeFileSync(p, JSON.stringify(v, null, 2) + '\n', { flag: 'wx' });
 const hash = p => createHash('sha256').update(fs.readFileSync(p)).digest('hex');
@@ -45,7 +45,7 @@ try {
       ...['recipes', 'facilities', 'items', 'transports', 'components'].flatMap(k => [`--${k}`, options[k]]), '--report-output', validationPath],
       { encoding: 'utf8', timeout: 30000, maxBuffer: 1024 * 1024 });
     fs.writeFileSync(path.join(output, c.name + '.log'), (result.stdout ?? '') + (result.stderr ?? ''), { flag: 'wx' });
-    const validation = read(validationPath), coverage = inspectCycleCoverage(c.detail, validation, catalogs), accepted = coverage.accepted;
+    const validation = read(validationPath), coverage = inspectBlockCoverage(c.detail, validation, catalogs), accepted = coverage.accepted;
     results.push({ name: c.name, passed: result.status === (c.geometry ? 0 : 2) && validation.covered_geometry_validated === c.geometry && accepted === c.accepted,
       covered_geometry_validated: validation.covered_geometry_validated, cycle_coverage_accepted: accepted,
       diagnostics: [...validation.diagnostics, ...coverage.diagnostics], witness_sha256: hash(witnessPath) });

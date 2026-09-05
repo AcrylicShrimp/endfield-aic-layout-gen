@@ -3,7 +3,7 @@ import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { normalizeGraph, extractCycles } from './graph.mjs';
-import { constructCycle, inspectCycleCoverage } from './model.mjs';
+import { constructCycle, inspectBlockCoverage } from './model.mjs';
 import { compactInterface, witnessScore } from '../constructive-auto-interface/compact.mjs';
 import { render } from '../constructive-bound-interconnect/view.mjs';
 const read = p => JSON.parse(fs.readFileSync(p));
@@ -47,7 +47,7 @@ try {
       child.on('error', e => { clearTimeout(guard); log.end(); reject(e); });
       child.on('close', code => { clearTimeout(guard); log.end(); resolve(code); });
     });
-    const validation = read(path.join(directory, 'validation.json')), coverage = inspectCycleCoverage(detail, validation, catalogs), accepted = code === 0 && coverage.accepted;
+    const validation = read(path.join(directory, 'validation.json')), coverage = inspectBlockCoverage(detail, validation, catalogs), accepted = code === 0 && coverage.accepted;
     write(path.join(directory, 'coverage.json'), coverage);
     fs.writeFileSync(path.join(directory, 'index.html'), render(detail, validation, catalogs), { flag: 'wx' });
     return { block: detail.block.id, embedding: detail.embedding, directory, accepted, facilities: detail.witness.placements.length,
