@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "threads": 4,
+  "training_reports": ["../../../target/layout-rl-training-main-02/report.json"],
+  "splits": ["test", "out-of-family"],
+  "baselines": ["retain", "uniform", "greedy", "best-first"],
+  "decoders": ["sample"],
+  "rollout_seeds": [101, 202, 303],
+  "budgets": [
+    {"mode": "work", "proposals": 32, "elapsed_ms": 30000},
+    {"mode": "work", "proposals": 128, "elapsed_ms": 30000},
+    {"mode": "time", "proposals": 16384, "elapsed_ms": 250},
+    {"mode": "time", "proposals": 16384, "elapsed_ms": 1000}
+  ],
+  "order_seed": 918
+}

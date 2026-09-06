@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "roots": "../../../target/layout-rl-roots-03/roots.json",
+  "main_training": "../../../target/layout-rl-training-main-02/report.json",
+  "main_evaluation": "../../../target/layout-rl-evaluation-main-02/report.json",
+  "main_audit": "../../../target/layout-rl-audit-main-01/report.json",
+  "main_policy_audit": "../../../target/layout-rl-audit-main-01/policy-report.json",
+  "detour_training": "../../../target/layout-rl-training-detour-03/report.json",
+  "detour_evaluation": "../../../target/layout-rl-evaluation-detour-03/report.json",
+  "detour_audit": "../../../target/layout-rl-audit-detour-02/report.json",
+  "detour_policy_audit": "../../../target/layout-rl-audit-detour-02/policy-report.json",
+  "detour_proof": "../../../target/layout-rl-detour-04/report.json",
+  "workers_prefix": "../../../target/layout-rl-workers-v2-",
+  "threads_prefix": "../../../target/layout-rl-cost-final-t",
+  "checkpoint_reproductions": [
+    ["../../../target/layout-rl-training-main-01/report.json", "../../../target/layout-rl-training-main-02/report.json"],
+    ["../../../target/layout-rl-training-detour-02/report.json", "../../../target/layout-rl-training-detour-03/report.json"]
+  ],
+  "host": {
+    "chip": "Apple M4", "physical_cores": 10, "logical_cores": 10,
+    "memory_gib": 24, "os": "macOS 26.6", "python": "3.14.7", "device": "cpu",
+    "training_rss_snapshot": {
+      "utc": "2026-09-06T19:25:52.870Z", "processes": 18,
+      "total_rss_kib": 1942640, "python_rss_kib": 464992,
+      "scope": "One ps snapshot during main myopic seed 29, uv + learner + eight Node workers + eight Rust probes. Sum includes shared pages; not peak RSS or exclusive physical memory."
+    }
+  }
+}

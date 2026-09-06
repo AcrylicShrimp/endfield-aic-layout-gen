@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "groups": 512,
+  "workers": 8,
+  "horizon": 16,
+  "threads": 4,
+  "width": 32,
+  "architecture": "graph",
+  "learning_rate": 0.001,
+  "curve_interval": 128,
+  "runs": [
+    {"signal": "terminal", "seed": 7},
+    {"signal": "terminal", "seed": 17},
+    {"signal": "terminal", "seed": 29},
+    {"signal": "myopic", "seed": 7},
+    {"signal": "myopic", "seed": 17},
+    {"signal": "myopic", "seed": 29},
+    {"signal": "zero", "seed": 7},
+    {"signal": "shuffled", "seed": 7}
+  ]
+}

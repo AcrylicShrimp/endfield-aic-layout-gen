@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "threads": 1,
+  "training_reports": ["../../../target/layout-rl-training-detour-03/report.json"],
+  "root_ids": ["chain-citron-51"],
+  "baselines": ["retain", "uniform", "greedy", "best-first"],
+  "decoders": ["sample", "argmax"],
+  "rollout_seeds": [101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116,
+    117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132],
+  "budgets": [{"mode": "work", "proposals": 2, "elapsed_ms": 30000}],
+  "order_seed": 918
+}
