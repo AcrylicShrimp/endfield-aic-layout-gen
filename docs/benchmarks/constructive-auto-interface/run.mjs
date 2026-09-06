@@ -10,7 +10,7 @@ const read = p => JSON.parse(fs.readFileSync(p));
 async function validate(detail, catalogs, options, directory) {
   const ioStart = performance.now();
   fs.mkdirSync(directory);
-  write(path.join(directory, 'detail.json'), detail); write(path.join(directory, 'witness.json'), detail.witness);
+  write(path.join(directory, 'witness.json'), detail.witness);
   const inputIoMs = performance.now() - ioStart;
   const start = performance.now();
   const code = await new Promise((resolve, reject) => {
@@ -24,9 +24,13 @@ async function validate(detail, catalogs, options, directory) {
   });
   const validationProcessMs = performance.now() - start;
   const reportPath = path.join(directory, 'validation.json');
-  if (!fs.existsSync(reportPath)) return { detail, directory, accepted: false, code: 'interface-validator-process-failed', exit_code: code,
-    validation_process_ms: validationProcessMs, input_io_ms: inputIoMs };
+  if (!fs.existsSync(reportPath)) {
+    detail = { ...detail, accepted: false, factory_validated: false }; write(path.join(directory, 'detail.json'), detail);
+    return { detail, directory, accepted: false, code: 'interface-validator-process-failed', exit_code: code,
+      validation_process_ms: validationProcessMs, input_io_ms: inputIoMs };
+  }
   const validation = read(reportPath), accepted = code === 0 && validation.covered_geometry_validated && validation.recipe_coverage_complete;
+  detail = { ...detail, accepted, factory_validated: false }; write(path.join(directory, 'detail.json'), detail);
   const renderStart = performance.now();
   fs.writeFileSync(path.join(directory, 'index.html'), render(detail, validation, catalogs), { flag: 'wx' });
   return { detail, validation, directory, accepted, score: witnessScore(detail.witness), validation_process_ms: validationProcessMs,
