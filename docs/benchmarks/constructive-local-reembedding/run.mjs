@@ -3,6 +3,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { reembed, extractChains, relocationCandidates } from './model.mjs';
 import { groupCandidates } from './groups.mjs';
+import { boundaryPortSwaps } from './ports.mjs';
 import { compactEmbedding } from '../constructive-embedding-compaction/model.mjs';
 import { executeValidator } from '../constructive-embedding-compaction/validator.mjs';
 import { normalizeGraph } from '../constructive-cycle-blocks/graph.mjs';
@@ -16,7 +17,7 @@ try {
   const keys = ['graph', 'baseline', 'recipes', 'facilities', 'items', 'transports', 'components', 'validator', 'output-directory'], options = {}, args = process.argv.slice(2);
   for (let i = 0; i < args.length; i += 2) {
     const k = args[i].slice(2);
-    if (!args[i].startsWith('--') || ![...keys, 'rounds', 'mode', 'move-limit', 'move-family', 'endpoint-policy', 'junction-policy'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
+    if (!args[i].startsWith('--') || ![...keys, 'rounds', 'mode', 'move-limit', 'move-family', 'endpoint-policy', 'junction-policy', 'max-new-crossings', 'port-policy'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
     options[k] = args[i + 1];
   }
   for (const k of keys) if (!options[k]) throw new Error(`Missing --${k}`);
@@ -24,6 +25,10 @@ try {
   const moveFamily = options['move-family'] ?? 'single';
   const endpointPolicy = options['endpoint-policy'] ?? 'retained';
   const junctionPolicy = options['junction-policy'] ?? 'internal';
+  const maxNewCrossings = Number(options['max-new-crossings'] ?? 0);
+  const portPolicy = options['port-policy'] ?? 'retained';
+  if (!['retained', 'paired'].includes(portPolicy)) throw new Error('Expected --port-policy retained|paired');
+  if (!Number.isSafeInteger(maxNewCrossings) || maxNewCrossings < 0 || maxNewCrossings > 8) throw new Error('Expected --max-new-crossings 0..8');
   if (!['internal', 'downstream'].includes(junctionPolicy)) throw new Error('Expected --junction-policy internal|downstream');
   if (!['retained', 'terminal-flexible'].includes(endpointPolicy)) throw new Error('Expected --endpoint-policy retained|terminal-flexible');
   if (!['single', 'group', 'cone'].includes(moveFamily)) throw new Error('Expected --move-family single|group|cone');
@@ -51,7 +56,7 @@ try {
   if (!selected.factory_validated) throw new Error('Complete incumbent failed independent graph validation');
   const initialScore = selected.score;
   const attempt = async (parent, request, context) => {
-    request = { ...request, endpointPolicy, junctionPolicy };
+    request = { ...request, endpointPolicy, junctionPolicy, maxNewCrossings };
     const record = { ...context, request, parent_directory: parent.directory }; stages.push(record);
     try {
       const r = reembed(parent.detail, catalogs, request); generationMs += r.elapsed_ms;
@@ -91,15 +96,20 @@ try {
         void_positions: moves.filter(m => m.void_candidate).length, increasing_distance_positions: moves.filter(m => m.endpoint_delta > 0).length,
         kinds: Object.fromEntries([...new Set(moves.map(m => m.kind))].map(kind => [kind, moves.filter(m => m.kind === kind).length])) });
       for (const diagnostic of portfolio.diagnostics ?? []) failures.push({ round, phase: 'group-screen', ...diagnostic });
-      for (const [ordinal, move] of moves.entries()) for (const order of ['near', 'far']) await attempt(parent, { move, order }, { round, phase: 'relocate', ordinal });
+      const chains = portPolicy === 'paired' ? extractChains(parent.detail.witness).chains : [];
+      for (const [ordinal, move] of moves.entries()) {
+        const assignments = [[], ...(portPolicy === 'paired' ? boundaryPortSwaps(parent.detail.witness, chains, move).slice(0, 4) : [])];
+        for (const [port_variant, portAssignments] of assignments.entries()) for (const order of ['near', 'far'])
+          await attempt(parent, { move, order, portAssignments }, { round, phase: 'relocate', ordinal, port_variant });
+      }
     }
     if (selected === before) { termination = 'unimproved-neighborhood'; break; }
   }
   const report = { schema_version: 1, status: better(selected.score.tuple, initialScore.tuple) ? 'complete-factory-improved' : 'complete-incumbent-retained', factory_validated: true,
-    selected_directory: selected.directory, initial_score: initialScore, score: selected.score, mode, rounds, move_limit: limit, move_family: moveFamily, move_schema_version: 2, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, termination,
+    selected_directory: selected.directory, initial_score: initialScore, score: selected.score, mode, rounds, move_limit: limit, move_family: moveFamily, move_schema_version: 2, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, max_new_crossings: maxNewCrossings, port_policy: portPolicy, termination,
     generation_ms: generationMs, compaction_ms: compactionMs, validation_output_ms: validationMs, elapsed_ms: performance.now() - began, neighborhoods, stages, failures,
     provenance: keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
-    source_hashes: Object.fromEntries(['model.mjs', 'movement.mjs', 'groups.mjs', 'path.mjs', 'run.mjs', '../constructive-embedding-compaction/model.mjs', '../constructive-embedding-compaction/length.mjs',
+    source_hashes: Object.fromEntries(['model.mjs', 'movement.mjs', 'groups.mjs', 'path.mjs', 'crossing.mjs', 'ports.mjs', 'run.mjs', '../constructive-embedding-compaction/model.mjs', '../constructive-embedding-compaction/length.mjs',
       '../constructive-embedding-compaction/validator.mjs', '../constructive-factory-closure/model.mjs', '../constructive-cycle-blocks/graph.mjs',
       '../constructive-auto-interface/compact.mjs', '../constructive-bound-interconnect/view.mjs', '../constructive-placement-only/model.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), report); fs.copyFileSync(path.join(selected.directory, 'index.html'), path.join(output, 'index.html'));

@@ -2,6 +2,8 @@ import { shortestPath, key, direction, distance, directions } from './path.mjs';
 import { project } from '../constructive-factory-closure/model.mjs';
 import { witnessScore } from '../constructive-auto-interface/compact.mjs';
 import { movementPlan } from './movement.mjs';
+import { crossingOptions } from './crossing.mjs';
+import { planPortAssignments } from './ports.mjs';
 const equalRate = (a, b) => BigInt(a.numerator) * BigInt(b.denominator) === BigInt(b.numerator) * BigInt(a.denominator);
 const fail = (code, message, entity = null) => { throw Object.assign(new Error(message), { code, severity: 'error', stage: 'local-reembedding', entity }); };
 const cellsOf = p => Array.from({ length: p.width * p.height }, (_, i) => ({ x: p.x + i % p.width, y: p.y + Math.floor(i / p.width) }));
@@ -66,11 +68,12 @@ export function flexibleTerminalAnchors(w, chains) {
   return new Set([...terminals].filter(([k, n]) => n === 1 && incident.get(k) === 1 && !components.has(k)).map(([k]) => k));
 }
 
-export function reembed(detail, catalogs, { move = null, chainIds = [], order = 'near', workBudget = 200000, endpointPolicy = 'retained', junctionPolicy = 'internal', routePriority = [] } = {}) {
+export function reembed(detail, catalogs, { move = null, chainIds = [], order = 'near', workBudget = 200000, endpointPolicy = 'retained', junctionPolicy = 'internal', routePriority = [], maxNewCrossings = 0, portAssignments = [] } = {}) {
   const began = performance.now(), original = detail.witness, { chains, anchors } = extractChains(original), bounds = extentOf(original);
   if (!['near', 'far'].includes(order)) fail('local-route-order', 'Expected near or far route order');
   if (!['retained', 'terminal-flexible'].includes(endpointPolicy)) fail('local-endpoint-policy', 'Expected retained or terminal-flexible endpoint policy');
   if (!['internal', 'downstream'].includes(junctionPolicy)) fail('local-junction-policy', 'Expected internal or downstream junction ownership');
+  if (!Number.isSafeInteger(maxNewCrossings) || maxNewCrossings < 0 || maxNewCrossings > 8) fail('local-crossing-budget', 'Expected new crossing budget 0..8');
   const flexible = endpointPolicy === 'terminal-flexible' ? flexibleTerminalAnchors(original, chains) : new Set();
   const changed = new Set(chainIds);
   if ([...changed].some(i => !Number.isSafeInteger(i) || !chains[i])) fail('local-chain-id', 'Unknown chain id');
@@ -78,11 +81,12 @@ export function reembed(detail, catalogs, { move = null, chainIds = [], order = 
     fail('local-route-priority', 'Expected unique known chain IDs in route priority');
   const priority = new Map(routePriority.map((id, i) => [id, i]));
   const movement = move ? movementPlan(original, chains, anchors, move, { junctionPolicy }) : null;
+  const shifted = (p, tr) => movement?.movable(tr, p) ? movement.translate(p) : p;
   // Private append-only draft: untouched nested values are read-only until successful detachment.
   const w = { ...original,
     placements: original.placements.map(p => movement?.selected.has(p.instance) ? { ...p, ...movement.translate(p) } : p),
     logistics_components: original.logistics_components.map(c => movement?.components.includes(c.id) ? { ...c, position: movement.translate(c.position) } : c),
-    transport_networks: original.transport_networks.map(n => ({ ...n, terminals: n.terminals.map(t => movement?.movable(n.transport, t.position) ? { ...t, position: movement.translate(t.position) } : t) })) };
+    transport_networks: original.transport_networks.map(n => ({ ...n, component_ids: [...n.component_ids], terminals: n.terminals.map(t => movement?.movable(n.transport, t.position) ? { ...t, position: movement.translate(t.position) } : t) })) };
   const paths = new Map(movement?.fixedChains ?? []);
   if (movement) {
     for (const id of movement.changed) changed.add(id);
@@ -91,11 +95,22 @@ export function reembed(detail, catalogs, { move = null, chainIds = [], order = 
     if (carried.some(p => p.x < bounds.minX || p.x > bounds.maxX || p.y < bounds.minY || p.y > bounds.maxY))
       fail('local-move-bounds', 'Translated geometry leaves the explicit current-extent neighborhood', move.instances);
   }
-  const relocated = (p, tr) => movement?.movable(tr, p) ? movement.translate(p) : p;
+  if (!Array.isArray(portAssignments)) fail('local-port-assignment', 'Expected a terminal assignment array');
+  const singleton = portAssignments.length ? flexibleTerminalAnchors(original, chains) : new Set();
+  const eligible = new Set(original.transport_networks.flatMap(n => n.terminals.filter(t => singleton.has(`${n.transport}:${key(t.position)}`)).map(t => `${n.transport}:${key(shifted(t.position, n.transport))}`)));
+  const ports = portAssignments.length ? planPortAssignments(w, catalogs, portAssignments, eligible) : { networks: w.transport_networks, positions: new Map() };
+  w.transport_networks = ports.networks;
+  const changedPort = (p, tr) => ports.positions.get(`${tr}:${key(shifted(p, tr))}`);
+  const newPorts = new Set([...ports.positions].map(([k, p]) => `${k.slice(0, k.indexOf(':'))}:${key(p)}`));
+  for (const p of ports.positions.values()) if (p.x < bounds.minX || p.x > bounds.maxX || p.y < bounds.minY || p.y > bounds.maxY)
+    fail('local-move-bounds', 'Reassigned port leaves the explicit current-extent neighborhood');
+  if (newPorts.size) for (const c of chains) if (changedPort(c.cells[0], c.transport) || changedPort(c.cells.at(-1), c.transport) ||
+    (paths.get(c.id) ?? c.cells).some(p => newPorts.has(`${c.transport}:${key(p)}`))) { paths.delete(c.id); changed.add(c.id); }
+  const relocated = (p, tr) => changedPort(p, tr) ?? shifted(p, tr);
   const jobs = [...changed].map(i => {
     const c = chains[i], start = relocated(c.cells[0], c.transport), end = relocated(c.cells.at(-1), c.transport);
-    return { ...c, start, end, first: flexible.has(`${c.transport}:${key(c.cells[0])}`) ? null : c.first,
-      last: flexible.has(`${c.transport}:${key(c.cells.at(-1))}`) ? null : c.last };
+    return { ...c, start, end, first: changedPort(c.cells[0], c.transport) || flexible.has(`${c.transport}:${key(c.cells[0])}`) ? null : c.first,
+      last: changedPort(c.cells.at(-1), c.transport) || flexible.has(`${c.transport}:${key(c.cells.at(-1))}`) ? null : c.last };
   }).sort((a, b) => (priority.get(a.id) ?? routePriority.length) - (priority.get(b.id) ?? routePriority.length) ||
     (order === 'near' ? 1 : -1) * (distance(a.start, a.end) - distance(b.start, b.end)) || a.id - b.id);
   const body = new Set(w.placements.flatMap(cellsOf).map(key)), occupied = { belt: new Set(), pipe: new Set() };
@@ -110,19 +125,34 @@ export function reembed(detail, catalogs, { move = null, chainIds = [], order = 
       const k = key(p); if (!reservations[j.transport].has(k)) reservations[j.transport].set(k, new Set()); reservations[j.transport].get(k).add(j.id);
     }
   }
-  const results = [];
+  const results = [], installedCrossings = [];
   for (const job of jobs) {
     const blocked = new Set([...body, ...occupied[job.transport]]);
     for (const [k, owners] of reservations[job.transport]) if (!owners.has(job.id)) blocked.add(k);
     if (body.has(key(job.start)) || body.has(key(job.end))) fail('local-endpoint-body', 'Route endpoint intersects a body', job.id);
     blocked.delete(key(job.start)); blocked.delete(key(job.end));
-    const result = shortestPath(job.start, job.end, blocked, bounds, { first: job.first, last: job.last, workBudget });
-    results.push({ id: job.id, item: job.item, first: job.first, last: job.last, status: result.status, expanded: result.expanded, old_steps: job.cells.length - 1, steps: result.steps, turns: result.turns });
+    const excluded = new Set([...body, ...reservations[job.transport].keys(),
+      ...w.logistics_components.filter(c => c.transport === job.transport).map(c => key(c.position)),
+      ...w.transport_networks.filter(n => n.transport === job.transport).flatMap(n => n.terminals.map(t => key(t.position))),
+      ...jobs.filter(j => j.transport === job.transport).flatMap(j => [key(j.start), key(j.end)])]);
+    const carriers = maxNewCrossings > installedCrossings.length ? chains.filter(c => !changed.has(c.id) || paths.has(c.id)).map(c => ({ ...c, cells: paths.get(c.id) ?? c.cells })) : [];
+    const sites = carriers.length ? crossingOptions(carriers, job, catalogs, excluded) : new Map();
+    const result = shortestPath(job.start, job.end, blocked, bounds, { first: job.first, last: job.last, workBudget,
+      crossingOptions: sites, crossingLimit: maxNewCrossings - installedCrossings.length });
+    results.push({ id: job.id, item: job.item, first: job.first, last: job.last, status: result.status, expanded: result.expanded, old_steps: job.cells.length - 1,
+      steps: result.steps, turns: result.turns, crossing_sites: sites.size, crossings: result.crossings ?? [] });
     if (result.status !== 'found') return { status: 'rejected', diagnostics: [{ code: `local-${result.status}`, severity: 'info', stage: 'local-reembedding', entity: job.id,
       message: 'Affected chain could not be restored within this candidate neighborhood' }], affected_chains: jobs.map(j => ({ id: j.id, item: j.item })), routes: results, elapsed_ms: performance.now() - began };
+    for (const site of result.crossings) {
+      let ordinal = w.logistics_components.length, id;
+      do { id = JSON.stringify(['local-crossing', job.transport, ordinal++]); } while (w.logistics_components.some(c => c.id === id));
+      const component = { id, component: site.component, kind: 'bridge', transport: site.transport, rotation: site.rotation, position: { ...site.position } };
+      w.logistics_components.push(component); installedCrossings.push({ ...site, id, routed_chain: job.id });
+      for (const ni of [site.carrier_network, job.network]) w.transport_networks[ni].component_ids.push(id);
+    }
     paths.set(job.id, result.cells); for (const p of result.cells) occupied[job.transport].add(key(p));
   }
-  if ((!move || (move.dx === 0 && move.dy === 0)) && jobs.every(j => paths.get(j.id).length === j.cells.length && paths.get(j.id).every((p, i) => key(p) === key(j.cells[i]))))
+  if (!portAssignments.length && (!move || (move.dx === 0 && move.dy === 0)) && jobs.every(j => paths.get(j.id).length === j.cells.length && paths.get(j.id).every((p, i) => key(p) === key(j.cells[i]))))
     return { status: 'unchanged', routes: results, elapsed_ms: performance.now() - began };
   for (const [ni, n] of w.transport_networks.entries()) if (chains.some(c => c.network === ni && paths.has(c.id)) ||
     original.transport_networks[ni].terminals.some(t => movement?.movable(n.transport, t.position))) {
@@ -137,7 +167,8 @@ export function reembed(detail, catalogs, { move = null, chainIds = [], order = 
   }
   const score = witnessScore(w), candidate = { schema_version: 1, case: 'complete-local-reembedding', embedding: 'local-astar', labels: structuredClone(detail.labels),
     witness: structuredClone(w), catalog_ports: project(w, catalogs), port_groups: { sources: [], targets: [] }, accepted: false, factory_validated: false,
-    reembedding: { move_schema_version: 2, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, route_priority: [...routePriority], move, order, carried_components: movement?.components ?? [], translated_chains: movement ? [...movement.fixedChains.keys()].filter(id => !changed.has(id)) : [], affected_chains: jobs.map(j => j.id), routes: results } };
+    reembedding: { move_schema_version: 2, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, route_priority: [...routePriority], max_new_crossings: maxNewCrossings,
+      new_crossings: installedCrossings, port_assignments: structuredClone(portAssignments), move, order, carried_components: movement?.components ?? [], translated_chains: movement ? [...movement.fixedChains.keys()].filter(id => !changed.has(id)) : [], affected_chains: jobs.map(j => j.id), routes: results } };
   return { status: 'candidate', detail: candidate, score, affected_chains: jobs.map(j => ({ id: j.id, item: j.item })), routes: results, elapsed_ms: performance.now() - began };
 }
 

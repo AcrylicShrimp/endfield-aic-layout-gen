@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "factory_validated": true,
+  "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/bridge-improved-retained/candidate-558",
+  "witness_sha256": "f9056959aa93fdc67cd7f2fcffcbc4044d686cb570f88ea317afdf48954dbb2a",
+  "score": {"width": 47, "height": 58, "area": 2726, "physical_tiles": 454, "turns": 40, "tuple": [2726, 454, 40]},
+  "previous_incumbent": "docs/benchmarks/constructive-local-reembedding/cone-results.json",
+  "previous_score": [2867, 410, 34],
+  "zero_bridge_control": "target/bridge-site-control/report.json",
+  "first_batch": ["target/bridge-final-retained/report.json", "target/bridge-final-paired/report.json"],
+  "follow_on": ["target/bridge-improved-retained/report.json", "target/bridge-improved-paired/report.json"],
+  "original_graph": "docs/benchmarks/constructive-chain-blocks/gap-1-placement.json",
+  "original_graph_audit": "target/bridge-improved-audit/audit.json",
+  "bridge_audit": "target/bridge-negative-audit/audit.json",
+  "port_swap_replay": "target/bridge-port-adjacent-replay/report.json",
+  "port_swap_alternative": "target/bridge-port-seed-refined/report.json",
+  "port_swap_alternative_audit": "target/bridge-port-seed-audit/audit.json",
+  "verification": {"node_tests_passed": 188, "rust_tests_passed": 524, "rust_tests_ignored": 2, "original_graph_controls": 8, "bridge_controls": 16},
+  "render": "http://100.114.24.86:8765/bound-interconnect-closure-bridge-final.html",
+  "alternative_render": "http://100.114.24.86:8765/bound-interconnect-closure-port-swap-seed.html",
+  "next_gate": "Explain retained order locks and evaluate joint group/interface search; Pumpkin is an optional oracle idea, not a mandated cutover."
+}
