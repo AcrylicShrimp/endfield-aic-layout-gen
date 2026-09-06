@@ -1,0 +1,24 @@
+{
+  "schema_version": 2,
+  "id": "citron-powder-03",
+  "source_image": "codex-clipboard-b4bd3050-5bac-4dba-9ab8-53070eb9f939.png",
+  "calibration": {"origin_pixels":[0,8],"cell_pitch_pixels":[102,102],"status":"manually-inferred-not-user-confirmed"},
+  "rate_assumptions": "All four facilities at full utilization for 60 powder/minute. Seed output splits equally between two planters. Steady-state rates do not prove observed operation or bootstrap inventory.",
+  "placements": [
+    {"id":"seed","label":"S","recipe":"seedcollector-plant-moss-2-1","position":[0,1],"rotation":180,"utilization":{"numerator":1,"denominator":1}},
+    {"id":"plant-cycle","label":"P1","recipe":"planter-plant-moss-2-1","position":[5,1],"rotation":0,"utilization":{"numerator":1,"denominator":1}},
+    {"id":"plant-product","label":"P2","recipe":"planter-plant-moss-2-1","position":[1,7],"rotation":90,"utilization":{"numerator":1,"denominator":1}},
+    {"id":"grinder","label":"G","recipe":"grinder-plant-moss-powder-2-1","position":[7,9],"rotation":90,"utilization":{"numerator":1,"denominator":1}}
+  ],
+  "routes": [
+    {"id":"cycle-return","source":["plant-cycle","output-belt-0"],"target":["seed","input-belt-0"],"item":"item-plant-moss-2","rate":{"numerator":1,"denominator":2},"corners":[[5,0],[4,0]]},
+    {"id":"cycle-seed","source":["seed","output-belt-0"],"target":["plant-cycle","input-belt-0"],"item":"item-plant-moss-seed-2","rate":{"numerator":1,"denominator":2},"corners":[[4,6],[5,6]]},
+    {"id":"product-seed","source":["seed","output-belt-4"],"target":["plant-product","input-belt-0"],"item":"item-plant-moss-seed-2","rate":{"numerator":1,"denominator":2},"corners":[[0,6],[0,7]]},
+    {"id":"plant-grinder","source":["plant-product","output-belt-3"],"target":["grinder","input-belt-1"],"item":"item-plant-moss-2","rate":{"numerator":1,"denominator":2},"corners":[[6,10]]}
+  ],
+  "expected_pending": [
+    {"instance":"grinder","direction":"output","item":"item-plant-moss-powder-2","rate":{"numerator":1,"denominator":1}}
+  ],
+  "annotations": [],
+  "unobserved": ["Powder export: full rate needs two belt-capacity lanes", "Cycle bootstrap inventory", "Actual recipe selection and running utilization", "Power is excluded"]
+}

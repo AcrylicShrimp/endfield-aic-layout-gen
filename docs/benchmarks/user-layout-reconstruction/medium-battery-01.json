@@ -1,27 +1,35 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "id": "medium-battery-01",
   "source_image": "codex-clipboard-91111fb0-9437-4616-88bc-abec7ca8e410.png",
   "calibration": { "origin_pixels": [112, 120], "cell_pitch_pixels": [72, 72], "status": "manually-inferred" },
-  "utilization_assumption": { "numerator": 1, "denominator": 1 },
+  "rate_assumptions": "All eight facilities at full utilization; rates are a comparison assumption, not observed operation.",
   "placements": [
-    { "id": "F1", "recipe": "furnance-iron-nugget-1", "position": [0, 0], "rotation": 90 },
-    { "id": "F2", "recipe": "furnance-iron-nugget-1", "position": [0, 3], "rotation": 90 },
-    { "id": "C1", "recipe": "component-iron-cmpt-1", "position": [4, 0], "rotation": 90 },
-    { "id": "C2", "recipe": "component-iron-cmpt-1", "position": [4, 3], "rotation": 90 },
-    { "id": "G1", "recipe": "grinder-originium-powder-1", "position": [0, 6], "rotation": 90 },
-    { "id": "G2", "recipe": "grinder-originium-powder-1", "position": [0, 9], "rotation": 90 },
-    { "id": "G3", "recipe": "grinder-originium-powder-1", "position": [0, 12], "rotation": 90 },
-    { "id": "P", "recipe": "tools-proc-battery-2-1", "position": [4, 11], "rotation": 180 }
+    { "id": "F1", "recipe": "furnance-iron-nugget-1", "position": [0, 0], "rotation": 90, "utilization": {"numerator":1,"denominator":1} },
+    { "id": "F2", "recipe": "furnance-iron-nugget-1", "position": [0, 3], "rotation": 90, "utilization": {"numerator":1,"denominator":1} },
+    { "id": "C1", "recipe": "component-iron-cmpt-1", "position": [4, 0], "rotation": 90, "utilization": {"numerator":1,"denominator":1} },
+    { "id": "C2", "recipe": "component-iron-cmpt-1", "position": [4, 3], "rotation": 90, "utilization": {"numerator":1,"denominator":1} },
+    { "id": "G1", "recipe": "grinder-originium-powder-1", "position": [0, 6], "rotation": 90, "utilization": {"numerator":1,"denominator":1} },
+    { "id": "G2", "recipe": "grinder-originium-powder-1", "position": [0, 9], "rotation": 90, "utilization": {"numerator":1,"denominator":1} },
+    { "id": "G3", "recipe": "grinder-originium-powder-1", "position": [0, 12], "rotation": 90, "utilization": {"numerator":1,"denominator":1} },
+    { "id": "P", "recipe": "tools-proc-battery-2-1", "position": [4, 11], "rotation": 180, "utilization": {"numerator":1,"denominator":1} }
   ],
   "routes": [
-    { "id": "F1-C1", "source": ["F1", "output-belt-1"], "target": ["C1", "input-belt-1"], "corners": [[3, 1]] },
-    { "id": "F2-C2", "source": ["F2", "output-belt-1"], "target": ["C2", "input-belt-1"], "corners": [[3, 4]] },
-    { "id": "C1-P", "source": ["C1", "output-belt-2"], "target": ["P", "input-belt-1"], "corners": [[7, 2], [8, 2], [8, 10]] },
-    { "id": "C2-P", "source": ["C2", "output-belt-2"], "target": ["P", "input-belt-2"], "corners": [[7, 5], [7, 10]] },
-    { "id": "G1-P", "source": ["G1", "output-belt-2"], "target": ["P", "input-belt-3"], "corners": [[3, 8], [6, 8], [6, 10]] },
-    { "id": "G2-P", "source": ["G2", "output-belt-0"], "target": ["P", "input-belt-4"], "corners": [[3, 9], [5, 9], [5, 10]] },
-    { "id": "G3-P", "source": ["G3", "output-belt-0"], "target": ["P", "input-belt-5"], "corners": [[3, 12], [3, 10], [4, 10]] }
+    { "id": "F1-C1", "source": ["F1", "output-belt-1"], "target": ["C1", "input-belt-1"], "item":"item-iron-nugget", "rate":{"numerator":1,"denominator":2}, "corners": [[3, 1]] },
+    { "id": "F2-C2", "source": ["F2", "output-belt-1"], "target": ["C2", "input-belt-1"], "item":"item-iron-nugget", "rate":{"numerator":1,"denominator":2}, "corners": [[3, 4]] },
+    { "id": "C1-P", "source": ["C1", "output-belt-2"], "target": ["P", "input-belt-1"], "item":"item-iron-cmpt", "rate":{"numerator":1,"denominator":2}, "corners": [[7, 2], [8, 2], [8, 10]] },
+    { "id": "C2-P", "source": ["C2", "output-belt-2"], "target": ["P", "input-belt-2"], "item":"item-iron-cmpt", "rate":{"numerator":1,"denominator":2}, "corners": [[7, 5], [7, 10]] },
+    { "id": "G1-P", "source": ["G1", "output-belt-2"], "target": ["P", "input-belt-3"], "item":"item-originium-powder", "rate":{"numerator":1,"denominator":2}, "corners": [[3, 8], [6, 8], [6, 10]] },
+    { "id": "G2-P", "source": ["G2", "output-belt-0"], "target": ["P", "input-belt-4"], "item":"item-originium-powder", "rate":{"numerator":1,"denominator":2}, "corners": [[3, 9], [5, 9], [5, 10]] },
+    { "id": "G3-P", "source": ["G3", "output-belt-0"], "target": ["P", "input-belt-5"], "item":"item-originium-powder", "rate":{"numerator":1,"denominator":2}, "corners": [[3, 12], [3, 10], [4, 10]] }
+  ],
+  "expected_pending": [
+    {"instance":"F1","direction":"input","item":"item-iron-ore","rate":{"numerator":1,"denominator":2}},
+    {"instance":"F2","direction":"input","item":"item-iron-ore","rate":{"numerator":1,"denominator":2}},
+    {"instance":"G1","direction":"input","item":"item-originium-ore","rate":{"numerator":1,"denominator":2}},
+    {"instance":"G2","direction":"input","item":"item-originium-ore","rate":{"numerator":1,"denominator":2}},
+    {"instance":"G3","direction":"input","item":"item-originium-ore","rate":{"numerator":1,"denominator":2}},
+    {"instance":"P","direction":"output","item":"item-proc-battery-2","rate":{"numerator":1,"denominator":10}}
   ],
   "annotations": [
     { "id": "E", "building": "power_diffuser_1", "position": [4, 6], "status": "inferred-position-and-identity", "label": "Power (inferred)" }

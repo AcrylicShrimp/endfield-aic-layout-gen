@@ -1,0 +1,36 @@
+{
+  "schema_version": 2,
+  "id": "enriched-iron-01-nine-facility-reference",
+  "source_image": "codex-clipboard-ab8992d2-f096-4882-a677-8615c83a7e04.png",
+  "calibration": {"origin_pixels":[6,-2],"cell_pitch_pixels":[102,102],"status":"manually-inferred-not-user-confirmed"},
+  "rate_assumptions": "30 enriched iron powder/minute. Both iron chains and thickener at full utilization; seed collector, two observed planters and plant grinder at one third utilization. Preserve nine observed facilities; not an eight-facility minimal-inventory comparison.",
+  "placements": [
+    {"id":"plant-product","label":"P2","recipe":"planter-plant-moss-3-1","position":[1,1],"rotation":180,"utilization":{"numerator":1,"denominator":3}},
+    {"id":"seed","label":"S","recipe":"seedcollector-plant-moss-3-1","position":[6,1],"rotation":0,"utilization":{"numerator":1,"denominator":3}},
+    {"id":"plant-cycle","label":"P1","recipe":"planter-plant-moss-3-1","position":[11,1],"rotation":180,"utilization":{"numerator":1,"denominator":3}},
+    {"id":"furnace-a","label":"F1","recipe":"furnance-iron-nugget-1","position":[12,6],"rotation":270,"utilization":{"numerator":1,"denominator":1}},
+    {"id":"furnace-b","label":"F2","recipe":"furnance-iron-nugget-1","position":[12,9],"rotation":270,"utilization":{"numerator":1,"denominator":1}},
+    {"id":"iron-grinder-a","label":"G1","recipe":"grinder-iron-powder-1","position":[7,6],"rotation":270,"utilization":{"numerator":1,"denominator":1}},
+    {"id":"iron-grinder-b","label":"G2","recipe":"grinder-iron-powder-1","position":[7,9],"rotation":270,"utilization":{"numerator":1,"denominator":1}},
+    {"id":"sand-grinder","label":"GP","recipe":"grinder-plant-moss-powder-3-1","position":[1,6],"rotation":270,"utilization":{"numerator":1,"denominator":3}},
+    {"id":"thickener","label":"T","recipe":"thickener-iron-enr-powder-1","position":[0,9],"rotation":180,"utilization":{"numerator":1,"denominator":1}}
+  ],
+  "routes": [
+    {"id":"product-seed","source":["seed","output-belt-0"],"target":["plant-product","input-belt-0"],"item":"item-plant-moss-seed-3","rate":{"numerator":1,"denominator":6},"corners":[[6,0],[5,0]]},
+    {"id":"cycle-seed","source":["seed","output-belt-4"],"target":["plant-cycle","input-belt-4"],"item":"item-plant-moss-seed-3","rate":{"numerator":1,"denominator":6},"corners":[[10,0],[11,0]]},
+    {"id":"cycle-return","source":["plant-cycle","output-belt-4"],"target":["seed","input-belt-4"],"item":"item-plant-moss-3","rate":{"numerator":1,"denominator":6},"corners":[[11,6],[10,6]]},
+    {"id":"iron-a","source":["furnace-a","output-belt-1"],"target":["iron-grinder-a","input-belt-1"],"item":"item-iron-nugget","rate":{"numerator":1,"denominator":2},"corners":[[11,7],[10,7]]},
+    {"id":"iron-b","source":["furnace-b","output-belt-1"],"target":["iron-grinder-b","input-belt-1"],"item":"item-iron-nugget","rate":{"numerator":1,"denominator":2},"corners":[[11,10],[10,10]]},
+    {"id":"plant-grinder","source":["plant-product","output-belt-1"],"target":["sand-grinder","input-belt-2"],"item":"item-plant-moss-3","rate":{"numerator":1,"denominator":6},"corners":[[4,6]]},
+    {"id":"sand-thickener","source":["sand-grinder","output-belt-0"],"target":["thickener","input-belt-5"],"item":"item-plant-moss-powder-3","rate":{"numerator":1,"denominator":2},"corners":[[0,8]]},
+    {"id":"iron-a-thickener","source":["iron-grinder-a","output-belt-1"],"target":["thickener","input-belt-1"],"item":"item-iron-powder","rate":{"numerator":1,"denominator":2},"corners":[[6,7],[4,7],[4,8]]},
+    {"id":"iron-b-thickener","source":["iron-grinder-b","output-belt-2"],"target":["thickener","input-belt-0"],"item":"item-iron-powder","rate":{"numerator":1,"denominator":2},"corners":[[6,9],[6,8],[5,8]]}
+  ],
+  "expected_pending": [
+    {"instance":"furnace-a","direction":"input","item":"item-iron-ore","rate":{"numerator":1,"denominator":2}},
+    {"instance":"furnace-b","direction":"input","item":"item-iron-ore","rate":{"numerator":1,"denominator":2}},
+    {"instance":"thickener","direction":"output","item":"item-iron-enr-powder","rate":{"numerator":1,"denominator":2}}
+  ],
+  "annotations": [],
+  "unobserved": ["Iron ore input belts", "Enriched iron powder export belt", "Cycle bootstrap inventory", "Actual recipe selection and running utilization", "Power is excluded"]
+}

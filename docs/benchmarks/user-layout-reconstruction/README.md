@@ -5,14 +5,24 @@ First case: medium-capacity Valley battery.
 
 ## Contract
 
-Input: an explicitly transcribed case JSON, runtime recipe/facility/item/transport/component
-catalogs, the source building table for a non-production power annotation, and the existing
+Input: an explicitly transcribed schema-2 case JSON, runtime recipe/facility/item/transport/component
+catalogs, an optional source building table for a non-production power annotation, and the existing
 independent witness validator. Screenshot coordinates are observations, not new game rules.
 
 Output: immutable case geometry, unit-cell witness, projected catalog ports, per-route counts,
 independent partial-geometry validation, and a native grid rendering. No router, placement
 search, compaction or optimizer may run. No missing external input/output is fabricated.
 Recipe utilization is a declared comparison assumption, not evidence of observed operation.
+
+Schema 2 replaces uniform `utilization_assumption` with explicit `placements[].utilization`.
+Every route declares `item` and `rate`; seed splits no longer duplicate a source's entire output.
+`expected_pending` lists the exact external recipe margins omitted from the screenshot.
+The runner requires the independent validator's derived margins to match that list, so a
+missing internal connection cannot pass merely because the covered geometry is legal.
+Schema-1 transcription input is rejected with migration guidance; the underlying Rust witness
+schema remains 1. Reports now use schema 2 and status `internal-reference-validated` on success.
+Use `--buildings` only when the case has annotations. No default utilization or route rate is
+inferred, and no compatibility adapter is retained.
 
 The source screenshot has no visible grid. Its inferred origin is approximately (112, 120)
 pixels with a 72-pixel cell pitch. Seven 3x3 buildings and one rotated 6x4 building fit this
@@ -93,3 +103,13 @@ node docs/benchmarks/user-layout-reconstruction/run.mjs \
 
 The reconstruction does not alter production APIs, catalog data or optimizer policy. Pending
 uncommitted multi-recipe experiments are not part of this work unit.
+
+## Chain-prototype reference milestone
+
+The [milestone-0 report](../chain-prototype/reference-report.md) adds citron-powder and
+enriched-iron references with explicit rates, and migrates the battery input without changing
+its witness hash. Build `cargo build --release -p aic-cli --bin aic-witness-probe` before running
+`node --test docs/benchmarks/user-layout-reconstruction/*.test.mjs`; the integration tests use
+that independent executable and fail explicitly when it is missing. New screenshot coordinates
+remain manually inferred, not user-confirmed. None of these references includes full external
+factory geometry or establishes startup/bootstrapping behavior.
