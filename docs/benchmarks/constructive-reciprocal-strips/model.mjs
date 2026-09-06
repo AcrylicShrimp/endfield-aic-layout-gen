@@ -16,7 +16,7 @@ export function reciprocalCore(graph, block) {
     covered_edges: graph.edges.filter(e => owned.has(e.source) && owned.has(e.target)), pending_edges: cuts };
 }
 
-function bind(w, catalogs, edges, ports, budget) {
+export function bindAdjacentEdges(w, catalogs, edges, ports, budget) {
   const bodies = new Set(w.placements.flatMap(bodyCells).map(key)), usedPorts = new Set(), occupied = { belt: new Set(), pipe: new Set() };
   const jobs = edges.map(e => {
     const cap = capacity(catalogs.transports.transports.find(t => t.kind === e.transport).capacity);
@@ -76,7 +76,7 @@ export function stripCandidates(graph, catalogs, block, { assignmentBudget = 100
       }
       const ordinal = layouts++, w = { schema_version: 1, placements, utilizations: Object.fromEntries(core.members.map(id => [id, nodes.get(id).utilization])), logistics_components: [], transport_networks: [] };
       const ports = project(w, catalogs); let result;
-      try { result = bind(w, catalogs, core.covered_edges, ports, assignmentBudget); }
+      try { result = bindAdjacentEdges(w, catalogs, core.covered_edges, ports, assignmentBudget); }
       catch (e) { if (e.code !== 'strip-assignment-budget') throw e; diagnostics.push({ code: e.code, severity: e.severity, stage: e.stage, message: e.message, ordinal }); return; }
       if (!result) { rejected++; return; }
       w.transport_networks = result.networks;
