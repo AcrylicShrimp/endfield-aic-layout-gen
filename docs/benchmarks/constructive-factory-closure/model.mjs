@@ -1,6 +1,7 @@
 import { rotateFacility } from '../constructive-placement-only/model.mjs';
 import { polyline } from '../constructive-interconnect/geometry.mjs';
-import { rate, add, compare, parseRate, dto, capacity } from '../constructive-interconnect/rates.mjs';
+import { pendingOutputSpace } from './output-space.mjs';
+import { rate, add, compare, parseRate, dto, capacity, lanesFor } from '../constructive-interconnect/rates.mjs';
 const key = p => `${p.x},${p.y}`, pair = p => [p.x, p.y];
 const delta = { north: [0, -1], east: [1, 0], south: [0, 1], west: [-1, 0] };
 const fail = (code, message, entity = null) => { throw Object.assign(new Error(message), { code, severity: 'error', stage: 'factory-closure', entity }); };
@@ -43,6 +44,35 @@ export function ready(graph, w) {
 }
 function portsFor(ports, occupied, id, direction, transport) {
   return (ports[id] ?? []).filter(p => p.direction === direction && p.transport === transport && !occupied.used.has(JSON.stringify([id, p.id])));
+}
+
+export function pendingOutputAccess(graph, w, catalogs, ports = project(w, catalogs), occupied = index(w)) {
+  const members = new Set(w.placements.map(p => p.instance)), margins = new Map();
+  const change = (instance, item, transport, value, subtract = false) => {
+    const id = JSON.stringify([instance, transport]);
+    if (!margins.has(id)) margins.set(id, { instance, transport, items: new Map() });
+    const items = margins.get(id).items, previous = items.get(item) ?? rate(0);
+    if (subtract && compare(previous, value) < 0) fail('closure-output-margin-exceeded', 'Routed output exceeds the graph margin', { instance, item, transport });
+    items.set(item, subtract ? minus(previous, value) : add(previous, value));
+  };
+  for (const e of graph.edges) if (members.has(e.source)) change(e.source, e.item, e.transport, parseRate(e.rate));
+  for (const n of w.transport_networks) for (const t of n.terminals)
+    if (t.direction === 'output' && t.endpoint.kind === 'facility') change(t.endpoint.instance, n.item, n.transport, parseRate(t.rate), true);
+  const reports = [];
+  for (const g of margins.values()) {
+    const cap = capacity(catalogs.transports.transports.find(t => t.kind === g.transport).capacity);
+    const items = [...g.items].filter(([, value]) => value.n > 0n);
+    if (!items.length) continue;
+    const required = items.reduce((s, [, value]) => s + lanesFor(value, cap), 0);
+    const access = portsFor(ports, occupied, g.instance, 'output', g.transport).map(p => {
+      const cell = key(p.connection), obstruction = p.connection.x < 0 || p.connection.y < 0 ? 'negative-coordinate' :
+        occupied.body.has(cell) ? 'facility-body' : occupied.layers[g.transport].has(cell) ? 'same-transport-layer' : null;
+      return { port: p.id, connection: { ...p.connection }, obstruction };
+    });
+    reports.push({ instance: g.instance, transport: g.transport, pending_items: items.map(([item, value]) => ({ item, rate: dto(value) })),
+      required, available: access.filter(p => p.obstruction === null).length, ports: access });
+  }
+  return reports;
 }
 
 // Enumerate a small family of orthogonal corridor templates, never a cell-search router.
@@ -171,12 +201,17 @@ export function growCandidates(catalogs, graph, base, node, budget = 64, routeFa
     try {
       const edges = graph.edges.filter(e => e.target === node.id).sort((a, b) => (a.transport === 'pipe' ? 0 : 1) - (b.transport === 'pipe' ? 0 : 1) || a.id.localeCompare(b.id));
       for (const edge of edges) routes.push(...connect(w, ports, occupied, edge, catalogs, null, routeFamily));
+      const access = pendingOutputAccess(graph, w, catalogs, ports, occupied), obstructed = access.filter(g => g.available < g.required);
+      if (obstructed.length) fail('closure-pending-output-obstructed', 'Insufficient free output connections for remaining graph margins', obstructed);
+      const space = pendingOutputSpace(graph, w, catalogs, access, occupied);
+      if (space.failures.length) fail('closure-pending-consumer-no-space', 'Closed output pocket cannot contain the pending consumer footprint or reach an external boundary', space.failures);
       const materializeStart = performance.now();
       candidates.push(structuredClone({ schema_version: 1, case: 'actual-graph-factory-closure', embedding: 'closure', witness: w, catalog_ports: ports, labels: { ...base.labels },
-        accepted: false, factory_validated: false, port_groups: { sources: [], targets: [] }, closure_plan: { added: node.id, placement: p, routes, trials, route_family: routeFamily, placement_family: placementFamily } }));
+        accepted: false, factory_validated: false, port_groups: { sources: [], targets: [] }, closure_plan: { added: node.id, placement: p, routes, trials,
+          pending_output_access: access, pending_output_space: space, route_family: routeFamily, placement_family: placementFamily } }));
       copying.materialized_count++; copying.materialize_ms += performance.now() - materializeStart;
       if (candidates.length === 8) break;
-    } catch (e) { failures.push({ code: e.code ?? 'closure-candidate-failed', message: e.message, entity: e.entity, placement: p }); }
+    } catch (e) { failures.push({ code: e.code ?? 'closure-candidate-failed', severity: e.severity ?? 'error', stage: e.stage ?? 'factory-closure', message: e.message, entity: e.entity, placement: p }); }
   }
   return { candidates, failures, trials, copying, construction_ms: performance.now() - start };
 }

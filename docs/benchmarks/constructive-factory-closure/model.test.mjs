@@ -5,7 +5,7 @@ import { normalizeGraph, extractCycles } from '../constructive-cycle-blocks/grap
 import { constructCycle } from '../constructive-cycle-blocks/model.mjs';
 import { composeBlocks, readyConsumers } from '../constructive-block-composition/model.mjs';
 import { compactInterface, witnessScore } from '../constructive-auto-interface/compact.mjs';
-import { growCandidates, ready, routeTemplates, inspectCoverage, placements } from './model.mjs';
+import { growCandidates, ready, routeTemplates, inspectCoverage, placements, pendingOutputAccess, project } from './model.mjs';
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k,
   read(`../../../data/game/normalized/${k === 'components' ? 'logistics-components' : k}.json`)]));
@@ -41,12 +41,66 @@ test('mixed ready set is graph-derived; first expansion preserves all retained i
     assert.equal(actual.length, expected.length);
     assert.ok(actual.every(t => expected.some(e => e.source === t.endpoint.node)));
     assert.equal(d.factory_validated, false);
+    assert.ok(d.closure_plan.pending_output_access.every(g => g.available >= g.required));
+    assert.deepEqual(d.closure_plan.pending_output_space.failures, []);
   }
   const utilization = structuredClone(ns[0].utilization);
   result.candidates[0].witness.utilizations[ns[0].id].numerator += 1;
   assert.deepEqual(ns[0].utilization, utilization);
   assert.throws(() => growCandidates(catalogs, graph, base, graph.nodes.find(n => n.label === 'F00')), { code: 'closure-frontier-unready' });
   assert.throws(() => growCandidates(catalogs, graph, base, ns[0], 0), { code: 'closure-candidate-budget' });
+});
+
+function outputFixture() {
+  const nodes = ['F11', 'F17'].map(label => graph.nodes.find(n => n.label === label));
+  const w = { placements: nodes.map((n, i) => {
+    const facility = catalogs.recipes.recipes.find(r => r.id === n.recipe).facility;
+    // This actual failing adjacency came from the density-cut native render.
+    const size = catalogs.facilities.facilities.find(f => f.id === facility).footprint;
+    return { instance: n.id, facility, recipe: n.recipe, rotation: 90, x: i ? 61 : 58, y: i ? 0 : 3,
+      width: size.height, height: size.width };
+  }), transport_networks: [], logistics_components: [] };
+  return { nodes, w };
+}
+
+test('actual F11 adjacency rejects all three output cells inside F17 without requiring all unused ports', () => {
+  const { nodes, w } = outputFixture(), before = JSON.stringify(w);
+  const a = pendingOutputAccess(graph, w, catalogs).find(g => g.instance === nodes[0].id);
+  assert.equal(a.available, 0); assert.equal(a.required, 1);
+  assert.deepEqual(a.ports.map(p => p.connection), [{ x: 61, y: 3 }, { x: 61, y: 4 }, { x: 61, y: 5 }]);
+  assert.ok(a.ports.every(p => p.obstruction === 'facility-body')); assert.equal(JSON.stringify(w), before);
+  w.placements[0].y = w.placements[1].height - 1;
+  const b = pendingOutputAccess(graph, w, catalogs).find(g => g.instance === nodes[0].id);
+  assert.equal(b.available, 2); assert.ok(b.available >= b.required);
+});
+
+test('pending access subtracts routed margins, aggregates same-item fragments and keeps different items separate', () => {
+  const { nodes, w } = outputFixture(); w.placements.pop();
+  const edge = graph.edges.find(e => e.source === nodes[0].id), cap = catalogs.transports.transports.find(t => t.kind === 'belt').capacity;
+  const amount = { numerator: cap.quantity * 1000, denominator: cap.duration_ms };
+  const g = { edges: [0, 1].map(i => ({ ...edge, id: `fragment-${i}`, rate: { numerator: amount.numerator, denominator: amount.denominator * 2 } })) };
+  assert.equal(pendingOutputAccess(g, w, catalogs)[0].required, 1);
+  g.edges[1].item = 'distinct-test-commodity'; assert.equal(pendingOutputAccess(g, w, catalogs)[0].required, 2);
+  g.edges[1].item = edge.item;
+  w.transport_networks.push({ item: edge.item, transport: 'belt', cells: [], terminals: [{ direction: 'output', rate: amount,
+    endpoint: { kind: 'facility', instance: nodes[0].id, port: 'output-belt-0' } }] });
+  assert.deepEqual(pendingOutputAccess(g, w, catalogs), []);
+  w.transport_networks[0].terminals[0].rate = { numerator: amount.numerator * 2, denominator: amount.denominator };
+  assert.throws(() => pendingOutputAccess(g, w, catalogs), { code: 'closure-output-margin-exceeded' });
+});
+
+test('output access respects used ports, transport layers, component cells and negative coordinates', () => {
+  const { nodes, w } = outputFixture(); w.placements.pop();
+  const connections = project(w, catalogs)[nodes[0].id].filter(p => p.direction === 'output').map(p => p.connection);
+  w.transport_networks.push({ item: 'test-liquid', transport: 'pipe', cells: connections, terminals: [] });
+  assert.equal(pendingOutputAccess(graph, w, catalogs)[0].available, 3);
+  w.logistics_components.push({ transport: 'belt', position: connections[0] });
+  assert.equal(pendingOutputAccess(graph, w, catalogs)[0].available, 2);
+  w.transport_networks.push({ item: 'test-item', transport: 'belt', cells: [connections[1]], terminals: [] });
+  assert.equal(pendingOutputAccess(graph, w, catalogs)[0].available, 1);
+  const ports = project(w, catalogs); ports[nodes[0].id].find(p => p.id === 'output-belt-2').connection.y = -1;
+  const a = pendingOutputAccess(graph, w, catalogs, ports)[0]; assert.equal(a.available, 0);
+  assert.equal(a.ports.at(-1).obstruction, 'negative-coordinate');
 });
 
 test('corridor templates respect layers, bodies, fixed output reservations and one-cell interfaces', () => {

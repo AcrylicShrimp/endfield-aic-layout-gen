@@ -88,7 +88,7 @@ try {
     covered_facilities: current.witness.placements.length, total_facilities: graph.nodes.length, selected_directory: selected.directory,
     elapsed_ms: performance.now() - start, route_family: options['route-family'] ?? 'simple', placement_family: placementFamily, selected_output_ms: selectedOutputMs, score: selected.score, stages, failures,
     provenance: keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
-    source_hashes: Object.fromEntries(['model.mjs', 'run.mjs', '../constructive-cycle-blocks/graph.mjs', '../constructive-auto-interface/compact.mjs', '../constructive-bound-interconnect/view.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
+    source_hashes: Object.fromEntries(['model.mjs', 'output-space.mjs', 'run.mjs', '../constructive-cluster-packing/pockets.mjs', '../constructive-cycle-blocks/graph.mjs', '../constructive-auto-interface/compact.mjs', '../constructive-bound-interconnect/view.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), report); fs.copyFileSync(path.join(selected.directory, 'index.html'), path.join(output, 'index.html'), fs.constants.COPYFILE_EXCL);
   console.log(JSON.stringify({ status: report.status, facilities: report.covered_facilities, score: report.score.tuple, output }));
   if (!report.factory_validated) process.exitCode = 2;
