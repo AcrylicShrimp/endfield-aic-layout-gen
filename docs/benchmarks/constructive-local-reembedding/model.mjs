@@ -156,7 +156,7 @@ export function reembed(detail, catalogs, options = {}) {
     const carriers = maxNewCrossings > installedCrossings.length ? chains.filter(c => !changed.has(c.id) || paths.has(c.id)).map(c => ({ ...c, cells: paths.get(c.id) ?? c.cells })) : [];
     const sites = carriers.length ? crossingOptions(carriers, job, catalogs, excluded) : new Map();
     const result = shortestPath(job.start, job.end, blocked, bounds, { first: job.first, last: job.last, workBudget,
-      crossingOptions: sites, crossingLimit: maxNewCrossings - installedCrossings.length });
+      crossingOptions: sites, crossingLimit: maxNewCrossings - installedCrossings.length, allowZeroLength: job.zero_length === true });
     results.push({ id: job.id, item: job.item, first: job.first, last: job.last, status: result.status, expanded: result.expanded, old_steps: job.cells.length - 1,
       steps: result.steps, turns: result.turns, crossing_sites: sites.size, crossings: result.crossings ?? [] });
     if (result.status !== 'found') return { status: 'rejected', diagnostics: [{ code: `local-${result.status}`, severity: 'info', stage: 'local-reembedding', entity: job.id,

@@ -73,3 +73,11 @@ test('separated terminal body intrusion is rejected before publishing a candidat
   const { detail: d } = fixture(), { chains, anchors } = extractChains(d.witness);
   assert.throws(() => movementPlan(d.witness, chains, anchors, [{ instances: ['source'], dx: 1, dy: 0 }]), { code: 'local-endpoint-body' });
 });
+
+test('explicit rip-up of a recognized coincident connection restores the unchanged one-cell route', () => {
+  const { detail: d } = fixture(), before = structuredClone(d), { chains } = extractChains(d.witness);
+  const c = chains.find(c => c.zero_length), result = reembed(d, catalogs, { chainIds: [c.id] });
+  assert.equal(result.status, 'unchanged'); assert.equal(result.routes.length, 1);
+  assert.equal(result.routes[0].status, 'found'); assert.equal(result.routes[0].steps, 0);
+  assert.equal(result.routes[0].turns, 0); assert.deepEqual(d, before);
+});

@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "chain_schema_version": 2,
+  "factory_validated": true,
+  "status": "zero-route-defect-fixed-area-unresolved",
+  "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/zero-route-fair/candidate-2158",
+  "witness_sha256": "30ffdd6fce46d129dd6c1705725b55d0558eba6bf185b929766dd55285262e4a",
+  "score": {"width": 46, "height": 54, "area": 2484, "physical_tiles": 404, "turns": 38, "tuple": [2484, 404, 38]},
+  "previous_incumbent": "docs/benchmarks/constructive-local-reembedding/fair-coalescence-results.json",
+  "matched_experiment": "target/zero-route-matched/report.json",
+  "continuation": "target/zero-route-fair/report.json",
+  "upper_replay": "target/zero-route-upper-replay/report.json",
+  "original_graph_audit": "target/zero-route-original-audit/audit.json",
+  "bridge_audit": "target/zero-route-crossing-audit/audit.json",
+  "verification": {"node_tests": 217, "rust_tests": 524, "rust_ignored": 2, "original_graph_controls": 8, "crossing_controls": 16},
+  "render": "http://100.114.24.86:8765/bound-interconnect-closure-zero-route.html",
+  "next_gate": "Enumerate unused compatible endpoint ports jointly in failed-chain repair; distinguish retained-interface bottlenecks from genuine placement constraints."
+}

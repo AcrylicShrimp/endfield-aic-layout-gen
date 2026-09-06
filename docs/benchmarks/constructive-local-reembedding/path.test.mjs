@@ -29,3 +29,18 @@ test('directed arms, bounds and explicit work failures are retained', () => {
   assert.throws(() => shortestPath(start, end, new Set(), bounds, { workBudget: NaN }), { code: 'path-invalid-input' });
   assert.throws(() => shortestPath(start, end, new Set(), bounds, { first: 5 }), { code: 'path-invalid-input' });
 });
+
+test('explicit zero-length paths require opt-in, free in-bounds endpoints and no directed arms', () => {
+  const before = structuredClone(start);
+  assert.equal(shortestPath(start, start, new Set(), bounds).status, 'same-endpoint');
+  const r = shortestPath(start, start, new Set(), bounds, { allowZeroLength: true });
+  assert.equal(r.status, 'found'); assert.deepEqual(r.cells, [start]);
+  assert.deepEqual([r.steps, r.turns, r.expanded], [0, 0, 0]); assert.deepEqual(r.crossings, []);
+  assert.deepEqual(start, before); assert.notEqual(r.cells[0], start);
+  for (const arms of [{ first: 0 }, { last: 2 }, { first: 1, last: 1 }])
+    assert.equal(shortestPath(start, start, new Set(), bounds, { allowZeroLength: true, ...arms }).status, 'same-endpoint');
+  assert.equal(shortestPath(start, start, new Set([key(start)]), bounds, { allowZeroLength: true }).status, 'blocked-endpoint');
+  const outside = { x: -1, y: 1 };
+  assert.equal(shortestPath(outside, outside, new Set(), bounds, { allowZeroLength: true }).status, 'blocked-endpoint');
+  assert.throws(() => shortestPath(start, start, new Set(), bounds, { allowZeroLength: 'true' }), { code: 'path-invalid-input' });
+});

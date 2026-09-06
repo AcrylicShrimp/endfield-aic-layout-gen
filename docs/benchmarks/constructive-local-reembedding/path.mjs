@@ -21,16 +21,17 @@ class Heap {
 }
 
 // Manhattan is an admissible lower bound; direction states account for turn costs and fixed arms.
-export function shortestPath(start, end, blocked, bounds, { first = null, last = null, workBudget = 200000, crossingOptions = new Map(), crossingLimit = 0 } = {}) {
+export function shortestPath(start, end, blocked, bounds, { first = null, last = null, workBudget = 200000, crossingOptions = new Map(), crossingLimit = 0, allowZeroLength = false } = {}) {
   const { minX, minY, maxX, maxY } = bounds, width = maxX - minX + 1, height = maxY - minY + 1;
   if (![minX, minY, maxX, maxY, start.x, start.y, end.x, end.y, workBudget].every(Number.isSafeInteger) ||
     width < 1 || height < 1 || width * height > 250000 || workBudget < 1 ||
     [first, last].some(d => d !== null && (!Number.isInteger(d) || d < 0 || d > 3)) ||
-    !(crossingOptions instanceof Map) || !Number.isSafeInteger(crossingLimit) || crossingLimit < 0 || crossingLimit > 8)
+    !(crossingOptions instanceof Map) || !Number.isSafeInteger(crossingLimit) || crossingLimit < 0 || crossingLimit > 8 || typeof allowZeroLength !== 'boolean')
     fail('path-invalid-input', 'Invalid grid, endpoint, direction, crossing or work budget');
   const inside = p => p.x >= minX && p.y >= minY && p.x <= maxX && p.y <= maxY;
   if (!inside(start) || !inside(end) || blocked.has(key(start)) || blocked.has(key(end))) return { status: 'blocked-endpoint', expanded: 0 };
-  if (key(start) === key(end)) return { status: 'same-endpoint', expanded: 0 };
+  if (key(start) === key(end)) return allowZeroLength && first === null && last === null ?
+    { status: 'found', cells: [{ ...start }], crossings: [], steps: 0, turns: 0, expanded: 0 } : { status: 'same-endpoint', expanded: 0 };
   const weight = width * height * 4 * (crossingLimit + 1) + 1, heap = new Heap(), best = new Map(), parents = new Map();
   const id = (p, d, used) => (((p.y - minY) * width + p.x - minX) * 5 + d) * (crossingLimit + 1) + used;
   const initial = id(start, 4, 0); best.set(initial, 0); heap.push({ ...start, d: 4, used: 0, id: initial, g: 0, f: distance(start, end) * weight });
