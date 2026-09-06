@@ -1,0 +1,1599 @@
+{
+  "schema_version": 1,
+  "factory_validated": true,
+  "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/monotone-shape-refined-more/candidate-914",
+  "score": {
+    "width": 104,
+    "height": 30,
+    "area": 3120,
+    "physical_tiles": 868,
+    "turns": 106,
+    "tuple": [
+      3120,
+      868,
+      106
+    ]
+  },
+  "witness_sha256": "efa7dc1810e76f48c5fbaf43468bfbeba6986e570fabcc01679e624a2c6b946f",
+  "core": [
+    {
+      "control_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/frontier-interface-max-final/wave-0-group-0-13",
+      "lanes": 6,
+      "before": {
+        "width": 12,
+        "height": 18,
+        "area": 216,
+        "physical_tiles": 90,
+        "bridges": 2
+      },
+      "after": {
+        "width": 5,
+        "height": 16,
+        "area": 80,
+        "physical_tiles": 40,
+        "bridges": 2
+      },
+      "all_paths_shortest": true,
+      "construction": {
+        "family": "monotone-tracks",
+        "track_order": [
+          "lane-2",
+          "lane-3",
+          "lane-4"
+        ],
+        "track_columns": {
+          "lane-2": 1,
+          "lane-3": 1,
+          "lane-4": 2
+        },
+        "precedence": [],
+        "inversions": 2,
+        "path_cells": 42,
+        "scope": "Manhattan-shortest fixed-terminal lanes and one crossing per inversion; not global minimum area"
+      },
+      "scope": "fixed lane order and rates; both before compaction and facility binding"
+    },
+    {
+      "control_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/frontier-interface-max-final/wave-0-group-1-5",
+      "lanes": 12,
+      "before": {
+        "width": 36,
+        "height": 36,
+        "area": 1296,
+        "physical_tiles": 540,
+        "bridges": 12
+      },
+      "after": {
+        "width": 10,
+        "height": 34,
+        "area": 340,
+        "physical_tiles": 180,
+        "bridges": 12
+      },
+      "all_paths_shortest": true,
+      "construction": {
+        "family": "monotone-tracks",
+        "track_order": [
+          "lane-2",
+          "lane-3",
+          "lane-7",
+          "lane-6",
+          "lane-5",
+          "lane-4",
+          "lane-8",
+          "lane-9",
+          "lane-10"
+        ],
+        "track_columns": {
+          "lane-2": 1,
+          "lane-3": 1,
+          "lane-7": 1,
+          "lane-6": 2,
+          "lane-5": 3,
+          "lane-4": 4,
+          "lane-8": 5,
+          "lane-9": 6,
+          "lane-10": 7
+        },
+        "precedence": [
+          {
+            "before": "lane-5",
+            "after": "lane-4"
+          },
+          {
+            "before": "lane-6",
+            "after": "lane-5"
+          },
+          {
+            "before": "lane-7",
+            "after": "lane-6"
+          },
+          {
+            "before": "lane-8",
+            "after": "lane-9"
+          },
+          {
+            "before": "lane-9",
+            "after": "lane-10"
+          }
+        ],
+        "inversions": 12,
+        "path_cells": 192,
+        "scope": "Manhattan-shortest fixed-terminal lanes and one crossing per inversion; not global minimum area"
+      },
+      "scope": "fixed lane order and rates; both before compaction and facility binding"
+    }
+  ],
+  "construction": [
+    {
+      "name": "frontier-min-control",
+      "kind": "frontier",
+      "report": "target/frontier-interface-min-final/report.json",
+      "sha256": "b760ce0e2d120787e2ae0b7b5d8940dc7aa109697f9444c84f6b011b88cdb1f0",
+      "elapsed_ms": 38702.643042,
+      "complete_packings": 1,
+      "complete_trials": 1,
+      "trials": 8,
+      "new_complete_scores": [
+        {
+          "width": 79,
+          "height": 99,
+          "area": 7821,
+          "physical_tiles": 1379,
+          "turns": 133,
+          "tuple": [
+            7821,
+            1379,
+            133
+          ]
+        }
+      ],
+      "current_sources_verified": null,
+      "input_provenance": [
+        {
+          "kind": "graph",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/scc-stop-grow-final/graph.json",
+          "sha256": "35344e4e57dbaa35859b901b55e86852bd6ed0926ed0ddbec8ffd7e84ccfb625"
+        },
+        {
+          "kind": "regions",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/scc-stop-grow-final/regions.json",
+          "sha256": "5bcfed4c9a3e635c1cddcb21bbbde69ae73f641d9383c1cbf503354e577e56e2"
+        },
+        {
+          "kind": "incumbent",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-shape-packing/full-matrix.json",
+          "sha256": "1e313f8d8ed2fe2d7f98ba78701db69b346d70fb38b1a1256d65a4f50993fb5d"
+        },
+        {
+          "kind": "recipes",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+          "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+        },
+        {
+          "kind": "facilities",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+          "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+        },
+        {
+          "kind": "items",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+          "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+        },
+        {
+          "kind": "transports",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+          "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+        },
+        {
+          "kind": "components",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+          "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+        },
+        {
+          "kind": "validator",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+          "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+        }
+      ],
+      "source_hashes": {
+        "run.mjs": "980ccf35947bff02f7b9dede8ffee1a51f9467b543bceb7b466d224a58f1f7c4",
+        "model.mjs": "62c43d3cc65735344056477f2b681acb8328d73ac1a7b3d7d632a77437c83372",
+        "../constructive-block-composition/model.mjs": "0f3159d35c52908eb032756e3592fa70e268fec3591f925d2aecf9873f81f37f",
+        "../constructive-auto-interface/embedding.mjs": "1817ba1194c8cc875872cb401012294ad99d93a48798b2aba5a2f2fd7343a191",
+        "../constructive-auto-interface/compact.mjs": "31be1364c1a7f7e702de2f426c9294efc2b87bb521e998b876f727a6dfea1ceb",
+        "../constructive-shape-packing/model.mjs": "b85d2d5c50614fb68ec8745a5bb88fd016f57503cfea2fd28f1326c2eb29b0bb",
+        "../constructive-cluster-packing/model.mjs": "dfc672bbe7dca7782fb10594662ad6cceb6374ba2a18ab4a5831e587a20d17df",
+        "../constructive-cluster-packing/nesting.mjs": "757a2399c525b59abf31b982e82a5adb349de7f5b5d0387597db7fa1b8ac40e6",
+        "../constructive-cluster-packing/pockets.mjs": "16a6085755a0da58f6ec94a425aeb0630171dff59336d2f5f132f0f0a602c81f",
+        "../constructive-cycle-blocks/graph.mjs": "1de3ed183916865e484838ad5ce043c35894a58aa288392717f3925696b360f2",
+        "../constructive-factory-closure/model.mjs": "1f3a5e82ab98a098cfa8104473006ade88b7485b0c3dd09f6791aa5ee421407c",
+        "../constructive-factory-closure/run.mjs": "077bfcdad3f652aa728f9f69185989d5da713a1e76e4c71c5d9ff39d9dd63c6f",
+        "../constructive-scc-groups/interface.mjs": "f8f628693d2eed130edd6b60a46f890f3d98888c78240232384aa38e5730ce4c",
+        "../constructive-embedding-compaction/validator.mjs": "e357484b02b6498eebf0742cc72868e9a6f6aa765bf26c8a7dbaca4cf51a69a3",
+        "../constructive-bound-interconnect/view.mjs": "f53acc7c08b58828841f1715de6d41becbf6e45085bc1df6c8950e2bc3020b71"
+      }
+    },
+    {
+      "name": "frontier-max-control",
+      "kind": "frontier",
+      "report": "target/frontier-interface-max-final/report.json",
+      "sha256": "3dcea6cf957c5996714b2e1986fd91e33780f9405f11fa00efb1ef167573de5e",
+      "elapsed_ms": 40020.24725,
+      "complete_packings": 1,
+      "complete_trials": 1,
+      "trials": 8,
+      "new_complete_scores": [
+        {
+          "width": 96,
+          "height": 78,
+          "area": 7488,
+          "physical_tiles": 1700,
+          "turns": 221,
+          "tuple": [
+            7488,
+            1700,
+            221
+          ]
+        }
+      ],
+      "current_sources_verified": null,
+      "input_provenance": [
+        {
+          "kind": "graph",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/scc-stop-grow-final/graph.json",
+          "sha256": "35344e4e57dbaa35859b901b55e86852bd6ed0926ed0ddbec8ffd7e84ccfb625"
+        },
+        {
+          "kind": "regions",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/scc-stop-grow-final/regions.json",
+          "sha256": "5bcfed4c9a3e635c1cddcb21bbbde69ae73f641d9383c1cbf503354e577e56e2"
+        },
+        {
+          "kind": "incumbent",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-shape-packing/full-matrix.json",
+          "sha256": "1e313f8d8ed2fe2d7f98ba78701db69b346d70fb38b1a1256d65a4f50993fb5d"
+        },
+        {
+          "kind": "recipes",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+          "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+        },
+        {
+          "kind": "facilities",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+          "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+        },
+        {
+          "kind": "items",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+          "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+        },
+        {
+          "kind": "transports",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+          "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+        },
+        {
+          "kind": "components",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+          "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+        },
+        {
+          "kind": "validator",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+          "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+        }
+      ],
+      "source_hashes": {
+        "run.mjs": "980ccf35947bff02f7b9dede8ffee1a51f9467b543bceb7b466d224a58f1f7c4",
+        "model.mjs": "62c43d3cc65735344056477f2b681acb8328d73ac1a7b3d7d632a77437c83372",
+        "../constructive-block-composition/model.mjs": "0f3159d35c52908eb032756e3592fa70e268fec3591f925d2aecf9873f81f37f",
+        "../constructive-auto-interface/embedding.mjs": "1817ba1194c8cc875872cb401012294ad99d93a48798b2aba5a2f2fd7343a191",
+        "../constructive-auto-interface/compact.mjs": "31be1364c1a7f7e702de2f426c9294efc2b87bb521e998b876f727a6dfea1ceb",
+        "../constructive-shape-packing/model.mjs": "b85d2d5c50614fb68ec8745a5bb88fd016f57503cfea2fd28f1326c2eb29b0bb",
+        "../constructive-cluster-packing/model.mjs": "dfc672bbe7dca7782fb10594662ad6cceb6374ba2a18ab4a5831e587a20d17df",
+        "../constructive-cluster-packing/nesting.mjs": "757a2399c525b59abf31b982e82a5adb349de7f5b5d0387597db7fa1b8ac40e6",
+        "../constructive-cluster-packing/pockets.mjs": "16a6085755a0da58f6ec94a425aeb0630171dff59336d2f5f132f0f0a602c81f",
+        "../constructive-cycle-blocks/graph.mjs": "1de3ed183916865e484838ad5ce043c35894a58aa288392717f3925696b360f2",
+        "../constructive-factory-closure/model.mjs": "1f3a5e82ab98a098cfa8104473006ade88b7485b0c3dd09f6791aa5ee421407c",
+        "../constructive-factory-closure/run.mjs": "077bfcdad3f652aa728f9f69185989d5da713a1e76e4c71c5d9ff39d9dd63c6f",
+        "../constructive-scc-groups/interface.mjs": "f8f628693d2eed130edd6b60a46f890f3d98888c78240232384aa38e5730ce4c",
+        "../constructive-embedding-compaction/validator.mjs": "e357484b02b6498eebf0742cc72868e9a6f6aa765bf26c8a7dbaca4cf51a69a3",
+        "../constructive-bound-interconnect/view.mjs": "f53acc7c08b58828841f1715de6d41becbf6e45085bc1df6c8950e2bc3020b71"
+      }
+    },
+    {
+      "name": "frontier-min-monotone",
+      "kind": "frontier",
+      "report": "target/monotone-frontier-min/report.json",
+      "sha256": "e8fd9ec3abea16df44d30b807af531c8050e2ed0abd01950760ef3cba6215385",
+      "elapsed_ms": 26187.882334,
+      "complete_packings": 4,
+      "complete_trials": 4,
+      "trials": 8,
+      "new_complete_scores": [
+        {
+          "width": 83,
+          "height": 75,
+          "area": 6225,
+          "physical_tiles": 1345,
+          "turns": 156,
+          "tuple": [
+            6225,
+            1345,
+            156
+          ]
+        },
+        {
+          "width": 102,
+          "height": 68,
+          "area": 6936,
+          "physical_tiles": 1016,
+          "turns": 130,
+          "tuple": [
+            6936,
+            1016,
+            130
+          ]
+        },
+        {
+          "width": 76,
+          "height": 99,
+          "area": 7524,
+          "physical_tiles": 1327,
+          "turns": 133,
+          "tuple": [
+            7524,
+            1327,
+            133
+          ]
+        },
+        {
+          "width": 83,
+          "height": 76,
+          "area": 6308,
+          "physical_tiles": 1348,
+          "turns": 156,
+          "tuple": [
+            6308,
+            1348,
+            156
+          ]
+        }
+      ],
+      "current_sources_verified": true,
+      "input_provenance": [
+        {
+          "kind": "graph",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/scc-stop-grow-final/graph.json",
+          "sha256": "35344e4e57dbaa35859b901b55e86852bd6ed0926ed0ddbec8ffd7e84ccfb625"
+        },
+        {
+          "kind": "regions",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/scc-stop-grow-final/regions.json",
+          "sha256": "5bcfed4c9a3e635c1cddcb21bbbde69ae73f641d9383c1cbf503354e577e56e2"
+        },
+        {
+          "kind": "incumbent",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-shape-packing/full-matrix.json",
+          "sha256": "1e313f8d8ed2fe2d7f98ba78701db69b346d70fb38b1a1256d65a4f50993fb5d"
+        },
+        {
+          "kind": "recipes",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+          "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+        },
+        {
+          "kind": "facilities",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+          "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+        },
+        {
+          "kind": "items",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+          "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+        },
+        {
+          "kind": "transports",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+          "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+        },
+        {
+          "kind": "components",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+          "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+        },
+        {
+          "kind": "validator",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+          "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+        }
+      ],
+      "source_hashes": {
+        "run.mjs": "aa978257d4e61907a2ff7cf8db0186bce4f2a6d7630ff6574736f76e7642b3ae",
+        "model.mjs": "62c43d3cc65735344056477f2b681acb8328d73ac1a7b3d7d632a77437c83372",
+        "../constructive-block-composition/model.mjs": "0f3159d35c52908eb032756e3592fa70e268fec3591f925d2aecf9873f81f37f",
+        "../constructive-auto-interface/embedding.mjs": "1817ba1194c8cc875872cb401012294ad99d93a48798b2aba5a2f2fd7343a191",
+        "../constructive-interconnect/geometry.mjs": "40fd87e27084a47923c40ac867afb7c5250588c0ac909fa765db70724e0ec371",
+        "../constructive-interconnect/tracks.mjs": "0c14404e301319b99f87581a76885ba6ece4187c4fef42b57de2aa6deb80d436",
+        "../constructive-auto-interface/trees.mjs": "2e9133ccb493ee76c7c5d4bfe3b9ecdd5cddee63bd854d7520aac054d3f56c8b",
+        "../constructive-auto-interface/lower.mjs": "32ae1b0f221213467fab2e1d3501bebb55c5d7956a65e0119151356ce5c5f82b",
+        "../constructive-auto-interface/compact.mjs": "31be1364c1a7f7e702de2f426c9294efc2b87bb521e998b876f727a6dfea1ceb",
+        "../constructive-shape-packing/model.mjs": "b85d2d5c50614fb68ec8745a5bb88fd016f57503cfea2fd28f1326c2eb29b0bb",
+        "../constructive-cluster-packing/model.mjs": "dfc672bbe7dca7782fb10594662ad6cceb6374ba2a18ab4a5831e587a20d17df",
+        "../constructive-cluster-packing/nesting.mjs": "757a2399c525b59abf31b982e82a5adb349de7f5b5d0387597db7fa1b8ac40e6",
+        "../constructive-cluster-packing/pockets.mjs": "16a6085755a0da58f6ec94a425aeb0630171dff59336d2f5f132f0f0a602c81f",
+        "../constructive-cycle-blocks/graph.mjs": "1de3ed183916865e484838ad5ce043c35894a58aa288392717f3925696b360f2",
+        "../constructive-factory-closure/model.mjs": "1f3a5e82ab98a098cfa8104473006ade88b7485b0c3dd09f6791aa5ee421407c",
+        "../constructive-factory-closure/run.mjs": "077bfcdad3f652aa728f9f69185989d5da713a1e76e4c71c5d9ff39d9dd63c6f",
+        "../constructive-scc-groups/interface.mjs": "f8f628693d2eed130edd6b60a46f890f3d98888c78240232384aa38e5730ce4c",
+        "../constructive-embedding-compaction/validator.mjs": "e357484b02b6498eebf0742cc72868e9a6f6aa765bf26c8a7dbaca4cf51a69a3",
+        "../constructive-bound-interconnect/view.mjs": "f53acc7c08b58828841f1715de6d41becbf6e45085bc1df6c8950e2bc3020b71"
+      }
+    },
+    {
+      "name": "frontier-max-monotone",
+      "kind": "frontier",
+      "report": "target/monotone-frontier-max/report.json",
+      "sha256": "01d577b88a8819141ffcbddd2d94c1c3aae094381fbcc9c67ec1c4daf0d22aa4",
+      "elapsed_ms": 25351.929709,
+      "complete_packings": 1,
+      "complete_trials": 1,
+      "trials": 8,
+      "new_complete_scores": [
+        {
+          "width": 86,
+          "height": 78,
+          "area": 6708,
+          "physical_tiles": 1500,
+          "turns": 186,
+          "tuple": [
+            6708,
+            1500,
+            186
+          ]
+        }
+      ],
+      "current_sources_verified": true,
+      "input_provenance": [
+        {
+          "kind": "graph",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/scc-stop-grow-final/graph.json",
+          "sha256": "35344e4e57dbaa35859b901b55e86852bd6ed0926ed0ddbec8ffd7e84ccfb625"
+        },
+        {
+          "kind": "regions",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/scc-stop-grow-final/regions.json",
+          "sha256": "5bcfed4c9a3e635c1cddcb21bbbde69ae73f641d9383c1cbf503354e577e56e2"
+        },
+        {
+          "kind": "incumbent",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-shape-packing/full-matrix.json",
+          "sha256": "1e313f8d8ed2fe2d7f98ba78701db69b346d70fb38b1a1256d65a4f50993fb5d"
+        },
+        {
+          "kind": "recipes",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+          "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+        },
+        {
+          "kind": "facilities",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+          "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+        },
+        {
+          "kind": "items",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+          "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+        },
+        {
+          "kind": "transports",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+          "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+        },
+        {
+          "kind": "components",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+          "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+        },
+        {
+          "kind": "validator",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+          "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+        }
+      ],
+      "source_hashes": {
+        "run.mjs": "aa978257d4e61907a2ff7cf8db0186bce4f2a6d7630ff6574736f76e7642b3ae",
+        "model.mjs": "62c43d3cc65735344056477f2b681acb8328d73ac1a7b3d7d632a77437c83372",
+        "../constructive-block-composition/model.mjs": "0f3159d35c52908eb032756e3592fa70e268fec3591f925d2aecf9873f81f37f",
+        "../constructive-auto-interface/embedding.mjs": "1817ba1194c8cc875872cb401012294ad99d93a48798b2aba5a2f2fd7343a191",
+        "../constructive-interconnect/geometry.mjs": "40fd87e27084a47923c40ac867afb7c5250588c0ac909fa765db70724e0ec371",
+        "../constructive-interconnect/tracks.mjs": "0c14404e301319b99f87581a76885ba6ece4187c4fef42b57de2aa6deb80d436",
+        "../constructive-auto-interface/trees.mjs": "2e9133ccb493ee76c7c5d4bfe3b9ecdd5cddee63bd854d7520aac054d3f56c8b",
+        "../constructive-auto-interface/lower.mjs": "32ae1b0f221213467fab2e1d3501bebb55c5d7956a65e0119151356ce5c5f82b",
+        "../constructive-auto-interface/compact.mjs": "31be1364c1a7f7e702de2f426c9294efc2b87bb521e998b876f727a6dfea1ceb",
+        "../constructive-shape-packing/model.mjs": "b85d2d5c50614fb68ec8745a5bb88fd016f57503cfea2fd28f1326c2eb29b0bb",
+        "../constructive-cluster-packing/model.mjs": "dfc672bbe7dca7782fb10594662ad6cceb6374ba2a18ab4a5831e587a20d17df",
+        "../constructive-cluster-packing/nesting.mjs": "757a2399c525b59abf31b982e82a5adb349de7f5b5d0387597db7fa1b8ac40e6",
+        "../constructive-cluster-packing/pockets.mjs": "16a6085755a0da58f6ec94a425aeb0630171dff59336d2f5f132f0f0a602c81f",
+        "../constructive-cycle-blocks/graph.mjs": "1de3ed183916865e484838ad5ce043c35894a58aa288392717f3925696b360f2",
+        "../constructive-factory-closure/model.mjs": "1f3a5e82ab98a098cfa8104473006ade88b7485b0c3dd09f6791aa5ee421407c",
+        "../constructive-factory-closure/run.mjs": "077bfcdad3f652aa728f9f69185989d5da713a1e76e4c71c5d9ff39d9dd63c6f",
+        "../constructive-scc-groups/interface.mjs": "f8f628693d2eed130edd6b60a46f890f3d98888c78240232384aa38e5730ce4c",
+        "../constructive-embedding-compaction/validator.mjs": "e357484b02b6498eebf0742cc72868e9a6f6aa765bf26c8a7dbaca4cf51a69a3",
+        "../constructive-bound-interconnect/view.mjs": "f53acc7c08b58828841f1715de6d41becbf6e45085bc1df6c8950e2bc3020b71"
+      }
+    },
+    {
+      "name": "shape-control",
+      "kind": "cluster",
+      "report": "docs/benchmarks/constructive-shape-packing/matrix.json",
+      "sha256": "d1339d5d610dbf1e98fadc35049d55044ca76b60c1824be14da42e0f19640672",
+      "elapsed_ms": 55770.020209,
+      "complete_packings": 1,
+      "complete_trials": 2,
+      "trials": 24,
+      "new_complete_scores": [
+        {
+          "width": 140,
+          "height": 36,
+          "area": 5040,
+          "physical_tiles": 1375,
+          "turns": 184,
+          "tuple": [
+            5040,
+            1375,
+            184
+          ]
+        }
+      ],
+      "current_sources_verified": null,
+      "input_provenance": [
+        {
+          "kind": "graph",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/reciprocal-direct-attached/graph.json",
+          "sha256": "41842797136485c2a3ec175d20a5f081e4f588a02e12e5deef61c2fb32baf5f5"
+        },
+        {
+          "kind": "blocks",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/reciprocal-direct-attached/blocks.json",
+          "sha256": "b2d29f157a03288f8f1b246ec5bf9406bde7b912604309b502a911c0f260d59a"
+        },
+        {
+          "kind": "incumbent",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-reciprocal-strips/full-matrix.json",
+          "sha256": "554bb8780ead10ecb9532b153570c0ef7938659b96db0166c570dcb2f171c8db"
+        },
+        {
+          "kind": "recipes",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+          "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+        },
+        {
+          "kind": "facilities",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+          "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+        },
+        {
+          "kind": "items",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+          "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+        },
+        {
+          "kind": "transports",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+          "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+        },
+        {
+          "kind": "components",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+          "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+        },
+        {
+          "kind": "validator",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+          "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+        },
+        {
+          "kind": "source-shapes",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/reciprocal-direct-attached/blocks.json",
+          "sha256": "b2d29f157a03288f8f1b246ec5bf9406bde7b912604309b502a911c0f260d59a"
+        }
+      ],
+      "source_hashes": {
+        "run.mjs": "c75db0f057345ed61a0daed6845770b245a7b4d11b32f4cb137672a664d75aac",
+        "model.mjs": "dfc672bbe7dca7782fb10594662ad6cceb6374ba2a18ab4a5831e587a20d17df",
+        "nesting.mjs": "757a2399c525b59abf31b982e82a5adb349de7f5b5d0387597db7fa1b8ac40e6",
+        "pockets.mjs": "16a6085755a0da58f6ec94a425aeb0630171dff59336d2f5f132f0f0a602c81f",
+        "../constructive-block-composition/model.mjs": "0f3159d35c52908eb032756e3592fa70e268fec3591f925d2aecf9873f81f37f",
+        "../constructive-factory-closure/model.mjs": "2ac964a4c2198897a3c48bf35deee96346589b5d145e29c1545e778e519e29db",
+        "../constructive-factory-closure/run.mjs": "7d4bbbff2cc8fa127f67784b2c5971df733521dc872351fb6e94689cb15897e7",
+        "../constructive-interconnect/geometry.mjs": "a232ee3dca2efa946015269685049233f0bb4039e5139aeb44baeb3da29ecbe6",
+        "../constructive-auto-interface/embedding.mjs": "1817ba1194c8cc875872cb401012294ad99d93a48798b2aba5a2f2fd7343a191",
+        "../constructive-auto-interface/model.mjs": "4a54a79cbf79099ff7593d16a9ffeba814fb97087fcd01963c0f472034abcfe5",
+        "../constructive-shape-packing/model.mjs": "b85d2d5c50614fb68ec8745a5bb88fd016f57503cfea2fd28f1326c2eb29b0bb"
+      }
+    },
+    {
+      "name": "shape-monotone",
+      "kind": "cluster",
+      "report": "target/monotone-shape-packing/report.json",
+      "sha256": "4263e1ba52d697cbc0b441279493eeb3a69dac854d693b829624aa097f81ba7c",
+      "elapsed_ms": 39129.860875,
+      "complete_packings": 1,
+      "complete_trials": 2,
+      "trials": 24,
+      "new_complete_scores": [
+        {
+          "width": 130,
+          "height": 36,
+          "area": 4680,
+          "physical_tiles": 1206,
+          "turns": 148,
+          "tuple": [
+            4680,
+            1206,
+            148
+          ]
+        }
+      ],
+      "current_sources_verified": true,
+      "input_provenance": [
+        {
+          "kind": "graph",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/reciprocal-direct-attached/graph.json",
+          "sha256": "41842797136485c2a3ec175d20a5f081e4f588a02e12e5deef61c2fb32baf5f5"
+        },
+        {
+          "kind": "blocks",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/reciprocal-direct-attached/blocks.json",
+          "sha256": "b2d29f157a03288f8f1b246ec5bf9406bde7b912604309b502a911c0f260d59a"
+        },
+        {
+          "kind": "incumbent",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-shape-packing/full-matrix.json",
+          "sha256": "1e313f8d8ed2fe2d7f98ba78701db69b346d70fb38b1a1256d65a4f50993fb5d"
+        },
+        {
+          "kind": "recipes",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+          "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+        },
+        {
+          "kind": "facilities",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+          "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+        },
+        {
+          "kind": "items",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+          "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+        },
+        {
+          "kind": "transports",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+          "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+        },
+        {
+          "kind": "components",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+          "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+        },
+        {
+          "kind": "validator",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+          "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+        },
+        {
+          "kind": "source-shapes",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/reciprocal-direct-attached/blocks.json",
+          "sha256": "b2d29f157a03288f8f1b246ec5bf9406bde7b912604309b502a911c0f260d59a"
+        }
+      ],
+      "source_hashes": {
+        "run.mjs": "4b3a388e79a2d5f5cc70d2fe3d95cea03df6a76a15df15f8865b8f1f5e141eb7",
+        "model.mjs": "dfc672bbe7dca7782fb10594662ad6cceb6374ba2a18ab4a5831e587a20d17df",
+        "nesting.mjs": "757a2399c525b59abf31b982e82a5adb349de7f5b5d0387597db7fa1b8ac40e6",
+        "pockets.mjs": "16a6085755a0da58f6ec94a425aeb0630171dff59336d2f5f132f0f0a602c81f",
+        "../constructive-block-composition/model.mjs": "0f3159d35c52908eb032756e3592fa70e268fec3591f925d2aecf9873f81f37f",
+        "../constructive-factory-closure/model.mjs": "1f3a5e82ab98a098cfa8104473006ade88b7485b0c3dd09f6791aa5ee421407c",
+        "../constructive-factory-closure/output-space.mjs": "135b4910cceb031da0dcf8aada70911f282e790e185dec99550da3ac150ab198",
+        "../constructive-factory-closure/run.mjs": "077bfcdad3f652aa728f9f69185989d5da713a1e76e4c71c5d9ff39d9dd63c6f",
+        "../constructive-interconnect/geometry.mjs": "40fd87e27084a47923c40ac867afb7c5250588c0ac909fa765db70724e0ec371",
+        "../constructive-interconnect/tracks.mjs": "0c14404e301319b99f87581a76885ba6ece4187c4fef42b57de2aa6deb80d436",
+        "../constructive-auto-interface/embedding.mjs": "1817ba1194c8cc875872cb401012294ad99d93a48798b2aba5a2f2fd7343a191",
+        "../constructive-auto-interface/model.mjs": "4a54a79cbf79099ff7593d16a9ffeba814fb97087fcd01963c0f472034abcfe5",
+        "../constructive-shape-packing/model.mjs": "b85d2d5c50614fb68ec8745a5bb88fd016f57503cfea2fd28f1326c2eb29b0bb"
+      }
+    }
+  ],
+  "refinements": [
+    {
+      "name": "previous-incumbent",
+      "report": "docs/benchmarks/constructive-shape-packing/full-matrix.json",
+      "audit": "docs/benchmarks/constructive-shape-packing/full-controls.json",
+      "sha256": "1e313f8d8ed2fe2d7f98ba78701db69b346d70fb38b1a1256d65a4f50993fb5d",
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/shape-packing-joint-refined/candidate-884",
+      "score": {
+        "width": 104,
+        "height": 31,
+        "area": 3224,
+        "physical_tiles": 775,
+        "turns": 119,
+        "tuple": [
+          3224,
+          775,
+          119
+        ]
+      },
+      "initial_score": {
+        "width": 140,
+        "height": 36,
+        "area": 5040,
+        "physical_tiles": 1375,
+        "turns": 184,
+        "tuple": [
+          5040,
+          1375,
+          184
+        ]
+      },
+      "rounds": 3,
+      "attempts": 1068,
+      "elapsed_ms": 68315.73008400001,
+      "termination": "round-budget",
+      "original_graph_audited": true,
+      "witness_sha256": "95123f01d73c849a9eceb1fe4c6a86381bbc89d6c9a78599d662cf6ae9af80fb",
+      "fill": {
+        "width": 104,
+        "height": 31,
+        "area": 3224,
+        "occupied_xy": 1848,
+        "facility_xy": 1133,
+        "fill_ratio": 0.5732009925558312,
+        "empty_xy": 1376
+      },
+      "empty_rectangles": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 32,
+          "height": 6,
+          "area": 192
+        },
+        {
+          "x": 0,
+          "y": 27,
+          "width": 32,
+          "height": 4,
+          "area": 128
+        },
+        {
+          "x": 11,
+          "y": 26,
+          "width": 21,
+          "height": 5,
+          "area": 105
+        }
+      ],
+      "input_provenance": [
+        {
+          "kind": "graph",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/reciprocal-direct-attached/graph.json",
+          "sha256": "41842797136485c2a3ec175d20a5f081e4f588a02e12e5deef61c2fb32baf5f5"
+        },
+        {
+          "kind": "baseline",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/shape-packing-joint/packing-11/closure-simple/report.json",
+          "sha256": "a6f4260b5d4517a21d0657b854fedb6c27ad21414c732fafeed64da296e9c4a3"
+        },
+        {
+          "kind": "recipes",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+          "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+        },
+        {
+          "kind": "facilities",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+          "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+        },
+        {
+          "kind": "items",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+          "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+        },
+        {
+          "kind": "transports",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+          "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+        },
+        {
+          "kind": "components",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+          "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+        },
+        {
+          "kind": "validator",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+          "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+        }
+      ],
+      "source_hashes": {
+        "model.mjs": "a7d15471354d3a9acdd63fa7e84040ccd546e823773cf2e494801da8c35586bd",
+        "movement.mjs": "dd10dfe5dedb930d82a9969b677002069bfe8db84fcb48ac05054e3cd0b5492f",
+        "groups.mjs": "afe423f5ba78ad586a05147584c9f3255e90fc1e20221997ff302d2f394751dc",
+        "path.mjs": "8ccacccfc98f61d06484dce0c9e81f7e62eda21966d47918331a3c7b4d202f0f",
+        "run.mjs": "8bd1df7661503c428551c2cc17fa1058a75b1d21c327244ad98fb1279d36a3bc",
+        "../constructive-embedding-compaction/model.mjs": "1f2b6402d1ab77c89da469c9d2c3ce42a31d83184170ba1f672e72783d52b29f",
+        "../constructive-embedding-compaction/length.mjs": "fa05d48ecb8ac6e31314b277b0d9e2a450ff88ce152e01d9dff2f8c9adb40498",
+        "../constructive-embedding-compaction/validator.mjs": "e357484b02b6498eebf0742cc72868e9a6f6aa765bf26c8a7dbaca4cf51a69a3",
+        "../constructive-factory-closure/model.mjs": "2ac964a4c2198897a3c48bf35deee96346589b5d145e29c1545e778e519e29db",
+        "../constructive-cycle-blocks/graph.mjs": "56da1be22c024ce6b270b8626ff7913cfde40557a53678d0753e6bc19206bcbe",
+        "../constructive-auto-interface/compact.mjs": "31be1364c1a7f7e702de2f426c9294efc2b87bb521e998b876f727a6dfea1ceb",
+        "../constructive-bound-interconnect/view.mjs": "634ac5b88679f4413aaedf8d1e818d272d5bb44f8855b15db4ca76d7bafd84f5",
+        "../constructive-placement-only/model.mjs": "47f0798630d1063b4ea0521d47e746f3051eac9361b9779914ed1e3e530edce3"
+      }
+    },
+    {
+      "name": "frontier-min-monotone",
+      "report": "target/monotone-min-refined/report.json",
+      "sha256": "cd3244fe45266f8523cbb9f9817511c425d716234dcc44115707fe732978c96e",
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/monotone-min-refined/candidate-953",
+      "score": {
+        "width": 73,
+        "height": 57,
+        "area": 4161,
+        "physical_tiles": 810,
+        "turns": 99,
+        "tuple": [
+          4161,
+          810,
+          99
+        ]
+      },
+      "initial_score": {
+        "width": 83,
+        "height": 75,
+        "area": 6225,
+        "physical_tiles": 1345,
+        "turns": 156,
+        "tuple": [
+          6225,
+          1345,
+          156
+        ]
+      },
+      "rounds": 3,
+      "attempts": 1065,
+      "elapsed_ms": 41197.590209,
+      "termination": "round-budget",
+      "original_graph_audited": false,
+      "witness_sha256": "61f39761b9df703e9c299d964c0798c36fdce7e75e4eaa95bec1e4c22c6c98c1",
+      "fill": {
+        "width": 73,
+        "height": 57,
+        "area": 4161,
+        "occupied_xy": 1870,
+        "facility_xy": 1133,
+        "fill_ratio": 0.4494111992309541,
+        "empty_xy": 2291
+      },
+      "empty_rectangles": [
+        {
+          "x": 63,
+          "y": 0,
+          "width": 10,
+          "height": 28,
+          "area": 280
+        },
+        {
+          "x": 67,
+          "y": 0,
+          "width": 6,
+          "height": 46,
+          "area": 276
+        },
+        {
+          "x": 65,
+          "y": 0,
+          "width": 8,
+          "height": 32,
+          "area": 256
+        }
+      ],
+      "input_provenance": [
+        {
+          "kind": "graph",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/scc-stop-grow-final/graph.json",
+          "sha256": "35344e4e57dbaa35859b901b55e86852bd6ed0926ed0ddbec8ffd7e84ccfb625"
+        },
+        {
+          "kind": "baseline",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/monotone-frontier-min/closure-2/report.json",
+          "sha256": "82d2f679e8b5e7cd0e5bd4627cbd07704be3149b8dcf30be65019204ccabaa9a"
+        },
+        {
+          "kind": "recipes",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+          "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+        },
+        {
+          "kind": "facilities",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+          "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+        },
+        {
+          "kind": "items",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+          "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+        },
+        {
+          "kind": "transports",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+          "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+        },
+        {
+          "kind": "components",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+          "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+        },
+        {
+          "kind": "validator",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+          "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+        }
+      ],
+      "source_hashes": {
+        "model.mjs": "a7d15471354d3a9acdd63fa7e84040ccd546e823773cf2e494801da8c35586bd",
+        "movement.mjs": "dd10dfe5dedb930d82a9969b677002069bfe8db84fcb48ac05054e3cd0b5492f",
+        "groups.mjs": "afe423f5ba78ad586a05147584c9f3255e90fc1e20221997ff302d2f394751dc",
+        "path.mjs": "8ccacccfc98f61d06484dce0c9e81f7e62eda21966d47918331a3c7b4d202f0f",
+        "run.mjs": "8bd1df7661503c428551c2cc17fa1058a75b1d21c327244ad98fb1279d36a3bc",
+        "../constructive-embedding-compaction/model.mjs": "1f2b6402d1ab77c89da469c9d2c3ce42a31d83184170ba1f672e72783d52b29f",
+        "../constructive-embedding-compaction/length.mjs": "fa05d48ecb8ac6e31314b277b0d9e2a450ff88ce152e01d9dff2f8c9adb40498",
+        "../constructive-embedding-compaction/validator.mjs": "e357484b02b6498eebf0742cc72868e9a6f6aa765bf26c8a7dbaca4cf51a69a3",
+        "../constructive-factory-closure/model.mjs": "1f3a5e82ab98a098cfa8104473006ade88b7485b0c3dd09f6791aa5ee421407c",
+        "../constructive-cycle-blocks/graph.mjs": "1de3ed183916865e484838ad5ce043c35894a58aa288392717f3925696b360f2",
+        "../constructive-auto-interface/compact.mjs": "31be1364c1a7f7e702de2f426c9294efc2b87bb521e998b876f727a6dfea1ceb",
+        "../constructive-bound-interconnect/view.mjs": "f53acc7c08b58828841f1715de6d41becbf6e45085bc1df6c8950e2bc3020b71",
+        "../constructive-placement-only/model.mjs": "47f0798630d1063b4ea0521d47e746f3051eac9361b9779914ed1e3e530edce3"
+      }
+    },
+    {
+      "name": "frontier-max-monotone",
+      "report": "target/monotone-max-refined/report.json",
+      "sha256": "f9689c428569eeef88b4d226650402878802584904f00a12a96831021efc2026",
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/monotone-max-refined/candidate-834",
+      "score": {
+        "width": 72,
+        "height": 65,
+        "area": 4680,
+        "physical_tiles": 1085,
+        "turns": 106,
+        "tuple": [
+          4680,
+          1085,
+          106
+        ]
+      },
+      "initial_score": {
+        "width": 86,
+        "height": 78,
+        "area": 6708,
+        "physical_tiles": 1500,
+        "turns": 186,
+        "tuple": [
+          6708,
+          1500,
+          186
+        ]
+      },
+      "rounds": 3,
+      "attempts": 1065,
+      "elapsed_ms": 45231.962374999996,
+      "termination": "round-budget",
+      "original_graph_audited": false,
+      "witness_sha256": "872f52eb6e2b530ded04dffd7c60496dea9713592d7b0a85580d566ead08ae03",
+      "fill": {
+        "width": 72,
+        "height": 65,
+        "area": 4680,
+        "occupied_xy": 2135,
+        "facility_xy": 1133,
+        "fill_ratio": 0.4561965811965812,
+        "empty_xy": 2545
+      },
+      "empty_rectangles": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 22,
+          "height": 17,
+          "area": 374
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 26,
+          "height": 13,
+          "area": 338
+        },
+        {
+          "x": 0,
+          "y": 0,
+          "width": 28,
+          "height": 12,
+          "area": 336
+        }
+      ],
+      "input_provenance": [
+        {
+          "kind": "graph",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/scc-stop-grow-final/graph.json",
+          "sha256": "35344e4e57dbaa35859b901b55e86852bd6ed0926ed0ddbec8ffd7e84ccfb625"
+        },
+        {
+          "kind": "baseline",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/monotone-frontier-max/closure-7/report.json",
+          "sha256": "11e2e2d5919ac7e91287a14deb45dbe9c2786521641cd6c2eaf91f63f08d330a"
+        },
+        {
+          "kind": "recipes",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+          "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+        },
+        {
+          "kind": "facilities",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+          "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+        },
+        {
+          "kind": "items",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+          "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+        },
+        {
+          "kind": "transports",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+          "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+        },
+        {
+          "kind": "components",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+          "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+        },
+        {
+          "kind": "validator",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+          "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+        }
+      ],
+      "source_hashes": {
+        "model.mjs": "a7d15471354d3a9acdd63fa7e84040ccd546e823773cf2e494801da8c35586bd",
+        "movement.mjs": "dd10dfe5dedb930d82a9969b677002069bfe8db84fcb48ac05054e3cd0b5492f",
+        "groups.mjs": "afe423f5ba78ad586a05147584c9f3255e90fc1e20221997ff302d2f394751dc",
+        "path.mjs": "8ccacccfc98f61d06484dce0c9e81f7e62eda21966d47918331a3c7b4d202f0f",
+        "run.mjs": "8bd1df7661503c428551c2cc17fa1058a75b1d21c327244ad98fb1279d36a3bc",
+        "../constructive-embedding-compaction/model.mjs": "1f2b6402d1ab77c89da469c9d2c3ce42a31d83184170ba1f672e72783d52b29f",
+        "../constructive-embedding-compaction/length.mjs": "fa05d48ecb8ac6e31314b277b0d9e2a450ff88ce152e01d9dff2f8c9adb40498",
+        "../constructive-embedding-compaction/validator.mjs": "e357484b02b6498eebf0742cc72868e9a6f6aa765bf26c8a7dbaca4cf51a69a3",
+        "../constructive-factory-closure/model.mjs": "1f3a5e82ab98a098cfa8104473006ade88b7485b0c3dd09f6791aa5ee421407c",
+        "../constructive-cycle-blocks/graph.mjs": "1de3ed183916865e484838ad5ce043c35894a58aa288392717f3925696b360f2",
+        "../constructive-auto-interface/compact.mjs": "31be1364c1a7f7e702de2f426c9294efc2b87bb521e998b876f727a6dfea1ceb",
+        "../constructive-bound-interconnect/view.mjs": "f53acc7c08b58828841f1715de6d41becbf6e45085bc1df6c8950e2bc3020b71",
+        "../constructive-placement-only/model.mjs": "47f0798630d1063b4ea0521d47e746f3051eac9361b9779914ed1e3e530edce3"
+      }
+    },
+    {
+      "name": "frontier-min-alternate-monotone",
+      "report": "target/monotone-min-alternate-refined/report.json",
+      "audit": "target/monotone-refined-audit/audit.json",
+      "sha256": "712be96b43b7ea414fc5f676eee35f61f51b831788057bbcb211449dcae32862",
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/monotone-min-alternate-refined/candidate-758",
+      "score": {
+        "width": 82,
+        "height": 46,
+        "area": 3772,
+        "physical_tiles": 646,
+        "turns": 79,
+        "tuple": [
+          3772,
+          646,
+          79
+        ]
+      },
+      "initial_score": {
+        "width": 102,
+        "height": 68,
+        "area": 6936,
+        "physical_tiles": 1016,
+        "turns": 130,
+        "tuple": [
+          6936,
+          1016,
+          130
+        ]
+      },
+      "rounds": 3,
+      "attempts": 1002,
+      "elapsed_ms": 33675.5695,
+      "termination": "round-budget",
+      "original_graph_audited": true,
+      "witness_sha256": "091c1c0bbda897acc1fe7b55153fe8ccb014741068f8e6bebd21518c96cf82d9",
+      "fill": {
+        "width": 82,
+        "height": 46,
+        "area": 3772,
+        "occupied_xy": 1737,
+        "facility_xy": 1133,
+        "fill_ratio": 0.46049840933191943,
+        "empty_xy": 2035
+      },
+      "empty_rectangles": [
+        {
+          "x": 0,
+          "y": 30,
+          "width": 26,
+          "height": 16,
+          "area": 416
+        },
+        {
+          "x": 6,
+          "y": 26,
+          "width": 20,
+          "height": 20,
+          "area": 400
+        },
+        {
+          "x": 7,
+          "y": 25,
+          "width": 19,
+          "height": 21,
+          "area": 399
+        }
+      ],
+      "input_provenance": [
+        {
+          "kind": "graph",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/scc-stop-grow-final/graph.json",
+          "sha256": "35344e4e57dbaa35859b901b55e86852bd6ed0926ed0ddbec8ffd7e84ccfb625"
+        },
+        {
+          "kind": "baseline",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/monotone-frontier-min/closure-3/report.json",
+          "sha256": "8dd6d6a7322a20052bf6d4e4beb5258c644215d07f8c289b47c7d57485d416e6"
+        },
+        {
+          "kind": "recipes",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+          "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+        },
+        {
+          "kind": "facilities",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+          "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+        },
+        {
+          "kind": "items",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+          "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+        },
+        {
+          "kind": "transports",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+          "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+        },
+        {
+          "kind": "components",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+          "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+        },
+        {
+          "kind": "validator",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+          "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+        }
+      ],
+      "source_hashes": {
+        "model.mjs": "a7d15471354d3a9acdd63fa7e84040ccd546e823773cf2e494801da8c35586bd",
+        "movement.mjs": "dd10dfe5dedb930d82a9969b677002069bfe8db84fcb48ac05054e3cd0b5492f",
+        "groups.mjs": "afe423f5ba78ad586a05147584c9f3255e90fc1e20221997ff302d2f394751dc",
+        "path.mjs": "8ccacccfc98f61d06484dce0c9e81f7e62eda21966d47918331a3c7b4d202f0f",
+        "run.mjs": "8bd1df7661503c428551c2cc17fa1058a75b1d21c327244ad98fb1279d36a3bc",
+        "../constructive-embedding-compaction/model.mjs": "1f2b6402d1ab77c89da469c9d2c3ce42a31d83184170ba1f672e72783d52b29f",
+        "../constructive-embedding-compaction/length.mjs": "fa05d48ecb8ac6e31314b277b0d9e2a450ff88ce152e01d9dff2f8c9adb40498",
+        "../constructive-embedding-compaction/validator.mjs": "e357484b02b6498eebf0742cc72868e9a6f6aa765bf26c8a7dbaca4cf51a69a3",
+        "../constructive-factory-closure/model.mjs": "1f3a5e82ab98a098cfa8104473006ade88b7485b0c3dd09f6791aa5ee421407c",
+        "../constructive-cycle-blocks/graph.mjs": "1de3ed183916865e484838ad5ce043c35894a58aa288392717f3925696b360f2",
+        "../constructive-auto-interface/compact.mjs": "31be1364c1a7f7e702de2f426c9294efc2b87bb521e998b876f727a6dfea1ceb",
+        "../constructive-bound-interconnect/view.mjs": "f53acc7c08b58828841f1715de6d41becbf6e45085bc1df6c8950e2bc3020b71",
+        "../constructive-placement-only/model.mjs": "47f0798630d1063b4ea0521d47e746f3051eac9361b9779914ed1e3e530edce3"
+      }
+    },
+    {
+      "name": "shape-monotone-first-three-rounds",
+      "report": "target/monotone-shape-refined/report.json",
+      "sha256": "47f2b691cc6da2762b77d6c97fb50f92d358e22bf683c67e29c013834f4dea9a",
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/monotone-shape-refined/candidate-966",
+      "score": {
+        "width": 106,
+        "height": 31,
+        "area": 3286,
+        "physical_tiles": 877,
+        "turns": 93,
+        "tuple": [
+          3286,
+          877,
+          93
+        ]
+      },
+      "initial_score": {
+        "width": 130,
+        "height": 36,
+        "area": 4680,
+        "physical_tiles": 1206,
+        "turns": 148,
+        "tuple": [
+          4680,
+          1206,
+          148
+        ]
+      },
+      "rounds": 3,
+      "attempts": 1068,
+      "elapsed_ms": 38927.413041,
+      "termination": "round-budget",
+      "original_graph_audited": false,
+      "witness_sha256": "d916fc75874c8a087f4ae1fca981365c5032c00002b7d43edbd77dcdf01ab086",
+      "fill": {
+        "width": 106,
+        "height": 31,
+        "area": 3286,
+        "occupied_xy": 1959,
+        "facility_xy": 1133,
+        "fill_ratio": 0.5961655508216677,
+        "empty_xy": 1327
+      },
+      "empty_rectangles": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 12,
+          "height": 10,
+          "area": 120
+        },
+        {
+          "x": 20,
+          "y": 16,
+          "width": 12,
+          "height": 7,
+          "area": 84
+        },
+        {
+          "x": 24,
+          "y": 13,
+          "width": 8,
+          "height": 10,
+          "area": 80
+        }
+      ],
+      "input_provenance": [
+        {
+          "kind": "graph",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/reciprocal-direct-attached/graph.json",
+          "sha256": "41842797136485c2a3ec175d20a5f081e4f588a02e12e5deef61c2fb32baf5f5"
+        },
+        {
+          "kind": "baseline",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/monotone-shape-packing/packing-11/closure-simple/report.json",
+          "sha256": "5b225868d753def5b0d5905b75149c503d59a807ad86c8850adb1ceee7c77d46"
+        },
+        {
+          "kind": "recipes",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+          "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+        },
+        {
+          "kind": "facilities",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+          "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+        },
+        {
+          "kind": "items",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+          "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+        },
+        {
+          "kind": "transports",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+          "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+        },
+        {
+          "kind": "components",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+          "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+        },
+        {
+          "kind": "validator",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+          "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+        }
+      ],
+      "source_hashes": {
+        "model.mjs": "a7d15471354d3a9acdd63fa7e84040ccd546e823773cf2e494801da8c35586bd",
+        "movement.mjs": "dd10dfe5dedb930d82a9969b677002069bfe8db84fcb48ac05054e3cd0b5492f",
+        "groups.mjs": "afe423f5ba78ad586a05147584c9f3255e90fc1e20221997ff302d2f394751dc",
+        "path.mjs": "8ccacccfc98f61d06484dce0c9e81f7e62eda21966d47918331a3c7b4d202f0f",
+        "run.mjs": "8bd1df7661503c428551c2cc17fa1058a75b1d21c327244ad98fb1279d36a3bc",
+        "../constructive-embedding-compaction/model.mjs": "1f2b6402d1ab77c89da469c9d2c3ce42a31d83184170ba1f672e72783d52b29f",
+        "../constructive-embedding-compaction/length.mjs": "fa05d48ecb8ac6e31314b277b0d9e2a450ff88ce152e01d9dff2f8c9adb40498",
+        "../constructive-embedding-compaction/validator.mjs": "e357484b02b6498eebf0742cc72868e9a6f6aa765bf26c8a7dbaca4cf51a69a3",
+        "../constructive-factory-closure/model.mjs": "1f3a5e82ab98a098cfa8104473006ade88b7485b0c3dd09f6791aa5ee421407c",
+        "../constructive-cycle-blocks/graph.mjs": "1de3ed183916865e484838ad5ce043c35894a58aa288392717f3925696b360f2",
+        "../constructive-auto-interface/compact.mjs": "31be1364c1a7f7e702de2f426c9294efc2b87bb521e998b876f727a6dfea1ceb",
+        "../constructive-bound-interconnect/view.mjs": "f53acc7c08b58828841f1715de6d41becbf6e45085bc1df6c8950e2bc3020b71",
+        "../constructive-placement-only/model.mjs": "47f0798630d1063b4ea0521d47e746f3051eac9361b9779914ed1e3e530edce3"
+      }
+    },
+    {
+      "name": "shape-monotone-three-more-rounds",
+      "report": "target/monotone-shape-refined-more/report.json",
+      "audit": "target/monotone-shape-refined-more-audit/audit.json",
+      "sha256": "b15aa8d5afc568eed7a149323780081e8de5a9ea00c6073555f4167c337d6556",
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/monotone-shape-refined-more/candidate-914",
+      "score": {
+        "width": 104,
+        "height": 30,
+        "area": 3120,
+        "physical_tiles": 868,
+        "turns": 106,
+        "tuple": [
+          3120,
+          868,
+          106
+        ]
+      },
+      "initial_score": {
+        "width": 106,
+        "height": 31,
+        "area": 3286,
+        "physical_tiles": 877,
+        "turns": 93,
+        "tuple": [
+          3286,
+          877,
+          93
+        ]
+      },
+      "rounds": 3,
+      "attempts": 1068,
+      "elapsed_ms": 38540.124875,
+      "termination": "round-budget",
+      "original_graph_audited": true,
+      "witness_sha256": "efa7dc1810e76f48c5fbaf43468bfbeba6986e570fabcc01679e624a2c6b946f",
+      "fill": {
+        "width": 104,
+        "height": 30,
+        "area": 3120,
+        "occupied_xy": 1929,
+        "facility_xy": 1133,
+        "fill_ratio": 0.6182692307692308,
+        "empty_xy": 1191
+      },
+      "empty_rectangles": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 12,
+          "height": 9,
+          "area": 108
+        },
+        {
+          "x": 20,
+          "y": 15,
+          "width": 11,
+          "height": 7,
+          "area": 77
+        },
+        {
+          "x": 24,
+          "y": 12,
+          "width": 7,
+          "height": 10,
+          "area": 70
+        }
+      ],
+      "input_provenance": [
+        {
+          "kind": "graph",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/reciprocal-direct-attached/graph.json",
+          "sha256": "41842797136485c2a3ec175d20a5f081e4f588a02e12e5deef61c2fb32baf5f5"
+        },
+        {
+          "kind": "baseline",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/monotone-shape-refined/report.json",
+          "sha256": "47f2b691cc6da2762b77d6c97fb50f92d358e22bf683c67e29c013834f4dea9a"
+        },
+        {
+          "kind": "recipes",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+          "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+        },
+        {
+          "kind": "facilities",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+          "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+        },
+        {
+          "kind": "items",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+          "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+        },
+        {
+          "kind": "transports",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+          "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+        },
+        {
+          "kind": "components",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+          "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+        },
+        {
+          "kind": "validator",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+          "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+        }
+      ],
+      "source_hashes": {
+        "model.mjs": "a7d15471354d3a9acdd63fa7e84040ccd546e823773cf2e494801da8c35586bd",
+        "movement.mjs": "dd10dfe5dedb930d82a9969b677002069bfe8db84fcb48ac05054e3cd0b5492f",
+        "groups.mjs": "afe423f5ba78ad586a05147584c9f3255e90fc1e20221997ff302d2f394751dc",
+        "path.mjs": "8ccacccfc98f61d06484dce0c9e81f7e62eda21966d47918331a3c7b4d202f0f",
+        "run.mjs": "8bd1df7661503c428551c2cc17fa1058a75b1d21c327244ad98fb1279d36a3bc",
+        "../constructive-embedding-compaction/model.mjs": "1f2b6402d1ab77c89da469c9d2c3ce42a31d83184170ba1f672e72783d52b29f",
+        "../constructive-embedding-compaction/length.mjs": "fa05d48ecb8ac6e31314b277b0d9e2a450ff88ce152e01d9dff2f8c9adb40498",
+        "../constructive-embedding-compaction/validator.mjs": "e357484b02b6498eebf0742cc72868e9a6f6aa765bf26c8a7dbaca4cf51a69a3",
+        "../constructive-factory-closure/model.mjs": "1f3a5e82ab98a098cfa8104473006ade88b7485b0c3dd09f6791aa5ee421407c",
+        "../constructive-cycle-blocks/graph.mjs": "1de3ed183916865e484838ad5ce043c35894a58aa288392717f3925696b360f2",
+        "../constructive-auto-interface/compact.mjs": "31be1364c1a7f7e702de2f426c9294efc2b87bb521e998b876f727a6dfea1ceb",
+        "../constructive-bound-interconnect/view.mjs": "f53acc7c08b58828841f1715de6d41becbf6e45085bc1df6c8950e2bc3020b71",
+        "../constructive-placement-only/model.mjs": "47f0798630d1063b4ea0521d47e746f3051eac9361b9779914ed1e3e530edce3"
+      }
+    },
+    {
+      "name": "previous-incumbent-three-more-rounds",
+      "report": "target/monotone-incumbent-control/report.json",
+      "audit": "target/monotone-incumbent-control-audit/audit.json",
+      "sha256": "71be69abaffd2f13fe28fd3982ca1895214817d10f4c038033033b11d9b109d2",
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/monotone-incumbent-control/candidate-898",
+      "score": {
+        "width": 102,
+        "height": 31,
+        "area": 3162,
+        "physical_tiles": 760,
+        "turns": 116,
+        "tuple": [
+          3162,
+          760,
+          116
+        ]
+      },
+      "initial_score": {
+        "width": 104,
+        "height": 31,
+        "area": 3224,
+        "physical_tiles": 775,
+        "turns": 119,
+        "tuple": [
+          3224,
+          775,
+          119
+        ]
+      },
+      "rounds": 3,
+      "attempts": 1068,
+      "elapsed_ms": 35738.543042000005,
+      "termination": "round-budget",
+      "original_graph_audited": true,
+      "witness_sha256": "93ce1b2f50f194a432b405c2a4ab48a197b20816196299fdcbe343d544caf965",
+      "fill": {
+        "width": 102,
+        "height": 31,
+        "area": 3162,
+        "occupied_xy": 1833,
+        "facility_xy": 1133,
+        "fill_ratio": 0.579696394686907,
+        "empty_xy": 1329
+      },
+      "empty_rectangles": [
+        {
+          "x": 0,
+          "y": 0,
+          "width": 32,
+          "height": 5,
+          "area": 160
+        },
+        {
+          "x": 0,
+          "y": 26,
+          "width": 32,
+          "height": 5,
+          "area": 160
+        },
+        {
+          "x": 11,
+          "y": 25,
+          "width": 21,
+          "height": 6,
+          "area": 126
+        }
+      ],
+      "input_provenance": [
+        {
+          "kind": "graph",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/reciprocal-direct-attached/graph.json",
+          "sha256": "41842797136485c2a3ec175d20a5f081e4f588a02e12e5deef61c2fb32baf5f5"
+        },
+        {
+          "kind": "baseline",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-shape-packing/full-matrix.json",
+          "sha256": "1e313f8d8ed2fe2d7f98ba78701db69b346d70fb38b1a1256d65a4f50993fb5d"
+        },
+        {
+          "kind": "recipes",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+          "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+        },
+        {
+          "kind": "facilities",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+          "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+        },
+        {
+          "kind": "items",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+          "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+        },
+        {
+          "kind": "transports",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+          "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+        },
+        {
+          "kind": "components",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+          "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+        },
+        {
+          "kind": "validator",
+          "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+          "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+        }
+      ],
+      "source_hashes": {
+        "model.mjs": "a7d15471354d3a9acdd63fa7e84040ccd546e823773cf2e494801da8c35586bd",
+        "movement.mjs": "dd10dfe5dedb930d82a9969b677002069bfe8db84fcb48ac05054e3cd0b5492f",
+        "groups.mjs": "afe423f5ba78ad586a05147584c9f3255e90fc1e20221997ff302d2f394751dc",
+        "path.mjs": "8ccacccfc98f61d06484dce0c9e81f7e62eda21966d47918331a3c7b4d202f0f",
+        "run.mjs": "8bd1df7661503c428551c2cc17fa1058a75b1d21c327244ad98fb1279d36a3bc",
+        "../constructive-embedding-compaction/model.mjs": "1f2b6402d1ab77c89da469c9d2c3ce42a31d83184170ba1f672e72783d52b29f",
+        "../constructive-embedding-compaction/length.mjs": "fa05d48ecb8ac6e31314b277b0d9e2a450ff88ce152e01d9dff2f8c9adb40498",
+        "../constructive-embedding-compaction/validator.mjs": "e357484b02b6498eebf0742cc72868e9a6f6aa765bf26c8a7dbaca4cf51a69a3",
+        "../constructive-factory-closure/model.mjs": "1f3a5e82ab98a098cfa8104473006ade88b7485b0c3dd09f6791aa5ee421407c",
+        "../constructive-cycle-blocks/graph.mjs": "1de3ed183916865e484838ad5ce043c35894a58aa288392717f3925696b360f2",
+        "../constructive-auto-interface/compact.mjs": "31be1364c1a7f7e702de2f426c9294efc2b87bb521e998b876f727a6dfea1ceb",
+        "../constructive-bound-interconnect/view.mjs": "f53acc7c08b58828841f1715de6d41becbf6e45085bc1df6c8950e2bc3020b71",
+        "../constructive-placement-only/model.mjs": "47f0798630d1063b4ea0521d47e746f3051eac9361b9779914ed1e3e530edce3"
+      }
+    }
+  ],
+  "cases_path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-interconnect/compact-cases.json",
+  "cases_sha256": "704a98f7fdc1b075e26f5a8b8f911e050087e9e762c5f7b5116e6b5b87027744",
+  "source_hashes": {
+    "geometry.mjs": "40fd87e27084a47923c40ac867afb7c5250588c0ac909fa765db70724e0ec371",
+    "tracks.mjs": "0c14404e301319b99f87581a76885ba6ece4187c4fef42b57de2aa6deb80d436",
+    "compact-evidence.mjs": "349ff2a820bb6ab8a6b92ce1541f183c7fd7e74a4c1d79caa95f5139a90d3bfd"
+  }
+}

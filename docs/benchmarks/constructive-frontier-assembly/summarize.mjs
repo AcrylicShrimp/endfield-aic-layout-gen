@@ -32,7 +32,7 @@ try {
         const d = read(path.join(g.selected[0], 'detail.json')), p = d.pre_compaction_plan ?? d;
         return { first_retained_directory: g.selected[0], targets: g.targets.length, fill: fillMetrics(d.witness),
           permutation: p.permutation ? { width: p.permutation.width, height: p.permutation.height,
-            swaps: p.permutation.modules.length, stages: p.permutation.schedule.stage_count,
+            crossings: p.permutation.modules.length, construction: p.permutation.construction,
             scope: 'abstract pre-compaction template, not final measured crossing area' } : null };
       }) })),
       new_complete: complete, elapsed_ms: r.elapsed_ms, initial_observation_ms: first.elapsed_ms,

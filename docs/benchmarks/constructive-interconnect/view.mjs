@@ -7,7 +7,7 @@ export function render(report) {
 @media(prefers-color-scheme:dark){:root{--bg:#07131d;--fg:#d3e8f1;--grid:#233a49;--a:#efb55b;--b:#62d6d1;--module:#b597f0}}
 *{box-sizing:border-box}body{margin:0;padding:24px;background:var(--bg);color:var(--fg);font:16px system-ui}h1{font-size:24px;margin:0 0 10px}p{max-width:1000px;line-height:1.5;overflow-wrap:anywhere}button{font:inherit;padding:8px 12px;cursor:pointer}nav{display:flex;gap:8px;flex-wrap:wrap}svg{display:block;width:100%;max-height:760px}text{fill:var(--fg);font-family:ui-monospace,monospace}.key{display:flex;gap:16px;flex-wrap:wrap}.key span{overflow-wrap:anywhere}.key i{display:inline-block;width:20px;border-top:3px solid;vertical-align:middle}#status{font-weight:600} @media(max-width:480px){body{padding:12px}h1{font-size:20px}}
 </style><h1>Planned lane permutation · typed channels stay separate</h1>
-<p>Solid lines: actual unit-grid paths. Dashed boxes: reserved adjacent-swap modules. Squares: catalog bridges with independent perpendicular channels. Fanout/fanin and facility binding are not built here.</p>
+<p>Solid lines: actual unit-grid paths. Dashed boxes: reserved bridge cells. Squares: catalog bridges with independent perpendicular channels. Fanout/fanin and facility binding are not built here.</p>
 <nav aria-label="Recipe interface case"><button id="minimum">Two consumers · small recipe</button><button id="maximum">Two consumers · catalog maximum belt input</button></nav>
 <p id="status" aria-live="polite"></p><div class="key" id="legend"></div><svg id="diagram" role="img" aria-label="Planned grid routes and crossing modules"></svg><p id="detail"></p>
 <script type="application/json" id="data">${safe}</script><script>

@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "original_graph": "docs/benchmarks/constructive-chain-blocks/gap-1-placement.json",
+  "core_control": "target/frontier-interface-max-final/report.json",
+  "catalogs": {
+    "recipes": "data/game/normalized/recipes.json",
+    "facilities": "data/game/normalized/facilities.json",
+    "items": "data/game/normalized/items.json",
+    "transports": "data/game/normalized/transports.json",
+    "components": "data/game/normalized/logistics-components.json"
+  },
+  "construction": [
+    { "name": "frontier-min-control", "kind": "frontier", "report": "target/frontier-interface-min-final/report.json" },
+    { "name": "frontier-max-control", "kind": "frontier", "report": "target/frontier-interface-max-final/report.json" },
+    { "name": "frontier-min-monotone", "kind": "frontier", "report": "target/monotone-frontier-min/report.json" },
+    { "name": "frontier-max-monotone", "kind": "frontier", "report": "target/monotone-frontier-max/report.json" },
+    { "name": "shape-control", "kind": "cluster", "report": "docs/benchmarks/constructive-shape-packing/matrix.json" },
+    { "name": "shape-monotone", "kind": "cluster", "report": "target/monotone-shape-packing/report.json" }
+  ],
+  "refinements": [
+    { "name": "previous-incumbent", "report": "docs/benchmarks/constructive-shape-packing/full-matrix.json", "audit": "docs/benchmarks/constructive-shape-packing/full-controls.json" },
+    { "name": "frontier-min-monotone", "report": "target/monotone-min-refined/report.json" },
+    { "name": "frontier-max-monotone", "report": "target/monotone-max-refined/report.json" },
+    { "name": "frontier-min-alternate-monotone", "report": "target/monotone-min-alternate-refined/report.json", "audit": "target/monotone-refined-audit/audit.json" },
+    { "name": "shape-monotone-first-three-rounds", "report": "target/monotone-shape-refined/report.json" },
+    { "name": "shape-monotone-three-more-rounds", "report": "target/monotone-shape-refined-more/report.json", "audit": "target/monotone-shape-refined-more-audit/audit.json" },
+    { "name": "previous-incumbent-three-more-rounds", "report": "target/monotone-incumbent-control/report.json", "audit": "target/monotone-incumbent-control-audit/audit.json" }
+  ]
+}

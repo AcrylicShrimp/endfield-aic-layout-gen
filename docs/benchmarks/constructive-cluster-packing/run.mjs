@@ -176,7 +176,7 @@ try {
     clusters: clusterReports, growth_fill: growthFill, source_shapes: { enabled: Boolean(options['source-shapes']), shape_limit: shapeLimit, beam_width: shapeBeam, checks: shapeChecks }, packings: packReports.map(({ detail, ...r }) => r),
     provenance: [...keys.filter(k => k !== 'output-directory'), ...['refine-from', 'source-shapes'].filter(k => options[k])].map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
     source_hashes: Object.fromEntries(['run.mjs', 'model.mjs', 'nesting.mjs', 'pockets.mjs', '../constructive-block-composition/model.mjs', '../constructive-factory-closure/model.mjs', '../constructive-factory-closure/output-space.mjs', '../constructive-factory-closure/run.mjs',
-      '../constructive-interconnect/geometry.mjs', '../constructive-auto-interface/embedding.mjs', '../constructive-auto-interface/model.mjs', '../constructive-shape-packing/model.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
+      '../constructive-interconnect/geometry.mjs', '../constructive-interconnect/tracks.mjs', '../constructive-auto-interface/embedding.mjs', '../constructive-auto-interface/model.mjs', '../constructive-shape-packing/model.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), report); fs.copyFileSync(path.join(selectedDirectory, 'index.html'), path.join(output, 'index.html'), fs.constants.COPYFILE_EXCL);
   console.log(JSON.stringify({ status: report.status, clusters: clusters.length, packings: packed.length, score: score.tuple, output }));
 } catch (e) {

@@ -15,6 +15,7 @@ const read = p => JSON.parse(fs.readFileSync(p)), hash = p => createHash('sha256
 const write = (p, v) => fs.writeFileSync(p, JSON.stringify(v, null, 2) + '\n', { flag: 'wx' });
 const signature = w => createHash('sha256').update(JSON.stringify(w)).digest('hex');
 const sources = ['run.mjs', 'model.mjs', '../constructive-block-composition/model.mjs', '../constructive-auto-interface/embedding.mjs',
+  '../constructive-interconnect/geometry.mjs', '../constructive-interconnect/tracks.mjs', '../constructive-auto-interface/trees.mjs', '../constructive-auto-interface/lower.mjs',
   '../constructive-auto-interface/compact.mjs', '../constructive-shape-packing/model.mjs', '../constructive-cluster-packing/model.mjs',
   '../constructive-cluster-packing/nesting.mjs', '../constructive-cluster-packing/pockets.mjs', '../constructive-cycle-blocks/graph.mjs',
   '../constructive-factory-closure/model.mjs', '../constructive-factory-closure/run.mjs', '../constructive-scc-groups/interface.mjs',

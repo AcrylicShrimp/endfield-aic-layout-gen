@@ -30,7 +30,7 @@ try {
   const examples = { minimum: recipeInterface(minimum, fixture.minimum_case, catalogs), maximum: recipeInterface(maximum, fixture.catalog_max_case, catalogs) };
   const result = { schema_version: 1, status: 'structural-interconnect-research', factory_validated: false,
     census: catalogCensus, examples, timing_ms: { census: censusMs, geometry_and_checker: performance.now() - geometryStart },
-    provenance: { inputs, node_version: process.version, source_sha256: Object.fromEntries(['census.mjs', 'rates.mjs', 'geometry.mjs', 'fixture.mjs', 'run.mjs'].map(name =>
+    provenance: { inputs, node_version: process.version, source_sha256: Object.fromEntries(['census.mjs', 'rates.mjs', 'geometry.mjs', 'tracks.mjs', 'fixture.mjs', 'run.mjs'].map(name =>
       [name, createHash('sha256').update(fs.readFileSync(new URL(name, import.meta.url))).digest('hex')])) } };
   fs.writeFileSync(outputs[0], JSON.stringify(result, null, 2) + '\n', { flag: 'wx' });
   fs.writeFileSync(outputs[1], render(result), { flag: 'wx' });

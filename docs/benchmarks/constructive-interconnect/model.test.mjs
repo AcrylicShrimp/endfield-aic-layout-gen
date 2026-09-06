@@ -21,31 +21,31 @@ test('every distinct-item permutation through six lanes passes independent cell 
       assert.deepEqual(g.lanes.map(l => l.rate), lanes.map(l => l.rate));
       const inversions = target.reduce((s, t, i) => s + target.slice(i + 1).filter(u => Number(u) < Number(t)).length, 0);
       assert.equal(g.modules.length, inversions); checked++;
-      assert.ok(g.width <= Math.max(1, inversions) * 6);
-      const scheduled = g.schedule.stages.flatMap((ss, stage) => ss.map(s => ({ ...s, stage }))).sort((a, b) => a.ordinal - b.ordinal);
-      const depth = [];
-      for (let i = 0; i < scheduled.length; i++) {
-        const predecessors = scheduled.slice(0, i).map((s, j) => Math.abs(s.upper - scheduled[i].upper) <= 1 ? depth[j] : 0);
-        depth.push(1 + Math.max(0, ...predecessors));
-        assert.equal(scheduled[i].stage + 1, depth[i]);
-        assert.equal(scheduled[i].ordinal, i);
+      const expectedPairs = [];
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++)
+        if (target.indexOf(String(i)) > target.indexOf(String(j))) expectedPairs.push(JSON.stringify([String(i), String(j)]));
+      const actualPairs = g.modules.map(m => JSON.stringify([...m.lanes].sort((a, b) => Number(a) - Number(b))));
+      assert.deepEqual(actualPairs.sort(), expectedPairs.sort());
+      assert.ok(g.width <= Math.max(1, inversions) * 5);
+      assert.equal(g.construction.inversions, inversions);
+      for (const l of g.lanes) {
+        const a = l.cells[0], b = l.cells.at(-1);
+        assert.equal(l.cells.length - 1, Math.abs(a.x - b.x) + Math.abs(a.y - b.y));
       }
-      assert.equal(g.schedule.stage_count, Math.max(1, ...depth));
+      assert.equal(g.construction.path_cells, g.lanes.reduce((s, l) => s + l.cells.length, 0));
     }
   }
   assert.equal(checked, 873);
 });
-test('independent swaps share columns while shared-position dependencies retain their order', () => {
+test('independent exchanges share tracks and a reversal no longer needs sequential swap stages', () => {
   const lanes = Array.from({ length: 6 }, (_, i) => lane(String(i)));
   const parallel = permutationModule(lanes, ['1', '0', '3', '2', '5', '4'], catalogs);
-  assert.equal(parallel.modules.length, 3); assert.equal(parallel.width, 6);
-  assert.equal(parallel.schedule.stage_count, 1); assert.equal(parallel.certificate.valid, true);
+  assert.equal(parallel.modules.length, 3); assert.equal(parallel.width, 5);
+  assert.equal(new Set(Object.values(parallel.construction.track_columns)).size, 2); assert.equal(parallel.certificate.valid, true);
   const dependent = permutationModule(lanes.slice(0, 3), ['2', '1', '0'], catalogs);
-  assert.equal(dependent.schedule.stage_count, 3); assert.equal(dependent.width, 18);
-  for (const g of [parallel, dependent]) for (const stage of g.schedule.stages) {
-    const positions = stage.flatMap(s => [s.upper, s.upper + 1]);
-    assert.equal(new Set(positions).size, positions.length);
-  }
+  assert.equal(dependent.width, 5); assert.equal(dependent.modules.length, 3);
+  assert.equal(dependent.lanes[1].cells.length, 5); // The middle lane stays straight through two crossings.
+  assert.equal(Object.hasOwn(dependent, 'schedule'), false);
 });
 test('stable same-commodity lanes reorder across other items without self-crossing', () => {
   const a = beltItems[0].id, b = beltItems[1].id;
@@ -53,6 +53,43 @@ test('stable same-commodity lanes reorder across other items without self-crossi
   const g = permutationModule(lanes, ['0', '2', '1', '3'], catalogs);
   assert.equal(g.modules.length, 1);
   assert.throws(() => permutationModule(lanes, ['1', '0', '2', '3'], catalogs), e => e.code === 'interconnect-same-item-order');
+});
+
+test('one exchange has two Manhattan-shortest paths and no return pocket', () => {
+  const g = permutationModule([lane('0'), lane('1')], ['1', '0'], catalogs);
+  assert.equal(g.width, 5); assert.equal(g.height, 4); assert.equal(g.certificate.physical_tiles, 15);
+  assert.deepEqual(g.components[0].position, { x: 2, y: 2 });
+  for (const l of g.lanes) {
+    const a = l.cells[0], b = l.cells.at(-1);
+    assert.equal(l.cells.length - 1, Math.abs(a.x - b.x) + Math.abs(a.y - b.y));
+    for (let i = 1; i < l.cells.length; i++) {
+      assert.ok(l.cells[i].x >= l.cells[i - 1].x);
+      assert.ok((l.cells[i].y - l.cells[i - 1].y) * Math.sign(b.y - a.y) >= 0);
+    }
+  }
+});
+
+test('monotone bridge poses honor directional catalog arms instead of assuming rotation zero', () => {
+  const c = structuredClone(catalogs), bridge = c.components.components.find(c => c.transport === 'belt' && c.kind === 'bridge');
+  bridge.input_directions = ['north', 'west']; bridge.output_directions = ['south', 'east']; bridge.allowed_rotations = [270];
+  const g = permutationModule([lane('0'), lane('1')], ['1', '0'], c);
+  assert.equal(g.components[0].rotation, 270); assert.equal(checkGeometry(g, c).valid, true);
+  bridge.allowed_rotations = [0];
+  assert.throws(() => permutationModule([lane('0'), lane('1')], ['1', '0'], c), { code: 'interconnect-no-bridge' });
+});
+
+test('larger deterministic permutations preserve shortest lanes and one crossing per inversion', () => {
+  let state = 17;
+  const random = () => { state = (Math.imul(state, 1664525) + 1013904223) >>> 0; return state; };
+  for (const n of [8, 12, 24, 32]) for (let trial = 0; trial < 4; trial++) {
+    const lanes = Array.from({ length: n }, (_, i) => lane(String(i))), target = lanes.map(l => l.id);
+    for (let i = n - 1; i > 0; i--) { const j = random() % (i + 1); [target[i], target[j]] = [target[j], target[i]]; }
+    const g = permutationModule(lanes, target, catalogs);
+    assert.equal(checkGeometry(g, catalogs).valid, true); assert.ok(g.width <= n + 3);
+    const inverted = target.reduce((s, t, i) => s + target.slice(i + 1).filter(u => Number(u) < Number(t)).length, 0);
+    assert.equal(g.modules.length, inverted);
+    for (const l of g.lanes) assert.equal(l.cells.length - 1, g.width - 1 + 3 * Math.abs(Number(l.id) - target.indexOf(l.id)));
+  }
 });
 test('all binary commodity words through six lanes respect stable item order', () => {
   for (let n = 2; n <= 6; n++) for (let count = 1; count < n; count++) {
@@ -84,9 +121,9 @@ test('catalog and geometry mutations are independently rejected', () => {
   const lower = structuredClone(catalogs);
   lower.components.components.find(c => c.transport === 'belt' && c.kind === 'bridge').capacity.duration_ms *= 2;
   assert.equal(checkGeometry(g, lower).valid, false);
-  assert.throws(() => permutationModule([lane('0'), lane('1')], ['1', '0'], catalogs, 0), e => e.code === 'interconnect-swap-budget');
-  const wide = Array.from({ length: 31 }, (_, i) => lane(String(i)));
-  assert.throws(() => permutationModule(wide, wide.map(l => l.id).reverse(), catalogs), e => e.code === 'interconnect-cell-budget');
+  assert.throws(() => permutationModule([lane('0'), lane('1')], ['1', '0'], catalogs, 0), e => e.code === 'interconnect-crossing-budget');
+  const wide = Array.from({ length: 400 }, (_, i) => lane(String(i), beltItems[i < 200 ? 0 : 1].id));
+  assert.throws(() => permutationModule(wide, [...wide.slice(200), ...wide.slice(0, 200)].map(l => l.id), catalogs, 100000), e => e.code === 'interconnect-cell-budget');
 });
 test('pipe geometry uses the pipe catalog and mixed layers are rejected', () => {
   const items = catalogs.items.items.filter(i => i.transport === 'pipe').slice(0, 2);
