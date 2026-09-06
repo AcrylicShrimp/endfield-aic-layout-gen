@@ -48,6 +48,15 @@ test('fourteen-facility closure consumes the shared output once and is independe
   assert.equal(d.composition_plan.inversions, 0);
 });
 
+test('explicit normalized region placements are retained while frontier routing stays shared', () => {
+  const targets = [id('F28'), id('F29')], source = inputs(targets), control = composeBlocks(catalogs, graph, source, targets);
+  const offsets = control.composition_plan.regions;
+  const d = composeBlocks(catalogs, graph, source, targets, { regionOffsets: offsets });
+  assert.deepEqual(d.witness, control.witness);
+  assert.equal(d.composition_plan.region_placement, 'explicit-occupied-packing');
+  assert.throws(() => composeBlocks(catalogs, graph, source, targets, { regionOffsets: offsets.map(o => ({ ...o, x: o.x + 1 })) }), { code: 'composition-offset-origin' });
+});
+
 test('unready inputs, duplicate ownership and mismatched retained transport cannot be hidden', () => {
   const source = inputs([id('F28')]);
   assert.throws(() => composeBlocks(catalogs, graph, source, [id('F29')]), { code: 'composition-frontier-not-ready' });

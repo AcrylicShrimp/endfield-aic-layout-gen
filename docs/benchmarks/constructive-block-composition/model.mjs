@@ -88,7 +88,7 @@ export function readyConsumers(graph, members, catalogs) {
       .every(a => catalogs.items.items.find(i => i.id === a.item)?.transport === 'belt')).map(n => n.id);
 }
 
-export function composeBlocks(catalogs, graph, regions, targetIds, { orderBudget = 128, lanePolicy = 'source' } = {}) {
+export function composeBlocks(catalogs, graph, regions, targetIds, { orderBudget = 128, lanePolicy = 'source', regionOffsets = null } = {}) {
   if (!['packed', 'source', 'portfolio'].includes(lanePolicy)) fail('composition-lane-policy', 'Expected packed, source or portfolio lane rows', lanePolicy);
   const start = performance.now(), members = new Set(regions.flatMap(r => r.detail.witness.placements.map(p => p.instance)));
   if (!regions.length || new Set(regions.map(r => r.id)).size !== regions.length || !targetIds.length || new Set(targetIds).size !== targetIds.length ||
@@ -97,11 +97,17 @@ export function composeBlocks(catalogs, graph, regions, targetIds, { orderBudget
   const incoming = graph.edges.filter(e => targetIds.includes(e.target));
   const producerIds = [...new Set(incoming.map(e => e.source))], items = [...new Set(incoming.map(e => e.item))].sort();
   const cap = capacity(catalogs.transports.transports.find(t => t.kind === 'belt').capacity);
+  const fixed = regionOffsets === null ? null : placeRegions(regions, regionOffsets, catalogs);
+  if (fixed) {
+    const b = bounds(fixed.witness);
+    if (b.x !== 0 || b.y !== 0) fail('composition-offset-origin', 'Explicit packing must normalize used geometry to zero');
+    fixed.width = b.width;
+  }
   const stackCache = new Map(), cacheMetrics = { hits: 0, builds: 0 }, profile = { stack_ms: 0, node_setup_ms: 0, allocation_ms: 0 };
   const evaluate = (order, targetOrder) => {
-    const stackStart = performance.now(), cacheKey = JSON.stringify(order);
+    const stackStart = performance.now(), cacheKey = fixed ? 'explicit-packing' : JSON.stringify(order);
     if (!stackCache.has(cacheKey)) {
-      stackCache.set(cacheKey, stack(regions, order, catalogs)); cacheMetrics.builds++;
+      stackCache.set(cacheKey, fixed ?? stack(regions, order, catalogs)); cacheMetrics.builds++;
       if (stackCache.size > 8) stackCache.delete(stackCache.keys().next().value);
     } else cacheMetrics.hits++;
     profile.stack_ms += performance.now() - stackStart;
@@ -135,7 +141,7 @@ export function composeBlocks(catalogs, graph, regions, targetIds, { orderBudget
   const better = (a, b) => { const x = score(a), y = score(b); for (let i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] < y[i]; return false; };
   while (trials < orderBudget) {
     let next = best;
-    for (const bank of ['order', 'targetOrder']) for (let i = 0; i < best[bank].length; i++) for (let j = 0; j < best[bank].length; j++) {
+    for (const bank of fixed ? ['targetOrder'] : ['order', 'targetOrder']) for (let i = 0; i < best[bank].length; i++) for (let j = 0; j < best[bank].length; j++) {
       if (i === j || trials >= orderBudget) continue;
       const order = [...best[bank]], [id] = order.splice(i, 1); order.splice(j, 0, id);
       const candidate = evaluate(bank === 'order' ? order : best.order, bank === 'targetOrder' ? order : best.targetOrder); trials++;
@@ -210,7 +216,8 @@ export function composeBlocks(catalogs, graph, regions, targetIds, { orderBudget
     permutation: geometry.permutation, permutation_origin: geometry.permutationOrigin, permutation_transform: geometry.permutationTransform,
     composition_plan: { regions: base.translations, frontier: targetIds, consumed_edges: incoming, bindings: plan.lanes, order_trials: trials,
       order_budget: orderBudget, order_budget_exhausted: trials >= orderBudget, source_order: prepared.order, consumer_order: prepared.targetOrder, inversions: plan.inversions,
-      lane_policy: policy, lane_rows: policy === 'source' ? laneRows : null, stack_cache: cacheMetrics },
+      lane_policy: policy, lane_rows: policy === 'source' ? laneRows : null, stack_cache: cacheMetrics,
+      region_placement: fixed ? 'explicit-occupied-packing' : 'rectangular-stack' },
     timings: { ...profile, order_ms: orderMs, port_placement_ms: interfaceStart - finishStart, interface_ms: loweringStart - interfaceStart,
       lowering_ms: performance.now() - loweringStart, embedding_lowering_ms: performance.now() - finishStart }, construction_ms: performance.now() - finishStart };
   };

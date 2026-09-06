@@ -8,6 +8,7 @@ import { compactInterface, witnessScore } from '../constructive-auto-interface/c
 import { inspectCoverage, better } from '../constructive-factory-closure/model.mjs';
 import { discoverClusters, packingCandidates } from './model.mjs';
 import { nestingCandidates } from './nesting.mjs';
+import { packShapes, diverse, fillMetrics, growthCut } from '../constructive-shape-packing/model.mjs';
 import { render } from '../constructive-bound-interconnect/view.mjs';
 const read = p => JSON.parse(fs.readFileSync(p)), hash = p => createHash('sha256').update(fs.readFileSync(p)).digest('hex');
 const write = (p, v) => fs.writeFileSync(p, JSON.stringify(v, null, 2) + '\n', { flag: 'wx' });
@@ -23,7 +24,7 @@ try {
   const keys = ['graph', 'blocks', 'incumbent', 'recipes', 'facilities', 'items', 'transports', 'components', 'validator', 'output-directory'], options = {}, args = process.argv.slice(2);
   for (let i = 0; i < args.length; i += 2) {
     const k = args[i].slice(2);
-    if (!args[i].startsWith('--') || ![...keys, 'packing-family', 'nesting-limit', 'nesting-screen', 'refine-from', 'refine-radius', 'placement-family'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
+    if (!args[i].startsWith('--') || ![...keys, 'packing-family', 'nesting-limit', 'nesting-screen', 'refine-from', 'refine-radius', 'placement-family', 'source-shapes', 'shape-limit', 'shape-beam', 'growth-fill'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
     options[k] = args[i + 1];
   }
   for (const k of keys) if (!options[k]) throw new Error(`Missing --${k}`);
@@ -31,6 +32,11 @@ try {
   if (!['shelf', 'nesting'].includes(packingFamily)) throw new Error('Expected --packing-family shelf or nesting');
   const placementFamily = options['placement-family'] ?? 'forward';
   if (!['forward', 'two-sided'].includes(placementFamily)) throw new Error('Expected --placement-family forward or two-sided');
+  const shapeLimit = Number(options['shape-limit'] ?? 12), shapeBeam = Number(options['shape-beam'] ?? 8);
+  if (![shapeLimit, shapeBeam].every(n => Number.isSafeInteger(n) && n >= 1 && n <= 32) ||
+      ((options['shape-limit'] || options['shape-beam']) && !options['source-shapes'])) throw new Error('Shape limits require --source-shapes and values 1..32');
+  const growthFill = Number(options['growth-fill'] ?? 0);
+  if (!Number.isFinite(growthFill) || growthFill < 0 || growthFill > 1) throw new Error('Expected --growth-fill in 0..1');
   const nestingLimit = Number(options['nesting-limit'] ?? (options['refine-from'] ? 32 : 12)), nestingScreen = options['nesting-screen'] ?? 'space';
   if (!Number.isSafeInteger(nestingLimit) || nestingLimit < 1 || nestingLimit > 32) throw new Error('Expected --nesting-limit 1..32');
   if (!['ports', 'space'].includes(nestingScreen)) throw new Error('Expected --nesting-screen ports or space');
@@ -56,21 +62,68 @@ try {
   const incumbent = await validate(read(path.join(baseline.selected_directory, 'detail.json')), path.join(output, 'incumbent'), true);
   if (!incumbent.factory_validated) throw new Error('Complete incumbent failed independent current-catalog validation'); publish(incumbent);
   const sources = blocks.selected.map(b => ({ id: b.block, detail: read(path.join(b.directory, 'detail.json')) }));
+  const banks = [], shapeChecks = [];
+  if (options['source-shapes']) {
+    const shapeReport = read(options['source-shapes']);
+    for (const s of blocks.selected) {
+      const retained = read(path.join(s.directory, 'detail.json')), seen = new Set(), alternatives = [];
+      for (const c of [s, ...shapeReport.candidates.filter(c => c.block === s.block && c.accepted)]) {
+        if (seen.has(c.witness_sha256)) continue; seen.add(c.witness_sha256);
+        const detail = c.directory === s.directory ? retained : read(path.join(c.directory, 'detail.json'));
+        // Hold logical allocation fixed while varying physical shape in this control.
+        if (JSON.stringify(detail.reallocation ?? null) !== JSON.stringify(retained.reallocation ?? null)) continue;
+        const score = witnessScore(detail.witness);
+        alternatives.push({ directory: c.directory, detail, ...score, tiles: score.physical_tiles, signature: c.directory });
+      }
+      const portfolio = diverse(alternatives, shapeLimit), variants = [];
+      for (let i = 0; i < portfolio.length; i++) {
+        const p = portfolio[i], checked = await validate(p.detail, path.join(output, `shape-${s.block}-${i}`));
+        shapeChecks.push({ region: s.block, source_directory: p.directory, ...fillMetrics(p.detail.witness), ...((({ detail, ...r }) => r)(checked)) });
+        if (checked.accepted) variants.push({ directory: p.directory, detail: p.detail });
+      }
+      if (!variants.length) throw new Error(`No currently valid source shape for ${s.block}`);
+      banks.push({ id: s.block, variants });
+    }
+  }
   const inventory = discoverClusters(graph, sources, catalogs), clusters = [], clusterReports = [];
   for (const c of inventory) {
-    let regions = c.regions, targets = c.frontier; const stages = [];
+    let regions = c.regions, targets = c.frontier; const stages = [], growthDecisions = []; let fillStopped = false;
     while (targets.length && stages.length < 32) {
-      const generated = composeBlocks(catalogs, graph, regions, targets, { lanePolicy: 'portfolio' }), candidates = [...generated.candidates];
+      const generated = composeBlocks(catalogs, graph, regions, targets, { lanePolicy: 'portfolio' });
+      let shapeSearch = null;
+      if (banks.length && stages.length === 0 && regions.length > 1) {
+        const packed = packShapes(graph, banks.filter(b => regions.some(r => r.id === b.id)), catalogs, { beamWidth: shapeBeam, limit: shapeBeam });
+        shapeSearch = packed.search;
+        for (const p of packed.candidates) {
+          try {
+            const g = composeBlocks(catalogs, graph, p.regions, targets, { lanePolicy: 'portfolio', regionOffsets: p.offsets });
+            generated.candidates.push(...g.candidates.map(d => ({ ...d, source_shape_plan: p.plan })));
+            generated.failures.push(...g.failures); generated.construction_ms += g.construction_ms;
+          } catch (e) {
+            if (!e.code) throw e;
+            generated.failures.push({ code: e.code, stage: e.stage, message: e.message, entity: e.entity, source_shape_plan: p.plan });
+          }
+        }
+      }
+      const candidates = [...generated.candidates];
       candidates.push(...generated.candidates.map(d => compactInterface(d, catalogs)));
       const checked = await Promise.all(candidates.map((d, i) => validate(d, path.join(output, `${c.id}-stage-${stages.length}-${i}`))));
       const valid = checked.filter(r => r.accepted).sort((a, b) => better(a.score.tuple, b.score.tuple) ? -1 : better(b.score.tuple, a.score.tuple) ? 1 : 0);
-      stages.push({ frontier: targets, construction_ms: generated.construction_ms, failures: generated.failures, candidates: checked.map(({ detail, ...r }) => r), selected_directory: valid[0]?.directory });
       if (!valid.length) throw new Error(`No valid structured interface for ${c.id}`);
-      const selected = valid[0]; publish(selected); regions = [{ id: c.id, detail: selected.detail }];
+      const selected = valid[0]; publish(selected);
+      const stage = { frontier: targets, construction_ms: generated.construction_ms, shape_search: shapeSearch, failures: generated.failures,
+        candidates: checked.map(({ detail, ...r }) => ({ ...r, fill: fillMetrics(detail.witness), source_shape_plan: detail.source_shape_plan ?? null })), selected_directory: selected.directory };
+      const cut = growthCut(stages.length ? regions[0].detail.witness : null, selected.detail.witness, growthFill);
+      if (cut) {
+        growthDecisions.push({ ...cut, rejected_growth: stage });
+        fillStopped = true; break;
+      }
+      stages.push(stage); regions = [{ id: c.id, detail: selected.detail }];
       targets = readyConsumers(graph, selected.detail.witness.placements.map(p => p.instance), catalogs);
     }
-    if (targets.length || regions.length !== 1) throw new Error(`Cluster growth did not close for ${c.id}`);
-    clusters.push(regions[0]); clusterReports.push({ id: c.id, sources: c.regions.map(r => r.id), members: regions[0].detail.witness.placements.map(p => p.instance), stages });
+    if ((!fillStopped && targets.length) || regions.length !== 1) throw new Error(`Cluster growth did not close for ${c.id}`);
+    clusters.push(regions[0]); clusterReports.push({ id: c.id, sources: c.regions.map(r => r.id), members: regions[0].detail.witness.placements.map(p => p.instance),
+      stages, growth_decisions: growthDecisions, deferred_frontier: fillStopped ? targets : [] });
   }
   let neighborhood = null;
   if (options['refine-from']) {
@@ -120,10 +173,10 @@ try {
   const selectedDirectory = improved[0]?.complete_directory ?? incumbent.directory, score = improved[0]?.complete_score ?? incumbent.score;
   const report = { schema_version: 1, status: improved.length ? 'complete-factory-improved' : 'complete-incumbent-retained', factory_validated: true,
     selected_directory: selectedDirectory, score, incumbent_score: incumbent.score, packing_family: packingFamily, placement_family: placementFamily, elapsed_ms: performance.now() - start, packing_construction_ms: packMs,
-    clusters: clusterReports, packings: packReports.map(({ detail, ...r }) => r),
-    provenance: [...keys.filter(k => k !== 'output-directory'), ...(options['refine-from'] ? ['refine-from'] : [])].map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
+    clusters: clusterReports, growth_fill: growthFill, source_shapes: { enabled: Boolean(options['source-shapes']), shape_limit: shapeLimit, beam_width: shapeBeam, checks: shapeChecks }, packings: packReports.map(({ detail, ...r }) => r),
+    provenance: [...keys.filter(k => k !== 'output-directory'), ...['refine-from', 'source-shapes'].filter(k => options[k])].map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
     source_hashes: Object.fromEntries(['run.mjs', 'model.mjs', 'nesting.mjs', 'pockets.mjs', '../constructive-block-composition/model.mjs', '../constructive-factory-closure/model.mjs', '../constructive-factory-closure/run.mjs',
-      '../constructive-interconnect/geometry.mjs', '../constructive-auto-interface/embedding.mjs', '../constructive-auto-interface/model.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
+      '../constructive-interconnect/geometry.mjs', '../constructive-auto-interface/embedding.mjs', '../constructive-auto-interface/model.mjs', '../constructive-shape-packing/model.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), report); fs.copyFileSync(path.join(selectedDirectory, 'index.html'), path.join(output, 'index.html'), fs.constants.COPYFILE_EXCL);
   console.log(JSON.stringify({ status: report.status, clusters: clusters.length, packings: packed.length, score: score.tuple, output }));
 } catch (e) {
