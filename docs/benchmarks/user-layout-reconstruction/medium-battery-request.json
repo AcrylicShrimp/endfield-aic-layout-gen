@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "target": { "item": "item-proc-battery-2", "quantity": 1, "duration_ms": 10000 },
+  "source_selections": [
+    {
+      "path": "/target/recipe:tools-proc-battery-2-1/input:item-iron-cmpt/recipe:component-iron-cmpt-1/input:item-iron-nugget",
+      "source": { "kind": "recipe", "recipe": "furnance-iron-nugget-1" }
+    }
+  ]
+}
