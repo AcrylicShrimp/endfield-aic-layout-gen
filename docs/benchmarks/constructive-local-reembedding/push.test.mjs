@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { closeGeometry, pushCandidates } from './push.mjs';
+import { closeGeometry, pushCandidates, boundaryCohorts } from './push.mjs';
 const body = (instance, x, y) => ({ instance, x, y, width: 1, height: 1 });
 const terminal = (id, instance, x, y, direction = 'output') => ({ id, position: { x, y }, direction,
   endpoint: instance === null ? { kind: 'external', node: id } : { kind: 'facility', instance, port: id }, rate: { numerator: 1, denominator: 1 } });
@@ -47,6 +47,18 @@ test('closure rejects invalid seeds and budgets explicitly', () => {
   const w = witness([body('a', 0, 0)]);
   for (const [ids, dx, dy, options] of [[[], 1, 0, {}], [['absent'], 1, 0, {}], [['a', 'a'], 1, 0, {}], [['a'], 0, 0, {}], [['a'], 0.5, 0, {}], [['a'], 1, 0, { maxMembers: 17 }]])
     assert.throws(() => closeGeometry(w, ids, dx, dy, options), { code: 'push-invalid-input' });
+});
+
+test('boundary cohorts derive separated support bodies from actual extents and diagnose oversized seeds', () => {
+  const w = witness([body('a', 10, 20), { ...body('b', 13, 19), height: 2 }, body('c', 16, 18), body('d', 12, 10)]), before = structuredClone(w);
+  const r = boundaryCohorts(w);
+  assert.ok(r.seeds.some(g => g.boundary.side === 'maxY' && g.boundary.band === 1 && g.instances.join(',') === 'a,b'));
+  assert.ok(r.seeds.some(g => g.boundary.side === 'maxY' && g.boundary.band === 3 && g.instances.join(',') === 'a,b,c'));
+  assert.equal(new Set(r.seeds.map(g => JSON.stringify(g.instances))).size, r.seeds.length);
+  const limited = boundaryCohorts(w, { maxMembers: 1 });
+  assert.ok(limited.diagnostics.some(d => d.code === 'push-boundary-seed-budget')); assert.ok(limited.seeds.every(g => g.instances.length === 1));
+  assert.deepEqual(w, before); assert.deepEqual(boundaryCohorts(w), r);
+  assert.throws(() => boundaryCohorts(w, { bandLimit: 0 }), { code: 'push-invalid-input' });
 });
 
 test('push portfolio charges poses and exposes deterministic bounded proposed geometry', () => {

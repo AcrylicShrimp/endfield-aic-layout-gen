@@ -55,26 +55,44 @@ export function closeGeometry(w, seedIds, dx, dy, { maxMembers = 16 } = {}) {
   return { status: failure ? 'rejected' : 'closed', instances: [...selected].sort(), additions, rounds, ...(failure ? { diagnostic: failure } : {}) };
 }
 
-export function pushCandidates(detail, graph, catalogs, { limit = 128, poseBudget = 4096, maxMembers = 16, junctionPolicy = 'downstream' } = {}) {
+export function boundaryCohorts(w, { maxMembers = 16, bandLimit = 4 } = {}) {
+  if (!Number.isSafeInteger(maxMembers) || maxMembers < 1 || maxMembers > 16 || !Number.isSafeInteger(bandLimit) || bandLimit < 1 || bandLimit > 16)
+    throw Object.assign(new Error('Expected cohort member and band budgets 1..16'), diagnostic('push-invalid-input', 'Invalid boundary seed budgets', null));
+  const seeds = new Map(), diagnostics = [];
+  if (!w.placements.length) return { seeds: [], diagnostics };
+  const b = box(w.placements);
+  for (const side of ['minX', 'maxX', 'minY', 'maxY']) for (let band = 1; band <= bandLimit; band++) {
+    const instances = w.placements.filter(p => side === 'minX' ? p.x <= b.minX + band - 1 : side === 'maxX' ? p.x + p.width - 1 >= b.maxX - band + 1 :
+      side === 'minY' ? p.y <= b.minY + band - 1 : p.y + p.height - 1 >= b.maxY - band + 1).map(p => p.instance).sort();
+    const signature = JSON.stringify(instances); if (seeds.has(signature)) continue;
+    if (instances.length > maxMembers) { diagnostics.push(diagnostic('push-boundary-seed-budget', 'Envelope support cohort exceeds the member budget', { side, band, members: instances.length, maxMembers })); continue; }
+    seeds.set(signature, { instances, kind: 'boundary', boundary: { side, band } });
+  }
+  return { seeds: [...seeds.values()], diagnostics };
+}
+
+export function pushCandidates(detail, graph, catalogs, { limit = 128, poseBudget = 4096, maxMembers = 16, junctionPolicy = 'downstream', seedPolicy = 'contact' } = {}) {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 512 || !Number.isSafeInteger(poseBudget) || poseBudget < 1 || poseBudget > 65536 ||
-    !Number.isSafeInteger(maxMembers) || maxMembers < 1 || maxMembers > 16 || !['internal', 'downstream'].includes(junctionPolicy))
+    !Number.isSafeInteger(maxMembers) || maxMembers < 1 || maxMembers > 16 || !['internal', 'downstream'].includes(junctionPolicy) || !['contact', 'boundary'].includes(seedPolicy))
     throw Object.assign(new Error('Invalid geometric-push candidate, pose, member or junction budget'), diagnostic('push-invalid-input', 'Invalid proposal budgets', null));
   const w = detail.witness, bounds = extentOf(w), voids = emptyRectangles(w), topology = bridgeTopologyView(w, catalogs), indexed = extractChains(topology.witness, topology.released).chains;
-  const seeds = new Map();
+  const seeds = new Map(), boundary = seedPolicy === 'boundary' ? boundaryCohorts(w, { maxMembers }) : { seeds: [], diagnostics: [] };
   for (const g of [...w.placements.map(p => ({ instances: [p.instance] })), ...connectedGroups(graph, catalogs)]) {
-    const instances = [...g.instances].sort(); if (instances.length <= maxMembers) seeds.set(JSON.stringify(instances), instances);
+    const instances = [...g.instances].sort(); if (instances.length <= maxMembers) seeds.set(JSON.stringify(instances), { instances, kind: 'contact' });
   }
-  function* poses(instances) {
+  for (const g of boundary.seeds) if (!seeds.has(JSON.stringify(g.instances))) seeds.set(JSON.stringify(g.instances), g);
+  function* poses({ instances, kind, boundary }) {
     const b = box(w.placements.filter(p => instances.includes(p.instance))), seen = new Set();
     function* cardinal() { for (let step = 1; step <= 8; step++) for (const [x, y] of directions) yield { dx: x * step, dy: y * step }; }
     function* aligned() {
       for (const r of voids) if (b.maxX - b.minX + 1 <= r.width && b.maxY - b.minY + 1 <= r.height)
         for (const x of [r.x, r.x + r.width - (b.maxX - b.minX + 1)]) for (const y of [r.y, r.y + r.height - (b.maxY - b.minY + 1)]) yield { dx: x - b.minX, dy: y - b.minY };
     }
-    for (const { value: shift } of interleave([cardinal(), aligned()])) { const k = JSON.stringify(shift); if (!shift.dx && !shift.dy || seen.has(k)) continue; seen.add(k); yield { instances, ...shift }; }
+    for (const { value: shift } of interleave([cardinal(), aligned()])) { const k = JSON.stringify(shift); if (!shift.dx && !shift.dy || seen.has(k)) continue; seen.add(k); yield { instances, seed_kind: kind, boundary, ...shift }; }
   }
   const stream = interleave([...seeds.values()].map(poses)), seen = new Set(), proposals = [], rejected = {}, diagnostics = [];
   const record = d => { rejected[d.code] = (rejected[d.code] ?? 0) + 1; if (diagnostics.length < 64) diagnostics.push(d); };
+  boundary.diagnostics.forEach(record);
   let examined = 0, closed = 0, grown = 0, exhausted = false;
   while (examined < poseBudget) {
     const next = stream.next(); if (next.done) { exhausted = true; break; } examined++;
@@ -95,12 +113,14 @@ export function pushCandidates(detail, graph, catalogs, { limit = 128, poseBudge
       const points = [...plan.fixedChains.values()].flat().concat(w.transport_networks.flatMap(n => n.terminals.map(t => plan.shiftTerminal(t))));
       if (points.some(q => q.x < bounds.minX || q.x > bounds.maxX || q.y < bounds.minY || q.y > bounds.maxY)) { record(diagnostic('push-bounds', 'Carried geometry leaves the retained extent', seed)); continue; }
       const delta = local.chains.reduce((s, c) => s + distance(plan.shiftEndpoint(c, false), plan.shiftEndpoint(c, true)) - distance(c.cells[0], c.cells.at(-1)), 0);
-      proposals.push({ moves: [move], seed, closure, releaseBridges, body_envelope_area: (b.maxX - b.minX + 1) * (b.maxY - b.minY + 1), endpoint_delta: delta, kind: 'geometric-push' });
+      proposals.push({ moves: [move], seed, seed_instances: p.instances, seed_kind: p.seed_kind, boundary: p.boundary, closure, releaseBridges,
+        body_envelope_area: (b.maxX - b.minX + 1) * (b.maxY - b.minY + 1), endpoint_delta: delta, kind: 'geometric-push' });
     } catch (e) { if (!e.code) throw e; record({ code: e.code, severity: e.severity, stage: e.stage, message: e.message, entity: e.entity }); }
   }
   proposals.sort((a, b) => a.body_envelope_area - b.body_envelope_area || a.endpoint_delta - b.endpoint_delta || a.seed - b.seed);
   const counts = new Map(); for (const p of proposals) { p.rank = counts.get(p.seed) ?? 0; counts.set(p.seed, p.rank + 1); }
-  return { groups: seeds.size, voids, poses_examined: examined, pose_budget: poseBudget, pose_budget_exhausted: !exhausted, member_budget: maxMembers,
+  return { groups: seeds.size, seed_policy: seedPolicy, boundary_seeds: [...seeds.values()].filter(g => g.kind === 'boundary').length,
+    voids, poses_examined: examined, pose_budget: poseBudget, pose_budget_exhausted: !exhausted, member_budget: maxMembers,
     closures: closed, grown_closures: grown, rejected, diagnostics, diagnostics_truncated: Object.values(rejected).reduce((a, b) => a + b, 0) > diagnostics.length,
     feasible_positions: proposals.length, candidates: proposals.sort((a, b) => a.rank - b.rank || a.body_envelope_area - b.body_envelope_area || a.endpoint_delta - b.endpoint_delta || a.seed - b.seed).slice(0, limit) };
 }

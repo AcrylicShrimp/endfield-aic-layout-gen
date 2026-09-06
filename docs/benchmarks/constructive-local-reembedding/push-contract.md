@@ -61,3 +61,21 @@ membership exhaustion, invalid IDs/translations and immutability. Verify determi
 pose budgets and output bounds. Compare the operator against existing group families
 on the same complete incumbent; inspect native full and focused results, and validate
 original graph margins and crossing controls before selecting any improvement.
+
+## Envelope-support seed experiment
+
+`--push-seeds contact|boundary` selects the contact-only control (default) or adds
+facility-envelope support cohorts. This flag is valid only for push mode. For each
+of the four body-envelope sides, collect facilities reaching within one through four
+cells of that side. Deduplicate identical membership sets, skip oversized seeds with
+an explicit `push-boundary-seed-budget` diagnostic, and subject every remaining cohort
+to the same closure, routing, release and full-factory validation gates. The four-cell
+band is a proposal budget, not a canonical gap or a game-rule pruning premise.
+
+`boundaryCohorts(witness, {maxMembers, bandLimit})` returns seeds (instances, side and
+band) and oversized-cohort diagnostics. Tests use non-origin and unequal-size bodies;
+the helper reads actual geometry and never labels recipes/facilities specially. It
+does not include or move external terminals just because they define the used bounds.
+Body-envelope support is only a seed heuristic; actual factory dimensions still include
+all transport and logistics geometry. Reports retain original seed IDs/kind so a
+boundary-cohort success can be distinguished from ordinary contact-push motion.
