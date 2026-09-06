@@ -8,6 +8,7 @@ import { releaseBridgeDraft } from './components.mjs';
 import { shortestPath, key } from './path.mjs';
 import { minimumTerminalReleasePath, terminalAccessObstacles } from './terminal-access.mjs';
 import { render } from '../constructive-bound-interconnect/view.mjs';
+import { planFacilityRotations } from './facility-rotation.mjs';
 const read = p => JSON.parse(fs.readFileSync(p));
 const hash = p => createHash('sha256').update(fs.readFileSync(p)).digest('hex');
 const write = (p, v) => fs.writeFileSync(p, JSON.stringify(v, null, 2) + '\n', { flag: 'wx' });
@@ -21,7 +22,7 @@ try {
   if (keys.some(k => !(k in options))) throw new Error('Expected --report PATH --stage INDEX --catalog-directory PATH --output-directory NEW_PATH');
   const report = read(options.report), index = Number(options.stage), trial = report.stages[index];
   if (report.chain_schema_version !== 2) throw new Error('Historical chain IDs require the recorded implementation; expected chain schema 2');
-  if (!Number.isSafeInteger(index) || index < 0 || !trial?.request?.moves?.length || trial.status !== 'rejected') throw new Error(`Expected a rejected schema-3 relocation at stage ${options.stage} of ${options.report}; schema-2 reports require explicit migration or their recorded commit`);
+  if (!Number.isSafeInteger(index) || index < 0 || !trial?.request?.moves?.length || trial.status !== 'rejected') throw new Error(`Expected a rejected multi-primitive relocation at stage ${options.stage} of ${options.report}; old single-move reports require explicit migration or their recorded commit`);
   const maxNewCrossings = Number(options['max-new-crossings'] ?? 0);
   if (!Number.isSafeInteger(maxNewCrossings) || maxNewCrossings < 0 || maxNewCrossings > 8) throw new Error('Expected --max-new-crossings 0..8');
   const portPolicy = options['port-policy'] ?? 'retained';
@@ -56,11 +57,12 @@ try {
   if (portPolicy === 'paired') for (const portAssignments of boundaryPortSwaps(parent.witness, chains, trial.request.moves).slice(0, 4))
     for (const order of ['near', 'far']) attempt('paired-ports', { ...trial.request, chainIds: [], routePriority: [], portAssignments, order });
   const failedIds = [...new Set(records.slice(0, 2).flatMap(r => (r.routes ?? []).filter(p => p.status !== 'found').map(p => p.id)))];
-  const vacant = portPolicy === 'vacant' ? vacantPortCandidates(parent.witness, chains, catalogs, trial.request.moves, { chainIds: failedIds }) : null;
+  const vacant = portPolicy === 'vacant' ? vacantPortCandidates(parent.witness, chains, catalogs, trial.request.moves, { chainIds: failedIds, facilityRotations: trial.request.facilityRotations }) : null;
   if (vacant) for (const p of vacant.candidates) for (const order of ['near', 'far'])
     attempt('vacant-ports', { ...trial.request, chainIds: [], routePriority: [], portAssignments: p.portAssignments, order });
   const rerouteChains = new Set(chains.filter(c => c.cells.some(p => released.has(`${c.transport}:${key(p)}`))).map(c => c.id));
-  const movement = movementPlan(routingWitness, chains, anchors, trial.request.moves, { junctionPolicy: trial.request.junctionPolicy, rerouteChains });
+  const facilityChanges = planFacilityRotations(routingWitness, catalogs, trial.request.moves, trial.request.facilityRotations);
+  const movement = movementPlan(routingWitness, chains, anchors, trial.request.moves, { junctionPolicy: trial.request.junctionPolicy, facilityChanges, rerouteChains });
   const body = new Set(parent.witness.placements.flatMap(p => bodyCells(movement.selected.has(p.instance) ? { ...p, ...movement.shiftFacility(p) } : p)).map(key));
   const bodyOnly = [], terminalAccess = [], bounds = extentOf(parent.witness);
   for (const id of new Set(records.filter(r => !r.request.portAssignments?.length).flatMap(r => r.routes.filter(p => p.status !== 'found').map(p => p.id)))) {
@@ -74,7 +76,7 @@ try {
   const failed = records[0].routes.find(p => p.status !== 'found');
   if (failed) {
     const c = chains[failed.id];
-    const detail = { ...parent, move_diagnostic: { moves: trial.request.moves, code: `local-no-path; chain ${failed.id}`,
+    const detail = { ...parent, move_diagnostic: { moves: trial.request.moves, facility_poses: [...facilityChanges].map(([instance, c]) => ({ instance, ...c.pose, ports: c.ports })), code: `local-no-path; chain ${failed.id}`,
       failed_endpoints: [false, true].map(end => movement.shiftEndpoint(c, end)),
       relaxed_routes: terminalAccess.filter(r => r.id === failed.id && r.status === 'found') } };
     fs.writeFileSync(path.join(output, 'index.html'), render(detail, read(path.join(trial.parent_directory, 'validation.json')), catalogs), { flag: 'wx' });
@@ -85,7 +87,7 @@ try {
     terminal_access_scope: 'Fixed retained canvas; bodies and other external terminals hard, facility terminal cells soft; wiring, components and arm constraints ignored. NOT valid routes.', priority_trials: seen.size, priority_limit: 64,
     priority_termination: queue.every(r => seen.has(JSON.stringify([r.order, r.routePriority]))) ? 'distinct-queue-exhausted' : 'trial-budget', elapsed_ms: performance.now() - started,
     provenance: [options.report, parentPath, ...Object.values(catalogPaths)].map(p => ({ path: path.resolve(p), sha256: hash(p) })),
-    source_hashes: Object.fromEntries(['priority-probe.mjs', 'model.mjs', 'movement.mjs', 'terminal-identity.mjs', 'terminal-access.mjs', 'components.mjs', 'path.mjs', 'crossing.mjs', 'ports.mjs', 'fair.mjs', '../constructive-bound-interconnect/view.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
+    source_hashes: Object.fromEntries(['priority-probe.mjs', 'model.mjs', 'movement.mjs', 'facility-rotation.mjs', 'terminal-identity.mjs', 'terminal-access.mjs', 'components.mjs', 'path.mjs', 'crossing.mjs', 'ports.mjs', 'fair.mjs', '../constructive-bound-interconnect/view.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), result);
   console.log(JSON.stringify({ status: result.status, trials: records.length, output }));
 } catch (e) { console.error(JSON.stringify({ code: 'priority-probe-failed', message: e.message })); process.exitCode = 1; }

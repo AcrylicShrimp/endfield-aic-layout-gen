@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { detachablePairs } from './terminal-identity.mjs';
 import { extractChains, reembed } from './model.mjs';
 import { movementPlan } from './movement.mjs';
+import { planFacilityRotations } from './facility-rotation.mjs';
 import { closeTerminalGroups } from './compound.mjs';
 import { rotateFacility } from '../constructive-placement-only/model.mjs';
 import { key } from './path.mjs';
@@ -80,4 +81,19 @@ test('explicit rip-up of a recognized coincident connection restores the unchang
   assert.equal(result.status, 'unchanged'); assert.equal(result.routes.length, 1);
   assert.equal(result.routes[0].status, 'found'); assert.equal(result.routes[0].steps, 0);
   assert.equal(result.routes[0].turns, 0); assert.deepEqual(d, before);
+});
+
+test('catalog rotation separates a zero-length pair by identity and restores its complete directed connection', () => {
+  const { detail: d } = fixture(), before = structuredClone(d), p = d.witness.placements[0];
+  const moves = [{ instances: ['source'], dx: 0, dy: -4 }], facilityRotations = [{ instance: 'source', rotation: (p.rotation + 90) % 360 }];
+  const changes = planFacilityRotations(d.witness, catalogs, moves, facilityRotations), { chains, anchors } = extractChains(d.witness);
+  const c = chains.find(c => c.zero_length), m = movementPlan(d.witness, chains, anchors, moves, { facilityChanges: changes });
+  assert.ok(m.separated.has(`belt:${key(c.cells[0])}`)); assert.ok(m.changed.has(c.id));
+  const result = reembed(d, catalogs, { moves, facilityRotations }); assert.equal(result.status, 'candidate');
+  const n = result.detail.witness.transport_networks[0]; assert.ok(n.segments.length > 0);
+  assert.deepEqual(n.terminals[0].position, changes.get('source').terminalPositions.get('source-terminal'));
+  assert.deepEqual(n.terminals[1], d.witness.transport_networks[0].terminals[1]);
+  assert.deepEqual(n.segments[0].from, n.terminals[0].position); assert.deepEqual(n.segments.at(-1).to, n.terminals[1].position);
+  assert.ok(n.segments.every(s => JSON.stringify(s.rate) === JSON.stringify(n.terminals[0].rate)));
+  assert.deepEqual(d, before);
 });

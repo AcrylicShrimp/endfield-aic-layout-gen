@@ -43,7 +43,7 @@ test('in-place rotation invalidates incident chains and rotates both directed en
   const pose = { id: 'junction', x: 5, y: 5, rotation: 90 }, changes = planComponentPoses(w, catalogs, [pose]);
   const m = movementPlan(w, chains, anchors, [], { componentChanges: changes });
   assert.equal(m.changed.size, chains.length); assert.equal(m.fixedChains.size, 0);
-  assert.equal(m.componentTurns.get('belt:5,5'), 1);
+  assert.equal(m.anchorTurns.get('belt:5,5'), 1);
   for (const c of chains) {
     const result = reembed(detail, catalogs, { componentPoses: [pose], routePriority: [c.id], endpointPolicy: 'terminal-flexible' });
     const first = result.routes[0]; assert.equal(first.id, c.id);

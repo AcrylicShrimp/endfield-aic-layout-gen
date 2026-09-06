@@ -9,6 +9,7 @@ import { minimumTerminalReleasePath, terminalAccessObstacles } from './terminal-
 import { key } from './path.mjs';
 import { project } from '../constructive-factory-closure/model.mjs';
 import { render } from '../constructive-bound-interconnect/view.mjs';
+import { planFacilityRotations } from './facility-rotation.mjs';
 const read = p => JSON.parse(fs.readFileSync(p)), hash = p => createHash('sha256').update(fs.readFileSync(p)).digest('hex');
 const write = (p, data) => fs.writeFileSync(p, JSON.stringify(data, null, 2) + '\n', { flag: 'wx' });
 try {
@@ -40,7 +41,7 @@ try {
     for (const c of chains) if ([...c.startTerminals, ...c.endTerminals].some(t => originalIds.has(t.id)))
       for (const ts of [c.startTerminals, c.endTerminals]) if (ts.length === 1 && ts[0].endpoint.kind === 'facility' && !ids.includes(ts[0].id)) ids.push(ts[0].id);
   }
-  const began = performance.now(), neighborhood = cooperativePortCandidates(witness, catalogs, request.moves, ids), records = [];
+  const began = performance.now(), neighborhood = cooperativePortCandidates(witness, catalogs, request.moves, ids, { facilityRotations: request.facilityRotations }), records = [];
   const output = path.resolve(options['output-directory']); fs.mkdirSync(output);
   for (const [assignment, candidate] of neighborhood.candidates.entries()) for (const order of ['near', 'far']) for (const prioritize of [false, true]) {
     const proposed = { ...request, chainIds: [], order, routePriority: prioritize ? controls.map(c => c.id) : [], portAssignments: candidate.portAssignments };
@@ -59,7 +60,8 @@ try {
   if (representative !== null) {
     const record = records[representative], failed = chains[record.routes.find(p => p.status !== 'found').id];
     const rerouteChains = new Set(chains.filter(c => c.cells.some(p => released.has(`${c.transport}:${key(p)}`))).map(c => c.id));
-    const movement = movementPlan(witness, chains, anchors, request.moves, { junctionPolicy: request.junctionPolicy, rerouteChains });
+    const facilityChanges = planFacilityRotations(witness, catalogs, request.moves, request.facilityRotations);
+    const movement = movementPlan(witness, chains, anchors, request.moves, { junctionPolicy: request.junctionPolicy, facilityChanges, rerouteChains });
     const placements = witness.placements.map(p => ({ ...p, ...movement.shiftFacility(p) })), ports = project({ ...witness, placements }, catalogs);
     const assignments = new Map(neighborhood.candidates[record.assignment].portAssignments.map(a => [a.terminal, a.port]));
     const terminalPosition = t => assignments.has(t.id) ? ports[t.endpoint.instance].find(p => p.id === assignments.get(t.id)).connection : movement.shiftTerminal(t);
@@ -73,7 +75,7 @@ try {
       const t = witness.transport_networks.flatMap(n => n.terminals).find(t => t.id === a.terminal);
       return `${parent.labels[t.endpoint.instance] ?? t.endpoint.instance} ${t.endpoint.port}->${a.port}`;
     });
-    const detail = { ...parent, move_diagnostic: { moves: request.moves, failed_endpoints: endpoints,
+    const detail = { ...parent, move_diagnostic: { moves: request.moves, facility_poses: [...facilityChanges].map(([instance, c]) => ({ instance, ...c.pose, ports: c.ports })), failed_endpoints: endpoints,
       code: `Cooperative ${scope} replay ${representative}; chain ${failed.id} failed. Proposed ports: ${changes.join(', ')}`,
       relaxed_routes: representativeAccess.status === 'found' ? [representativeAccess] : [] } };
     fs.writeFileSync(path.join(output, 'index.html'), render(detail, read(path.join(report.parent_directory, 'validation.json')), catalogs), { flag: 'wx' });
@@ -82,7 +84,7 @@ try {
     status: records.some(r => r.candidate) ? 'unvalidated-replay-candidate' : 'bounded-cooperative-replay-exhausted',
     parent_directory: report.parent_directory, request, chains: controls.map(c => c.id), control_records: controls.map(c => c.index), neighborhood, records, elapsed_ms: performance.now() - began,
     diagnostic_source_mismatches: mismatches, provenance: [options.report, parentPath, ...Object.values(paths)].map(p => ({ path: path.resolve(p), sha256: hash(p) })),
-    source_hashes: Object.fromEntries([...new Set([...Object.keys(report.source_hashes), 'cooperative.mjs', 'cooperative-probe.mjs',
+    source_hashes: Object.fromEntries([...new Set([...Object.keys(report.source_hashes), 'cooperative.mjs', 'cooperative-probe.mjs', 'facility-rotation.mjs',
       '../constructive-factory-closure/model.mjs', '../constructive-placement-only/model.mjs'])].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), result);
   console.log(JSON.stringify({ status: result.status, assignments: neighborhood.candidates.length, trials: records.length, termination: neighborhood.termination, output }));

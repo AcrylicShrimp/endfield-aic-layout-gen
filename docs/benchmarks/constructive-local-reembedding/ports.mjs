@@ -1,6 +1,7 @@
 import { project } from '../constructive-factory-closure/model.mjs';
 import { key, distance } from './path.mjs';
 import { interleave } from './fair.mjs';
+import { planFacilityRotations } from './facility-rotation.mjs';
 const tag = (tr, p) => `${tr}:${key(p)}`;
 const fail = (message, entity) => { throw Object.assign(new Error(message), { code: 'local-port-assignment', stage: 'local-ports', severity: 'info', entity }); };
 
@@ -55,18 +56,19 @@ export function boundaryPortSwaps(w, chains, moves) {
   return result;
 }
 
-export function vacantPortCandidates(w, chains, catalogs, moves, { chainIds, limit = 64, combinationBudget = 4096 } = {}) {
+export function vacantPortCandidates(w, chains, catalogs, moves, { chainIds, limit = 64, combinationBudget = 4096, facilityRotations = [] } = {}) {
   if (!Array.isArray(chainIds) || new Set(chainIds).size !== chainIds.length || chainIds.some(id => !Number.isSafeInteger(id) || !chains.some(c => c.id === id)) ||
     !Number.isSafeInteger(limit) || limit < 1 || limit > 64 || !Number.isSafeInteger(combinationBudget) || combinationBudget < 1 || combinationBudget > 65536)
     fail('Expected known unique chain IDs, candidate limit 1..64 and combination budget 1..65536', chainIds);
   const shifts = new Map(moves.flatMap(m => m.instances.map(id => [id, m])));
+  const rotated = planFacilityRotations(w, catalogs, moves, facilityRotations);
   const shift = (p, id) => ({ x: p.x + (shifts.get(id)?.dx ?? 0), y: p.y + (shifts.get(id)?.dy ?? 0) });
-  const placements = w.placements.map(p => ({ ...p, ...shift(p, p.instance) })), projected = project({ ...w, placements }, catalogs);
+  const placements = w.placements.map(p => ({ ...p, ...(rotated.get(p.instance)?.pose ?? shift(p, p.instance)) })), projected = project({ ...w, placements }, catalogs);
   const occupiedPorts = new Set(w.transport_networks.flatMap(n => n.terminals.filter(t => t.endpoint.kind === 'facility').map(t => JSON.stringify([t.endpoint.instance, t.endpoint.port]))));
   const choices = (c, end) => {
     const ts = end ? c.endTerminals : c.startTerminals, p = end ? c.cells.at(-1) : c.cells[0];
     if (ts.length !== 1 || ts[0].endpoint.kind !== 'facility') return [{ position: p, assignment: null }];
-    const t = ts[0], retained = { position: shift(t.position, t.endpoint.instance), assignment: null };
+    const t = ts[0], retained = { position: rotated.get(t.endpoint.instance)?.terminalPositions.get(t.id) ?? shift(t.position, t.endpoint.instance), assignment: null };
     return [retained, ...projected[t.endpoint.instance].filter(q => q.direction === t.direction && q.transport === c.transport &&
       !occupiedPorts.has(JSON.stringify([t.endpoint.instance, q.id])) &&
       !placements.some(p => q.connection.x >= p.x && q.connection.x < p.x + p.width && q.connection.y >= p.y && q.connection.y < p.y + p.height))

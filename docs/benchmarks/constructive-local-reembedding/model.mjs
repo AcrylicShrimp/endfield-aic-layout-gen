@@ -6,6 +6,7 @@ import { crossingOptions } from './crossing.mjs';
 import { planPortAssignments } from './ports.mjs';
 import { planComponentPoses, releaseBridgeDraft } from './components.mjs';
 import { detachablePairs } from './terminal-identity.mjs';
+import { planFacilityRotations } from './facility-rotation.mjs';
 const equalRate = (a, b) => BigInt(a.numerator) * BigInt(b.denominator) === BigInt(b.numerator) * BigInt(a.denominator);
 const fail = (code, message, entity = null) => { throw Object.assign(new Error(message), { code, severity: 'error', stage: 'local-reembedding', entity }); };
 const cellsOf = p => Array.from({ length: p.width * p.height }, (_, i) => ({ x: p.x + i % p.width, y: p.y + Math.floor(i / p.width) }));
@@ -75,7 +76,7 @@ export function flexibleTerminalAnchors(w, chains) {
 
 export function reembed(detail, catalogs, options = {}) {
   if (Object.hasOwn(options, 'move')) fail('local-move-input', 'Move schema 2 is obsolete; supply schema-3 moves array');
-  const { moves = [], componentPoses = [], releaseBridges = [], chainIds = [], order = 'near', workBudget = 200000, endpointPolicy = 'retained', junctionPolicy = 'internal', routePriority = [], maxNewCrossings = 0, portAssignments = [] } = options;
+  const { moves = [], facilityRotations = [], componentPoses = [], releaseBridges = [], chainIds = [], order = 'near', workBudget = 200000, endpointPolicy = 'retained', junctionPolicy = 'internal', routePriority = [], maxNewCrossings = 0, portAssignments = [] } = options;
   const began = performance.now(), { witness: original, released } = releaseBridgeDraft(detail.witness, catalogs, releaseBridges);
   const { chains, anchors } = extractChains(original, released), bounds = extentOf(original);
   if (!['near', 'far'].includes(order)) fail('local-route-order', 'Expected near or far route order');
@@ -91,8 +92,9 @@ export function reembed(detail, catalogs, options = {}) {
   const priority = new Map(routePriority.map((id, i) => [id, i]));
   if (!Array.isArray(moves)) fail('local-move-input', 'Expected schema-3 moves array');
   const componentChanges = planComponentPoses(original, catalogs, componentPoses);
+  const facilityChanges = planFacilityRotations(original, catalogs, moves, facilityRotations);
   const rerouteChains = new Set(chains.filter(c => c.cells.some(p => released.has(`${c.transport}:${key(p)}`))).map(c => c.id));
-  const movement = moves.length || componentChanges.size ? movementPlan(original, chains, anchors, moves, { junctionPolicy, componentChanges, rerouteChains }) : null;
+  const movement = moves.length || componentChanges.size ? movementPlan(original, chains, anchors, moves, { junctionPolicy, componentChanges, facilityChanges, rerouteChains }) : null;
   const shifted = (p, tr) => movement?.movable(tr, p) ? movement.shiftAnchor(tr, p) : p;
   // Private append-only draft: untouched nested values are read-only until successful detachment.
   const w = { ...original,
@@ -126,7 +128,7 @@ export function reembed(detail, catalogs, options = {}) {
   };
   const jobs = [...changed].map(i => {
     const c = chains[i], start = relocated(c, false), end = relocated(c, true);
-    const arm = (p, d) => d === null ? null : (d + (movement?.componentTurns.get(`${c.transport}:${key(p)}`) ?? 0)) % 4;
+    const arm = (p, d) => d === null ? null : (d + (movement?.anchorTurns.get(`${c.transport}:${key(p)}`) ?? 0)) % 4;
     return { ...c, start, end, first: changedPort(c, false) || flexible.has(`${c.transport}:${key(c.cells[0])}`) ? null : arm(c.cells[0], c.first),
       last: changedPort(c, true) || flexible.has(`${c.transport}:${key(c.cells.at(-1))}`) ? null : arm(c.cells.at(-1), c.last) };
   }).sort((a, b) => (priority.get(a.id) ?? routePriority.length) - (priority.get(b.id) ?? routePriority.length) ||
@@ -173,7 +175,7 @@ export function reembed(detail, catalogs, options = {}) {
   const unchangedPoses = [...componentChanges].every(([id, p]) => {
     const c = original.logistics_components.find(c => c.id === id); return c.rotation === p.rotation && key(c.position) === key(p.position);
   });
-  if (!released.size && unchangedPoses && !portAssignments.length && moves.every(m => m.dx === 0 && m.dy === 0) && jobs.every(j => paths.get(j.id).length === j.cells.length && paths.get(j.id).every((p, i) => key(p) === key(j.cells[i]))))
+  if (!released.size && unchangedPoses && !facilityChanges.size && !portAssignments.length && moves.every(m => m.dx === 0 && m.dy === 0) && jobs.every(j => paths.get(j.id).length === j.cells.length && paths.get(j.id).every((p, i) => key(p) === key(j.cells[i]))))
     return { status: 'unchanged', routes: results, elapsed_ms: performance.now() - began };
   for (const [ni, n] of w.transport_networks.entries()) if (chains.some(c => c.network === ni && paths.has(c.id)) ||
     original.transport_networks[ni].terminals.some(t => movement?.movable(n.transport, t.position))) {
@@ -188,7 +190,7 @@ export function reembed(detail, catalogs, options = {}) {
   }
   const score = witnessScore(w), candidate = { schema_version: 1, case: 'complete-local-reembedding', embedding: 'local-astar', labels: structuredClone(detail.labels),
     witness: structuredClone(w), catalog_ports: project(w, catalogs), port_groups: { sources: [], targets: [] }, accepted: false, factory_validated: false,
-    reembedding: { chain_schema_version: 2, move_schema_version: 3, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, route_priority: [...routePriority], max_new_crossings: maxNewCrossings,
+    reembedding: { chain_schema_version: 2, move_schema_version: 4, facility_rotations: structuredClone(facilityRotations), endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, route_priority: [...routePriority], max_new_crossings: maxNewCrossings,
       new_crossings: installedCrossings, released_bridges: [...releaseBridges], port_assignments: structuredClone(portAssignments), component_poses: structuredClone(componentPoses), moves: structuredClone(moves), order, carried_components: movement?.components ?? [], translated_chains: movement ? [...movement.fixedChains.keys()].filter(id => !changed.has(id)) : [], affected_chains: jobs.map(j => j.id), routes: results } };
   return { status: 'candidate', detail: candidate, score, affected_chains: jobs.map(j => ({ id: j.id, item: j.item })), routes: results, elapsed_ms: performance.now() - began };
 }

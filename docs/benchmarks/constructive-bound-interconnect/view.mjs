@@ -38,8 +38,10 @@ for(const q of detail.catalog_ports[p.instance]){const a=xy(q.position),b=xy(q.c
 for(const c of w.logistics_components){const a=xy(c.position),r=Math.max(5,s*.35);svg.append(el('rect',{x:a.x-r,y:a.y-r,width:2*r,height:2*r,fill:'var(--bg)',stroke:'var(--component)','stroke-width':2}));svg.append(el('text',{x:a.x,y:a.y+4,'text-anchor':'middle','font-size':12},c.kind==='bridge'?'X':c.kind==='splitter'?'S':'M'));}
 if(detail.move_diagnostic){const m=detail.move_diagnostic;
 for(const move of m.moves)for(const p of w.placements.filter(p=>move.instances.includes(p.instance))){
-svg.append(el('rect',{x:x+(p.x+move.dx)*s,y:y+(p.y+move.dy)*s,width:p.width*s,height:p.height*s,fill:'var(--bad)','fill-opacity':.12,stroke:'var(--bad)','stroke-width':2,'stroke-dasharray':'5 3'}));
-svg.append(el('text',{x:x+(p.x+move.dx+p.width/2)*s,y:y+(p.y+move.dy+p.height/2)*s,'text-anchor':'middle','font-size':Math.max(10,s*.6),style:'fill:var(--bad)'},(detail.labels?.[p.instance]??p.instance)+' proposed'));}
+const q=m.facility_poses?.find(q=>q.instance===p.instance)??{...p,x:p.x+move.dx,y:p.y+move.dy};
+svg.append(el('rect',{x:x+q.x*s,y:y+q.y*s,width:q.width*s,height:q.height*s,fill:'var(--bad)','fill-opacity':.12,stroke:'var(--bad)','stroke-width':2,'stroke-dasharray':'5 3'}));
+svg.append(el('text',{x:x+(q.x+q.width/2)*s,y:y+(q.y+q.height/2)*s,'text-anchor':'middle','font-size':Math.max(10,s*.6),style:'fill:var(--bad)'},(detail.labels?.[p.instance]??p.instance)+' proposed'+(q.rotation!==p.rotation?' '+q.rotation+'°':'')));
+for(const port of q.ports??[]){const a=xy(port.position),b=xy(port.connection);svg.append(el('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'var(--bad)','stroke-width':Math.max(1,s*.08),'data-proposed-port':port.id}));}}
 for(const p of m.failed_endpoints??[]){const a=xy(p);svg.append(el('circle',{cx:a.x,cy:a.y,r:s*.35,fill:'none',stroke:'var(--bad)','stroke-width':3}));}
 for(const r of m.relaxed_routes??[]){svg.append(el('polyline',{points:r.cells.map(p=>{const a=xy(p);return a.x+','+a.y;}).join(' '),fill:'none',stroke:'var(--component)','stroke-width':Math.max(2,s*.12),'stroke-dasharray':'3 3','data-relaxed-route':r.id}));
 for(const b of r.blockers){const a=xy(b.position),mark=el('rect',{x:a.x-s*.4,y:a.y-s*.4,width:s*.8,height:s*.8,fill:'none',stroke:'var(--component)','stroke-width':3,'data-terminal-obstruction':r.id});
