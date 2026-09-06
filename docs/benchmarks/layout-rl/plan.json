@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "seed": 20260907,
+  "catalogs": {
+    "recipes": "../../../data/game/normalized/recipes.json",
+    "facilities": "../../../data/game/normalized/facilities.json",
+    "items": "../../../data/game/normalized/items.json",
+    "transports": "../../../data/game/normalized/transports.json",
+    "components": "../../../data/game/normalized/logistics-components.json"
+  },
+  "validator": "../../../target/release/aic-witness-probe",
+  "chain_comparison": "../../../target/chain-m5-comparison-release/report.json",
+  "closure_sources": [
+    {"id": "closure-original", "report": "../constructive-factory-closure/matrix.json", "request": "../constructive-chain-blocks/gap-1-placement.json"},
+    {"id": "closure-refined", "report": "../constructive-factory-closure/output-space-refined.json", "request": "../constructive-chain-blocks/gap-1-placement.json"}
+  ],
+  "environment": {
+    "horizon": 16,
+    "translation_steps": [1, 2],
+    "connected_pairs": true,
+    "route_expansions_per_action": 12000,
+    "validator_ms": 3000,
+    "episode_ms": 10000,
+    "max_actions": 2048,
+    "max_tokens": 512
+  }
+}
