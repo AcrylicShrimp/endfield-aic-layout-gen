@@ -1,10 +1,30 @@
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cooperativePortCandidates as enumerate } from './cooperative.mjs';
+import { cooperativePortCandidates as enumerate, cooperativeControls } from './cooperative.mjs';
 import { project } from '../constructive-factory-closure/model.mjs';
 import { rotateFacility } from '../constructive-placement-only/model.mjs';
 const catalogs = { facilities: JSON.parse(fs.readFileSync(new URL('../../../data/game/normalized/facilities.json', import.meta.url))) };
+test('cooperative controls pair each selected obstruction with a matching retained failure', () => {
+  const request = { moves: [{ instances: ['a'], dx: 0, dy: -1 }], portAssignments: [], maxNewCrossings: 2 };
+  const report = { terminal_access: [2, 7].map(id => ({ id, status: 'found', blockers: [] })), records: [
+    { status: 'rejected', request: { ...request, portAssignments: [{ terminal: 'changed', port: 'p' }] }, routes: [{ id: 7, status: 'no-path' }] },
+    { status: 'rejected', request: { ...request, order: 'near' }, routes: [{ id: 2, status: 'no-path' }] },
+    { status: 'rejected', request: { maxNewCrossings: 2, portAssignments: [], moves: request.moves, order: 'far', chainIds: [2, 7], routePriority: [7] }, routes: [{ id: 2, status: 'found' }, { id: 7, status: 'no-path' }] }
+  ] }, before = structuredClone(report);
+  assert.deepEqual(cooperativeControls(report).map(c => c.index), [1]);
+  assert.deepEqual(cooperativeControls(report, [7, 2]).map(c => [c.id, c.index]), [[7, 2], [2, 1]]);
+  for (const ids of [[], [7, 7], [-1], [0], [2.5], Array.from({ length: 9 }, (_, i) => i)]) assert.throws(() => cooperativeControls(report, ids));
+  const mismatch = structuredClone(report); mismatch.records[2].request.maxNewCrossings = 3;
+  assert.throws(() => cooperativeControls(mismatch, [2, 7]), /disagree/);
+  const missing = structuredClone(report); missing.terminal_access[1].status = 'work-budget';
+  assert.throws(() => cooperativeControls(missing, [7]), /relaxed terminal-access/);
+  const success = structuredClone(report); success.records[2].routes[1].status = 'found';
+  assert.throws(() => cooperativeControls(success, [7]), /failed retained replay/);
+  const changed = structuredClone(report); changed.records[2].request.portAssignments = [{ terminal: 'changed', port: 'p' }];
+  assert.throws(() => cooperativeControls(changed, [7]), /failed retained replay/);
+  assert.deepEqual(report, before);
+});
 function fixture() {
   const f = catalogs.facilities.facilities.find(f => f.ports.filter(p => p.direction === 'input' && p.transport === 'belt').length >= 3);
   const rotation = f.allowed_rotations[0], shape = rotateFacility(f, rotation);

@@ -12,6 +12,16 @@ also includes singleton facility terminals at the opposite ends of chains incide
 to the initial selected set (one hop, not a recursive closure). The eight-terminal
 ceiling rejects an oversized group explicitly, without silently dropping owners.
 
+`--chains ID[,ID...]` may select up to eight distinct failed retained-port chains
+with recorded terminal-access results instead of the first one. The report records
+selected chains and control indices. Controls must have no port assignments, must
+actually fail their selected chain, and must agree on geometry/crossing policies
+(routing order, priority and explicitly rerouted chains may differ). Unknown IDs or
+missing/inconsistent controls fail before output creation. The terminal domain is
+the union of the selected chains' ends and obstruction owners, still capped at eight
+terminals. Priority trials prioritize the selected chain list in CLI order. The
+four-order portfolio and assignment limits do not multiply with the number of chains.
+
 `cooperativePortCandidates` takes a witness, catalogs, movement primitives, selected
 unique terminal IDs, a candidate limit (1..4096), and a search-node budget (1..65536).
 It enumerates injective compatible assignments to runtime ports, including selected
@@ -37,10 +47,13 @@ original-graph factory validator. Nothing is automatically selected or committed
 
 Invalid CLI/report input returns `cooperative-probe-failed`. Candidate input errors
 use `local-cooperative-ports`, severity info, stage local-ports, with entity references.
-Each route failure retains the existing structured diagnostics. Report schema 1
+Each route failure retains the existing structured diagnostics. Report schema 2
 records source hashes, input hashes, request, attempts, domain termination and any
 private candidate paths. A diagnostic-source hash mismatch must be explicitly
 reported rather than silently claiming exact historical replay.
+Schema 2 replaces scalar `chain` with ordered `chains` and adds `control_records`;
+historical schema-1 reports retain their original scalar field. No runtime adapter
+or redundant scalar field is kept in new outputs.
 
 The native overlay selects the rejected record with the most successfully restored
 jobs (first tie). It shows proposed bodies, the failed chain's reassigned endpoints,

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { extractChains, reembed, extentOf } from './model.mjs';
 import { releaseBridgeDraft } from './components.mjs';
-import { cooperativePortCandidates } from './cooperative.mjs';
+import { cooperativePortCandidates, cooperativeControls } from './cooperative.mjs';
 import { movementPlan, bodyCells } from './movement.mjs';
 import { minimumTerminalReleasePath, terminalAccessObstacles } from './terminal-access.mjs';
 import { key } from './path.mjs';
@@ -15,15 +15,15 @@ try {
   const args = process.argv.slice(2), options = {};
   for (let i = 0; i < args.length; i += 2) {
     const k = args[i].slice(2);
-    if (!args[i].startsWith('--') || !['report', 'catalog-directory', 'output-directory', 'scope'].includes(k) || k in options || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
+    if (!args[i].startsWith('--') || !['report', 'catalog-directory', 'output-directory', 'scope', 'chains'].includes(k) || k in options || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
     options[k] = args[i + 1];
   }
-  if (['report', 'catalog-directory', 'output-directory'].some(k => !options[k])) throw new Error('Expected --report TERMINAL_ACCESS_REPORT --catalog-directory PATH --output-directory NEW_PATH [--scope terminals|interfaces]');
+  if (['report', 'catalog-directory', 'output-directory'].some(k => !options[k])) throw new Error('Expected --report TERMINAL_ACCESS_REPORT --catalog-directory PATH --output-directory NEW_PATH [--scope terminals|interfaces] [--chains ID[,ID...]]');
   const scope = options.scope ?? 'terminals'; if (!['terminals', 'interfaces'].includes(scope)) throw new Error('Expected --scope terminals|interfaces');
   const report = read(options.report), parentPath = path.join(report.parent_directory, 'detail.json'), parent = read(parentPath);
   if (report.chain_schema_version !== 2 || !report.terminal_access?.length) throw new Error('Expected chain schema 2 terminal-access replay');
-  const access = report.terminal_access[0], request = report.records[0].request;
-  if (access.status !== 'found' || report.records[0].status !== 'rejected') throw new Error('Expected a failed retained replay with a found relaxed terminal-access path');
+  if (options.chains !== undefined && !/^\d+(,\d+)*$/.test(options.chains)) throw new Error('Expected --chains ID[,ID...]');
+  const controls = cooperativeControls(report, options.chains?.split(',').map(Number)), request = controls[0].request;
   const paths = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k, path.join(options['catalog-directory'], (k === 'components' ? 'logistics-components' : k) + '.json')]));
   const catalogs = Object.fromEntries(Object.entries(paths).map(([k, p]) => [k, read(p)]));
   for (const p of [parentPath, ...Object.values(paths)]) {
@@ -31,10 +31,10 @@ try {
     if (!recorded || recorded.sha256 !== hash(p)) throw new Error(`Input provenance mismatch: ${p}`);
   }
   const mismatches = Object.entries(report.source_hashes).filter(([p, sha]) => hash(new URL(p, import.meta.url)) !== sha).map(([p]) => p);
-  const { witness, released } = releaseBridgeDraft(parent.witness, catalogs, request.releaseBridges ?? []), { chains, anchors } = extractChains(witness, released), chain = chains[access.id];
-  if (!chain) throw new Error(`Unknown failed chain ${access.id}`);
-  const ids = [...new Set([...access.blockers.flatMap(b => b.owners.map(o => o.terminal)),
-    ...[chain.startTerminals, chain.endTerminals].filter(ts => ts.length === 1 && ts[0].endpoint.kind === 'facility').map(ts => ts[0].id)])];
+  const { witness, released } = releaseBridgeDraft(parent.witness, catalogs, request.releaseBridges ?? []), { chains, anchors } = extractChains(witness, released);
+  if (controls.some(c => !chains[c.id])) throw new Error('Unknown selected failed chain');
+  const ids = [...new Set(controls.flatMap(({ id, access }) => [...access.blockers.flatMap(b => b.owners.map(o => o.terminal)),
+    ...[chains[id].startTerminals, chains[id].endTerminals].filter(ts => ts.length === 1 && ts[0].endpoint.kind === 'facility').map(ts => ts[0].id)]))];
   if (scope === 'interfaces') {
     const originalIds = new Set(ids);
     for (const c of chains) if ([...c.startTerminals, ...c.endTerminals].some(t => originalIds.has(t.id)))
@@ -43,7 +43,7 @@ try {
   const began = performance.now(), neighborhood = cooperativePortCandidates(witness, catalogs, request.moves, ids), records = [];
   const output = path.resolve(options['output-directory']); fs.mkdirSync(output);
   for (const [assignment, candidate] of neighborhood.candidates.entries()) for (const order of ['near', 'far']) for (const prioritize of [false, true]) {
-    const proposed = { ...request, chainIds: [], order, routePriority: prioritize ? [chain.id] : [], portAssignments: candidate.portAssignments };
+    const proposed = { ...request, chainIds: [], order, routePriority: prioritize ? controls.map(c => c.id) : [], portAssignments: candidate.portAssignments };
     let result;
     try { result = reembed(parent, catalogs, proposed); }
     catch (e) { if (!e.code) throw e; result = { status: 'rejected', routes: [], diagnostics: [{ code: e.code, severity: e.severity, stage: e.stage, message: e.message, entity: e.entity }] }; }
@@ -78,9 +78,9 @@ try {
       relaxed_routes: representativeAccess.status === 'found' ? [representativeAccess] : [] } };
     fs.writeFileSync(path.join(output, 'index.html'), render(detail, read(path.join(report.parent_directory, 'validation.json')), catalogs), { flag: 'wx' });
   }
-  const result = { schema_version: 1, chain_schema_version: 2, factory_validated: false, scope, representative, representative_access: representativeAccess,
+  const result = { schema_version: 2, chain_schema_version: 2, factory_validated: false, scope, representative, representative_access: representativeAccess,
     status: records.some(r => r.candidate) ? 'unvalidated-replay-candidate' : 'bounded-cooperative-replay-exhausted',
-    parent_directory: report.parent_directory, request, chain: chain.id, neighborhood, records, elapsed_ms: performance.now() - began,
+    parent_directory: report.parent_directory, request, chains: controls.map(c => c.id), control_records: controls.map(c => c.index), neighborhood, records, elapsed_ms: performance.now() - began,
     diagnostic_source_mismatches: mismatches, provenance: [options.report, parentPath, ...Object.values(paths)].map(p => ({ path: path.resolve(p), sha256: hash(p) })),
     source_hashes: Object.fromEntries([...new Set([...Object.keys(report.source_hashes), 'cooperative.mjs', 'cooperative-probe.mjs',
       '../constructive-factory-closure/model.mjs', '../constructive-placement-only/model.mjs'])].map(p => [p, hash(new URL(p, import.meta.url))])) };

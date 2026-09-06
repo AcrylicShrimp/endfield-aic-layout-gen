@@ -1,4 +1,19 @@
 import { project } from '../constructive-factory-closure/model.mjs';
+import { isDeepStrictEqual } from 'node:util';
+
+export function cooperativeControls(report, chainIds = [report.terminal_access?.[0]?.id]) {
+  if (!Array.isArray(chainIds) || !chainIds.length || chainIds.length > 8 || new Set(chainIds).size !== chainIds.length ||
+    chainIds.some(id => !Number.isSafeInteger(id) || id < 0)) throw new Error('Expected one to eight distinct nonnegative chain IDs');
+  const controls = chainIds.map(id => {
+    const access = report.terminal_access?.find(a => a.id === id);
+    const index = report.records?.findIndex(r => r.status === 'rejected' && !r.request.portAssignments?.length && r.routes?.find(p => p.status !== 'found')?.id === id) ?? -1;
+    if (access?.status !== 'found' || index < 0) throw new Error(`Expected chain ${id} to have a failed retained replay and a found relaxed terminal-access path`);
+    return { id, access, index, request: report.records[index].request };
+  });
+  const geometry = ({ order, routePriority, chainIds, ...rest }) => rest;
+  if (controls.some(c => !isDeepStrictEqual(geometry(c.request), geometry(controls[0].request)))) throw new Error('Selected chain controls disagree on geometry or routing policies');
+  return controls;
+}
 
 export function cooperativePortCandidates(w, catalogs, moves, terminalIds, { limit = 4096, nodeBudget = 65536 } = {}) {
   const fail = (message, entity) => { throw Object.assign(new Error(message), { code: 'local-cooperative-ports', severity: 'info', stage: 'local-ports', entity }); };
