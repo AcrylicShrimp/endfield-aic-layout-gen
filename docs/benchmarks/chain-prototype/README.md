@@ -1,9 +1,10 @@
 # Chain-reasoning prototype
 
-Status: milestones 0–4 complete. Routed chain/cycle/fan-in construction, explicit external
+Status: milestones 0–5 complete. Routed chain/cycle/fan-in construction, explicit external
 factories, shape-sensitive fit estimates and bounded connected replay with complete-incumbent
-evaluation are implemented within the documented graph class and controls. Equal-total-work
-comparison and the final research recommendation remain in progress.
+evaluation are implemented within the documented graph class and controls. The
+[matched-budget findings](comparison-report.md) and [completion audit](completion-audit.md)
+close this research goal, not the general optimizer or a production migration.
 This directory is the separate experimental entry point; production commands remain unchanged.
 
 ## Implemented entry point
@@ -32,6 +33,13 @@ partial-area ordering and improves complete incumbents while preserving frozen i
 Thirteen of sixteen proposal-order/ranking controls complete, but the greedy remaining-body
 fit ranking fails battery and is not generally better than partial-area ranking. The explicit
 failure controls remain part of the result, and no production default or fallback was changed.
+
+See the [comparison contract](comparison-contract.md) for `run-comparison.mjs`. Its 192-run
+matrix is reproducible from `comparison-plan.json`. The explicit
+`replay-partial-policy.json` completes all four requests under one measured policy at the
+original caps; it does not replace the original Fit policy or silently dispatch by recipe.
+Actual continuation helps, but costs early completion under smaller budgets, and greedy
+body-fit ranking is not generally better. All 76 complete matrix rows pass standalone audits.
 
 ## Contract direction
 
@@ -79,6 +87,6 @@ This milestone reuses neutral catalog projection and independent validation, not
 constructor or the paused breadth orchestration. Each implementation stage will define its
 concrete DTOs, supported graph class, diagnostics, failure modes and test gates before coding.
 
-See the [active tracker](../../todos/2026-09-06.11-chain-reasoning-prototype.md) and the
+See the [completed tracker](../../todos/2026-09-06.11-chain-reasoning-prototype.md) and the
 [research decision](../user-layout-reconstruction/completion-research.md). No later milestone
 is considered implemented merely because this contract describes it.

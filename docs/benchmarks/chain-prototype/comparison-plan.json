@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "requests": [
+    { "id": "battery", "path": "battery-factory.json" },
+    { "id": "citron", "path": "citron-factory.json" },
+    { "id": "iron-nine", "path": "iron-nine-factory.json" },
+    { "id": "iron-eight", "path": "iron-eight-factory.json" }
+  ],
+  "proposal_budgets": [128, 256, 512, 1024],
+  "factory_first_families": ["straight", "left", "right", "fold"],
+  "replay_orders": ["exhaustive", "interleaved"],
+  "replay_rankings": ["partial-area", "remaining-fit"],
+  "replay_trial_limits": [1, 8]
+}
