@@ -1,7 +1,7 @@
 import { add, compare, dto, multiply, parseRate, rate, capacity } from '../constructive-interconnect/rates.mjs';
 export const diagnostic = (code, stage, message, entity = null, severity = 'error') => ({ code: `chain-${code}`, severity, stage, message, entity });
 export const fail = (code, message, entity = null) => { throw Object.assign(new Error(message), diagnostic(code, 'chain-input', message, entity)); };
-const fields = (v, keys, entity) => {
+export const fields = (v, keys, entity) => {
   if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).some(k => !keys.includes(k)) || keys.some(k => !(k in v)))
     fail('input-invalid', `Expected exactly: ${keys.join(', ')}`, entity);
 };
@@ -20,11 +20,12 @@ export function recipeMargins(node, recipe) {
   }
   return result;
 }
-export function parseGraph(input, catalogs, { minimumGap = 1, allowedFamilies = ['straight', 'left', 'right'] } = {}) {
-  fields(input, ['schema_version', 'id', 'nodes', 'edges', 'external', 'policy', 'budget'], 'request');
-  if (input.schema_version !== 1 || !name(input.id) || !Array.isArray(input.nodes) || input.nodes.length < 2 || input.nodes.length > 16
-    || !Array.isArray(input.edges) || !Array.isArray(input.external)) fail('input-invalid', 'Expected schema 1 and a 2–16-node graph', input.id);
-  fields(input.policy, ['families', 'gaps', 'ports_per_side'], 'policy');
+export function parseGraph(input, catalogs, { minimumGap = 1, allowedFamilies = ['straight', 'left', 'right'], schemaVersion = 1,
+  extraRootFields = [], extraPolicyFields = [] } = {}) {
+  fields(input, ['schema_version', 'id', 'nodes', 'edges', 'external', 'policy', 'budget', ...extraRootFields], 'request');
+  if (input.schema_version !== schemaVersion || !name(input.id) || !Array.isArray(input.nodes) || input.nodes.length < 2 || input.nodes.length > 16
+    || !Array.isArray(input.edges) || !Array.isArray(input.external)) fail('input-invalid', `Expected schema ${schemaVersion} and a 2–16-node graph`, input.id);
+  fields(input.policy, ['families', 'gaps', 'ports_per_side', ...extraPolicyFields], 'policy');
   const { families, gaps, ports_per_side: ports } = input.policy;
   if (!Array.isArray(families) || !families.length || new Set(families).size !== families.length || families.some(f => !allowedFamilies.includes(f))
     || !Array.isArray(gaps) || !gaps.length || new Set(gaps).size !== gaps.length || gaps.some(g => !Number.isSafeInteger(g) || g < minimumGap || g > 16)

@@ -21,7 +21,9 @@ const centerRank = (p, owner) => ['north', 'south'].includes(p.edge) ? Math.abs(
 export const rankedPorts = (ps, owner, count) => [...ps].sort((a, b) => centerRank(a, owner) - centerRank(b, owner)
   || a.position.y - b.position.y || a.position.x - b.position.x || a.id.localeCompare(b.id)).slice(0, count);
 export function* proposals(parent, parentNode, sourceNode, edge, family, policy, used) {
-  const targets = rankedPorts(ports(parent, parentNode).filter(p => p.direction === 'input' && p.transport === edge.transport && !used.has(JSON.stringify([parent.instance, p.id]))), parent, policy.ports_per_side);
+  const available = ports(parent, parentNode).filter(p => p.direction === 'input' && p.transport === edge.transport && !used.has(JSON.stringify([parent.instance, p.id])));
+  const targets = policy.port_order === 'spatial' ? available.sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x).slice(0, policy.ports_per_side)
+    : rankedPorts(available, parent, policy.ports_per_side);
   for (const gap of policy.gaps) for (const target of targets) {
     const outputSide = turn(target.edge, family === 'straight' ? 2 : family === 'left' ? 1 : family === 'right' ? 3 : 0);
     for (const rotation of [...sourceNode.facility_data.allowed_rotations].sort((a, b) => a - b)) {

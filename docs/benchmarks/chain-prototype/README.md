@@ -1,8 +1,9 @@
 # Chain-reasoning prototype
 
-Status: milestones 0, 1 and 2 complete. Simple chains and atomic cycle/branch groups are
-implemented; multi-input composition, complete external factories and completion-aware
-improvement remain in progress.
+Status: milestones 0–3 complete. Simple chains, atomic cycle/branch groups, multi-input composition
+and complete external factories are implemented within the documented graph class and controls.
+Completion-aware evaluation, bounded committed-chain rollback and equal-total-work comparison
+remain in progress.
 This directory is the separate experimental entry point; production commands remain unchanged.
 
 ## Implemented entry point
@@ -16,7 +17,14 @@ The [reference report](reference-report.md) retains the independently validated 
 See the [group contract](group-contract.md) and [milestone-2 report](group-report.md) for
 `run-group.mjs`, the geometry-free citron cycle/branch request, private incremental construction,
 body-contact and 180-degree-fold proposals, and the controlled first-completion replays.
-All current successful prototype outputs still have explicit pending external boundaries.
+Those milestone-2 outputs still have explicit pending external boundaries.
+
+See the [factory contract](factory-contract.md) and [milestone-3 report](factory-report.md) for
+`run-factory.mjs`, `run-factory-controls.mjs` and the separate `verify-factory.mjs` command.
+Eleven of sixteen same-cap first-priority controls produce complete factories, including all
+three recipe families and both iron inventories. The default straight-first battery still
+stops; only its explicit right-first control completes. These are first-completion results,
+not completion-aware optimization or a universal-success claim.
 
 ## Contract direction
 

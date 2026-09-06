@@ -1,0 +1,31 @@
+{
+  "schema_version":2,"id":"enriched-iron-eight-facilities",
+  "nodes":[
+    {"id":"T","recipe":"thickener-iron-enr-powder-1","utilization":{"numerator":1,"denominator":1}},
+    {"id":"GP","recipe":"grinder-plant-moss-powder-3-1","utilization":{"numerator":1,"denominator":3}},
+    {"id":"S","recipe":"seedcollector-plant-moss-3-1","utilization":{"numerator":1,"denominator":3}},
+    {"id":"P","recipe":"planter-plant-moss-3-1","utilization":{"numerator":2,"denominator":3}},
+    {"id":"G1","recipe":"grinder-iron-powder-1","utilization":{"numerator":1,"denominator":1}},
+    {"id":"G2","recipe":"grinder-iron-powder-1","utilization":{"numerator":1,"denominator":1}},
+    {"id":"F1","recipe":"furnance-iron-nugget-1","utilization":{"numerator":1,"denominator":1}},
+    {"id":"F2","recipe":"furnance-iron-nugget-1","utilization":{"numerator":1,"denominator":1}}
+  ],
+  "edges":[
+    {"id":"plant-powder","source":"GP","target":"T","item":"item-plant-moss-powder-3","rate":{"numerator":1,"denominator":2}},
+    {"id":"plant","source":"P","target":"GP","item":"item-plant-moss-3","rate":{"numerator":1,"denominator":6}},
+    {"id":"return","source":"P","target":"S","item":"item-plant-moss-3","rate":{"numerator":1,"denominator":6}},
+    {"id":"cycle","source":"S","target":"P","item":"item-plant-moss-seed-3","rate":{"numerator":1,"denominator":3}},
+    {"id":"iron-powder-1","source":"G1","target":"T","item":"item-iron-powder","rate":{"numerator":1,"denominator":2}},
+    {"id":"iron-powder-2","source":"G2","target":"T","item":"item-iron-powder","rate":{"numerator":1,"denominator":2}},
+    {"id":"iron-1","source":"F1","target":"G1","item":"item-iron-nugget","rate":{"numerator":1,"denominator":2}},
+    {"id":"iron-2","source":"F2","target":"G2","item":"item-iron-nugget","rate":{"numerator":1,"denominator":2}}
+  ],
+  "external":[
+    {"id":"ore-F1","instance":"F1","direction":"input","item":"item-iron-ore","rate":{"numerator":1,"denominator":2}},
+    {"id":"ore-F2","instance":"F2","direction":"input","item":"item-iron-ore","rate":{"numerator":1,"denominator":2}},
+    {"id":"iron-export","instance":"T","direction":"output","item":"item-iron-enr-powder","rate":{"numerator":1,"denominator":2}}
+  ],
+  "policy":{"families":["straight","left","right","fold"],"gaps":[0,1,2,3],"ports_per_side":6,"slides_per_pose":5,"port_order":"spatial"},
+  "boundary":{"margins":[1,2,4],"endpoint_limit":16},
+  "budget":{"proposals":1024,"route_expansions":200000,"validations":512,"elapsed_ms":30000}
+}
