@@ -6,7 +6,7 @@ import { groupCandidates } from './groups.mjs';
 import { compoundCandidates } from './compound.mjs';
 import { componentPoseCandidates, releaseBridgeDraft } from './components.mjs';
 import { coalescenceCandidates, incidentBridgeIds } from './coalescence.mjs';
-import { boundaryPortSwaps } from './ports.mjs';
+import { boundaryPortSwaps, vacantPortCandidates } from './ports.mjs';
 import { compactEmbedding } from '../constructive-embedding-compaction/model.mjs';
 import { executeValidator } from '../constructive-embedding-compaction/validator.mjs';
 import { normalizeGraph } from '../constructive-cycle-blocks/graph.mjs';
@@ -37,7 +37,8 @@ try {
   const auditBudget = Number(options['audit-unimproved'] ?? 0); let audited = 0;
   if (!Number.isSafeInteger(auditBudget) || auditBudget < 0 || auditBudget > 64) throw new Error('Expected --audit-unimproved 0..64');
   if (!['coupled', 'independent'].includes(layerPolicy)) throw new Error('Expected --layer-policy coupled|independent');
-  if (!['retained', 'paired'].includes(portPolicy)) throw new Error('Expected --port-policy retained|paired');
+  if (!['retained', 'paired', 'vacant'].includes(portPolicy)) throw new Error('Expected --port-policy retained|paired|vacant');
+  if (portPolicy === 'vacant' && !['move', 'joint'].includes(mode)) throw new Error('Vacant port repair requires a facility movement mode');
   if (!Number.isSafeInteger(maxNewCrossings) || maxNewCrossings < 0 || maxNewCrossings > 8) throw new Error('Expected --max-new-crossings 0..8');
   if (!['internal', 'downstream'].includes(junctionPolicy)) throw new Error('Expected --junction-policy internal|downstream');
   if (!['retained', 'terminal-flexible'].includes(endpointPolicy)) throw new Error('Expected --endpoint-policy retained|terminal-flexible');
@@ -71,7 +72,7 @@ try {
     try {
       const r = reembed(parent.detail, catalogs, request); generationMs += r.elapsed_ms;
       record.generation_ms = r.elapsed_ms; record.status = r.status; record.routes = r.routes; record.affected_chains = r.affected_chains; record.diagnostics = r.diagnostics;
-      if (r.status !== 'candidate') return;
+      if (r.status !== 'candidate') return record;
       let candidate = r.detail, score = r.score; record.raw_score = score;
       // Re-routing frees old bends/order. Compaction is optional postprocessing of that new geometry.
       const start = performance.now();
@@ -88,7 +89,7 @@ try {
           Object.assign(record, Object.fromEntries(Object.entries(checked).filter(([k]) => k !== 'detail')));
           record.status = checked.factory_validated ? 'unimproved-validated' : 'validation-rejected';
         }
-        return;
+        return record;
       }
       const checked = await validate(candidate, `candidate-${stages.length - 1}`);
       Object.assign(record, Object.fromEntries(Object.entries(checked).filter(([k]) => k !== 'detail')));
@@ -98,6 +99,7 @@ try {
       record.status = 'rejected'; record.diagnostics = [{ code: e.code ?? 'local-candidate-failed', severity: e.severity ?? 'info', stage: e.stage ?? 'local-reembedding', message: e.message, entity: e.entity ?? null }];
       failures.push({ ...context, ...record.diagnostics[0] });
     }
+    return record;
   };
   let termination = 'round-budget';
   for (let round = 0; round < rounds; round++) {
@@ -133,8 +135,19 @@ try {
       for (const [ordinal, move] of moves.entries()) {
         const translations = ['compound', 'coalescence'].includes(moveFamily) ? move.moves : [move];
         const assignments = [[], ...(portPolicy === 'paired' ? boundaryPortSwaps(parent.detail.witness, chains, translations).slice(0, 4) : [])];
-        for (const [port_variant, portAssignments] of assignments.entries()) for (const order of ['near', 'far'])
-          await attempt(parent, { moves: translations, order, portAssignments, releaseBridges: bridgePolicy === 'release' ? move.releaseBridges ?? incidentBridgeIds(parent.detail.witness, collapsed, new Set(translations.flatMap(m => m.instances))) : [] }, { round, phase: 'relocate', ordinal, port_variant, proposal_kind: move.kind });
+        const releaseBridges = bridgePolicy === 'release' ? move.releaseBridges ?? incidentBridgeIds(parent.detail.witness, collapsed, new Set(translations.flatMap(m => m.instances))) : [];
+        for (const [port_variant, portAssignments] of assignments.entries()) for (const order of ['near', 'far']) {
+          const request = { moves: translations, order, portAssignments, releaseBridges }, context = { round, phase: 'relocate', ordinal, port_variant, proposal_kind: move.kind };
+          const failedStage = stages.length, record = await attempt(parent, request, context), failed = record.routes?.find(r => r.status !== 'found');
+          if (portPolicy !== 'vacant' || record.status !== 'rejected' || !failed) continue;
+          const start = performance.now(), draft = releaseBridgeDraft(parent.detail.witness, catalogs, releaseBridges);
+          const local = extractChains(draft.witness, draft.released).chains;
+          const ports = vacantPortCandidates(parent.detail.witness, local, catalogs, translations, { chainIds: [failed.id], limit: 8 });
+          generationMs += performance.now() - start;
+          record.vacant_port_neighborhood = { ...ports, candidates: ports.candidates.length };
+          for (const [i, p] of ports.candidates.entries()) await attempt(parent, { ...request, portAssignments: p.portAssignments },
+            { ...context, phase: 'vacant-port-repair', port_variant: i + 1, failed_stage: failedStage, failed_chain: failed.id, endpoint_distance: p.endpoint_distance });
+        }
       }
     }
     if (selected === before) { termination = 'unimproved-neighborhood'; break; }
