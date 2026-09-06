@@ -1,0 +1,98 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
+import { reembed, extractChains, relocationCandidates } from './model.mjs';
+import { compactEmbedding } from '../constructive-embedding-compaction/model.mjs';
+import { executeValidator } from '../constructive-embedding-compaction/validator.mjs';
+import { normalizeGraph } from '../constructive-cycle-blocks/graph.mjs';
+import { inspectCoverage, better } from '../constructive-factory-closure/model.mjs';
+import { witnessScore } from '../constructive-auto-interface/compact.mjs';
+import { render } from '../constructive-bound-interconnect/view.mjs';
+const read = p => JSON.parse(fs.readFileSync(p)), write = (p, v) => fs.writeFileSync(p, JSON.stringify(v, null, 2) + '\n', { flag: 'wx' });
+const hash = p => createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+let output, created = false;
+try {
+  const keys = ['graph', 'baseline', 'recipes', 'facilities', 'items', 'transports', 'components', 'validator', 'output-directory'], options = {}, args = process.argv.slice(2);
+  for (let i = 0; i < args.length; i += 2) {
+    const k = args[i].slice(2);
+    if (!args[i].startsWith('--') || ![...keys, 'rounds', 'mode', 'move-limit'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
+    options[k] = args[i + 1];
+  }
+  for (const k of keys) if (!options[k]) throw new Error(`Missing --${k}`);
+  const rounds = Number(options.rounds ?? 2), mode = options.mode ?? 'joint', limit = Number(options['move-limit'] ?? 64);
+  if (!Number.isSafeInteger(rounds) || rounds < 1 || rounds > 8 || !Number.isSafeInteger(limit) || limit < 1 || limit > 512 || !['fixed', 'move', 'joint'].includes(mode))
+    throw new Error('Expected --rounds 1..8, --mode fixed|move|joint and --move-limit 1..512');
+  output = path.resolve(options['output-directory']); fs.mkdirSync(output); created = true; const began = performance.now();
+  const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k, read(options[k])]));
+  const graph = normalizeGraph(read(options.graph), catalogs), baseline = read(options.baseline), stages = [], failures = [];
+  let generationMs = 0, compactionMs = 0, validationMs = 0;
+  const validate = async (detail, name) => {
+    const start = performance.now(), directory = path.join(output, name); fs.mkdirSync(directory); write(path.join(directory, 'witness.json'), detail.witness);
+    const processResult = await executeValidator(path.resolve(options.validator), ['--witness', path.join(directory, 'witness.json'),
+      ...['recipes', 'facilities', 'items', 'transports', 'components'].flatMap(k => [`--${k}`, options[k]]), '--report-output', path.join(directory, 'validation.json')], path.join(directory, 'validator.log'));
+    write(path.join(directory, 'validator-process.json'), processResult);
+    if (processResult.timed_out || !fs.existsSync(path.join(directory, 'validation.json'))) throw new Error(`Validator failed to finish in ${directory}`);
+    const v = read(path.join(directory, 'validation.json')), coverage = inspectCoverage(graph, detail, v, true);
+    detail.accepted = detail.factory_validated = processResult.code === 0 && coverage.factory_validated;
+    write(path.join(directory, 'coverage.json'), coverage); write(path.join(directory, 'detail.json'), detail);
+    fs.writeFileSync(path.join(directory, 'index.html'), render(detail, v, catalogs), { flag: 'wx' });
+    validationMs += performance.now() - start;
+    return { detail, directory, factory_validated: detail.factory_validated, score: witnessScore(detail.witness), witness_sha256: hash(path.join(directory, 'witness.json')),
+      validator_ms: v.elapsed_ms, diagnostics: [...v.diagnostics, ...coverage.diagnostics] };
+  };
+  let selected = await validate(read(path.join(baseline.selected_directory, 'detail.json')), 'incumbent');
+  if (!selected.factory_validated) throw new Error('Complete incumbent failed independent graph validation');
+  const initialScore = selected.score;
+  const attempt = async (parent, request, context) => {
+    const record = { ...context, request, parent_directory: parent.directory }; stages.push(record);
+    try {
+      const r = reembed(parent.detail, catalogs, request); generationMs += r.elapsed_ms;
+      record.generation_ms = r.elapsed_ms; record.status = r.status; record.routes = r.routes; record.affected_chains = r.affected_chains; record.diagnostics = r.diagnostics;
+      if (r.status !== 'candidate') return;
+      let candidate = r.detail, score = r.score; record.raw_score = score;
+      // Re-routing frees old bends/order. Compaction is optional postprocessing of that new geometry.
+      const start = performance.now();
+      try {
+        let compacted = compactEmbedding(compactEmbedding(candidate, catalogs, 'x'), catalogs, 'y');
+        const compactScore = witnessScore(compacted.witness);
+        if (better(compactScore.tuple, score.tuple)) { candidate = compacted; score = compactScore; }
+      } catch (e) { record.compaction_diagnostic = { code: e.code ?? 'local-compaction-failed', message: e.message }; }
+      record.compaction_ms = performance.now() - start; compactionMs += record.compaction_ms; record.score = score;
+      if (!better(score.tuple, selected.score.tuple)) { record.status = 'unimproved'; return; }
+      const checked = await validate(candidate, `candidate-${stages.length - 1}`);
+      Object.assign(record, Object.fromEntries(Object.entries(checked).filter(([k]) => k !== 'detail')));
+      record.status = checked.factory_validated ? 'selected' : 'validation-rejected';
+      if (checked.factory_validated) selected = checked;
+    } catch (e) {
+      record.status = 'rejected'; record.diagnostics = [{ code: e.code ?? 'local-candidate-failed', severity: e.severity ?? 'info', stage: e.stage ?? 'local-reembedding', message: e.message, entity: e.entity ?? null }];
+      failures.push({ ...context, ...record.diagnostics[0] });
+    }
+  };
+  let termination = 'round-budget';
+  for (let round = 0; round < rounds; round++) {
+    const before = selected;
+    if (mode !== 'move') {
+      // Keep endpoint identity stable while recomputing chain ids after each accepted reroute/compaction.
+      const count = extractChains(selected.detail.witness).chains.length;
+      for (let id = 0; id < count; id++) await attempt(selected, { chainIds: [id] }, { round, phase: 'fixed-path', ordinal: id });
+    }
+    if (mode !== 'fixed') {
+      const parent = selected, start = performance.now(), moves = relocationCandidates(parent.detail, { limit }); generationMs += performance.now() - start;
+      for (const [ordinal, move] of moves.entries()) for (const order of ['near', 'far']) await attempt(parent, { move, order }, { round, phase: 'relocate', ordinal });
+    }
+    if (selected === before) { termination = 'unimproved-neighborhood'; break; }
+  }
+  const report = { schema_version: 1, status: better(selected.score.tuple, initialScore.tuple) ? 'complete-factory-improved' : 'complete-incumbent-retained', factory_validated: true,
+    selected_directory: selected.directory, initial_score: initialScore, score: selected.score, mode, rounds, move_limit: limit, termination,
+    generation_ms: generationMs, compaction_ms: compactionMs, validation_output_ms: validationMs, elapsed_ms: performance.now() - began, stages, failures,
+    provenance: keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
+    source_hashes: Object.fromEntries(['model.mjs', 'path.mjs', 'run.mjs', '../constructive-embedding-compaction/model.mjs', '../constructive-embedding-compaction/length.mjs',
+      '../constructive-embedding-compaction/validator.mjs', '../constructive-factory-closure/model.mjs', '../constructive-cycle-blocks/graph.mjs',
+      '../constructive-auto-interface/compact.mjs', '../constructive-bound-interconnect/view.mjs', '../constructive-placement-only/model.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
+  write(path.join(output, 'report.json'), report); fs.copyFileSync(path.join(selected.directory, 'index.html'), path.join(output, 'index.html'));
+  console.log(JSON.stringify({ status: report.status, score: report.score.tuple, attempts: stages.length, elapsed_ms: report.elapsed_ms, output }));
+} catch (e) {
+  const diagnostic = { code: e.code ?? 'local-execution-failed', severity: 'error', stage: e.stage ?? 'local-reembedding', message: e.message };
+  if (created) write(path.join(output, 'failure.json'), diagnostic);
+  console.error(JSON.stringify(diagnostic)); process.exitCode = 1;
+}
