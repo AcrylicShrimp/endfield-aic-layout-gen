@@ -21,6 +21,14 @@ are obstacles; independent transport layers remain independent. No new crossings
 are invented by this slice. Bound the search by the current witness extent, not a game canvas.
 Failure within that neighborhood is not global infeasibility. Report exhausted work separately.
 
+An optional `totalWorkBudget` additionally caps the sum of expansions across all affected
+chains in one re-embedding. It is a positive integer; the historical per-chain `workBudget`
+still applies, and omitting the shared cap leaves existing controls unchanged. Multi-step RL
+uses this explicit account so a multi-route action cannot multiply its allotted work.
+An optional in-process `onRouteResult` observer receives each completed path search's ID,
+status and expansion count, including rejected paths, before later candidate processing.
+This keeps diagnostic work accounting available even if a later operation throws.
+
 A facility move rips up every chain touching its new body or translated attached terminal, as
 well as every incident chain. Reject overlap with other bodies or fixed anchors/components.
 Re-embed affected chains transactionally in deterministic order. All removed chains must be

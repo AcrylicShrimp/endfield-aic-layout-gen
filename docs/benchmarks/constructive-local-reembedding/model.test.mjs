@@ -15,6 +15,22 @@ const make = b => structuredClone(compactInterface(constructCycle(catalogs, grap
 const margins = w => w.transport_networks.map(n => ({ id: n.id, item: n.item, transport: n.transport, requirement_ids: n.requirement_ids, terminals: n.terminals, component_ids: n.component_ids }));
 function freeze(value) { if (value && typeof value === 'object' && !Object.isFrozen(value)) { Object.freeze(value); for (const v of Object.values(value)) freeze(v); } return value; }
 
+test('optional shared expansion cap and observer charge every attempted chain without changing uncapped controls', () => {
+  const d = freeze(make(blocks[0])), snapshot = structuredClone(d), ids = extractChains(d.witness).chains.map(c => c.id);
+  const observed = [], plain = reembed(d, catalogs, { chainIds: ids });
+  const measured = reembed(d, catalogs, { chainIds: ids, onRouteResult: r => observed.push(r) });
+  assert.deepEqual(measured.routes, plain.routes);
+  assert.deepEqual(observed, measured.routes.map(({ id, status, expanded }) => ({ id, status, expanded })));
+  const budget = Math.max(1, plain.routes[0].expanded), capped = [];
+  const limited = reembed(d, catalogs, { chainIds: ids, totalWorkBudget: budget, onRouteResult: r => capped.push(r) });
+  assert.ok(capped.reduce((sum, r) => sum + r.expanded, 0) <= budget);
+  assert.equal(limited.status, 'rejected');
+  assert.equal(limited.routes.at(-1).status, 'work-budget');
+  assert.deepEqual(d, snapshot);
+  for (const value of [0, -1, NaN, 1.5]) assert.throws(() => reembed(d, catalogs, { totalWorkBudget: value }), { code: 'local-total-work-budget' });
+  assert.throws(() => reembed(d, catalogs, { onRouteResult: true }), { code: 'local-route-observer' });
+});
+
 test('explicit route priority changes only ordering, validates IDs and leaves the input intact', () => {
   const d = freeze(make(blocks[0])), snapshot = structuredClone(d), { chains } = extractChains(d.witness), ids = chains.map(c => c.id);
   assert.ok(ids.length > 1);

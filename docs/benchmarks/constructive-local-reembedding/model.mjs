@@ -76,7 +76,10 @@ export function flexibleTerminalAnchors(w, chains) {
 
 export function reembed(detail, catalogs, options = {}) {
   if (Object.hasOwn(options, 'move')) fail('local-move-input', 'Move schema 2 is obsolete; supply schema-3 moves array');
-  const { moves = [], facilityRotations = [], componentPoses = [], releaseBridges = [], chainIds = [], order = 'near', workBudget = 200000, endpointPolicy = 'retained', junctionPolicy = 'internal', routePriority = [], maxNewCrossings = 0, portAssignments = [] } = options;
+  const { moves = [], facilityRotations = [], componentPoses = [], releaseBridges = [], chainIds = [], order = 'near', workBudget = 200000, totalWorkBudget = null, onRouteResult = null, endpointPolicy = 'retained', junctionPolicy = 'internal', routePriority = [], maxNewCrossings = 0, portAssignments = [] } = options;
+  if (totalWorkBudget !== null && (!Number.isSafeInteger(totalWorkBudget) || totalWorkBudget < 1))
+    fail('local-total-work-budget', 'Expected a positive shared route-expansion budget');
+  if (onRouteResult !== null && typeof onRouteResult !== 'function') fail('local-route-observer', 'Expected a route-result observer function');
   const began = performance.now(), { witness: original, released } = releaseBridgeDraft(detail.witness, catalogs, releaseBridges);
   const { chains, anchors } = extractChains(original, released), bounds = extentOf(original);
   if (!['near', 'far'].includes(order)) fail('local-route-order', 'Expected near or far route order');
@@ -145,7 +148,7 @@ export function reembed(detail, catalogs, options = {}) {
       const k = key(p); if (!reservations[j.transport].has(k)) reservations[j.transport].set(k, new Set()); reservations[j.transport].get(k).add(j.id);
     }
   }
-  const results = [], installedCrossings = [];
+  const results = [], installedCrossings = []; let routeExpansions = 0;
   for (const job of jobs) {
     const blocked = new Set([...body, ...occupied[job.transport]]);
     for (const [k, owners] of reservations[job.transport]) if (!owners.has(job.id)) blocked.add(k);
@@ -157,8 +160,12 @@ export function reembed(detail, catalogs, options = {}) {
       ...jobs.filter(j => j.transport === job.transport).flatMap(j => [key(j.start), key(j.end)])]);
     const carriers = maxNewCrossings > installedCrossings.length ? chains.filter(c => !changed.has(c.id) || paths.has(c.id)).map(c => ({ ...c, cells: paths.get(c.id) ?? c.cells })) : [];
     const sites = carriers.length ? crossingOptions(carriers, job, catalogs, excluded) : new Map();
-    const result = shortestPath(job.start, job.end, blocked, bounds, { first: job.first, last: job.last, workBudget,
-      crossingOptions: sites, crossingLimit: maxNewCrossings - installedCrossings.length, allowZeroLength: job.zero_length === true });
+    const remainingWork = totalWorkBudget === null ? workBudget : Math.min(workBudget, totalWorkBudget - routeExpansions);
+    const result = remainingWork <= 0 ? { status: 'work-budget', expanded: 0, crossings: [] }
+      : shortestPath(job.start, job.end, blocked, bounds, { first: job.first, last: job.last, workBudget: remainingWork,
+        crossingOptions: sites, crossingLimit: maxNewCrossings - installedCrossings.length, allowZeroLength: job.zero_length === true });
+    routeExpansions += result.expanded;
+    onRouteResult?.({ id: job.id, status: result.status, expanded: result.expanded });
     results.push({ id: job.id, item: job.item, first: job.first, last: job.last, status: result.status, expanded: result.expanded, old_steps: job.cells.length - 1,
       steps: result.steps, turns: result.turns, crossing_sites: sites.size, crossings: result.crossings ?? [] });
     if (result.status !== 'found') return { status: 'rejected', diagnostics: [{ code: `local-${result.status}`, severity: 'info', stage: 'local-reembedding', entity: job.id,
