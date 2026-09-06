@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "id": "enriched-iron-single-chain-fragment",
+  "nodes": [
+    {"id":"F","recipe":"furnance-iron-nugget-1","utilization":{"numerator":1,"denominator":1}},
+    {"id":"G","recipe":"grinder-iron-powder-1","utilization":{"numerator":1,"denominator":1}},
+    {"id":"T","recipe":"thickener-iron-enr-powder-1","utilization":{"numerator":1,"denominator":1}}
+  ],
+  "edges": [
+    {"id":"iron","source":"F","target":"G","item":"item-iron-nugget","rate":{"numerator":1,"denominator":2}},
+    {"id":"powder","source":"G","target":"T","item":"item-iron-powder","rate":{"numerator":1,"denominator":2}}
+  ],
+  "external": [
+    {"id":"ore-in","instance":"F","direction":"input","item":"item-iron-ore","rate":{"numerator":1,"denominator":2}},
+    {"id":"other-iron-chain-cut","instance":"T","direction":"input","item":"item-iron-powder","rate":{"numerator":1,"denominator":2}},
+    {"id":"plant-chain-cut","instance":"T","direction":"input","item":"item-plant-moss-powder-3","rate":{"numerator":1,"denominator":2}},
+    {"id":"product-out","instance":"T","direction":"output","item":"item-iron-enr-powder","rate":{"numerator":1,"denominator":2}}
+  ],
+  "policy": {"families":["straight","left","right"],"gaps":[1,2],"ports_per_side":3},
+  "budget": {"proposals":512,"route_expansions":200000,"validations":512,"elapsed_ms":30000}
+}

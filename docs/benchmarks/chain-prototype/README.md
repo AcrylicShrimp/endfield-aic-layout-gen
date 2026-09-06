@@ -1,7 +1,16 @@
 # Chain-reasoning prototype
 
-Status: milestone 0 complete; see the [reference report](reference-report.md). No constructor implemented yet.
+Status: milestones 0 and 1 complete. The simple-chain constructor is implemented; cycles,
+branches, complete external factories and completion-aware improvement remain in progress.
 This directory is the separate experimental entry point; production commands remain unchanged.
+
+## Implemented entry point
+
+See the [chain contract](chain-contract.md) and [milestone-1 report](chain-report.md) for the
+geometry-free request DTO, CLI command, generated straight/bent chains, decision traces,
+shared work budgets and verification. The three `*-chain.json` requests are explicit small
+chain fragments, not substitutes for the full recipe-family factories required by the goal.
+The [reference report](reference-report.md) retains the independently validated human layouts.
 
 ## Contract direction
 

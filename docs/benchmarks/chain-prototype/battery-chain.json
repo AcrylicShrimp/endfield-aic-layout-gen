@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "battery-iron-chain-fragment",
+  "nodes": [
+    {"id":"F","recipe":"furnance-iron-nugget-1","utilization":{"numerator":1,"denominator":1}},
+    {"id":"C","recipe":"component-iron-cmpt-1","utilization":{"numerator":1,"denominator":1}}
+  ],
+  "edges": [
+    {"id":"iron","source":"F","target":"C","item":"item-iron-nugget","rate":{"numerator":1,"denominator":2}}
+  ],
+  "external": [
+    {"id":"ore-in","instance":"F","direction":"input","item":"item-iron-ore","rate":{"numerator":1,"denominator":2}},
+    {"id":"component-out","instance":"C","direction":"output","item":"item-iron-cmpt","rate":{"numerator":1,"denominator":2}}
+  ],
+  "policy": {"families":["straight","left","right"],"gaps":[1,2],"ports_per_side":3},
+  "budget": {"proposals":256,"route_expansions":100000,"validations":256,"elapsed_ms":30000}
+}

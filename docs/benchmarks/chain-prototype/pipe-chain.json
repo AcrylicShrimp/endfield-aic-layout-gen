@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "id": "xiranite-pipe-chain-fragment",
+  "nodes": [
+    {"id":"L","recipe":"pool-liquid-liquid-xiranite-1","utilization":{"numerator":1,"denominator":1}},
+    {"id":"P","recipe":"pool-liquid-xiranite-poly-1","utilization":{"numerator":1,"denominator":1}}
+  ],
+  "edges": [
+    {"id":"liquid","source":"L","target":"P","item":"item-liquid-xiranite","rate":{"numerator":1,"denominator":2}}
+  ],
+  "external": [
+    {"id":"water-in","instance":"L","direction":"input","item":"item-liquid-water","rate":{"numerator":1,"denominator":2}},
+    {"id":"powder-in","instance":"L","direction":"input","item":"item-xiranite-powder","rate":{"numerator":1,"denominator":2}},
+    {"id":"sewage-in","instance":"P","direction":"input","item":"item-liquid-sewage","rate":{"numerator":1,"denominator":2}},
+    {"id":"lowpoly-out","instance":"P","direction":"output","item":"item-liquid-xiranite-lowpoly","rate":{"numerator":1,"denominator":2}},
+    {"id":"poly-out","instance":"P","direction":"output","item":"item-liquid-xiranite-poly","rate":{"numerator":1,"denominator":2}}
+  ],
+  "policy": {"families":["straight","left","right"],"gaps":[1,2],"ports_per_side":3},
+  "budget": {"proposals":256,"route_expansions":100000,"validations":256,"elapsed_ms":30000}
+}
