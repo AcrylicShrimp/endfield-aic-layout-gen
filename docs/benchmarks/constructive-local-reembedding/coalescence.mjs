@@ -8,6 +8,11 @@ const box = ps => ({ x: Math.min(...ps.map(p => p.x)), y: Math.min(...ps.map(p =
   right: Math.max(...ps.map(p => p.x + p.width)), bottom: Math.max(...ps.map(p => p.y + p.height)) });
 const overlap = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
 
+export function incidentBridgeIds(w, chains, memberIds) {
+  const incident = chains.filter(c => [...c.startTerminals, ...c.endTerminals].some(t => memberIds.has(t.endpoint.instance)));
+  return w.logistics_components.filter(c => c.kind === 'bridge' && incident.some(j => j.transport === c.transport && j.cells.some(p => key(p) === key(c.position)))).map(c => c.id);
+}
+
 export function terminalLinks(chains) {
   const links = new Map(), starts = new Map();
   for (const c of chains) { const k = `${c.network}:${key(c.cells[0])}`; if (!starts.has(k)) starts.set(k, []); starts.get(k).push(c); }
@@ -40,8 +45,7 @@ export function coalescenceCandidates(detail, graph, catalogs, { limit = 128, po
   outer: for (const [pair, { a, b, link }] of pairs.entries()) {
     pairsConsidered++;
     const memberIds = new Set([...a.instances, ...b.instances]);
-    const incident = chains.filter(c => [...c.startTerminals, ...c.endTerminals].some(t => memberIds.has(t.endpoint.instance)));
-    const pairBridges = detail.witness.logistics_components.filter(c => c.kind === 'bridge' && incident.some(j => j.transport === c.transport && j.cells.some(p => key(p) === key(c.position)))).map(c => c.id);
+    const pairBridges = incidentBridgeIds(detail.witness, chains, memberIds);
     const draft = releaseBridgeDraft(detail.witness, catalogs, pairBridges), local = extractChains(draft.witness, draft.released);
     const rerouteChains = new Set(local.chains.filter(c => c.cells.some(p => draft.released.has(`${c.transport}:${key(p)}`))).map(c => c.id));
     for (const [vx, vy] of directions) {
@@ -72,9 +76,9 @@ export function coalescenceCandidates(detail, graph, catalogs, { limit = 128, po
       try {
         const plan = movementPlan(draft.witness, local.chains, local.anchors, p.moves, { junctionPolicy, rerouteChains });
         const carried = [...plan.fixedChains.values()].flat();
-        for (const n of w.transport_networks) for (const t of n.terminals) carried.push(plan.shiftAnchor(n.transport, t.position));
+        for (const n of w.transport_networks) for (const t of n.terminals) carried.push(plan.shiftTerminal(t));
         if (carried.some(p => p.x < bounds.minX || p.x > bounds.maxX || p.y < bounds.minY || p.y > bounds.maxY)) continue;
-        const delta = local.chains.reduce((s, c) => s + distance(plan.shiftAnchor(c.transport, c.cells[0]), plan.shiftAnchor(c.transport, c.cells.at(-1))) - distance(c.cells[0], c.cells.at(-1)), 0);
+        const delta = local.chains.reduce((s, c) => s + distance(plan.shiftEndpoint(c, false), plan.shiftEndpoint(c, true)) - distance(c.cells[0], c.cells.at(-1)), 0);
         proposals.push({ ...p, releaseBridges: pairBridges, endpoint_delta: delta, rank: count++ }); if (count === 32) break;
       } catch (e) { if (!e.code) throw e; rejected[e.code] = (rejected[e.code] ?? 0) + 1; }
     }

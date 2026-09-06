@@ -34,11 +34,14 @@ test('same shifts preserve interiors, conflicting moved anchors and overlapping 
   assert.throws(() => movementPlan(w, chains, anchors, { instances: ['a'], dx: 0, dy: 0 }), { code: 'local-move-input' });
 });
 
-test('shared zero-length owners must receive equal translations even in separate primitives', () => {
+test('isolated shared zero-length owners may separate without losing endpoint identity', () => {
   const w = fixture(); w.placements[1].x = 4;
   const n = w.transport_networks[0]; n.cells = [p(3)]; n.segments = []; n.terminals[1].position = p(3);
   const { chains, anchors } = extractChains(w);
-  assert.throws(() => movementPlan(w, chains, anchors, [{ instances: ['a'], dx: 0, dy: 1 }, { instances: ['b'], dx: 0, dy: 2 }]), { code: 'local-shared-terminal-move' });
+  const split = movementPlan(w, chains, anchors, [{ instances: ['a'], dx: 0, dy: 1 }, { instances: ['b'], dx: 0, dy: 2 }]);
+  assert.deepEqual(split.shiftEndpoint(chains[0], false), p(3, 3));
+  assert.deepEqual(split.shiftEndpoint(chains[0], true), p(3, 4));
+  assert.equal(split.changed.size, 1);
   const r = movementPlan(w, chains, anchors, [{ instances: ['a'], dx: 0, dy: 1 }, { instances: ['b'], dx: 0, dy: 1 }]);
   assert.deepEqual(r.shiftAnchor('belt', p(3)), p(3, 3));
 });

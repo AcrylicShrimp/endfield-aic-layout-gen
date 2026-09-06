@@ -94,13 +94,14 @@ export function groupCandidates(detail, graph, catalogs, { limit = 64, cones = f
       for (const dx of [r.x - hull.minX, r.x + r.width - 1 - hull.maxX]) for (const dy of [r.y - hull.minY, r.y + r.height - 1 - hull.maxY]) {
         xs.add(dx); ys.add(dy); voidShifts.add(`${dx},${dy}`);
       }
-    const boundary = chains.filter(c => seed.movable(c.transport, c.cells[0]) !== seed.movable(c.transport, c.cells.at(-1)));
+    const ownsEndpoint = (c, end) => c.zero_length ? ids.has((end ? c.endTerminals : c.startTerminals)[0].endpoint.instance) : seed.movable(c.transport, end ? c.cells.at(-1) : c.cells[0]);
+    const boundary = chains.filter(c => ownsEndpoint(c, false) !== ownsEndpoint(c, true));
     const oldDistance = boundary.reduce((s, c) => s + distance(c.cells[0], c.cells.at(-1)), 0), raw = [];
     for (const dx of xs) for (const dy of ys) {
       if ((!dx && !dy) || a.minX + dx < bounds.minX || a.maxX + dx > bounds.maxX || a.minY + dy < bounds.minY || a.maxY + dy > bounds.maxY) continue;
       if (moving.some(p => retained.some(q => p.x + dx < q.x + q.width && q.x < p.x + dx + p.width && p.y + dy < q.y + q.height && q.y < p.y + dy + p.height))) continue;
-      const endpointDelta = boundary.reduce((s, c) => { const shift = p => seed.movable(c.transport, p) ? { x: p.x + dx, y: p.y + dy } : p;
-        return s + distance(shift(c.cells[0]), shift(c.cells.at(-1))); }, 0) - oldDistance;
+      const endpointDelta = boundary.reduce((s, c) => { const shift = (p, end) => ownsEndpoint(c, end) ? { x: p.x + dx, y: p.y + dy } : p;
+        return s + distance(shift(c.cells[0], false), shift(c.cells.at(-1), true)); }, 0) - oldDistance;
       const envelope = (Math.max(b.maxX, a.maxX + dx) - Math.min(b.minX, a.minX + dx) + 1) * (Math.max(b.maxY, a.maxY + dy) - Math.min(b.minY, a.minY + dy) + 1);
       raw.push({ ...group, labels: group.instances.map(id => detail.labels[id]), dx, dy, endpoint_delta: endpointDelta, body_envelope_area: envelope, group: ordinal, void_candidate: voidShifts.has(`${dx},${dy}`) });
     }
@@ -115,7 +116,7 @@ export function groupCandidates(detail, graph, catalogs, { limit = 64, cones = f
           const plan = movementPlan(w, chains, anchors, [move], { junctionPolicy });
           // Every carried cell, not only its body, must stay inside this explicit neighborhood.
           if ([...plan.fixedChains.values()].flat().some(p => p.x < bounds.minX || p.x > bounds.maxX || p.y < bounds.minY || p.y > bounds.maxY)) continue;
-          if ([...plan.moved].some(tag => { const p = tag.slice(tag.indexOf(':') + 1).split(',').map(Number); return p[0] + move.dx < bounds.minX || p[0] + move.dx > bounds.maxX || p[1] + move.dy < bounds.minY || p[1] + move.dy > bounds.maxY; })) continue;
+          if (w.transport_networks.some(n => n.terminals.some(t => { const p = plan.shiftTerminal(t); return p.x < bounds.minX || p.x > bounds.maxX || p.y < bounds.minY || p.y > bounds.maxY; }))) continue;
           seen.add(k); valid.push({ ...move, policy, carried_components: plan.components.length, translated_chains: plan.fixedChains.size }); if (++count === 4) break;
         } catch { /* Rejected geometry is not a routing trial or a proof of infeasibility. */ }
       }

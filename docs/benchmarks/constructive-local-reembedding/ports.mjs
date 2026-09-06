@@ -12,11 +12,13 @@ export function planPortAssignments(w, catalogs, assignments, eligible) {
     const matches = w.transport_networks.flatMap(n => n.terminals.filter(t => t.id === a.terminal).map(t => ({ n, t })));
     if (matches.length !== 1) fail('Assignment must identify one existing terminal', a.terminal);
     const { n, t } = matches[0];
-    if (t.endpoint.kind !== 'facility' || !eligible.has(tag(n.transport, t.position))) fail('Only singleton ordinary facility terminals can change ports', a.terminal);
+    if (t.endpoint.kind !== 'facility' || !eligible.has(t.id)) fail('Only independently identified ordinary facility terminals can change ports', a.terminal);
     const q = ports[t.endpoint.instance].find(p => p.id === a.port && p.direction === t.direction && p.transport === n.transport);
     if (!q) fail('Assigned port has incompatible identity, direction or transport', a);
-    changes.set(t.id, { ...t, endpoint: { ...t.endpoint, port: a.port }, position: { ...q.connection } });
-    if (key(q.connection) !== key(t.position)) positions.set(tag(n.transport, t.position), { ...q.connection });
+    if (a.port !== t.endpoint.port) {
+      changes.set(t.id, { ...t, endpoint: { ...t.endpoint, port: a.port }, position: { ...q.connection } });
+      positions.set(t.id, { ...q.connection });
+    }
   }
   const networks = w.transport_networks.map(n => ({ ...n, terminals: n.terminals.map(t => changes.get(t.id) ?? t) }));
   const used = new Set(), counts = new Map();

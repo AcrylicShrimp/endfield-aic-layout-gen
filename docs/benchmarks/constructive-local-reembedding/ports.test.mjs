@@ -11,7 +11,7 @@ function fixture() {
   const ports = project(w, catalogs).p.filter(p => p.transport === 'belt' && p.direction === 'input');
   const terminals = ports.slice(0, 2).map((p, i) => ({ id: `t${i}`, position: p.connection, direction: 'input', endpoint: { kind: 'facility', instance: 'p', port: p.id }, rate: { numerator: 1, denominator: 3 } }));
   w.transport_networks = [{ item: 'runtime-fixture', transport: 'belt', terminals }];
-  return { w, terminals, swap: [{ terminal: 't0', port: terminals[1].endpoint.port }, { terminal: 't1', port: terminals[0].endpoint.port }], eligible: new Set(terminals.map(t => `belt:${key(t.position)}`)) };
+  return { w, terminals, swap: [{ terminal: 't0', port: terminals[1].endpoint.port }, { terminal: 't1', port: terminals[0].endpoint.port }], eligible: new Set(terminals.map(t => t.id)) };
 }
 
 test('simultaneous port swaps preserve identities and rates, not old positions, without mutation', () => {

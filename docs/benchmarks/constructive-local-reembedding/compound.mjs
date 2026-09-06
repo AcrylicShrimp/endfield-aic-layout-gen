@@ -2,16 +2,19 @@ import { connectedGroups } from './groups.mjs';
 import { extractChains, extentOf } from './model.mjs';
 import { movementPlan } from './movement.mjs';
 import { distance } from './path.mjs';
+import { detachablePairs } from './terminal-identity.mjs';
 const box = ps => ({ x: Math.min(...ps.map(p => p.x)), y: Math.min(...ps.map(p => p.y)),
   right: Math.max(...ps.map(p => p.x + p.width)), bottom: Math.max(...ps.map(p => p.y + p.height)) });
 
 export function closeTerminalGroups(w, seeds, limit = 16) {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 16) throw Object.assign(new Error('Expected membership limit 1..16'), { code: 'compound-budget' });
   const ids = new Set(w.placements.map(p => p.instance)), adjacent = new Map([...ids].map(id => [id, new Set()])), fixed = new Set(), slots = new Map();
+  const detachable = detachablePairs(w);
   for (const n of w.transport_networks) for (const t of n.terminals) {
     const k = `${n.transport}:${t.position.x},${t.position.y}`; if (!slots.has(k)) slots.set(k, []); slots.get(k).push(t.endpoint);
   }
-  for (const owners of slots.values()) {
+  for (const [slot, owners] of slots) {
+    if (detachable.has(slot)) continue;
     const members = owners.filter(e => e.kind === 'facility').map(e => e.instance);
     if (members.some(id => !ids.has(id))) throw Object.assign(new Error('Unknown shared-terminal owner'), { code: 'compound-owner' });
     if (owners.some(e => e.kind === 'external')) members.forEach(id => fixed.add(id));
@@ -66,11 +69,11 @@ export function compoundCandidates(detail, graph, catalogs, { limit = 128, pairB
       try {
         plan = movementPlan(w, chains, anchors, moves, { junctionPolicy });
         const carried = [...plan.fixedChains.values()].flat();
-        for (const n of w.transport_networks) for (const t of n.terminals) carried.push(plan.shiftAnchor(n.transport, t.position));
+        for (const n of w.transport_networks) for (const t of n.terminals) carried.push(plan.shiftTerminal(t));
         if (carried.some(p => p.x < bounds.minX || p.y < bounds.minY || p.x > bounds.maxX || p.y > bounds.maxY)) continue;
       } catch (e) { if (!e.code) throw e; rejected.set(e.code, (rejected.get(e.code) ?? 0) + 1); continue; }
       const bb = box(ps), envelope = (bb.right - bb.x) * (bb.bottom - bb.y);
-      const delta = chains.reduce((n, c) => n + distance(plan.shiftAnchor(c.transport, c.cells[0]), plan.shiftAnchor(c.transport, c.cells.at(-1))) - distance(c.cells[0], c.cells.at(-1)), 0);
+      const delta = chains.reduce((n, c) => n + distance(plan.shiftEndpoint(c, false), plan.shiftEndpoint(c, true)) - distance(c.cells[0], c.cells.at(-1)), 0);
       proposals.push({ moves, kind: o.kind, pair: [i, j], labels: moves.map(m => m.instances.map(id => detail.labels[id])), body_envelope_area: envelope, endpoint_delta: delta });
     }
   }

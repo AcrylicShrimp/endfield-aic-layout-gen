@@ -4,8 +4,8 @@ import { createHash } from 'node:crypto';
 import { reembed, extractChains, relocationCandidates, extentOf } from './model.mjs';
 import { groupCandidates } from './groups.mjs';
 import { compoundCandidates } from './compound.mjs';
-import { componentPoseCandidates } from './components.mjs';
-import { coalescenceCandidates } from './coalescence.mjs';
+import { componentPoseCandidates, releaseBridgeDraft } from './components.mjs';
+import { coalescenceCandidates, incidentBridgeIds } from './coalescence.mjs';
 import { boundaryPortSwaps } from './ports.mjs';
 import { compactEmbedding } from '../constructive-embedding-compaction/model.mjs';
 import { executeValidator } from '../constructive-embedding-compaction/validator.mjs';
@@ -33,7 +33,7 @@ try {
   const layerPolicy = options['layer-policy'] ?? 'coupled';
   const bridgePolicy = options['bridge-policy'] ?? 'retained';
   if (!['retained', 'release'].includes(bridgePolicy)) throw new Error('Expected --bridge-policy retained|release');
-  if (bridgePolicy === 'release' && moveFamily !== 'coalescence') throw new Error('Bridge release currently requires --move-family coalescence');
+  if (bridgePolicy === 'release' && !['move', 'joint'].includes(mode)) throw new Error('Bridge release requires a facility movement mode');
   const auditBudget = Number(options['audit-unimproved'] ?? 0); let audited = 0;
   if (!Number.isSafeInteger(auditBudget) || auditBudget < 0 || auditBudget > 64) throw new Error('Expected --audit-unimproved 0..64');
   if (!['coupled', 'independent'].includes(layerPolicy)) throw new Error('Expected --layer-policy coupled|independent');
@@ -126,20 +126,22 @@ try {
         kinds: Object.fromEntries([...new Set(moves.map(m => m.kind))].map(kind => [kind, moves.filter(m => m.kind === kind).length])) });
       for (const diagnostic of portfolio.diagnostics ?? []) failures.push({ round, phase: 'group-screen', ...diagnostic });
       const chains = portPolicy === 'paired' ? extractChains(parent.detail.witness).chains : [];
+      const bridgeDraft = bridgePolicy === 'release' ? releaseBridgeDraft(parent.detail.witness, catalogs, parent.detail.witness.logistics_components.filter(c => c.kind === 'bridge').map(c => c.id)) : null;
+      const collapsed = bridgeDraft ? extractChains(bridgeDraft.witness, bridgeDraft.released).chains : [];
       for (const [ordinal, move] of moves.entries()) {
         const translations = ['compound', 'coalescence'].includes(moveFamily) ? move.moves : [move];
         const assignments = [[], ...(portPolicy === 'paired' ? boundaryPortSwaps(parent.detail.witness, chains, translations).slice(0, 4) : [])];
         for (const [port_variant, portAssignments] of assignments.entries()) for (const order of ['near', 'far'])
-          await attempt(parent, { moves: translations, order, portAssignments, releaseBridges: bridgePolicy === 'release' ? move.releaseBridges : [] }, { round, phase: 'relocate', ordinal, port_variant, proposal_kind: move.kind });
+          await attempt(parent, { moves: translations, order, portAssignments, releaseBridges: bridgePolicy === 'release' ? move.releaseBridges ?? incidentBridgeIds(parent.detail.witness, collapsed, new Set(translations.flatMap(m => m.instances))) : [] }, { round, phase: 'relocate', ordinal, port_variant, proposal_kind: move.kind });
       }
     }
     if (selected === before) { termination = 'unimproved-neighborhood'; break; }
   }
-  const report = { schema_version: 1, status: better(selected.score.tuple, initialScore.tuple) ? 'complete-factory-improved' : 'complete-incumbent-retained', factory_validated: true,
+  const report = { schema_version: 1, chain_schema_version: 2, status: better(selected.score.tuple, initialScore.tuple) ? 'complete-factory-improved' : 'complete-incumbent-retained', factory_validated: true,
     selected_directory: selected.directory, initial_score: initialScore, score: selected.score, mode, rounds, move_limit: limit, move_family: moveFamily, move_schema_version: 3, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, max_new_crossings: maxNewCrossings, port_policy: portPolicy, layer_policy: layerPolicy, bridge_policy: bridgePolicy, termination,
     generation_ms: generationMs, compaction_ms: compactionMs, validation_output_ms: validationMs, elapsed_ms: performance.now() - began, unimproved_audit_budget: auditBudget, unimproved_audited: audited, neighborhoods, stages, failures,
     provenance: keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
-    source_hashes: Object.fromEntries(['model.mjs', 'movement.mjs', 'groups.mjs', 'compound.mjs', 'coalescence.mjs', 'components.mjs', 'path.mjs', 'crossing.mjs', 'ports.mjs', 'run.mjs', '../constructive-embedding-compaction/model.mjs', '../constructive-embedding-compaction/length.mjs',
+    source_hashes: Object.fromEntries(['model.mjs', 'movement.mjs', 'terminal-identity.mjs', 'groups.mjs', 'compound.mjs', 'coalescence.mjs', 'components.mjs', 'path.mjs', 'crossing.mjs', 'ports.mjs', 'run.mjs', '../constructive-embedding-compaction/model.mjs', '../constructive-embedding-compaction/length.mjs',
       '../constructive-embedding-compaction/validator.mjs', '../constructive-factory-closure/model.mjs', '../constructive-cycle-blocks/graph.mjs',
       '../constructive-auto-interface/compact.mjs', '../constructive-bound-interconnect/view.mjs', '../constructive-placement-only/model.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), report); fs.copyFileSync(path.join(selected.directory, 'index.html'), path.join(output, 'index.html'));

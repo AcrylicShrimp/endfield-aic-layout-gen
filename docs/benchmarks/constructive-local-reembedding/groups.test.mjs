@@ -62,7 +62,7 @@ test('whole cyclic groups translate all internal paths and junctions without mut
   }
 });
 
-test('zero-length shared terminals move together and reject partial ownership', () => {
+test('unidentified shared terminals remain coupled and reject partial ownership', () => {
   const position = { x: 1, y: 0 }, rate = { numerator: 1, denominator: 2 };
   const w = { placements: [{ instance: 'a', x: 0, y: 0, width: 1, height: 1 }, { instance: 'b', x: 2, y: 0, width: 1, height: 1 }],
     logistics_components: [], transport_networks: [{ id: 'n', transport: 'belt', cells: [position], segments: [], terminals: [
@@ -85,6 +85,7 @@ test('downstream junction ownership carries all arms only when every output owne
     logistics_components: [{ id: 'junction', transport: 'belt', position: center }],
     transport_networks: [{ transport: 'belt', terminals, cells: [...ps, center] }] };
   const chains = ps.map((p, i) => ({ id: i, transport: 'belt', cells: i < 2 ? [p, center] : [center, p] }));
+  w.transport_networks[0].segments = chains.map(c => ({ from: c.cells[0], to: c.cells[1] }));
   const anchors = { belt: new Set([...ps, center].map(p => `${p.x},${p.y}`)), pipe: new Set() };
   const move = { instances: ['c', 'd'], dx: 0, dy: 8 }, snapshot = structuredClone(w);
   const retained = movementPlan(w, chains, anchors, [move]);

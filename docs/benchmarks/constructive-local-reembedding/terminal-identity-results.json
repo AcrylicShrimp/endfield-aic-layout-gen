@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "chain_schema_version": 2,
+  "factory_validated": true,
+  "status": "complete-factory-improved-central-space-unresolved",
+  "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/identity-continuation/candidate-1870",
+  "witness_sha256": "ba528a2c251e043972e49c9ee59efa043c1dd1ebc7e725713c551476993ec570",
+  "score": {"width": 46, "height": 54, "area": 2484, "physical_tiles": 425, "turns": 40, "tuple": [2484, 425, 40]},
+  "previous_incumbent": "docs/benchmarks/constructive-local-reembedding/coalescence-results.json",
+  "experiments": {
+    "initial_exploration": "target/identity-single-release/report.json",
+    "frozen_source_repeat": "target/identity-current-repeat/report.json",
+    "continuation": "target/identity-continuation/report.json",
+    "coalescence": "target/identity-coalescence/report.json",
+    "f36_branch": "target/identity-f36-branch/report.json",
+    "coalescence_followup": "target/identity-coalescence-followup/report.json"
+  },
+  "original_graph_audit": "target/identity-original-audit/audit.json",
+  "bridge_audit": "target/identity-bridge-audit/audit.json",
+  "verification": {"node_tests": 212, "rust_tests": 524, "rust_ignored": 2, "original_graph_controls": 8, "crossing_controls": 19},
+  "render": "http://100.114.24.86:8765/bound-interconnect-closure-identity-refined.html",
+  "alternative_render": "http://100.114.24.86:8765/bound-interconnect-closure-identity-aba-alternative.html",
+  "alternative_score": [2484, 432, 44],
+  "alternative_promoted": false,
+  "next_gate": "Define and compare coordinated process-bank/consumer placement proposals with rebuilt interfaces; evaluate a bounded Pumpkin placement oracle without changing the production constructor or claiming placement-only routability."
+}

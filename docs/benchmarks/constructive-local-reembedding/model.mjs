@@ -5,12 +5,14 @@ import { movementPlan } from './movement.mjs';
 import { crossingOptions } from './crossing.mjs';
 import { planPortAssignments } from './ports.mjs';
 import { planComponentPoses, releaseBridgeDraft } from './components.mjs';
+import { detachablePairs } from './terminal-identity.mjs';
 const equalRate = (a, b) => BigInt(a.numerator) * BigInt(b.denominator) === BigInt(b.numerator) * BigInt(a.denominator);
 const fail = (code, message, entity = null) => { throw Object.assign(new Error(message), { code, severity: 'error', stage: 'local-reembedding', entity }); };
 const cellsOf = p => Array.from({ length: p.width * p.height }, (_, i) => ({ x: p.x + i % p.width, y: p.y + Math.floor(i / p.width) }));
 
 export function extractChains(w, released = new Set()) {
   const chains = [], anchors = { belt: new Set(), pipe: new Set() }, terminals = new Map();
+  const pairs = detachablePairs(w);
   for (const c of w.logistics_components) anchors[c.transport].add(key(c.position));
   const layerOwners = new Map();
   for (const n of w.transport_networks) for (const p of n.cells) {
@@ -45,6 +47,8 @@ export function extractChains(w, released = new Set()) {
         startTerminals: terminals.get(`${ni}:${key(path[0])}`) ?? [], endTerminals: terminals.get(`${ni}:${key(path.at(-1))}`) ?? [] });
     }
     if (visited.size !== n.segments.length) fail('local-unanchored-cycle', 'A directed cycle has no terminal or component anchor', n.id);
+    for (const p of pairs.values()) if (p.network === ni) chains.push({ id: chains.length, network: ni, transport: n.transport, item: n.item,
+      zero_length: true, cells: [p.source.position], rate: p.source.rate, first: null, last: null, startTerminals: [p.source], endTerminals: [p.target] });
     for (const k of local) anchors[n.transport].add(k);
   }
   return { chains, anchors };
@@ -94,32 +98,37 @@ export function reembed(detail, catalogs, options = {}) {
   const w = { ...original,
     placements: original.placements.map(p => movement?.selected.has(p.instance) ? { ...p, ...movement.shiftFacility(p) } : p),
     logistics_components: original.logistics_components.map(c => movement?.components.includes(c.id) ? { ...c, position: movement.shiftAnchor(c.transport, c.position), rotation: componentChanges.get(c.id)?.rotation ?? c.rotation } : c),
-    transport_networks: original.transport_networks.map(n => ({ ...n, component_ids: [...n.component_ids], terminals: n.terminals.map(t => movement?.movable(n.transport, t.position) ? { ...t, position: movement.shiftAnchor(n.transport, t.position) } : t) })) };
+    transport_networks: original.transport_networks.map(n => ({ ...n, component_ids: [...n.component_ids], terminals: n.terminals.map(t => movement ? { ...t, position: movement.shiftTerminal(t) } : t) })) };
   const paths = new Map(movement?.fixedChains ?? []);
   if (movement) {
     for (const id of movement.changed) changed.add(id);
     for (const id of paths.keys()) changed.delete(id);
-    const carried = [...w.placements.flatMap(p => [p, { x: p.x + p.width - 1, y: p.y + p.height - 1 }]), ...w.logistics_components.map(c => c.position), ...paths.values()].flat();
+    const carried = [...w.placements.flatMap(p => [p, { x: p.x + p.width - 1, y: p.y + p.height - 1 }]), ...w.logistics_components.map(c => c.position), ...w.transport_networks.flatMap(n => n.terminals.map(t => t.position)), ...paths.values()].flat();
     if (carried.some(p => p.x < bounds.minX || p.x > bounds.maxX || p.y < bounds.minY || p.y > bounds.maxY))
       fail('local-move-bounds', 'Translated geometry leaves the explicit current-extent neighborhood', moves.flatMap(m => m.instances));
   }
   if (!Array.isArray(portAssignments)) fail('local-port-assignment', 'Expected a terminal assignment array');
   const singleton = portAssignments.length ? flexibleTerminalAnchors(original, chains) : new Set();
-  const eligible = new Set(original.transport_networks.flatMap(n => n.terminals.filter(t => singleton.has(`${n.transport}:${key(t.position)}`)).map(t => `${n.transport}:${key(shifted(t.position, n.transport))}`)));
+  const zeroTerminals = new Set(chains.filter(c => c.zero_length).flatMap(c => [...c.startTerminals, ...c.endTerminals].map(t => t.id)));
+  const eligible = new Set(original.transport_networks.flatMap(n => n.terminals.filter(t => zeroTerminals.has(t.id) || singleton.has(`${n.transport}:${key(t.position)}`)).map(t => t.id)));
   const ports = portAssignments.length ? planPortAssignments(w, catalogs, portAssignments, eligible) : { networks: w.transport_networks, positions: new Map() };
   w.transport_networks = ports.networks;
-  const changedPort = (p, tr) => ports.positions.get(`${tr}:${key(shifted(p, tr))}`);
-  const newPorts = new Set([...ports.positions].map(([k, p]) => `${k.slice(0, k.indexOf(':'))}:${key(p)}`));
+  const changedPort = (c, end) => (end ? c.endTerminals : c.startTerminals).some(t => ports.positions.has(t.id));
+  const newPorts = new Set(w.transport_networks.flatMap(n => n.terminals.filter(t => ports.positions.has(t.id)).map(t => `${n.transport}:${key(t.position)}`)));
+  const finalTerminals = new Map(w.transport_networks.flatMap(n => n.terminals.map(t => [t.id, t.position])));
   for (const p of ports.positions.values()) if (p.x < bounds.minX || p.x > bounds.maxX || p.y < bounds.minY || p.y > bounds.maxY)
     fail('local-move-bounds', 'Reassigned port leaves the explicit current-extent neighborhood');
-  if (newPorts.size) for (const c of chains) if (changedPort(c.cells[0], c.transport) || changedPort(c.cells.at(-1), c.transport) ||
+  if (newPorts.size) for (const c of chains) if (changedPort(c, false) || changedPort(c, true) ||
     (paths.get(c.id) ?? c.cells).some(p => newPorts.has(`${c.transport}:${key(p)}`))) { paths.delete(c.id); changed.add(c.id); }
-  const relocated = (p, tr) => changedPort(p, tr) ?? shifted(p, tr);
+  const relocated = (c, end) => {
+    const ts = end ? c.endTerminals : c.startTerminals;
+    return ts.length === 1 ? finalTerminals.get(ts[0].id) : movement ? movement.shiftEndpoint(c, end) : end ? c.cells.at(-1) : c.cells[0];
+  };
   const jobs = [...changed].map(i => {
-    const c = chains[i], start = relocated(c.cells[0], c.transport), end = relocated(c.cells.at(-1), c.transport);
-    const arm = (p, d) => (d + (movement?.componentTurns.get(`${c.transport}:${key(p)}`) ?? 0)) % 4;
-    return { ...c, start, end, first: changedPort(c.cells[0], c.transport) || flexible.has(`${c.transport}:${key(c.cells[0])}`) ? null : arm(c.cells[0], c.first),
-      last: changedPort(c.cells.at(-1), c.transport) || flexible.has(`${c.transport}:${key(c.cells.at(-1))}`) ? null : arm(c.cells.at(-1), c.last) };
+    const c = chains[i], start = relocated(c, false), end = relocated(c, true);
+    const arm = (p, d) => d === null ? null : (d + (movement?.componentTurns.get(`${c.transport}:${key(p)}`) ?? 0)) % 4;
+    return { ...c, start, end, first: changedPort(c, false) || flexible.has(`${c.transport}:${key(c.cells[0])}`) ? null : arm(c.cells[0], c.first),
+      last: changedPort(c, true) || flexible.has(`${c.transport}:${key(c.cells.at(-1))}`) ? null : arm(c.cells.at(-1), c.last) };
   }).sort((a, b) => (priority.get(a.id) ?? routePriority.length) - (priority.get(b.id) ?? routePriority.length) ||
     (order === 'near' ? 1 : -1) * (distance(a.start, a.end) - distance(b.start, b.end)) || a.id - b.id);
   const body = new Set(w.placements.flatMap(cellsOf).map(key)), occupied = { belt: new Set(), pipe: new Set() };
@@ -168,8 +177,8 @@ export function reembed(detail, catalogs, options = {}) {
     return { status: 'unchanged', routes: results, elapsed_ms: performance.now() - began };
   for (const [ni, n] of w.transport_networks.entries()) if (chains.some(c => c.network === ni && paths.has(c.id)) ||
     original.transport_networks[ni].terminals.some(t => movement?.movable(n.transport, t.position))) {
-    const usedBefore = new Set(original.transport_networks[ni].segments.flatMap(s => [key(s.from), key(s.to)]));
-    const cells = new Map(original.transport_networks[ni].cells.filter(p => !usedBefore.has(key(p))).map(p => relocated(p, n.transport)).map(p => [key(p), p])), segments = [];
+    const usedBefore = new Set(chains.filter(c => c.network === ni).flatMap(c => c.cells.map(key)));
+    const cells = new Map(original.transport_networks[ni].cells.filter(p => !usedBefore.has(key(p))).map(p => shifted(p, n.transport)).map(p => [key(p), p])), segments = [];
     for (const c of chains.filter(c => c.network === ni)) {
       const ps = paths.get(c.id) ?? c.cells;
       for (const p of ps) cells.set(key(p), p);
@@ -179,7 +188,7 @@ export function reembed(detail, catalogs, options = {}) {
   }
   const score = witnessScore(w), candidate = { schema_version: 1, case: 'complete-local-reembedding', embedding: 'local-astar', labels: structuredClone(detail.labels),
     witness: structuredClone(w), catalog_ports: project(w, catalogs), port_groups: { sources: [], targets: [] }, accepted: false, factory_validated: false,
-    reembedding: { move_schema_version: 3, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, route_priority: [...routePriority], max_new_crossings: maxNewCrossings,
+    reembedding: { chain_schema_version: 2, move_schema_version: 3, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, route_priority: [...routePriority], max_new_crossings: maxNewCrossings,
       new_crossings: installedCrossings, released_bridges: [...releaseBridges], port_assignments: structuredClone(portAssignments), component_poses: structuredClone(componentPoses), moves: structuredClone(moves), order, carried_components: movement?.components ?? [], translated_chains: movement ? [...movement.fixedChains.keys()].filter(id => !changed.has(id)) : [], affected_chains: jobs.map(j => j.id), routes: results } };
   return { status: 'candidate', detail: candidate, score, affected_chains: jobs.map(j => ({ id: j.id, item: j.item })), routes: results, elapsed_ms: performance.now() - began };
 }
@@ -187,10 +196,11 @@ export function reembed(detail, catalogs, options = {}) {
 export function relocationCandidates(detail, { limit = 64 } = {}) {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 512) fail('local-move-budget', 'Expected candidate limit 1..512');
   const w = detail.witness, { chains, anchors } = extractChains(w), bounds = extentOf(w), candidates = [];
+  const detachable = detachablePairs(w);
   for (const p of w.placements) {
     const ts = w.transport_networks.flatMap(n => n.terminals.map(t => ({ ...t, transport: n.transport }))), own = ts.filter(t => t.endpoint.kind === 'facility' && t.endpoint.instance === p.instance);
     const ownKeys = new Set(own.map(t => `${t.transport}:${key(t.position)}`));
-    if (ts.some(t => ownKeys.has(`${t.transport}:${key(t.position)}`) && (t.endpoint.kind !== 'facility' || t.endpoint.instance !== p.instance))) continue;
+    if (ts.some(t => ownKeys.has(`${t.transport}:${key(t.position)}`) && !detachable.has(`${t.transport}:${key(t.position)}`) && (t.endpoint.kind !== 'facility' || t.endpoint.instance !== p.instance))) continue;
     const incident = chains.flatMap(c => {
       const own = ts => ts.some(t => t.endpoint.kind === 'facility' && t.endpoint.instance === p.instance);
       return own(c.startTerminals) ? [{ own: c.cells[0], other: c.cells.at(-1) }] : own(c.endTerminals) ? [{ own: c.cells.at(-1), other: c.cells[0] }] : [];
@@ -207,7 +217,8 @@ export function relocationCandidates(detail, { limit = 64 } = {}) {
       if ((x === p.x && y === p.y) || x < bounds.minX || y < bounds.minY || x + p.width - 1 > bounds.maxX || y + p.height - 1 > bounds.maxY) continue;
       if (w.placements.some(q => q !== p && x < q.x + q.width && q.x < x + p.width && y < q.y + q.height && q.y < y + p.height)) continue;
       const delta = incident.reduce((s, e) => s + distance({ x: e.own.x + x - p.x, y: e.own.y + y - p.y }, e.other), 0) - oldDistance;
-      if (delta >= 0) continue;
+      const ps = w.placements.map(q => q === p ? { ...p, x, y } : q);
+      const envelope = (Math.max(...ps.map(q => q.x + q.width)) - Math.min(...ps.map(q => q.x))) * (Math.max(...ps.map(q => q.y + q.height)) - Math.min(...ps.map(q => q.y)));
       const body = new Set(cellsOf({ ...p, x, y }).map(key));
       if (w.logistics_components.some(c => body.has(key(c.position))) || ['belt', 'pipe'].some(k => [...anchors[k]].some(a => body.has(a) && !ownKeys.has(`${k}:${a}`)))) continue;
       if (own.some(t => { const q = { x: t.position.x + x - p.x, y: t.position.y + y - p.y }, k = key(q);
@@ -215,11 +226,11 @@ export function relocationCandidates(detail, { limit = 64 } = {}) {
           ['belt', 'pipe'].some(tr => anchors[tr].has(k) && !ownKeys.has(`${tr}:${k}`)) ||
           w.placements.some(a => a !== p && q.x >= a.x && q.x < a.x + a.width && q.y >= a.y && q.y < a.y + a.height);
       })) continue;
-      local.push({ instances: [p.instance], labels: [detail.labels[p.instance]], dx: x - p.x, dy: y - p.y, endpoint_delta: delta });
+      local.push({ instances: [p.instance], labels: [detail.labels[p.instance]], dx: x - p.x, dy: y - p.y, endpoint_delta: delta, body_envelope_area: envelope });
     }
-    local.sort((a, b) => a.endpoint_delta - b.endpoint_delta || a.dy - b.dy || a.dx - b.dx);
+    local.sort((a, b) => a.body_envelope_area - b.body_envelope_area || a.endpoint_delta - b.endpoint_delta || a.dy - b.dy || a.dx - b.dx);
     // Diversify across facilities before deepening any one facility's position shortlist.
     for (const [rank, c] of local.slice(0, 8).entries()) candidates.push({ ...c, rank });
   }
-  return candidates.sort((a, b) => a.rank - b.rank || a.endpoint_delta - b.endpoint_delta || a.instances[0].localeCompare(b.instances[0])).slice(0, limit);
+  return candidates.sort((a, b) => a.body_envelope_area - b.body_envelope_area || a.rank - b.rank || a.endpoint_delta - b.endpoint_delta || a.instances[0].localeCompare(b.instances[0])).slice(0, limit);
 }
