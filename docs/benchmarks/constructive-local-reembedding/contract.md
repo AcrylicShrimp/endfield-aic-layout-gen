@@ -2,10 +2,15 @@
 
 Status: JavaScript research on a complete independently validated factory. No production cutover.
 
+The current move contract is DTO v2 in `group-contract.md`: one or more connected facilities
+translate together with eligible internal junctions. The initial single-facility absolute-position
+DTO described by historical experiment reports is no longer accepted.
+
 Input: complete witness/detail, original graph, runtime catalogs and explicit experiment budgets.
 Preserve facility identities, recipes, utilizations and rotations; logical commodity flows,
-terminal rates and logistics-component identities remain unchanged. A move changes one facility
-position and its attached terminal positions. Existing route shapes are not constraints.
+terminal rates and logistics-component identities remain unchanged. A move changes selected
+facility positions and their attached terminal/junction positions. Existing boundary route shapes
+are not constraints; wholly internal group chains translate rigidly in the group family.
 
 Extract directed constant-rate chains between terminals, logistics components, shared crossing
 cells, branch/merge vertices and rate changes. Bends are not anchors. Preserve directed attachment
@@ -36,10 +41,11 @@ same-region before/after renders; distinguish topology-required returns from avo
 This local greedy sequence makes no joint path, packing or global optimality claim.
 
 Current restrictions: terminal port identities and boundary positions are fixed during routing;
-zero-length connections shared by different facilities reject relocation explicitly. Candidate
+zero-length connections reject relocation when only some endpoint owners move. Single-facility candidate
 positions use facility-contact and endpoint-alignment coordinates, prefer lower endpoint-distance
-sum and are diversified across facilities. Thus area-improving moves that temporarily worsen that
-proxy can be missed. Fixed attachment arms and the first/last adjacent cells of other affected
+sum and are diversified across facilities. Thus that family can miss area-improving moves that
+temporarily worsen the proxy. The group family additionally targets measured empty rectangles
+and retains candidates with increasing endpoint distance. Fixed attachment arms and the first/last adjacent cells of other affected
 chains are reserved. These are conservative search choices, not additional game rules. A shortest
 direction-state walk that repeats a cell is rejected with its own diagnostic, not called infeasible.
 Unchanged paths skip optional compaction. Exhaustion means only this bounded greedy neighborhood.

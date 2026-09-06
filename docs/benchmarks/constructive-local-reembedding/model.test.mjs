@@ -13,6 +13,7 @@ const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transpor
 const graph = normalizeGraph(read('../constructive-chain-blocks/gap-1-placement.json'), catalogs), blocks = extractCycles(graph, catalogs).blocks;
 const make = b => structuredClone(compactInterface(constructCycle(catalogs, graph, b, 'root'), catalogs));
 const margins = w => w.transport_networks.map(n => ({ id: n.id, item: n.item, transport: n.transport, requirement_ids: n.requirement_ids, terminals: n.terminals, component_ids: n.component_ids }));
+function freeze(value) { if (value && typeof value === 'object' && !Object.isFrozen(value)) { Object.freeze(value); for (const v of Object.values(value)) freeze(v); } return value; }
 
 test('chains cover every directed segment and retain rates, not old bends', () => {
   for (const b of blocks) {
@@ -29,7 +30,7 @@ test('chains cover every directed segment and retain rates, not old bends', () =
 test('fixed-chain rerouting preserves immutable semantic margins and unselected layers', () => {
   let candidates = 0;
   for (const b of blocks) {
-    const d = make(b), snapshot = structuredClone(d), { chains } = extractChains(d.witness);
+    const d = freeze(make(b)), snapshot = structuredClone(d), { chains } = extractChains(d.witness);
     for (const c of chains) {
       const r = reembed(d, catalogs, { chainIds: [c.id] });
       assert.deepEqual(d, snapshot);
@@ -52,9 +53,9 @@ test('relocation candidates and diagnostics are deterministic and nonmutating', 
   assert.deepEqual(candidates, relocationCandidates(d, { limit: 32 })); assert.deepEqual(d, snapshot);
   assert.throws(() => relocationCandidates(d, { limit: NaN }), { code: 'local-move-budget' });
   assert.throws(() => reembed(d, catalogs, { chainIds: [-1] }), { code: 'local-chain-id' });
-  assert.throws(() => reembed(d, catalogs, { move: { instance: 'unknown', x: 0, y: 0 } }), { code: 'local-move-input' });
+  assert.throws(() => reembed(d, catalogs, { move: { instances: ['unknown'], dx: 0, dy: 0 } }), { code: 'local-move-input' });
   const [a, b] = d.witness.placements;
-  assert.throws(() => reembed(d, catalogs, { move: { instance: a.instance, x: b.x, y: b.y } }), { code: 'local-body-collision' });
+  assert.throws(() => reembed(d, catalogs, { move: { instances: [a.instance], dx: b.x - a.x, dy: b.y - a.y } }), { code: 'local-body-collision' });
   assert.equal(reembed(d, catalogs, { chainIds: [] }).status, 'unchanged');
   assert.deepEqual(d, snapshot);
 });
@@ -70,12 +71,12 @@ test('a moved body rips up a nonincident crossing path and restores it or reject
     segments: ps.slice(1).map((q, i) => ({ from: ps[i], to: q, rate })), terminals: [
       { id: 'left', node: 'left', endpoint: { kind: 'external', node: 'left', side: 'west' }, direction: 'output', position: ps[0], rate },
       { id: 'right', node: 'right', endpoint: { kind: 'external', node: 'right', side: 'east' }, direction: 'input', position: ps.at(-1), rate }], component_ids: [], requirement_ids: [] });
-  const snapshot = structuredClone(d), move = { instance: p.instance, x: p.x, y: p.y + 18 }, r = reembed(d, catalogs, { move });
+  const snapshot = structuredClone(d), move = { instances: [p.instance], dx: 0, dy: 18 }, r = reembed(freeze(d), catalogs, { move });
   assert.deepEqual(d, snapshot);
   assert.ok(r.affected_chains.some(c => c.item === 'test-only'), 'The unrelated wire intersecting the new body must be scheduled for rerouting');
   assert.equal(r.status, 'candidate');
   assert.deepEqual(r.detail.witness.placements.filter(a => a.instance !== p.instance), original.witness.placements.filter(a => a.instance !== p.instance));
   const moved = r.detail.witness.placements.find(a => a.instance === p.instance);
-  assert.equal(moved.y, move.y);
+  assert.equal(moved.y, p.y + move.dy);
   assert.ok(r.detail.witness.transport_networks.at(-1).cells.every(q => q.x < moved.x || q.x >= moved.x + moved.width || q.y < moved.y || q.y >= moved.y + moved.height));
 });

@@ -1,6 +1,7 @@
 import { shortestPath, key, direction, distance, directions } from './path.mjs';
 import { project } from '../constructive-factory-closure/model.mjs';
 import { witnessScore } from '../constructive-auto-interface/compact.mjs';
+import { movementPlan } from './movement.mjs';
 const equalRate = (a, b) => BigInt(a.numerator) * BigInt(b.denominator) === BigInt(b.numerator) * BigInt(a.denominator);
 const fail = (code, message, entity = null) => { throw Object.assign(new Error(message), { code, severity: 'error', stage: 'local-reembedding', entity }); };
 const cellsOf = p => Array.from({ length: p.width * p.height }, (_, i) => ({ x: p.x + i % p.width, y: p.y + Math.floor(i / p.width) }));
@@ -58,39 +59,27 @@ export function reembed(detail, catalogs, { move = null, chainIds = [], order = 
   if (!['near', 'far'].includes(order)) fail('local-route-order', 'Expected near or far route order');
   const changed = new Set(chainIds);
   if ([...changed].some(i => !Number.isSafeInteger(i) || !chains[i])) fail('local-chain-id', 'Unknown chain id');
-  const w = structuredClone(original), moving = move && w.placements.find(p => p.instance === move.instance);
-  const movingTerminals = { belt: new Set(), pipe: new Set() };
-  let dx = 0, dy = 0;
-  if (move) {
-    if (!moving || !Number.isSafeInteger(move.x) || !Number.isSafeInteger(move.y)) fail('local-move-input', 'Unknown facility or noninteger position', move);
-    dx = move.x - moving.x; dy = move.y - moving.y;
-    for (const n of w.transport_networks) for (const t of n.terminals)
-      if (t.endpoint.kind === 'facility' && t.endpoint.instance === move.instance) movingTerminals[n.transport].add(key(t.position));
-    for (const n of w.transport_networks) for (const t of n.terminals)
-      if (movingTerminals[n.transport].has(key(t.position)) && (t.endpoint.kind !== 'facility' || t.endpoint.instance !== move.instance))
-        fail('local-shared-terminal-move', 'Moving a zero-length shared terminal needs a separate network rewrite', move.instance);
-    const body = new Set(cellsOf({ ...moving, x: move.x, y: move.y }).map(key));
-    for (const p of w.placements) if (p !== moving && cellsOf(p).some(q => body.has(key(q)))) fail('local-body-collision', 'Moved body intersects another facility', move.instance);
-    for (const c of w.logistics_components) if (body.has(key(c.position))) fail('local-component-collision', 'Moved body intersects a fixed component', c.id);
-    for (const transport of ['belt', 'pipe']) for (const k of anchors[transport])
-      if (body.has(k) && !movingTerminals[transport].has(k)) fail('local-anchor-collision', 'Moved body intersects a fixed route anchor', k);
-    for (const n of w.transport_networks) for (const t of n.terminals) if (t.endpoint.kind === 'facility' && t.endpoint.instance === move.instance) {
-      t.position.x += dx; t.position.y += dy;
-      for (const transport of ['belt', 'pipe']) if (anchors[transport].has(key(t.position)) && !movingTerminals[transport].has(key(t.position)))
-        fail('local-terminal-collision', 'Moved terminal intersects a fixed anchor', t.id);
-    }
-    moving.x = move.x; moving.y = move.y;
-    const movedConnections = new Set(w.transport_networks.flatMap(n => n.terminals.filter(t => t.endpoint.kind === 'facility' && t.endpoint.instance === move.instance).map(t => key(t.position))));
-    for (const c of chains) if ([...c.startTerminals, ...c.endTerminals].some(t => t.endpoint.kind === 'facility' && t.endpoint.instance === move.instance) ||
-      c.cells.some(p => body.has(key(p)) || movedConnections.has(key(p)))) changed.add(c.id);
+  const movement = move ? movementPlan(original, chains, anchors, move) : null;
+  // Private append-only draft: untouched nested values are read-only until successful detachment.
+  const w = { ...original,
+    placements: original.placements.map(p => movement?.selected.has(p.instance) ? { ...p, ...movement.translate(p) } : p),
+    logistics_components: original.logistics_components.map(c => movement?.components.includes(c.id) ? { ...c, position: movement.translate(c.position) } : c),
+    transport_networks: original.transport_networks.map(n => ({ ...n, terminals: n.terminals.map(t => movement?.movable(n.transport, t.position) ? { ...t, position: movement.translate(t.position) } : t) })) };
+  const paths = new Map(movement?.fixedChains ?? []);
+  if (movement) {
+    for (const id of movement.changed) changed.add(id);
+    for (const id of paths.keys()) changed.delete(id);
+    const carried = [...w.placements.flatMap(p => [p, { x: p.x + p.width - 1, y: p.y + p.height - 1 }]), ...paths.values()].flat();
+    if (carried.some(p => p.x < bounds.minX || p.x > bounds.maxX || p.y < bounds.minY || p.y > bounds.maxY))
+      fail('local-move-bounds', 'Translated geometry leaves the explicit current-extent neighborhood', move.instances);
   }
-  const relocated = (p, ts) => ts.some(t => t.endpoint.kind === 'facility' && t.endpoint.instance === move?.instance) ? { x: p.x + dx, y: p.y + dy } : p;
+  const relocated = (p, tr) => movement?.movable(tr, p) ? movement.translate(p) : p;
   const jobs = [...changed].map(i => {
-    const c = chains[i], start = relocated(c.cells[0], c.startTerminals), end = relocated(c.cells.at(-1), c.endTerminals);
+    const c = chains[i], start = relocated(c.cells[0], c.transport), end = relocated(c.cells.at(-1), c.transport);
     return { ...c, start, end };
   }).sort((a, b) => (order === 'near' ? 1 : -1) * (distance(a.start, a.end) - distance(b.start, b.end)) || a.id - b.id);
   const body = new Set(w.placements.flatMap(cellsOf).map(key)), occupied = { belt: new Set(), pipe: new Set() };
-  for (const c of chains) if (!changed.has(c.id)) for (const p of c.cells) occupied[c.transport].add(key(p));
+  for (const c of chains) if (!changed.has(c.id)) for (const p of paths.get(c.id) ?? c.cells) occupied[c.transport].add(key(p));
   for (const n of w.transport_networks) for (const t of n.terminals) occupied[n.transport].add(key(t.position));
   for (const c of w.logistics_components) occupied[c.transport].add(key(c.position));
   for (const j of jobs) { occupied[j.transport].add(key(j.start)); occupied[j.transport].add(key(j.end)); }
@@ -101,7 +90,7 @@ export function reembed(detail, catalogs, { move = null, chainIds = [], order = 
       const k = key(p); if (!reservations[j.transport].has(k)) reservations[j.transport].set(k, new Set()); reservations[j.transport].get(k).add(j.id);
     }
   }
-  const results = [], paths = new Map();
+  const results = [];
   for (const job of jobs) {
     const blocked = new Set([...body, ...occupied[job.transport]]);
     for (const [k, owners] of reservations[job.transport]) if (!owners.has(job.id)) blocked.add(k);
@@ -113,11 +102,12 @@ export function reembed(detail, catalogs, { move = null, chainIds = [], order = 
       message: 'Affected chain could not be restored within this candidate neighborhood' }], affected_chains: jobs.map(j => ({ id: j.id, item: j.item })), routes: results, elapsed_ms: performance.now() - began };
     paths.set(job.id, result.cells); for (const p of result.cells) occupied[job.transport].add(key(p));
   }
-  if ((!move || (dx === 0 && dy === 0)) && jobs.every(j => paths.get(j.id).length === j.cells.length && paths.get(j.id).every((p, i) => key(p) === key(j.cells[i]))))
+  if ((!move || (move.dx === 0 && move.dy === 0)) && jobs.every(j => paths.get(j.id).length === j.cells.length && paths.get(j.id).every((p, i) => key(p) === key(j.cells[i]))))
     return { status: 'unchanged', routes: results, elapsed_ms: performance.now() - began };
-  for (const [ni, n] of w.transport_networks.entries()) if (jobs.some(j => j.network === ni)) {
+  for (const [ni, n] of w.transport_networks.entries()) if (chains.some(c => c.network === ni && paths.has(c.id)) ||
+    original.transport_networks[ni].terminals.some(t => movement?.movable(n.transport, t.position))) {
     const usedBefore = new Set(original.transport_networks[ni].segments.flatMap(s => [key(s.from), key(s.to)]));
-    const cells = new Map(n.cells.filter(p => !usedBefore.has(key(p))).map(p => [key(p), p])), segments = [];
+    const cells = new Map(original.transport_networks[ni].cells.filter(p => !usedBefore.has(key(p))).map(p => relocated(p, n.transport)).map(p => [key(p), p])), segments = [];
     for (const c of chains.filter(c => c.network === ni)) {
       const ps = paths.get(c.id) ?? c.cells;
       for (const p of ps) cells.set(key(p), p);
@@ -127,7 +117,7 @@ export function reembed(detail, catalogs, { move = null, chainIds = [], order = 
   }
   const score = witnessScore(w), candidate = { schema_version: 1, case: 'complete-local-reembedding', embedding: 'local-astar', labels: structuredClone(detail.labels),
     witness: structuredClone(w), catalog_ports: project(w, catalogs), port_groups: { sources: [], targets: [] }, accepted: false, factory_validated: false,
-    reembedding: { move, order, affected_chains: jobs.map(j => j.id), routes: results } };
+    reembedding: { move_schema_version: 2, move, order, carried_components: movement?.components ?? [], translated_chains: movement ? [...movement.fixedChains.keys()].filter(id => !changed.has(id)) : [], affected_chains: jobs.map(j => j.id), routes: results } };
   return { status: 'candidate', detail: candidate, score, affected_chains: jobs.map(j => ({ id: j.id, item: j.item })), routes: results, elapsed_ms: performance.now() - began };
 }
 
@@ -162,11 +152,11 @@ export function relocationCandidates(detail, { limit = 64 } = {}) {
           ['belt', 'pipe'].some(tr => anchors[tr].has(k) && !ownKeys.has(`${tr}:${k}`)) ||
           w.placements.some(a => a !== p && q.x >= a.x && q.x < a.x + a.width && q.y >= a.y && q.y < a.y + a.height);
       })) continue;
-      local.push({ instance: p.instance, label: detail.labels[p.instance], x, y, endpoint_delta: delta });
+      local.push({ instances: [p.instance], labels: [detail.labels[p.instance]], dx: x - p.x, dy: y - p.y, endpoint_delta: delta });
     }
-    local.sort((a, b) => a.endpoint_delta - b.endpoint_delta || a.y - b.y || a.x - b.x);
+    local.sort((a, b) => a.endpoint_delta - b.endpoint_delta || a.dy - b.dy || a.dx - b.dx);
     // Diversify across facilities before deepening any one facility's position shortlist.
     for (const [rank, c] of local.slice(0, 8).entries()) candidates.push({ ...c, rank });
   }
-  return candidates.sort((a, b) => a.rank - b.rank || a.endpoint_delta - b.endpoint_delta || a.instance.localeCompare(b.instance)).slice(0, limit);
+  return candidates.sort((a, b) => a.rank - b.rank || a.endpoint_delta - b.endpoint_delta || a.instances[0].localeCompare(b.instances[0])).slice(0, limit);
 }

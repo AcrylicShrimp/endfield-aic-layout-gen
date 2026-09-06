@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 import { reembed, extractChains, relocationCandidates } from './model.mjs';
+import { groupCandidates } from './groups.mjs';
 import { compactEmbedding } from '../constructive-embedding-compaction/model.mjs';
 import { executeValidator } from '../constructive-embedding-compaction/validator.mjs';
 import { normalizeGraph } from '../constructive-cycle-blocks/graph.mjs';
@@ -15,16 +16,18 @@ try {
   const keys = ['graph', 'baseline', 'recipes', 'facilities', 'items', 'transports', 'components', 'validator', 'output-directory'], options = {}, args = process.argv.slice(2);
   for (let i = 0; i < args.length; i += 2) {
     const k = args[i].slice(2);
-    if (!args[i].startsWith('--') || ![...keys, 'rounds', 'mode', 'move-limit'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
+    if (!args[i].startsWith('--') || ![...keys, 'rounds', 'mode', 'move-limit', 'move-family'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
     options[k] = args[i + 1];
   }
   for (const k of keys) if (!options[k]) throw new Error(`Missing --${k}`);
   const rounds = Number(options.rounds ?? 2), mode = options.mode ?? 'joint', limit = Number(options['move-limit'] ?? 64);
+  const moveFamily = options['move-family'] ?? 'single';
+  if (!['single', 'group'].includes(moveFamily)) throw new Error('Expected --move-family single|group');
   if (!Number.isSafeInteger(rounds) || rounds < 1 || rounds > 8 || !Number.isSafeInteger(limit) || limit < 1 || limit > 512 || !['fixed', 'move', 'joint'].includes(mode))
     throw new Error('Expected --rounds 1..8, --mode fixed|move|joint and --move-limit 1..512');
   output = path.resolve(options['output-directory']); fs.mkdirSync(output); created = true; const began = performance.now();
   const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k, read(options[k])]));
-  const graph = normalizeGraph(read(options.graph), catalogs), baseline = read(options.baseline), stages = [], failures = [];
+  const graph = normalizeGraph(read(options.graph), catalogs), baseline = read(options.baseline), stages = [], failures = [], neighborhoods = [];
   let generationMs = 0, compactionMs = 0, validationMs = 0;
   const validate = async (detail, name) => {
     const start = performance.now(), directory = path.join(output, name); fs.mkdirSync(directory); write(path.join(directory, 'witness.json'), detail.witness);
@@ -77,16 +80,20 @@ try {
       for (let id = 0; id < count; id++) await attempt(selected, { chainIds: [id] }, { round, phase: 'fixed-path', ordinal: id });
     }
     if (mode !== 'fixed') {
-      const parent = selected, start = performance.now(), moves = relocationCandidates(parent.detail, { limit }); generationMs += performance.now() - start;
+      const parent = selected, start = performance.now(), portfolio = moveFamily === 'group' ? groupCandidates(parent.detail, graph, catalogs, { limit }) :
+        { candidates: relocationCandidates(parent.detail, { limit }) }, moves = portfolio.candidates; generationMs += performance.now() - start;
+      neighborhoods.push({ round, parent_directory: parent.directory, groups: portfolio.groups, voids: portfolio.voids, selected_positions: moves.length,
+        void_positions: moves.filter(m => m.void_candidate).length, increasing_distance_positions: moves.filter(m => m.endpoint_delta > 0).length });
+      for (const diagnostic of portfolio.diagnostics ?? []) failures.push({ round, phase: 'group-screen', ...diagnostic });
       for (const [ordinal, move] of moves.entries()) for (const order of ['near', 'far']) await attempt(parent, { move, order }, { round, phase: 'relocate', ordinal });
     }
     if (selected === before) { termination = 'unimproved-neighborhood'; break; }
   }
   const report = { schema_version: 1, status: better(selected.score.tuple, initialScore.tuple) ? 'complete-factory-improved' : 'complete-incumbent-retained', factory_validated: true,
-    selected_directory: selected.directory, initial_score: initialScore, score: selected.score, mode, rounds, move_limit: limit, termination,
-    generation_ms: generationMs, compaction_ms: compactionMs, validation_output_ms: validationMs, elapsed_ms: performance.now() - began, stages, failures,
+    selected_directory: selected.directory, initial_score: initialScore, score: selected.score, mode, rounds, move_limit: limit, move_family: moveFamily, move_schema_version: 2, termination,
+    generation_ms: generationMs, compaction_ms: compactionMs, validation_output_ms: validationMs, elapsed_ms: performance.now() - began, neighborhoods, stages, failures,
     provenance: keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
-    source_hashes: Object.fromEntries(['model.mjs', 'path.mjs', 'run.mjs', '../constructive-embedding-compaction/model.mjs', '../constructive-embedding-compaction/length.mjs',
+    source_hashes: Object.fromEntries(['model.mjs', 'movement.mjs', 'groups.mjs', 'path.mjs', 'run.mjs', '../constructive-embedding-compaction/model.mjs', '../constructive-embedding-compaction/length.mjs',
       '../constructive-embedding-compaction/validator.mjs', '../constructive-factory-closure/model.mjs', '../constructive-cycle-blocks/graph.mjs',
       '../constructive-auto-interface/compact.mjs', '../constructive-bound-interconnect/view.mjs', '../constructive-placement-only/model.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), report); fs.copyFileSync(path.join(selected.directory, 'index.html'), path.join(output, 'index.html'));
