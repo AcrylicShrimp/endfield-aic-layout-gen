@@ -20,14 +20,14 @@ export function recipeMargins(node, recipe) {
   }
   return result;
 }
-export function prepare(input, catalogs) {
+export function parseGraph(input, catalogs, { minimumGap = 1, allowedFamilies = ['straight', 'left', 'right'] } = {}) {
   fields(input, ['schema_version', 'id', 'nodes', 'edges', 'external', 'policy', 'budget'], 'request');
   if (input.schema_version !== 1 || !name(input.id) || !Array.isArray(input.nodes) || input.nodes.length < 2 || input.nodes.length > 16
-    || !Array.isArray(input.edges) || !Array.isArray(input.external)) fail('input-invalid', 'Expected schema 1 and a 2–16-node chain', input.id);
+    || !Array.isArray(input.edges) || !Array.isArray(input.external)) fail('input-invalid', 'Expected schema 1 and a 2–16-node graph', input.id);
   fields(input.policy, ['families', 'gaps', 'ports_per_side'], 'policy');
   const { families, gaps, ports_per_side: ports } = input.policy;
-  if (!Array.isArray(families) || !families.length || new Set(families).size !== families.length || families.some(f => !['straight', 'left', 'right'].includes(f))
-    || !Array.isArray(gaps) || !gaps.length || new Set(gaps).size !== gaps.length || gaps.some(g => !Number.isSafeInteger(g) || g < 1 || g > 16)
+  if (!Array.isArray(families) || !families.length || new Set(families).size !== families.length || families.some(f => !allowedFamilies.includes(f))
+    || !Array.isArray(gaps) || !gaps.length || new Set(gaps).size !== gaps.length || gaps.some(g => !Number.isSafeInteger(g) || g < minimumGap || g > 16)
     || !Number.isSafeInteger(ports) || ports < 1 || ports > 16) fail('input-invalid', 'Invalid family, gap or port proposal policy');
   const budgetKeys = ['proposals', 'route_expansions', 'validations', 'elapsed_ms'];
   fields(input.budget, budgetKeys, 'budget');
@@ -57,7 +57,7 @@ export function prepare(input, catalogs) {
     edgeIds.add(e.id); const value = positive(e.rate, e.id), item = catalogs.items.items.find(i => i.id === e.item);
     const transport = catalogs.transports.transports.find(t => t.kind === item?.transport);
     if (!transport) fail('input-invalid', 'Unknown edge item/transport', e.id);
-    if (compare(value, capacity(transport.capacity)) > 0) fail('unsupported-lanes', 'Milestone 1 supports one capacity lane per internal edge', e.id);
+    if (compare(value, capacity(transport.capacity)) > 0) fail('unsupported-lanes', 'This prototype stage supports one capacity lane per internal edge', e.id);
     const edge = { ...structuredClone(e), rate: dto(value), transport: item.transport };
     incoming.get(e.target).push(edge); outgoing.get(e.source).push(edge);
     sum(actual, marginKey(e.source, 'output', e.item), value); sum(actual, marginKey(e.target, 'input', e.item), value);
@@ -70,6 +70,10 @@ export function prepare(input, catalogs) {
   }
   for (const k of new Set([...expected.keys(), ...actual.keys()])) if (compare(expected.get(k) ?? rate(0), actual.get(k) ?? rate(0)))
     fail('input-invalid', 'Declared internal and external rates do not equal the utilized recipe ledger', k);
+  return { id: input.id, nodes, edges, incoming, outgoing, expected, external: structuredClone(input.external), policy: structuredClone(input.policy), budget: structuredClone(input.budget) };
+}
+export function prepare(input, catalogs) {
+  const graph = parseGraph(input, catalogs), { nodes, edges, incoming, outgoing } = graph;
   const sinks = [...nodes.keys()].filter(id => outgoing.get(id).length === 0);
   if (edges.length !== nodes.size - 1 || sinks.length !== 1 || [...nodes.keys()].some(id => incoming.get(id).length > 1 || outgoing.get(id).length > 1))
     fail('unsupported-topology', 'Expected a simple chain; branches, merges, cycles and parallel edges are later milestones');
@@ -78,7 +82,7 @@ export function prepare(input, catalogs) {
   if (order.length !== nodes.size || current) fail('unsupported-topology', 'Disconnected or cyclic chain input');
   let belt = false;
   for (const e of growthEdges) { if (belt && e.transport === 'pipe') fail('unsupported-pipe-order', 'This sink-first chain would add a pipe after belt growth', e.id); belt ||= e.transport === 'belt'; }
-  return { id: input.id, nodes, edges, order, growthEdges, expected, external: structuredClone(input.external), policy: structuredClone(input.policy), budget: structuredClone(input.budget) };
+  return { ...graph, order, growthEdges };
 }
 
 export function checkState(graph, witness, validation) {

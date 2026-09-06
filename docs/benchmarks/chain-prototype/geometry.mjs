@@ -23,12 +23,26 @@ export const rankedPorts = (ps, owner, count) => [...ps].sort((a, b) => centerRa
 export function* proposals(parent, parentNode, sourceNode, edge, family, policy, used) {
   const targets = rankedPorts(ports(parent, parentNode).filter(p => p.direction === 'input' && p.transport === edge.transport && !used.has(JSON.stringify([parent.instance, p.id]))), parent, policy.ports_per_side);
   for (const gap of policy.gaps) for (const target of targets) {
-    const outputSide = turn(target.edge, family === 'straight' ? 2 : family === 'left' ? 1 : 3);
+    const outputSide = turn(target.edge, family === 'straight' ? 2 : family === 'left' ? 1 : family === 'right' ? 3 : 0);
     for (const rotation of [...sourceNode.facility_data.allowed_rotations].sort((a, b) => a - b)) {
       const local = placement(sourceNode, rotation);
       const sources = rankedPorts(ports(local, sourceNode).filter(p => p.direction === 'output' && p.transport === edge.transport && p.edge === outputSide), local, policy.ports_per_side);
       for (const source of sources) {
-        const [nx, ny] = vectors[target.edge], desired = { x: target.connection.x + nx * (gap - 1), y: target.connection.y + ny * (gap - 1) };
+        if (family === 'fold') {
+          // A U-fold aligns the input/output faces and puts bodies beside each other.
+          // Try both tangential sides; the router must validate the returning connection.
+          for (const side of [-1, 1]) {
+            const verticalFace = ['east', 'west'].includes(target.edge);
+            const x = verticalFace ? target.connection.x - source.connection.x : side < 0 ? parent.x - local.width - gap : parent.x + parent.width + gap;
+            const y = verticalFace ? side < 0 ? parent.y - local.height - gap : parent.y + parent.height + gap : target.connection.y - source.connection.y;
+            const pose = placement(sourceNode, rotation, x, y);
+            yield { pose, source: ports(pose, sourceNode).find(p => p.id === source.id), target, gap, fold_side: side };
+          }
+          continue;
+        }
+        // Body contact at a bend must not move the route endpoint into the consumer.
+        const offset = family === 'straight' ? gap - 1 : Math.max(0, gap - 1);
+        const [nx, ny] = vectors[target.edge], desired = { x: target.connection.x + nx * offset, y: target.connection.y + ny * offset };
         if (family !== 'straight') {
           if (outputSide === 'south') desired.y = parent.y - gap;
           if (outputSide === 'north') desired.y = parent.y + parent.height + gap - 1;

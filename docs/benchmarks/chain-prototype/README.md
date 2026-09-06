@@ -1,7 +1,8 @@
 # Chain-reasoning prototype
 
-Status: milestones 0 and 1 complete. The simple-chain constructor is implemented; cycles,
-branches, complete external factories and completion-aware improvement remain in progress.
+Status: milestones 0, 1 and 2 complete. Simple chains and atomic cycle/branch groups are
+implemented; multi-input composition, complete external factories and completion-aware
+improvement remain in progress.
 This directory is the separate experimental entry point; production commands remain unchanged.
 
 ## Implemented entry point
@@ -11,6 +12,11 @@ geometry-free request DTO, CLI command, generated straight/bent chains, decision
 shared work budgets and verification. The three `*-chain.json` requests are explicit small
 chain fragments, not substitutes for the full recipe-family factories required by the goal.
 The [reference report](reference-report.md) retains the independently validated human layouts.
+
+See the [group contract](group-contract.md) and [milestone-2 report](group-report.md) for
+`run-group.mjs`, the geometry-free citron cycle/branch request, private incremental construction,
+body-contact and 180-degree-fold proposals, and the controlled first-completion replays.
+All current successful prototype outputs still have explicit pending external boundaries.
 
 ## Contract direction
 

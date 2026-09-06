@@ -2,18 +2,8 @@ import { shortestPath } from '../constructive-local-reembedding/path.mjs';
 import { witnessScore } from '../constructive-auto-interface/compact.mjs';
 import { checkState, diagnostic } from './input.mjs';
 import { body, canonical, key, occupancy, placement, ports, proposals, routeBounds } from './geometry.mjs';
+import { Work } from './work.mjs';
 const better = (a, b) => a.some((v, i) => v !== b[i] && a.slice(0, i).every((x, j) => x === b[j]) && v < b[i]);
-class Work {
-  constructor(limits, now) { this.limits = limits; this.used = { proposals: 0, route_expansions: 0, validations: 0 }; this.now = now; this.start = now(); this.reason = null; }
-  timeLeft() { return Math.max(0, this.limits.elapsed_ms - (this.now() - this.start)); }
-  alive() { if (this.timeLeft() <= 0) { this.reason = 'elapsed_ms'; return false; } return true; }
-  take(kind, count = 1) {
-    if (!this.alive()) return false;
-    if (this.used[kind] + count > this.limits[kind]) { this.reason = kind; return false; }
-    this.used[kind] += count; return true;
-  }
-  report() { return { limits: this.limits, used: this.used, elapsed_ms: this.now() - this.start, exhausted: this.reason }; }
-}
 function networkFor(w, edge, proposal) {
   let n = w.transport_networks.find(n => n.item === edge.item && n.transport === edge.transport);
   if (!n) { n = { id: `network:${JSON.stringify([edge.transport, edge.item])}`, item: edge.item, transport: edge.transport,
