@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "status": "private-unimproved-lookahead-seed",
+  "factory_validated": true,
+  "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/block-rotation-final-block/audit-315",
+  "global_incumbent_report": "target/block-rotation-final-single/report.json",
+  "global_incumbent_score": [2173, 388, 36],
+  "private_seed_score": [2173, 395, 36],
+  "scope": "Validated F30/F44 block rotation is a private lookahead seed, not an accepted replacement for the global incumbent."
+}

@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "status": "complete-factory-improved",
+  "factory_validated": true,
+  "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/block-rotation-lookahead-push/candidate-4962",
+  "score": { "width": 41, "height": 52, "area": 2132, "physical_tiles": 395, "turns": 37, "tuple": [2132, 395, 37] },
+  "initial_score": [2173, 395, 38],
+  "global_root_score_before_lookahead": [2173, 388, 36],
+  "global_root_report_before_lookahead": "target/block-rotation-final-single/report.json",
+  "global_root_improved": true,
+  "witness_sha256": "844860393fed9258422d85d8d29fd3a9f9e5d5abd4a7427a72203336e9169da7",
+  "source_report": "target/block-rotation-lookahead-push/report.json",
+  "source_report_sha256": "ea4bb6c08fefb3ab9d7d15ddd8faa95a6bbc632bf228db0e79de43e6c21a0ba1",
+  "private_seed": "docs/benchmarks/constructive-local-reembedding/block-rotation-lookahead-seed.json",
+  "seed_source_report": "target/block-rotation-final-block/report.json",
+  "seed_source_report_sha256": "80b1ec4be5286416a32b856ea87bc7eb99fcb34a1cc4c4aec444676aaf432793",
+  "initial_push_report": "target/rotation-parent-area-boundary/report.json",
+  "verification": { "node_tests": 256, "rust_tests": 524, "rust_ignored": 2, "original_graph_controls": 8, "crossing_controls": 25 },
+  "scope": "Rigid block rotation produces a validated but unimproved private seed. Three bounded push rounds yield an independently validated result better than the global root. No minimum-area or production-cutover claim."
+}

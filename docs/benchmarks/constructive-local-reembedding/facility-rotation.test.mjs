@@ -6,10 +6,11 @@ import { movementPlan } from './movement.mjs';
 import { reembed, extractChains } from './model.mjs';
 import { deflectionCandidates } from './deflection.mjs';
 import { rotationCandidates } from './rotation-candidates.mjs';
+import { componentPoseCandidates } from './components.mjs';
 import { cooperativePortCandidates } from './cooperative.mjs';
 import { vacantPortCandidates } from './ports.mjs';
 import { project } from '../constructive-factory-closure/model.mjs';
-import { key } from './path.mjs';
+import { key, directions, distance } from './path.mjs';
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const catalogs = Object.fromEntries(['facilities', 'components'].map(k => [k, read(`../../../data/game/normalized/${k === 'components' ? 'logistics-components' : k}.json`)]));
 const axes = { north: [0, -1], east: [1, 0], south: [0, 1], west: [-1, 0] };
@@ -138,4 +139,29 @@ test('standalone rotation proposals are bounded, deterministic, catalog-backed a
   for (const options of [{ limit: 0 }, { poseBudget: 0 }, { stepLimit: -1 }, { junctionPolicy: 'unknown' }])
     assert.throws(() => rotationCandidates(d, catalogs, options), { code: 'rotation-invalid-input' });
   assert.deepEqual(d, before);
+});
+
+test('component proposal bodies and endpoint-distance proxies use the actual rotated facility pose', () => {
+  // A two-arm anchor isolates proposal geometry; this is not a complete bridge witness.
+  const d = fixture(), w = d.witness, definition = catalogs.components.components.find(c => c.kind === 'bridge' && c.transport === 'belt');
+  const component = { id: 'geometry-anchor', component: definition.id, kind: definition.kind, transport: 'belt', rotation: 0, position: w.transport_networks[0].cells[3] };
+  w.logistics_components.push(component); w.transport_networks[0].component_ids.push(component.id);
+  const { chains } = extractChains(w), bounds = { minX: 0, minY: 0, maxX: 40, maxY: 40 }, moves = [{ instances: ['a'], dx: 1, dy: 2 }], facilityRotations = [{ instance: 'a', rotation: 90 }];
+  const before = structuredClone(w), change = planFacilityRotations(w, catalogs, moves, facilityRotations).get('a');
+  const r = componentPoseCandidates(w, chains, catalogs, moves, bounds, { facilityRotations });
+  assert.ok(r.candidates.length); assert.notDeepEqual(r, componentPoseCandidates(w, chains, catalogs, moves, bounds));
+  const jobs = chains.filter(c => c.transport === 'belt' && [c.cells[0], c.cells.at(-1)].some(p => key(p) === key(component.position)));
+  const endpoints = jobs.map(c => {
+    const start = key(c.cells[0]) === key(component.position), ts = start ? c.endTerminals : c.startTerminals, t = ts[0];
+    return { position: t.endpoint.kind === 'facility' ? change.terminalPositions.get(t.id) : t.position, direction: start ? c.first : (c.last + 2) % 4 };
+  });
+  const body = new Set(Array.from({ length: change.pose.width * change.pose.height }, (_, i) => `${change.pose.x + i % change.pose.width},${change.pose.y + Math.floor(i / change.pose.width)}`));
+  for (const candidate of r.candidates) {
+    const q = candidate.componentPoses[0], turns = ((q.rotation - component.rotation) / 90 + 4) % 4;
+    assert.ok(!body.has(key(q)));
+    const expected = endpoints.reduce((s, e) => { const [dx, dy] = directions[(e.direction + turns) % 4], arm = { x: q.x + dx, y: q.y + dy }; assert.ok(!body.has(key(arm)));
+      return s + 1 + distance(arm, e.position) - distance(component.position, e.position); }, 0);
+    assert.equal(candidate.endpoint_delta, expected);
+  }
+  assert.deepEqual(w, before);
 });

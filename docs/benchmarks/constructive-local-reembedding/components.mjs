@@ -1,5 +1,6 @@
 import { key, distance, directions } from './path.mjs';
 import { bodyCells } from './movement.mjs';
+import { planFacilityRotations } from './facility-rotation.mjs';
 const fail = (message, entity = null) => { throw Object.assign(new Error(message), { code: 'local-component-pose', stage: 'component-pose', severity: 'info', entity }); };
 
 export const bridgeReleaseLimit = 8;
@@ -50,12 +51,15 @@ export function planComponentPoses(w, catalogs, poses) {
   return changes;
 }
 
-export function componentPoseCandidates(w, chains, catalogs, moves, bounds, { limit = 64, affectedOnly = false } = {}) {
+export function componentPoseCandidates(w, chains, catalogs, moves, bounds, { limit = 64, affectedOnly = false, facilityRotations = [] } = {}) {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 512) fail('Expected component candidate limit 1..512');
   const shifts = new Map(moves.flatMap(m => m.instances.map(id => [id, m])));
-  const shift = p => { const m = shifts.get(p.instance); return m ? { ...p, x: p.x + m.dx, y: p.y + m.dy } : p; };
+  const rotated = planFacilityRotations(w, catalogs, moves, facilityRotations);
+  const shift = p => { if (rotated.has(p.instance)) return { ...p, ...rotated.get(p.instance).pose };
+    const m = shifts.get(p.instance); return m ? { ...p, x: p.x + m.dx, y: p.y + m.dy } : p; };
   const body = new Set(w.placements.flatMap(p => bodyCells(shift(p))).map(key));
   const terminalPoint = t => { const m = t.endpoint.kind === 'facility' && shifts.get(t.endpoint.instance);
+    const q = t.endpoint.kind === 'facility' && rotated.get(t.endpoint.instance)?.terminalPositions.get(t.id); if (q) return q;
     return m ? { x: t.position.x + m.dx, y: t.position.y + m.dy } : t.position; };
   const terminals = new Set(w.transport_networks.flatMap(n => n.terminals.map(t => `${n.transport}:${key(terminalPoint(t))}`)));
   const result = []; let examined = 0;
