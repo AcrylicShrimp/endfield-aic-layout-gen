@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "id": "user-enriched-iron-completion-envelope",
+  "scope": "Screenshot-inferred body and visible-belt masks; not a factory witness",
+  "maximum_examined_area": 260,
+  "snapshots": [
+    {
+      "id": "rejected-seven",
+      "source_image": "codex-clipboard-14172007-023f-4eba-9621-ef079c7d5d5b.png",
+      "calibration": "Approximately 98 pixels per cell; body origin (0, 98). Outer crop is approximate.",
+      "placements": [
+        {"id":"plant-left","facility":"planter-1-mode-normal","x":6,"y":1,"rotation":180},
+        {"id":"seed","facility":"seedcollector-1-mode-normal","x":11,"y":1,"rotation":0},
+        {"id":"plant-right","facility":"planter-1-mode-normal","x":16,"y":1,"rotation":180},
+        {"id":"furnace-a","facility":"furnance-1-mode-normal","x":0,"y":1,"rotation":180},
+        {"id":"furnace-b","facility":"furnance-1-mode-normal","x":3,"y":1,"rotation":180},
+        {"id":"iron-grinder-a","facility":"grinder-1-mode-normal","x":0,"y":5,"rotation":180},
+        {"id":"iron-grinder-b","facility":"grinder-1-mode-normal","x":3,"y":5,"rotation":180}
+      ],
+      "belt_polylines": [[[1,4]],[[4,4]],[[10,0],[11,0]],[[15,0],[16,0]],[[15,6],[16,6]]]
+    },
+    {
+      "id": "relocated-seven",
+      "source_image": "codex-clipboard-ab8992d2-f096-4882-a677-8615c83a7e04.png",
+      "calibration": "Approximately 102 pixels per cell; body origin (108, 100). Counterfactual removes the last two facilities and their incident belts from the final screenshot.",
+      "placements": [
+        {"id":"plant-left","facility":"planter-1-mode-normal","x":1,"y":1,"rotation":180},
+        {"id":"seed","facility":"seedcollector-1-mode-normal","x":6,"y":1,"rotation":0},
+        {"id":"plant-right","facility":"planter-1-mode-normal","x":11,"y":1,"rotation":180},
+        {"id":"furnace-a","facility":"furnance-1-mode-normal","x":12,"y":6,"rotation":270},
+        {"id":"furnace-b","facility":"furnance-1-mode-normal","x":12,"y":9,"rotation":270},
+        {"id":"iron-grinder-a","facility":"grinder-1-mode-normal","x":7,"y":6,"rotation":270},
+        {"id":"iron-grinder-b","facility":"grinder-1-mode-normal","x":7,"y":9,"rotation":270}
+      ],
+      "belt_polylines": [[[10,7],[11,7]],[[10,10],[11,10]],[[5,0],[6,0]],[[10,0],[11,0]],[[10,6],[11,6]]]
+    }
+  ],
+  "remaining": [
+    {"id":"thickener","facility":"thickener-1-mode-normal"},
+    {"id":"sand-grinder","facility":"grinder-1-mode-normal"}
+  ],
+  "observed_completion": {
+    "base": "relocated-seven",
+    "placements": [
+      {"id":"thickener","facility":"thickener-1-mode-normal","x":0,"y":9,"rotation":180},
+      {"id":"sand-grinder","facility":"grinder-1-mode-normal","x":1,"y":6,"rotation":270}
+    ],
+    "belt_polylines": [[[4,6]],[[0,8]],[[6,7],[4,7],[4,8]],[[6,9],[6,8],[5,8]]]
+  }
+}

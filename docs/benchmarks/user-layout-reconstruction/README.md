@@ -29,6 +29,11 @@ the visible reconstructed subgraph validates, not that the screenshot proves a f
 
 ## Reference collection
 
+The subsequent [completion-envelope research](completion-research.md) records chain-folding
+and remaining-space reasoning across the user's examples, with a separate geometry-only
+diagnostic for the enriched iron decision. It does not extend this battery witness's validation
+claim to the newer screenshots or change production planning.
+
 The user requested several independently designed in-game recipe layouts before changing
 the optimization approach. Preserve each reference as supplied, distinguish observation
 from interpretation, and discuss recurring patterns and exceptions before implementation.
