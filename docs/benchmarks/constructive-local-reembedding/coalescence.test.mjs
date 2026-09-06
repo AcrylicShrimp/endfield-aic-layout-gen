@@ -64,3 +64,21 @@ test('coalescence derives relative attachment offsets, respects bounds and repor
   assert.ok(bounded.pairs_considered <= bounded.pairs_available);
   assert.throws(() => coalescenceCandidates(d, graph, catalogs, { poseBudget: 0 }), { code: 'coalescence-budget' });
 });
+
+test('a shared pose budget samples later terminal relationships before deepening the first', () => {
+  const networks = [0, 10].map((y, i) => {
+    const n = net(`link-${i}`, Array.from({ length: 9 }, (_, x) => ({ x: x + 1, y })));
+    n.terminals.forEach((t, j) => { t.endpoint = { kind: 'facility', instance: `${i}-${j}` }; });
+    return n;
+  });
+  const placements = [0, 10].flatMap((y, i) => [0, 10].map((x, j) => ({ instance: `${i}-${j}`, x, y, width: 1, height: 1 })));
+  placements.push({ instance: 'frame', x: 20, y: 20, width: 1, height: 1 });
+  const detail = { witness: { placements, logistics_components: [], transport_networks: networks }, labels: Object.fromEntries(placements.map(p => [p.instance, p.instance])) };
+  const graph = { nodes: placements.map(p => ({ id: p.instance, recipe: 'geometry-only' })), edges: [] }, before = structuredClone(detail);
+  const r = coalescenceCandidates(detail, graph, catalogs, { poseBudget: 2 });
+  assert.equal(r.links_available, 2); assert.equal(r.links_sampled, 2); assert.equal(r.pairs_considered, 2);
+  assert.equal(r.poses_examined, 2); assert.equal(r.pose_budget_exhausted, true);
+  assert.deepEqual(r.link_coverage.map(l => l.poses), [1, 1]);
+  assert.deepEqual(detail, before);
+  assert.deepEqual(r, coalescenceCandidates(detail, graph, catalogs, { poseBudget: 2 }));
+});

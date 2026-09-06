@@ -4,9 +4,38 @@ import { extractChains, extentOf } from './model.mjs';
 import { releaseBridgeDraft } from './components.mjs';
 import { movementPlan } from './movement.mjs';
 import { distance, key, directions } from './path.mjs';
+import { diagonalProduct, interleave } from './fair.mjs';
 const box = ps => ({ x: Math.min(...ps.map(p => p.x)), y: Math.min(...ps.map(p => p.y)),
   right: Math.max(...ps.map(p => p.x + p.width)), bottom: Math.max(...ps.map(p => p.y + p.height)) });
 const overlap = (a, b) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height;
+const linkKey = link => JSON.stringify([link.source.id, link.target.id]);
+const poseOrder = (a, b) => a.body_envelope_area - b.body_envelope_area || a.displacement - b.displacement || a.signature.localeCompare(b.signature);
+
+function* pairPoses(w, bounds, { a, b, link }) {
+  const ids = new Set([...a.instances, ...b.instances]), retained = w.placements.filter(p => !ids.has(p.instance));
+  const rb = retained.length ? box(retained) : null;
+  function* directionPoses(vx, vy) {
+    const relative = { dx: link.source.position.x + vx - link.target.position.x, dy: link.source.position.y + vy - link.target.position.y };
+    const moving = w.placements.filter(p => ids.has(p.instance)).map(p => b.instances.includes(p.instance) ? { ...p, x: p.x + relative.dx, y: p.y + relative.dy } : p);
+    if (moving.some((p, i) => moving.some((q, j) => i < j && overlap(p, q)))) return;
+    const bb = box(moving), xs = new Set([0, -relative.dx, bounds.minX - bb.x, bounds.maxX + 1 - bb.right]), ys = new Set([0, -relative.dy, bounds.minY - bb.y, bounds.maxY + 1 - bb.bottom]);
+    for (const q of retained) for (const gap of [0, 1]) {
+      xs.add(q.x + q.width + gap - bb.x); xs.add(q.x - gap - bb.right);
+      ys.add(q.y + q.height + gap - bb.y); ys.add(q.y - gap - bb.bottom);
+    }
+    const order = (a, b) => Math.abs(a) - Math.abs(b) || a - b;
+    for (const [dx, dy] of diagonalProduct([...xs].sort(order), [...ys].sort(order))) {
+      // Null poses still consume the common sampling budget.
+      if (bb.x + dx < bounds.minX || bb.right + dx > bounds.maxX + 1 || bb.y + dy < bounds.minY || bb.bottom + dy > bounds.maxY + 1 ||
+        moving.some(p => retained.some(q => overlap({ ...p, x: p.x + dx, y: p.y + dy }, q)))) { yield null; continue; }
+      const moves = [{ instances: a.instances, dx, dy }, { instances: b.instances, dx: dx + relative.dx, dy: dy + relative.dy }];
+      const envelope = rb ? (Math.max(rb.right, bb.right + dx) - Math.min(rb.x, bb.x + dx)) * (Math.max(rb.bottom, bb.bottom + dy) - Math.min(rb.y, bb.y + dy)) : (bb.right - bb.x) * (bb.bottom - bb.y);
+      yield { moves, body_envelope_area: envelope, displacement: Math.abs(dx) + Math.abs(dy), signature: JSON.stringify(moves),
+        link: { source: link.source.id, target: link.target.id }, kind: 'link-coalescence' };
+    }
+  }
+  for (const { value } of interleave(directions.map(([vx, vy]) => directionPoses(vx, vy)))) yield value;
+}
 
 export function incidentBridgeIds(w, chains, memberIds) {
   const incident = chains.filter(c => [...c.startTerminals, ...c.endTerminals].some(t => memberIds.has(t.endpoint.instance)));
@@ -41,37 +70,30 @@ export function coalescenceCandidates(detail, graph, catalogs, { limit = 128, po
       if (a.instances.length + b.instances.length <= 16 && !a.instances.some(id => b.instances.includes(id))) pairs.push({ a, b, link });
   pairs.sort((a, b) => distance(b.link.source.position, b.link.target.position) - distance(a.link.source.position, a.link.target.position) ||
     (a.a.instances.length + a.b.instances.length) - (b.a.instances.length + b.b.instances.length));
-  const proposals = [], seen = new Set(), rejected = {}; let screened = 0, examined = 0, exhausted = false, pairsConsidered = 0;
-  outer: for (const [pair, { a, b, link }] of pairs.entries()) {
-    pairsConsidered++;
+  const proposals = [], seen = new Set(), rejected = {}, raw = pairs.map(() => []), rawSeen = pairs.map(() => new Set());
+  const sampledPairs = new Set(), linkCoverage = new Map(links.map(link => [linkKey(link), { source: link.source.id, target: link.target.id,
+    labels: [detail.labels[link.source.endpoint.instance], detail.labels[link.target.endpoint.instance]], poses: 0, selected: 0 }]));
+  let screened = 0, examined = 0, exhausted = false;
+  const stream = interleave(pairs.map(pair => pairPoses(w, bounds, pair)));
+  while (examined < poseBudget) {
+    const next = stream.next(); if (next.done) break;
+    const { index: pair, value: p } = next.value; examined++; sampledPairs.add(pair);
+    linkCoverage.get(linkKey(pairs[pair].link)).poses++;
+    if (!p || rawSeen[pair].has(p.signature)) continue;
+    raw[pair].push({ ...p, pair }); rawSeen[pair].add(p.signature); raw[pair].sort(poseOrder);
+    if (raw[pair].length > 64) rawSeen[pair].delete(raw[pair].pop().signature);
+  }
+  // No unbudgeted lookahead: reaching the cap leaves completion unproven.
+  exhausted = examined === poseBudget;
+  for (const [pair, { a, b }] of pairs.entries()) {
+    if (!raw[pair].length) continue;
     const memberIds = new Set([...a.instances, ...b.instances]);
     const pairBridges = incidentBridgeIds(detail.witness, chains, memberIds);
     const draft = releaseBridgeDraft(detail.witness, catalogs, pairBridges), local = extractChains(draft.witness, draft.released);
     const rerouteChains = new Set(local.chains.filter(c => c.cells.some(p => draft.released.has(`${c.transport}:${key(p)}`))).map(c => c.id));
-    for (const [vx, vy] of directions) {
-    const relative = { dx: link.source.position.x + vx - link.target.position.x, dy: link.source.position.y + vy - link.target.position.y };
-    const ids = new Set([...a.instances, ...b.instances]);
-    const moving = w.placements.filter(p => ids.has(p.instance)).map(p => b.instances.includes(p.instance) ? { ...p, x: p.x + relative.dx, y: p.y + relative.dy } : p);
-    if (moving.some((p, i) => moving.some((q, j) => i < j && overlap(p, q)))) continue;
-    const retained = w.placements.filter(p => !ids.has(p.instance)), bb = box(moving), rb = box(retained);
-    const xs = new Set([0, -relative.dx, bounds.minX - bb.x, bounds.maxX + 1 - bb.right]), ys = new Set([0, -relative.dy, bounds.minY - bb.y, bounds.maxY + 1 - bb.bottom]);
-    for (const q of retained) for (const gap of [0, 1]) {
-      xs.add(q.x + q.width + gap - bb.x); xs.add(q.x - gap - bb.right);
-      ys.add(q.y + q.height + gap - bb.y); ys.add(q.y - gap - bb.bottom);
-    }
-    const raw = [];
-    for (const dx of xs) for (const dy of ys) {
-      if (examined++ >= poseBudget) { exhausted = true; break outer; }
-      if (bb.x + dx < bounds.minX || bb.right + dx > bounds.maxX + 1 || bb.y + dy < bounds.minY || bb.bottom + dy > bounds.maxY + 1) continue;
-      if (moving.some(p => retained.some(q => overlap({ ...p, x: p.x + dx, y: p.y + dy }, q)))) continue;
-      const moves = [{ instances: a.instances, dx, dy }, { instances: b.instances, dx: dx + relative.dx, dy: dy + relative.dy }];
-      const signature = JSON.stringify(moves); if (seen.has(signature)) continue; seen.add(signature);
-      const envelope = (Math.max(rb.right, bb.right + dx) - Math.min(rb.x, bb.x + dx)) * (Math.max(rb.bottom, bb.bottom + dy) - Math.min(rb.y, bb.y + dy));
-      raw.push({ moves, body_envelope_area: envelope, pair, link: { source: link.source.id, target: link.target.id }, kind: 'link-coalescence' });
-    }
-    raw.sort((a, b) => a.body_envelope_area - b.body_envelope_area || Math.abs(a.moves[0].dx) + Math.abs(a.moves[0].dy) - Math.abs(b.moves[0].dx) - Math.abs(b.moves[0].dy));
     let count = 0;
-    for (const p of raw.slice(0, 128)) {
+    for (const p of raw[pair]) {
+      if (seen.has(p.signature)) continue; seen.add(p.signature);
       screened++;
       try {
         const plan = movementPlan(draft.witness, local.chains, local.anchors, p.moves, { junctionPolicy, rerouteChains });
@@ -79,12 +101,18 @@ export function coalescenceCandidates(detail, graph, catalogs, { limit = 128, po
         for (const n of w.transport_networks) for (const t of n.terminals) carried.push(plan.shiftTerminal(t));
         if (carried.some(p => p.x < bounds.minX || p.x > bounds.maxX || p.y < bounds.minY || p.y > bounds.maxY)) continue;
         const delta = local.chains.reduce((s, c) => s + distance(plan.shiftEndpoint(c, false), plan.shiftEndpoint(c, true)) - distance(c.cells[0], c.cells.at(-1)), 0);
-        proposals.push({ ...p, releaseBridges: pairBridges, endpoint_delta: delta, rank: count++ }); if (count === 32) break;
+        const { signature, displacement, ...candidate } = p;
+        proposals.push({ ...candidate, releaseBridges: pairBridges, endpoint_delta: delta }); if (++count === 8) break;
       } catch (e) { if (!e.code) throw e; rejected[e.code] = (rejected[e.code] ?? 0) + 1; }
     }
   }
-  }
-  return { groups: groups.length, pairs_available: pairs.length, pairs_considered: pairsConsidered, pose_budget: poseBudget, poses_examined: Math.min(examined, poseBudget), pose_budget_exhausted: exhausted,
-    screened, rejected, feasible_positions: proposals.length,
-    candidates: proposals.sort((a, b) => a.body_envelope_area - b.body_envelope_area || a.rank - b.rank || a.endpoint_delta - b.endpoint_delta).slice(0, limit) };
+  const ranks = new Map();
+  proposals.sort((a, b) => a.body_envelope_area - b.body_envelope_area || a.endpoint_delta - b.endpoint_delta || a.pair - b.pair);
+  for (const p of proposals) { const k = JSON.stringify([p.link.source, p.link.target]), rank = ranks.get(k) ?? 0; p.rank = rank; ranks.set(k, rank + 1); }
+  const candidates = proposals.sort((a, b) => a.rank - b.rank || a.body_envelope_area - b.body_envelope_area || a.endpoint_delta - b.endpoint_delta).slice(0, limit);
+  for (const p of candidates) linkCoverage.get(JSON.stringify([p.link.source, p.link.target])).selected++;
+  return { groups: groups.length, pairs_available: pairs.length, pairs_considered: sampledPairs.size, pose_budget: poseBudget, poses_examined: examined, pose_budget_exhausted: exhausted,
+    links_available: new Set(pairs.map(p => linkKey(p.link))).size, links_sampled: [...linkCoverage.values()].filter(l => l.poses).length,
+    links_selected: [...linkCoverage.values()].filter(l => l.selected).length, link_coverage: [...linkCoverage.values()], raw_pose_limit_per_pair: 64, valid_pose_limit_per_pair: 8,
+    screened, rejected, feasible_positions: proposals.length, candidates };
 }
