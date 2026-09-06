@@ -22,6 +22,11 @@ test('minimum-cut costs match 1000 independently enumerated bounded integer syst
     const minimum = Math.min(...feasible.map(v => v.reduce((s, x, i) => s + costs[i] * x, 0)));
     assert.equal(result.primal, minimum); assert.equal(result.dual, minimum);
     assert.ok(feasible.some(v => v.every((x, i) => x === result.values[i])));
+    const optima = feasible.filter(v => v.reduce((s, x, i) => s + costs[i] * x, 0) === minimum);
+    assert.deepEqual(result.values, lower.map((_, i) => Math.min(...optima.map(v => v[i]))));
+    const greatest = minimizeLinearCost(lower, upper, edges, costs, { tie: 'greatest' });
+    assert.equal(greatest.primal, minimum); assert.equal(greatest.dual, minimum);
+    assert.deepEqual(greatest.values, lower.map((_, i) => Math.max(...optima.map(v => v[i]))));
   }
   assert.ok(movable > 500); assert.ok(negativeEdges > 1000);
 });
@@ -31,6 +36,8 @@ test('fixed extent still permits shorter chains; zero-cost ties stay determinist
   const result = minimizeLinearCost(lower, upper, edges, [0, -1, 1]);
   assert.deepEqual(result.values, [0, 9, 10]); assert.equal(result.primal, 1);
   assert.deepEqual(minimizeLinearCost(lower, upper, edges, [0, 0, 0]).values, lower);
+  assert.deepEqual(minimizeLinearCost(lower, upper, edges, [0, 0, 0], { tie: 'greatest' }).values, upper);
+  assert.throws(() => minimizeLinearCost(lower, upper, edges, [0, 0, 0], { tie: 'random' }), { code: 'length-tie-policy' });
   assert.deepEqual(minimizeLinearCost([2], [2], [], [5]).values, [2]);
 });
 

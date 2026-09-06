@@ -2,8 +2,9 @@ const fail = (code, message, entity = null) => { throw Object.assign(new Error(m
 const dot = (a, b) => a.reduce((n, v, i) => n + BigInt(v) * BigInt(b[i]), 0n);
 
 // Integer minimum closure through an iterative level-graph max flow.
-export function minimizeLinearCost(lower, upper, inequalities, costs, { nodeBudget = 100000, edgeBudget = 500000, workBudget = 20000000 } = {}) {
+export function minimizeLinearCost(lower, upper, inequalities, costs, { nodeBudget = 100000, edgeBudget = 500000, workBudget = 20000000, tie = 'least' } = {}) {
   const start = performance.now(), n = lower.length;
+  if (!['least', 'greatest'].includes(tie)) fail('length-tie-policy', 'Expected least or greatest optimal closure', tie);
   if (![nodeBudget, edgeBudget, workBudget].every(v => Number.isSafeInteger(v) && v >= 0)) fail('length-budget-schema', 'Budgets must be nonnegative safe integers');
   let work = 0;
   const step = () => { if (++work > workBudget) fail('length-work-budget', 'Threshold construction or minimum-cut work budget exhausted', { work, workBudget }); };
@@ -69,10 +70,21 @@ export function minimizeLinearCost(lower, upper, inequalities, costs, { nodeBudg
       flow += amount; augmentations++;
     }
   }
+  const selected = Uint8Array.from(levels, v => v >= 0 ? 1 : 0);
+  if (tie === 'greatest') {
+    const reachesSink = new Uint8Array(count), queue = [sink]; reachesSink[sink] = 1;
+    for (let i = 0; i < queue.length; i++) for (const e of graph[queue[i]]) {
+      step();
+      if (graph[e.to][e.rev].capacity > 0 && !reachesSink[e.to]) { reachesSink[e.to] = 1; queue.push(e.to); }
+    }
+    for (let i = 0; i < count; i++) selected[i] = 1 - reachesSink[i];
+  }
+  if (!selected[source] || selected[sink]) fail('length-cut-certificate', 'Cut does not separate source and sink');
   const values = lower.map((v, i) => {
     let x = v, missing = false;
     for (let k = v + 1; k <= upper[i]; k++) {
-      if (levels[threshold(i, k)] >= 0) { if (missing) fail('length-cut-certificate', 'Selected thresholds are not a prefix'); x++; } else missing = true;
+      step();
+      if (selected[threshold(i, k)]) { if (missing) fail('length-cut-certificate', 'Selected thresholds are not a prefix'); x++; } else missing = true;
     }
     return x;
   });
@@ -80,6 +92,6 @@ export function minimizeLinearCost(lower, upper, inequalities, costs, { nodeBudg
   const primal = Number(exactPrimal), dual = Number(exactDual);
   if (!Number.isSafeInteger(primal) || !Number.isSafeInteger(dual) || exactPrimal !== exactDual || inequalities.some(e => values[e.to] < values[e.from] + e.weight))
     fail('length-cut-certificate', 'Minimum-cut coordinates or primal/dual costs failed verification');
-  return { values, primal, dual, flow, nodes: count, edges: edgeCount, finite_capacity: finite, phases, augmentations, work,
+  return { values, tie, primal, dual, flow, nodes: count, edges: edgeCount, finite_capacity: finite, phases, augmentations, work,
     build_ms: buildMs, flow_ms: performance.now() - flowStart, elapsed_ms: performance.now() - start };
 }

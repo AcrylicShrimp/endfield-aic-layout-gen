@@ -29,7 +29,7 @@ export function solveDifferences(lower, edges, original, relaxationBudget = 2000
   return { values, relaxations, examined };
 }
 
-export function compactEmbedding(detail, catalogs, axis = 'x', { pointBudget = 100000, relaxationBudget = 2000000, cellBudget = 400000 } = {}) {
+export function compactEmbedding(detail, catalogs, axis = 'x', { pointBudget = 100000, relaxationBudget = 2000000, cellBudget = 400000, tie: cutTie = 'least' } = {}) {
   if (!['x', 'y'].includes(axis)) fail('compaction-axis', 'Expected x or y axis', axis);
   const started = performance.now(), cross = axis === 'x' ? 'y' : 'x', w = detail.witness;
   const points = [], lookup = new Map(), equalities = [], critical = new Set();
@@ -144,7 +144,7 @@ export function compactEmbedding(detail, catalogs, axis = 'x', { pointBudget = 1
     costOffset += sign * (offsets.get(to) - offsets.get(from));
     originalCost += Math.abs(c.to[axis] - c.from[axis]);
   }
-  const lengthLower = solution.values, length = minimizeLinearCost(lengthLower, tightUpper, [...edges.values()], costs);
+  const lengthLower = solution.values, length = minimizeLinearCost(lengthLower, tightUpper, [...edges.values()], costs, { tie: cutTie });
   solution.values = length.values;
   const lengthMs = performance.now() - lengthStart, solveMs = performance.now() - solveStart, lowerStart = performance.now();
   const move = p => {
