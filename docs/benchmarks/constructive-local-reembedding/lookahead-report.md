@@ -77,7 +77,7 @@ The four private branches did **not** produce this new improvement. Their useful
 evidence is safe root retention and reproducible branch outcomes.
 
 The reports listed in lookahead-results.json have verified matching input and engine
-hashes at this slice. Preliminary lookahead-replay/ and lookahead-portfolio/ reports
+hashes at this slice's commit e67c08d. Preliminary lookahead-replay/ and lookahead-portfolio/ reports
 precede the final comparison-record addition; use their `-final` counterparts.
 
 ## Verification and visual findings
@@ -105,6 +105,9 @@ aspect ratio, its resize observer redraws and resets the view. Immediate pan/zoo
 assertions pass but do not prove persistence; the attempted focused capture repeats
 the full view. A delayed check confirms the reset. Fix this next before claiming
 stable focused visual inspection. Six viewport/theme checks and the full render pass.
+The subsequent renderer-only repair and persistent browser checks are documented in
+../constructive-bound-interconnect/viewport-report.md; that follow-up resolves this
+issue and completes full/focused visual inspection without changing the factory.
 
 Compared with AGENTS.md and the constructive design's Iterative Improvement contract:
 every public selection is a complete validated factory and improves area/cells/turns
