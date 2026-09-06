@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "seed": 20260907,
+  "requests": [
+    {"id": "battery", "path": "../chain-prototype/battery-chain.json", "split": "main"},
+    {"id": "iron", "path": "../chain-prototype/iron-chain.json", "split": "main"},
+    {"id": "pipe", "path": "../chain-prototype/pipe-chain.json", "split": "out-of-family"}
+  ],
+  "counts": {"train": 192, "validation": 48, "test": 64, "out-of-family": 48},
+  "actions": 12,
+  "max_state_attempts": 3000,
+  "route_expansions_per_action": 4000,
+  "validator_ms": 3000,
+  "elapsed_ms": 180000,
+  "max_gap": 6
+}

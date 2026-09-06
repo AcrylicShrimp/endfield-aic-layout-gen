@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "seeds": [7, 17, 29],
+  "train_limit": 1536,
+  "steps": 600,
+  "batch_size": 64,
+  "learning_rate": 0.001,
+  "width": 32,
+  "threads": 1,
+  "curve_interval": 100,
+  "inference_repeats": 100,
+  "runs": [
+    {"architecture": "graph", "signal": "normal"},
+    {"architecture": "graph", "signal": "supervised"},
+    {"architecture": "pooled", "signal": "normal"}
+  ]
+}

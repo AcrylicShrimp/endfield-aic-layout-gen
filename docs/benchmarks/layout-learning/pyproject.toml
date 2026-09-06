@@ -1,0 +1,9 @@
+[project]
+name = "aic-layout-learning"
+version = "0.1.0"
+description = "Isolated catalog-backed layout learning signal experiments"
+requires-python = ">=3.12"
+dependencies = ["torch>=2,<3"]
+
+[tool.uv]
+package = false

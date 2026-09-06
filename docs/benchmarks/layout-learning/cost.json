@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "seed": 31,
+  "repeats": 20,
+  "cases": [
+    {"tokens": 64, "width": 32, "batch": 16},
+    {"tokens": 256, "width": 64, "batch": 16},
+    {"tokens": 1024, "width": 128, "batch": 16}
+  ]
+}
