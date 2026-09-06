@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "factory_validated": true,
+  "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/layer-move-independent/candidate-1223",
+  "witness_sha256": "f06a5b2a525936ff20b9020fea004b4460993cce4ef35500124fa27fbfc784a7",
+  "score": {"width": 47, "height": 57, "area": 2679, "physical_tiles": 444, "turns": 45, "tuple": [2679, 444, 45]},
+  "previous_incumbent": "docs/benchmarks/constructive-local-reembedding/crossing-results.json",
+  "previous_score": [2726, 454, 40],
+  "order_diagnostic": "target/bridge-order-current/report.json",
+  "fixed_matrix": ["target/layer-coupled-xy/report.json", "target/layer-coupled-yx/report.json", "target/independent-layer-xy/report.json", "target/layer-independent-yx/report.json"],
+  "joint_matrix": ["target/layer-move-coupled/report.json", "target/layer-move-independent/report.json"],
+  "follow_on": "target/layer-follow-on/report.json",
+  "original_graph_audit": "target/layer-original-audit/audit.json",
+  "bridge_audit": "target/layer-bridge-audit/audit.json",
+  "verification": {"node_tests_passed": 193, "rust_tests_passed": 524, "rust_tests_ignored": 2, "original_graph_controls": 8, "bridge_controls": 16, "viewport_theme_checks": 6},
+  "render": "http://100.114.24.86:8765/bound-interconnect-closure-independent-layers.html",
+  "largest_interior_empty_rectangle": {"x": 23, "y": 32, "width": 9, "height": 11, "area": 99},
+  "next_gate": "Evaluate coordinated group order/shape changes and rebuilt interfaces; neither the central void nor the full research/product goal is solved."
+}

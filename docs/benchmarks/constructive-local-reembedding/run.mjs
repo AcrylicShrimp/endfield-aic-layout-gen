@@ -17,7 +17,7 @@ try {
   const keys = ['graph', 'baseline', 'recipes', 'facilities', 'items', 'transports', 'components', 'validator', 'output-directory'], options = {}, args = process.argv.slice(2);
   for (let i = 0; i < args.length; i += 2) {
     const k = args[i].slice(2);
-    if (!args[i].startsWith('--') || ![...keys, 'rounds', 'mode', 'move-limit', 'move-family', 'endpoint-policy', 'junction-policy', 'max-new-crossings', 'port-policy'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
+    if (!args[i].startsWith('--') || ![...keys, 'rounds', 'mode', 'move-limit', 'move-family', 'endpoint-policy', 'junction-policy', 'max-new-crossings', 'port-policy', 'layer-policy'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
     options[k] = args[i + 1];
   }
   for (const k of keys) if (!options[k]) throw new Error(`Missing --${k}`);
@@ -27,6 +27,8 @@ try {
   const junctionPolicy = options['junction-policy'] ?? 'internal';
   const maxNewCrossings = Number(options['max-new-crossings'] ?? 0);
   const portPolicy = options['port-policy'] ?? 'retained';
+  const layerPolicy = options['layer-policy'] ?? 'coupled';
+  if (!['coupled', 'independent'].includes(layerPolicy)) throw new Error('Expected --layer-policy coupled|independent');
   if (!['retained', 'paired'].includes(portPolicy)) throw new Error('Expected --port-policy retained|paired');
   if (!Number.isSafeInteger(maxNewCrossings) || maxNewCrossings < 0 || maxNewCrossings > 8) throw new Error('Expected --max-new-crossings 0..8');
   if (!['internal', 'downstream'].includes(junctionPolicy)) throw new Error('Expected --junction-policy internal|downstream');
@@ -66,7 +68,7 @@ try {
       // Re-routing frees old bends/order. Compaction is optional postprocessing of that new geometry.
       const start = performance.now();
       try {
-        let compacted = compactEmbedding(compactEmbedding(candidate, catalogs, 'x'), catalogs, 'y');
+        let compacted = compactEmbedding(compactEmbedding(candidate, catalogs, 'x', { layerPolicy }), catalogs, 'y', { layerPolicy });
         const compactScore = witnessScore(compacted.witness);
         if (better(compactScore.tuple, score.tuple)) { candidate = compacted; score = compactScore; }
       } catch (e) { record.compaction_diagnostic = { code: e.code ?? 'local-compaction-failed', message: e.message }; }
@@ -106,7 +108,7 @@ try {
     if (selected === before) { termination = 'unimproved-neighborhood'; break; }
   }
   const report = { schema_version: 1, status: better(selected.score.tuple, initialScore.tuple) ? 'complete-factory-improved' : 'complete-incumbent-retained', factory_validated: true,
-    selected_directory: selected.directory, initial_score: initialScore, score: selected.score, mode, rounds, move_limit: limit, move_family: moveFamily, move_schema_version: 2, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, max_new_crossings: maxNewCrossings, port_policy: portPolicy, termination,
+    selected_directory: selected.directory, initial_score: initialScore, score: selected.score, mode, rounds, move_limit: limit, move_family: moveFamily, move_schema_version: 2, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, max_new_crossings: maxNewCrossings, port_policy: portPolicy, layer_policy: layerPolicy, termination,
     generation_ms: generationMs, compaction_ms: compactionMs, validation_output_ms: validationMs, elapsed_ms: performance.now() - began, neighborhoods, stages, failures,
     provenance: keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
     source_hashes: Object.fromEntries(['model.mjs', 'movement.mjs', 'groups.mjs', 'path.mjs', 'crossing.mjs', 'ports.mjs', 'run.mjs', '../constructive-embedding-compaction/model.mjs', '../constructive-embedding-compaction/length.mjs',

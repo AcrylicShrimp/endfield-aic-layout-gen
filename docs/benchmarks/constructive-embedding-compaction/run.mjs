@@ -15,12 +15,14 @@ try {
   const keys = ['graph', 'baseline', 'recipes', 'facilities', 'items', 'transports', 'components', 'validator', 'output-directory'], options = {}, args = process.argv.slice(2);
   for (let i = 0; i < args.length; i += 2) {
     const k = args[i].slice(2);
-    if (!args[i].startsWith('--') || ![...keys, 'rounds', 'axis-order', 'state-budget'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
+    if (!args[i].startsWith('--') || ![...keys, 'rounds', 'axis-order', 'state-budget', 'layer-policy'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
     options[k] = args[i + 1];
   }
   for (const k of keys) if (!options[k]) throw new Error(`Missing --${k}`);
   const rounds = Number(options.rounds ?? 8), order = options['axis-order'] ?? 'xy';
   const stateBudget = Number(options['state-budget'] ?? 16);
+  const layerPolicy = options['layer-policy'] ?? 'coupled';
+  if (!['coupled', 'independent'].includes(layerPolicy)) throw new Error('Expected --layer-policy coupled|independent');
   if (!Number.isSafeInteger(stateBudget) || stateBudget < 1 || stateBudget > 128) throw new Error('Expected --state-budget 1..128');
   if (!Number.isSafeInteger(rounds) || rounds < 1 || rounds > 32 || !['xy', 'yx'].includes(order)) throw new Error('Expected --rounds 1..32 and --axis-order xy or yx');
   output = path.resolve(options['output-directory']); fs.mkdirSync(output); outputCreated = true; const start = performance.now();
@@ -51,7 +53,7 @@ try {
   const validated = new Map([[witnessKey(selected.detail.witness), selected]]); let validationReuses = 0;
   const search = await explorePlateau(selected, order, async (input, axis, tie, branch, { round, state }) => {
       try {
-        const candidate = compactEmbedding(input.detail, catalogs, axis, { tie }), key = witnessKey(candidate.witness), cached = validated.get(key);
+        const candidate = compactEmbedding(input.detail, catalogs, axis, { tie, layerPolicy }), key = witnessKey(candidate.witness), cached = validated.get(key);
         if (cached) {
           validationReuses++;
           return { ...cached, validation_reused_from: cached.directory, validation_output_ms: 0, validator_ms: 0,
@@ -65,7 +67,7 @@ try {
   selected = search.selected;
   const { stages, termination, ...searchMetrics } = Object.fromEntries(Object.entries(search).filter(([k]) => k !== 'selected'));
   const report = { schema_version: 1, factory_validated: true, status: better(selected.score.tuple, initialScore.tuple) ? 'complete-factory-improved' : 'complete-incumbent-retained',
-    selected_directory: selected.directory, initial_score: initialScore, score: selected.score, axis_order: order, round_budget: rounds, termination,
+    selected_directory: selected.directory, initial_score: initialScore, score: selected.score, axis_order: order, layer_policy: layerPolicy, round_budget: rounds, termination,
     elapsed_ms: performance.now() - start, state_budget: stateBudget, validation_reuses: validationReuses, unique_validated_witnesses: validated.size, ...searchMetrics, stages, failures,
     provenance: keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
     source_hashes: Object.fromEntries(['model.mjs', 'length.mjs', 'transactions.mjs', 'validator.mjs', 'run.mjs', '../constructive-placement-only/model.mjs', '../constructive-bound-interconnect/view.mjs', '../constructive-auto-interface/compact.mjs', '../constructive-factory-closure/model.mjs', '../constructive-cycle-blocks/graph.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };

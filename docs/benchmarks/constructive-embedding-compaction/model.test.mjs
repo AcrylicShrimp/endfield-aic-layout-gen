@@ -56,8 +56,8 @@ test('rigid catalog bodies and terminal connection offsets survive both axes', (
   const n = network('a', port.direction === 'input' ? corners : corners.reverse(), port.transport);
   n.terminals.push({ id: 'input', rate, position: connection, endpoint: { kind: 'facility', instance: p.instance, port: port.id } });
   const d = detail([n]); d.witness.placements.push(p); d.witness.utilizations[p.instance] = rate;
-  for (const axis of ['x', 'y']) {
-    const c = compactEmbedding(d, catalogs, axis), q = c.witness.placements[0], t = c.witness.transport_networks[0].terminals[0];
+  for (const axis of ['x', 'y']) for (const layerPolicy of ['coupled', 'independent']) {
+    const c = compactEmbedding(d, catalogs, axis, { layerPolicy }), q = c.witness.placements[0], t = c.witness.transport_networks[0].terminals[0];
     assert.equal(q.width, p.width); assert.equal(q.height, p.height);
     assert.deepEqual(t.position, { x: q.x + port.position.x + dir[0], y: q.y + port.position.y + dir[1] });
     assert.deepEqual(c.catalog_ports[p.instance].find(t => t.id === port.id).connection, t.position);
@@ -65,7 +65,28 @@ test('rigid catalog bodies and terminal connection offsets survive both axes', (
   }
   }
   }
-  assert.equal(checked, catalogs.facilities.facilities.reduce((n, f) => n + 2 * f.allowed_rotations.length * f.ports.length, 0));
+  assert.equal(checked, catalogs.facilities.facilities.reduce((n, f) => n + 4 * f.allowed_rotations.length * f.ports.length, 0));
+});
+
+test('independent layers may coincide, but same-layer paths and shared facility bodies stay separated', () => {
+  for (const axis of ['x', 'y']) {
+    const corners = axis === 'x' ? [[[0, 0], [0, 2]], [[20, 1], [20, 3]]] : [[[0, 0], [2, 0]], [[1, 20], [3, 20]]];
+    const d = detail([network('belt', corners[0]), network('pipe', corners[1], 'pipe')]), before = structuredClone(d);
+    const coupled = compactEmbedding(d, catalogs, axis), independent = compactEmbedding(d, catalogs, axis, { layerPolicy: 'independent' });
+    assert.equal(coupled.compaction_certificate.resulting_extent, 2);
+    assert.equal(independent.compaction_certificate.resulting_extent, 1);
+    assert.deepEqual(d, before);
+    d.witness.transport_networks[1].transport = 'belt';
+    assert.equal(compactEmbedding(d, catalogs, axis, { layerPolicy: 'independent' }).compaction_certificate.resulting_extent, 2);
+  }
+  const f = catalogs.facilities.facilities[0], shape = rotateFacility(f, f.allowed_rotations[0]);
+  const p = { instance: 'body', facility: f.id, rotation: f.allowed_rotations[0], x: 10, y: 0, width: shape.width, height: shape.height };
+  const d = detail([network('left', [[0, 0], [0, shape.height]]), network('right', [[30, 0], [30, shape.height]], 'pipe')]);
+  d.witness.placements = [p];
+  const c = compactEmbedding(d, catalogs, 'x', { layerPolicy: 'independent' }), q = c.witness.placements[0];
+  assert.ok(c.witness.transport_networks[0].cells.every(p => p.x < q.x));
+  assert.ok(c.witness.transport_networks[1].cells.every(p => p.x >= q.x + q.width));
+  assert.throws(() => compactEmbedding(d, catalogs, 'x', { layerPolicy: 'unknown' }), { code: 'compaction-layer-policy' });
 });
 
 test('row obstacles, rate transitions, layer coincidences and external sides are preserved', () => {
