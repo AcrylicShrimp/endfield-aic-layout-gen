@@ -3,7 +3,7 @@ export const bodyCells = p => Array.from({ length: p.width * p.height }, (_, i) 
 const fail = (code, message, entity = null) => { throw Object.assign(new Error(message), { code, severity: 'info', stage: 'local-movement', entity }); };
 const tag = (tr, p) => `${tr}:${key(p)}`;
 
-export function movementPlan(w, chains, anchors, moves, { junctionPolicy = 'internal', componentChanges = new Map() } = {}) {
+export function movementPlan(w, chains, anchors, moves, { junctionPolicy = 'internal', componentChanges = new Map(), rerouteChains = new Set() } = {}) {
   if (!['internal', 'downstream'].includes(junctionPolicy)) fail('local-junction-policy', 'Expected internal or downstream junction ownership');
   if (!Array.isArray(moves) || moves.length > 4 || moves.some(move => !move || !Array.isArray(move.instances) || !move.instances.length ||
     !move.instances.every(id => w.placements.some(p => p.instance === id)) || !Number.isSafeInteger(move.dx) || !Number.isSafeInteger(move.dy) ||
@@ -74,7 +74,7 @@ export function movementPlan(w, chains, anchors, moves, { junctionPolicy = 'inte
     if (stationary.has(k) || cells.has(k)) fail('local-endpoint-body', 'Translated anchor intersects a facility body', k);
   const components = w.logistics_components.filter(c => movable(c.transport, c.position)).map(c => c.id);
   const fixedChains = new Map(), changed = new Set();
-  for (const c of chains) if (!componentTurns.get(tag(c.transport, c.cells[0])) && !componentTurns.get(tag(c.transport, c.cells.at(-1))) &&
+  for (const c of chains) if (!rerouteChains.has(c.id) && !componentTurns.get(tag(c.transport, c.cells[0])) && !componentTurns.get(tag(c.transport, c.cells.at(-1))) &&
     equalShift(anchorShifts.get(tag(c.transport, c.cells[0])), anchorShifts.get(tag(c.transport, c.cells.at(-1))))) {
     const delta = anchorShifts.get(tag(c.transport, c.cells[0])), path = c.cells.map(p => translate(p, delta));
     if (path.some(p => stationary.has(key(p)) || cells.has(key(p)))) fail('local-internal-body-collision', 'Translated internal route intersects a body', c.id);

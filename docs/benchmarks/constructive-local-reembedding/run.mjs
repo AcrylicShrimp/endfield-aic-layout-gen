@@ -5,6 +5,7 @@ import { reembed, extractChains, relocationCandidates, extentOf } from './model.
 import { groupCandidates } from './groups.mjs';
 import { compoundCandidates } from './compound.mjs';
 import { componentPoseCandidates } from './components.mjs';
+import { coalescenceCandidates } from './coalescence.mjs';
 import { boundaryPortSwaps } from './ports.mjs';
 import { compactEmbedding } from '../constructive-embedding-compaction/model.mjs';
 import { executeValidator } from '../constructive-embedding-compaction/validator.mjs';
@@ -19,7 +20,7 @@ try {
   const keys = ['graph', 'baseline', 'recipes', 'facilities', 'items', 'transports', 'components', 'validator', 'output-directory'], options = {}, args = process.argv.slice(2);
   for (let i = 0; i < args.length; i += 2) {
     const k = args[i].slice(2);
-    if (!args[i].startsWith('--') || ![...keys, 'rounds', 'mode', 'move-limit', 'move-family', 'endpoint-policy', 'junction-policy', 'max-new-crossings', 'port-policy', 'layer-policy', 'audit-unimproved'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
+    if (!args[i].startsWith('--') || ![...keys, 'rounds', 'mode', 'move-limit', 'move-family', 'endpoint-policy', 'junction-policy', 'max-new-crossings', 'port-policy', 'layer-policy', 'audit-unimproved', 'bridge-policy'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
     options[k] = args[i + 1];
   }
   for (const k of keys) if (!options[k]) throw new Error(`Missing --${k}`);
@@ -30,6 +31,9 @@ try {
   const maxNewCrossings = Number(options['max-new-crossings'] ?? 0);
   const portPolicy = options['port-policy'] ?? 'retained';
   const layerPolicy = options['layer-policy'] ?? 'coupled';
+  const bridgePolicy = options['bridge-policy'] ?? 'retained';
+  if (!['retained', 'release'].includes(bridgePolicy)) throw new Error('Expected --bridge-policy retained|release');
+  if (bridgePolicy === 'release' && moveFamily !== 'coalescence') throw new Error('Bridge release currently requires --move-family coalescence');
   const auditBudget = Number(options['audit-unimproved'] ?? 0); let audited = 0;
   if (!Number.isSafeInteger(auditBudget) || auditBudget < 0 || auditBudget > 64) throw new Error('Expected --audit-unimproved 0..64');
   if (!['coupled', 'independent'].includes(layerPolicy)) throw new Error('Expected --layer-policy coupled|independent');
@@ -37,7 +41,7 @@ try {
   if (!Number.isSafeInteger(maxNewCrossings) || maxNewCrossings < 0 || maxNewCrossings > 8) throw new Error('Expected --max-new-crossings 0..8');
   if (!['internal', 'downstream'].includes(junctionPolicy)) throw new Error('Expected --junction-policy internal|downstream');
   if (!['retained', 'terminal-flexible'].includes(endpointPolicy)) throw new Error('Expected --endpoint-policy retained|terminal-flexible');
-  if (!['single', 'group', 'cone', 'compound'].includes(moveFamily)) throw new Error('Expected --move-family single|group|cone|compound');
+  if (!['single', 'group', 'cone', 'compound', 'coalescence'].includes(moveFamily)) throw new Error('Expected --move-family single|group|cone|compound|coalescence');
   if (!Number.isSafeInteger(rounds) || rounds < 1 || rounds > 8 || !Number.isSafeInteger(limit) || limit < 1 || limit > 512 || !['fixed', 'move', 'joint', 'component'].includes(mode))
     throw new Error('Expected --rounds 1..8, --mode fixed|move|joint|component and --move-limit 1..512');
   output = path.resolve(options['output-directory']); fs.mkdirSync(output); created = true; const began = performance.now();
@@ -112,29 +116,30 @@ try {
         await attempt(parent, { componentPoses: proposal.componentPoses, order }, { round, phase: 'component-pose', ordinal, proposal_kind: proposal.kind });
     }
     if (mode === 'move' || mode === 'joint') {
-      const parent = selected, start = performance.now(), portfolio = moveFamily === 'compound' ? compoundCandidates(parent.detail, graph, catalogs, { limit, junctionPolicy }) : moveFamily !== 'single' ? groupCandidates(parent.detail, graph, catalogs, { limit, cones: moveFamily === 'cone', junctionPolicy }) :
+      const parent = selected, start = performance.now(), portfolio = moveFamily === 'coalescence' ? coalescenceCandidates(parent.detail, graph, catalogs, { limit, junctionPolicy }) : moveFamily === 'compound' ? compoundCandidates(parent.detail, graph, catalogs, { limit, junctionPolicy }) : moveFamily !== 'single' ? groupCandidates(parent.detail, graph, catalogs, { limit, cones: moveFamily === 'cone', junctionPolicy }) :
         { candidates: relocationCandidates(parent.detail, { limit }) }, moves = portfolio.candidates; generationMs += performance.now() - start;
       neighborhoods.push({ round, parent_directory: parent.directory, groups: portfolio.groups, voids: portfolio.voids, selected_positions: moves.length,
         screened: portfolio.screened, feasible_positions: portfolio.feasible_positions, geometry_rejections: portfolio.rejected,
-        pairs_considered: portfolio.pairs_considered, pair_budget: portfolio.pair_budget, pair_budget_exhausted: portfolio.pair_budget_exhausted,
+        pairs_considered: portfolio.pairs_considered, pairs_available: portfolio.pairs_available, pair_budget: portfolio.pair_budget, pair_budget_exhausted: portfolio.pair_budget_exhausted,
+        pose_budget: portfolio.pose_budget, poses_examined: portfolio.poses_examined, pose_budget_exhausted: portfolio.pose_budget_exhausted,
         void_positions: moves.filter(m => m.void_candidate).length, increasing_distance_positions: moves.filter(m => m.endpoint_delta > 0).length,
         kinds: Object.fromEntries([...new Set(moves.map(m => m.kind))].map(kind => [kind, moves.filter(m => m.kind === kind).length])) });
       for (const diagnostic of portfolio.diagnostics ?? []) failures.push({ round, phase: 'group-screen', ...diagnostic });
       const chains = portPolicy === 'paired' ? extractChains(parent.detail.witness).chains : [];
       for (const [ordinal, move] of moves.entries()) {
-        const translations = moveFamily === 'compound' ? move.moves : [move];
+        const translations = ['compound', 'coalescence'].includes(moveFamily) ? move.moves : [move];
         const assignments = [[], ...(portPolicy === 'paired' ? boundaryPortSwaps(parent.detail.witness, chains, translations).slice(0, 4) : [])];
         for (const [port_variant, portAssignments] of assignments.entries()) for (const order of ['near', 'far'])
-          await attempt(parent, { moves: translations, order, portAssignments }, { round, phase: 'relocate', ordinal, port_variant, proposal_kind: move.kind });
+          await attempt(parent, { moves: translations, order, portAssignments, releaseBridges: bridgePolicy === 'release' ? move.releaseBridges : [] }, { round, phase: 'relocate', ordinal, port_variant, proposal_kind: move.kind });
       }
     }
     if (selected === before) { termination = 'unimproved-neighborhood'; break; }
   }
   const report = { schema_version: 1, status: better(selected.score.tuple, initialScore.tuple) ? 'complete-factory-improved' : 'complete-incumbent-retained', factory_validated: true,
-    selected_directory: selected.directory, initial_score: initialScore, score: selected.score, mode, rounds, move_limit: limit, move_family: moveFamily, move_schema_version: 3, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, max_new_crossings: maxNewCrossings, port_policy: portPolicy, layer_policy: layerPolicy, termination,
+    selected_directory: selected.directory, initial_score: initialScore, score: selected.score, mode, rounds, move_limit: limit, move_family: moveFamily, move_schema_version: 3, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, max_new_crossings: maxNewCrossings, port_policy: portPolicy, layer_policy: layerPolicy, bridge_policy: bridgePolicy, termination,
     generation_ms: generationMs, compaction_ms: compactionMs, validation_output_ms: validationMs, elapsed_ms: performance.now() - began, unimproved_audit_budget: auditBudget, unimproved_audited: audited, neighborhoods, stages, failures,
     provenance: keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
-    source_hashes: Object.fromEntries(['model.mjs', 'movement.mjs', 'groups.mjs', 'compound.mjs', 'components.mjs', 'path.mjs', 'crossing.mjs', 'ports.mjs', 'run.mjs', '../constructive-embedding-compaction/model.mjs', '../constructive-embedding-compaction/length.mjs',
+    source_hashes: Object.fromEntries(['model.mjs', 'movement.mjs', 'groups.mjs', 'compound.mjs', 'coalescence.mjs', 'components.mjs', 'path.mjs', 'crossing.mjs', 'ports.mjs', 'run.mjs', '../constructive-embedding-compaction/model.mjs', '../constructive-embedding-compaction/length.mjs',
       '../constructive-embedding-compaction/validator.mjs', '../constructive-factory-closure/model.mjs', '../constructive-cycle-blocks/graph.mjs',
       '../constructive-auto-interface/compact.mjs', '../constructive-bound-interconnect/view.mjs', '../constructive-placement-only/model.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), report); fs.copyFileSync(path.join(selected.directory, 'index.html'), path.join(output, 'index.html'));

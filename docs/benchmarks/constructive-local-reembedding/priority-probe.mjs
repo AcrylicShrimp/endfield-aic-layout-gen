@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import { reembed, extractChains, extentOf } from './model.mjs';
 import { movementPlan, bodyCells } from './movement.mjs';
 import { boundaryPortSwaps } from './ports.mjs';
+import { releaseBridgeDraft } from './components.mjs';
 import { shortestPath, key } from './path.mjs';
 import { render } from '../constructive-bound-interconnect/view.mjs';
 const read = p => JSON.parse(fs.readFileSync(p));
@@ -28,7 +29,8 @@ try {
   const catalogPaths = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k, path.join(options['catalog-directory'], (k === 'components' ? 'logistics-components' : k) + '.json')]));
   const catalogs = Object.fromEntries(Object.entries(catalogPaths).map(([k, p]) => [k, read(p)]));
   const output = path.resolve(options['output-directory']); fs.mkdirSync(output);
-  const { chains, anchors } = extractChains(parent.witness), records = [], started = performance.now();
+  const { witness: routingWitness, released } = releaseBridgeDraft(parent.witness, catalogs, trial.request.releaseBridges ?? []);
+  const { chains, anchors } = extractChains(routingWitness, released), records = [], started = performance.now();
   const attempt = (family, request) => {
     let r;
     try { r = reembed(parent, catalogs, request); }
@@ -51,7 +53,8 @@ try {
   }
   if (portPolicy === 'paired') for (const portAssignments of boundaryPortSwaps(parent.witness, chains, trial.request.moves).slice(0, 4))
     for (const order of ['near', 'far']) attempt('paired-ports', { ...trial.request, chainIds: [], routePriority: [], portAssignments, order });
-  const movement = movementPlan(parent.witness, chains, anchors, trial.request.moves, { junctionPolicy: trial.request.junctionPolicy });
+  const rerouteChains = new Set(chains.filter(c => c.cells.some(p => released.has(`${c.transport}:${key(p)}`))).map(c => c.id));
+  const movement = movementPlan(routingWitness, chains, anchors, trial.request.moves, { junctionPolicy: trial.request.junctionPolicy, rerouteChains });
   const relocated = (tr, p) => movement.shiftAnchor(tr, p);
   const body = new Set(parent.witness.placements.flatMap(p => bodyCells(movement.selected.has(p.instance) ? { ...p, ...movement.shiftFacility(p) } : p)).map(key));
   const bodyOnly = [];
@@ -72,7 +75,7 @@ try {
     parent_directory: trial.parent_directory, stage: index, records, body_only: bodyOnly, priority_trials: seen.size, priority_limit: 64,
     priority_termination: queue.every(r => seen.has(JSON.stringify([r.order, r.routePriority]))) ? 'distinct-queue-exhausted' : 'trial-budget', elapsed_ms: performance.now() - started,
     provenance: [options.report, parentPath, ...Object.values(catalogPaths)].map(p => ({ path: path.resolve(p), sha256: hash(p) })),
-    source_hashes: Object.fromEntries(['priority-probe.mjs', 'model.mjs', 'movement.mjs', 'path.mjs', 'crossing.mjs', 'ports.mjs', '../constructive-bound-interconnect/view.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
+    source_hashes: Object.fromEntries(['priority-probe.mjs', 'model.mjs', 'movement.mjs', 'components.mjs', 'path.mjs', 'crossing.mjs', 'ports.mjs', '../constructive-bound-interconnect/view.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), result);
   console.log(JSON.stringify({ status: result.status, trials: records.length, output }));
 } catch (e) { console.error(JSON.stringify({ code: 'priority-probe-failed', message: e.message })); process.exitCode = 1; }

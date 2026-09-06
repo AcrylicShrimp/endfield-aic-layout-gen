@@ -2,6 +2,28 @@ import { key, distance, directions } from './path.mjs';
 import { bodyCells } from './movement.mjs';
 const fail = (message, entity = null) => { throw Object.assign(new Error(message), { code: 'local-component-pose', stage: 'component-pose', severity: 'info', entity }); };
 
+export function releaseBridgeDraft(w, catalogs, ids = []) {
+  const reject = message => { throw Object.assign(new Error(message), { code: 'local-bridge-release', stage: 'bridge-release', severity: 'info' }); };
+  if (!Array.isArray(ids) || ids.length > 8 || new Set(ids).size !== ids.length) reject('Expected up to eight unique existing bridge IDs');
+  const released = new Set();
+  for (const id of ids) {
+    const c = w.logistics_components.find(c => c.id === id), def = catalogs.components.components.find(d => d.id === c?.component);
+    if (!c || c.kind !== 'bridge' || def?.kind !== 'bridge') reject('Only existing catalog bridges may be released');
+    const owners = w.transport_networks.filter(n => n.component_ids.includes(id));
+    if (owners.length !== 2) reject('This release family requires two bridge owners');
+    for (const n of owners) {
+      const ins = n.segments.filter(s => key(s.to) === key(c.position)), outs = n.segments.filter(s => key(s.from) === key(c.position));
+      if (n.terminals.some(t => key(t.position) === key(c.position)) || ins.length !== 1 || outs.length !== 1 ||
+        ins[0].from.x + outs[0].to.x !== 2 * c.position.x || ins[0].from.y + outs[0].to.y !== 2 * c.position.y ||
+        BigInt(ins[0].rate.numerator) * BigInt(outs[0].rate.denominator) !== BigInt(outs[0].rate.numerator) * BigInt(ins[0].rate.denominator))
+        reject('A released bridge must have terminal-free straight equal-rate owner paths');
+    }
+    released.add(`${c.transport}:${key(c.position)}`);
+  }
+  return { released, witness: { ...w, logistics_components: w.logistics_components.filter(c => !ids.includes(c.id)),
+    transport_networks: w.transport_networks.map(n => ({ ...n, component_ids: n.component_ids.filter(id => !ids.includes(id)) })) } };
+}
+
 export function planComponentPoses(w, catalogs, poses) {
   if (!Array.isArray(poses) || poses.length > 8 || poses.some(p => !p || typeof p.id !== 'string' || ![p.x, p.y, p.rotation].every(Number.isSafeInteger)) ||
     new Set(poses.map(p => p.id)).size !== poses.length) fail('Expected up to eight unique component poses');
