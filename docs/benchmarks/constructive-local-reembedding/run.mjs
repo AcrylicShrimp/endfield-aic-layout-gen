@@ -5,6 +5,7 @@ import { reembed, extractChains, relocationCandidates, extentOf } from './model.
 import { groupCandidates } from './groups.mjs';
 import { compoundCandidates } from './compound.mjs';
 import { pushCandidates } from './push.mjs';
+import { deflectionCandidates } from './deflection.mjs';
 import { componentPoseCandidates, releaseBridgeDraft, bridgeTopologyView } from './components.mjs';
 import { coalescenceCandidates, incidentBridgeIds } from './coalescence.mjs';
 import { boundaryPortSwaps, vacantPortCandidates } from './ports.mjs';
@@ -45,8 +46,9 @@ try {
   if (!Number.isSafeInteger(maxNewCrossings) || maxNewCrossings < 0 || maxNewCrossings > 8) throw new Error('Expected --max-new-crossings 0..8');
   if (!['internal', 'downstream'].includes(junctionPolicy)) throw new Error('Expected --junction-policy internal|downstream');
   if (!['retained', 'terminal-flexible'].includes(endpointPolicy)) throw new Error('Expected --endpoint-policy retained|terminal-flexible');
-  if (!['single', 'group', 'cone', 'compound', 'coalescence', 'push'].includes(moveFamily)) throw new Error('Expected --move-family single|group|cone|compound|coalescence|push');
+  if (!['single', 'group', 'cone', 'compound', 'coalescence', 'push', 'deflect'].includes(moveFamily)) throw new Error('Expected --move-family single|group|cone|compound|coalescence|push|deflect');
   if (moveFamily === 'push' && (!['move', 'joint'].includes(mode) || bridgePolicy !== 'release')) throw new Error('Geometric push requires move/joint mode and --bridge-policy release');
+  if (moveFamily === 'deflect' && (!['move', 'joint'].includes(mode) || bridgePolicy !== 'release')) throw new Error('Boundary deflection requires move/joint mode and --bridge-policy release');
   if (!Number.isSafeInteger(rounds) || rounds < 1 || rounds > 8 || !Number.isSafeInteger(limit) || limit < 1 || limit > 512 || !['fixed', 'move', 'joint', 'component'].includes(mode))
     throw new Error('Expected --rounds 1..8, --mode fixed|move|joint|component and --move-limit 1..512');
   output = path.resolve(options['output-directory']); fs.mkdirSync(output); created = true; const began = performance.now();
@@ -122,7 +124,7 @@ try {
         await attempt(parent, { componentPoses: proposal.componentPoses, order }, { round, phase: 'component-pose', ordinal, proposal_kind: proposal.kind });
     }
     if (mode === 'move' || mode === 'joint') {
-      const parent = selected, start = performance.now(), portfolio = moveFamily === 'push' ? pushCandidates(parent.detail, graph, catalogs, { limit, junctionPolicy, seedPolicy: pushSeeds }) : moveFamily === 'coalescence' ? coalescenceCandidates(parent.detail, graph, catalogs, { limit, junctionPolicy }) : moveFamily === 'compound' ? compoundCandidates(parent.detail, graph, catalogs, { limit, junctionPolicy }) : moveFamily !== 'single' ? groupCandidates(parent.detail, graph, catalogs, { limit, cones: moveFamily === 'cone', junctionPolicy }) :
+      const parent = selected, start = performance.now(), portfolio = moveFamily === 'deflect' ? deflectionCandidates(parent.detail, catalogs, { limit, junctionPolicy }) : moveFamily === 'push' ? pushCandidates(parent.detail, graph, catalogs, { limit, junctionPolicy, seedPolicy: pushSeeds }) : moveFamily === 'coalescence' ? coalescenceCandidates(parent.detail, graph, catalogs, { limit, junctionPolicy }) : moveFamily === 'compound' ? compoundCandidates(parent.detail, graph, catalogs, { limit, junctionPolicy }) : moveFamily !== 'single' ? groupCandidates(parent.detail, graph, catalogs, { limit, cones: moveFamily === 'cone', junctionPolicy }) :
         { candidates: relocationCandidates(parent.detail, { limit }) }, moves = portfolio.candidates; generationMs += performance.now() - start;
       neighborhoods.push({ round, parent_directory: parent.directory, groups: portfolio.groups, voids: portfolio.voids, selected_positions: moves.length,
         screened: portfolio.screened, feasible_positions: portfolio.feasible_positions, geometry_rejections: portfolio.rejected,
@@ -132,6 +134,7 @@ try {
         raw_pose_limit_per_pair: portfolio.raw_pose_limit_per_pair, valid_pose_limit_per_pair: portfolio.valid_pose_limit_per_pair,
         member_budget: portfolio.member_budget, closures: portfolio.closures, grown_closures: portfolio.grown_closures, diagnostics_truncated: portfolio.diagnostics_truncated,
         seed_policy: portfolio.seed_policy, boundary_seeds: portfolio.boundary_seeds,
+        step_limit: portfolio.step_limit, release_indexes: portfolio.release_indexes,
         void_positions: moves.filter(m => m.void_candidate).length, increasing_distance_positions: moves.filter(m => m.endpoint_delta > 0).length,
         kinds: Object.fromEntries([...new Set(moves.map(m => m.kind))].map(kind => [kind, moves.filter(m => m.kind === kind).length])) });
       for (const diagnostic of portfolio.diagnostics ?? []) failures.push({ round, phase: 'group-screen', ...diagnostic });
@@ -139,12 +142,13 @@ try {
       const bridgeDraft = bridgePolicy === 'release' ? bridgeTopologyView(parent.detail.witness, catalogs) : null;
       const collapsed = bridgeDraft ? extractChains(bridgeDraft.witness, bridgeDraft.released).chains : [];
       for (const [ordinal, move] of moves.entries()) {
-        const translations = ['compound', 'coalescence', 'push'].includes(moveFamily) ? move.moves : [move];
+        const translations = ['compound', 'coalescence', 'push', 'deflect'].includes(moveFamily) ? move.moves : [move];
         const assignments = [[], ...(portPolicy === 'paired' ? boundaryPortSwaps(parent.detail.witness, chains, translations).slice(0, 4) : [])];
         const releaseBridges = bridgePolicy === 'release' ? move.releaseBridges ?? incidentBridgeIds(parent.detail.witness, collapsed, new Set(translations.flatMap(m => m.instances))) : [];
         for (const [port_variant, portAssignments] of assignments.entries()) for (const order of ['near', 'far']) {
           const request = { moves: translations, order, portAssignments, releaseBridges }, context = { round, phase: 'relocate', ordinal, port_variant, proposal_kind: move.kind,
-            ...(moveFamily === 'push' ? { geometric_closure: move.closure, seed: move.seed, seed_instances: move.seed_instances, seed_kind: move.seed_kind, boundary: move.boundary } : {}) };
+            ...(moveFamily === 'push' || moveFamily === 'deflect' ? { geometric_closure: move.closure, seed: move.seed, seed_instances: move.seed_instances, seed_kind: move.seed_kind,
+              boundary: move.boundary, deflected_instance: move.deflected_instance } : {}) };
           const failedStage = stages.length, record = await attempt(parent, request, context), failed = record.routes?.find(r => r.status !== 'found');
           if (portPolicy !== 'vacant' || record.status !== 'rejected' || !failed) continue;
           const start = performance.now(), draft = releaseBridgeDraft(parent.detail.witness, catalogs, releaseBridges);
@@ -163,7 +167,7 @@ try {
     selected_directory: selected.directory, initial_score: initialScore, score: selected.score, mode, rounds, move_limit: limit, move_family: moveFamily, move_schema_version: 3, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, max_new_crossings: maxNewCrossings, port_policy: portPolicy, layer_policy: layerPolicy, bridge_policy: bridgePolicy, ...(moveFamily === 'push' ? { push_seeds: pushSeeds } : {}), termination,
     generation_ms: generationMs, compaction_ms: compactionMs, validation_output_ms: validationMs, elapsed_ms: performance.now() - began, unimproved_audit_budget: auditBudget, unimproved_audited: audited, neighborhoods, stages, failures,
     provenance: keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
-    source_hashes: Object.fromEntries(['model.mjs', 'movement.mjs', 'terminal-identity.mjs', 'groups.mjs', 'compound.mjs', 'coalescence.mjs', 'push.mjs', 'fair.mjs', 'components.mjs', 'path.mjs', 'crossing.mjs', 'ports.mjs', 'run.mjs', '../constructive-embedding-compaction/model.mjs', '../constructive-embedding-compaction/length.mjs',
+    source_hashes: Object.fromEntries(['model.mjs', 'movement.mjs', 'terminal-identity.mjs', 'groups.mjs', 'compound.mjs', 'coalescence.mjs', 'push.mjs', 'deflection.mjs', 'fair.mjs', 'components.mjs', 'path.mjs', 'crossing.mjs', 'ports.mjs', 'run.mjs', '../constructive-embedding-compaction/model.mjs', '../constructive-embedding-compaction/length.mjs',
       '../constructive-embedding-compaction/validator.mjs', '../constructive-factory-closure/model.mjs', '../constructive-cycle-blocks/graph.mjs',
       '../constructive-auto-interface/compact.mjs', '../constructive-bound-interconnect/view.mjs', '../constructive-placement-only/model.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), report); fs.copyFileSync(path.join(selected.directory, 'index.html'), path.join(output, 'index.html'));
