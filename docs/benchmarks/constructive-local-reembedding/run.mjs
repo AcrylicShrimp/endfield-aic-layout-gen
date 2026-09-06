@@ -4,7 +4,7 @@ import { createHash } from 'node:crypto';
 import { reembed, extractChains, relocationCandidates, extentOf } from './model.mjs';
 import { groupCandidates } from './groups.mjs';
 import { compoundCandidates } from './compound.mjs';
-import { componentPoseCandidates, releaseBridgeDraft } from './components.mjs';
+import { componentPoseCandidates, releaseBridgeDraft, bridgeTopologyView } from './components.mjs';
 import { coalescenceCandidates, incidentBridgeIds } from './coalescence.mjs';
 import { boundaryPortSwaps, vacantPortCandidates } from './ports.mjs';
 import { compactEmbedding } from '../constructive-embedding-compaction/model.mjs';
@@ -130,7 +130,7 @@ try {
         kinds: Object.fromEntries([...new Set(moves.map(m => m.kind))].map(kind => [kind, moves.filter(m => m.kind === kind).length])) });
       for (const diagnostic of portfolio.diagnostics ?? []) failures.push({ round, phase: 'group-screen', ...diagnostic });
       const chains = portPolicy === 'paired' ? extractChains(parent.detail.witness).chains : [];
-      const bridgeDraft = bridgePolicy === 'release' ? releaseBridgeDraft(parent.detail.witness, catalogs, parent.detail.witness.logistics_components.filter(c => c.kind === 'bridge').map(c => c.id)) : null;
+      const bridgeDraft = bridgePolicy === 'release' ? bridgeTopologyView(parent.detail.witness, catalogs) : null;
       const collapsed = bridgeDraft ? extractChains(bridgeDraft.witness, bridgeDraft.released).chains : [];
       for (const [ordinal, move] of moves.entries()) {
         const translations = ['compound', 'coalescence'].includes(moveFamily) ? move.moves : [move];

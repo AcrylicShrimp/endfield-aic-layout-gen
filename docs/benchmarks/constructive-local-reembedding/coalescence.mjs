@@ -1,7 +1,7 @@
 import { connectedGroups } from './groups.mjs';
 import { closeTerminalGroups } from './compound.mjs';
 import { extractChains, extentOf } from './model.mjs';
-import { releaseBridgeDraft } from './components.mjs';
+import { releaseBridgeDraft, bridgeTopologyView, bridgeReleaseLimit } from './components.mjs';
 import { movementPlan } from './movement.mjs';
 import { distance, key, directions } from './path.mjs';
 import { diagonalProduct, interleave } from './fair.mjs';
@@ -61,8 +61,7 @@ export function terminalLinks(chains) {
 export function coalescenceCandidates(detail, graph, catalogs, { limit = 128, poseBudget = 250000, junctionPolicy = 'downstream' } = {}) {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 512 || !Number.isSafeInteger(poseBudget) || poseBudget < 1 || poseBudget > 2000000)
     throw Object.assign(new Error('Expected candidate limit 1..512 and pose budget 1..2000000'), { code: 'coalescence-budget' });
-  const releaseBridges = detail.witness.logistics_components.filter(c => c.kind === 'bridge').map(c => c.id);
-  const { witness: w, released } = releaseBridgeDraft(detail.witness, catalogs, releaseBridges);
+  const { witness: w, released } = bridgeTopologyView(detail.witness, catalogs);
   const { chains } = extractChains(w, released), bounds = extentOf(w), groups = closeTerminalGroups(w, connectedGroups(graph, catalogs));
   const pairs = [], links = terminalLinks(chains);
   for (const link of links) for (const a of groups.filter(g => g.instances.includes(link.source.endpoint.instance)))
@@ -70,7 +69,7 @@ export function coalescenceCandidates(detail, graph, catalogs, { limit = 128, po
       if (a.instances.length + b.instances.length <= 16 && !a.instances.some(id => b.instances.includes(id))) pairs.push({ a, b, link });
   pairs.sort((a, b) => distance(b.link.source.position, b.link.target.position) - distance(a.link.source.position, a.link.target.position) ||
     (a.a.instances.length + a.b.instances.length) - (b.a.instances.length + b.b.instances.length));
-  const proposals = [], seen = new Set(), rejected = {}, raw = pairs.map(() => []), rawSeen = pairs.map(() => new Set());
+  const proposals = [], seen = new Set(), rejected = {}, diagnostics = [], raw = pairs.map(() => []), rawSeen = pairs.map(() => new Set());
   const sampledPairs = new Set(), linkCoverage = new Map(links.map(link => [linkKey(link), { source: link.source.id, target: link.target.id,
     labels: [detail.labels[link.source.endpoint.instance], detail.labels[link.target.endpoint.instance]], poses: 0, selected: 0 }]));
   let screened = 0, examined = 0, exhausted = false;
@@ -89,6 +88,12 @@ export function coalescenceCandidates(detail, graph, catalogs, { limit = 128, po
     if (!raw[pair].length) continue;
     const memberIds = new Set([...a.instances, ...b.instances]);
     const pairBridges = incidentBridgeIds(detail.witness, chains, memberIds);
+    if (pairBridges.length > bridgeReleaseLimit) {
+      const code = 'local-bridge-release-budget'; rejected[code] = (rejected[code] ?? 0) + 1;
+      diagnostics.push({ code, severity: 'info', stage: 'bridge-release', entity: { pair, bridges: pairBridges },
+        message: `Coalescence pair needs ${pairBridges.length} bridge releases; local transaction limit is ${bridgeReleaseLimit}` });
+      continue;
+    }
     const draft = releaseBridgeDraft(detail.witness, catalogs, pairBridges), local = extractChains(draft.witness, draft.released);
     const rerouteChains = new Set(local.chains.filter(c => c.cells.some(p => draft.released.has(`${c.transport}:${key(p)}`))).map(c => c.id));
     let count = 0;
@@ -114,5 +119,5 @@ export function coalescenceCandidates(detail, graph, catalogs, { limit = 128, po
   return { groups: groups.length, pairs_available: pairs.length, pairs_considered: sampledPairs.size, pose_budget: poseBudget, poses_examined: examined, pose_budget_exhausted: exhausted,
     links_available: new Set(pairs.map(p => linkKey(p.link))).size, links_sampled: [...linkCoverage.values()].filter(l => l.poses).length,
     links_selected: [...linkCoverage.values()].filter(l => l.selected).length, link_coverage: [...linkCoverage.values()], raw_pose_limit_per_pair: 64, valid_pose_limit_per_pair: 8,
-    screened, rejected, feasible_positions: proposals.length, candidates };
+    screened, rejected, diagnostics, feasible_positions: proposals.length, candidates };
 }
