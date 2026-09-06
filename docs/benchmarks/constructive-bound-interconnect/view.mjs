@@ -37,9 +37,9 @@ if(s>16)svg.append(el('text',{x:x+(p.x+p.width/2)*s,y:y+(p.y+p.height/2)*s+18,'t
 for(const q of detail.catalog_ports[p.instance]){const a=xy(q.position),b=xy(q.connection);svg.append(el('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:q.direction==='input'?'var(--b)':'var(--a)','stroke-width':Math.max(1,s*.06)}));}}
 for(const c of w.logistics_components){const a=xy(c.position),r=Math.max(5,s*.35);svg.append(el('rect',{x:a.x-r,y:a.y-r,width:2*r,height:2*r,fill:'var(--bg)',stroke:'var(--component)','stroke-width':2}));svg.append(el('text',{x:a.x,y:a.y+4,'text-anchor':'middle','font-size':12},c.kind==='bridge'?'X':c.kind==='splitter'?'S':'M'));}
 if(detail.move_diagnostic){const m=detail.move_diagnostic;
-for(const p of w.placements.filter(p=>m.instances.includes(p.instance))){
-svg.append(el('rect',{x:x+(p.x+m.dx)*s,y:y+(p.y+m.dy)*s,width:p.width*s,height:p.height*s,fill:'var(--bad)','fill-opacity':.12,stroke:'var(--bad)','stroke-width':2,'stroke-dasharray':'5 3'}));
-svg.append(el('text',{x:x+(p.x+m.dx+p.width/2)*s,y:y+(p.y+m.dy+p.height/2)*s,'text-anchor':'middle','font-size':Math.max(10,s*.6),style:'fill:var(--bad)'},(detail.labels?.[p.instance]??p.instance)+' proposed'));}
+for(const move of m.moves)for(const p of w.placements.filter(p=>move.instances.includes(p.instance))){
+svg.append(el('rect',{x:x+(p.x+move.dx)*s,y:y+(p.y+move.dy)*s,width:p.width*s,height:p.height*s,fill:'var(--bad)','fill-opacity':.12,stroke:'var(--bad)','stroke-width':2,'stroke-dasharray':'5 3'}));
+svg.append(el('text',{x:x+(p.x+move.dx+p.width/2)*s,y:y+(p.y+move.dy+p.height/2)*s,'text-anchor':'middle','font-size':Math.max(10,s*.6),style:'fill:var(--bad)'},(detail.labels?.[p.instance]??p.instance)+' proposed'));}
 for(const p of m.failed_endpoints??[]){const a=xy(p);svg.append(el('circle',{cx:a.x,cy:a.y,r:s*.35,fill:'none',stroke:'var(--bad)','stroke-width':3}));}}
 document.getElementById('status').textContent=w.placements.length+' facilities · '+w.logistics_components.length+' components · '+used_bounds.width+' × '+used_bounds.height+' used bounds · '+(overload?'SCALED CAPACITY VIOLATION':'independent validator '+(validation.covered_geometry_validated?'PASS':'REJECTED')+(detail.accepted===false?' · planner REJECTED':''));
 document.getElementById('explanation').textContent=overload?'RED: single-lane capacity exceeded when rates are multiplied by four. This is the retained geometry, not proof that the recipe request is impossible.':'Actual unit-grid paths. Independent validation checks recipe rates, facility ports, component arms, capacity and reachability.';

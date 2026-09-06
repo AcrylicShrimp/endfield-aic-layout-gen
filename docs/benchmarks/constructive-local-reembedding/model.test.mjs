@@ -102,9 +102,9 @@ test('relocation candidates and diagnostics are deterministic and nonmutating', 
   assert.deepEqual(candidates, relocationCandidates(d, { limit: 32 })); assert.deepEqual(d, snapshot);
   assert.throws(() => relocationCandidates(d, { limit: NaN }), { code: 'local-move-budget' });
   assert.throws(() => reembed(d, catalogs, { chainIds: [-1] }), { code: 'local-chain-id' });
-  assert.throws(() => reembed(d, catalogs, { move: { instances: ['unknown'], dx: 0, dy: 0 } }), { code: 'local-move-input' });
+  assert.throws(() => reembed(d, catalogs, { moves: [{ instances: ['unknown'], dx: 0, dy: 0 }] }), { code: 'local-move-input' });
   const [a, b] = d.witness.placements;
-  assert.throws(() => reembed(d, catalogs, { move: { instances: [a.instance], dx: b.x - a.x, dy: b.y - a.y } }), { code: 'local-body-collision' });
+  assert.throws(() => reembed(d, catalogs, { moves: [{ instances: [a.instance], dx: b.x - a.x, dy: b.y - a.y }] }), { code: 'local-body-collision' });
   assert.equal(reembed(d, catalogs, { chainIds: [] }).status, 'unchanged');
   assert.deepEqual(d, snapshot);
 });
@@ -120,7 +120,7 @@ test('a moved body rips up a nonincident crossing path and restores it or reject
     segments: ps.slice(1).map((q, i) => ({ from: ps[i], to: q, rate })), terminals: [
       { id: 'left', node: 'left', endpoint: { kind: 'external', node: 'left', side: 'west' }, direction: 'output', position: ps[0], rate },
       { id: 'right', node: 'right', endpoint: { kind: 'external', node: 'right', side: 'east' }, direction: 'input', position: ps.at(-1), rate }], component_ids: [], requirement_ids: [] });
-  const snapshot = structuredClone(d), move = { instances: [p.instance], dx: 0, dy: 18 }, r = reembed(freeze(d), catalogs, { move });
+  const snapshot = structuredClone(d), move = { instances: [p.instance], dx: 0, dy: 18 }, r = reembed(freeze(d), catalogs, { moves: [move] });
   assert.deepEqual(d, snapshot);
   assert.ok(r.affected_chains.some(c => c.item === 'test-only'), 'The unrelated wire intersecting the new body must be scheduled for rerouting');
   assert.equal(r.status, 'candidate');
@@ -128,4 +128,6 @@ test('a moved body rips up a nonincident crossing path and restores it or reject
   const moved = r.detail.witness.placements.find(a => a.instance === p.instance);
   assert.equal(moved.y, p.y + move.dy);
   assert.ok(r.detail.witness.transport_networks.at(-1).cells.every(q => q.x < moved.x || q.x >= moved.x + moved.width || q.y < moved.y || q.y >= moved.y + moved.height));
+  r.detail.reembedding.moves[0].dx++;
+  assert.deepEqual(move, { instances: [p.instance], dx: 0, dy: 18 });
 });

@@ -33,9 +33,8 @@ export function planPortAssignments(w, catalogs, assignments, eligible) {
 }
 
 // Paired slots of an equal-rate commodity may be permuted without changing any terminal rate.
-export function boundaryPortSwaps(w, chains, move) {
-  if (!move) return [];
-  const selected = new Set(move.instances), groups = new Map();
+export function boundaryPortSwaps(w, chains, moves) {
+  const selected = new Set(moves.flatMap(m => m.instances)), groups = new Map();
   for (const c of chains) if ([...c.startTerminals, ...c.endTerminals].some(t => t.endpoint.kind === 'facility' && selected.has(t.endpoint.instance)))
     for (const t of [...c.startTerminals, ...c.endTerminals]) if (t.endpoint.kind === 'facility') {
       const k = JSON.stringify([t.endpoint.instance, t.direction, c.item, c.transport]);

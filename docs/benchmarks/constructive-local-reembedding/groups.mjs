@@ -80,7 +80,7 @@ export function groupCandidates(detail, graph, catalogs, { limit = 64, cones = f
     const box = ps => ({ minX: Math.min(...ps.map(p => p.x)), minY: Math.min(...ps.map(p => p.y)), maxX: Math.max(...ps.map(p => p.x + p.width - 1)), maxY: Math.max(...ps.map(p => p.y + p.height - 1)) });
     const a = box(moving), b = box(retained), width = a.maxX - a.minX + 1, height = a.maxY - a.minY + 1;
     let seed;
-    try { seed = movementPlan(w, chains, anchors, { instances: group.instances, dx: 0, dy: 0 }, { junctionPolicy }); }
+    try { seed = movementPlan(w, chains, anchors, [{ instances: group.instances, dx: 0, dy: 0 }], { junctionPolicy }); }
     catch (e) { diagnostics.push({ group: ordinal, code: e.code, message: e.message }); continue; }
     const xs = new Set([bounds.minX - a.minX, bounds.maxX - a.maxX, 0]), ys = new Set([bounds.minY - a.minY, bounds.maxY - a.maxY, 0]);
     for (const p of retained) {
@@ -112,7 +112,7 @@ export function groupCandidates(detail, graph, catalogs, { limit = 64, cones = f
       for (const move of sorted.slice(0, 128)) {
         const k = `${move.dx},${move.dy}`; if (seen.has(k)) continue;
         try {
-          const plan = movementPlan(w, chains, anchors, move, { junctionPolicy });
+          const plan = movementPlan(w, chains, anchors, [move], { junctionPolicy });
           // Every carried cell, not only its body, must stay inside this explicit neighborhood.
           if ([...plan.fixedChains.values()].flat().some(p => p.x < bounds.minX || p.x > bounds.maxX || p.y < bounds.minY || p.y > bounds.maxY)) continue;
           if ([...plan.moved].some(tag => { const p = tag.slice(tag.indexOf(':') + 1).split(',').map(Number); return p[0] + move.dx < bounds.minX || p[0] + move.dx > bounds.maxX || p[1] + move.dy < bounds.minY || p[1] + move.dy > bounds.maxY; })) continue;

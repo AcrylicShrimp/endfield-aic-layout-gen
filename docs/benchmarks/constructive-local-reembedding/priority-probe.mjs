@@ -18,7 +18,7 @@ try {
   }
   if (keys.some(k => !(k in options))) throw new Error('Expected --report PATH --stage INDEX --catalog-directory PATH --output-directory NEW_PATH');
   const report = read(options.report), index = Number(options.stage), trial = report.stages[index];
-  if (!Number.isSafeInteger(index) || index < 0 || !trial?.request?.move || trial.status !== 'rejected') throw new Error(`Expected a rejected relocation at stage ${options.stage} of ${options.report}`);
+  if (!Number.isSafeInteger(index) || index < 0 || !trial?.request?.moves?.length || trial.status !== 'rejected') throw new Error(`Expected a rejected schema-3 relocation at stage ${options.stage} of ${options.report}; schema-2 reports require explicit migration or their recorded commit`);
   const maxNewCrossings = Number(options['max-new-crossings'] ?? 0);
   if (!Number.isSafeInteger(maxNewCrossings) || maxNewCrossings < 0 || maxNewCrossings > 8) throw new Error('Expected --max-new-crossings 0..8');
   const portPolicy = options['port-policy'] ?? 'retained';
@@ -49,11 +49,11 @@ try {
       if (!request.routePriority.includes(failed.id)) queue.push({ ...request, routePriority: [...rest, failed.id] });
     }
   }
-  if (portPolicy === 'paired') for (const portAssignments of boundaryPortSwaps(parent.witness, chains, trial.request.move).slice(0, 4))
+  if (portPolicy === 'paired') for (const portAssignments of boundaryPortSwaps(parent.witness, chains, trial.request.moves).slice(0, 4))
     for (const order of ['near', 'far']) attempt('paired-ports', { ...trial.request, chainIds: [], routePriority: [], portAssignments, order });
-  const movement = movementPlan(parent.witness, chains, anchors, trial.request.move, { junctionPolicy: trial.request.junctionPolicy });
-  const relocated = (tr, p) => movement.movable(tr, p) ? movement.translate(p) : p;
-  const body = new Set(parent.witness.placements.flatMap(p => bodyCells(movement.selected.has(p.instance) ? { ...p, ...movement.translate(p) } : p)).map(key));
+  const movement = movementPlan(parent.witness, chains, anchors, trial.request.moves, { junctionPolicy: trial.request.junctionPolicy });
+  const relocated = (tr, p) => movement.shiftAnchor(tr, p);
+  const body = new Set(parent.witness.placements.flatMap(p => bodyCells(movement.selected.has(p.instance) ? { ...p, ...movement.shiftFacility(p) } : p)).map(key));
   const bodyOnly = [];
   for (const id of new Set(records.filter(r => !r.request.portAssignments?.length).flatMap(r => r.routes.filter(p => p.status !== 'found').map(p => p.id)))) {
     const c = chains[id], start = relocated(c.transport, c.cells[0]), end = relocated(c.transport, c.cells.at(-1));
@@ -63,7 +63,7 @@ try {
   const failed = records[0].routes.find(p => p.status !== 'found');
   if (failed) {
     const c = chains[failed.id];
-    const detail = { ...parent, move_diagnostic: { ...trial.request.move, code: `local-no-path; chain ${failed.id}`,
+    const detail = { ...parent, move_diagnostic: { moves: trial.request.moves, code: `local-no-path; chain ${failed.id}`,
       failed_endpoints: [c.cells[0], c.cells.at(-1)].map(p => relocated(c.transport, p)) } };
     fs.writeFileSync(path.join(output, 'index.html'), render(detail, read(path.join(trial.parent_directory, 'validation.json')), catalogs), { flag: 'wx' });
   }

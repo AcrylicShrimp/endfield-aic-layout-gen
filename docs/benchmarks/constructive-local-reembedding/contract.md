@@ -2,9 +2,10 @@
 
 Status: JavaScript research on a complete independently validated factory. No production cutover.
 
-The current move contract is DTO v2 in `group-contract.md`: one or more connected facilities
-translate together with eligible internal junctions. The initial single-facility absolute-position
-DTO described by historical experiment reports is no longer accepted.
+The current move contract is schema 3 in `compound-contract.md`: a `moves` array of
+disjoint rigid translation primitives, with eligible internal junctions. Both the old
+absolute-position DTO and the schema-2 single `move` request are rejected. Historical
+reports remain evidence at their recorded commits, not compatibility inputs.
 
 Input: complete witness/detail, original graph, runtime catalogs and explicit experiment budgets.
 Preserve facility identities, recipes, utilizations and rotations; logical commodity flows,

@@ -31,9 +31,9 @@ test('simultaneous port swaps preserve identities and rates, not old positions, 
 
 test('boundary pair proposals require the same owner, item, direction and exact rate', () => {
   const { w, terminals, swap } = fixture(), c = { item: 'same', transport: 'belt', startTerminals: [], endTerminals: terminals }, move = { instances: ['p'] };
-  assert.deepEqual(boundaryPortSwaps(w, [c], move), [swap]);
-  assert.deepEqual(boundaryPortSwaps(w, [c], { instances: ['other'] }), []);
+  assert.deepEqual(boundaryPortSwaps(w, [c], [move]), [swap]);
+  assert.deepEqual(boundaryPortSwaps(w, [c], [{ instances: ['other'] }]), []);
   const unequal = structuredClone(c); unequal.endTerminals[1].rate.denominator = 4;
-  assert.deepEqual(boundaryPortSwaps(w, [unequal], move), []);
-  assert.deepEqual(boundaryPortSwaps(w, terminals.map((t, i) => ({ ...c, item: String(i), endTerminals: [t] })), move), []);
+  assert.deepEqual(boundaryPortSwaps(w, [unequal], [move]), []);
+  assert.deepEqual(boundaryPortSwaps(w, terminals.map((t, i) => ({ ...c, item: String(i), endTerminals: [t] })), [move]), []);
 });

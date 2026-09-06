@@ -54,7 +54,7 @@ test('groups are connected and include actual cycles, independent of labels and 
 test('whole cyclic groups translate all internal paths and junctions without mutating inputs', () => {
   for (const b of blocks) {
     const d = structuredClone(compactInterface(constructCycle(catalogs, graph, b, 'root'), catalogs)), snapshot = structuredClone(d), { chains, anchors } = extractChains(d.witness);
-    const p = movementPlan(d.witness, chains, anchors, { instances: b.members, dx: 7, dy: 9 });
+    const p = movementPlan(d.witness, chains, anchors, [{ instances: b.members, dx: 7, dy: 9 }]);
     assert.equal(p.fixedChains.size, chains.length); assert.equal(p.changed.size, 0);
     assert.deepEqual(p.components.sort(), d.witness.logistics_components.map(c => c.id).sort());
     for (const c of chains) assert.deepEqual(p.fixedChains.get(c.id), c.cells.map(v => ({ x: v.x + 7, y: v.y + 9 })));
@@ -69,11 +69,11 @@ test('zero-length shared terminals move together and reject partial ownership', 
       { endpoint: { kind: 'facility', instance: 'a' }, direction: 'output', position, rate },
       { endpoint: { kind: 'facility', instance: 'b' }, direction: 'input', position, rate }] }] };
   const { chains, anchors } = extractChains(w), snapshot = structuredClone(w);
-  assert.throws(() => movementPlan(w, chains, anchors, { instances: ['a'], dx: 0, dy: 3 }), { code: 'local-shared-terminal-move' });
-  const p = movementPlan(w, chains, anchors, { instances: ['a', 'b'], dx: 0, dy: 3 });
-  assert.equal(p.movable('belt', position), true); assert.deepEqual(p.translate(position), { x: 1, y: 3 }); assert.deepEqual(w, snapshot);
+  assert.throws(() => movementPlan(w, chains, anchors, [{ instances: ['a'], dx: 0, dy: 3 }]), { code: 'local-shared-terminal-move' });
+  const p = movementPlan(w, chains, anchors, [{ instances: ['a', 'b'], dx: 0, dy: 3 }]);
+  assert.equal(p.movable('belt', position), true); assert.deepEqual(p.shiftAnchor('belt', position), { x: 1, y: 3 }); assert.deepEqual(w, snapshot);
   assert.throws(() => movementPlan(w, chains, anchors, { instance: 'a', x: 0, y: 3 }), { code: 'local-move-input' });
-  assert.throws(() => movementPlan(w, chains, anchors, { instances: ['a', 'a'], dx: 0, dy: 3 }), { code: 'local-move-input' });
+  assert.throws(() => movementPlan(w, chains, anchors, [{ instances: ['a', 'a'], dx: 0, dy: 3 }]), { code: 'local-move-input' });
 });
 
 test('downstream junction ownership carries all arms only when every output owner moves', () => {
@@ -87,23 +87,28 @@ test('downstream junction ownership carries all arms only when every output owne
   const chains = ps.map((p, i) => ({ id: i, transport: 'belt', cells: i < 2 ? [p, center] : [center, p] }));
   const anchors = { belt: new Set([...ps, center].map(p => `${p.x},${p.y}`)), pipe: new Set() };
   const move = { instances: ['c', 'd'], dx: 0, dy: 8 }, snapshot = structuredClone(w);
-  const retained = movementPlan(w, chains, anchors, move);
+  const retained = movementPlan(w, chains, anchors, [move]);
   assert.deepEqual(retained.components, []);
-  const carried = movementPlan(w, chains, anchors, move, { junctionPolicy: 'downstream' });
+  const carried = movementPlan(w, chains, anchors, [move], { junctionPolicy: 'downstream' });
   assert.deepEqual(carried.components, ['junction']);
   assert.deepEqual([...carried.fixedChains.keys()], [2, 3]);
   assert.deepEqual([...carried.changed], [0, 1]);
+  const separated = movementPlan(w, chains, anchors, [{ instances: ['c'], dx: 0, dy: 8 }, { instances: ['d'], dx: 0, dy: 9 }], { junctionPolicy: 'downstream' });
+  assert.deepEqual(separated.components, []);
+  assert.deepEqual([...separated.changed], [2, 3]);
   assert.equal(carried.movable('belt', ps[0]), false);
-  assert.deepEqual(movementPlan(w, chains, anchors, { ...move, instances: ['c'] }, { junctionPolicy: 'downstream' }).components, []);
+  assert.deepEqual(movementPlan(w, chains, anchors, [{ ...move, instances: ['c'] }], { junctionPolicy: 'downstream' }).components, []);
   const external = structuredClone(w); external.transport_networks[0].terminals[3].endpoint = { kind: 'external' };
-  assert.deepEqual(movementPlan(external, chains, anchors, move, { junctionPolicy: 'downstream' }).components, []);
-  assert.throws(() => movementPlan(w, chains, anchors, move, { junctionPolicy: 'unknown' }), { code: 'local-junction-policy' });
+  assert.deepEqual(movementPlan(external, chains, anchors, [move], { junctionPolicy: 'downstream' }).components, []);
+  assert.throws(() => movementPlan(w, chains, anchors, [move], { junctionPolicy: 'unknown' }), { code: 'local-junction-policy' });
   assert.deepEqual(w, snapshot);
 });
 
 test('current-extent move bounds reject carried paths rather than silently expanding the canvas', () => {
   const b = blocks[0], d = compactInterface(constructCycle(catalogs, graph, b, 'root'), catalogs);
-  assert.throws(() => reembed(d, catalogs, { move: { instances: b.members, dx: 100, dy: 0 } }), { code: 'local-move-bounds' });
+  assert.throws(() => reembed(d, catalogs, { move: { instances: b.members, dx: 0, dy: 0 } }), { code: 'local-move-input' });
+  assert.throws(() => reembed(d, catalogs, { moves: {} }), { code: 'local-move-input' });
+  assert.throws(() => reembed(d, catalogs, { moves: [{ instances: b.members, dx: 100, dy: 0 }] }), { code: 'local-move-bounds' });
 });
 
 test('largest empty rectangle matches brute force for every tiny occupancy mask', () => {

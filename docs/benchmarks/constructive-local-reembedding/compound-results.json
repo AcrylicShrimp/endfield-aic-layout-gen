@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "move_schema_version": 3,
+  "factory_validated": true,
+  "status": "complete-incumbent-retained",
+  "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/compound-current-repeat/incumbent",
+  "witness_sha256": "f06a5b2a525936ff20b9020fea004b4460993cce4ef35500124fa27fbfc784a7",
+  "score": {"width": 47, "height": 57, "area": 2679, "physical_tiles": 444, "turns": 45, "tuple": [2679, 444, 45]},
+  "previous_incumbent": "docs/benchmarks/constructive-embedding-compaction/layer-results.json",
+  "current_source_control": "target/compound-cone-repeat/report.json",
+  "current_source_expanded": "target/compound-current-repeat/report.json",
+  "initial_non_closed": "target/compound-compound-first/report.json",
+  "closed_first": "target/compound-closed-first/report.json",
+  "rejected_replay": "target/compound-first-replay/report.json",
+  "original_graph_audit": "target/layer-original-audit/audit.json",
+  "non_improving_alternative": {
+    "directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/compound-current-repeat/audit-179",
+    "score": [2679, 465, 53],
+    "witness_sha256": "b31603eee959fb15ba4d43f0b2ed95a6265e0c3f9a49c0deb33c8dd7dcdb759d",
+    "original_graph_audit": "target/compound-alternative-audit/audit.json",
+    "promoted": false
+  },
+  "verification": {"node_tests_passed": 198, "rust_tests_passed": 524, "rust_tests_ignored": 2, "alternative_original_graph_controls": 8, "unimproved_requests_validated": 4, "distinct_alternative_witnesses": 2},
+  "render": "http://100.114.24.86:8765/bound-interconnect-closure-independent-layers.html",
+  "alternative_render": "http://100.114.24.86:8765/bound-interconnect-closure-compound-alternative.html",
+  "rejected_render": "http://100.114.24.86:8765/bound-interconnect-closure-compound-obstruction.html",
+  "next_gate": "Reconstruct affected splitter/merger geometry and port ordering jointly with group poses; rigid pair exchanges do not improve this incumbent."
+}

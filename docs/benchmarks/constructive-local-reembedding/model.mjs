@@ -68,7 +68,9 @@ export function flexibleTerminalAnchors(w, chains) {
   return new Set([...terminals].filter(([k, n]) => n === 1 && incident.get(k) === 1 && !components.has(k)).map(([k]) => k));
 }
 
-export function reembed(detail, catalogs, { move = null, chainIds = [], order = 'near', workBudget = 200000, endpointPolicy = 'retained', junctionPolicy = 'internal', routePriority = [], maxNewCrossings = 0, portAssignments = [] } = {}) {
+export function reembed(detail, catalogs, options = {}) {
+  if (Object.hasOwn(options, 'move')) fail('local-move-input', 'Move schema 2 is obsolete; supply schema-3 moves array');
+  const { moves = [], chainIds = [], order = 'near', workBudget = 200000, endpointPolicy = 'retained', junctionPolicy = 'internal', routePriority = [], maxNewCrossings = 0, portAssignments = [] } = options;
   const began = performance.now(), original = detail.witness, { chains, anchors } = extractChains(original), bounds = extentOf(original);
   if (!['near', 'far'].includes(order)) fail('local-route-order', 'Expected near or far route order');
   if (!['retained', 'terminal-flexible'].includes(endpointPolicy)) fail('local-endpoint-policy', 'Expected retained or terminal-flexible endpoint policy');
@@ -80,20 +82,21 @@ export function reembed(detail, catalogs, { move = null, chainIds = [], order = 
   if (!Array.isArray(routePriority) || new Set(routePriority).size !== routePriority.length || routePriority.some(i => !Number.isSafeInteger(i) || !chains[i]))
     fail('local-route-priority', 'Expected unique known chain IDs in route priority');
   const priority = new Map(routePriority.map((id, i) => [id, i]));
-  const movement = move ? movementPlan(original, chains, anchors, move, { junctionPolicy }) : null;
-  const shifted = (p, tr) => movement?.movable(tr, p) ? movement.translate(p) : p;
+  if (!Array.isArray(moves)) fail('local-move-input', 'Expected schema-3 moves array');
+  const movement = moves.length ? movementPlan(original, chains, anchors, moves, { junctionPolicy }) : null;
+  const shifted = (p, tr) => movement?.movable(tr, p) ? movement.shiftAnchor(tr, p) : p;
   // Private append-only draft: untouched nested values are read-only until successful detachment.
   const w = { ...original,
-    placements: original.placements.map(p => movement?.selected.has(p.instance) ? { ...p, ...movement.translate(p) } : p),
-    logistics_components: original.logistics_components.map(c => movement?.components.includes(c.id) ? { ...c, position: movement.translate(c.position) } : c),
-    transport_networks: original.transport_networks.map(n => ({ ...n, component_ids: [...n.component_ids], terminals: n.terminals.map(t => movement?.movable(n.transport, t.position) ? { ...t, position: movement.translate(t.position) } : t) })) };
+    placements: original.placements.map(p => movement?.selected.has(p.instance) ? { ...p, ...movement.shiftFacility(p) } : p),
+    logistics_components: original.logistics_components.map(c => movement?.components.includes(c.id) ? { ...c, position: movement.shiftAnchor(c.transport, c.position) } : c),
+    transport_networks: original.transport_networks.map(n => ({ ...n, component_ids: [...n.component_ids], terminals: n.terminals.map(t => movement?.movable(n.transport, t.position) ? { ...t, position: movement.shiftAnchor(n.transport, t.position) } : t) })) };
   const paths = new Map(movement?.fixedChains ?? []);
   if (movement) {
     for (const id of movement.changed) changed.add(id);
     for (const id of paths.keys()) changed.delete(id);
     const carried = [...w.placements.flatMap(p => [p, { x: p.x + p.width - 1, y: p.y + p.height - 1 }]), ...paths.values()].flat();
     if (carried.some(p => p.x < bounds.minX || p.x > bounds.maxX || p.y < bounds.minY || p.y > bounds.maxY))
-      fail('local-move-bounds', 'Translated geometry leaves the explicit current-extent neighborhood', move.instances);
+      fail('local-move-bounds', 'Translated geometry leaves the explicit current-extent neighborhood', moves.flatMap(m => m.instances));
   }
   if (!Array.isArray(portAssignments)) fail('local-port-assignment', 'Expected a terminal assignment array');
   const singleton = portAssignments.length ? flexibleTerminalAnchors(original, chains) : new Set();
@@ -152,7 +155,7 @@ export function reembed(detail, catalogs, { move = null, chainIds = [], order = 
     }
     paths.set(job.id, result.cells); for (const p of result.cells) occupied[job.transport].add(key(p));
   }
-  if (!portAssignments.length && (!move || (move.dx === 0 && move.dy === 0)) && jobs.every(j => paths.get(j.id).length === j.cells.length && paths.get(j.id).every((p, i) => key(p) === key(j.cells[i]))))
+  if (!portAssignments.length && moves.every(m => m.dx === 0 && m.dy === 0) && jobs.every(j => paths.get(j.id).length === j.cells.length && paths.get(j.id).every((p, i) => key(p) === key(j.cells[i]))))
     return { status: 'unchanged', routes: results, elapsed_ms: performance.now() - began };
   for (const [ni, n] of w.transport_networks.entries()) if (chains.some(c => c.network === ni && paths.has(c.id)) ||
     original.transport_networks[ni].terminals.some(t => movement?.movable(n.transport, t.position))) {
@@ -167,8 +170,8 @@ export function reembed(detail, catalogs, { move = null, chainIds = [], order = 
   }
   const score = witnessScore(w), candidate = { schema_version: 1, case: 'complete-local-reembedding', embedding: 'local-astar', labels: structuredClone(detail.labels),
     witness: structuredClone(w), catalog_ports: project(w, catalogs), port_groups: { sources: [], targets: [] }, accepted: false, factory_validated: false,
-    reembedding: { move_schema_version: 2, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, route_priority: [...routePriority], max_new_crossings: maxNewCrossings,
-      new_crossings: installedCrossings, port_assignments: structuredClone(portAssignments), move, order, carried_components: movement?.components ?? [], translated_chains: movement ? [...movement.fixedChains.keys()].filter(id => !changed.has(id)) : [], affected_chains: jobs.map(j => j.id), routes: results } };
+    reembedding: { move_schema_version: 3, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, route_priority: [...routePriority], max_new_crossings: maxNewCrossings,
+      new_crossings: installedCrossings, port_assignments: structuredClone(portAssignments), moves: structuredClone(moves), order, carried_components: movement?.components ?? [], translated_chains: movement ? [...movement.fixedChains.keys()].filter(id => !changed.has(id)) : [], affected_chains: jobs.map(j => j.id), routes: results } };
   return { status: 'candidate', detail: candidate, score, affected_chains: jobs.map(j => ({ id: j.id, item: j.item })), routes: results, elapsed_ms: performance.now() - began };
 }
 

@@ -3,13 +3,19 @@ export const bodyCells = p => Array.from({ length: p.width * p.height }, (_, i) 
 const fail = (code, message, entity = null) => { throw Object.assign(new Error(message), { code, severity: 'info', stage: 'local-movement', entity }); };
 const tag = (tr, p) => `${tr}:${key(p)}`;
 
-export function movementPlan(w, chains, anchors, move, { junctionPolicy = 'internal' } = {}) {
+export function movementPlan(w, chains, anchors, moves, { junctionPolicy = 'internal' } = {}) {
   if (!['internal', 'downstream'].includes(junctionPolicy)) fail('local-junction-policy', 'Expected internal or downstream junction ownership');
-  if (!move || !Array.isArray(move.instances) || !move.instances.length || move.instances.length > 16 ||
-    new Set(move.instances).size !== move.instances.length || !move.instances.every(id => w.placements.some(p => p.instance === id)) ||
-    !Number.isSafeInteger(move.dx) || !Number.isSafeInteger(move.dy) || 'instance' in move || 'x' in move || 'y' in move)
-    fail('local-move-input', 'Expected move DTO v2: instances (1..16 unique known IDs), integer dx/dy', move);
-  const selected = new Set(move.instances), moved = new Set(), adjacency = new Map(), outgoing = new Map(), terminals = new Map();
+  if (!Array.isArray(moves) || moves.length > 4 || moves.some(move => !move || !Array.isArray(move.instances) || !move.instances.length ||
+    !move.instances.every(id => w.placements.some(p => p.instance === id)) || !Number.isSafeInteger(move.dx) || !Number.isSafeInteger(move.dy) ||
+    'instance' in move || 'x' in move || 'y' in move)) fail('local-move-input', 'Expected move schema 3: up to four translation primitives', moves);
+  const instances = moves.flatMap(m => m.instances);
+  if (instances.length > 16 || new Set(instances).size !== instances.length) fail('local-move-input', 'Expected at most sixteen distinct selected facilities', moves);
+  const selected = new Set(instances), shifts = new Map(moves.flatMap(m => m.instances.map(id => [id, { dx: m.dx, dy: m.dy }])));
+  const moved = new Set(), anchorShifts = new Map(), adjacency = new Map(), outgoing = new Map(), terminals = new Map();
+  const equalShift = (a, b) => a && b && a.dx === b.dx && a.dy === b.dy;
+  const translate = (p, delta) => delta ? { x: p.x + delta.dx, y: p.y + delta.dy } : { x: p.x, y: p.y };
+  const shiftFacility = p => translate(p, shifts.get(p.instance));
+  const shiftAnchor = (tr, p) => translate(p, anchorShifts.get(tag(tr, p)));
   for (const c of chains) {
     const a = tag(c.transport, c.cells[0]), b = tag(c.transport, c.cells.at(-1));
     if (!outgoing.has(a)) outgoing.set(a, new Set()); outgoing.get(a).add(b);
@@ -19,9 +25,11 @@ export function movementPlan(w, chains, anchors, move, { junctionPolicy = 'inter
     const k = tag(n.transport, t.position); if (!terminals.has(k)) terminals.set(k, []); terminals.get(k).push(t);
   }
   const own = t => t.endpoint.kind === 'facility' && selected.has(t.endpoint.instance);
+  const common = ts => ts.length && ts.every(own) && ts.every(t => equalShift(shifts.get(t.endpoint.instance), shifts.get(ts[0].endpoint.instance))) ? shifts.get(ts[0].endpoint.instance) : null;
   for (const [k, ts] of terminals) if (ts.some(own)) {
-    if (!ts.every(own)) fail('local-shared-terminal-move', 'Shared terminal owners must move together', k);
-    moved.add(k);
+    const delta = common(ts);
+    if (!delta) fail('local-shared-terminal-move', 'Shared terminal owners must receive identical translations', k);
+    moved.add(k); anchorShifts.set(k, delta);
   }
   // Move whole nonterminal clusters; downstream ownership may release incoming supply paths.
   const visited = new Set();
@@ -32,18 +40,27 @@ export function movementPlan(w, chains, anchors, move, { junctionPolicy = 'inter
       else if (!visited.has(v)) { visited.add(v); queue.push(v); }
     }
     const sinks = new Set(queue.flatMap(v => [...(outgoing.get(v) ?? [])]).filter(v => terminals.has(v)));
-    const internal = neighbors.size && [...neighbors].every(v => terminals.get(v).every(own));
-    const downstream = junctionPolicy === 'downstream' && sinks.size &&
-      [...sinks].every(v => terminals.get(v).every(t => own(t) && t.direction === 'input'));
-    if (internal || downstream) for (const v of queue) moved.add(v);
+    const internal = common([...neighbors].flatMap(v => terminals.get(v)));
+    const sinkTerminals = [...sinks].flatMap(v => terminals.get(v));
+    const downstream = junctionPolicy === 'downstream' && sinkTerminals.every(t => t.direction === 'input') ? common(sinkTerminals) : null;
+    const delta = internal || downstream;
+    if (delta) for (const v of queue) { moved.add(v); anchorShifts.set(v, delta); }
   }
-  const translate = p => ({ x: p.x + move.dx, y: p.y + move.dy });
   const movable = (tr, p) => moved.has(tag(tr, p));
-  const bodies = w.placements.filter(p => selected.has(p.instance)).map(p => ({ ...p, ...translate(p) }));
+  const bodies = w.placements.filter(p => selected.has(p.instance)).map(p => ({ ...p, ...shiftFacility(p) }));
   const cells = new Set(bodies.flatMap(bodyCells).map(key)), stationary = new Set(w.placements.filter(p => !selected.has(p.instance)).flatMap(bodyCells).map(key));
-  if ([...cells].some(k => stationary.has(k))) fail('local-body-collision', 'Translated group intersects a retained facility', move.instances);
+  if (cells.size !== bodies.reduce((n, p) => n + p.width * p.height, 0) || [...cells].some(k => stationary.has(k)))
+    fail('local-body-collision', 'Simultaneous translated bodies overlap each other or a retained facility', instances);
   const movedAnchors = { belt: new Set(), pipe: new Set() };
-  for (const n of w.transport_networks) for (const p of n.cells) if (movable(n.transport, p)) movedAnchors[n.transport].add(key(translate(p)));
+  const origins = { belt: new Map(), pipe: new Map() };
+  const carry = (tr, before, after) => {
+    const k = key(after), original = key(before);
+    if (origins[tr].has(k) && origins[tr].get(k) !== original) fail('local-carried-collision', 'Different carried cells collide on one layer', { transport: tr, position: after });
+    origins[tr].set(k, original);
+  };
+  for (const n of w.transport_networks) for (const p of n.cells) if (movable(n.transport, p)) {
+    const q = shiftAnchor(n.transport, p); carry(n.transport, p, q); movedAnchors[n.transport].add(key(q));
+  }
   for (const tr of ['belt', 'pipe']) for (const k of anchors[tr]) if (!moved.has(`${tr}:${k}`)) {
     if (cells.has(k)) fail('local-anchor-collision', 'Translated body intersects a fixed anchor', k);
     if (movedAnchors[tr].has(k)) fail('local-terminal-collision', 'Translated anchor intersects a retained anchor', k);
@@ -52,9 +69,10 @@ export function movementPlan(w, chains, anchors, move, { junctionPolicy = 'inter
     if (stationary.has(k) || cells.has(k)) fail('local-endpoint-body', 'Translated anchor intersects a facility body', k);
   const components = w.logistics_components.filter(c => movable(c.transport, c.position)).map(c => c.id);
   const fixedChains = new Map(), changed = new Set();
-  for (const c of chains) if (movable(c.transport, c.cells[0]) && movable(c.transport, c.cells.at(-1))) {
-    const path = c.cells.map(translate);
+  for (const c of chains) if (equalShift(anchorShifts.get(tag(c.transport, c.cells[0])), anchorShifts.get(tag(c.transport, c.cells.at(-1))))) {
+    const delta = anchorShifts.get(tag(c.transport, c.cells[0])), path = c.cells.map(p => translate(p, delta));
     if (path.some(p => stationary.has(key(p)) || cells.has(key(p)))) fail('local-internal-body-collision', 'Translated internal route intersects a body', c.id);
+    path.forEach((p, i) => carry(c.transport, c.cells[i], p));
     fixedChains.set(c.id, path);
   }
   const carried = { belt: new Set([...movedAnchors.belt]), pipe: new Set([...movedAnchors.pipe]) };
@@ -63,5 +81,5 @@ export function movementPlan(w, chains, anchors, move, { junctionPolicy = 'inter
     if (!moved.has(`${tr}:${k}`) && carried[tr].has(k)) fail('local-internal-anchor-collision', 'Translated internal route intersects a retained anchor', k);
   for (const c of chains) if (!fixedChains.has(c.id) && (movable(c.transport, c.cells[0]) || movable(c.transport, c.cells.at(-1)) ||
     c.cells.some(p => cells.has(key(p)) || carried[c.transport].has(key(p))))) changed.add(c.id);
-  return { selected, moved, movable, translate, components, fixedChains, changed, body: cells };
+  return { selected, moved, movable, shiftFacility, shiftAnchor, components, fixedChains, changed, body: cells };
 }

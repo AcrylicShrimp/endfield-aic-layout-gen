@@ -1,9 +1,9 @@
 # Connected-group translation and interface reconstruction
 
-Move DTO version 2 replaces the single-facility absolute-position request with
-`{ instances: string[], dx: integer, dy: integer }`. Single-facility candidates use the same
-contract; the former `instance/x/y` DTO is rejected explicitly. Existing recorded reports are
-historical evidence, not executable compatibility inputs.
+The primitive `{ instances: string[], dx: integer, dy: integer }` describes one rigid
+group translation. Executable requests now use the schema-3 `moves` array documented
+in `compound-contract.md`; the former schema-2 single `move` request is rejected.
+Historical reports require their recorded commit or explicit migration before replay.
 
 Translate selected facilities rigidly, preserving rotations, recipes and utilization. Carry
 terminal anchors and any nonterminal junction component whose complete terminal neighborhood
@@ -36,7 +36,7 @@ Never truncate a layer to meet the budget. Deduplicate member sets; external end
 are not facilities and are excluded. This is a search neighborhood, not a graph rewrite
 or a claim that all selected nodes form an atomic production SCC.
 
-The move DTO and physical movement contract are unchanged: translate eligible internal
+The translation primitive retains its physical contract: translate eligible internal
 geometry, rip up boundary/displaced chains, restore all rates and validate the complete
 factory before accepting an area/cell/turn improvement. Preserve the old `group` family
 as an explicit experimental control. Record the selected family and proposal kinds;
@@ -52,7 +52,7 @@ Its geometry and component rotation translate rigidly. This is a conservative di
 ownership heuristic, not proof that other junction poses are impossible.
 
 For rejected moves, the native viewer may receive `move_diagnostic` alongside the
-unchanged validated witness: `instances`, integer `dx/dy`, a diagnostic `code` and
+unchanged validated witness: schema-3 `moves`, a diagnostic `code` and
 `failed_endpoints` in the proposed coordinates. Red dashed bodies and red endpoint rings
 are a proposal overlay, not an accepted or partially routed factory. The base witness's
 validation must not be confused with acceptance of the highlighted proposal.
