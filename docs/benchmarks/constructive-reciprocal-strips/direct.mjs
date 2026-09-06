@@ -4,7 +4,9 @@ import { bodyCells } from '../constructive-local-reembedding/movement.mjs';
 import { key, directions } from '../constructive-local-reembedding/path.mjs';
 import { capacity, compare, parseRate } from '../constructive-interconnect/rates.mjs';
 
-export function directAttachments(catalogs, graph, core, target) {
+export function directAttachments(catalogs, graph, core, target, { orientationPolicy = 'east' } = {}) {
+  if (!['east', 'all'].includes(orientationPolicy)) throw Object.assign(new Error('Expected direct orientation policy east|all'), { code: 'direct-orientation-policy' });
+  const delta = { north: [0, -1], east: [1, 0], south: [0, 1], west: [-1, 0] };
   const incoming = graph.edges.filter(e => e.target === target);
   if (incoming.length !== 1 || !incoming[0].internal || incoming[0].transport !== 'belt') return [];
   const edge = incoming[0], original = core.witness;
@@ -18,19 +20,20 @@ export function directAttachments(catalogs, graph, core, target) {
   const candidates = [], seen = new Set();
   for (const rotation of facility.allowed_rotations) {
     const shape = rotateFacility(facility, rotation);
-    if (!shape.ports.some(p => p.direction === 'output' && p.transport === 'belt' && p.edge === 'east')) continue;
+    if (!shape.ports.some(p => p.direction === 'output' && p.transport === 'belt' && (orientationPolicy === 'all' || p.edge === 'east'))) continue;
     for (const a of ports[edge.source].filter(p => p.direction === 'output' && p.transport === 'belt' && !used.has(JSON.stringify([edge.source, p.id]))))
-      for (const b of shape.ports.filter(p => p.direction === 'input' && p.transport === 'belt' && p.edge === 'west')) for (const [dx, dy] of [[0, 0], ...directions]) {
+      for (const b of shape.ports.filter(p => p.direction === 'input' && p.transport === 'belt' && (orientationPolicy === 'all' || p.edge === 'west'))) for (const [dx, dy] of [[0, 0], ...directions]) {
         const connection = { x: a.connection.x + dx, y: a.connection.y + dy };
         const p = { instance: target, recipe: recipe.id, facility: facility.id, rotation, width: shape.width, height: shape.height,
-          x: connection.x - b.position.x + 1, y: connection.y - b.position.y };
+          x: connection.x - b.position.x - delta[b.edge][0], y: connection.y - b.position.y - delta[b.edge][1] };
         const signature = JSON.stringify([rotation, p.x, p.y, a.id, b.id]); if (seen.has(signature)) continue; seen.add(signature);
         const newBody = new Set(bodyCells(p).map(key));
         if ([...newBody].some(k => all.has(k)) || [a.connection, connection].some(q => body.has(key(q)) || newBody.has(key(q)) || belt.has(key(q)))) continue;
         const projected = project({ placements: [p] }, catalogs)[target];
         const occupied = new Set([...body, ...newBody, ...belt, key(a.connection), key(connection)]);
         const rowRight = new Map(); for (const k of occupied) { const [x, y] = k.split(',').map(Number); rowRight.set(y, Math.max(rowRight.get(y) ?? -Infinity, x)); }
-        if (!projected.some(q => q.direction === 'output' && q.transport === 'belt' && q.edge === 'east' && (rowRight.get(q.connection.y) ?? -Infinity) < q.connection.x)) continue;
+        if (!projected.some(q => q.direction === 'output' && q.transport === 'belt' && (orientationPolicy === 'all' ? !occupied.has(key(q.connection)) :
+          q.edge === 'east' && (rowRight.get(q.connection.y) ?? -Infinity) < q.connection.x))) continue;
         const w = structuredClone(original); w.placements.push(p); w.utilizations[target] = structuredClone(node.utilization);
         let n = w.transport_networks.find(n => n.item === edge.item && n.transport === edge.transport);
         if (!n) { n = { id: JSON.stringify(['direct', edge.item]), item: edge.item, transport: edge.transport, cells: [], segments: [], terminals: [], requirement_ids: [], component_ids: [] }; w.transport_networks.push(n); }
@@ -47,7 +50,7 @@ export function directAttachments(catalogs, graph, core, target) {
           witness: w, labels: core.labels, catalog_ports: project(w, catalogs), port_groups: { sources: [], targets: [] }, reallocation: core.reallocation ?? null,
           block: { id: core.block.id, members, request: { schema_version: 1, producers: graph.nodes.filter(n => set.has(n.id)), consumers: [] },
             pending_edges: graph.edges.filter(e => set.has(e.source) !== set.has(e.target)) },
-          direct_attachment: { edge: edge.id, source_port: a.id, target_port: b.id, physical_cells: dx || dy ? 2 : 1 } }));
+          direct_attachment: { edge: edge.id, source_port: a.id, target_port: b.id, physical_cells: dx || dy ? 2 : 1, orientation_policy: orientationPolicy } }));
       }
   }
   return candidates;

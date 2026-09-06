@@ -44,7 +44,7 @@ export function normalizeGraph(snapshot, catalogs) {
   return { schema_version: 1, nodes, edges };
 }
 
-function components(graph) {
+export function components(graph) {
   const seen = new Map(), low = new Map(), stack = [], active = new Set(), result = [];
   const adjacency = new Map(graph.nodes.map(n => [n.id, graph.edges.filter(e => e.internal && e.source === n.id).map(e => e.target)]));
   let index = 0;
