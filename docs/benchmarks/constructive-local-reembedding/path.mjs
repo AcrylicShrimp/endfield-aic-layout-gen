@@ -4,7 +4,7 @@ export const direction = (a, b) => directions.findIndex(([x, y]) => b.x - a.x ==
 export const distance = (a, b) => Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 const fail = (code, message) => { throw Object.assign(new Error(message), { code, severity: 'error', stage: 'local-path' }); };
 
-class Heap {
+export class Heap {
   values = [];
   less(a, b) { return a.f < b.f || (a.f === b.f && (a.g < b.g || (a.g === b.g && a.id < b.id))); }
   push(a) {

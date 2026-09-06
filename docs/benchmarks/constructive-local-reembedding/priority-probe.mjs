@@ -6,6 +6,7 @@ import { movementPlan, bodyCells } from './movement.mjs';
 import { boundaryPortSwaps, vacantPortCandidates } from './ports.mjs';
 import { releaseBridgeDraft } from './components.mjs';
 import { shortestPath, key } from './path.mjs';
+import { minimumTerminalReleasePath, terminalAccessObstacles } from './terminal-access.mjs';
 import { render } from '../constructive-bound-interconnect/view.mjs';
 const read = p => JSON.parse(fs.readFileSync(p));
 const hash = p => createHash('sha256').update(fs.readFileSync(p)).digest('hex');
@@ -61,25 +62,30 @@ try {
   const rerouteChains = new Set(chains.filter(c => c.cells.some(p => released.has(`${c.transport}:${key(p)}`))).map(c => c.id));
   const movement = movementPlan(routingWitness, chains, anchors, trial.request.moves, { junctionPolicy: trial.request.junctionPolicy, rerouteChains });
   const body = new Set(parent.witness.placements.flatMap(p => bodyCells(movement.selected.has(p.instance) ? { ...p, ...movement.shiftFacility(p) } : p)).map(key));
-  const bodyOnly = [];
+  const bodyOnly = [], terminalAccess = [], bounds = extentOf(parent.witness);
   for (const id of new Set(records.filter(r => !r.request.portAssignments?.length).flatMap(r => r.routes.filter(p => p.status !== 'found').map(p => p.id)))) {
     const c = chains[id], start = movement.shiftEndpoint(c, false), end = movement.shiftEndpoint(c, true);
     const r = shortestPath(start, end, body, extentOf(parent.witness), { first: null, last: null, workBudget: 200000 });
     bodyOnly.push({ id, item: c.item, start, end, status: r.status, steps: r.steps, expanded: r.expanded });
+    const { hard, soft } = terminalAccessObstacles(routingWitness, movement, c.transport, [start, end], body);
+    terminalAccess.push({ id, item: c.item, transport: c.transport, start, end, bounds,
+      ...minimumTerminalReleasePath(start, end, hard, soft, bounds) });
   }
   const failed = records[0].routes.find(p => p.status !== 'found');
   if (failed) {
     const c = chains[failed.id];
     const detail = { ...parent, move_diagnostic: { moves: trial.request.moves, code: `local-no-path; chain ${failed.id}`,
-      failed_endpoints: [false, true].map(end => movement.shiftEndpoint(c, end)) } };
+      failed_endpoints: [false, true].map(end => movement.shiftEndpoint(c, end)),
+      relaxed_routes: terminalAccess.filter(r => r.id === failed.id && r.status === 'found') } };
     fs.writeFileSync(path.join(output, 'index.html'), render(detail, read(path.join(trial.parent_directory, 'validation.json')), catalogs), { flag: 'wx' });
   }
   const result = { schema_version: 1, chain_schema_version: 2, status: records.some(r => r.candidate) ? 'unvalidated-replay-candidate' : 'bounded-orders-exhausted', factory_validated: false,
     scope: 'Private replay; optional paired or vacant endpoint ports and new bridges. Body-only reachability uses the retained-port control and is not a valid layout.', port_policy: portPolicy, vacant_port_neighborhood: vacant,
-    parent_directory: trial.parent_directory, stage: index, records, body_only: bodyOnly, priority_trials: seen.size, priority_limit: 64,
+    parent_directory: trial.parent_directory, stage: index, records, body_only: bodyOnly, terminal_access: terminalAccess,
+    terminal_access_scope: 'Fixed retained canvas; bodies and other external terminals hard, facility terminal cells soft; wiring, components and arm constraints ignored. NOT valid routes.', priority_trials: seen.size, priority_limit: 64,
     priority_termination: queue.every(r => seen.has(JSON.stringify([r.order, r.routePriority]))) ? 'distinct-queue-exhausted' : 'trial-budget', elapsed_ms: performance.now() - started,
     provenance: [options.report, parentPath, ...Object.values(catalogPaths)].map(p => ({ path: path.resolve(p), sha256: hash(p) })),
-    source_hashes: Object.fromEntries(['priority-probe.mjs', 'model.mjs', 'movement.mjs', 'terminal-identity.mjs', 'components.mjs', 'path.mjs', 'crossing.mjs', 'ports.mjs', 'fair.mjs', '../constructive-bound-interconnect/view.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
+    source_hashes: Object.fromEntries(['priority-probe.mjs', 'model.mjs', 'movement.mjs', 'terminal-identity.mjs', 'terminal-access.mjs', 'components.mjs', 'path.mjs', 'crossing.mjs', 'ports.mjs', 'fair.mjs', '../constructive-bound-interconnect/view.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), result);
   console.log(JSON.stringify({ status: result.status, trials: records.length, output }));
 } catch (e) { console.error(JSON.stringify({ code: 'priority-probe-failed', message: e.message })); process.exitCode = 1; }
