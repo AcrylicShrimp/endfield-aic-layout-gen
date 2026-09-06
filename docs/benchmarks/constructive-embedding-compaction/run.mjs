@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { compactEmbedding } from './model.mjs';
+import { executeValidator } from './validator.mjs';
 import { normalizeGraph } from '../constructive-cycle-blocks/graph.mjs';
 import { inspectCoverage, better } from '../constructive-factory-closure/model.mjs';
 import { witnessScore } from '../constructive-auto-interface/compact.mjs';
@@ -26,16 +26,13 @@ try {
   const validate = async (detail, name) => {
     const began = performance.now(), directory = path.join(output, name); fs.mkdirSync(directory);
     write(path.join(directory, 'witness.json'), detail.witness);
-    const code = await new Promise((resolve, reject) => {
-      const log = fs.createWriteStream(path.join(directory, 'validator.log'), { flags: 'wx' });
-      const p = spawn(path.resolve(options.validator), ['--witness', path.join(directory, 'witness.json'),
-        ...['recipes', 'facilities', 'items', 'transports', 'components'].flatMap(k => [`--${k}`, options[k]]), '--report-output', path.join(directory, 'validation.json')]);
-      const guard = setTimeout(() => p.kill(), 30000); p.stdout.pipe(log, { end: false }); p.stderr.pipe(log, { end: false });
-      p.on('error', e => { clearTimeout(guard); log.end(); reject(e); }); p.on('close', code => { clearTimeout(guard); log.end(); resolve(code); });
-    });
+    const processResult = await executeValidator(path.resolve(options.validator), ['--witness', path.join(directory, 'witness.json'),
+      ...['recipes', 'facilities', 'items', 'transports', 'components'].flatMap(k => [`--${k}`, options[k]]), '--report-output', path.join(directory, 'validation.json')], path.join(directory, 'validator.log'));
+    write(path.join(directory, 'validator-process.json'), processResult);
+    if (processResult.timed_out) throw Object.assign(new Error(`Validator time limit exhausted in ${directory}`), { code: 'compaction-validator-timeout', stage: 'validation', entity: directory });
     if (!fs.existsSync(path.join(directory, 'validation.json'))) throw new Error(`Validator produced no report in ${directory}`);
     const v = read(path.join(directory, 'validation.json')), coverage = inspectCoverage(graph, detail, v, true);
-    detail.accepted = detail.factory_validated = code === 0 && coverage.factory_validated;
+    detail.accepted = detail.factory_validated = processResult.code === 0 && coverage.factory_validated;
     write(path.join(directory, 'coverage.json'), coverage); write(path.join(directory, 'detail.json'), detail);
     fs.writeFileSync(path.join(directory, 'index.html'), render(detail, v, catalogs), { flag: 'wx' });
     const { coordinates, lower, original, edges, values, ...certificate } = detail.compaction_certificate ?? {};
@@ -63,7 +60,7 @@ try {
     selected_directory: selected.directory, initial_score: initialScore, score: selected.score, axis_order: order, round_budget: rounds, termination,
     elapsed_ms: performance.now() - start, stages, failures,
     provenance: keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
-    source_hashes: Object.fromEntries(['model.mjs', 'run.mjs', '../constructive-placement-only/model.mjs', '../constructive-bound-interconnect/view.mjs', '../constructive-auto-interface/compact.mjs', '../constructive-factory-closure/model.mjs', '../constructive-cycle-blocks/graph.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
+    source_hashes: Object.fromEntries(['model.mjs', 'length.mjs', 'validator.mjs', 'run.mjs', '../constructive-placement-only/model.mjs', '../constructive-bound-interconnect/view.mjs', '../constructive-auto-interface/compact.mjs', '../constructive-factory-closure/model.mjs', '../constructive-cycle-blocks/graph.mjs'].map(p => [p, hash(new URL(p, import.meta.url))])) };
   write(path.join(output, 'report.json'), report); fs.copyFileSync(path.join(selected.directory, 'index.html'), path.join(output, 'index.html'));
   console.log(JSON.stringify({ status: report.status, score: report.score.tuple, stages: stages.length, elapsed_ms: report.elapsed_ms, output }));
 } catch (e) {

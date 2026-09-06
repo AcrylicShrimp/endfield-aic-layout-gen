@@ -1,0 +1,334 @@
+{
+  "schema_version": 1,
+  "scope": "Four complete original-graph seeds and both axis orders; fixed-neighborhood optimization, not global optimality",
+  "cases": [
+    {
+      "name": "final",
+      "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-final/report.json",
+      "report_sha256": "bfe7723d0d6f4a22c31a7a55215aae2f5a0329e29857890f1abb679a21479850",
+      "baseline": {
+        "kind": "baseline",
+        "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-embedding-compaction/matrix.json",
+        "sha256": "961e87ee8c94a562390483101f5c4171e7ea10b2d73ca687ef52df6a3c3f813d"
+      },
+      "axis_order": "yx",
+      "initial_score": {
+        "width": 91,
+        "height": 75,
+        "area": 6825,
+        "physical_tiles": 1789,
+        "turns": 261,
+        "tuple": [
+          6825,
+          1789,
+          261
+        ]
+      },
+      "score": {
+        "width": 91,
+        "height": 75,
+        "area": 6825,
+        "physical_tiles": 1603,
+        "turns": 261,
+        "tuple": [
+          6825,
+          1603,
+          261
+        ]
+      },
+      "elapsed_ms": 907.464334,
+      "attempts": 4,
+      "all_candidates_validated": true,
+      "failures": [],
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-final/round-0-x",
+      "selected_witness_sha256": "40d28c2694b137f4faa79045e36c0a4745e51a5741730581f645b5c854721780"
+    },
+    {
+      "name": "final-incumbent-xy",
+      "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-final-incumbent-xy/report.json",
+      "report_sha256": "afaeb0cb43bc4024a293c50ac2aa2aba7496bea68b7ffd918a6e9965d7b2b0be",
+      "baseline": {
+        "kind": "baseline",
+        "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-embedding-compaction/matrix.json",
+        "sha256": "961e87ee8c94a562390483101f5c4171e7ea10b2d73ca687ef52df6a3c3f813d"
+      },
+      "axis_order": "xy",
+      "initial_score": {
+        "width": 91,
+        "height": 75,
+        "area": 6825,
+        "physical_tiles": 1789,
+        "turns": 261,
+        "tuple": [
+          6825,
+          1789,
+          261
+        ]
+      },
+      "score": {
+        "width": 91,
+        "height": 75,
+        "area": 6825,
+        "physical_tiles": 1603,
+        "turns": 261,
+        "tuple": [
+          6825,
+          1603,
+          261
+        ]
+      },
+      "elapsed_ms": 877.281834,
+      "attempts": 4,
+      "all_candidates_validated": true,
+      "failures": [],
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-final-incumbent-xy/round-0-y",
+      "selected_witness_sha256": "d3b6f747a1b625927f91667fa5b30f9bc1e34ef6e199edb3b828303c01ee9970"
+    },
+    {
+      "name": "final-source-xy",
+      "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-final-source-xy/report.json",
+      "report_sha256": "ac4d5cc9425afe1ab0e845b89c3b99542d523b7856d655264754f1a63c1732c7",
+      "baseline": {
+        "kind": "baseline",
+        "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-cluster-packing/approach-final-matrix.json",
+        "sha256": "ac5ca2ad85388d4b057e80bf578b5e05add2213f99a5f6c3dadf300bddca2c5b"
+      },
+      "axis_order": "xy",
+      "initial_score": {
+        "width": 99,
+        "height": 85,
+        "area": 8415,
+        "physical_tiles": 2056,
+        "turns": 261,
+        "tuple": [
+          8415,
+          2056,
+          261
+        ]
+      },
+      "score": {
+        "width": 91,
+        "height": 75,
+        "area": 6825,
+        "physical_tiles": 1603,
+        "turns": 261,
+        "tuple": [
+          6825,
+          1603,
+          261
+        ]
+      },
+      "elapsed_ms": 1161.162916,
+      "attempts": 6,
+      "all_candidates_validated": true,
+      "failures": [],
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-final-source-xy/round-1-x",
+      "selected_witness_sha256": "40d28c2694b137f4faa79045e36c0a4745e51a5741730581f645b5c854721780"
+    },
+    {
+      "name": "final-source-yx",
+      "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-final-source-yx/report.json",
+      "report_sha256": "aca1288db20b20c1d32e69fe327eb411dd8bcc89b80bacf5f4d350bcf79f4d5f",
+      "baseline": {
+        "kind": "baseline",
+        "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-cluster-packing/approach-final-matrix.json",
+        "sha256": "ac5ca2ad85388d4b057e80bf578b5e05add2213f99a5f6c3dadf300bddca2c5b"
+      },
+      "axis_order": "yx",
+      "initial_score": {
+        "width": 99,
+        "height": 85,
+        "area": 8415,
+        "physical_tiles": 2056,
+        "turns": 261,
+        "tuple": [
+          8415,
+          2056,
+          261
+        ]
+      },
+      "score": {
+        "width": 91,
+        "height": 75,
+        "area": 6825,
+        "physical_tiles": 1603,
+        "turns": 261,
+        "tuple": [
+          6825,
+          1603,
+          261
+        ]
+      },
+      "elapsed_ms": 863.877667,
+      "attempts": 4,
+      "all_candidates_validated": true,
+      "failures": [],
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-final-source-yx/round-0-x",
+      "selected_witness_sha256": "5344f2a01aed38eabe7fd35e4eb4c9ff7fb71fa2a128b70ae36498447b04ca00"
+    },
+    {
+      "name": "copy-xy",
+      "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-copy-xy/report.json",
+      "report_sha256": "499839269ff2849dd01f6bad08b4ed154e40b39bb8c69b63d1306253bf2dd25d",
+      "baseline": {
+        "kind": "baseline",
+        "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-cluster-packing/copy-matrix.json",
+        "sha256": "5f6a24664453a42871c4a1121c123164e301cf9a6fce28193895cf4e6786ecb1"
+      },
+      "axis_order": "xy",
+      "initial_score": {
+        "width": 112,
+        "height": 88,
+        "area": 9856,
+        "physical_tiles": 2299,
+        "turns": 256,
+        "tuple": [
+          9856,
+          2299,
+          256
+        ]
+      },
+      "score": {
+        "width": 94,
+        "height": 77,
+        "area": 7238,
+        "physical_tiles": 1683,
+        "turns": 256,
+        "tuple": [
+          7238,
+          1683,
+          256
+        ]
+      },
+      "elapsed_ms": 1195.293541,
+      "attempts": 6,
+      "all_candidates_validated": true,
+      "failures": [],
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-copy-xy/round-1-x",
+      "selected_witness_sha256": "d67775276b43ae0d6e7933a6ccfdc9b6c495aa159ee6255a8f8ccb7c2c3c52e5"
+    },
+    {
+      "name": "copy-yx",
+      "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-copy-yx/report.json",
+      "report_sha256": "b9a93e1e50bf7eb0e69e1b97859ceb1bc6f86190ee918b683a25e359d2df1667",
+      "baseline": {
+        "kind": "baseline",
+        "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-cluster-packing/copy-matrix.json",
+        "sha256": "5f6a24664453a42871c4a1121c123164e301cf9a6fce28193895cf4e6786ecb1"
+      },
+      "axis_order": "yx",
+      "initial_score": {
+        "width": 112,
+        "height": 88,
+        "area": 9856,
+        "physical_tiles": 2299,
+        "turns": 256,
+        "tuple": [
+          9856,
+          2299,
+          256
+        ]
+      },
+      "score": {
+        "width": 96,
+        "height": 77,
+        "area": 7392,
+        "physical_tiles": 1701,
+        "turns": 256,
+        "tuple": [
+          7392,
+          1701,
+          256
+        ]
+      },
+      "elapsed_ms": 905.961125,
+      "attempts": 4,
+      "all_candidates_validated": true,
+      "failures": [],
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-copy-yx/round-0-x",
+      "selected_witness_sha256": "dc9f9daab3337313c129ae204ec77377e7ab32239921de7f92d4b04d3a540e49"
+    },
+    {
+      "name": "layered-final-xy",
+      "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-layered-final-xy/report.json",
+      "report_sha256": "68913a4e0a2f11938b82d8190094a99d1920d73870364183e35810805264713b",
+      "baseline": {
+        "kind": "baseline",
+        "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-cluster-packing/layered-final-matrix.json",
+        "sha256": "b64a2fad1d24b97b84f3526c4f27c4cb70a7622f207f4ef94e036482d2a7b372"
+      },
+      "axis_order": "xy",
+      "initial_score": {
+        "width": 107,
+        "height": 88,
+        "area": 9416,
+        "physical_tiles": 2242,
+        "turns": 257,
+        "tuple": [
+          9416,
+          2242,
+          257
+        ]
+      },
+      "score": {
+        "width": 95,
+        "height": 77,
+        "area": 7315,
+        "physical_tiles": 1710,
+        "turns": 257,
+        "tuple": [
+          7315,
+          1710,
+          257
+        ]
+      },
+      "elapsed_ms": 1194.833667,
+      "attempts": 6,
+      "all_candidates_validated": true,
+      "failures": [],
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-layered-final-xy/round-1-x",
+      "selected_witness_sha256": "ebda81bd395f6d0751861b2f93fa0dd08e362c46ee1176b8c36b0bff73d3fb2c"
+    },
+    {
+      "name": "layered-final-yx",
+      "report": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-layered-final-yx/report.json",
+      "report_sha256": "d7f2a753c8ae79a3d7a518d972d5f6d19a28b52b0ade7b2148abd12941706f31",
+      "baseline": {
+        "kind": "baseline",
+        "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-cluster-packing/layered-final-matrix.json",
+        "sha256": "b64a2fad1d24b97b84f3526c4f27c4cb70a7622f207f4ef94e036482d2a7b372"
+      },
+      "axis_order": "yx",
+      "initial_score": {
+        "width": 107,
+        "height": 88,
+        "area": 9416,
+        "physical_tiles": 2242,
+        "turns": 257,
+        "tuple": [
+          9416,
+          2242,
+          257
+        ]
+      },
+      "score": {
+        "width": 97,
+        "height": 77,
+        "area": 7469,
+        "physical_tiles": 1728,
+        "turns": 257,
+        "tuple": [
+          7469,
+          1728,
+          257
+        ]
+      },
+      "elapsed_ms": 899.065041,
+      "attempts": 4,
+      "all_candidates_validated": true,
+      "failures": [],
+      "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/embedding-length-layered-final-yx/round-0-x",
+      "selected_witness_sha256": "f0bc7bf0c8d9586812e8dcaf52b19981d059450fbe6063a87ae60c71e3871f92"
+    }
+  ]
+}

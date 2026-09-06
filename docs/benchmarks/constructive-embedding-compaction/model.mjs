@@ -1,4 +1,5 @@
 import { rotateFacility } from '../constructive-placement-only/model.mjs';
+import { minimizeLinearCost } from './length.mjs';
 const key = p => `${p.x},${p.y}`;
 const sameRate = (a, b) => BigInt(a.numerator) * BigInt(b.denominator) === BigInt(b.numerator) * BigInt(a.denominator);
 const delta = { north: [0, -1], east: [1, 0], south: [0, 1], west: [-1, 0] };
@@ -116,7 +117,36 @@ export function compactEmbedding(detail, catalogs, axis = 'x', { pointBudget = 1
   }
   const modelMs = performance.now() - started, solveStart = performance.now();
   const solution = solveDifferences(groups.map(g => g.lower), [...edges.values()], groups.map(g => g.original), relaxationBudget);
-  const solveMs = performance.now() - solveStart, lowerStart = performance.now();
+  const extentSolveMs = performance.now() - solveStart, lengthStart = performance.now();
+  const chains = w.transport_networks.map((n, i) => {
+    const result = [];
+    for (const s of n.segments) if (critical.has(lookup.get(key(s.from)))) {
+      let end = s.to, steps = 0;
+      while (!critical.has(lookup.get(key(end)))) {
+        const next = indexes[i].outs.get(key(end));
+        if (next?.length !== 1 || !sameRate(s.rate, next[0].rate) || ++steps > n.cells.length) fail('compaction-straight-chain', 'Invalid suppressed chain', n.id);
+        end = next[0].to;
+      }
+      result.push({ from: s.from, to: end, rate: s.rate });
+    }
+    return result;
+  });
+  const span = solution.values[owner.get(high)] + offsets.get(high), upper = groups.map(() => Infinity), costs = groups.map(() => 0), seen = new Set();
+  let costOffset = 0, originalCost = 0;
+  for (const id of retained) upper[owner.get(id)] = Math.min(upper[owner.get(id)], span - offsets.get(id));
+  upper[owner.get(low)] = Math.min(upper[owner.get(low)], -offsets.get(low));
+  const tightUpper = solveDifferences(upper.map(x => -x), [...edges.values()].map(e => ({ from: e.to, to: e.from, weight: e.weight })), solution.values.map(x => -x), relaxationBudget).values.map(x => -x);
+  for (let i = 0; i < chains.length; i++) for (const c of chains[i]) {
+    const from = lookup.get(key(c.from)), to = lookup.get(key(c.to)), sign = Math.sign(c.to[axis] - c.from[axis]);
+    const physical = `${w.transport_networks[i].transport}:${Math.min(from, to)}:${Math.max(from, to)}`;
+    if (!sign || seen.has(physical)) continue; seen.add(physical);
+    costs[owner.get(from)] -= sign; costs[owner.get(to)] += sign;
+    costOffset += sign * (offsets.get(to) - offsets.get(from));
+    originalCost += Math.abs(c.to[axis] - c.from[axis]);
+  }
+  const lengthLower = solution.values, length = minimizeLinearCost(lengthLower, tightUpper, [...edges.values()], costs);
+  solution.values = length.values;
+  const lengthMs = performance.now() - lengthStart, solveMs = performance.now() - solveStart, lowerStart = performance.now();
   const move = p => {
     const id = lookup.get(key(p));
     if (!owner.has(id)) fail('compaction-unretained-event', 'Attempted to translate a suppressed interior', p);
@@ -125,13 +155,8 @@ export function compactEmbedding(detail, catalogs, axis = 'x', { pointBudget = 1
   let materialized = 0;
   const networks = w.transport_networks.map((n, i) => {
     const cells = new Map(n.cells.filter(p => critical.has(lookup.get(key(p)))).map(p => { const q = move(p); return [key(q), q]; })), segments = [];
-    for (const s of n.segments) if (critical.has(lookup.get(key(s.from)))) {
-      let end = s.to, steps = 0;
-      while (!critical.has(lookup.get(key(end)))) {
-        const next = indexes[i].outs.get(key(end));
-        if (next?.length !== 1 || !sameRate(s.rate, next[0].rate) || ++steps > n.cells.length) fail('compaction-straight-chain', 'Invalid suppressed chain', n.id);
-        end = next[0].to;
-      }
+    for (const s of chains[i]) {
+      const end = s.to;
       const from = move(s.from), to = move(end), dx = Math.sign(to.x - from.x), dy = Math.sign(to.y - from.y);
       const length = Math.abs(to.x - from.x) + Math.abs(to.y - from.y);
       if ((!dx && !dy) || (dx && dy) || Math.sign(end[axis] - s.from[axis]) !== Math.sign(to[axis] - from[axis]))
@@ -145,6 +170,9 @@ export function compactEmbedding(detail, catalogs, axis = 'x', { pointBudget = 1
     return { ...n, cells: [...cells.values()], segments, terminals: n.terminals.map(t => ({ ...t, position: move(t.position) })) };
   });
   const witness = { ...w, placements: w.placements.map(move), logistics_components: w.logistics_components.map(c => ({ ...c, position: move(c.position) })), transport_networks: networks };
+  const tiles = w => new Set(w.transport_networks.flatMap(n => n.cells.map(p => `${n.transport}:${key(p)}`))).size;
+  const tileDelta = tiles(w) - tiles(witness), predictedDelta = originalCost - (length.primal + costOffset);
+  if (tileDelta !== predictedDelta) fail('compaction-length-certificate', 'Chain cost does not match actual physical tile change', { tileDelta, predictedDelta });
   const ports = Object.create(null);
   for (const p of witness.placements) {
     const shape = rotateFacility(catalogs.facilities.facilities.find(f => f.id === p.facility), p.rotation);
@@ -154,7 +182,9 @@ export function compactEmbedding(detail, catalogs, axis = 'x', { pointBudget = 1
   const certificate = { axis, points: points.length - 2, retained_points: critical.size, groups: groups.length, constraints: edges.size,
     relaxations: solution.relaxations, examined: solution.examined, original_extent: max - min + 1,
     resulting_extent: solution.values[owner.get(high)] + offsets.get(high) + 1,
-    scope: 'least extent for fixed perpendicular geometry, row order, layer coincidences and chain topology',
+    scope: 'minimum extent then physical tiles for fixed perpendicular geometry, row order, layer coincidences and chain topology',
+    length: { ...length, costs, lower: lengthLower, upper: tightUpper, cost_offset: costOffset, original_chain_cost: originalCost, resulting_chain_cost: length.primal + costOffset,
+      actual_tile_delta: tileDelta, predicted_tile_delta: predictedDelta },
     coordinates: retained.map(id => ({ original: points[id], group: owner.get(id), offset: offsets.get(id) })),
     lower: groups.map(g => g.lower), original: groups.map(g => g.original), edges: [...edges.values()], values: solution.values };
   // Geometry plans refer to the old coordinates; do not expose them as current placement decisions.
@@ -162,6 +192,7 @@ export function compactEmbedding(detail, catalogs, axis = 'x', { pointBudget = 1
   const candidate = structuredClone({ schema_version: detail.schema_version, case: detail.case, embedding: `${detail.embedding}-fixed-${axis}`,
     labels: detail.labels, witness, catalog_ports: ports, port_groups: { sources: [], targets: [] },
     accepted: false, factory_validated: false, pre_embedding_compaction: pre_embedding_compaction ?? metadata, compaction_certificate: certificate });
-  candidate.compaction_timings = { model_ms: modelMs, solve_ms: solveMs, lowering_and_copy_ms: performance.now() - lowerStart, total_ms: performance.now() - started };
+  candidate.compaction_timings = { model_ms: modelMs, solve_ms: solveMs, extent_solve_ms: extentSolveMs, length_ms: lengthMs,
+    lowering_and_copy_ms: performance.now() - lowerStart, total_ms: performance.now() - started };
   return candidate;
 }

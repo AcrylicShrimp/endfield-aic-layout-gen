@@ -24,7 +24,10 @@ The resulting difference constraints have form X[v] >= X[u] + weight. Their orig
 are a feasible certificate. Starting from nonnegative coordinate lower bounds, longest-path
 relaxation gives the componentwise least feasible solution. This minimizes the moving-axis extent
 for this fixed perpendicular geometry, row order, coincidences and suppressed-chain topology.
-It does not minimize arbitrary layout area. Re-expansion restores unit segments with exact rates.
+Then fix that minimum extent and minimize physical parallel-chain length using the bounded integer
+minimum-closure model in `length-contract.md`. The secondary solution need not be componentwise
+least; it preserves the minimum extent. Neither phase minimizes arbitrary layout area.
+Re-expansion restores unit segments with exact rates and checks predicted versus actual tile change.
 Original coordinate feasibility is checked before solving. Explicit point/relaxation/materialization
 budgets report a diagnostic limit, never global infeasibility; input geometry is never mutated.
 
