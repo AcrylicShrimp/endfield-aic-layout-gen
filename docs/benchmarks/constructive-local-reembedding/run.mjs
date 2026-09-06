@@ -16,15 +16,17 @@ try {
   const keys = ['graph', 'baseline', 'recipes', 'facilities', 'items', 'transports', 'components', 'validator', 'output-directory'], options = {}, args = process.argv.slice(2);
   for (let i = 0; i < args.length; i += 2) {
     const k = args[i].slice(2);
-    if (!args[i].startsWith('--') || ![...keys, 'rounds', 'mode', 'move-limit', 'move-family', 'endpoint-policy'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
+    if (!args[i].startsWith('--') || ![...keys, 'rounds', 'mode', 'move-limit', 'move-family', 'endpoint-policy', 'junction-policy'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
     options[k] = args[i + 1];
   }
   for (const k of keys) if (!options[k]) throw new Error(`Missing --${k}`);
   const rounds = Number(options.rounds ?? 2), mode = options.mode ?? 'joint', limit = Number(options['move-limit'] ?? 64);
   const moveFamily = options['move-family'] ?? 'single';
   const endpointPolicy = options['endpoint-policy'] ?? 'retained';
+  const junctionPolicy = options['junction-policy'] ?? 'internal';
+  if (!['internal', 'downstream'].includes(junctionPolicy)) throw new Error('Expected --junction-policy internal|downstream');
   if (!['retained', 'terminal-flexible'].includes(endpointPolicy)) throw new Error('Expected --endpoint-policy retained|terminal-flexible');
-  if (!['single', 'group'].includes(moveFamily)) throw new Error('Expected --move-family single|group');
+  if (!['single', 'group', 'cone'].includes(moveFamily)) throw new Error('Expected --move-family single|group|cone');
   if (!Number.isSafeInteger(rounds) || rounds < 1 || rounds > 8 || !Number.isSafeInteger(limit) || limit < 1 || limit > 512 || !['fixed', 'move', 'joint'].includes(mode))
     throw new Error('Expected --rounds 1..8, --mode fixed|move|joint and --move-limit 1..512');
   output = path.resolve(options['output-directory']); fs.mkdirSync(output); created = true; const began = performance.now();
@@ -49,7 +51,7 @@ try {
   if (!selected.factory_validated) throw new Error('Complete incumbent failed independent graph validation');
   const initialScore = selected.score;
   const attempt = async (parent, request, context) => {
-    request = { ...request, endpointPolicy };
+    request = { ...request, endpointPolicy, junctionPolicy };
     const record = { ...context, request, parent_directory: parent.directory }; stages.push(record);
     try {
       const r = reembed(parent.detail, catalogs, request); generationMs += r.elapsed_ms;
@@ -83,17 +85,18 @@ try {
       for (let id = 0; id < count; id++) await attempt(selected, { chainIds: [id] }, { round, phase: 'fixed-path', ordinal: id });
     }
     if (mode !== 'fixed') {
-      const parent = selected, start = performance.now(), portfolio = moveFamily === 'group' ? groupCandidates(parent.detail, graph, catalogs, { limit }) :
+      const parent = selected, start = performance.now(), portfolio = moveFamily !== 'single' ? groupCandidates(parent.detail, graph, catalogs, { limit, cones: moveFamily === 'cone', junctionPolicy }) :
         { candidates: relocationCandidates(parent.detail, { limit }) }, moves = portfolio.candidates; generationMs += performance.now() - start;
       neighborhoods.push({ round, parent_directory: parent.directory, groups: portfolio.groups, voids: portfolio.voids, selected_positions: moves.length,
-        void_positions: moves.filter(m => m.void_candidate).length, increasing_distance_positions: moves.filter(m => m.endpoint_delta > 0).length });
+        void_positions: moves.filter(m => m.void_candidate).length, increasing_distance_positions: moves.filter(m => m.endpoint_delta > 0).length,
+        kinds: Object.fromEntries([...new Set(moves.map(m => m.kind))].map(kind => [kind, moves.filter(m => m.kind === kind).length])) });
       for (const diagnostic of portfolio.diagnostics ?? []) failures.push({ round, phase: 'group-screen', ...diagnostic });
       for (const [ordinal, move] of moves.entries()) for (const order of ['near', 'far']) await attempt(parent, { move, order }, { round, phase: 'relocate', ordinal });
     }
     if (selected === before) { termination = 'unimproved-neighborhood'; break; }
   }
   const report = { schema_version: 1, status: better(selected.score.tuple, initialScore.tuple) ? 'complete-factory-improved' : 'complete-incumbent-retained', factory_validated: true,
-    selected_directory: selected.directory, initial_score: initialScore, score: selected.score, mode, rounds, move_limit: limit, move_family: moveFamily, move_schema_version: 2, endpoint_policy: endpointPolicy, termination,
+    selected_directory: selected.directory, initial_score: initialScore, score: selected.score, mode, rounds, move_limit: limit, move_family: moveFamily, move_schema_version: 2, endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, termination,
     generation_ms: generationMs, compaction_ms: compactionMs, validation_output_ms: validationMs, elapsed_ms: performance.now() - began, neighborhoods, stages, failures,
     provenance: keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
     source_hashes: Object.fromEntries(['model.mjs', 'movement.mjs', 'groups.mjs', 'path.mjs', 'run.mjs', '../constructive-embedding-compaction/model.mjs', '../constructive-embedding-compaction/length.mjs',

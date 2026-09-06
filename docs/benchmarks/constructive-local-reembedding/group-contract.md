@@ -26,3 +26,38 @@ generation and validation costs. Compare whole-factory area with the complete in
 substitute sum of group areas. Test translated zero-length terminals, mixed boundary ownership,
 internal junctions, displaced wires, nonmutation and actual complete recipe closure. Inspect the
 large void and displaced process links in actual before/after renders, not merely summary scores.
+
+## Dependency-cone extension
+
+The opt-in `--move-family cone` retains the existing group proposals and adds bounded
+upstream/downstream dependency cones. Starting from each graph node, add complete BFS
+layers of internal predecessors or successors, at most four layers and sixteen members.
+Never truncate a layer to meet the budget. Deduplicate member sets; external endpoints
+are not facilities and are excluded. This is a search neighborhood, not a graph rewrite
+or a claim that all selected nodes form an atomic production SCC.
+
+The move DTO and physical movement contract are unchanged: translate eligible internal
+geometry, rip up boundary/displaced chains, restore all rates and validate the complete
+factory before accepting an area/cell/turn improvement. Preserve the old `group` family
+as an explicit experimental control. Record the selected family and proposal kinds;
+compare the same complete incumbent and inspect the resulting void and crossing geometry.
+
+The opt-in `--junction-policy downstream` may also carry an entire connected nonterminal
+anchor cluster when every outgoing boundary terminal is an input of a selected facility.
+At least one such outgoing terminal is required. Every moved external-supply connection
+is rerouted; no external terminal moves. Otherwise retain the cluster. Preserve the
+`internal` control (all adjacent terminal owners must be selected). The cluster includes
+all joined bridge arms and rate-change anchors, not an arbitrary subset of a component.
+Its geometry and component rotation translate rigidly. This is a conservative directed
+ownership heuristic, not proof that other junction poses are impossible.
+
+For rejected moves, the native viewer may receive `move_diagnostic` alongside the
+unchanged validated witness: `instances`, integer `dx/dy`, a diagnostic `code` and
+`failed_endpoints` in the proposed coordinates. Red dashed bodies and red endpoint rings
+are a proposal overlay, not an accepted or partially routed factory. The base witness's
+validation must not be confused with acceptance of the highlighted proposal.
+
+Replay requests may supply `routePriority`, an ordered list of unique known chain IDs.
+Only chains already selected for rerouting are affected; this list neither deletes chains
+nor expands the rip-up set. Priority precedes the near/far heuristic, enabling bounded
+failure-first order probes. The default empty priority preserves existing ordering.

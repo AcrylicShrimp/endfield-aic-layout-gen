@@ -3,14 +3,16 @@ export const bodyCells = p => Array.from({ length: p.width * p.height }, (_, i) 
 const fail = (code, message, entity = null) => { throw Object.assign(new Error(message), { code, severity: 'info', stage: 'local-movement', entity }); };
 const tag = (tr, p) => `${tr}:${key(p)}`;
 
-export function movementPlan(w, chains, anchors, move) {
+export function movementPlan(w, chains, anchors, move, { junctionPolicy = 'internal' } = {}) {
+  if (!['internal', 'downstream'].includes(junctionPolicy)) fail('local-junction-policy', 'Expected internal or downstream junction ownership');
   if (!move || !Array.isArray(move.instances) || !move.instances.length || move.instances.length > 16 ||
     new Set(move.instances).size !== move.instances.length || !move.instances.every(id => w.placements.some(p => p.instance === id)) ||
     !Number.isSafeInteger(move.dx) || !Number.isSafeInteger(move.dy) || 'instance' in move || 'x' in move || 'y' in move)
     fail('local-move-input', 'Expected move DTO v2: instances (1..16 unique known IDs), integer dx/dy', move);
-  const selected = new Set(move.instances), moved = new Set(), adjacency = new Map(), terminals = new Map();
+  const selected = new Set(move.instances), moved = new Set(), adjacency = new Map(), outgoing = new Map(), terminals = new Map();
   for (const c of chains) {
     const a = tag(c.transport, c.cells[0]), b = tag(c.transport, c.cells.at(-1));
+    if (!outgoing.has(a)) outgoing.set(a, new Set()); outgoing.get(a).add(b);
     for (const [from, to] of [[a, b], [b, a]]) { if (!adjacency.has(from)) adjacency.set(from, new Set()); adjacency.get(from).add(to); }
   }
   for (const n of w.transport_networks) for (const t of n.terminals) {
@@ -21,7 +23,7 @@ export function movementPlan(w, chains, anchors, move) {
     if (!ts.every(own)) fail('local-shared-terminal-move', 'Shared terminal owners must move together', k);
     moved.add(k);
   }
-  // Connected nonterminal anchor clusters can move only with every incident terminal owner.
+  // Move whole nonterminal clusters; downstream ownership may release incoming supply paths.
   const visited = new Set();
   for (const start of adjacency.keys()) if (!terminals.has(start) && !visited.has(start)) {
     const queue = [start], neighbors = new Set(); visited.add(start);
@@ -29,7 +31,11 @@ export function movementPlan(w, chains, anchors, move) {
       if (terminals.has(v)) neighbors.add(v);
       else if (!visited.has(v)) { visited.add(v); queue.push(v); }
     }
-    if (neighbors.size && [...neighbors].every(v => terminals.get(v).every(own))) for (const v of queue) moved.add(v);
+    const sinks = new Set(queue.flatMap(v => [...(outgoing.get(v) ?? [])]).filter(v => terminals.has(v)));
+    const internal = neighbors.size && [...neighbors].every(v => terminals.get(v).every(own));
+    const downstream = junctionPolicy === 'downstream' && sinks.size &&
+      [...sinks].every(v => terminals.get(v).every(t => own(t) && t.direction === 'input'));
+    if (internal || downstream) for (const v of queue) moved.add(v);
   }
   const translate = p => ({ x: p.x + move.dx, y: p.y + move.dy });
   const movable = (tr, p) => moved.has(tag(tr, p));

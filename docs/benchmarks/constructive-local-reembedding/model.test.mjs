@@ -15,6 +15,19 @@ const make = b => structuredClone(compactInterface(constructCycle(catalogs, grap
 const margins = w => w.transport_networks.map(n => ({ id: n.id, item: n.item, transport: n.transport, requirement_ids: n.requirement_ids, terminals: n.terminals, component_ids: n.component_ids }));
 function freeze(value) { if (value && typeof value === 'object' && !Object.isFrozen(value)) { Object.freeze(value); for (const v of Object.values(value)) freeze(v); } return value; }
 
+test('explicit route priority changes only ordering, validates IDs and leaves the input intact', () => {
+  const d = freeze(make(blocks[0])), snapshot = structuredClone(d), { chains } = extractChains(d.witness), ids = chains.map(c => c.id);
+  assert.ok(ids.length > 1);
+  const r = reembed(d, catalogs, { chainIds: ids, routePriority: [...ids].reverse() });
+  assert.equal(r.routes[0].id, ids.at(-1));
+  assert.deepEqual(d, snapshot);
+  const without = reembed(d, catalogs, { chainIds: [ids[0]] });
+  const unrelated = reembed(d, catalogs, { chainIds: [ids[0]], routePriority: [ids.at(-1)] });
+  assert.deepEqual(unrelated.routes, without.routes);
+  assert.throws(() => reembed(d, catalogs, { routePriority: [ids[0], ids[0]] }), { code: 'local-route-priority' });
+  assert.throws(() => reembed(d, catalogs, { routePriority: [-1] }), { code: 'local-route-priority' });
+});
+
 test('only ordinary singleton terminal anchors release the retained segment arm', () => {
   const a = { x: 0, y: 0 }, b = { x: 2, y: 0 };
   const w = { logistics_components: [], transport_networks: [{ transport: 'belt', terminals: [{ position: a }, { position: b }] }] };

@@ -29,7 +29,29 @@ export function emptyRectangles(w, limit = 8) {
   return result;
 }
 
-export function connectedGroups(graph, catalogs) {
+export function dependencyCones(graph, { maxMembers = 16, maxDepth = 4 } = {}) {
+  if (!Number.isSafeInteger(maxMembers) || maxMembers < 2 || maxMembers > 16 ||
+    !Number.isSafeInteger(maxDepth) || maxDepth < 1 || maxDepth > 16) throw new Error('Expected cone budgets: members 2..16, depth 1..16');
+  const ids = new Set(graph.nodes.map(n => n.id)), edges = graph.edges.filter(e => e.internal), result = new Map();
+  if (edges.some(e => !ids.has(e.source) || !ids.has(e.target))) throw new Error('Internal cone edge references an unknown facility');
+  for (const direction of ['upstream', 'downstream']) {
+    const adjacent = new Map([...ids].map(id => [id, new Set()]));
+    for (const e of edges) adjacent.get(direction === 'upstream' ? e.target : e.source).add(direction === 'upstream' ? e.source : e.target);
+    for (const root of [...ids].sort()) {
+      let members = new Set([root]), frontier = [root];
+      for (let depth = 1; depth <= maxDepth; depth++) {
+        const next = new Set(frontier.flatMap(id => [...adjacent.get(id)]).filter(id => !members.has(id)));
+        if (!next.size || members.size + next.size > maxMembers) break;
+        members = new Set([...members, ...next]); frontier = [...next];
+        const instances = [...members].sort(), signature = JSON.stringify(instances);
+        if (!result.has(signature)) result.set(signature, { instances, kind: `${direction}-cone` });
+      }
+    }
+  }
+  return [...result.values()];
+}
+
+export function connectedGroups(graph, catalogs, { cones = false } = {}) {
   const groups = new Map(), add = (ids, kind) => {
     const sorted = [...new Set(ids)].sort(); if (sorted.length < 2 || sorted.length > 8) return;
     const k = JSON.stringify(sorted); if (!groups.has(k)) groups.set(k, { instances: sorted, kind });
@@ -41,19 +63,24 @@ export function connectedGroups(graph, catalogs) {
     const incoming = [...new Set(edges.filter(e => e.target === n.id).map(e => e.source))], outgoing = [...new Set(edges.filter(e => e.source === n.id).map(e => e.target))];
     if (incoming.length === 1 && outgoing.length === 1) add([incoming[0], n.id, outgoing[0]], 'serial');
   }
+  if (cones) for (const g of dependencyCones(graph)) {
+    const signature = JSON.stringify(g.instances); if (!groups.has(signature)) groups.set(signature, g);
+  }
   return [...groups.values()];
 }
 
-export function groupCandidates(detail, graph, catalogs, { limit = 64 } = {}) {
+export function groupCandidates(detail, graph, catalogs, { limit = 64, cones = false, junctionPolicy = 'internal' } = {}) {
   if (!Number.isSafeInteger(limit) || limit < 1 || limit > 512) throw new Error('Expected group candidate limit 1..512');
+  if (!['internal', 'downstream'].includes(junctionPolicy)) throw new Error('Expected internal or downstream junction ownership');
   const w = detail.witness, { chains, anchors } = extractChains(w), bounds = extentOf(w), candidates = [], diagnostics = [];
-  const groups = connectedGroups(graph, catalogs), voids = emptyRectangles(w);
+  const groups = connectedGroups(graph, catalogs, { cones }), voids = emptyRectangles(w);
   for (const [ordinal, group] of groups.entries()) {
     const ids = new Set(group.instances), moving = w.placements.filter(p => ids.has(p.instance)), retained = w.placements.filter(p => !ids.has(p.instance));
+    if (!moving.length || !retained.length) continue;
     const box = ps => ({ minX: Math.min(...ps.map(p => p.x)), minY: Math.min(...ps.map(p => p.y)), maxX: Math.max(...ps.map(p => p.x + p.width - 1)), maxY: Math.max(...ps.map(p => p.y + p.height - 1)) });
     const a = box(moving), b = box(retained), width = a.maxX - a.minX + 1, height = a.maxY - a.minY + 1;
     let seed;
-    try { seed = movementPlan(w, chains, anchors, { instances: group.instances, dx: 0, dy: 0 }); }
+    try { seed = movementPlan(w, chains, anchors, { instances: group.instances, dx: 0, dy: 0 }, { junctionPolicy }); }
     catch (e) { diagnostics.push({ group: ordinal, code: e.code, message: e.message }); continue; }
     const xs = new Set([bounds.minX - a.minX, bounds.maxX - a.maxX, 0]), ys = new Set([bounds.minY - a.minY, bounds.maxY - a.maxY, 0]);
     for (const p of retained) {
@@ -85,7 +112,7 @@ export function groupCandidates(detail, graph, catalogs, { limit = 64 } = {}) {
       for (const move of sorted.slice(0, 128)) {
         const k = `${move.dx},${move.dy}`; if (seen.has(k)) continue;
         try {
-          const plan = movementPlan(w, chains, anchors, move);
+          const plan = movementPlan(w, chains, anchors, move, { junctionPolicy });
           // Every carried cell, not only its body, must stay inside this explicit neighborhood.
           if ([...plan.fixedChains.values()].flat().some(p => p.x < bounds.minX || p.x > bounds.maxX || p.y < bounds.minY || p.y > bounds.maxY)) continue;
           if ([...plan.moved].some(tag => { const p = tag.slice(tag.indexOf(':') + 1).split(',').map(Number); return p[0] + move.dx < bounds.minX || p[0] + move.dx > bounds.maxX || p[1] + move.dy < bounds.minY || p[1] + move.dy > bounds.maxY; })) continue;
