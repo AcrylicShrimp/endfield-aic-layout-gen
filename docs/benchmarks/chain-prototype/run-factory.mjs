@@ -24,7 +24,7 @@ try {
   const catalogs = Object.fromEntries(catalogKeys.map(k => [k, read(options[k])]));
   const graph = prepareFactory(read(options.request), catalogs), output = path.resolve(options['output-directory']);
   const provenance = keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) }));
-  for (const relative of ['./run-factory.mjs', './factory.mjs', './factory-input.mjs', './factory-check.mjs', './factory-geometry.mjs', './factory-routing.mjs', './factory-boundary.mjs', './factory-access.mjs',
+  for (const relative of ['./run-factory.mjs', './factory.mjs', './factory-kernel.mjs', './factory-input.mjs', './factory-check.mjs', './factory-geometry.mjs', './factory-routing.mjs', './factory-boundary.mjs', './factory-access.mjs',
     './geometry.mjs', './input.mjs', './work.mjs', '../constructive-local-reembedding/path.mjs', '../constructive-placement-only/model.mjs', '../constructive-interconnect/rates.mjs',
     '../constructive-auto-interface/compact.mjs', '../constructive-embedding-compaction/validator.mjs', '../constructive-bound-interconnect/view.mjs']) {
     const source = fileURLToPath(new URL(relative, import.meta.url)); provenance.push({ kind: 'implementation', path: source, sha256: hash(source) });

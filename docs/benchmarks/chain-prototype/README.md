@@ -1,9 +1,9 @@
 # Chain-reasoning prototype
 
-Status: milestones 0–3 complete. Simple chains, atomic cycle/branch groups, multi-input composition
-and complete external factories are implemented within the documented graph class and controls.
-Completion-aware evaluation, bounded committed-chain rollback and equal-total-work comparison
-remain in progress.
+Status: milestones 0–4 complete. Routed chain/cycle/fan-in construction, explicit external
+factories, shape-sensitive fit estimates and bounded connected replay with complete-incumbent
+evaluation are implemented within the documented graph class and controls. Equal-total-work
+comparison and the final research recommendation remain in progress.
 This directory is the separate experimental entry point; production commands remain unchanged.
 
 ## Implemented entry point
@@ -25,6 +25,13 @@ Eleven of sixteen same-cap first-priority controls produce complete factories, i
 three recipe families and both iron inventories. The default straight-first battery still
 stops; only its explicit right-first control completes. These are first-completion results,
 not completion-aware optimization or a universal-success claim.
+
+See the [replay contract](replay-contract.md) and [milestone-4 report](replay-report.md) for
+`run-replay.mjs` and `run-replay-controls.mjs`. Actual continuation reverses a generated iron
+partial-area ordering and improves complete incumbents while preserving frozen internal chains.
+Thirteen of sixteen proposal-order/ranking controls complete, but the greedy remaining-body
+fit ranking fails battery and is not generally better than partial-area ranking. The explicit
+failure controls remain part of the result, and no production default or fallback was changed.
 
 ## Contract direction
 

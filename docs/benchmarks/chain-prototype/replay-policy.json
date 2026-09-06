@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "ranking": "remaining-fit",
+  "proposal_order": "interleaved",
+  "shortlist": 4,
+  "trials": 8,
+  "rollback_facilities": 4,
+  "frontier_work": { "proposals": 128, "route_expansions": 25000, "validations": 32 },
+  "fit_checks": 8192,
+  "fit_slice": 1024
+}
