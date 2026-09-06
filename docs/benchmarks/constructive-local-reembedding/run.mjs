@@ -16,12 +16,14 @@ try {
   const keys = ['graph', 'baseline', 'recipes', 'facilities', 'items', 'transports', 'components', 'validator', 'output-directory'], options = {}, args = process.argv.slice(2);
   for (let i = 0; i < args.length; i += 2) {
     const k = args[i].slice(2);
-    if (!args[i].startsWith('--') || ![...keys, 'rounds', 'mode', 'move-limit', 'move-family'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
+    if (!args[i].startsWith('--') || ![...keys, 'rounds', 'mode', 'move-limit', 'move-family', 'endpoint-policy'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
     options[k] = args[i + 1];
   }
   for (const k of keys) if (!options[k]) throw new Error(`Missing --${k}`);
   const rounds = Number(options.rounds ?? 2), mode = options.mode ?? 'joint', limit = Number(options['move-limit'] ?? 64);
   const moveFamily = options['move-family'] ?? 'single';
+  const endpointPolicy = options['endpoint-policy'] ?? 'retained';
+  if (!['retained', 'terminal-flexible'].includes(endpointPolicy)) throw new Error('Expected --endpoint-policy retained|terminal-flexible');
   if (!['single', 'group'].includes(moveFamily)) throw new Error('Expected --move-family single|group');
   if (!Number.isSafeInteger(rounds) || rounds < 1 || rounds > 8 || !Number.isSafeInteger(limit) || limit < 1 || limit > 512 || !['fixed', 'move', 'joint'].includes(mode))
     throw new Error('Expected --rounds 1..8, --mode fixed|move|joint and --move-limit 1..512');
@@ -47,6 +49,7 @@ try {
   if (!selected.factory_validated) throw new Error('Complete incumbent failed independent graph validation');
   const initialScore = selected.score;
   const attempt = async (parent, request, context) => {
+    request = { ...request, endpointPolicy };
     const record = { ...context, request, parent_directory: parent.directory }; stages.push(record);
     try {
       const r = reembed(parent.detail, catalogs, request); generationMs += r.elapsed_ms;
@@ -90,7 +93,7 @@ try {
     if (selected === before) { termination = 'unimproved-neighborhood'; break; }
   }
   const report = { schema_version: 1, status: better(selected.score.tuple, initialScore.tuple) ? 'complete-factory-improved' : 'complete-incumbent-retained', factory_validated: true,
-    selected_directory: selected.directory, initial_score: initialScore, score: selected.score, mode, rounds, move_limit: limit, move_family: moveFamily, move_schema_version: 2, termination,
+    selected_directory: selected.directory, initial_score: initialScore, score: selected.score, mode, rounds, move_limit: limit, move_family: moveFamily, move_schema_version: 2, endpoint_policy: endpointPolicy, termination,
     generation_ms: generationMs, compaction_ms: compactionMs, validation_output_ms: validationMs, elapsed_ms: performance.now() - began, neighborhoods, stages, failures,
     provenance: keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) })),
     source_hashes: Object.fromEntries(['model.mjs', 'movement.mjs', 'groups.mjs', 'path.mjs', 'run.mjs', '../constructive-embedding-compaction/model.mjs', '../constructive-embedding-compaction/length.mjs',

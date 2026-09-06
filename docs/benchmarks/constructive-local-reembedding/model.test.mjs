@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { normalizeGraph, extractCycles } from '../constructive-cycle-blocks/graph.mjs';
 import { constructCycle } from '../constructive-cycle-blocks/model.mjs';
 import { compactInterface } from '../constructive-auto-interface/compact.mjs';
-import { reembed, relocationCandidates, extractChains } from './model.mjs';
+import { reembed, relocationCandidates, extractChains, flexibleTerminalAnchors } from './model.mjs';
 import { key, direction } from './path.mjs';
 import { witnessKey } from '../constructive-embedding-compaction/transactions.mjs';
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
@@ -14,6 +14,42 @@ const graph = normalizeGraph(read('../constructive-chain-blocks/gap-1-placement.
 const make = b => structuredClone(compactInterface(constructCycle(catalogs, graph, b, 'root'), catalogs));
 const margins = w => w.transport_networks.map(n => ({ id: n.id, item: n.item, transport: n.transport, requirement_ids: n.requirement_ids, terminals: n.terminals, component_ids: n.component_ids }));
 function freeze(value) { if (value && typeof value === 'object' && !Object.isFrozen(value)) { Object.freeze(value); for (const v of Object.values(value)) freeze(v); } return value; }
+
+test('only ordinary singleton terminal anchors release the retained segment arm', () => {
+  const a = { x: 0, y: 0 }, b = { x: 2, y: 0 };
+  const w = { logistics_components: [], transport_networks: [{ transport: 'belt', terminals: [{ position: a }, { position: b }] }] };
+  const chains = [{ transport: 'belt', cells: [a, { x: 1, y: 0 }, b] }];
+  assert.deepEqual([...flexibleTerminalAnchors(w, chains)], ['belt:0,0', 'belt:2,0']);
+  w.logistics_components.push({ transport: 'belt', position: a });
+  assert.deepEqual([...flexibleTerminalAnchors(w, chains)], ['belt:2,0']);
+  w.transport_networks[0].terminals.push({ position: b });
+  assert.equal(flexibleTerminalAnchors(w, chains).size, 0);
+  w.transport_networks[0].terminals.pop();
+  chains.push({ transport: 'belt', cells: [b, { x: 3, y: 0 }] });
+  assert.equal(flexibleTerminalAnchors(w, chains).size, 0);
+});
+
+test('flexible terminal reroutes preserve actual catalog margins and immutable input', () => {
+  let changedArm = 0;
+  for (const block of blocks) {
+    const d = freeze(make(block)), snapshot = structuredClone(d), { chains } = extractChains(d.witness);
+    for (const c of chains) {
+      const r = reembed(d, catalogs, { chainIds: [c.id], endpointPolicy: 'terminal-flexible' });
+      assert.deepEqual(d, snapshot);
+      if (r.status !== 'candidate') continue;
+      assert.deepEqual(margins(r.detail.witness), margins(d.witness));
+      assert.deepEqual(r.detail.witness.placements, d.witness.placements);
+      const updated = extractChains(r.detail.witness).chains.find(a => a.network === c.network && key(a.cells[0]) === key(c.cells[0]) && key(a.cells.at(-1)) === key(c.cells.at(-1)));
+      assert.ok(updated);
+      if (updated.first !== c.first || updated.last !== c.last) changedArm++;
+      assert.equal(r.detail.reembedding.endpoint_policy, 'terminal-flexible');
+      r.detail.witness.transport_networks[0].terminals[0].rate.numerator++;
+      assert.deepEqual(d, snapshot);
+    }
+  }
+  assert.ok(changedArm > 0, 'At least one actual catalog terminal must turn differently');
+  assert.throws(() => reembed(make(blocks[0]), catalogs, { endpointPolicy: 'unknown' }), { code: 'local-endpoint-policy' });
+});
 
 test('chains cover every directed segment and retain rates, not old bends', () => {
   for (const b of blocks) {

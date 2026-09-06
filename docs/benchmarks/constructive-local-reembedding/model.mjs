@@ -54,9 +54,23 @@ export function extentOf(w) {
     { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity });
 }
 
-export function reembed(detail, catalogs, { move = null, chainIds = [], order = 'near', workBudget = 200000 } = {}) {
+export function flexibleTerminalAnchors(w, chains) {
+  const tag = (tr, p) => `${tr}:${key(p)}`, terminals = new Map(), incident = new Map();
+  const components = new Set(w.logistics_components.map(c => tag(c.transport, c.position)));
+  for (const n of w.transport_networks) for (const t of n.terminals) {
+    const k = tag(n.transport, t.position); terminals.set(k, (terminals.get(k) ?? 0) + 1);
+  }
+  for (const c of chains) for (const p of [c.cells[0], c.cells.at(-1)]) {
+    const k = tag(c.transport, p); incident.set(k, (incident.get(k) ?? 0) + 1);
+  }
+  return new Set([...terminals].filter(([k, n]) => n === 1 && incident.get(k) === 1 && !components.has(k)).map(([k]) => k));
+}
+
+export function reembed(detail, catalogs, { move = null, chainIds = [], order = 'near', workBudget = 200000, endpointPolicy = 'retained' } = {}) {
   const began = performance.now(), original = detail.witness, { chains, anchors } = extractChains(original), bounds = extentOf(original);
   if (!['near', 'far'].includes(order)) fail('local-route-order', 'Expected near or far route order');
+  if (!['retained', 'terminal-flexible'].includes(endpointPolicy)) fail('local-endpoint-policy', 'Expected retained or terminal-flexible endpoint policy');
+  const flexible = endpointPolicy === 'terminal-flexible' ? flexibleTerminalAnchors(original, chains) : new Set();
   const changed = new Set(chainIds);
   if ([...changed].some(i => !Number.isSafeInteger(i) || !chains[i])) fail('local-chain-id', 'Unknown chain id');
   const movement = move ? movementPlan(original, chains, anchors, move) : null;
@@ -76,7 +90,8 @@ export function reembed(detail, catalogs, { move = null, chainIds = [], order = 
   const relocated = (p, tr) => movement?.movable(tr, p) ? movement.translate(p) : p;
   const jobs = [...changed].map(i => {
     const c = chains[i], start = relocated(c.cells[0], c.transport), end = relocated(c.cells.at(-1), c.transport);
-    return { ...c, start, end };
+    return { ...c, start, end, first: flexible.has(`${c.transport}:${key(c.cells[0])}`) ? null : c.first,
+      last: flexible.has(`${c.transport}:${key(c.cells.at(-1))}`) ? null : c.last };
   }).sort((a, b) => (order === 'near' ? 1 : -1) * (distance(a.start, a.end) - distance(b.start, b.end)) || a.id - b.id);
   const body = new Set(w.placements.flatMap(cellsOf).map(key)), occupied = { belt: new Set(), pipe: new Set() };
   for (const c of chains) if (!changed.has(c.id)) for (const p of paths.get(c.id) ?? c.cells) occupied[c.transport].add(key(p));
@@ -85,8 +100,8 @@ export function reembed(detail, catalogs, { move = null, chainIds = [], order = 
   for (const j of jobs) { occupied[j.transport].add(key(j.start)); occupied[j.transport].add(key(j.end)); }
   const reservations = { belt: new Map(), pipe: new Map() };
   for (const j of jobs) {
-    for (const p of [{ x: j.start.x + directions[j.first][0], y: j.start.y + directions[j.first][1] },
-      { x: j.end.x - directions[j.last][0], y: j.end.y - directions[j.last][1] }]) {
+    for (const p of [j.first === null ? null : { x: j.start.x + directions[j.first][0], y: j.start.y + directions[j.first][1] },
+      j.last === null ? null : { x: j.end.x - directions[j.last][0], y: j.end.y - directions[j.last][1] }].filter(Boolean)) {
       const k = key(p); if (!reservations[j.transport].has(k)) reservations[j.transport].set(k, new Set()); reservations[j.transport].get(k).add(j.id);
     }
   }
@@ -97,7 +112,7 @@ export function reembed(detail, catalogs, { move = null, chainIds = [], order = 
     if (body.has(key(job.start)) || body.has(key(job.end))) fail('local-endpoint-body', 'Route endpoint intersects a body', job.id);
     blocked.delete(key(job.start)); blocked.delete(key(job.end));
     const result = shortestPath(job.start, job.end, blocked, bounds, { first: job.first, last: job.last, workBudget });
-    results.push({ id: job.id, item: job.item, status: result.status, expanded: result.expanded, old_steps: job.cells.length - 1, steps: result.steps, turns: result.turns });
+    results.push({ id: job.id, item: job.item, first: job.first, last: job.last, status: result.status, expanded: result.expanded, old_steps: job.cells.length - 1, steps: result.steps, turns: result.turns });
     if (result.status !== 'found') return { status: 'rejected', diagnostics: [{ code: `local-${result.status}`, severity: 'info', stage: 'local-reembedding', entity: job.id,
       message: 'Affected chain could not be restored within this candidate neighborhood' }], affected_chains: jobs.map(j => ({ id: j.id, item: j.item })), routes: results, elapsed_ms: performance.now() - began };
     paths.set(job.id, result.cells); for (const p of result.cells) occupied[job.transport].add(key(p));
@@ -117,7 +132,7 @@ export function reembed(detail, catalogs, { move = null, chainIds = [], order = 
   }
   const score = witnessScore(w), candidate = { schema_version: 1, case: 'complete-local-reembedding', embedding: 'local-astar', labels: structuredClone(detail.labels),
     witness: structuredClone(w), catalog_ports: project(w, catalogs), port_groups: { sources: [], targets: [] }, accepted: false, factory_validated: false,
-    reembedding: { move_schema_version: 2, move, order, carried_components: movement?.components ?? [], translated_chains: movement ? [...movement.fixedChains.keys()].filter(id => !changed.has(id)) : [], affected_chains: jobs.map(j => j.id), routes: results } };
+    reembedding: { move_schema_version: 2, endpoint_policy: endpointPolicy, move, order, carried_components: movement?.components ?? [], translated_chains: movement ? [...movement.fixedChains.keys()].filter(id => !changed.has(id)) : [], affected_chains: jobs.map(j => j.id), routes: results } };
   return { status: 'candidate', detail: candidate, score, affected_chains: jobs.map(j => ({ id: j.id, item: j.item })), routes: results, elapsed_ms: performance.now() - began };
 }
 

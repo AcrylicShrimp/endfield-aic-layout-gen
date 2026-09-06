@@ -1,0 +1,2880 @@
+{
+  "schema_version": 1,
+  "status": "complete-incumbent-retained",
+  "factory_validated": true,
+  "selected_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+  "initial_score": {
+    "width": 75,
+    "height": 61,
+    "area": 4575,
+    "physical_tiles": 1383,
+    "turns": 211,
+    "tuple": [
+      4575,
+      1383,
+      211
+    ]
+  },
+  "score": {
+    "width": 75,
+    "height": 61,
+    "area": 4575,
+    "physical_tiles": 1383,
+    "turns": 211,
+    "tuple": [
+      4575,
+      1383,
+      211
+    ]
+  },
+  "mode": "fixed",
+  "rounds": 3,
+  "move_limit": 64,
+  "move_family": "single",
+  "move_schema_version": 2,
+  "endpoint_policy": "retained",
+  "termination": "unimproved-neighborhood",
+  "generation_ms": 1041.793455,
+  "compaction_ms": 957.5570819999997,
+  "validation_output_ms": 68.525,
+  "elapsed_ms": 2128.139583,
+  "neighborhoods": [],
+  "stages": [
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 0,
+      "request": {
+        "chainIds": [
+          0
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 16.032207999999997,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 0,
+          "item": "item-plant-moss-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 2,
+          "old_steps": 1,
+          "steps": 1,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 1,
+      "request": {
+        "chainIds": [
+          1
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 14.390332999999998,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 1,
+          "item": "item-plant-moss-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 11,
+          "old_steps": 5,
+          "steps": 5,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 2,
+      "request": {
+        "chainIds": [
+          2
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 9.442249999999973,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 2,
+          "item": "item-plant-moss-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 2,
+          "old_steps": 1,
+          "steps": 1,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 3,
+      "request": {
+        "chainIds": [
+          3
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 8.92316599999998,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 3,
+          "item": "item-plant-moss-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 5,
+          "old_steps": 4,
+          "steps": 4,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 4,
+      "request": {
+        "chainIds": [
+          4
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 9.563249999999982,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 4,
+          "item": "item-plant-moss-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 69,
+          "old_steps": 19,
+          "steps": 19,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 5,
+      "request": {
+        "chainIds": [
+          5
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 8.795749999999998,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 5,
+          "item": "item-plant-moss-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 10,
+          "old_steps": 9,
+          "steps": 9,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 6,
+      "request": {
+        "chainIds": [
+          6
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 9.415374999999983,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 6,
+          "item": "item-plant-moss-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 82,
+          "old_steps": 19,
+          "steps": 19,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 7,
+      "request": {
+        "chainIds": [
+          7
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 8.725415999999996,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 7,
+          "item": "item-plant-moss-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 3,
+          "old_steps": 2,
+          "steps": 2,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 8,
+      "request": {
+        "chainIds": [
+          8
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 9.152416000000017,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 8,
+          "item": "item-plant-moss-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 2,
+          "old_steps": 1,
+          "steps": 1,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 9,
+      "request": {
+        "chainIds": [
+          9
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 8.800457999999992,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 9,
+          "item": "item-plant-moss-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 7,
+          "old_steps": 6,
+          "steps": 6,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 10,
+      "request": {
+        "chainIds": [
+          10
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 12.428709000000026,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 10,
+          "item": "item-plant-moss-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 71,
+          "old_steps": 19,
+          "steps": 19,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 11,
+      "request": {
+        "chainIds": [
+          11
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 11.602457999999956,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 11,
+          "item": "item-plant-moss-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 2,
+          "old_steps": 1,
+          "steps": 1,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 12,
+      "request": {
+        "chainIds": [
+          12
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 9.544457999999963,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 12,
+          "item": "item-plant-moss-seed-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 20,
+          "old_steps": 19,
+          "steps": 19,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 13,
+      "request": {
+        "chainIds": [
+          13
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 10.820290999999997,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 13,
+          "item": "item-plant-moss-seed-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 250,
+          "old_steps": 30,
+          "steps": 30,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 14,
+      "request": {
+        "chainIds": [
+          14
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 8.328084000000047,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 14,
+          "item": "item-plant-moss-seed-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 20,
+          "old_steps": 19,
+          "steps": 19,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 15,
+      "request": {
+        "chainIds": [
+          15
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 8.71954199999999,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 15,
+          "item": "item-plant-moss-seed-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 84,
+          "old_steps": 30,
+          "steps": 30,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 16,
+      "request": {
+        "chainIds": [
+          16
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 7.766666999999984,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 16,
+          "item": "item-plant-moss-seed-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 2,
+          "old_steps": 1,
+          "steps": 1,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 17,
+      "request": {
+        "chainIds": [
+          17
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 8.033083999999974,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 17,
+          "item": "item-plant-moss-seed-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 60,
+          "old_steps": 20,
+          "steps": 20,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 18,
+      "request": {
+        "chainIds": [
+          18
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 7.588792000000012,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 18,
+          "item": "item-plant-moss-seed-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 2,
+          "old_steps": 1,
+          "steps": 1,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 19,
+      "request": {
+        "chainIds": [
+          19
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 29.026792,
+      "status": "unimproved",
+      "routes": [
+        {
+          "id": 19,
+          "item": "item-plant-moss-seed-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 14,
+          "old_steps": 7,
+          "steps": 7,
+          "turns": 4
+        }
+      ],
+      "affected_chains": [
+        {
+          "id": 19,
+          "item": "item-plant-moss-seed-2"
+        }
+      ],
+      "raw_score": {
+        "width": 75,
+        "height": 61,
+        "area": 4575,
+        "physical_tiles": 1383,
+        "turns": 211,
+        "tuple": [
+          4575,
+          1383,
+          211
+        ]
+      },
+      "compaction_ms": 194.896708,
+      "score": {
+        "width": 75,
+        "height": 61,
+        "area": 4575,
+        "physical_tiles": 1383,
+        "turns": 211,
+        "tuple": [
+          4575,
+          1383,
+          211
+        ]
+      }
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 20,
+      "request": {
+        "chainIds": [
+          20
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 24.402541999999926,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 20,
+          "item": "item-plant-moss-seed-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 20,
+          "old_steps": 19,
+          "steps": 19,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 21,
+      "request": {
+        "chainIds": [
+          21
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 16.953082999999992,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 21,
+          "item": "item-plant-moss-seed-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 88,
+          "old_steps": 30,
+          "steps": 30,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 22,
+      "request": {
+        "chainIds": [
+          22
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 11.620834000000059,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 22,
+          "item": "item-plant-moss-seed-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 2,
+          "old_steps": 1,
+          "steps": 1,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 23,
+      "request": {
+        "chainIds": [
+          23
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 11.334958000000029,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 23,
+          "item": "item-plant-moss-seed-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 36,
+          "old_steps": 16,
+          "steps": 16,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 24,
+      "request": {
+        "chainIds": [
+          24
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 9.480749999999944,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 24,
+          "item": "item-plant-moss-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 2,
+          "old_steps": 1,
+          "steps": 1,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 25,
+      "request": {
+        "chainIds": [
+          25
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 11.80879200000004,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 25,
+          "item": "item-plant-moss-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 454,
+          "old_steps": 41,
+          "steps": 41,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 26,
+      "request": {
+        "chainIds": [
+          26
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 11.063750000000027,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 26,
+          "item": "item-plant-moss-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 3,
+          "old_steps": 2,
+          "steps": 2,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 27,
+      "request": {
+        "chainIds": [
+          27
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 11.510125000000016,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 27,
+          "item": "item-plant-moss-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 3,
+          "old_steps": 2,
+          "steps": 2,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 28,
+      "request": {
+        "chainIds": [
+          28
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 10.695958000000019,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 28,
+          "item": "item-plant-moss-3",
+          "first": 1,
+          "last": 0,
+          "status": "found",
+          "expanded": 7,
+          "old_steps": 4,
+          "steps": 4,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 29,
+      "request": {
+        "chainIds": [
+          29
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 9.474125000000072,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 29,
+          "item": "item-plant-moss-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 6,
+          "old_steps": 5,
+          "steps": 5,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 30,
+      "request": {
+        "chainIds": [
+          30
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 9.936791000000085,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 30,
+          "item": "item-plant-moss-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 4,
+          "old_steps": 3,
+          "steps": 3,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 31,
+      "request": {
+        "chainIds": [
+          31
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 10.379583000000025,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 31,
+          "item": "item-plant-moss-3",
+          "first": 0,
+          "last": 3,
+          "status": "found",
+          "expanded": 3,
+          "old_steps": 2,
+          "steps": 2,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 32,
+      "request": {
+        "chainIds": [
+          32
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 22.699500000000057,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 32,
+          "item": "item-plant-moss-3",
+          "first": 1,
+          "last": 0,
+          "status": "found",
+          "expanded": 9,
+          "old_steps": 5,
+          "steps": 5,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 33,
+      "request": {
+        "chainIds": [
+          33
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 32.88358399999993,
+      "status": "unimproved",
+      "routes": [
+        {
+          "id": 33,
+          "item": "item-plant-moss-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 18,
+          "old_steps": 9,
+          "steps": 9,
+          "turns": 2
+        }
+      ],
+      "affected_chains": [
+        {
+          "id": 33,
+          "item": "item-plant-moss-3"
+        }
+      ],
+      "raw_score": {
+        "width": 75,
+        "height": 61,
+        "area": 4575,
+        "physical_tiles": 1383,
+        "turns": 211,
+        "tuple": [
+          4575,
+          1383,
+          211
+        ]
+      },
+      "compaction_ms": 174.20491600000003,
+      "score": {
+        "width": 75,
+        "height": 61,
+        "area": 4575,
+        "physical_tiles": 1383,
+        "turns": 211,
+        "tuple": [
+          4575,
+          1383,
+          211
+        ]
+      }
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 34,
+      "request": {
+        "chainIds": [
+          34
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 10.411500000000046,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 34,
+          "item": "item-plant-moss-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 4,
+          "old_steps": 3,
+          "steps": 3,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 35,
+      "request": {
+        "chainIds": [
+          35
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 10.961667000000034,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 35,
+          "item": "item-plant-moss-3",
+          "first": 0,
+          "last": 3,
+          "status": "found",
+          "expanded": 3,
+          "old_steps": 2,
+          "steps": 2,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 36,
+      "request": {
+        "chainIds": [
+          36
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 9.546416999999906,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 36,
+          "item": "item-plant-moss-3",
+          "first": 1,
+          "last": 0,
+          "status": "found",
+          "expanded": 32,
+          "old_steps": 14,
+          "steps": 14,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 37,
+      "request": {
+        "chainIds": [
+          37
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 10.067125000000033,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 37,
+          "item": "item-plant-moss-seed-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 22,
+          "old_steps": 21,
+          "steps": 21,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 38,
+      "request": {
+        "chainIds": [
+          38
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 12.756874999999809,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 38,
+          "item": "item-plant-moss-seed-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 3,
+          "old_steps": 2,
+          "steps": 2,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 39,
+      "request": {
+        "chainIds": [
+          39
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 10.262707999999975,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 39,
+          "item": "item-plant-moss-seed-3",
+          "first": 1,
+          "last": 0,
+          "status": "found",
+          "expanded": 3,
+          "old_steps": 2,
+          "steps": 2,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 40,
+      "request": {
+        "chainIds": [
+          40
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 10.238374999999905,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 40,
+          "item": "item-plant-moss-seed-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 7,
+          "old_steps": 6,
+          "steps": 6,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 41,
+      "request": {
+        "chainIds": [
+          41
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 14.291042000000061,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 41,
+          "item": "item-plant-moss-seed-3",
+          "first": 0,
+          "last": 3,
+          "status": "found",
+          "expanded": 611,
+          "old_steps": 32,
+          "steps": 32,
+          "turns": 5
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 42,
+      "request": {
+        "chainIds": [
+          42
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 15.115375000000085,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 42,
+          "item": "item-plant-moss-seed-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 113,
+          "old_steps": 27,
+          "steps": 27,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 43,
+      "request": {
+        "chainIds": [
+          43
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 13.092249999999922,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 43,
+          "item": "item-plant-moss-seed-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 9,
+          "old_steps": 5,
+          "steps": 5,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 44,
+      "request": {
+        "chainIds": [
+          44
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 10.457583999999997,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 44,
+          "item": "item-plant-moss-seed-3",
+          "first": 1,
+          "last": 1,
+          "status": "found",
+          "expanded": 4,
+          "old_steps": 3,
+          "steps": 3,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 45,
+      "request": {
+        "chainIds": [
+          45
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 30.20941599999992,
+      "status": "unimproved",
+      "routes": [
+        {
+          "id": 45,
+          "item": "item-plant-moss-seed-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 23,
+          "old_steps": 7,
+          "steps": 7,
+          "turns": 2
+        }
+      ],
+      "affected_chains": [
+        {
+          "id": 45,
+          "item": "item-plant-moss-seed-3"
+        }
+      ],
+      "raw_score": {
+        "width": 75,
+        "height": 61,
+        "area": 4575,
+        "physical_tiles": 1383,
+        "turns": 211,
+        "tuple": [
+          4575,
+          1383,
+          211
+        ]
+      },
+      "compaction_ms": 158.344875,
+      "score": {
+        "width": 75,
+        "height": 61,
+        "area": 4575,
+        "physical_tiles": 1383,
+        "turns": 211,
+        "tuple": [
+          4575,
+          1383,
+          211
+        ]
+      }
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 46,
+      "request": {
+        "chainIds": [
+          46
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 8.807999999999993,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 46,
+          "item": "item-plant-moss-seed-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 68,
+          "old_steps": 37,
+          "steps": 37,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 47,
+      "request": {
+        "chainIds": [
+          47
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 8.273874999999862,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 47,
+          "item": "item-plant-moss-seed-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 77,
+          "old_steps": 43,
+          "steps": 43,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 48,
+      "request": {
+        "chainIds": [
+          48
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 8.879667000000154,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 48,
+          "item": "item-plant-moss-seed-3",
+          "first": 0,
+          "last": 3,
+          "status": "found",
+          "expanded": 5,
+          "old_steps": 4,
+          "steps": 4,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 49,
+      "request": {
+        "chainIds": [
+          49
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.832541999999876,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 49,
+          "item": "item-plant-moss-seed-3",
+          "first": 1,
+          "last": 0,
+          "status": "found",
+          "expanded": 3,
+          "old_steps": 2,
+          "steps": 2,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 50,
+      "request": {
+        "chainIds": [
+          50
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 23.44966700000009,
+      "status": "unimproved",
+      "routes": [
+        {
+          "id": 50,
+          "item": "item-plant-moss-seed-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 39,
+          "old_steps": 12,
+          "steps": 12,
+          "turns": 2
+        }
+      ],
+      "affected_chains": [
+        {
+          "id": 50,
+          "item": "item-plant-moss-seed-3"
+        }
+      ],
+      "raw_score": {
+        "width": 75,
+        "height": 61,
+        "area": 4575,
+        "physical_tiles": 1383,
+        "turns": 211,
+        "tuple": [
+          4575,
+          1383,
+          211
+        ]
+      },
+      "compaction_ms": 155.29324999999994,
+      "score": {
+        "width": 75,
+        "height": 61,
+        "area": 4575,
+        "physical_tiles": 1383,
+        "turns": 211,
+        "tuple": [
+          4575,
+          1383,
+          211
+        ]
+      }
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 51,
+      "request": {
+        "chainIds": [
+          51
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 11.157541999999921,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 51,
+          "item": "item-plant-moss-seed-3",
+          "first": 0,
+          "last": 3,
+          "status": "found",
+          "expanded": 423,
+          "old_steps": 54,
+          "steps": 54,
+          "turns": 5
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 52,
+      "request": {
+        "chainIds": [
+          52
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 7.091458000000102,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 52,
+          "item": "item-plant-moss-powder-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 2,
+          "old_steps": 1,
+          "steps": 1,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 53,
+      "request": {
+        "chainIds": [
+          53
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.812457999999879,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 53,
+          "item": "item-plant-moss-powder-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 2,
+          "old_steps": 1,
+          "steps": 1,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 54,
+      "request": {
+        "chainIds": [
+          54
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.845499999999902,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 54,
+          "item": "item-plant-moss-powder-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 2,
+          "old_steps": 1,
+          "steps": 1,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 55,
+      "request": {
+        "chainIds": [
+          55
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.808540999999877,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 55,
+          "item": "item-plant-moss-powder-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 2,
+          "old_steps": 1,
+          "steps": 1,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 56,
+      "request": {
+        "chainIds": [
+          56
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 7.6908750000000055,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 56,
+          "item": "item-plant-moss-powder-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 52,
+          "old_steps": 20,
+          "steps": 20,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 57,
+      "request": {
+        "chainIds": [
+          57
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 7.093332999999802,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 57,
+          "item": "item-plant-moss-powder-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 61,
+          "old_steps": 20,
+          "steps": 20,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 58,
+      "request": {
+        "chainIds": [
+          58
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.8621669999999995,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 58,
+          "item": "item-plant-moss-powder-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 6,
+          "old_steps": 5,
+          "steps": 5,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 59,
+      "request": {
+        "chainIds": [
+          59
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.88675000000012,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 59,
+          "item": "item-plant-moss-powder-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 6,
+          "old_steps": 5,
+          "steps": 5,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 60,
+      "request": {
+        "chainIds": [
+          60
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.822875000000067,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 60,
+          "item": "item-plant-moss-powder-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 6,
+          "old_steps": 5,
+          "steps": 5,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 61,
+      "request": {
+        "chainIds": [
+          61
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.778084000000035,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 61,
+          "item": "item-plant-moss-powder-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 10,
+          "old_steps": 7,
+          "steps": 7,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 62,
+      "request": {
+        "chainIds": [
+          62
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.918583000000126,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 62,
+          "item": "item-plant-moss-powder-2",
+          "first": 0,
+          "last": 3,
+          "status": "found",
+          "expanded": 10,
+          "old_steps": 9,
+          "steps": 9,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 63,
+      "request": {
+        "chainIds": [
+          63
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 7.146082999999862,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 63,
+          "item": "item-plant-moss-powder-2",
+          "first": 3,
+          "last": 0,
+          "status": "found",
+          "expanded": 7,
+          "old_steps": 6,
+          "steps": 6,
+          "turns": 3
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 64,
+      "request": {
+        "chainIds": [
+          64
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 7.1410829999999805,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 64,
+          "item": "item-plant-moss-powder-2",
+          "first": 0,
+          "last": 3,
+          "status": "found",
+          "expanded": 17,
+          "old_steps": 10,
+          "steps": 10,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 65,
+      "request": {
+        "chainIds": [
+          65
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.973333000000139,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 65,
+          "item": "item-plant-moss-powder-2",
+          "first": 3,
+          "last": 0,
+          "status": "found",
+          "expanded": 4,
+          "old_steps": 3,
+          "steps": 3,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 66,
+      "request": {
+        "chainIds": [
+          66
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 8.054208000000017,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 66,
+          "item": "item-plant-moss-powder-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 2,
+          "old_steps": 1,
+          "steps": 1,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 67,
+      "request": {
+        "chainIds": [
+          67
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.842624999999998,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 67,
+          "item": "item-plant-moss-powder-2",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 2,
+          "old_steps": 1,
+          "steps": 1,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 68,
+      "request": {
+        "chainIds": [
+          68
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.743541999999934,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 68,
+          "item": "item-plant-moss-powder-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 6,
+          "old_steps": 5,
+          "steps": 5,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 69,
+      "request": {
+        "chainIds": [
+          69
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 23.982292000000143,
+      "status": "unimproved",
+      "routes": [
+        {
+          "id": 69,
+          "item": "item-plant-moss-powder-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 147,
+          "old_steps": 20,
+          "steps": 20,
+          "turns": 6
+        }
+      ],
+      "affected_chains": [
+        {
+          "id": 69,
+          "item": "item-plant-moss-powder-3"
+        }
+      ],
+      "raw_score": {
+        "width": 75,
+        "height": 61,
+        "area": 4575,
+        "physical_tiles": 1383,
+        "turns": 211,
+        "tuple": [
+          4575,
+          1383,
+          211
+        ]
+      },
+      "compaction_ms": 142.0983749999998,
+      "score": {
+        "width": 75,
+        "height": 61,
+        "area": 4575,
+        "physical_tiles": 1383,
+        "turns": 211,
+        "tuple": [
+          4575,
+          1383,
+          211
+        ]
+      }
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 70,
+      "request": {
+        "chainIds": [
+          70
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 7.648500000000013,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 70,
+          "item": "item-plant-moss-powder-3",
+          "first": 0,
+          "last": 3,
+          "status": "found",
+          "expanded": 18,
+          "old_steps": 17,
+          "steps": 17,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 71,
+      "request": {
+        "chainIds": [
+          71
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.728041999999959,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 71,
+          "item": "item-plant-moss-powder-3",
+          "first": 3,
+          "last": 3,
+          "status": "found",
+          "expanded": 4,
+          "old_steps": 3,
+          "steps": 3,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 72,
+      "request": {
+        "chainIds": [
+          72
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 7.068625000000111,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 72,
+          "item": "item-plant-moss-powder-3",
+          "first": 3,
+          "last": 0,
+          "status": "found",
+          "expanded": 42,
+          "old_steps": 13,
+          "steps": 13,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 73,
+      "request": {
+        "chainIds": [
+          73
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 7.484916999999996,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 73,
+          "item": "item-plant-moss-powder-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 156,
+          "old_steps": 24,
+          "steps": 24,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 74,
+      "request": {
+        "chainIds": [
+          74
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 7.708042000000205,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 74,
+          "item": "item-plant-moss-powder-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 9,
+          "old_steps": 7,
+          "steps": 7,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 75,
+      "request": {
+        "chainIds": [
+          75
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.749250000000075,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 75,
+          "item": "item-plant-moss-powder-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 4,
+          "old_steps": 3,
+          "steps": 3,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 76,
+      "request": {
+        "chainIds": [
+          76
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.6881660000001375,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 76,
+          "item": "item-plant-moss-powder-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 5,
+          "old_steps": 4,
+          "steps": 4,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 77,
+      "request": {
+        "chainIds": [
+          77
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.841750000000047,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 77,
+          "item": "item-plant-moss-powder-3",
+          "first": 0,
+          "last": 0,
+          "status": "found",
+          "expanded": 41,
+          "old_steps": 15,
+          "steps": 15,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 78,
+      "request": {
+        "chainIds": [
+          78
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.792957999999999,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 78,
+          "item": "item-liquid-water",
+          "first": 1,
+          "last": 1,
+          "status": "found",
+          "expanded": 40,
+          "old_steps": 39,
+          "steps": 39,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 79,
+      "request": {
+        "chainIds": [
+          79
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.945541000000048,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 79,
+          "item": "item-liquid-water",
+          "first": 1,
+          "last": 2,
+          "status": "found",
+          "expanded": 86,
+          "old_steps": 47,
+          "steps": 47,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 80,
+      "request": {
+        "chainIds": [
+          80
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.536292000000003,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 80,
+          "item": "item-liquid-water",
+          "first": 1,
+          "last": 0,
+          "status": "found",
+          "expanded": 16,
+          "old_steps": 10,
+          "steps": 10,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 81,
+      "request": {
+        "chainIds": [
+          81
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 7.160957999999937,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 81,
+          "item": "item-liquid-water",
+          "first": 1,
+          "last": 2,
+          "status": "found",
+          "expanded": 94,
+          "old_steps": 22,
+          "steps": 22,
+          "turns": 3
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 82,
+      "request": {
+        "chainIds": [
+          82
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.544415999999956,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 82,
+          "item": "item-carbon-enr",
+          "first": 1,
+          "last": 1,
+          "status": "found",
+          "expanded": 5,
+          "old_steps": 4,
+          "steps": 4,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 83,
+      "request": {
+        "chainIds": [
+          83
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.72587499999986,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 83,
+          "item": "item-carbon-enr",
+          "first": 3,
+          "last": 3,
+          "status": "found",
+          "expanded": 28,
+          "old_steps": 12,
+          "steps": 12,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 84,
+      "request": {
+        "chainIds": [
+          84
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.55295799999999,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 84,
+          "item": "item-carbon-enr",
+          "first": 3,
+          "last": 3,
+          "status": "found",
+          "expanded": 9,
+          "old_steps": 8,
+          "steps": 8,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 85,
+      "request": {
+        "chainIds": [
+          85
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 7.117915999999923,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 85,
+          "item": "item-carbon-enr",
+          "first": 1,
+          "last": 1,
+          "status": "found",
+          "expanded": 10,
+          "old_steps": 8,
+          "steps": 8,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 86,
+      "request": {
+        "chainIds": [
+          86
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 8.85129199999983,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 86,
+          "item": "item-carbon-enr",
+          "first": 3,
+          "last": 3,
+          "status": "found",
+          "expanded": 470,
+          "old_steps": 39,
+          "steps": 39,
+          "turns": 4
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 87,
+      "request": {
+        "chainIds": [
+          87
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 9.150750000000016,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 87,
+          "item": "item-carbon-enr",
+          "first": 1,
+          "last": 1,
+          "status": "found",
+          "expanded": 509,
+          "old_steps": 33,
+          "steps": 33,
+          "turns": 6
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 88,
+      "request": {
+        "chainIds": [
+          88
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.739291999999978,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 88,
+          "item": "item-xiranite-powder",
+          "first": 1,
+          "last": 1,
+          "status": "found",
+          "expanded": 7,
+          "old_steps": 6,
+          "steps": 6,
+          "turns": 2
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 89,
+      "request": {
+        "chainIds": [
+          89
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 9.78104200000007,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 89,
+          "item": "item-xiranite-powder",
+          "first": 0,
+          "last": 1,
+          "status": "found",
+          "expanded": 3,
+          "old_steps": 2,
+          "steps": 2,
+          "turns": 1
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 90,
+      "request": {
+        "chainIds": [
+          90
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 7.426167000000078,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 90,
+          "item": "item-xiranite-powder",
+          "first": 0,
+          "last": 3,
+          "status": "found",
+          "expanded": 7,
+          "old_steps": 6,
+          "steps": 6,
+          "turns": 3
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 91,
+      "request": {
+        "chainIds": [
+          91
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 8.133707999999842,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 91,
+          "item": "item-liquid-xiranite",
+          "first": 2,
+          "last": 1,
+          "status": "found",
+          "expanded": 299,
+          "old_steps": 60,
+          "steps": 60,
+          "turns": 5
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 92,
+      "request": {
+        "chainIds": [
+          92
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.71816600000011,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 92,
+          "item": "item-liquid-sewage",
+          "first": 1,
+          "last": 1,
+          "status": "found",
+          "expanded": 3,
+          "old_steps": 2,
+          "steps": 2,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 93,
+      "request": {
+        "chainIds": [
+          93
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 69.6249580000001,
+      "status": "unimproved",
+      "routes": [
+        {
+          "id": 93,
+          "item": "item-liquid-xiranite-poly",
+          "first": 0,
+          "last": 2,
+          "status": "found",
+          "expanded": 8762,
+          "old_steps": 150,
+          "steps": 150,
+          "turns": 10
+        }
+      ],
+      "affected_chains": [
+        {
+          "id": 93,
+          "item": "item-liquid-xiranite-poly"
+        }
+      ],
+      "raw_score": {
+        "width": 75,
+        "height": 61,
+        "area": 4575,
+        "physical_tiles": 1383,
+        "turns": 211,
+        "tuple": [
+          4575,
+          1383,
+          211
+        ]
+      },
+      "compaction_ms": 132.71895799999993,
+      "score": {
+        "width": 75,
+        "height": 61,
+        "area": 4575,
+        "physical_tiles": 1383,
+        "turns": 211,
+        "tuple": [
+          4575,
+          1383,
+          211
+        ]
+      }
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 94,
+      "request": {
+        "chainIds": [
+          94
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 7.497124999999869,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 94,
+          "item": "item-xiranite-enr-powder",
+          "first": 3,
+          "last": 3,
+          "status": "found",
+          "expanded": 16,
+          "old_steps": 15,
+          "steps": 15,
+          "turns": 0
+        }
+      ]
+    },
+    {
+      "round": 0,
+      "phase": "fixed-path",
+      "ordinal": 95,
+      "request": {
+        "chainIds": [
+          95
+        ],
+        "endpointPolicy": "retained"
+      },
+      "parent_directory": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/terminal-retained-fixed/incumbent",
+      "generation_ms": 6.927458000000115,
+      "status": "unchanged",
+      "routes": [
+        {
+          "id": 95,
+          "item": "item-liquid-xiranite-lowpoly",
+          "first": 2,
+          "last": 3,
+          "status": "found",
+          "expanded": 11,
+          "old_steps": 10,
+          "steps": 10,
+          "turns": 1
+        }
+      ]
+    }
+  ],
+  "failures": [],
+  "provenance": [
+    {
+      "kind": "graph",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-chain-blocks/gap-1-placement.json",
+      "sha256": "5bc27708ce6b227dd78acef885032035fedd7e427fe16c9662f6e25d37670157"
+    },
+    {
+      "kind": "baseline",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-local-reembedding/group-matrix.json",
+      "sha256": "4912b8ffc4db9e2ab9826b4bc2d11946494261520ac865850b0c8d1a3b6845f1"
+    },
+    {
+      "kind": "recipes",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json",
+      "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+    },
+    {
+      "kind": "facilities",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json",
+      "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+    },
+    {
+      "kind": "items",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json",
+      "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+    },
+    {
+      "kind": "transports",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json",
+      "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+    },
+    {
+      "kind": "components",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json",
+      "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+    },
+    {
+      "kind": "validator",
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/aic-witness-probe",
+      "sha256": "9cc45ff7458fe2f04a065aeab2aacffc705c5ff7657c15beaf78cdc90812bcc8"
+    }
+  ],
+  "source_hashes": {
+    "model.mjs": "a7d15471354d3a9acdd63fa7e84040ccd546e823773cf2e494801da8c35586bd",
+    "movement.mjs": "dd10dfe5dedb930d82a9969b677002069bfe8db84fcb48ac05054e3cd0b5492f",
+    "groups.mjs": "afe423f5ba78ad586a05147584c9f3255e90fc1e20221997ff302d2f394751dc",
+    "path.mjs": "8ccacccfc98f61d06484dce0c9e81f7e62eda21966d47918331a3c7b4d202f0f",
+    "run.mjs": "8bd1df7661503c428551c2cc17fa1058a75b1d21c327244ad98fb1279d36a3bc",
+    "../constructive-embedding-compaction/model.mjs": "1f2b6402d1ab77c89da469c9d2c3ce42a31d83184170ba1f672e72783d52b29f",
+    "../constructive-embedding-compaction/length.mjs": "fa05d48ecb8ac6e31314b277b0d9e2a450ff88ce152e01d9dff2f8c9adb40498",
+    "../constructive-embedding-compaction/validator.mjs": "e357484b02b6498eebf0742cc72868e9a6f6aa765bf26c8a7dbaca4cf51a69a3",
+    "../constructive-factory-closure/model.mjs": "2ac964a4c2198897a3c48bf35deee96346589b5d145e29c1545e778e519e29db",
+    "../constructive-cycle-blocks/graph.mjs": "56da1be22c024ce6b270b8626ff7913cfde40557a53678d0753e6bc19206bcbe",
+    "../constructive-auto-interface/compact.mjs": "31be1364c1a7f7e702de2f426c9294efc2b87bb521e998b876f727a6dfea1ceb",
+    "../constructive-bound-interconnect/view.mjs": "634ac5b88679f4413aaedf8d1e818d272d5bb44f8855b15db4ca76d7bafd84f5",
+    "../constructive-placement-only/model.mjs": "47f0798630d1063b4ea0521d47e746f3051eac9361b9779914ed1e3e530edce3"
+  }
+}

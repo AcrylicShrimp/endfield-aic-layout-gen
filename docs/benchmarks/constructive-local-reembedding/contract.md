@@ -40,6 +40,9 @@ region preservation, actual complete-graph validation and negative controls. Ins
 same-region before/after renders; distinguish topology-required returns from avoidable detours.
 This local greedy sequence makes no joint path, packing or global optimality claim.
 
+The optional terminal-flexible endpoint policy releases old path arms at ordinary singleton
+terminals, as specified in terminal-contract.md. It does not rotate facilities or change ports.
+
 Current restrictions: terminal port identities and boundary positions are fixed during routing;
 zero-length connections reject relocation when only some endpoint owners move. Single-facility candidate
 positions use facility-contact and endpoint-alignment coordinates, prefer lower endpoint-distance
