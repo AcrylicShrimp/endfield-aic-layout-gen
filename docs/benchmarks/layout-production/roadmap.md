@@ -2,9 +2,10 @@
 
 Status: active user goal. Started 2026-09-07. Early stages prioritize exploration, not productization.
 
-The user clarified that the initial work should compare useful degrees of freedom, their costs,
-failure causes and alternative training methods. Production readiness remains the final target,
-not a reason to prematurely freeze the current action space or learning algorithm.
+The user clarified that initial capability/learning pilots are useful prerequisites, but must
+not become the main objective. Those initial pilots are now complete. The active work is the
+connected fresh-factory generation, training and independent evaluation path. Policy form and
+operator studies are supporting decisions, not replacement goals.
 
 1. **Freeze gates and audit the strongest starting points.** Resolve Heavy Xiranite identity;
    measure exact XY voids, futile actions and route quality on original, learned and strongest
@@ -17,18 +18,21 @@ not a reason to prematurely freeze the current action space or learning algorith
    Audit preflight work rather than hiding it in a low selected-action rejection rate. Preserve
    complete transactional states and revalidate legacy learned detours. See [the exploration
    matrix](exploration-plan.md); do not simply expose every cross-product action to the model.
-3. **Train and measure long-horizon access to dense states.** The initial action and compound
-   probes are complete. Start actual expanded-action policy training now, with valid temporary
-   deterioration and a separately retained best incumbent. Use long sequential evaluations
-   and charged search demonstrations to distinguish failure to learn a useful sequence from
-   a concrete action restriction. Do not require a one-step dense target before training;
-   the user specifically highlighted the strong incumbent's likely long-horizon difficulty.
-   If the 1% criterion is proven inconsistent with game semantics, stop with a sound verdict.
-4. **Build diverse training and sealed evaluation data.** Cover recipe families, topology and
-   scale, including mixed transport and larger factories. Keep all related descendants together;
-   preserve full original requests and record unsupported generation. Include already improved
-   states, so training does not repeatedly learn only the easy first compression.
-5. **Explore training methods under matched exposure.** Compare terminal-credit RL with
+3. **Connect fresh factories to actual multi-step learning and independent evaluation.** Stop
+   extending the fixed-root candidate pilot. Sample new production requests and source choices
+   from runtime catalogs, construct and independently validate each complete initial factory,
+   then train a policy on that generated problem. Record failed generation and procurement
+   choices, not only accepted roots. The current implementation uses conditional direct action
+   parameters; this is a design choice, not a goal in itself. Retain the best valid factory
+   while permitting valid private detours. Train long trajectories, not just longer evaluation.
+   See [the streaming contract](../layout-direct/contract.md). If the 1% criterion is proven
+   inconsistent with game semantics, stop with a sound goal-level verdict.
+4. **Broaden the actual environment stream and protect independent evaluation.** Cover recipe
+   families, topology and scale, including mixed transport and larger factories. Measure
+   generation/constructor acceptance bias by stratum. Preserve full original requests, keep
+   related descendants together, and freeze sealed evaluation before selection. Include already
+   improved states and explicit target replay without counting that replay as fresh general data.
+5. **Improve the trained policy where main-path evidence shows a limitation.** Compare terminal-credit RL with
    search-trajectory imitation/warm start and temporal-credit/value-baseline alternatives on
    the same viable action domain; also compare flat versus factorized action selection where
    candidate count warrants it. Use a small-to-complex curriculum with rehearsal, equal
@@ -46,7 +50,11 @@ Each stage ends with a focused verified commit and an evidence report. A failed 
 retained as evidence, not silently replaced by a more favorable benchmark. The goal stays active
 until release gates actually pass or an evidence-backed goal-level impossibility is reported.
 
-Current stage: 3, expanded-action sequential model training. Prior learning pilots do not
-satisfy the release criteria. Stronger historical local operators are research evidence, not
-already available actions in the trained model. Each comparison must explain a negative result
-within the sampled domain; it must not label a degree of freedom universally useless.
+Current stage: 3–5, the first dynamic-catalog complete-factory/direct-parameter training run is
+complete. See `../layout-direct/report.md`: no reliable learned advantage, roughly 82% futile
+development actions, small-factory-biased generation and unchanged target density. Improve the
+connected learner's credit and actual stream breadth. The fixed-root baseline is archived in
+`../layout-sequential/report.md`.
+Neither a working RL loop nor changed weights satisfies the release criteria. Judge advancement
+by independent layout quality, futile-action rate, actual environment breadth, target density
+and visual inspection. Do not call a sampled negative result universal action uselessness.

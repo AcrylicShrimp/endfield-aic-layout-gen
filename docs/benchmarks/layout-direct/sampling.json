@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "catalogs": {
+    "recipes": "../../../data/game/normalized/recipes.json",
+    "facilities": "../../../data/game/normalized/facilities.json",
+    "items": "../../../data/game/normalized/items.json",
+    "transports": "../../../data/game/normalized/transports.json",
+    "components": "../../../data/game/normalized/logistics-components.json"
+  },
+  "cli": "../../../target/release/aic-cli",
+  "validator": "../../../target/release/aic-witness-probe",
+  "sampling": {
+    "schema_version": 1,
+    "partition_salt": "dynamic-factory-target-partitions-v1",
+    "partition_buckets": {"train": 8, "validation": 1, "test": 1},
+    "utilizations": [{"numerator": 1, "denominator": 4}, {"numerator": 1, "denominator": 2}, {"numerator": 1, "denominator": 1}],
+    "procurement_pool": "all-catalog-inputs",
+    "procurement_probability": 0.25,
+    "source_selection_scope": "item",
+    "max_source_nodes": 512,
+    "max_depth": 64,
+    "max_facilities": 128
+  },
+  "construction": {"elapsed_ms": 5000, "max_steps": 256, "max_placement_attempts": 256, "max_route_searches": 4096, "analysis_workers": 1},
+  "flow_elapsed_ms": 5000,
+  "validator_ms": 3000,
+  "environment": {"grid_cells": 65536, "max_tokens": 512, "max_members": 16, "per_action_expansions": 5000, "validator_ms": 3000},
+  "target": {
+    "request": "../constructive-chain-blocks/gap-1-placement.json",
+    "witness": "../../../target/layout-production-baseline-03/strongest-geometric/witness.json",
+    "sha256": "38829b5ec2949cfa3a04542a5faf73979b2802c011cebde69733e4bcae104299"
+  }
+}
