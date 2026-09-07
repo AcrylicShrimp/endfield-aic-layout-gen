@@ -17,11 +17,13 @@ not a reason to prematurely freeze the current action space or learning algorith
    Audit preflight work rather than hiding it in a low selected-action rejection rate. Preserve
    complete transactional states and revalidate legacy learned detours. See [the exploration
    matrix](exploration-plan.md); do not simply expose every cross-product action to the model.
-3. **Establish a reachable dense target before scaling learning.** Starting from the best complete
-   Heavy Xiranite incumbent, test transactional packing and routing neighborhoods, recording
-   achievable density, residual obstructions and visual defects. If the 1% criterion conflicts
-   with unavoidable game semantics, produce a sound scoped verdict and stop; otherwise retain
-   evidence-backed improvements. Do not spend large training budgets on an unavailable action.
+3. **Train and measure long-horizon access to dense states.** The initial action and compound
+   probes are complete. Start actual expanded-action policy training now, with valid temporary
+   deterioration and a separately retained best incumbent. Use long sequential evaluations
+   and charged search demonstrations to distinguish failure to learn a useful sequence from
+   a concrete action restriction. Do not require a one-step dense target before training;
+   the user specifically highlighted the strong incumbent's likely long-horizon difficulty.
+   If the 1% criterion is proven inconsistent with game semantics, stop with a sound verdict.
 4. **Build diverse training and sealed evaluation data.** Cover recipe families, topology and
    scale, including mixed transport and larger factories. Keep all related descendants together;
    preserve full original requests and record unsupported generation. Include already improved
@@ -44,7 +46,7 @@ Each stage ends with a focused verified commit and an evidence report. A failed 
 retained as evidence, not silently replaced by a more favorable benchmark. The goal stays active
 until release gates actually pass or an evidence-backed goal-level impossibility is reported.
 
-Current stage: 1, with the stage-2 exploration design underway. Prior learning pilots do not
+Current stage: 3, expanded-action sequential model training. Prior learning pilots do not
 satisfy the release criteria. Stronger historical local operators are research evidence, not
 already available actions in the trained model. Each comparison must explain a negative result
 within the sampled domain; it must not label a degree of freedom universally useless.
