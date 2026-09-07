@@ -109,6 +109,8 @@ class PreparedRollout:
     """A bounded device copy, cropped back to each unchanged minibatch's exact shape."""
 
     def __init__(self, rollout, advantage, returns, device, maximum_bytes=1 << 30):
+        if type(maximum_bytes) is not int or maximum_bytes < 0:
+            raise ValueError("preparation.invalid_budget: maximum_bytes must be a nonnegative integer")
         observations = rollout["observations"]
         self.extents = np.asarray([(o["raster"].shape[1], o["raster"].shape[2], len(o["candidates"]))
                                    for o in observations])
@@ -156,9 +158,10 @@ def update(model, optimizer, rollout, config, rng):
     batches = 0
     seconds = {key: 0.0 for key in ("batch", "forward_loss", "backward", "optimizer")}
     prepared = None
+    preparation_budget = config.get("prepared_rollout_max_bytes", 1 << 30)
     if device.type == "cuda":
         started = time.perf_counter()
-        prepared = PreparedRollout(rollout, advantage, returns, device)
+        prepared = PreparedRollout(rollout, advantage, returns, device, maximum_bytes=preparation_budget)
         seconds["batch"] += completed_time()-started
     for _ in range(config["epochs"]):
         permutation = rng.permutation(len(advantage))
@@ -204,4 +207,5 @@ def update(model, optimizer, rollout, config, rng):
     return {**{key: value/batches for key, value in totals.items()}, "optimizer_steps": batches,
             "seconds": seconds,
             "preparation": {"mode": "rollout_device" if prepared is not None and prepared.tensors is not None else "minibatch",
+                            "maximum_bytes": preparation_budget,
                             "estimated_rollout_bytes": prepared.estimated_bytes if prepared is not None else 0}}

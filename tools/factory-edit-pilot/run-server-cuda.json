@@ -2,6 +2,7 @@
   "schema_version": 1,
   "seed": 17,
   "device": "cuda",
+  "prepared_rollout_max_bytes": 4294967296,
   "threads": 16,
   "horizon": 128,
   "commands": 65536,

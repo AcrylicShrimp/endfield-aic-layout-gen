@@ -274,6 +274,19 @@ class PilotTests(unittest.TestCase):
         self.assertEqual(sum(v.numel()*v.element_size() for v in prepared.tensors.values()), prepared.estimated_bytes)
         limited = PreparedRollout(rollout, advantage, returns, torch.device("cpu"), maximum_bytes=1)
         self.assertIsNone(limited.tensors)
+        exact = PreparedRollout(rollout, advantage, returns, torch.device("cpu"),
+                                maximum_bytes=prepared.estimated_bytes)
+        self.assertIsNotNone(exact.tensors)
+        for budget in (-1, True, 1.5):
+            with self.assertRaisesRegex(ValueError, "preparation.invalid_budget"):
+                PreparedRollout(rollout, advantage, returns, torch.device("cpu"), maximum_bytes=budget)
+
+    def test_invalid_preparation_budget_reports_configuration_path(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for budget in (-1, True, 1.5):
+                config = {**self.config, "prepared_rollout_max_bytes": budget}
+                with self.assertRaisesRegex(ValueError, "preparation.invalid_budget: bad-config.json"):
+                    runner.train(self.catalog, config, Path("bad-config.json"), Path(directory)/"run")
 
     def test_canonical_command_cache_eviction_preserves_json_order(self):
         first = Command("EXTEND", (self.env.nids[0], (0, 0), "forward", "N", 1))

@@ -148,7 +148,9 @@ or successful learning.
 CUDA PPO updates now prepare a collected rollout once and reuse its tensors across epochs.
 Each sampled minibatch is cropped to its original maximum raster/candidate dimensions before
 selection, preserving samples, ordering, values, and neural workload. Prepared tensor payloads
-are bounded to 1 GiB; larger estimates use ordinary minibatch preparation and report that mode.
+default to a 1 GiB ceiling; `prepared_rollout_max_bytes` selects a nonnegative payload limit
+(zero disables preparation). The 32 GiB server config uses 4 GiB. Larger estimates use ordinary
+minibatch preparation and report that mode. This ceiling excludes model/gradient memory.
 CPU updates keep ordinary minibatch construction. `updates.jsonl` records `preparation.mode`
 and `estimated_rollout_bytes`; all preparation/selection time remains charged to `seconds.batch`.
 
@@ -221,3 +223,8 @@ catalog data. Compiled CPU continuation has not established cross-process bitwis
 shared weights, identical observations and cloned sampling RNG. It follows the eager stream
 and retains the first action disagreement if present. The [compiled actor report](../../docs/reports/2026-09-08.03-factory-edit-compiled-actor.md)
 separates fixed-input gains, full-run quality, cache costs and controlled behavior parity.
+
+`preparation_benchmark.py --case <case> --config <config> --input <retained-input.pt>
+--output <fresh-directory>` compares 1/4 GiB preparation ceilings with deterministic CUDA
+updates. It repeats the retained input eight times only inside this diagnostic, preserving
+identical data/optimizer exposure across the pair, and checks resulting parameter hashes.

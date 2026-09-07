@@ -127,6 +127,9 @@ def train(catalog, config, config_path, output, resume_path=None):
         raise ValueError("Checkpoints must align with completed PPO rollouts")
     if config.get("compile_actor", False) and not config.get("compiler_cache_directory"):
         raise ValueError(f"actor.compile_cache_missing: {config_path}: compiler_cache_directory is required")
+    budget = config.get("prepared_rollout_max_bytes", 1 << 30)
+    if type(budget) is not int or budget < 0:
+        raise ValueError(f"preparation.invalid_budget: {config_path}: prepared_rollout_max_bytes must be a nonnegative integer")
     output.mkdir(parents=True, exist_ok=True)
     torch.set_num_threads(config["threads"])
     torch.set_num_interop_threads(1)
