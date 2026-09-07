@@ -2,6 +2,11 @@
 
 CLI tools for generating construction layouts for the Arknights: Endfield Automated Industry Complex.
 
+Current design discussion: [learned factory edit policy](docs/designs/2026-09-07.00-learned-factory-edit-policy.md)
+and [design tracker](docs/todos/2026-09-07.04-learned-factory-edit-design.md). This is a fresh,
+documentation-only RL design for improving existing factories; no new experiment or production
+cutover has started, and the historical learning study remains stopped.
+
 ## Workspace
 
 This repository is a Rust virtual workspace. Crates live under `crates/` and use the `aic-` prefix.

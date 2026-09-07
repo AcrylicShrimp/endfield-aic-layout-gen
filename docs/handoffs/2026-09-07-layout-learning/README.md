@@ -1,5 +1,12 @@
 # Learned layout improver: paused handoff
 
+Current continuation, 2026-09-07: the user has requested a **fresh collaborative design**,
+not resumption of this study or its diagnosis. Read the
+[learned factory edit design](../../designs/2026-09-07.00-learned-factory-edit-policy.md) and
+[active design tracker](../../todos/2026-09-07.04-learned-factory-edit-design.md) first.
+The old experiments remain stopped. The historical decisions and evidence below are preserved;
+their proposed next steps do not supersede the new design-only instruction.
+
 Status: paused by the user, 2026-09-07. No training or diagnosis is running.
 Read this file first when resuming; older experiment instructions to continue are historical.
 
