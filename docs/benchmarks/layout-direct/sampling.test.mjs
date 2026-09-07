@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { read,digest } from '../layout-rl/io.mjs';
-import { sampleRequest,partitionFor } from './sampling.mjs';
+import { sampleRequest,partitionFor,validateSampling } from './sampling.mjs';
 
 const catalogs={recipes:read(new URL('../../../data/game/normalized/recipes.json',import.meta.url))};
 const policy=read(new URL('./sampling.json',import.meta.url)).sampling;
@@ -31,4 +31,18 @@ test('choices are catalog-derived, root production is mandatory, and repeated it
 });
 test('an exhausted hierarchy guard rejects instead of adding an external shortcut',()=>{
   assert.throws(()=>sampleRequest(catalogs,{...policy,max_source_nodes:1},{seed:'streaming-test',ordinal:3,split:'train'}),e=>e.code==='stream-source-guard');
+});
+test('target loads above one multiply demand, not per-instance utilization or source choices',()=>{
+  const position={seed:'streaming-test',ordinal:3,split:'train'};
+  const low=sampleRequest(catalogs,{...policy,target_loads:[{numerator:1,denominator:1}]},position);
+  const high=sampleRequest(catalogs,{...policy,target_loads:[{numerator:8,denominator:1}]},position);
+  assert.deepEqual(high.request.source_selections,low.request.source_selections);
+  assert.equal(high.request.target.quantity,low.request.target.quantity*8);
+  assert.equal(high.request.target.duration_ms,low.request.target.duration_ms);
+  assert.deepEqual(high.target_load,{numerator:8,denominator:1});
+  assert.equal(high.structure_sha256,low.structure_sha256);
+  assert.notEqual(high.request_sha256,low.request_sha256);
+  assert.throws(()=>validateSampling({...policy,schema_version:1}),/schema 2/);
+  assert.throws(()=>validateSampling({...policy,utilizations:[]}),/obsolete/);
+  assert.throws(()=>validateSampling({...policy,target_loads:[{numerator:1,denominator:0}]}),/target-load/);
 });

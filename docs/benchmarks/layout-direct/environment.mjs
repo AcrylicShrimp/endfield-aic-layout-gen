@@ -1,4 +1,4 @@
-import { reembed,extractChains,extentOf } from '../constructive-local-reembedding/model.mjs';
+import { reembed,extractChains } from '../constructive-local-reembedding/model.mjs';
 import { compactInterface } from '../constructive-auto-interface/compact.mjs';
 import { project } from '../constructive-factory-closure/model.mjs';
 import { prepareRoot,checkRoot } from '../layout-rl/coverage.mjs';
@@ -8,6 +8,7 @@ import { observe,contextFor } from '../layout-rl/features.mjs';
 import { digest } from '../layout-rl/io.mjs';
 import { productionIdentity } from '../layout-production/capability-model.mjs';
 import { density,mechanicalWaste } from '../layout-production/metrics.mjs';
+import { observationSupport } from './support.mjs';
 
 const normalRejections=new Set(['local-move-bounds','local-shared-terminal-move','local-shared-terminal-rotation','local-body-collision',
   'local-carried-collision','local-anchor-collision','local-terminal-collision','local-endpoint-body','local-internal-body-collision',
@@ -33,8 +34,8 @@ export class DirectEnvironment {
   observation(){
     const start=performance.now(),state=digest(this.current);
     if(this.cache?.state!==state){
-      const w=this.current,b=extentOf(w),width=b.maxX-b.minX+1,height=b.maxY-b.minY+1,area=width*height;
-      if(area>this.plan.grid_cells)throw new Error(`Direct observation grid guard exceeded: ${area}`);
+      const w=this.current,support=observationSupport(w,this.catalogs,this.plan),b=support.bounds,{width,height}=b,area=support.grid_cells;
+      if(!support.supported)throw Object.assign(new Error(support.diagnostics[0].message),support.diagnostics[0]);
       const grid=Array.from({length:10},()=>Array(area).fill(0)),at=p=>(p.y-b.minY)*width+p.x-b.minX;
       for(const p of w.placements)for(let y=0;y<p.height;y++)for(let x=0;x<p.width;x++)grid[0][at({x:p.x+x,y:p.y+y})]=1;
       for(const n of w.transport_networks){

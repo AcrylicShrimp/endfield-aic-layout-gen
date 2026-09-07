@@ -1,6 +1,6 @@
 # Broader production-load stream contract
 
-Status: next main-path contract, not yet implemented or measured.
+Status: implementation in progress; no measured breadth or learned benefit claim yet.
 
 The first dynamic training sample reaches only ten facilities. Its target rate is at most one
 root recipe's full utilization, and explicit intermediate procurement has probability 0.25.
@@ -34,7 +34,17 @@ budget factory remains construction success with a structured learning-ineligibl
 not crop geometry, delete networks, increase procurement or crash halfway through a rollout.
 The report must count such attrition. The same applies to explicit minimum training size.
 
-First connect the broadened load distribution directly to training with all failed attempts
+The first training configuration requests small, medium and large roots in a repeating
+curriculum; target replay does not consume a curriculum slot. The same size cycle assigns
+development evaluation slots. Size is measured after exact wiring, before geometry. An
+off-stratum request is recorded whole and not constructed for that slot. A fixed retry bound
+exhausts with a structured failure, not fallback to an easier stratum or stored root. This
+explicit stratification prevents a nominally broad load distribution from silently yielding
+only small training cases. Training schema 3 requires both size schedules; `any` is an explicit
+unstratified experimental control. Save each completed optimizer checkpoint before requesting
+the next new root so a later constructor limitation cannot erase completed training evidence.
+
+Connect the broadened load distribution directly to training with all failed attempts
 recorded. Do not build another fixed witness corpus and silently sample from it. If larger
 strata still do not enter actual training, investigate the specific construction/representation
 failure before claiming breadth or spending a large training budget. No prior witness fallback.

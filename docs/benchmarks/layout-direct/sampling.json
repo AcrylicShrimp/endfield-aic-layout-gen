@@ -10,10 +10,10 @@
   "cli": "../../../target/release/aic-cli",
   "validator": "../../../target/release/aic-witness-probe",
   "sampling": {
-    "schema_version": 1,
+    "schema_version": 2,
     "partition_salt": "dynamic-factory-target-partitions-v1",
     "partition_buckets": {"train": 8, "validation": 1, "test": 1},
-    "utilizations": [{"numerator": 1, "denominator": 4}, {"numerator": 1, "denominator": 2}, {"numerator": 1, "denominator": 1}],
+    "target_loads": [{"numerator": 1, "denominator": 4}, {"numerator": 1, "denominator": 2}, {"numerator": 1, "denominator": 1}, {"numerator": 2, "denominator": 1}, {"numerator": 4, "denominator": 1}, {"numerator": 8, "denominator": 1}],
     "procurement_pool": "all-catalog-inputs",
     "procurement_probability": 0.25,
     "source_selection_scope": "item",

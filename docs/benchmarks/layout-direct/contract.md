@@ -2,6 +2,11 @@
 
 Status: replacement experiment contract; no learned benefit or readiness claim.
 
+Current migration: `sampling.json` uses sampling schema 2 `target_loads` (including multiples
+above one), and training schema 3 explicitly selects size strata. See `rate-stream-contract.md`
+and the measured `breadth-report.md`. Historical first-run commands/config are preserved by
+their commits and source hashes; current plans do not reproduce the old small-load distribution.
+
 ## Why this is a different experiment
 
 The user clarified that fixed-root action and learning pilots are useful prerequisites, but

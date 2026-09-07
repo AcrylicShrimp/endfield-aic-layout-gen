@@ -1,5 +1,7 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
+  "training_size_schedule": ["any"],
+  "evaluation_size_schedule": ["any"],
   "credit": "terminal-score",
   "seed": 1901,
   "groups": 64,

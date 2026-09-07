@@ -3,10 +3,11 @@ import { digest } from '../layout-rl/io.mjs';
 
 const fail=(code,message,entity=null)=>{throw Object.assign(new Error(message),{code:`stream-${code}`,severity:'warning',stage:'sampling',entity});};
 export function validateSampling(p){
-  if(p?.schema_version!==1||typeof p.partition_salt!=='string'||!p.partition_salt)throw new Error('Invalid sampling schema/partition salt');
+  if(p?.schema_version!==2||Object.hasOwn(p,'utilizations'))throw new Error('Sampling schema 2 requires target_loads; schema-1 utilizations are obsolete');
+  if(typeof p.partition_salt!=='string'||!p.partition_salt)throw new Error('Invalid sampling partition salt');
   if(Object.keys(p.partition_buckets??{}).sort().join()!=='test,train,validation'||Object.values(p.partition_buckets).some(n=>!Number.isSafeInteger(n)||n<1))throw new Error('Invalid partition buckets');
   for(const [k,max]of [['max_source_nodes',4096],['max_depth',128],['max_facilities',256]])if(!Number.isSafeInteger(p[k])||p[k]<1||p[k]>max)throw new Error(`Invalid sampling guard ${k}`);
-  if(!Array.isArray(p.utilizations)||!p.utilizations.length||p.utilizations.some(u=>!Number.isSafeInteger(u.numerator)||!Number.isSafeInteger(u.denominator)||u.numerator<1||u.denominator<u.numerator))throw new Error('Invalid sampled utilization fractions');
+  if(!Array.isArray(p.target_loads)||!p.target_loads.length||p.target_loads.some(u=>!Number.isSafeInteger(u.numerator)||!Number.isSafeInteger(u.denominator)||u.numerator<1||u.denominator<1))throw new Error('Invalid positive target-load fractions');
   if(!['all-catalog-inputs','catalog-external-items'].includes(p.procurement_pool)||!['item','occurrence'].includes(p.source_selection_scope))throw new Error('Invalid procurement pool/source scope');
   if(!Number.isFinite(p.procurement_probability)||p.procurement_probability<0||p.procurement_probability>1)throw new Error('Invalid declared procurement probability');
 }
@@ -35,7 +36,7 @@ export function sampleRequest(catalogs,policy,{seed,ordinal,split='train'}){
   for(const xs of producers.values())xs.sort((a,b)=>a.id.localeCompare(b.id));
   const targets=[...producers.keys()].filter(item=>partitionFor(item,policy)===split).sort();
   if(!targets.length)fail('empty-partition','No runtime-catalog target belongs to this split',split);
-  const rng=new Random(seed,ordinal),item=rng.choice(targets),sink=rng.choice(producers.get(item)),u=rng.choice(policy.utilizations);
+  const rng=new Random(seed,ordinal),item=rng.choice(targets),sink=rng.choice(producers.get(item)),u=rng.choice(policy.target_loads);
   const quantity=sink.outputs.filter(o=>o.item===item).reduce((a,o)=>a+o.quantity,0)*u.numerator,duration_ms=sink.duration_ms*u.denominator;
   if(!Number.isSafeInteger(quantity)||!Number.isSafeInteger(duration_ms))fail('rate-guard','Requested target rate exceeds exact integer DTO range',item);
   const request={schema_version:1,target:{item,quantity,duration_ms},source_selections:[]},trace=[],selectedByItem=new Map([[item,sink]]);
@@ -57,7 +58,7 @@ export function sampleRequest(catalogs,policy,{seed,ordinal,split='train'}){
   };
   visit(item,'/target',new Map(),0,sink);
   const structure_sha256=digest({target:item,source_selections:request.source_selections});
-  return {schema_version:1,seed,ordinal,split,request,trace,structure_sha256,request_sha256:digest(request),
+  return {schema_version:2,seed,ordinal,split,target_load:{...u},request,trace,structure_sha256,request_sha256:digest(request),
     selected_recipes:[...new Set(trace.filter(t=>t.source.kind==='recipe').map(t=>t.source.recipe))].sort(),
     source_cycles:trace.filter(t=>t.cycle_to).length,source_nodes:trace.length};
 }

@@ -58,6 +58,11 @@ connected learner's credit and actual stream breadth. The fixed-root baseline is
 The measured temporal-credit follow-up (`../layout-direct/credit-report.md`) supplies target
 task gradients but still has mixed quality, about 82% development waste and unchanged target
 density. Next broaden actual production-load sampling before scaling this training configuration.
+The broadened, explicitly stratified run (`../layout-direct/breadth-report.md`) trains one
+seven-facility group, then exposes a verified admission gap: all 11 medium constructions finish
+one internal component and have no frontier into the remaining parallel components. A proposed
+component-admission extension is awaiting the user's construction-policy decision; do not
+substitute small roots or silently relax connected growth. No global impossibility is established.
 Neither a working RL loop nor changed weights satisfies the release criteria. Judge advancement
 by independent layout quality, futile-action rate, actual environment breadth, target density
 and visual inspection. Do not call a sampled negative result universal action uselessness.

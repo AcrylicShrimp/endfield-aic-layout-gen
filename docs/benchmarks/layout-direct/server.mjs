@@ -25,7 +25,7 @@ export async function serve(options){
         if(request.op==='hello')result={schema_version:1,policy_type:'conditional-direct-parameters',dynamic_generation:true,target:'heavy-strong',max_members:stream.plan.environment.max_members};
         else if(request.op==='generate'){
           if(!['train','validation'].includes(request.split))throw new Error('Sealed test generation is not exposed by the training worker');
-          result=await stream.attempt({seed:request.seed,ordinal:request.ordinal,split:request.split});
+          result=await stream.attempt({seed:request.seed,ordinal:request.ordinal,split:request.split,requested_stratum:request.stratum??'any'});
         }else if(request.op==='target')result={id:'heavy-strong',family:'heavy-xiranite-target',split:'target-training',generation:'explicit-target-replay',dialect:'closure-factory',
           request:read(resolve(stream.plan.target.request)),witness:read(resolve(stream.plan.target.witness))};
         else if(request.op==='reset'){result=await env.reset(request.root,request.budget);episode++;}

@@ -1,0 +1,21 @@
+{
+  "schema_version": 3,
+  "training_size_schedule": ["small", "medium", "large"],
+  "evaluation_size_schedule": ["small", "medium", "large"],
+  "credit": "quality-futility-prefix",
+  "seed": 2901,
+  "groups": 32,
+  "workers": 4,
+  "horizon": 512,
+  "threads": 4,
+  "width": 32,
+  "learning_rate": 0.003,
+  "entropy": 0.0001,
+  "target_interval": 8,
+  "minimum_training_facilities": 2,
+  "generation_attempts_per_root": 200,
+  "episode_ms": 300000,
+  "evaluation_roots": 12,
+  "evaluation_horizons": [1024],
+  "evaluation_seeds": [101]
+}

@@ -68,6 +68,9 @@ class DirectPolicyTests(unittest.TestCase):
         self.assertEqual(terminal_advantages([[100, 9, 5], [100, 9, 5]]), [0, 0])
         validate(json.loads(Path(__file__).with_name("train.json").read_text()))
         validate(json.loads(Path(__file__).with_name("credit.json").read_text()))
+        validate(json.loads(Path(__file__).with_name("breadth.json").read_text()))
+        with self.assertRaises(ValueError):
+            validate(dict(json.loads(Path(__file__).with_name("breadth.json").read_text()), training_size_schedule={"small": 1}))
         with self.assertRaises(ValueError):
             validate(dict(schema_version=1))
 

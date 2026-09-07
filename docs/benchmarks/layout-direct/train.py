@@ -26,10 +26,13 @@ def sha(path):
 
 
 def validate(config):
-    if config.get("schema_version") != 2:
+    if config.get("schema_version") != 3:
         raise ValueError("Unsupported streaming training schema")
     if config.get("credit") not in ("terminal-score", "quality-futility-prefix"):
         raise ValueError("Invalid streaming credit contract")
+    for key in ("training_size_schedule", "evaluation_size_schedule"):
+        if not isinstance(config.get(key), list) or not config[key] or any(s not in ("any", "small", "medium", "large") for s in config[key]):
+            raise ValueError(f"Invalid required {key}")
     for key, limit in (("groups", 10000), ("workers", 16), ("horizon", 16384), ("threads", 16), ("width", 256),
                        ("target_interval", 10000), ("generation_attempts_per_root", 1000), ("episode_ms", 300000),
                        ("evaluation_roots", 300), ("minimum_training_facilities", 128)):
@@ -141,20 +144,28 @@ def run(options):
         if not pool.metadata.get("dynamic_generation") or pool.metadata.get("policy_type") != "conditional-direct-parameters":
             raise ValueError("Expected a dynamic direct-action worker")
 
-        def generate(split):
+        def generate(split, stratum):
             # The validation stream is fixed across model seeds and never used for training.
             seed = f"stream-train-main-v1-{config['seed']}" if split == "train" else "stream-validation-frozen-v1"
             for _ in range(config["generation_attempts_per_root"]):
-                result = pool.workers[0].call("generate", seed=seed, ordinal=ordinals[split], split=split)
+                result = pool.workers[0].call("generate", seed=seed, ordinal=ordinals[split], split=split, stratum=stratum)
                 ordinals[split] += 1
                 root, row = result["root"], result["row"]
-                eligible = root is not None and len(root["witness"]["placements"]) >= config["minimum_training_facilities"]
-                generation.append(dict(**row, learning_eligible=eligible))
+                supported = root is not None and row["learning_support"]["supported"]
+                large_enough = root is not None and len(root["witness"]["placements"]) >= config["minimum_training_facilities"]
+                eligible = supported and large_enough
+                eligibility = "requested-stratum-filtered" if row["status"] == "size-stratum-filtered" else "eligible" if eligible else "construction-unavailable" if root is None else "observation-guard" if not supported else "below-training-minimum"
+                generation.append(dict(**row, learning_eligible=eligible, learning_eligibility=eligibility))
+                if not eligible and (row.get("facilities", 0) >= 17 or ordinals[split] % 10 == 0):
+                    print(json.dumps(dict(stage="generation-attempt", split=split, ordinal=row["ordinal"], status=row["status"],
+                                          facilities=row.get("facilities"), stratum=row["size_stratum"], eligibility=eligibility,
+                                          topology=row.get("internal_topology"), elapsed_ms=row["elapsed_ms"])), flush=True)
                 if eligible:
                     print(json.dumps(dict(stage="fresh-factory", split=split, ordinal=row["ordinal"], target=row["sample"]["request"]["target"]["item"],
-                                          facilities=row["facilities"], transports=row["transports"], source_cycles=row["sample"]["source_cycles"])), flush=True)
+                                          facilities=row["facilities"], stratum=row["size_stratum"], load=row["sample"]["target_load"],
+                                          transports=row["transports"], internal_topology=row["internal_topology"])), flush=True)
                     return root
-            raise RuntimeError(f"Fresh {split} factory generation exhausted {config['generation_attempts_per_root']} attempts; no stored-root fallback")
+            raise RuntimeError(f"Fresh {split}/{stratum} factory generation exhausted {config['generation_attempts_per_root']} attempts; no easier-stratum or stored-root fallback")
 
         target = pool.workers[0].call("target")
         model = DirectPolicy(config["width"])
@@ -164,9 +175,15 @@ def run(options):
         optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
         print(json.dumps(dict(stage="streaming-training-started", groups=config["groups"], horizon=config["horizon"],
                               parameters=sum(p.numel() for p in model.parameters()))), flush=True)
+        fresh_group = 0
         for group in range(config["groups"]):
             started = time.perf_counter()
-            root = target if (group + 1) % config["target_interval"] == 0 else generate("train")
+            if (group + 1) % config["target_interval"] == 0:
+                root = target
+            else:
+                schedule = config["training_size_schedule"]
+                root = generate("train", schedule[fresh_group % len(schedule)])
+                fresh_group += 1
             result = rollout(pool, model, [root] * config["workers"], config["horizon"], config, config["seed"] + group, record=True)
             credit = credit_signals(result["histories"], result["summaries"], config["credit"])
             advantage = credit["terminal"]
@@ -191,7 +208,7 @@ def run(options):
                 raise RuntimeError("Nonfinite streaming gradient")
             norm = float(torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0))
             optimizer.step()
-            row = dict(group=group + 1, root=root["id"], family=root["family"], generation=root["generation"],
+            row = dict(group=group + 1, root=root["id"], family=root["family"], generation=root["generation"], facilities=len(root["witness"]["placements"]),
                        sampled_transitions=samples, terminal_advantages=advantage, task_loss=task_loss, entropy=entropy_sum,
                        quality_terminal_advantages=credit["quality_terminal"], terminal_outcomes=credit["outcomes"],
                        credited_transitions=sum(v != 0 for xs in credit["signals"] for v in xs),
@@ -199,6 +216,7 @@ def run(options):
                        summaries=result["summaries"], audits=result["audits"], artifacts=result["artifacts"], elapsed_seconds=time.perf_counter() - started)
             groups.append(row)
             write(output / f"group-{group + 1:04d}.json", row)
+            write(output / f"checkpoint-{group + 1:04d}.json", checkpoint(model))
             print(json.dumps(dict(stage="streaming-optimizer-update", group=group + 1, root=root["id"], informative=any(advantage),
                                   quality_informative=any(credit["quality_terminal"]), credited=row["credited_transitions"],
                                   futile=[s["waste"]["futile_fraction"] for s in result["summaries"]],
@@ -220,7 +238,8 @@ def run(options):
                         dynamic_groups=sum(g["generation"] == "dynamic-catalog" for g in groups),
                         unique_dynamic_roots=len({g["root"] for g in groups if g["generation"] == "dynamic-catalog"}))
         write(output / "training.json", training)
-        roots = [generate("validation") for _ in range(config["evaluation_roots"])] + [target]
+        schedule = config["evaluation_size_schedule"]
+        roots = [generate("validation", schedule[i % len(schedule)]) for i in range(config["evaluation_roots"])] + [target]
         write(output / "evaluation-roots.json", roots)
         for horizon in config["evaluation_horizons"]:
             for seed in config["evaluation_seeds"]:
@@ -229,7 +248,7 @@ def run(options):
                         batch = roots[start:start + config["workers"]]
                         result = rollout(pool, policy, batch, horizon, config, seed, uniform=name == "uniform")
                         for i, root in enumerate(batch):
-                            row = dict(model=name, root=root["id"], family=root["family"], split=root["split"], horizon=horizon, seed=seed,
+                            row = dict(model=name, root=root["id"], family=root["family"], split=root["split"], horizon=horizon, seed=seed, facilities=len(root["witness"]["placements"]),
                                        inference_seconds=result["inference_seconds_by_worker"][i],
                                        inference_batch_seconds=result["inference_seconds"], batch_roots=[r["id"] for r in batch],
                                        summary=result["summaries"][i], audit=result["audits"][i], artifact=result["artifacts"][i])

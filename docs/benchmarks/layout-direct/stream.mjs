@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { args,read,write,hash,digest,sourcePaths,catalogKeys,Probe } from '../layout-rl/io.mjs';
 import { prepareRoot,checkRoot } from '../layout-rl/coverage.mjs';
 import { sampleRequest,validateSampling } from './sampling.mjs';
+import { observationSupport,sizeStratum,internalTopology } from './support.mjs';
 
 const diagnostic=(code,message,entity=null,stage='stream')=>({code:`stream-${code}`,severity:'warning',stage,message,entity});
 const run=(binary,argv,timeout)=>new Promise((resolve,reject)=>{
@@ -28,6 +29,7 @@ export class FactoryStream {
     this.probe=new Probe({...paths,validator:this.validator},plan.validator_ms);this.attempts=[];this.seen=new Map();
   }
   async attempt(position){
+    if(!['any','small','medium','large'].includes(position.requested_stratum??'any'))throw new Error('Invalid requested factory size stratum');
     const started=performance.now(),directory=path.join(this.output,`attempt-${String(this.attempts.length).padStart(7,'0')}`);fs.mkdirSync(directory);
     const row={...position,directory,status:'pending',factory_validated:false};let root=null;
     try{
@@ -47,11 +49,16 @@ export class FactoryStream {
         else{
           const nodes=wiring.nodes.filter(n=>n.kind==='facility'),ids=new Set(nodes.map(n=>n.id));
           row.facilities=nodes.length;row.requirements=wiring.edges.length;
+          row.size_stratum=sizeStratum(nodes.length);
+          if(nodes.length<=this.plan.sampling.max_facilities)row.internal_topology=internalTopology(nodes,wiring.edges);
           row.transports=[...new Set(wiring.edges.map(e=>this.catalogs.items.items.find(i=>i.id===e.item).transport))].sort();
           const graphRequest={placements:nodes.map(n=>({instance:n.id,recipe:n.recipe,facility:n.facility})),
             internal_requirements:wiring.edges.filter(e=>ids.has(e.source)&&ids.has(e.target)),external_requirements:wiring.edges.filter(e=>!ids.has(e.source)||!ids.has(e.target))};
           row.production_sha256=digest({target:sample.request.target,graph:graphRequest});
           if(nodes.length>this.plan.sampling.max_facilities){row.status='instance-guard';row.diagnostic=diagnostic('instance-guard','Whole generated factory exceeds declared operational instance guard',nodes.length);}
+          else if(position.requested_stratum&&position.requested_stratum!=='any'&&position.requested_stratum!==row.size_stratum){
+            row.status='size-stratum-filtered';row.diagnostic={...diagnostic('size-stratum-filtered','Whole request does not belong to the predetermined curriculum size slot',
+              {requested:position.requested_stratum,actual:row.size_stratum,facilities:nodes.length}),severity:'info'};}
           else if(this.seen.has(row.production_sha256)){row.status='duplicate-production';row.duplicate_of=this.seen.get(row.production_sha256);}
           else{
             this.seen.set(row.production_sha256,{...position,directory});
@@ -76,14 +83,15 @@ export class FactoryStream {
                 root.graph=prepareRoot(root,this.catalogs);const start=performance.now(),validation=await this.probe.check(witness),coverage=checkRoot(root,root.graph,witness,validation);
                 row.validation_ms=performance.now()-start;write(path.join(directory,'validation.json'),{validation,coverage});
                 if(!coverage.factory_validated){row.status='validation-rejected';row.diagnostics=coverage.diagnostics;root=null;}
-                else{row.status='accepted';row.factory_validated=true;write(path.join(directory,'root.json'),root);row.root={path:path.join(directory,'root.json'),sha256:hash(path.join(directory,'root.json'))};}
+                else{row.status='accepted';row.factory_validated=true;row.learning_support=observationSupport(witness,this.catalogs,this.plan.environment);
+                  write(path.join(directory,'root.json'),root);row.root={id:root.id,path:path.join(directory,'root.json'),sha256:hash(path.join(directory,'root.json'))};}
               }
             }
           }
         }
       }
     }catch(e){if(!e.code?.startsWith('stream-'))throw e;row.status='sampling-rejected';row.diagnostic={code:e.code,severity:e.severity,stage:e.stage,message:e.message,entity:e.entity};}
-    row.elapsed_ms=performance.now()-started;this.attempts.push(row);write(path.join(directory,'attempt.json'),row);return {root,row};
+    row.size_stratum??='unknown-flow';row.elapsed_ms=performance.now()-started;this.attempts.push(row);write(path.join(directory,'attempt.json'),row);return {root,row};
   }
   close(){this.probe.close();for(const p of this.provenance)if(hash(p.path)!==p.sha256)throw new Error(`Factory stream source changed: ${p.path}`);}
 }
