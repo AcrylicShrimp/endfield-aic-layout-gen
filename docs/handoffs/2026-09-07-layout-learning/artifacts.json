@@ -1,0 +1,209 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-07",
+  "status": "stopped-by-user; all diagnosis and new training paused for handoff",
+  "workspace": "/Users/ashrimp/Devel/endfield-aic-layout-gen",
+  "evaluation_set": {
+    "path": "target/layout-direct-budget-evaluation-02/evaluation-set.json",
+    "bytes": 2372975,
+    "sha256": "a4d336b102be55f3deb7ebdacd7e10e90bcb4194076c2c74a9e6f5bba1e0acc2"
+  },
+  "runs": [
+    {
+      "seed": 1901,
+      "directory": "target/layout-direct-budget-seed-1901-02",
+      "exit_code": 130,
+      "termination": "user-requested SIGINT",
+      "completed_updates": 399,
+      "completed_update_actions": 817152,
+      "last_after_state_sha256": "3748fe64cc8cfa73b27b8cbdb11026726a94d18bcd7edd7d1dbf9a59d445a231",
+      "last_complete_group": {
+        "path": "target/layout-direct-budget-seed-1901-02/group-0399.json",
+        "bytes": 32629,
+        "sha256": "71510b5e381283b1857d2c9a7da410a7ad75be7726272f12b7f0c88e3871d59c"
+      },
+      "checkpoints": [
+        {
+          "path": "target/layout-direct-budget-seed-1901-02/checkpoint-0000.json",
+          "bytes": 637872,
+          "sha256": "c6e711ada06b5d67e5a112afad427fc14c5a9a0bef7f70c7a99afe38615658bb"
+        },
+        {
+          "path": "target/layout-direct-budget-seed-1901-02/checkpoint-0064.json",
+          "bytes": 1976354,
+          "sha256": "ce9a77071690512694b8bad4493fab2f39a8bd35717311b8058e8a2742acb223"
+        },
+        {
+          "path": "target/layout-direct-budget-seed-1901-02/checkpoint-0256.json",
+          "bytes": 1982645,
+          "sha256": "b42eee8d17c9b5fde7cc108ea96d7d649c503eb92223e2d692f10fe71f4fd548"
+        }
+      ],
+      "evaluations": [
+        {
+          "path": "target/layout-direct-budget-seed-1901-02/evaluation-0000-initial.json",
+          "bytes": 384613,
+          "sha256": "c3430b45c61ee8896923d75e28a03b52b98f9c32aa85d736a05ebf3282395026"
+        },
+        {
+          "path": "target/layout-direct-budget-seed-1901-02/evaluation-0000-uniform.json",
+          "bytes": 390071,
+          "sha256": "6ce128f4230d308088ba648409ef9a57aa4c33f56ff42de4b32d8b4792bc1b2a"
+        },
+        {
+          "path": "target/layout-direct-budget-seed-1901-02/evaluation-0064-trained.json",
+          "bytes": 387460,
+          "sha256": "8e78869dad8d486efe3d70671ead8761fe34c299799188deecd832f6fbadcff6"
+        },
+        {
+          "path": "target/layout-direct-budget-seed-1901-02/evaluation-0256-trained.json",
+          "bytes": 385759,
+          "sha256": "343a9a1f3463991c08e9dfef2d8c8ba32523da72bc7f675f334c78150b0c15d5"
+        }
+      ],
+      "provenance": {
+        "path": "target/layout-direct-budget-seed-1901-02/provenance.json",
+        "bytes": 9733,
+        "sha256": "531b51992fffb1d5684a20bd651d0073c1f5ac65366adb43561b54cbe2866151"
+      },
+      "has_final_report": false
+    },
+    {
+      "seed": 2901,
+      "directory": "target/layout-direct-budget-seed-2901-01",
+      "exit_code": 130,
+      "termination": "user-requested SIGINT",
+      "completed_updates": 391,
+      "completed_update_actions": 800768,
+      "last_after_state_sha256": "5147123cfc1b48ce33d0478cd756395b272dcdcfbee97ecf9361d32bdec7fc73",
+      "last_complete_group": {
+        "path": "target/layout-direct-budget-seed-2901-01/group-0391.json",
+        "bytes": 40207,
+        "sha256": "919e1606f9731502373649d2afda271d7cf5e700606275045b66e6e0b40f84ec"
+      },
+      "checkpoints": [
+        {
+          "path": "target/layout-direct-budget-seed-2901-01/checkpoint-0000.json",
+          "bytes": 637917,
+          "sha256": "994ec192394ba1f165e4a0b4f38e5635dd76c21dc8ffc37fefac9ad95a2ec4a3"
+        },
+        {
+          "path": "target/layout-direct-budget-seed-2901-01/checkpoint-0064.json",
+          "bytes": 1976470,
+          "sha256": "90ea6d0af8f8899368fff1b7e939715b67a2a6d5df8f0dd01a12cfa88c3ba8f2"
+        },
+        {
+          "path": "target/layout-direct-budget-seed-2901-01/checkpoint-0256.json",
+          "bytes": 1980503,
+          "sha256": "df1be9f07e711c3313e008040bea820f10b0cbca910d66e3e8d246517330e022"
+        }
+      ],
+      "evaluations": [
+        {
+          "path": "target/layout-direct-budget-seed-2901-01/evaluation-0000-initial.json",
+          "bytes": 395537,
+          "sha256": "1213a6eb2c75ff58e79f2dc3108536a663405ba6a2c402c3461baf2d8cd0a87e"
+        },
+        {
+          "path": "target/layout-direct-budget-seed-2901-01/evaluation-0000-uniform.json",
+          "bytes": 390058,
+          "sha256": "f1c37c45275b4004ecffae4a971dcb7148acd0a944238f8173da6479985dbcc8"
+        },
+        {
+          "path": "target/layout-direct-budget-seed-2901-01/evaluation-0064-trained.json",
+          "bytes": 382653,
+          "sha256": "e648484f7e4c5c37715b6e027c92874cafcf880a661bf6deaf92618f3b50b45e"
+        },
+        {
+          "path": "target/layout-direct-budget-seed-2901-01/evaluation-0256-trained.json",
+          "bytes": 394172,
+          "sha256": "6fa9e6c296c0381d1acbbc4d21733df82da9fc1f8d9594a0d065d41950269a85"
+        }
+      ],
+      "provenance": {
+        "path": "target/layout-direct-budget-seed-2901-01/provenance.json",
+        "bytes": 9733,
+        "sha256": "531b51992fffb1d5684a20bd651d0073c1f5ac65366adb43561b54cbe2866151"
+      },
+      "has_final_report": false
+    },
+    {
+      "seed": 3901,
+      "directory": "target/layout-direct-budget-seed-3901-01",
+      "exit_code": 130,
+      "termination": "user-requested SIGINT",
+      "completed_updates": 389,
+      "completed_update_actions": 796672,
+      "last_after_state_sha256": "f15383a48f60e25759644b07034d641e0a3364c1919e4485663635179bf07c84",
+      "last_complete_group": {
+        "path": "target/layout-direct-budget-seed-3901-01/group-0389.json",
+        "bytes": 26508,
+        "sha256": "ec80a6f8ea266541684b5d55d3f1885e635a4b81e330d2cdd8daad66a2982a18"
+      },
+      "checkpoints": [
+        {
+          "path": "target/layout-direct-budget-seed-3901-01/checkpoint-0000.json",
+          "bytes": 637775,
+          "sha256": "182081a823b1494b7e691395a5cd3f921b951be7f800f2c9e3dd7314fc559508"
+        },
+        {
+          "path": "target/layout-direct-budget-seed-3901-01/checkpoint-0064.json",
+          "bytes": 1973816,
+          "sha256": "70e9da43ea7584b98d8adc4583a98e4e6df45b78fb67699ef92607ddda5bddf8"
+        },
+        {
+          "path": "target/layout-direct-budget-seed-3901-01/checkpoint-0256.json",
+          "bytes": 1979069,
+          "sha256": "dcba7c26ca1804fbd184c1368e716ab1f71a4efc2ae4e94d12941025052b8251"
+        }
+      ],
+      "evaluations": [
+        {
+          "path": "target/layout-direct-budget-seed-3901-01/evaluation-0000-initial.json",
+          "bytes": 387965,
+          "sha256": "e8c9f20643297a6d549c49d3654030f647941af23101156d1e6e1db4c5346ab3"
+        },
+        {
+          "path": "target/layout-direct-budget-seed-3901-01/evaluation-0000-uniform.json",
+          "bytes": 390028,
+          "sha256": "397b4d6dc3c4c89feec8c9ef1d10fcc30f50e71a9c6409f03f818f649ec19324"
+        },
+        {
+          "path": "target/layout-direct-budget-seed-3901-01/evaluation-0064-trained.json",
+          "bytes": 386641,
+          "sha256": "68b14d00e81283a8fa1726a2a992c2fbfa057f81b73acaa89e243b1e6acd33a4"
+        },
+        {
+          "path": "target/layout-direct-budget-seed-3901-01/evaluation-0256-trained.json",
+          "bytes": 383264,
+          "sha256": "b41d5091c7a2101c25c115267b7103e8626b2006f313f59e50e2e3a542c18474"
+        }
+      ],
+      "provenance": {
+        "path": "target/layout-direct-budget-seed-3901-01/provenance.json",
+        "bytes": 9733,
+        "sha256": "531b51992fffb1d5684a20bd651d0073c1f5ac65366adb43561b54cbe2866151"
+      },
+      "has_final_report": false
+    }
+  ],
+  "verified_integrity": {
+    "completed_training_episodes": 4716,
+    "completed_evaluation_episodes": 312,
+    "completed_referenced_episodes": 5028,
+    "completed_update_training_actions": 2414592,
+    "completed_evaluation_actions": 319488,
+    "total_completed_referenced_actions": 2734080,
+    "verified_root_and_episode_references": 6207,
+    "completed_training_target_episodes": 580,
+    "completed_training_target_area_improvements": 0,
+    "scope": "Independent SHA-256 checks of all referenced roots/episodes, full completed-group continuity, recorded validation flags and raw-versus-summary retained score/waste checks. Not a fresh geometry-validator or gradient rerun. Last full independent semantic audit through update 256."
+  },
+  "limits": [
+    "Interrupted in-flight groups and their partial records are excluded; no files were deleted.",
+    "Last full model/Adam snapshots are 256, not the final completed-group numbers.",
+    "Model/Adam capsules do not resume factory generation, worker or deduplication state.",
+    "No 1024 checkpoint, evaluation or completed budget-curve report exists.",
+    "target/ artifacts are ignored by Git; retain them or back them up separately."
+  ]
+}

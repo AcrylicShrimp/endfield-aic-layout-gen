@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "scope": "archived-uncommitted-source-overlay-not-integrated-code",
+  "base_commit": "44a854f045eb9daa6aafc56d989bc69648ccf773",
+  "patch": {
+    "path": "docs/handoffs/2026-09-07-layout-learning/remaining-worktree.patch",
+    "sha256": "a3c0e33d8122581cbfcd2b07a34b0d73aaa73ee1fb4811aa442e6cdb139aba8e"
+  },
+  "files": [
+    {
+      "path": "docs/benchmarks/constructive-bound-interconnect/model.test.mjs",
+      "bytes": 6268,
+      "sha256": "74db7f7bf4503f60208eeb639efca983484a57a249b57444f085f1bb6b22bd52"
+    },
+    {
+      "path": "docs/benchmarks/constructive-bound-interconnect/view.mjs",
+      "bytes": 11826,
+      "sha256": "286b36e05d84dd25dc0986ff2c9b0dfcac554250a02d65133ecfa85cb0316995"
+    },
+    {
+      "path": "docs/benchmarks/constructive-factory-closure/model.mjs",
+      "bytes": 25766,
+      "sha256": "91a82ac5d7a4a800a2888467813fc82bcd1dc0437118efc545d71b7515bfac76"
+    },
+    {
+      "path": "docs/benchmarks/constructive-recipe-breadth/contract.md",
+      "bytes": 4162,
+      "sha256": "a4870fd51bc20dc589cd06700ada6f9611dd335ffece31a5645d4a0820d3d57e"
+    },
+    {
+      "path": "docs/benchmarks/constructive-recipe-breadth/model.mjs",
+      "bytes": 8070,
+      "sha256": "4c40bfebcf9168ea7573aea834363914feba9db495fac38882cd62e6c2b33908"
+    },
+    {
+      "path": "docs/benchmarks/constructive-recipe-breadth/model.test.mjs",
+      "bytes": 11339,
+      "sha256": "e99e23f35fc821b0287612418606f0cd6cc735d63b4e8e6adfe462a6f130c635"
+    },
+    {
+      "path": "docs/benchmarks/constructive-recipe-breadth/run.mjs",
+      "bytes": 11936,
+      "sha256": "c94970dc9be49d2ae94b6d1fc5da634b80a733d9c8d822c15bc4439a7e6ffb0d"
+    },
+    {
+      "path": "docs/benchmarks/constructive-recipe-breadth/requests/battery-3.json",
+      "bytes": 506,
+      "sha256": "da758b09d66314cef8ea72cc9a571c1c2d339925e1696d46bbeea45e268b8fb0"
+    },
+    {
+      "path": "docs/benchmarks/constructive-recipe-breadth/requests/food-3.json",
+      "bytes": 665,
+      "sha256": "4483eac2724f5ba5af9084f27c556d306855ae03e22f33f8addb2dbb4179111e"
+    },
+    {
+      "path": "docs/benchmarks/constructive-recipe-breadth/requests/medical-3.json",
+      "bytes": 671,
+      "sha256": "cbff3a5f40a70ab57e8fccf16ab305fa77a1868fb8f072c1d61effa5c4811fca"
+    },
+    {
+      "path": "docs/benchmarks/layout-direct/choice-fit-contract.md",
+      "bytes": 6095,
+      "sha256": "184568e272e637b4e9e10c2474fc8cedf1f554550dd548f9c57754c54de49c12"
+    },
+    {
+      "path": "docs/benchmarks/layout-direct/choice_fit.py",
+      "bytes": 15843,
+      "sha256": "a7ac82119aac4116428024533a88d1e6205cd916e53adbfca16f949c167af04e"
+    }
+  ],
+  "verification": {
+    "isolated_index_round_trip": "all 12 files byte-identical",
+    "current_frozen_source_hashes_checked": 54
+  },
+  "warning": "Do not apply over the existing dirty worktree. Inspect first; use git apply --check on the recorded base. This archive is not completion or approval of the underlying drafts."
+}

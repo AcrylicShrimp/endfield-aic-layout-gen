@@ -1,0 +1,1026 @@
+diff --git a/docs/benchmarks/constructive-bound-interconnect/model.test.mjs b/docs/benchmarks/constructive-bound-interconnect/model.test.mjs
+index 1d4760f..07347ac 100644
+--- a/docs/benchmarks/constructive-bound-interconnect/model.test.mjs
++++ b/docs/benchmarks/constructive-bound-interconnect/model.test.mjs
+@@ -31,7 +31,7 @@ test('visualization includes actual ports, pending scope and script-safe inline
+   const d=buildFixture(catalogs,spec,true,true);d.case='</script>';
+   const html=render(d,{covered_geometry_validated:true,recipe_terminals:[]},{transports:catalogs.transports});
+   assert(html.includes('catalog_ports'));assert(html.includes('SCALED CAPACITY VIOLATION'));
+-  assert(html.includes('not the complete heavy-xiranite'));assert(html.includes('\\u003c/script>'));
++  assert(html.includes('partial production graph, not a complete factory'));assert(html.includes('\\u003c/script>'));
+ });
+ test('full-rate dedicated pairs use six lanes and two preplanned bridge cells',()=>{
+   const spec=JSON.parse(fs.readFileSync(new URL('./full-fixture.json',import.meta.url))),result=buildDedicated(catalogs,spec);
+diff --git a/docs/benchmarks/constructive-bound-interconnect/view.mjs b/docs/benchmarks/constructive-bound-interconnect/view.mjs
+index a22f022..67379da 100644
+--- a/docs/benchmarks/constructive-bound-interconnect/view.mjs
++++ b/docs/benchmarks/constructive-bound-interconnect/view.mjs
+@@ -52,7 +52,7 @@ document.getElementById('status').textContent=w.placements.length+' facilities
+ document.getElementById('explanation').textContent=overload?'RED: single-lane capacity exceeded when rates are multiplied by four. This is the retained geometry, not proof that the recipe request is impossible.':'Actual unit-grid paths. Independent validation checks recipe rates, facility ports, component arms, capacity and reachability.';
+ if(detail.move_diagnostic&&!overload){document.getElementById('status').textContent+=' · proposed move REJECTED';document.getElementById('explanation').textContent='RED DASHED: proposed facility positions, not committed geometry. RED RINGS: failed route endpoints. '+detail.move_diagnostic.code+'. The solid geometry is the unchanged validated factory.';}
+ if(detail.move_diagnostic?.relaxed_routes?.length&&!overload)document.getElementById('explanation').textContent+=' PURPLE DASHED: minimum terminal-cell-contact path in a finite relaxation; NOT a valid route. PURPLE SQUARES: occupied terminal cells to clear (hover for all owners). Wiring, components and port arms are ignored.';
+-document.getElementById('scope').textContent='Pending recipe terminals: '+validation.recipe_terminals.filter(t=>value(t.pending_rate)>0).length+'. '+(detail.case==='actual-graph-cycle-block'?'Actual graph cycle: internal return flow is closed; outgoing graph products remain pending. ':detail.case==='actual-graph-block-composition'?'Actual composed graph: new frontier connections are validated; block interiors are preserved; remaining graph cuts stay pending. ':detail.case==='actual-graph-factory-closure'?'Actual graph closure: retained blocks, mixed-transport head and original boundary obligations. ':'')+(detail.factory_validated&&validation.covered_geometry_validated&&validation.recipe_coverage_complete?'Complete original graph and external margins independently checked. No minimum-area claim.':'This is not the complete heavy-xiranite production graph.');}
++document.getElementById('scope').textContent='Pending recipe terminals: '+validation.recipe_terminals.filter(t=>value(t.pending_rate)>0).length+'. '+(detail.case==='actual-graph-cycle-block'?'Actual graph cycle: internal return flow is closed; outgoing graph products remain pending. ':detail.case==='actual-graph-block-composition'?'Actual composed graph: new frontier connections are validated; block interiors are preserved; remaining graph cuts stay pending. ':detail.case==='actual-graph-factory-closure'?'Actual graph closure: retained blocks, mixed-transport head and original boundary obligations. ':'')+(detail.factory_validated&&validation.covered_geometry_validated&&validation.recipe_coverage_complete?'Complete original graph and external margins independently checked. No minimum-area claim.':'This is a partial production graph, not a complete factory.');}
+ document.getElementById('fit').onclick=()=>{view=[...fullView];applyView();};
+ svg.style.touchAction='none';svg.style.cursor='grab';
+ svg.addEventListener('wheel',e=>{e.preventDefault();const p=new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse()),k=e.deltaY>0?1.15:1/1.15;
+diff --git a/docs/benchmarks/constructive-factory-closure/model.mjs b/docs/benchmarks/constructive-factory-closure/model.mjs
+index de70679..186a828 100644
+--- a/docs/benchmarks/constructive-factory-closure/model.mjs
++++ b/docs/benchmarks/constructive-factory-closure/model.mjs
+@@ -2,6 +2,7 @@ import { rotateFacility } from '../constructive-placement-only/model.mjs';
+ import { polyline } from '../constructive-interconnect/geometry.mjs';
+ import { pendingOutputSpace } from './output-space.mjs';
+ import { rate, add, compare, parseRate, dto, capacity, lanesFor } from '../constructive-interconnect/rates.mjs';
++import { shortestPath } from '../constructive-local-reembedding/path.mjs';
+ const key = p => `${p.x},${p.y}`, pair = p => [p.x, p.y];
+ const delta = { north: [0, -1], east: [1, 0], south: [0, 1], west: [-1, 0] };
+ const fail = (code, message, entity = null) => { throw Object.assign(new Error(message), { code, severity: 'error', stage: 'factory-closure', entity }); };
+@@ -76,8 +77,8 @@ export function pendingOutputAccess(graph, w, catalogs, ports = project(w, catal
+ }
+
+ // Enumerate a small family of orthogonal corridor templates, never a cell-search router.
+-export function routeTemplates(a, b, occupied, transport, extent, boundary = null, family = 'simple') {
+-  if (!['simple', 'perimeter'].includes(family)) fail('closure-route-family', 'Expected simple or perimeter corridor templates', family);
++export function routeTemplates(a, b, occupied, transport, extent, boundary = null, family = 'simple', search = null) {
++  if (!['simple', 'perimeter', 'search'].includes(family)) fail('closure-route-family', 'Expected simple, perimeter or bounded-search routing', family);
+   const templates = [[pair(a), [b.x, a.y], pair(b)], [pair(a), [a.x, b.y], pair(b)]];
+   const xs = new Set([a.x, b.x, Math.floor((a.x + b.x) / 2)]), ys = new Set([a.y, b.y, Math.floor((a.y + b.y) / 2)]);
+   for (const d of [-8, -4, -2, -1, 1, 2, 4, 8]) { xs.add(a.x + d); xs.add(b.x + d); ys.add(a.y + d); ys.add(b.y + d); }
+@@ -86,7 +87,7 @@ export function routeTemplates(a, b, occupied, transport, extent, boundary = nul
+   for (const y of ys) if (y >= 0) templates.push([pair(a), [a.x, y], [b.x, y], pair(b)]);
+   // A reserved transfer row plus a separate ingress/egress column avoids approaching
+   // a north-facing input through the consumer body from below (and the dual case).
+-  if (family === 'perimeter') for (const y of new Set([0, extent.height, Math.max(a.y, b.y) + 1, Math.min(a.y, b.y) - 1])) {
++  if (family !== 'simple') for (const y of new Set([0, extent.height, Math.max(a.y, b.y) + 1, Math.min(a.y, b.y) - 1])) {
+     if (y < 0) continue;
+     for (const d of [-8, -4, -2, -1, 1, 2, 4, 8]) {
+       if (b.x + d >= 0) templates.push([pair(a), [a.x, y], [b.x + d, y], [b.x + d, b.y], pair(b)]);
+@@ -106,6 +107,16 @@ export function routeTemplates(a, b, occupied, transport, extent, boundary = nul
+     const candidate = { cells, corners, score: [area, cells.length, turns] };
+     if (!selected || better(candidate.score, selected.score)) selected = candidate;
+   }
++  if (!selected && family === 'search' && search && search.remaining > 0 && search.calls < 256) {
++    const maxX = boundary ? boundary.width - 1 : Math.max(extent.width, a.x, b.x) + 4;
++    const maxY = boundary ? boundary.height - 1 : Math.max(extent.height, a.y, b.y) + 4;
++    if ((maxX + 1) * (maxY + 1) <= 250000) {
++      const result = shortestPath(a, b, new Set([...occupied.body, ...occupied.layers[transport]]), { minX: 0, minY: 0, maxX, maxY },
++        { workBudget: Math.min(20000, search.remaining), allowZeroLength: true });
++      search.calls++; search.expanded += result.expanded; search.remaining -= result.expanded;
++      if (result.status === 'found') selected = { cells: result.cells, corners: result.cells.map(pair), score: [areaWith(extent, result.cells), result.cells.length, result.turns] };
++    }
++  }
+   return selected ?? null;
+ }
+ function append(w, occupied, edge, source, target, value, path, ordinal) {
+@@ -122,7 +133,7 @@ function append(w, occupied, edge, source, target, value, path, ordinal) {
+   for (let i = 1; i < path.cells.length; i++) n.segments.push({ from: path.cells[i - 1], to: path.cells[i], rate: dto(value) });
+   return { edge: edge.id, source: source.external ? source.node : [source.node, source.id], target: target.external ? target.node : [target.node, target.id], rate: dto(value), corners: path.corners };
+ }
+-function connect(w, ports, occupied, edge, catalogs, boundary = null, family = 'simple') {
++function connect(w, ports, occupied, edge, catalogs, boundary = null, family = 'simple', search = null) {
+   let left = parseRate(edge.rate), ordinal = 0; const routes = [];
+   const cap = capacity(catalogs.transports.transports.find(t => t.kind === edge.transport).capacity);
+   while (left.n) {
+@@ -137,7 +148,9 @@ function connect(w, ports, occupied, edge, catalogs, boundary = null, family = '
+         ...(boundary ? [{ external: true, node, edge: 'south', connection: { x, y: boundary.height - 1 } }] : [])]);
+       if (boundary) {
+         const ys = new Set(opposite.flatMap(p => Array.from({ length: 33 }, (_, i) => p.connection.y + i - 16)));
+-        ends.push(...[...ys].filter(y => y >= 0 && y < boundary.height).map(y => ({ external: true, node, edge: 'east', connection: { x: boundary.width - 1, y } })));
++        ends.push(...[...ys].filter(y => y >= 0 && y < boundary.height).flatMap(y => [
++          { external: true, node, edge: 'east', connection: { x: boundary.width - 1, y } },
++          { external: true, node, edge: 'west', connection: { x: 0, y } }]));
+       }
+       return ends;
+     };
+@@ -149,10 +162,11 @@ function connect(w, ports, occupied, edge, catalogs, boundary = null, family = '
+     for (const { a, b } of pairs) {
+       const minimum = [areaWith(extent, [a.connection, b.connection]), distance(a.connection, b.connection) + 1, 0];
+       if (selected && !better(minimum, selected.path.score)) continue;
+-      const path = routeTemplates(a.connection, b.connection, occupied, edge.transport, extent, boundary, family);
++      const path = routeTemplates(a.connection, b.connection, occupied, edge.transport, extent, boundary, family, search);
+       if (path && (!selected || better(path.score, selected.path.score))) selected = { a, b, path };
+     }
+-    if (!selected) fail('closure-port-template-exhausted', 'No unused port pair and collision-free corridor template', { edge: edge.id, item: edge.item, pairs: pairs.length });
++    if (!selected) fail(search && (search.remaining === 0 || search.calls >= 256) ? 'closure-route-search-budget' : 'closure-port-template-exhausted',
++      'No unused port pair and valid route within the recorded family and work budget', { edge: edge.id, item: edge.item, pairs: pairs.length, ...(search ? { search: { ...search } } : {}) });
+     routes.push(append(w, occupied, edge, selected.a, selected.b, value, selected.path, ordinal++)); left = minus(left, value);
+   }
+   return routes;
+@@ -181,10 +195,11 @@ export function placements(node, graph, base, catalogs, family = 'forward') {
+   return positions.map(c => c.p);
+ }
+ export function growCandidates(catalogs, graph, base, node, budget = 64, routeFamily = 'simple', placementFamily = 'forward') {
+-  if (!['simple', 'perimeter'].includes(routeFamily)) fail('closure-route-family', 'Expected simple or perimeter corridor templates', routeFamily);
++  if (!['simple', 'perimeter', 'search'].includes(routeFamily)) fail('closure-route-family', 'Expected simple, perimeter or bounded-search routing', routeFamily);
+   if (!Number.isSafeInteger(budget) || budget < 1 || budget > 512) fail('closure-candidate-budget', 'Expected placement trial budget 1..512');
+   if (!ready(graph, base.witness).some(n => n.id === node.id)) fail('closure-frontier-unready', 'Internal predecessors must already be retained', node.id);
+   const start = performance.now(), candidates = [], failures = []; let trials = 0;
++  const search = routeFamily === 'search' ? { remaining: 200000, calls: 0, expanded: 0 } : null;
+   const copying = { draft_count: 0, draft_ms: 0, materialized_count: 0, materialize_ms: 0 };
+   const retainedPorts = project(base.witness, catalogs);
+   for (const p of placements(node, graph, base, catalogs, placementFamily).slice(0, budget)) {
+@@ -200,7 +215,7 @@ export function growCandidates(catalogs, graph, base, node, budget = 64, routeFa
+     const ports = { ...retainedPorts, ...project({ placements: [p] }, catalogs) }, occupied = index(w), routes = [];
+     try {
+       const edges = graph.edges.filter(e => e.target === node.id).sort((a, b) => (a.transport === 'pipe' ? 0 : 1) - (b.transport === 'pipe' ? 0 : 1) || a.id.localeCompare(b.id));
+-      for (const edge of edges) routes.push(...connect(w, ports, occupied, edge, catalogs, null, routeFamily));
++      for (const edge of edges) routes.push(...connect(w, ports, occupied, edge, catalogs, null, routeFamily, search));
+       const access = pendingOutputAccess(graph, w, catalogs, ports, occupied), obstructed = access.filter(g => g.available < g.required);
+       if (obstructed.length) fail('closure-pending-output-obstructed', 'Insufficient free output connections for remaining graph margins', obstructed);
+       const space = pendingOutputSpace(graph, w, catalogs, access, occupied);
+@@ -213,7 +228,7 @@ export function growCandidates(catalogs, graph, base, node, budget = 64, routeFa
+       if (candidates.length === 8) break;
+     } catch (e) { failures.push({ code: e.code ?? 'closure-candidate-failed', severity: e.severity ?? 'error', stage: e.stage ?? 'factory-closure', message: e.message, entity: e.entity, placement: p }); }
+   }
+-  return { candidates, failures, trials, copying, construction_ms: performance.now() - start };
++  return { candidates, failures, trials, copying, route_search: search, construction_ms: performance.now() - start };
+ }
+ export function finishOutputs(catalogs, graph, base, routeFamily = 'simple') {
+   const start = performance.now(), w = structuredClone(base.witness), ports = project(w, catalogs), occupied = index(w), routes = [];
+@@ -224,8 +239,28 @@ export function finishOutputs(catalogs, graph, base, routeFamily = 'simple') {
+   return { ...base, witness: w, catalog_ports: ports, accepted: false, factory_validated: false, closure_plan: { added: null, routes, route_family: routeFamily }, construction_ms: performance.now() - start };
+ }
+
++// Internal-region construction defers only real original external demands, never internal inputs.
++export function finishBoundary(catalogs, graph, base, routeFamily = 'perimeter') {
++  const start = performance.now(), w = structuredClone(base.witness), members = new Set(w.placements.map(p => p.instance));
++  if (members.size !== graph.nodes.length || graph.nodes.some(n => !members.has(n.id)))
++    fail('closure-incomplete-membership', 'All original facilities are required before full boundary realization');
++  if (w.transport_networks.some(n => n.terminals.some(t => t.endpoint.kind === 'external')))
++    fail('closure-boundary-already-realized', 'Expected internal-region geometry with original external demands still pending');
++  const move = p => ({ ...p, x: p.x + 1, y: p.y + 1 });
++  w.placements = w.placements.map(move); w.logistics_components = w.logistics_components.map(c => ({ ...c, position: move(c.position) }));
++  w.transport_networks = w.transport_networks.map(n => ({ ...n, cells: n.cells.map(move),
++    segments: n.segments.map(s => ({ ...s, from: move(s.from), to: move(s.to) })), terminals: n.terminals.map(t => ({ ...t, position: move(t.position) })) }));
++  const ports = project(w, catalogs), occupied = index(w), extent = extentOf(w), boundary = { width: extent.width + 1, height: extent.height + 1 }, routes = [];
++  const search = routeFamily === 'search' ? { remaining: 200000, calls: 0, expanded: 0 } : null;
++  for (const edge of graph.edges.filter(e => !e.internal).sort((a, b) => (a.transport === 'pipe' ? 0 : 1) - (b.transport === 'pipe' ? 0 : 1) || a.id.localeCompare(b.id)))
++    routes.push(...connect(w, ports, occupied, edge, catalogs, boundary, routeFamily, search));
++  return { ...base, witness: w, catalog_ports: ports, accepted: false, factory_validated: false, case: 'actual-graph-factory-closure',
++    embedding: 'boundary-realized', boundary_plan: { translation: { x: 1, y: 1 }, routes, route_family: routeFamily, route_search: search }, construction_ms: performance.now() - start };
++}
++
+ // Compare against the original graph, never a candidate-supplied list of remaining obligations.
+-export function inspectCoverage(graph, detail, validation, complete = false) {
++export function inspectCoverage(graph, detail, validation, complete = false, { pendingExternalInputs = false } = {}) {
++  if (complete && pendingExternalInputs) fail('closure-coverage-stage', 'A complete factory cannot retain pending external inputs');
+   const diagnostics = [], error = (code, entity) => diagnostics.push({ code, severity: 'error', stage: 'factory-coverage', message: code.replaceAll('-', ' '), entity });
+   const w = detail.witness, members = new Set(w.placements.map(p => p.instance));
+   if (!validation.covered_geometry_validated) error('closure-geometry-rejected', null);
+@@ -242,7 +277,8 @@ export function inspectCoverage(graph, detail, validation, complete = false) {
+     if (hasTarget) addTo(required, JSON.stringify([e.target, 'input', e.item]), e.rate);
+     if (hasTarget && e.internal && !hasSource) error('closure-missing-internal-input', e.id);
+     if (hasSource && !hasTarget && (e.internal || !complete)) addTo(pending, JSON.stringify([e.source, 'output', e.item]), e.rate);
+-    if (!e.internal && (hasTarget || (complete && hasSource))) addTo(external, JSON.stringify([hasTarget ? e.source : e.target, hasTarget ? 'output' : 'input', e.item]), e.rate);
++    if (!e.internal && hasTarget && pendingExternalInputs) addTo(pending, JSON.stringify([e.target, 'input', e.item]), e.rate);
++    if (!e.internal && ((hasTarget && !pendingExternalInputs) || (complete && hasSource))) addTo(external, JSON.stringify([hasTarget ? e.source : e.target, hasTarget ? 'output' : 'input', e.item]), e.rate);
+   }
+   const seen = new Set();
+   for (const t of validation.recipe_terminals) {
+diff --git a/docs/benchmarks/constructive-recipe-breadth/contract.md b/docs/benchmarks/constructive-recipe-breadth/contract.md
+new file mode 100644
+index 0000000..32a8f86
+--- /dev/null
++++ b/docs/benchmarks/constructive-recipe-breadth/contract.md
+@@ -0,0 +1,71 @@
++# Complex-recipe breadth gate
++
++Status: in progress.
++
++## Inputs and invariants
++
++Exercise additional runtime-catalog recipes from explicit schema-1 source plans,
++not modified heavy-xiranite witnesses. Preserve the existing independently validated
++heavy-xiranite incumbent. Begin with enriched bottled food, enriched medical supplies
++and a tier-three battery: these combine multiple inputs, plant return cycles and
++mineral or container processing. Include a mixed belt/pipe recipe if the source
++hierarchy and existing constructor support it.
++
++Produce each original facility-instance wiring graph through the existing Rust CLI.
++No fabricated external substitutions, omitted inputs, facility-only global placement,
++relaxed capacity, or reuse of another recipe's witness is allowed. Source selections
++are explicit test data; they are not built-in game defaults. Ambiguity, unsupported
++structural shapes and exhausted construction bounds must be reported, not hidden.
++
++Assess which existing constructive stages can run from these inputs without a
++previous heavy-xiranite geometry artifact. Define the missing stage contract before
++implementing it. Structural interfaces should remain runtime-recipe-independent.
++Use bounded independent workers where work can safely overlap.
++
++## Outputs and completion evidence
++
++### From-wiring region construction
++
++The new runner accepts successful schema-1 facility-instance wiring plus the five
++runtime catalogs and independent validator. It projects graph identities and exact
++margins without creating any placement-only geometry artifact. Initial regions are
++supported productive SCCs or a single facility with only declared external inputs.
++Each region is independently validated. Add one ready consumer to exactly the regions
++supplying it, route all newly internal inputs, validate the connected union, and then
++commit that union while leaving unrelated regions unchanged. Never place the whole
++facility set before routing internal dependencies.
++
++During this explicit internal-region stage, only original external input demands and
++outgoing original graph cuts may remain pending. Missing internal inputs, substituted
++external identities, excess rates and invented cuts remain invalid. This is distinct
++from the existing closure stage that has already connected external inputs; its
++default validation contract must not change. A pending-external-input region cannot
++be reported as a complete factory.
++
++After one connected region contains all original facilities and all internal margins
++are routed, realize the actual external inputs/exports at the used boundary. A private
++one-cell translation provides a boundary routing margin; no caller canvas constraint
++is introduced. Enumerate all four boundary sides, pipes first, and validate every
++terminal against the original graph. Publish only a complete independently validated
++factory, or report the retained valid internal region and the exact failed boundary.
++
++Bounds: at most 256 input facilities, four initial-candidate validator workers, 256
++growth transactions, 128 ordering trials per composition, and finite existing
++corridor templates. Bounds limit this experiment, not game or production dimensions.
++
++For each case report input/source hashes, requested rate, instance/edge/cycle counts,
++construction stage status, independently validated covered membership, full-factory
++acceptance or structured failure, used area/cells/turns and separated timing.
++Any accepted complete witness must pass both Rust geometry validation and original
++graph margin/external-identity coverage. Partial or unsupported cases are not success.
++
++Inspect the actual full and focused render for each completed construction milestone.
++Record controls, tests and reproduction commands in the report. Breadth evidence does
++not claim minimum area, universal recipe coverage, a production cutover or completion
++of the eventual web workflow.
++
++## Activity
++
++- 2026-09-06: Baseline is the clean a71fddf worktree and the validated 41x52,
++  2,132 / 392 / 38 heavy-xiranite factory. Previous work made concrete progress through
++  bounded lookahead and a stable native viewport; this slice targets generality.
+diff --git a/docs/benchmarks/constructive-recipe-breadth/model.mjs b/docs/benchmarks/constructive-recipe-breadth/model.mjs
+new file mode 100644
+index 0000000..a433ba3
+--- /dev/null
++++ b/docs/benchmarks/constructive-recipe-breadth/model.mjs
+@@ -0,0 +1,95 @@
++import { normalizeGraph } from '../constructive-cycle-blocks/graph.mjs';
++import { rotateFacility } from '../constructive-placement-only/model.mjs';
++import { project, pendingOutputAccess } from '../constructive-factory-closure/model.mjs';
++import { placeRegions } from '../constructive-block-composition/model.mjs';
++import { usedBounds } from '../constructive-bound-interconnect/view.mjs';
++import { compare, parseRate } from '../constructive-interconnect/rates.mjs';
++const fail = (code, message, entity = null) => { throw Object.assign(new Error(message), { code, severity: 'error', stage: 'recipe-breadth', entity }); };
++
++export function graphFromWiring(wiring, catalogs) {
++  if (wiring.schema_version !== 1 || wiring.success !== true || !Array.isArray(wiring.nodes) || !Array.isArray(wiring.edges))
++    fail('breadth-wiring-schema', 'Expected successful schema-1 facility-instance wiring');
++  const nodes = new Map(wiring.nodes.map(n => [n.id, n]));
++  if (nodes.size !== wiring.nodes.length || wiring.nodes.some(n => typeof n.id !== 'string' || !n.id || !['facility', 'external', 'target', 'surplus'].includes(n.kind)))
++    fail('breadth-wiring-nodes', 'Expected unique typed wiring nodes');
++  const facilities = wiring.nodes.filter(n => n.kind === 'facility'), ids = new Set(facilities.map(n => n.id));
++  for (const e of wiring.edges) {
++    const a = nodes.get(e.source), b = nodes.get(e.target);
++    if (!a || !b || (!ids.has(e.source) && !ids.has(e.target)) ||
++        (!ids.has(e.source) && (a.kind !== 'external' || a.item !== e.item)) ||
++        (!ids.has(e.target) && (!['target', 'surplus'].includes(b.kind) || b.item !== e.item)))
++      fail('breadth-wiring-endpoint', 'Unknown or incompatible original external endpoint', e.id);
++  }
++  // Project identities/margins into the existing normalizer; no facility positions are constructed.
++  const graph = normalizeGraph({ placements: facilities.map((n, i) => ({ instance: n.id, recipe: n.recipe, facility: n.facility, label: `F${String(i).padStart(2, '0')}` })),
++    internal_requirements: wiring.edges.filter(e => ids.has(e.source) && ids.has(e.target)),
++    external_requirements: wiring.edges.filter(e => !ids.has(e.source) || !ids.has(e.target)) }, catalogs);
++  for (const n of graph.nodes) if (compare(parseRate(n.utilization), parseRate(nodes.get(n.id).work_seconds_per_second)))
++    fail('breadth-wiring-utilization', 'Wiring utilization differs from original recipe margins', n.id);
++  return graph;
++}
++
++export function externalSeed(catalogs, graph, node) {
++  if (!graph.nodes.some(n => n.id === node.id) || !graph.edges.some(e => e.target === node.id) || graph.edges.some(e => e.internal && e.target === node.id))
++    fail('breadth-seed-inputs', 'An external seed must have only actual original external inputs', node.id);
++  const recipe = catalogs.recipes.recipes.find(r => r.id === node.recipe), facility = catalogs.facilities.facilities.find(f => f.id === recipe.facility);
++  const shape = facility.allowed_rotations.map(r => rotateFacility(facility, r)).find(s => ['input', 'output'].every(d =>
++    s.ports.some(p => p.transport === 'belt' && p.direction === d && p.edge === (d === 'input' ? 'west' : 'east'))));
++  if (!shape) fail('breadth-seed-orientation', 'This seed family requires a catalog east-flow belt orientation', node.id);
++  const witness = { schema_version: 1, placements: [{ instance: node.id, recipe: node.recipe, facility: recipe.facility,
++    x: 0, y: 0, width: shape.width, height: shape.height, rotation: shape.rotation }], utilizations: { [node.id]: { ...node.utilization } },
++    transport_networks: [], logistics_components: [] };
++  return { schema_version: 1, case: 'actual-graph-external-seed', embedding: 'external-seed', witness, catalog_ports: project(witness, catalogs),
++    labels: Object.fromEntries(graph.nodes.map(n => [n.id, n.label])), accepted: false, factory_validated: false,
++    port_groups: { sources: [], targets: [] }, pending_external_inputs: graph.edges.filter(e => e.target === node.id).map(e => e.id) };
++}
++
++export function regionsForConsumer(graph, regions, target) {
++  const needed = new Set(graph.edges.filter(e => e.internal && e.target === target).map(e => e.source));
++  const selected = regions.filter(r => r.detail.witness.placements.some(p => needed.has(p.instance)));
++  const members = new Set(selected.flatMap(r => r.detail.witness.placements.map(p => p.instance)));
++  if (!needed.size || [...needed].some(id => !members.has(id)) || members.has(target)) fail('breadth-consumer-unready', 'Consumer requires retained original suppliers', target);
++  return selected;
++}
++
++export function joinSupplierRegions(catalogs, graph, regions) {
++  const sizes = regions.map(r => ({ id: r.id, bounds: usedBounds(r.detail.witness) })).sort((a, b) => b.bounds.width * b.bounds.height - a.bounds.width * a.bounds.height || a.id.localeCompare(b.id));
++  const width = Math.max(...sizes.map(r => r.bounds.width));
++  let y = 0;
++  const offsets = sizes.map(({ id, bounds: b }) => { const offset = { region: id, x: width - b.width - b.x, y: y - b.y }; y += b.height + 1; return offset; });
++  const joined = placeRegions(regions, offsets, catalogs);
++  return { schema_version: 1, case: 'actual-graph-supplier-regions', embedding: 'private-supplier-union', accepted: false, factory_validated: false,
++    witness: joined.witness, catalog_ports: joined.ports, labels: Object.fromEntries(graph.nodes.map(n => [n.id, n.label])),
++    port_groups: { sources: [], targets: [] }, region_translations: joined.translations };
++}
++
++export function frontierDepth(graph, target, depths) {
++  const inputs = graph.edges.filter(e => e.internal && e.target === target);
++  if (!inputs.length || inputs.some(e => !depths.has(e.source))) fail('breadth-frontier-depth', 'Frontier depth requires retained suppliers', target);
++  return 1 + Math.max(...inputs.map(e => depths.get(e.source)));
++}
++
++// Constructive reservation heuristic, not a proof that a pocket could never hold a consumer.
++export function inspectFutureEscape(catalogs, graph, detail) {
++  const w = detail.witness, bounds = usedBounds(w), groups = pendingOutputAccess(graph, w, catalogs), diagnostics = [], layers = new Map();
++  if ((bounds.width + 2) * (bounds.height + 2) > 250000)
++    fail('breadth-escape-grid-budget', 'Future-output escape screening exceeds the local grid budget');
++  for (const transport of new Set(groups.map(g => g.transport))) {
++    const blocked = new Set();
++    for (const p of w.placements) for (let dy = 0; dy < p.height; dy++) for (let dx = 0; dx < p.width; dx++) blocked.add(`${p.x + dx},${p.y + dy}`);
++    for (const n of w.transport_networks.filter(n => n.transport === transport)) for (const p of n.cells) blocked.add(`${p.x},${p.y}`);
++    for (const c of w.logistics_components.filter(c => c.transport === transport)) blocked.add(`${c.position.x},${c.position.y}`);
++    const minX = bounds.x - 1, minY = bounds.y - 1, maxX = bounds.x + bounds.width, maxY = bounds.y + bounds.height;
++    const queue = [{ x: minX, y: minY }], reached = new Set([`${minX},${minY}`]);
++    for (let i = 0; i < queue.length; i++) for (const [dx, dy] of [[1, 0], [0, 1], [-1, 0], [0, -1]]) {
++      const p = { x: queue[i].x + dx, y: queue[i].y + dy }, key = `${p.x},${p.y}`;
++      if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY || reached.has(key) || blocked.has(key)) continue;
++      reached.add(key); queue.push(p);
++    }
++    layers.set(transport, reached);
++  }
++  const access = groups.map(g => ({ ...g, escaping_ports: g.ports.filter(p => !p.obstruction && layers.get(g.transport).has(`${p.connection.x},${p.connection.y}`)).map(p => p.port) }));
++  for (const g of access) if (g.escaping_ports.length < g.required) diagnostics.push({ code: 'breadth-pending-output-escape', severity: 'warning', stage: 'future-output-screen',
++    message: 'Constructive candidate does not reserve enough unobstructed exits for its remaining output margins', entity: g.instance, transport: g.transport, required: g.required, escaping_ports: g.escaping_ports });
++  return { accepted: !diagnostics.length, diagnostics, access };
++}
+diff --git a/docs/benchmarks/constructive-recipe-breadth/model.test.mjs b/docs/benchmarks/constructive-recipe-breadth/model.test.mjs
+new file mode 100644
+index 0000000..1735884
+--- /dev/null
++++ b/docs/benchmarks/constructive-recipe-breadth/model.test.mjs
+@@ -0,0 +1,119 @@
++import fs from 'node:fs';
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { graphFromWiring, externalSeed, regionsForConsumer, joinSupplierRegions, frontierDepth, inspectFutureEscape } from './model.mjs';
++import { finishBoundary, inspectCoverage, routeTemplates } from '../constructive-factory-closure/model.mjs';
++import { rate, dto, add, parseRate } from '../constructive-interconnect/rates.mjs';
++const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
++const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k, read(`../../../data/game/normalized/${k === 'components' ? 'logistics-components' : k}.json`)]));
++const request = read('./requests/battery-3.json'), recipe = catalogs.recipes.recipes.find(r => r.id === request.source_selections[0].source.recipe);
++const one = { numerator: 1, denominator: 1 };
++function fixture(id = 'producer') {
++  const amount = a => dto(rate(BigInt(a.quantity) * 1000n, recipe.duration_ms));
++  return { schema_version: 1, success: true, nodes: [{ kind: 'facility', id, recipe: recipe.id, facility: recipe.facility, work_seconds_per_second: one },
++    ...recipe.inputs.map((a, i) => ({ kind: 'external', id: `${id}-input-${i}`, item: a.item })),
++    ...recipe.outputs.map((a, i) => ({ kind: 'target', id: `${id}-output-${i}`, item: a.item }))],
++    edges: [...recipe.inputs.map((a, i) => ({ id: `${id}-in-${i}`, source: `${id}-input-${i}`, target: id, item: a.item, rate: amount(a) })),
++      ...recipe.outputs.map((a, i) => ({ id: `${id}-out-${i}`, source: id, target: `${id}-output-${i}`, item: a.item, rate: amount(a) }))] };
++}
++function terminalReport(graph, detail) {
++  // Coverage-only fixture. Independent physical validation is exercised separately by the CLI audit.
++  const required = new Map(), routed = new Map(), ids = new Set(detail.witness.placements.map(p => p.instance));
++  const sum = (m, key, value) => m.set(key, add(m.get(key) ?? rate(0), parseRate(value)));
++  for (const e of graph.edges) {
++    if (ids.has(e.source)) sum(required, JSON.stringify([e.source, 'output', e.item]), e.rate);
++    if (ids.has(e.target)) sum(required, JSON.stringify([e.target, 'input', e.item]), e.rate);
++  }
++  for (const n of detail.witness.transport_networks) for (const t of n.terminals) if (t.endpoint.kind === 'facility')
++    sum(routed, JSON.stringify([t.endpoint.instance, t.direction, n.item]), t.rate);
++  return { covered_geometry_validated: true, recipe_coverage_complete: [...required].every(([id, total]) => JSON.stringify(dto(total)) === JSON.stringify(dto(routed.get(id) ?? rate(0)))),
++    recipe_terminals: [...required].map(([id, total]) => {
++      const [instance, direction, item] = JSON.parse(id), actual = routed.get(id) ?? rate(0), pending = rate(total.n * actual.d - actual.n * total.d, total.d * actual.d);
++      return { instance, direction, item, required_rate: dto(total), routed_rate: dto(actual), pending_rate: dto(pending) };
++    }) };
++}
++test('from-wiring graph derives exact original identities/margins without placement coordinates', () => {
++  const w = fixture(), before = structuredClone(w), graph = graphFromWiring(w, catalogs);
++  assert.equal(graph.nodes.length, 1); assert.deepEqual(graph.nodes[0].utilization, one); assert.ok(graph.edges.every(e => !e.internal));
++  assert.ok(graph.nodes.every(n => !Object.hasOwn(n, 'x') && !Object.hasOwn(n, 'y'))); assert.deepEqual(w, before);
++});
++test('from-wiring graph rejects forged success, nodes, endpoint roles/items and utilization', () => {
++  const w = fixture(); assert.throws(() => graphFromWiring({ ...w, success: false }, catalogs), { code: 'breadth-wiring-schema' });
++  const duplicate = structuredClone(w); duplicate.nodes.push(duplicate.nodes[0]); assert.throws(() => graphFromWiring(duplicate, catalogs), { code: 'breadth-wiring-nodes' });
++  for (const patch of [{ kind: 'surplus' }, { item: 'unknown-item' }, { id: 'undeclared-input' }]) {
++    const bad = structuredClone(w); Object.assign(bad.nodes.find(n => n.kind === 'external'), patch);
++    assert.throws(() => graphFromWiring(bad, catalogs), { code: 'breadth-wiring-endpoint' });
++  }
++  const bad = structuredClone(w); bad.nodes[0].work_seconds_per_second = { numerator: 1, denominator: 2 };
++  assert.throws(() => graphFromWiring(bad, catalogs), { code: 'breadth-wiring-utilization' });
++});
++test('external seed retains only declared external demand and cannot pretend to satisfy internal inputs', () => {
++  const graph = graphFromWiring(fixture(), catalogs), before = structuredClone(graph), d = externalSeed(catalogs, graph, graph.nodes[0]);
++  assert.equal(d.witness.placements.length, 1); assert.equal(d.witness.transport_networks.length, 0); assert.equal(d.factory_validated, false);
++  assert.deepEqual(d.pending_external_inputs, graph.edges.filter(e => e.target === 'producer').map(e => e.id)); assert.deepEqual(graph, before);
++  graph.edges[0].internal = true; assert.throws(() => externalSeed(catalogs, graph, graph.nodes[0]), { code: 'breadth-seed-inputs' });
++});
++test('pending-external coverage is explicit, preserves default semantics and cannot validate a complete factory', () => {
++  const graph = graphFromWiring(fixture(), catalogs), d = externalSeed(catalogs, graph, graph.nodes[0]), v = terminalReport(graph, d);
++  assert.equal(inspectCoverage(graph, d, v).accepted, false);
++  assert.equal(inspectCoverage(graph, d, v, false, { pendingExternalInputs: true }).accepted, true);
++  assert.equal(inspectCoverage(graph, d, v, true).factory_validated, false);
++  assert.throws(() => inspectCoverage(graph, d, v, true, { pendingExternalInputs: true }), { code: 'closure-coverage-stage' });
++  const internal = structuredClone(graph); internal.edges[0].internal = true;
++  assert.equal(inspectCoverage(internal, d, v, false, { pendingExternalInputs: true }).accepted, false);
++  const missing = structuredClone(v); missing.recipe_terminals.pop(); assert.equal(inspectCoverage(graph, d, missing, false, { pendingExternalInputs: true }).accepted, false);
++  const inflated = structuredClone(v); inflated.recipe_terminals[0].pending_rate.numerator++;
++  assert.equal(inspectCoverage(graph, d, inflated, false, { pendingExternalInputs: true }).accepted, false);
++});
++test('full boundary routes real identities in a private translated witness with no changes to retained seed', () => {
++  const graph = graphFromWiring(fixture(), catalogs), d = externalSeed(catalogs, graph, graph.nodes[0]), before = structuredClone(d), result = finishBoundary(catalogs, graph, d);
++  assert.deepEqual(d, before); assert.equal(result.factory_validated, false); assert.equal(result.boundary_plan.routes.length, graph.edges.length);
++  assert.equal(result.witness.placements[0].x, d.witness.placements[0].x + 1);
++  const external = result.witness.transport_networks.flatMap(n => n.terminals.filter(t => t.endpoint.kind === 'external'));
++  assert.ok(external.some(t => t.endpoint.side === 'west')); assert.equal(external.length, graph.edges.length);
++  assert.equal(inspectCoverage(graph, result, terminalReport(graph, result), true).factory_validated, true);
++  assert.throws(() => finishBoundary(catalogs, graph, result), { code: 'closure-boundary-already-realized' });
++  assert.throws(() => finishBoundary(catalogs, { ...graph, nodes: [...graph.nodes, { id: 'missing' }] }, d), { code: 'closure-incomplete-membership' });
++  const forged = structuredClone(result); external[0].endpoint.node = 'undeclared-external';
++  assert.equal(inspectCoverage(graph, result, terminalReport(graph, result), true).factory_validated, false);
++  assert.equal(inspectCoverage(graph, forged, terminalReport(graph, forged), true).factory_validated, true);
++});
++test('supplier joining translates only involved concrete regions and leaves them immutable', () => {
++  const a = graphFromWiring(fixture('a'), catalogs), b = graphFromWiring(fixture('b'), catalogs), graph = { nodes: [...a.nodes, ...b.nodes], edges: [...a.edges, ...b.edges,
++    { internal: true, source: 'a', target: 'consumer' }] };
++  const regions = [{ id: 'a', detail: externalSeed(catalogs, a, a.nodes[0]) }, { id: 'b', detail: externalSeed(catalogs, b, b.nodes[0]) }], before = structuredClone(regions);
++  assert.deepEqual(regionsForConsumer(graph, regions, 'consumer'), [regions[0]]);
++  const joined = joinSupplierRegions(catalogs, graph, regions); assert.equal(joined.witness.placements.length, 2);
++  assert.notEqual(joined.witness.placements[0].y, joined.witness.placements[1].y); assert.deepEqual(regions, before);
++  assert.throws(() => regionsForConsumer(graph, [regions[1]], 'consumer'), { code: 'breadth-consumer-unready' });
++  assert.equal(frontierDepth(graph, 'consumer', new Map([['a', 2]])), 3);
++  assert.throws(() => frontierDepth(graph, 'consumer', new Map()), { code: 'breadth-frontier-depth' });
++});
++
++test('bounded A-star routes a multi-bend corridor that the finite template family cannot represent', () => {
++  const belt = new Set();
++  for (const x of [2, 4, 6]) for (let y = 0; y < 9; y++) if (y !== (x === 4 ? 0 : 8)) belt.add(`${x},${y}`);
++  const occupied = { body: new Set(), layers: { belt, pipe: new Set() } }, a = { x: 0, y: 4 }, b = { x: 8, y: 4 }, extent = { width: 9, height: 9, minX: 0, minY: 0 };
++  assert.equal(routeTemplates(a, b, occupied, 'belt', extent, extent, 'perimeter'), null);
++  const work = { calls: 0, remaining: 10000, expanded: 0 }, p = routeTemplates(a, b, occupied, 'belt', extent, extent, 'search', work);
++  assert.ok(p); assert.equal(work.calls, 1); assert.ok(work.expanded > 0 && work.remaining < 10000);
++  assert.deepEqual(p.cells[0], a); assert.deepEqual(p.cells.at(-1), b); assert.ok(p.score[2] >= 6);
++  for (const c of p.cells) assert.ok(!belt.has(`${c.x},${c.y}`));
++  assert.equal(new Set(p.cells.map(p => `${p.x},${p.y}`)).size, p.cells.length);
++  const stopped = { calls: 0, remaining: 0, expanded: 0 };
++  assert.equal(routeTemplates(a, b, occupied, 'belt', extent, extent, 'search', stopped), null); assert.equal(stopped.calls, 0);
++  assert.equal(routeTemplates(a, b, occupied, 'pipe', extent, extent, 'search', stopped).cells.length, 9);
++});
++
++test('future-output screen distinguishes an open exit from a same-layer enclosed port pocket', () => {
++  const graph = graphFromWiring(fixture(), catalogs), d = externalSeed(catalogs, graph, graph.nodes[0]);
++  assert.equal(inspectFutureEscape(catalogs, graph, d).accepted, true);
++  const ports = d.catalog_ports.producer.filter(p => p.direction === 'output' && p.transport === 'belt'), x = ports[0].connection.x;
++  const low = Math.min(...ports.map(p => p.connection.y)) - 1, high = Math.max(...ports.map(p => p.connection.y)) + 1;
++  const cells = Array.from({ length: high - low + 1 }, (_, i) => ({ x: x + 1, y: low + i })); cells.push({ x, y: low }, { x, y: high });
++  // Geometry-only obstacle isolates the screen, not a claim about network flow validity.
++  d.witness.transport_networks.push({ item: 'geometry-only-ring', transport: 'belt', cells, terminals: [], segments: [] });
++  const before = structuredClone(d), blocked = inspectFutureEscape(catalogs, graph, d);
++  assert.equal(blocked.accepted, false); assert.equal(blocked.diagnostics[0].code, 'breadth-pending-output-escape'); assert.deepEqual(d, before);
++  d.witness.transport_networks[0].transport = 'pipe'; assert.equal(inspectFutureEscape(catalogs, graph, d).accepted, true);
++});
+diff --git a/docs/benchmarks/constructive-recipe-breadth/run.mjs b/docs/benchmarks/constructive-recipe-breadth/run.mjs
+new file mode 100644
+index 0000000..ccbeead
+--- /dev/null
++++ b/docs/benchmarks/constructive-recipe-breadth/run.mjs
+@@ -0,0 +1,134 @@
++import fs from 'node:fs';
++import path from 'node:path';
++import { createHash } from 'node:crypto';
++import { fileURLToPath } from 'node:url';
++import { graphFromWiring, externalSeed, regionsForConsumer, joinSupplierRegions, frontierDepth, inspectFutureEscape } from './model.mjs';
++import { extractCycles } from '../constructive-cycle-blocks/graph.mjs';
++import { constructCycle } from '../constructive-cycle-blocks/model.mjs';
++import { composeBlocks, readyConsumers } from '../constructive-block-composition/model.mjs';
++import { inspectCoverage, finishBoundary, growCandidates, better } from '../constructive-factory-closure/model.mjs';
++import { compactInterface, witnessScore } from '../constructive-auto-interface/compact.mjs';
++import { executeValidator } from '../constructive-embedding-compaction/validator.mjs';
++import { mapLookaheadBranches } from '../constructive-local-reembedding/lookahead.mjs';
++import { render } from '../constructive-bound-interconnect/view.mjs';
++const read = p => JSON.parse(fs.readFileSync(p)), hash = p => createHash('sha256').update(fs.readFileSync(p)).digest('hex');
++const write = (p, v) => fs.writeFileSync(p, JSON.stringify(v, null, 2) + '\n', { flag: 'wx' });
++const diagnostic = e => ({ code: e.code ?? 'breadth-generation-failed', severity: 'error', stage: e.stage ?? 'recipe-breadth', message: e.message, entity: e.entity ?? null });
++const publicRecord = ({ detail, ...r }) => r;
++const sourceDirectory = fileURLToPath(new URL('.', import.meta.url));
++const engineHashes = () => {
++  const visited = new Map(), visit = file => {
++    if (visited.has(file)) return; visited.set(file, hash(file));
++    const text = fs.readFileSync(file, 'utf8');
++    for (const m of text.matchAll(/\b(?:import|export)\s+[^;]*?\bfrom\s+['"](\.{1,2}\/[^'"]+\.mjs)['"]/g)) visit(path.resolve(path.dirname(file), m[1]));
++  };
++  visit(fileURLToPath(import.meta.url)); return Object.fromEntries([...visited].map(([file, h]) => [path.relative(sourceDirectory, file), h]));
++};
++let output;
++try {
++  const keys = ['wiring', 'recipes', 'facilities', 'items', 'transports', 'components', 'validator', 'output-directory'], args = process.argv.slice(2), options = {};
++  for (let i = 0; i < args.length; i += 2) {
++    const k = args[i].slice(2);
++    if (!args[i].startsWith('--') || ![...keys, 'max-steps'].includes(k) || options[k] || !args[i + 1]) throw new Error(`Invalid argument ${args[i]}`);
++    options[k] = args[i + 1];
++  }
++  for (const k of keys) if (!options[k]) throw new Error(`Missing --${k}`);
++  const maxSteps = Number(options['max-steps'] ?? 256);
++  if (!Number.isSafeInteger(maxSteps) || maxSteps < 1 || maxSteps > 256) throw new Error('Expected --max-steps 1..256');
++  const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k, read(options[k])]));
++  const began = performance.now(), graph = graphFromWiring(read(options.wiring), catalogs), inventory = extractCycles(graph, catalogs), stages = [], failures = [];
++  const provenance = keys.filter(k => k !== 'output-directory').map(k => ({ kind: k, path: path.resolve(options[k]), sha256: hash(options[k]) }));
++  const sourceHashes = engineHashes();
++  output = path.resolve(options['output-directory']); fs.mkdirSync(output); write(path.join(output, 'graph.json'), graph); write(path.join(output, 'inventory.json'), inventory);
++  const validate = async (detail, name, complete = false) => {
++    const directory = path.join(output, name); fs.mkdirSync(directory); write(path.join(directory, 'witness.json'), detail.witness);
++    const processResult = await executeValidator(path.resolve(options.validator), ['--witness', path.join(directory, 'witness.json'),
++      ...['recipes', 'facilities', 'items', 'transports', 'components'].flatMap(k => [`--${k}`, options[k]]), '--report-output', path.join(directory, 'validation.json')], path.join(directory, 'validator.log'));
++    write(path.join(directory, 'validator-process.json'), processResult);
++    if (processResult.timed_out || !fs.existsSync(path.join(directory, 'validation.json'))) throw new Error(`Validator did not finish for ${name}`);
++    const validation = read(path.join(directory, 'validation.json')), coverage = inspectCoverage(graph, detail, validation, complete, { pendingExternalInputs: !complete });
++    const accepted = processResult.code === 0 && coverage.accepted, checked = { ...detail, accepted, factory_validated: accepted && complete };
++    write(path.join(directory, 'detail.json'), checked); write(path.join(directory, 'coverage.json'), coverage);
++    fs.writeFileSync(path.join(directory, 'index.html'), render(checked, validation, catalogs), { flag: 'wx' });
++    return { directory, detail: checked, accepted, factory_validated: checked.factory_validated, score: witnessScore(detail.witness),
++      witness_sha256: hash(path.join(directory, 'witness.json')), validator_ms: processResult.elapsed_ms, diagnostics: [...validation.diagnostics, ...coverage.diagnostics] };
++  };
++  const variants = detail => {
++    try { return [detail, compactInterface(detail, catalogs)]; }
++    catch (e) { failures.push({ ...diagnostic(e), severity: 'warning', stage: 'compaction' }); return [detail]; }
++  };
++  const check = async (candidates, prefix, complete = false) => {
++    const checked = await mapLookaheadBranches(candidates, 4, async (d, i) => {
++      try {
++        if (!complete) { const escape = inspectFutureEscape(catalogs, graph, d); if (!escape.accepted) return { accepted: false, diagnostics: escape.diagnostics, score: witnessScore(d.witness) }; }
++        return await validate(d, `${prefix}-${i}`, complete);
++      } catch (e) { return { accepted: false, diagnostics: [diagnostic(e)] }; }
++    });
++    const valid = checked.filter(r => r.accepted).sort((a, b) => better(a.score.tuple, b.score.tuple) ? -1 : better(b.score.tuple, a.score.tuple) ? 1 : 0);
++    return { checked, selected: valid[0] };
++  };
++  const initialJobs = inventory.blocks.map(block => ({ id: block.id, generate: () => ['leaf', 'root'].flatMap(f => {
++    try { return variants(constructCycle(catalogs, graph, block, f)); } catch (e) { failures.push(diagnostic(e)); return []; }
++  }) }));
++  const covered = new Set(inventory.blocks.flatMap(b => b.members));
++  for (const n of graph.nodes.filter(n => !covered.has(n.id) && graph.edges.some(e => e.target === n.id) && graph.edges.filter(e => e.target === n.id).every(e => !e.internal)))
++    initialJobs.push({ id: `external-${n.label}`, generate: () => [externalSeed(catalogs, graph, n)] });
++  let regions = [];
++  // Each initial region is a connected atomic SCC or one explicit external-demand seed.
++  for (const job of initialJobs) {
++    try {
++      const start = performance.now(), candidates = job.generate(), generationMs = performance.now() - start;
++      const { checked, selected } = await check(candidates, `seed-${job.id}`);
++      stages.push({ stage: 'seed', region: job.id, generation_ms: generationMs, candidates: checked.map(publicRecord), selected_directory: selected?.directory ?? null });
++      if (selected) regions.push({ id: job.id, detail: selected.detail, directory: selected.directory });
++    } catch (e) { failures.push(diagnostic(e)); }
++  }
++  failures.push(...inventory.failures);
++  const depths = new Map(regions.flatMap(r => r.detail.witness.placements.map(p => [p.instance, 0])));
++  let growth = 0;
++  for (; growth < maxSteps; growth++) {
++    const members = regions.flatMap(r => r.detail.witness.placements.map(p => p.instance));
++    if (members.length === graph.nodes.length) break;
++    const targets = readyConsumers(graph, members, catalogs).sort((a, b) => frontierDepth(graph, a, depths) - frontierDepth(graph, b, depths) || a.localeCompare(b)); let committed = false;
++    for (const target of targets) {
++      try {
++        const needed = regionsForConsumer(graph, regions, target), start = performance.now();
++        let generated, local;
++        try { generated = composeBlocks(catalogs, graph, needed, [target], { orderBudget: 128, lanePolicy: 'portfolio' }); }
++        catch (e) { generated = { candidates: [], failures: [diagnostic(e)] }; }
++        try { local = growCandidates(catalogs, graph, joinSupplierRegions(catalogs, graph, needed), graph.nodes.find(n => n.id === target), 128, 'search', 'two-sided'); }
++        catch (e) { local = { candidates: [], failures: [diagnostic(e)], trials: 0 }; }
++        const candidates = [...generated.candidates, ...local.candidates].flatMap(variants), generationMs = performance.now() - start;
++        const { checked, selected } = await check(candidates, `growth-${growth}-${graph.nodes.find(n => n.id === target).label}`);
++        stages.push({ stage: 'growth', transaction: growth, consumer: target, source_regions: needed.map(r => r.id), generation_ms: generationMs,
++          candidates: checked.map(publicRecord), selected_directory: selected?.directory ?? null,
++          proposal_failures: generated.failures, local_trials: local.trials, local_route_search: local.route_search, local_failures: local.failures });
++        if (!selected) continue;
++        depths.set(target, frontierDepth(graph, target, depths));
++        regions = [...regions.filter(r => !needed.includes(r)), { id: `growth-${growth}`, detail: selected.detail, directory: selected.directory }];
++        committed = true; break;
++      } catch (e) { failures.push(diagnostic(e)); }
++    }
++    if (!committed) { failures.push({ code: 'breadth-no-valid-frontier', severity: 'error', stage: 'region-growth', message: 'No ready consumer could extend its retained supplier regions', entity: targets }); break; }
++  }
++  let final;
++  if (regions.length === 1 && regions[0].detail.witness.placements.length === graph.nodes.length) {
++    try {
++      const start = performance.now(), raw = finishBoundary(catalogs, graph, regions[0].detail, 'search'), candidates = variants(raw), generationMs = performance.now() - start;
++      const { checked, selected } = await check(candidates, 'complete', true); final = selected;
++      stages.push({ stage: 'boundary', generation_ms: generationMs, candidates: checked.map(publicRecord), selected_directory: selected?.directory ?? null });
++    } catch (e) { failures.push(diagnostic(e)); }
++  }
++  const report = { schema_version: 1, status: final?.factory_validated ? 'complete-factory-validated' : 'region-construction-stopped', factory_validated: final?.factory_validated ?? false,
++    total_facilities: graph.nodes.length, covered_facilities: regions.reduce((n, r) => n + r.detail.witness.placements.length, 0), required_edges: graph.edges.length,
++    max_steps: maxSteps, growth_transactions: stages.filter(s => s.stage === 'growth' && s.selected_directory).length,
++    selected_directory: final?.directory ?? null, score: final?.score ?? null, witness_sha256: final?.witness_sha256 ?? null,
++    retained_regions: regions.map(r => ({ id: r.id, directory: r.directory, facilities: r.detail.witness.placements.length, score: witnessScore(r.detail.witness) })),
++    stages, failures, elapsed_ms: performance.now() - began, provenance,
++    source_hashes: sourceHashes };
++  for (const input of provenance) if (hash(input.path) !== input.sha256) throw new Error(`Input changed during construction: ${input.path}`);
++  for (const [file, expected] of Object.entries(sourceHashes)) if (hash(path.resolve(sourceDirectory, file)) !== expected) throw new Error(`Engine changed during construction: ${file}`);
++  write(path.join(output, 'report.json'), report); if (final) fs.copyFileSync(path.join(final.directory, 'index.html'), path.join(output, 'index.html'));
++  console.log(JSON.stringify({ status: report.status, total: report.total_facilities, covered: report.covered_facilities, score: report.score?.tuple, elapsed_ms: report.elapsed_ms, output }));
++  if (!report.factory_validated) process.exitCode = 2;
++} catch (e) { const d = diagnostic(e); if (output) write(path.join(output, 'failure.json'), d); console.error(JSON.stringify(d)); process.exitCode = 1; }
+diff --git a/docs/benchmarks/constructive-recipe-breadth/requests/battery-3.json b/docs/benchmarks/constructive-recipe-breadth/requests/battery-3.json
+new file mode 100644
+index 0000000..5e6ceb1
+--- /dev/null
++++ b/docs/benchmarks/constructive-recipe-breadth/requests/battery-3.json
+@@ -0,0 +1,7 @@
++{
++  "schema_version": 1,
++  "target": { "item": "item-proc-battery-3", "quantity": 1, "duration_ms": 10000 },
++  "source_selections": [
++    { "path": "/target/recipe:tools-proc-battery-3-1/input:item-iron-enr-cmpt/recipe:component-iron-enr-cmpt-1/input:item-iron-enr/recipe:furnance-iron-enr-1/input:item-iron-enr-powder/recipe:thickener-iron-enr-powder-1/input:item-iron-powder/recipe:grinder-iron-powder-1/input:item-iron-nugget", "source": { "kind": "recipe", "recipe": "furnance-iron-nugget-1" } }
++  ]
++}
+diff --git a/docs/benchmarks/constructive-recipe-breadth/requests/food-3.json b/docs/benchmarks/constructive-recipe-breadth/requests/food-3.json
+new file mode 100644
+index 0000000..0729558
+--- /dev/null
++++ b/docs/benchmarks/constructive-recipe-breadth/requests/food-3.json
+@@ -0,0 +1,8 @@
++{
++  "schema_version": 1,
++  "target": { "item": "item-bottled-food-3", "quantity": 1, "duration_ms": 10000 },
++  "source_selections": [
++    { "path": "/target/recipe:filling-bottled-food-3-1/input:item-iron-enr-bottle", "source": { "kind": "recipe", "recipe": "shaper-iron-enr-bottle-1" } },
++    { "path": "/target/recipe:filling-bottled-food-3-1/input:item-iron-enr-bottle/recipe:shaper-iron-enr-bottle-1/input:item-iron-enr/recipe:furnance-iron-enr-1/input:item-iron-enr-powder/recipe:thickener-iron-enr-powder-1/input:item-iron-powder/recipe:grinder-iron-powder-1/input:item-iron-nugget", "source": { "kind": "recipe", "recipe": "furnance-iron-nugget-1" } }
++  ]
++}
+diff --git a/docs/benchmarks/constructive-recipe-breadth/requests/medical-3.json b/docs/benchmarks/constructive-recipe-breadth/requests/medical-3.json
+new file mode 100644
+index 0000000..bd579bc
+--- /dev/null
++++ b/docs/benchmarks/constructive-recipe-breadth/requests/medical-3.json
+@@ -0,0 +1,8 @@
++{
++  "schema_version": 1,
++  "target": { "item": "item-bottled-rec-hp-3", "quantity": 1, "duration_ms": 10000 },
++  "source_selections": [
++    { "path": "/target/recipe:filling-bottled-rec-hp-3-1/input:item-iron-enr-bottle", "source": { "kind": "recipe", "recipe": "shaper-iron-enr-bottle-1" } },
++    { "path": "/target/recipe:filling-bottled-rec-hp-3-1/input:item-iron-enr-bottle/recipe:shaper-iron-enr-bottle-1/input:item-iron-enr/recipe:furnance-iron-enr-1/input:item-iron-enr-powder/recipe:thickener-iron-enr-powder-1/input:item-iron-powder/recipe:grinder-iron-powder-1/input:item-iron-nugget", "source": { "kind": "recipe", "recipe": "furnance-iron-nugget-1" } }
++  ]
++}
+diff --git a/docs/benchmarks/layout-direct/choice-fit-contract.md b/docs/benchmarks/layout-direct/choice-fit-contract.md
+new file mode 100644
+index 0000000..f4bd00a
+--- /dev/null
++++ b/docs/benchmarks/layout-direct/choice-fit-contract.md
+@@ -0,0 +1,88 @@
++# Complete-state direct-choice learnability probe
++
++Status: specified before selection/training, 2026-09-07. Diagnostic imitation only.
++
++## Question, prior evidence and scope
++
++Can the unchanged direct policy fit already executed, independently valid improving actions
++on complete factory states, and reproduce those choices through the actual executor?
++This separates basic representation/optimization response from the main RL credit experiment.
++It does not replace the streaming RL objective, establish a deployment policy, or demonstrate
++long-horizon planning. The user's area/density reward suggestion remains unimplemented.
++
++Read-only availability inspection of the completed frozen-batch pilot found 158 distinct
++small-factory pre-states with accepted new-incumbent actions that also improve the current
++tuple, covering all five action kinds. The target supplies only two such distinct pre-states,
++both port actions. No target area-improvement example is available in this source population.
++Keep that limitation explicit; do not invent labels or substitute smaller target factories.
++
++## Frozen selection and input DTO
++
++Pin `layout-direct-frozen-batch-01/report.json` at SHA-256
++`f1d8099372fd8214da9341355a60766938534479247be33420c2da1ff93ada29`.
++Read every referenced behavior capsule and source episode in batch, worker, step order.
++Eligible positive: accepted, new incumbent, and the final current tuple strictly improves
++the pre-action tuple. Deduplicate by full pre-state witness hash within each root.
++
++For the small factory select twelve states by round-robin over
++`relocate, pose, port, reroute, compact`, preserving source order within each kind and
++deduplicating pre-states. For the target select its two available states in source order.
++Small selection indices 2,5,8,11 and target index 1 are held-out states; the other nine
++examples are training. These are related states from two seen factories, not independent
++factory generalization. All kinds appear in small training; no split or seed selection by fit.
++
++For each selected state retain the original complete request/graph, source capsule/episode
++references, pre-state hash, recorded decisions/action and before/after tuples. Reconstruct
++the complete witness, reset the real environment with a one-action budget, and obtain a new
++observation. This intentionally resets temporal context; do not call it historical replay.
++The reset geometry must hash-match the recorded pre-state. Decode the original decisions
++against that observation and require the same action. Execute the teacher and freshly audit
++the resulting complete factory; require the recorded after-witness hash and tuple.
++
++When available, keep the first rejected or physically unchanged source action at that same
++pre-state as a contrast. Reexecute and audit it from the same reset geometry. Do not label
++valid temporary deterioration, mere novelty, or a different pre-state as a negative example.
++Missing contrasts remain missing; no new search for favorable negatives.
++
++## Fixed fit and controls
++
++Use the common initial width-32 model and empty Adam state from the pilot's original snapshot.
++No architecture, mask, action, data-admission or production code changes. Minimize mean
++teacher-forced full-action negative log likelihood on the nine training observations with
++Adam lr 0.003, global gradient clip 1, entropy zero, full-batch streaming accumulation.
++Run exactly 128 updates, checkpointing at 0,16,32,64,128. No early selection of best checkpoint.
++Keep the unchanged initial policy as the no-update control. No negative-example loss term:
++contrast likelihoods are diagnostic, not an added penalty for failed actions.
++
++Record per-example joint NLL, stage probabilities/legal support, greedy teacher-prefix match,
++and contrast NLL at each fixed checkpoint. Greedy match means every chosen conditional
++index is the first argmax on the teacher prefix; it is not beam/global joint-MAP search.
++Record optimizer/CPU RNG state, gradient norm and parameter displacement. The first update
++must match the existing combined updater with constant +1 signal and zero entropy on the
++same behavior-matched examples. Later teacher-forced updates are supervised, not on-policy RL.
++
++At the initial and final snapshots, sample eight fresh actions per selected state, each
++from a separate identical one-action reset, using SHA-256-derived
++`["choice-fit-v1", state_index, sample_index]` seeds matched across the two models.
++Execute and independently validate all 224 sampled proposals. Report exact teacher matches,
++accepted/improving/unchanged/rejected outcomes and full quality tuples separately for the
++nine training and five held-out states, and separately by root. A valid alternative improvement
++is not a teacher match but is still a geometric improvement. Do not infer generalization from
++the 112 correlated samples per model. Teacher/contrast verification adds at most 28 actions.
++
++## Output and gate
++
++Exclusive output directory; version-1 finite JSON dataset, provenance, checkpoint/optimizer
++snapshots, learning curves, all teacher/contrast/sample episode references and fresh audits.
++Existing per-capsule 512 MiB guard applies. Structured failures use `choice-fit-failed`,
++severity `error`, stage `complete-state-choice-fit`, with message and relevant input/state.
++Reject changed source hashes, unavailable selected positives, changed legal decisions,
++nonreproducing teacher geometry, incomplete factory audits, or nonfinite updates. No fallback.
++
++A narrow positive training-fit gate requires final mean training NLL <= 1 and at least 8/9
++greedy teacher matches. Report the actual sampled-action execution response regardless of
++that gate. A failed finite fit is not proof that this architecture cannot represent the task;
++a passed fit is not proof that current RL credit learns it, that held-out states generalize,
++or that the 59-facility target can be compacted. Inspect actual geometry before making any
++packing-quality claim. Follow-up interventions must use these findings, not silently change
++the user's objective or the retained area/tiles/turns ordering.
+diff --git a/docs/benchmarks/layout-direct/choice_fit.py b/docs/benchmarks/layout-direct/choice_fit.py
+new file mode 100644
+index 0000000..63a7e43
+--- /dev/null
++++ b/docs/benchmarks/layout-direct/choice_fit.py
+@@ -0,0 +1,262 @@
++"""Fit recorded improving direct choices on freshly reset complete factory states."""
++
++import argparse
++import copy
++import hashlib
++import json
++import math
++from pathlib import Path
++import time
++
++import torch
++
++from client import Pool
++from gradient_audit import configure_runtime, vector
++from policy import decode
++from replay import file_reference, referenced_json, restore_snapshot, save_capsule, snapshot
++from update import apply_update, behavior, fingerprint
++
++REPORT_SHA = "f1d8099372fd8214da9341355a60766938534479247be33420c2da1ff93ada29"
++KINDS = ("relocate", "pose", "port", "reroute", "compact")
++CHECKPOINTS = (0, 16, 32, 64, 128)
++
++
++def select_cases(candidates):
++    selected = []
++    for root_index in (0, 1):
++        items = [c for c in candidates if c["root_index"] == root_index]
++        if root_index == 0:
++            queues = {k: [c for c in items if c["action"]["kind"] == k] for k in KINDS}
++            chosen = []
++            while len(chosen) < 12:
++                previous = len(chosen)
++                for kind in KINDS:
++                    if queues[kind] and len(chosen) < 12:
++                        chosen.append(queues[kind].pop(0))
++                if len(chosen) == previous:
++                    raise ValueError("Fewer than twelve distinct small positive states")
++        else:
++            if len(items) != 2:
++                raise ValueError("Target availability differs from the declared two positive states")
++            chosen = items
++        for i, case in enumerate(chosen):
++            held_out = i % 3 == 2 if root_index == 0 else i == 1
++            selected.append(dict(case, split="held-out-state" if held_out else "train"))
++    return selected
++
++
++def collect(run):
++    report_ref = file_reference(run / "report.json")
++    if report_ref["sha256"] != REPORT_SHA:
++        raise ValueError("Source report differs from the declared frozen-batch pilot")
++    report = referenced_json(report_ref)
++    manifest = json.loads((run / "manifest.json").read_bytes())
++    for ref in manifest["sources"]:
++        if file_reference(ref["path"]) != ref:
++            raise ValueError(f"Changed source implementation: {ref['path']}")
++    if report["status"] != "complete" or len(report["groups"]) != 16:
++        raise ValueError("Choice fit requires the complete frozen pilot")
++    candidates, negatives, seen = [], {}, set()
++    for group_ref in report["groups"]:
++        group = referenced_json(group_ref)
++        capsule = referenced_json(group["behavior_capsule"])
++        for worker, (history, episode_ref) in enumerate(zip(capsule["rollouts"]["histories"], capsule["episodes"])):
++            episode = referenced_json(episode_ref)
++            for step, (entry, row) in enumerate(zip(history, episode["trace"])):
++                key = (group["root_index"], row["parent_sha256"])
++                source = dict(capsule=group["behavior_capsule"], episode=episode_ref, worker=worker, step=step)
++                if not row["accepted"] or row["witness_sha256"] == row["parent_sha256"]:
++                    negatives.setdefault(key, dict(action=row["action"], decisions=entry["decisions"], source=source))
++                if (row["accepted"] and row.get("new_incumbent") and tuple(row["score"]) < tuple(row["before"])
++                        and key not in seen):
++                    seen.add(key)
++                    state = capsule["rollouts"]["states"][entry["state_ref"]]
++                    if state["state"] != row["parent_sha256"] or fingerprint(state) != entry["state_ref"]:
++                        raise ValueError("Recorded positive state identity differs from source trajectory")
++                    candidates.append(dict(root_index=group["root_index"], original_root=capsule["root"], state=state,
++                        action=row["action"], decisions=entry["decisions"], source=source,
++                        before=row["before"], after=row["score"], after_witness_sha256=row["witness_sha256"]))
++    selected = select_cases(candidates)
++    for case in selected:
++        case["contrast"] = negatives.get((case["root_index"], case["state"]["state"]))
++    return selected, manifest, report_ref, dict(distinct_positive_states=[sum(c["root_index"] == i for c in candidates) for i in (0, 1)])
++
++
++def reconstructed_root(case, index):
++    root = copy.deepcopy(case["original_root"])
++    s = case["state"]
++    witness = dict(root["witness"])
++    witness.update(placements=[{k: v for k, v in p.items() if k not in ("ports", "rotations")} for p in s["facilities"]],
++                   transport_networks=s["networks"], logistics_components=s["logistics_components"], utilizations=s["utilizations"])
++    root.update(id=root["id"] + f"-choice-fit-{index}", generation="explicit-recorded-complete-state-diagnostic", witness=witness)
++    return root
++
++
++def finish_trial(worker, action):
++    after = worker.call("step", action=action)
++    summary, audit, artifact = worker.call("summary"), worker.call("audit"), worker.call("save")
++    if summary["work"]["proposals"] != 1 or summary["termination"] != "proposal-budget":
++        raise ValueError("Choice-fit single-action trial did not complete exactly one proposal")
++    if not audit["coverage"]["factory_validated"] or not audit["validation"]["covered_geometry_validated"]:
++        raise ValueError("Choice-fit trial failed complete factory audit")
++    return after, dict(action=action, summary=summary, audit=audit, artifact=artifact)
++
++
++def nll_update(model, optimizer, examples):
++    if not examples:
++        raise ValueError("Teacher fit requires training examples")
++    optimizer.zero_grad(set_to_none=True)
++    loss_sum = 0.0
++    for example in examples:
++        action, _, logp, entropy = decode(model, example["observation"], decisions=example["decisions"])
++        if action != example["action"]:
++            raise ValueError("Teacher-forced decoder changed the recorded action")
++        loss = (-1.0 * logp - 0.0 * entropy) / len(examples)
++        loss.backward()
++        loss_sum += float(loss.detach())
++    if not all(p.grad is None or torch.isfinite(p.grad).all() for p in model.parameters()):
++        raise ValueError("Nonfinite teacher gradient")
++    digest = fingerprint({k: None if p.grad is None else p.grad.detach().tolist() for k, p in model.named_parameters()})
++    norm = float(torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0))
++    optimizer.step()
++    if not all(torch.isfinite(p).all() for p in model.parameters()):
++        raise ValueError("Nonfinite teacher parameters")
++    return dict(mean_nll_before_update=loss_sum, gradient_norm=norm, gradient_sha256=digest)
++
++
++def likelihoods(model, examples):
++    rows = []
++    with torch.no_grad():
++        for example in examples:
++            trace = []
++            action, _, logp, _ = decode(model, example["observation"], decisions=example["decisions"], trace=trace)
++            if action != example["action"]:
++                raise ValueError("Likelihood probe changed the teacher action")
++            greedy = all(row["chosen"] == max(range(row["vocabulary"]), key=lambda i: row["probabilities"][i]) for row in trace)
++            contrast = example.get("contrast")
++            negative_nll = None
++            if contrast:
++                other, _, lp, _ = decode(model, example["observation"], decisions=contrast["decisions"])
++                if other != contrast["action"]:
++                    raise ValueError("Contrast decoder changed the source action")
++                negative_nll = -float(lp)
++            rows.append(dict(index=example["index"], root_index=example["root_index"], split=example["split"],
++                nll=-float(logp), joint_probability=math.exp(float(logp)), greedy_teacher_match=greedy,
++                contrast_nll=negative_nll, trace=trace))
++    return rows
++
++
++def run(source, output):
++    began = time.perf_counter()
++    source, output = Path(source).resolve(), Path(output).resolve()
++    selected, manifest, report_ref, availability = collect(source)
++    original = referenced_json(manifest["capsules"][0])
++    before = original["before"]
++    configure_runtime(before["runtime"])
++    model, optimizer = restore_snapshot(before)
++    if optimizer.state:
++        raise ValueError("Choice fit requires empty original Adam moments")
++    output.mkdir()
++    write = lambda name, value: save_capsule(output / name, value)
++    sources = manifest["sources"] + [file_reference(Path(__file__)), file_reference(Path(__file__).with_name("choice-fit-contract.md"))]
++    provenance = dict(schema_version=1, sources=sources, source_report=report_ref, availability=availability,
++                      initial_snapshot_sha256=fingerprint(before), objective="diagnostic-teacher-forced-action-nll-not-production-rl")
++    write("provenance.json", provenance)
++    plan = Path(__file__).with_name("sampling.json").resolve()
++    examples, curves, updates, samples = [], [], [], []
++    with Pool(plan, output, 1) as pool:
++        worker = pool.workers[0]
++        for index, case in enumerate(selected):
++            root = reconstructed_root(case, index)
++            root_ref = write(f"root-{index:02}.json", root)
++            obs = worker.call("reset", root=root, budget=dict(steps=1, elapsed_ms=300000))
++            if obs["state"]["state"] != case["state"]["state"] or obs["current_score"] != case["before"]:
++                raise ValueError(f"Fresh reset changed recorded complete geometry: {index}")
++            trace = []
++            with torch.no_grad():
++                action, _, logp, entropy = decode(model, obs, decisions=case["decisions"], trace=trace)
++            if action != case["action"]:
++                raise ValueError(f"Fresh context changed teacher decoding: {index}")
++            obs = dict(obs, futile=0, behavior=behavior(logp, entropy, trace))
++            after, teacher = finish_trial(worker, action)
++            if (not after["transition"]["accepted"] or after["state"]["state"] != case["after_witness_sha256"]
++                    or after["current_score"] != case["after"]):
++                raise ValueError(f"Recorded teacher did not reproduce its valid improvement: {index}")
++            contrast = case["contrast"]
++            if contrast:
++                worker.call("reset", root=root, budget=dict(steps=1, elapsed_ms=300000))
++                after_negative, trial = finish_trial(worker, contrast["action"])
++                if after_negative["state"]["state"] != obs["state"]["state"]:
++                    raise ValueError(f"Recorded rejected/unchanged contrast changed state: {index}")
++                contrast = dict(contrast, trial=trial)
++            examples.append(dict(index=index, root_index=case["root_index"], split=case["split"], root=root_ref,
++                source=case["source"], observation=obs, decisions=case["decisions"], action=action,
++                teacher=teacher, contrast=contrast))
++        dataset_ref = write("dataset.json", dict(schema_version=1, examples=examples))
++        training = [e for e in examples if e["split"] == "train"]
++        if len(training) != 9 or len(examples) != 14:
++            raise ValueError("Choice-fit allocation differs from nine training and five held-out states")
++        initial_parameters = vector(model)
++        for step in range(129):
++            if step in CHECKPOINTS:
++                state = snapshot(model, optimizer)
++                curve = dict(step=step, examples=likelihoods(model, examples), snapshot=write(f"snapshot-{step:03}.json", state),
++                             parameter_delta_norm=float((vector(model) - initial_parameters).norm()))
++                curves.append(curve)
++                print(json.dumps(dict(stage="choice-fit-checkpoint", step=step,
++                    mean_train_nll=sum(e["nll"] for e in curve["examples"] if e["split"] == "train") / len(training),
++                    train_greedy=sum(e["greedy_teacher_match"] for e in curve["examples"] if e["split"] == "train"))), flush=True)
++            if step == 128:
++                break
++            if step == 0:
++                reference, reference_optimizer = restore_snapshot(before)
++                reference_update = apply_update(reference, reference_optimizer,
++                    [[(e["observation"], e["decisions"], e["action"])] for e in training], [[1.0]] * len(training), 0.0)
++                expected = snapshot(reference, reference_optimizer)
++            update = nll_update(model, optimizer, training)
++            if step == 0 and (snapshot(model, optimizer) != expected or update["gradient_sha256"] != reference_update["gradient_sha256"]):
++                raise ValueError("First teacher update differs from constant-positive existing update")
++            updates.append(update)
++        final = snapshot(model, optimizer)
++        for name, state in (("initial", before), ("fitted", final)):
++            candidate, _ = restore_snapshot(state)
++            for example in examples:
++                root = referenced_json(example["root"])
++                for sample_index in range(8):
++                    action_seed = int.from_bytes(hashlib.sha256(json.dumps(["choice-fit-v1", example["index"], sample_index]).encode()).digest()[:8], "little")
++                    obs = worker.call("reset", root=root, budget=dict(steps=1, elapsed_ms=300000))
++                    if obs["state"] != example["observation"]["state"] or obs["context"] != example["observation"]["context"]:
++                        raise ValueError("Sampled choice did not start from identical fitted observation")
++                    with torch.no_grad():
++                        action, _, _, _ = decode(candidate, obs, generator=torch.Generator().manual_seed(action_seed))
++                    after, trial = finish_trial(worker, action)
++                    samples.append(dict(model=name, index=example["index"], root_index=example["root_index"], split=example["split"],
++                        sample_index=sample_index, seed=action_seed, teacher_match=action == example["action"],
++                        accepted=after["transition"]["accepted"], unchanged=after["state"]["state"] == obs["state"]["state"],
++                        improved=tuple(after["best_score"]) < tuple(obs["initial_score"]), **trial))
++                print(json.dumps(dict(stage="choice-fit-samples-complete", model=name, index=example["index"])), flush=True)
++    for ref in sources:
++        if file_reference(ref["path"]) != ref:
++            raise ValueError(f"Source changed during choice fit: {ref['path']}")
++    train_final = [e for e in curves[-1]["examples"] if e["split"] == "train"]
++    mean_nll = sum(e["nll"] for e in train_final) / len(train_final)
++    greedy = sum(e["greedy_teacher_match"] for e in train_final)
++    result = dict(schema_version=1, status="complete", scope="complete-state-choice-memorization-and-execution-diagnostic",
++                  dataset=dataset_ref, curves=curves, updates=updates, samples=samples,
++                  training_fit_gate=dict(passed=mean_nll <= 1 and greedy >= 8, mean_nll=mean_nll, greedy_matches=greedy, examples=9),
++                  sampled_proposals=len(samples), teacher_proposals=len(examples), contrast_proposals=sum(bool(e["contrast"]) for e in examples),
++                  elapsed_seconds=time.perf_counter() - began, production_ready=False)
++    print(json.dumps(dict(status="complete", report=write("report.json", result), training_fit_gate=result["training_fit_gate"])), flush=True)
++
++
++if __name__ == "__main__":
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--run", required=True)
++    parser.add_argument("--output-directory", required=True)
++    options = parser.parse_args()
++    try:
++        run(options.run, options.output_directory)
++    except Exception as error:
++        print(json.dumps(dict(code="choice-fit-failed", severity="error", stage="complete-state-choice-fit",
++                              message=str(error), entity=options.run)), flush=True)
++        raise SystemExit(1)

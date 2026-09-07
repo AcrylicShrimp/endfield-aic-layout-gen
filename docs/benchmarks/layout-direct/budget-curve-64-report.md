@@ -1,9 +1,11 @@
 # 64-update checkpoint in the ongoing cumulative study
 
-Status: all three 64-update evaluations verified; 256/1024 allocations still running.
+Status: historical verified 64-update report; the later study was stopped by the user.
 Date: 2026-09-07. Method and stopping rule: `budget-curve-contract.md`.
+Later continuation instructions are superseded by the
+[paused handoff](../../handoffs/2026-09-07-layout-learning/README.md); no 1024 result exists.
 
-## Decision
+## Decision at this checkpoint (historical)
 
 The first fixed checkpoint has positive observed development win-minus-loss estimates for
 all three training seeds, against both initial and conditional-uniform policies. This is

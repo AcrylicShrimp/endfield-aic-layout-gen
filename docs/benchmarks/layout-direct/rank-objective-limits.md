@@ -2,6 +2,9 @@
 
 Status: mathematical interpretation and decision constraint, 2026-09-07.
 No change to the running cumulative experiment, its objective, or release requirements.
+Subsequent user decision: the experiment was stopped and further diagnosis paused;
+see the [handoff](../../handoffs/2026-09-07-layout-learning/README.md). References below
+to preserving the 1024 allocation describe the earlier decision, not permission to restart.
 
 ## Limited estimator result
 

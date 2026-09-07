@@ -1,9 +1,11 @@
 # 256-update checkpoint in the ongoing cumulative study
 
-Status: all three 256-update evaluations verified; unchanged 1024-update runs continue.
+Status: verified 256-update report; the later study was stopped by the user before 1024.
 Date: 2026-09-07. Allocation and interpretation: `budget-curve-contract.md`.
+The continuation decision below is historical. See the
+[paused handoff](../../handoffs/2026-09-07-layout-learning/README.md) before resuming work.
 
-## Decision
+## Decision at this checkpoint (historical)
 
 Continuing from 64 to 256 updates has not demonstrated a consistent additional benefit in
 this development population. The mean paired win-minus-loss endpoint against the initial

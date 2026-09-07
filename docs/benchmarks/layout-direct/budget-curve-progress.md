@@ -1,7 +1,19 @@
 # Cumulative budget study: execution ledger
 
-Status: runner verified; declared training allocation in progress, no completed budget curve.
+Status: stopped by the user before 1024; no completed final budget curve.
 Date: 2026-09-07. Allocation and interpretation: `budget-curve-contract.md`.
+
+## Latest decision: stopped, not awaiting completion
+
+The user stopped training to investigate the 64-to-256 plateau, then paused diagnosis
+for a committed handoff. Seeds 1901/2901/3901 ended after 399/391/389 completed updates;
+all returned exit 130 following requested SIGINT. Their last full snapshots and formal
+evaluations are at 256. No files were deleted and no automatic restart is authorized.
+The preregistered contract remains byte-identical for evidence verification, but its
+continuation instruction has been superseded by this explicit user decision.
+Read [the handoff](../../handoffs/2026-09-07-layout-learning/README.md) for hashes,
+results, remaining changes and the next diagnostic questions. The narrative below is
+the historical execution ledger, not a claim that those processes are still alive.
 
 ## Why this experiment
 

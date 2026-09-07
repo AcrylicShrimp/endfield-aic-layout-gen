@@ -1,6 +1,15 @@
 # Production-ready layout model roadmap
 
-Status: active user goal. Started 2026-09-07. Early stages prioritize exploration, not productization.
+Status: paused by the user, 2026-09-07; goal unmet. Early stages prioritize exploration, not productization.
+
+Latest decision: stop the cumulative study, then pause further diagnosis for handoff.
+Read [the restart context](../../handoffs/2026-09-07-layout-learning/README.md) first.
+The historical continuation instructions below do not authorize restarting the stopped
+learners. Diagnose the plateau only after the user resumes; no replacement reward,
+architecture change or deletion of existing work has been approved by this pause.
+The user requires adversarial review before reusing the inherited technical direction.
+Treat this roadmap's historical choices and next-step suggestions as hypotheses, not
+authority; reassess their evidence and alignment with the original goal first.
 
 The user clarified that initial capability/learning pilots are useful prerequisites, but must
 not become the main objective. Those initial pilots are now complete. The active work is the
