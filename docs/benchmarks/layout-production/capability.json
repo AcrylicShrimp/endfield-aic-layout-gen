@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "dataset": "../../../target/layout-rl-roots-03/roots.json",
+  "roots": [
+    {"id":"citron", "root":"chain-citron-48"},
+    {"id":"iron-nine", "root":"chain-iron-nine-137"},
+    {"id":"heavy-loose", "root":"closure-original"},
+    {"id":"heavy-strong", "root":"closure-original", "witness": {
+      "path":"../../../target/layout-production-baseline-03/strongest-geometric/witness.json",
+      "sha256":"38829b5ec2949cfa3a04542a5faf73979b2802c011cebde69733e4bcae104299"
+    }}
+  ],
+  "budget": {"proposals":2048, "route_expansions":200000, "per_action_expansions":5000, "elapsed_ms":10000, "validator_ms":3000},
+  "levels": [
+    {"id":"single-t2", "kind":"translate", "step_limit":2, "max_members":1, "junction_policy":"internal"},
+    {"id":"pair-t2", "kind":"translate", "step_limit":2, "max_members":2, "junction_policy":"internal"},
+    {"id":"pair-t4", "kind":"translate", "step_limit":4, "max_members":2, "junction_policy":"internal"},
+    {"id":"pair-t8", "kind":"translate", "step_limit":8, "max_members":2, "junction_policy":"internal"},
+    {"id":"group4-t2", "kind":"translate", "step_limit":2, "max_members":4, "junction_policy":"internal"},
+    {"id":"group8-t2", "kind":"translate", "step_limit":2, "max_members":8, "junction_policy":"internal"},
+    {"id":"group16-t2", "kind":"translate", "step_limit":2, "max_members":16, "junction_policy":"internal"},
+    {"id":"group16-downstream", "kind":"translate", "step_limit":2, "max_members":16, "junction_policy":"downstream"},
+    {"id":"rotate", "kind":"rotate", "step_limit":0, "max_members":1, "junction_policy":"internal"},
+    {"id":"rotate-t2", "kind":"rotate", "step_limit":2, "max_members":1, "junction_policy":"internal"},
+    {"id":"port", "kind":"port", "step_limit":0, "max_members":1, "junction_policy":"internal"},
+    {"id":"reroute", "kind":"reroute", "step_limit":0, "max_members":1, "junction_policy":"internal"}
+  ]
+}
