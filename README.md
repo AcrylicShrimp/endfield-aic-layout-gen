@@ -7,6 +7,8 @@ and [design tracker](docs/todos/2026-09-07.04-learned-factory-edit-design.md). A
 revisable. The user has authorized the [first CPU fixed-factory experiment](tools/factory-edit-pilot/README.md),
 prioritizing visible outcome/reward curves whether or not learning succeeds. This isolated
 experiment does not change production commands; the historical learning study remains stopped.
+The [first result](docs/reports/2026-09-07.00-first-cpu-factory-edit-pilot.md) shows a learned
+4.545% area reduction on the fixed four-facility instance after 65,536 commands.
 
 ## Workspace
 

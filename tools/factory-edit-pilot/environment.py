@@ -262,7 +262,9 @@ class Environment:
             outcome["diagnostics"] = accepted["diagnostics"]
             if accepted["valid"]:
                 outcome["complete"] = True
-                outcome["new_completion"] = self.draft != before
+                # Restoring the previously validated base is a complete state, but does
+                # not demonstrate a newly completed edit (including explicit discard).
+                outcome["new_completion"] = self.draft != self.base
                 self.base, self.base_score = clone(self.draft), accepted["score"]
                 if accepted["score"] < self.best_score:
                     self.best, self.best_score = clone(self.draft), accepted["score"]

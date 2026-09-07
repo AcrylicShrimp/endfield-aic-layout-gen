@@ -44,9 +44,11 @@ def render(output, catalog):
         axes[2].plot(ex, [e["training_champion_reduction"]*100 for e in episodes], color="#df8640", label="Training discovery record")
         axes[2].plot(x, [s["improvement_frequency"]*100 for s in summaries], "o-", color="#009b77", label="Evaluation improvement frequency")
     axes[1].set(title="Episode reward", ylabel="Undiscounted task return", xlabel="Training commands")
-    axes[1].legend(fontsize=8)
+    if episodes:
+        axes[1].legend(fontsize=8)
     axes[2].set(title="Discovery and repeatability", ylabel="Percent (separate measures)", xlabel="Training commands")
-    axes[2].legend(fontsize=8)
+    if episodes:
+        axes[2].legend(fontsize=8)
     for ax in axes:
         ax.grid(alpha=.2)
         ax.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
@@ -62,6 +64,9 @@ def render(output, catalog):
                ("training-best.json", "Best discovered during training"),
                ("witness.json", "Scripted environment witness (not learned)")]
     layouts = [(json.loads((output/name).read_text()), title) for name, title in choices if (output/name).exists()]
+    layout_bounds = [check(catalog, layout)["bounds"] for layout, _ in layouts]
+    common = (min(b[0] for b in layout_bounds), min(b[1] for b in layout_bounds),
+              max(b[2] for b in layout_bounds), max(b[3] for b in layout_bounds))
     fig, axes = plt.subplots(1, len(layouts), figsize=(4*len(layouts), 8), constrained_layout=True, squeeze=False)
     network_colors = {nid: plt.get_cmap("tab10")(i) for i, nid in enumerate(catalog.networks)}
     for ax, (layout, title) in zip(axes[0], layouts):
@@ -90,10 +95,10 @@ def render(output, catalog):
         area, tiles, turns = validation["score"]
         ax.set_title(f"{title}\n{x1-x0+1} x {y1-y0+1} | area {area}, belt tiles {tiles}, turns {turns}", fontsize=10)
         ax.set_aspect("equal")
-        ax.set_xlim(x0-1.5, x1+1.5)
-        ax.set_ylim(max(20, y1+1.5), min(-3, y0-1.5))
-        ax.set_xticks(range(x0, x1+1, 2))
-        ax.set_yticks(range(y0, y1+1, 2))
+        ax.set_xlim(common[0]-1.5, common[2]+1.5)
+        ax.set_ylim(common[3]+1.5, common[1]-1.5)
+        ax.set_xticks(range(common[0], common[2]+1, 2))
+        ax.set_yticks(range(common[1], common[3]+1, 2))
         ax.grid(alpha=.12)
     labels = ", ".join(f"{fid}: {f['recipe']}" for fid, f in catalog.facilities.items())
     fig.suptitle("Complete validated factories | all original production obligations preserved\n"+labels, fontsize=10)

@@ -3,6 +3,8 @@
 An isolated first learning experiment, authorized by the user after the collaborative design
 phase. See the [execution contract](../../docs/designs/2026-09-07.02-fixed-factory-pilot-execution.md)
 and [pilot hypotheses](../../docs/designs/2026-09-07.01-factory-edit-learning-pilot.md).
+The [first result](../../docs/reports/2026-09-07.00-first-cpu-factory-edit-pilot.md) records the
+completed 65,536-command seed, outcome/reward curves, learned edit, and interpretation limits.
 
 The model is a 100,898-parameter CPU CNN plus per-object MLP, with shared policy/value features
 and a typed local-command scorer. PPO starts from fresh weights. There is no GNN, demonstration
@@ -43,6 +45,7 @@ Independent acceptance of an exported factory, without running the environment o
 ```sh
 tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/acceptance.py --case tools/factory-edit-pilot/case.json --layout artifacts/factory-edit-pilot/cpu-100898-seed17/training-best.json
 tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/plots.py --case tools/factory-edit-pilot/case.json --output artifacts/factory-edit-pilot/cpu-100898-seed17
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/audit.py --case tools/factory-edit-pilot/case.json --output artifacts/factory-edit-pilot/cpu-100898-seed17 --source-commit 42ade74
 ```
 
 `learning-curves.png` separates frozen-policy outcomes, training/evaluation episode rewards,

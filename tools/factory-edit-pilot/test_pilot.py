@@ -120,6 +120,18 @@ class PilotTests(unittest.TestCase):
         self.assertEqual(self.env.best_score, self.env.initial_score)
         self.assertEqual(self.env.steps, 0)
 
+    def test_restoring_base_is_not_a_new_completion(self):
+        tid = "battery:target"
+        binding = deepcopy(self.env.draft["bindings"][tid])
+        self.env.step({"op": "UNBIND_TERMINALS", "terminal": tid})
+        _, _, outcome = self.env.step({"op": "BIND_TERMINALS", "terminal": tid, "binding": binding})
+        self.assertTrue(outcome["complete"])
+        self.assertFalse(outcome["new_completion"])
+        self.env.step({"op": "UNBIND_TERMINALS", "terminal": tid})
+        _, _, outcome = self.env.step({"op": "DISCARD_EDIT"})
+        self.assertTrue(outcome["complete"])
+        self.assertFalse(outcome["new_completion"])
+
     def test_candidate_replay_and_geometry_encodings(self):
         rng = random.Random(99)
         for _ in range(2):
