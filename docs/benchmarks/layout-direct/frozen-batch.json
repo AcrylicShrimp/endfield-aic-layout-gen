@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "seed_namespace": "frozen-batch-v1",
+  "capsules": [
+    {"path": "../../../target/layout-direct-update-audit-02/update-0001.json", "sha256": "444455d32a91864944278feabba393081f891634f13aa0fa32cfe8d44cef0546"},
+    {"path": "../../../target/layout-direct-update-audit-02/update-0002.json", "sha256": "b746b3e6303ae14399cef77a234436c9a5b59aceb249bc8b588b12eb0b2b4789"}
+  ],
+  "plan": "sampling.json",
+  "batches": 8,
+  "workers": 4,
+  "horizon": 128,
+  "evaluation_seeds": 4,
+  "episode_ms": 300000,
+  "output_bytes": 2147483648,
+  "bootstrap_samples": 2000
+}

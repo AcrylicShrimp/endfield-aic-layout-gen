@@ -82,3 +82,11 @@ for the two recorded smoke updates and expose Adam carryover under zero current 
 They do not measure gradient SNR or learned layout benefit. Next collect independent batches
 at frozen policy/root snapshots and prospectively evaluate matched update controls, preserving
 the qualitatively verified useful detour rather than imposing an immediate-worse penalty.
+The [independent frozen-batch pilot](../layout-direct/frozen-batch-report.md) completes sixteen
+single-update trials and 40,960 proposals. Small-root paired quality remains uncertain;
+target prefix outcomes tie the unchanged policy on all 32 pairs, with no area reduction.
+Observed prefix gradient dispersion improves on the target but worsens on the small root.
+Peer-rank reassignment is not an independent noise control because tournament scores couple
+workers. Next isolate learnability of known improving choices on complete states before
+choosing a capacity/credit intervention. Do not turn the user's area-reward hypothesis into
+an untested implementation decision or claim product success from the visually strongest pair.
