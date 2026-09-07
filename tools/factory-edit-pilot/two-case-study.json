@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "battery-two-case-learning",
+  "base_config": "tools/factory-edit-pilot/run-server-cuda.json",
+  "cases": {
+    "A": "tools/factory-edit-pilot/case.json",
+    "B": "tools/factory-edit-pilot/case-spread.json"
+  },
+  "initialization_case": "A",
+  "training_seeds": [17, 29, 43],
+  "conditions": {
+    "A-only": {"schedule": ["A"], "commands": 65536},
+    "B-only": {"schedule": ["B"], "commands": 65536},
+    "A+B": {"schedule": ["A", "B"], "commands": 131072}
+  },
+  "checkpoints": [0, 8192, 16384, 32768, 65536, 131072]
+}

@@ -1,0 +1,477 @@
+{
+  "schema_version": 1,
+  "id": "battery-one-four-facility-spread-root",
+  "catalogs": {
+    "recipes": "data/game/normalized/recipes.json",
+    "facilities": "data/game/normalized/facilities.json",
+    "transports": "data/game/normalized/transports.json"
+  },
+  "target": {
+    "item": "item-proc-battery-1",
+    "rate": [
+      1,
+      20
+    ]
+  },
+  "facilities": [
+    {
+      "id": "F",
+      "recipe": "furnance-quartz-glass-1",
+      "utilization": [
+        1,
+        2
+      ],
+      "pose": [
+        0,
+        20,
+        0
+      ]
+    },
+    {
+      "id": "C",
+      "recipe": "component-glass-cmpt-1",
+      "utilization": [
+        1,
+        2
+      ],
+      "pose": [
+        0,
+        12,
+        0
+      ]
+    },
+    {
+      "id": "G",
+      "recipe": "grinder-originium-powder-1",
+      "utilization": [
+        1,
+        1
+      ],
+      "pose": [
+        8,
+        12,
+        0
+      ]
+    },
+    {
+      "id": "T",
+      "recipe": "tools-proc-battery-1-1",
+      "utilization": [
+        1,
+        2
+      ],
+      "pose": [
+        0,
+        0,
+        0
+      ]
+    }
+  ],
+  "networks": [
+    {
+      "id": "quartz",
+      "item": "item-quartz-sand",
+      "rate": [
+        1,
+        4
+      ],
+      "source": {
+        "external": "quartz-import"
+      },
+      "target": {
+        "facility": "F"
+      },
+      "source_binding": {
+        "cell": [
+          1,
+          27
+        ],
+        "side": "S"
+      },
+      "target_binding": {
+        "port": "input-belt-1"
+      },
+      "corners": [
+        [
+          1,
+          27
+        ],
+        [
+          1,
+          23
+        ]
+      ]
+    },
+    {
+      "id": "glass",
+      "item": "item-quartz-glass",
+      "rate": [
+        1,
+        4
+      ],
+      "source": {
+        "facility": "F"
+      },
+      "target": {
+        "facility": "C"
+      },
+      "source_binding": {
+        "port": "output-belt-1"
+      },
+      "target_binding": {
+        "port": "input-belt-1"
+      },
+      "corners": [
+        [
+          1,
+          19
+        ],
+        [
+          1,
+          15
+        ]
+      ]
+    },
+    {
+      "id": "component",
+      "item": "item-glass-cmpt",
+      "rate": [
+        1,
+        4
+      ],
+      "source": {
+        "facility": "C"
+      },
+      "target": {
+        "facility": "T"
+      },
+      "source_binding": {
+        "port": "output-belt-1"
+      },
+      "target_binding": {
+        "port": "input-belt-1"
+      },
+      "corners": [
+        [
+          1,
+          11
+        ],
+        [
+          1,
+          4
+        ]
+      ]
+    },
+    {
+      "id": "ore",
+      "item": "item-originium-ore",
+      "rate": [
+        1,
+        2
+      ],
+      "source": {
+        "external": "originium-import"
+      },
+      "target": {
+        "facility": "G"
+      },
+      "source_binding": {
+        "cell": [
+          9,
+          27
+        ],
+        "side": "S"
+      },
+      "target_binding": {
+        "port": "input-belt-1"
+      },
+      "corners": [
+        [
+          9,
+          27
+        ],
+        [
+          9,
+          15
+        ]
+      ]
+    },
+    {
+      "id": "powder",
+      "item": "item-originium-powder",
+      "rate": [
+        1,
+        2
+      ],
+      "source": {
+        "facility": "G"
+      },
+      "target": {
+        "facility": "T"
+      },
+      "source_binding": {
+        "port": "output-belt-1"
+      },
+      "target_binding": {
+        "port": "input-belt-5"
+      },
+      "corners": [
+        [
+          9,
+          11
+        ],
+        [
+          9,
+          6
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          5,
+          4
+        ]
+      ]
+    },
+    {
+      "id": "battery",
+      "item": "item-proc-battery-1",
+      "rate": [
+        1,
+        20
+      ],
+      "source": {
+        "facility": "T"
+      },
+      "target": {
+        "external": "battery-export"
+      },
+      "source_binding": {
+        "port": "output-belt-2"
+      },
+      "target_binding": {
+        "cell": [
+          2,
+          -7
+        ],
+        "side": "N"
+      },
+      "corners": [
+        [
+          2,
+          -1
+        ],
+        [
+          2,
+          -7
+        ]
+      ]
+    }
+  ],
+  "witness": [
+    {
+      "op": "UNBIND_TERMINALS",
+      "terminal": "battery:target"
+    },
+    {
+      "op": "ERASE_TRANSPORT",
+      "network": "battery",
+      "cells": [
+        [
+          2,
+          -6
+        ],
+        [
+          2,
+          -7
+        ]
+      ]
+    },
+    {
+      "op": "BIND_TERMINALS",
+      "terminal": "battery:target",
+      "binding": {
+        "cell": [
+          2,
+          -5
+        ],
+        "side": "N"
+      }
+    },
+    {
+      "op": "UNBIND_TERMINALS",
+      "terminal": "battery:target"
+    },
+    {
+      "op": "ERASE_TRANSPORT",
+      "network": "battery",
+      "cells": [
+        [
+          2,
+          -4
+        ],
+        [
+          2,
+          -5
+        ]
+      ]
+    },
+    {
+      "op": "BIND_TERMINALS",
+      "terminal": "battery:target",
+      "binding": {
+        "cell": [
+          2,
+          -3
+        ],
+        "side": "N"
+      }
+    },
+    {
+      "op": "UNBIND_TERMINALS",
+      "terminal": "battery:target"
+    },
+    {
+      "op": "ERASE_TRANSPORT",
+      "network": "battery",
+      "cells": [
+        [
+          2,
+          -2
+        ],
+        [
+          2,
+          -3
+        ]
+      ]
+    },
+    {
+      "op": "BIND_TERMINALS",
+      "terminal": "battery:target",
+      "binding": {
+        "cell": [
+          2,
+          -1
+        ],
+        "side": "N"
+      }
+    },
+    {
+      "op": "UNBIND_TERMINALS",
+      "terminal": "quartz:source"
+    },
+    {
+      "op": "UNBIND_TERMINALS",
+      "terminal": "ore:source"
+    },
+    {
+      "op": "ERASE_TRANSPORT",
+      "network": "quartz",
+      "cells": [
+        [
+          1,
+          27
+        ],
+        [
+          1,
+          26
+        ]
+      ]
+    },
+    {
+      "op": "ERASE_TRANSPORT",
+      "network": "ore",
+      "cells": [
+        [
+          9,
+          27
+        ],
+        [
+          9,
+          26
+        ]
+      ]
+    },
+    {
+      "op": "BIND_TERMINALS",
+      "terminal": "quartz:source",
+      "binding": {
+        "cell": [
+          1,
+          25
+        ],
+        "side": "S"
+      }
+    },
+    {
+      "op": "BIND_TERMINALS",
+      "terminal": "ore:source",
+      "binding": {
+        "cell": [
+          9,
+          25
+        ],
+        "side": "S"
+      }
+    },
+    {
+      "op": "UNBIND_TERMINALS",
+      "terminal": "quartz:source"
+    },
+    {
+      "op": "UNBIND_TERMINALS",
+      "terminal": "ore:source"
+    },
+    {
+      "op": "ERASE_TRANSPORT",
+      "network": "quartz",
+      "cells": [
+        [
+          1,
+          25
+        ],
+        [
+          1,
+          24
+        ]
+      ]
+    },
+    {
+      "op": "ERASE_TRANSPORT",
+      "network": "ore",
+      "cells": [
+        [
+          9,
+          25
+        ],
+        [
+          9,
+          24
+        ]
+      ]
+    },
+    {
+      "op": "BIND_TERMINALS",
+      "terminal": "quartz:source",
+      "binding": {
+        "cell": [
+          1,
+          23
+        ],
+        "side": "S"
+      }
+    },
+    {
+      "op": "BIND_TERMINALS",
+      "terminal": "ore:source",
+      "binding": {
+        "cell": [
+          9,
+          23
+        ],
+        "side": "S"
+      }
+    }
+  ]
+}

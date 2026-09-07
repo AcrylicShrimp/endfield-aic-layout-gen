@@ -157,3 +157,37 @@ Migration evidence: [state/snapshots](../../docs/reports/2026-09-08.07-factory-e
 [final server results](../../docs/reports/2026-09-08.11-factory-edit-native-results.md).
 Earlier learning and CPU/CUDA findings remain under `docs/reports/`; native migration does not
 turn those single-case measurements into generalization or optimizer claims.
+
+## Two-case learning study
+
+The [predeclared protocol](../../docs/designs/2026-09-08.05-two-case-learning-experiment.md)
+compares A-only, B-only and alternating A+B at three training seeds. `case-spread.json` is a
+selected external runtime fixture with the same production obligations and feature meanings as
+`case.json`, but wider facility gaps, a bent internal route and longer tails. Its separate
+21-command witness achieves five successive valid area reductions from 385 to 275. Witness
+commands are not training demonstrations. Each training episode resets its selected original
+root; this experiment adds neither curriculum nor best-layout carryover.
+
+With a clean committed checkout and the explicit release library, run the entire sequential
+matrix, independent audits and comparison plots:
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/two_case_matrix.py --protocol tools/factory-edit-pilot/two-case-study.json --native-library "$AIC_NATIVE_LIBRARY" --output artifacts/factory-edit-pilot/two-case-learning
+```
+
+Solo conditions receive 65,536 actions; mixed training receives 131,072, including a frozen
+65,536 checkpoint. Evaluate both cases separately at every checkpoint. The final comparison
+reports equal total allowance and equal per-case exposure separately, including all three
+independently trained seeds. A single condition can be run with `two_case.py --protocol <path>
+--condition A+B --seed 17 --native-library <path> --output <fresh-directory>`.
+
+Per-case subdirectories retain validated roots, witnesses, training champions, frozen evaluation
+rows and selected layouts/traces. Shared checkpoints store the model/Adam/RNG, both native
+snapshots, scheduler and per-case exposure. A separate interrupted checkpoint preserves partial
+collection and its active case. Automatic continuation of this study checkpoint format is not
+implemented; do not pass it to the single-case `run.py --resume` interface.
+
+`two_case_audit.py --protocol <path> --output <run> --source-commit <recorded-commit>` independently
+checks both case outputs and the declared exposure. `two_case_compare.py --protocol <path>
+--runs <all-declared-runs> --output <fresh-directory>` requires passing audits, common source/
+runtime/configuration and equal initial parameters within each training seed.
