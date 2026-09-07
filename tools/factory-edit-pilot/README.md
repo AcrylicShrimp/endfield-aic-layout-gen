@@ -191,3 +191,7 @@ implemented; do not pass it to the single-case `run.py --resume` interface.
 checks both case outputs and the declared exposure. `two_case_compare.py --protocol <path>
 --runs <all-declared-runs> --output <fresh-directory>` requires passing audits, common source/
 runtime/configuration and equal initial parameters within each training seed.
+
+The [completed three-seed results](../../docs/reports/2026-09-08.12-two-case-learning-results.md)
+contain all nine runs: no positive training or evaluation reward, despite verified improving
+witnesses. Neither matched-total nor matched-per-case comparison showed a benefit in this matrix.
