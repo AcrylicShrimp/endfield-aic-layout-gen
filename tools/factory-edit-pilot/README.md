@@ -184,3 +184,6 @@ batching on fixed retained observations. It reports preparation, completed forwa
 and CPU sampling separately. It does not change production collection or enable deterministic
 training. Two-episode GPU batching remains a prospective collection change, not a selected
 execution path in this slice.
+
+Immutable candidate measurements and remaining actor costs are recorded in
+[the typed candidate report](../../docs/reports/2026-09-08.00-factory-edit-typed-candidate-speed.md).
