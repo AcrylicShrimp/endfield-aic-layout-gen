@@ -77,3 +77,8 @@ and gradient signal on frozen behavior batches; do not interpret the two-update 
 as a capacity or training-budget experiment. Continue judging product readiness
 by independent layout quality, futile-action rate, actual environment breadth, target density
 and visual inspection. Do not call a sampled negative result universal action uselessness.
+The [frozen-batch controls](../layout-direct/gradient-audit-report.md) reject entropy dominance
+for the two recorded smoke updates and expose Adam carryover under zero current signal.
+They do not measure gradient SNR or learned layout benefit. Next collect independent batches
+at frozen policy/root snapshots and prospectively evaluate matched update controls, preserving
+the qualitatively verified useful detour rather than imposing an immediate-worse penalty.
