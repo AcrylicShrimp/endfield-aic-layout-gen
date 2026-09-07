@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "seed": 701,
+  "groups": 32,
+  "workers": 4,
+  "horizon": 64,
+  "threads": 4,
+  "width": 32,
+  "learning_rate": 0.003,
+  "entropy": 0.001,
+  "target_interval": 4,
+  "episode_ms": 300000,
+  "evaluation_horizons": [128, 1024],
+  "evaluation_seeds": [101]
+}

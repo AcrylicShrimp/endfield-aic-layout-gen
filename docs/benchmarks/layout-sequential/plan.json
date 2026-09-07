@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "dataset": "../../../target/layout-rl-next-corpus-01/roots.json",
+  "target": {
+    "root": "closure-original",
+    "id": "heavy-strong",
+    "path": "../../../target/layout-production-baseline-03/strongest-geometric/witness.json",
+    "sha256": "38829b5ec2949cfa3a04542a5faf73979b2802c011cebde69733e4bcae104299"
+  },
+  "environment": {
+    "per_action_expansions": 5000,
+    "validator_ms": 3000,
+    "max_actions": 8192,
+    "max_tokens": 256,
+    "compaction_variants": [false, true],
+    "levels": [
+      {"id":"group4-t2","kind":"translate","step_limit":2,"max_members":4,"junction_policy":"internal"},
+      {"id":"rotate-t2","kind":"rotate","step_limit":2,"max_members":1,"junction_policy":"internal"},
+      {"id":"port","kind":"port","step_limit":0,"max_members":1,"junction_policy":"internal"},
+      {"id":"contact-pair","kind":"contact","step_limit":0,"max_members":2,"junction_policy":"internal"},
+      {"id":"compact","kind":"compact"}
+    ]
+  }
+}
