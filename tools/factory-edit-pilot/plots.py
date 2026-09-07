@@ -1,5 +1,6 @@
 """Standalone outcome, reward, and geometry figures from recorded experiment data."""
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -16,13 +17,30 @@ def read_rows(path):
     return [json.loads(line) for line in Path(path).read_text().splitlines() if line.strip()] if Path(path).exists() else []
 
 
-def render(output, catalog):
+def render(output, catalog, parent=None):
     output = Path(output)
     metadata = json.loads((output/"metadata.json").read_text())
     episodes = read_rows(output/"episodes.jsonl")
     evaluations = read_rows(output/"evaluations.jsonl")
     summaries = read_rows(output/"evaluation-summary.jsonl")
     config = metadata["config"]
+    curve_name = "learning-curves"
+    if parent is not None:
+        parent = Path(parent)
+        lineage = metadata.get("lineage", {})
+        if hashlib.sha256((parent/"metadata.json").read_bytes()).hexdigest() != lineage.get("parent_metadata_sha256"):
+            raise ValueError(f"Continuation parent metadata hash differs: {parent}")
+        boundary = lineage["resumed_commands"]
+        parent_evaluations = read_rows(parent/"evaluations.jsonl")
+        if [r for r in parent_evaluations if r["commands"] == boundary] != [r for r in evaluations if r["commands"] == boundary]:
+            raise ValueError(f"Restored checkpoint evaluation differs from parent: {parent}")
+        parent_episodes = read_rows(parent/"episodes.jsonl")
+        if not parent_episodes or parent_episodes[-1]["commands"] != boundary or any(r["commands"] <= boundary for r in episodes):
+            raise ValueError(f"Continuation episode boundary is inconsistent: {parent}")
+        episodes = parent_episodes+episodes
+        evaluations = parent_evaluations+[r for r in evaluations if r["commands"] > boundary]
+        summaries = read_rows(parent/"evaluation-summary.jsonl")+[r for r in summaries if r["commands"] > boundary]
+        curve_name = "learning-curves-with-parent"
     plt.rcParams.update({"font.size": 10, "axes.spines.top": False, "axes.spines.right": False})
     fig, axes = plt.subplots(1, 3, figsize=(15.5, 4.8), constrained_layout=True)
     x = [s["commands"] for s in summaries]
@@ -50,13 +68,16 @@ def render(output, catalog):
     if episodes:
         axes[2].legend(fontsize=8)
     for ax in axes:
+        if parent is not None:
+            ax.axvline(boundary, color="#777777", linestyle=":", linewidth=1)
         ax.grid(alpha=.2)
         ax.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
     count = episodes[-1]["commands"] if episodes else 0
-    fig.suptitle(f"{metadata['device'].upper()} learner / CPU actor | {metadata['parameters']:,} parameters | {count:,} commands | one training seed\n"
+    continuation_label = f" | continued at {boundary:,} (dotted line)" if parent is not None else ""
+    fig.suptitle(f"{metadata['device'].upper()} learner / CPU actor | {metadata['parameters']:,} parameters | {count:,} commands | one training seed{continuation_label}\n"
                  "Same initial layout and 128 edits per episode; raw episode reward equals relative area reduction", fontsize=12)
-    fig.savefig(output/"learning-curves.png", dpi=170)
-    fig.savefig(output/"learning-curves.svg")
+    fig.savefig(output/f"{curve_name}.png", dpi=170)
+    fig.savefig(output/f"{curve_name}.svg")
     plt.close(fig)
 
     choices = [("initial.json", "Initial factory"),
@@ -105,14 +126,15 @@ def render(output, catalog):
     fig.savefig(output/"factory-comparison.png", dpi=160)
     fig.savefig(output/"factory-comparison.svg")
     plt.close(fig)
-    return {"curves": str(output/"learning-curves.png"), "layouts": str(output/"factory-comparison.png")}
+    return {"curves": str(output/f"{curve_name}.png"), "layouts": str(output/"factory-comparison.png")}
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--parent", type=Path, help="Include the verified immediate parent training segment")
     parser.add_argument("--case", required=True, type=Path)
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[2])
     args = parser.parse_args()
-    print(json.dumps(render(args.output, Catalog(args.root, args.case)), indent=2))
+    print(json.dumps(render(args.output, Catalog(args.root, args.case), args.parent), indent=2))

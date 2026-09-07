@@ -132,3 +132,5 @@ Candidate observations now reuse finite catalog/action one-hot templates and fil
 arrays directly. Candidate sorting reuses the same standard JSON encoder. No action pruning,
 feature changes, state cache, or validation reduction accompanies this optimization.
 `environment_benchmark.py --case <case> --config <config> --input <retained-input.pt> [<input.pt> ...] --reference-source <trusted-git-commit> --output <fresh-directory>` compares every candidate in order, observation byte, and transition against the named historical environment and recorded observations. It alternates implementations after warm-up and retains timing/parity evidence.
+
+The [continuation result](../../docs/reports/2026-09-07.03-fixed-factory-continuation.md) remained flat at 4.545% through 131,072 commands. `plots.py --parent <parent-run>` adds verified parent rows to a separate `learning-curves-with-parent` figure without changing raw records.
