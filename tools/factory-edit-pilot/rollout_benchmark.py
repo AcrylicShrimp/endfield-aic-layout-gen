@@ -69,9 +69,9 @@ def main():
                     # Execute recorded actions to fix geometry independently of numeric sampling differences.
                     model.act(observation, generator)
                     inference_seconds += time.perf_counter()-inference_started
-                    _, done, result = env.step(candidates[recorded])
+                    _, done, result = env.step(candidates.commands[recorded].to_dict())
                     if not result["applied"]:
-                        raise ValueError(f"Recorded replay action failed: {candidates[recorded]}")
+                        raise ValueError(f"Recorded replay action failed: {candidates.commands[recorded].to_dict()}")
                     observations.append(observation)
                     if done:
                         env.reset()

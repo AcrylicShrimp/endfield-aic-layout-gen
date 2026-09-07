@@ -38,7 +38,7 @@ def audit(root, case, output, source_commit):
         rows = json.loads(path.read_text())
         for i, row in enumerate(rows):
             command = row["command"]
-            if command not in env.candidates():
+            if command not in env.candidates().to_dicts():
                 raise ValueError(f"Trace command outside the declared domain: {path}:{i+1}")
             reward, _, outcome = env.step(command)
             if abs(reward-row["reward"]) > 1e-12 or any(outcome[k] != row[k] for k in ("applied", "complete", "improved")):

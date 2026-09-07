@@ -37,7 +37,7 @@ def verify_environment(catalog, config, output):
     write(output/"initial.json", serialize(env.root))
     reward = 0.0
     for command in catalog.case["witness"]:
-        if command not in env.candidates():
+        if command not in env.candidates().to_dicts():
             raise RuntimeError(f"Witness action outside the model's actual domain: {command}")
         r, done, result = env.step(command)
         if not result["applied"] or done:
@@ -69,7 +69,7 @@ def evaluate(model, catalog, config, output, commands, training_seconds):
                 candidates = env.candidates()
                 observation = env.observe(candidates)
                 selected, _, _ = model.act(observation, generator)
-                reward, _, _ = env.step(candidates[selected])
+                reward, _, _ = env.step(candidates.commands[selected].to_dict())
                 total += reward
             layout = serialize(env.best)
             accepted = check(catalog, layout)
@@ -198,7 +198,7 @@ def train(catalog, config, config_path, output, resume_path=None):
                 inference_started = time.perf_counter()
                 action, log_prob, value = actor.act(observation)
                 inference_seconds += time.perf_counter()-inference_started
-                reward, done, outcome = env.step(candidates[action])
+                reward, done, outcome = env.step(candidates.commands[action].to_dict())
                 commands += 1
                 for key, item in (("observations", observation), ("actions", action), ("log_probs", log_prob),
                                   ("values", value), ("rewards", reward), ("dones", done)):

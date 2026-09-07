@@ -14,6 +14,7 @@ import torch
 
 from acceptance import Catalog
 from environment import Environment, serialize
+from commands import CandidateSet
 from run import provenance, write
 
 
@@ -21,12 +22,14 @@ def replay(environment, catalog, config, rollout, reset_caches=False):
     env = environment(catalog, config)
     rows = []
     cache_hits, cache_misses = 0, 0
+    sort_hits, sort_misses = 0, 0
     started = time.perf_counter()
     for selected in rollout["actions"]:
         candidates = env.candidates()
         observation = env.observe(candidates)
-        result = env.step(candidates[selected])
-        rows.append((candidates, observation, result))
+        typed = isinstance(candidates, CandidateSet)
+        result = env.step(candidates.commands[selected].to_dict() if typed else candidates[selected])
+        rows.append((candidates.commands if typed else candidates, observation, result))
         if result[1]:
             env.reset()
             if reset_caches:
@@ -35,7 +38,13 @@ def replay(environment, catalog, config, rollout, reset_caches=False):
                     cache_hits += info.hits
                     cache_misses += info.misses
                     env.encode_candidate.cache_clear()
-                    env.sort_keys.clear()
+                    if hasattr(env, "sort_keys"):
+                        env.sort_keys.clear()
+                    else:
+                        info = env.canonical_command_key.cache_info()
+                        sort_hits += info.hits
+                        sort_misses += info.misses
+                        env.canonical_command_key.cache_clear()
                 if hasattr(env, "feature_templates"):
                     env.feature_templates.clear()
     elapsed = time.perf_counter()-started
@@ -44,7 +53,14 @@ def replay(environment, catalog, config, rollout, reset_caches=False):
     if hasattr(env, "encode_candidate"):
         info = env.encode_candidate.cache_info()
         counts.update(encoding_cache_hits=cache_hits+info.hits, encoding_cache_misses=cache_misses+info.misses,
-                      encoding_cache_entries=info.currsize, sort_cache_entries=len(env.sort_keys))
+                      encoding_cache_entries=info.currsize,
+                      sort_cache_entries=len(env.sort_keys) if hasattr(env, "sort_keys") else env.canonical_command_key.cache_info().currsize)
+    if hasattr(env, "canonical_command_key") and hasattr(env.canonical_command_key, "cache_info"):
+        info = env.canonical_command_key.cache_info()
+        counts.update(sort_cache_hits=sort_hits+info.hits, sort_cache_misses=sort_misses+info.misses)
+    # Full external serialization is diagnostic work, outside the production timing.
+    rows = [([command.to_dict() for command in candidates] if isinstance(candidates, tuple) else candidates, observation, result)
+            for candidates, observation, result in rows]
     return rows, states, elapsed, dict(env.seconds), counts
 
 

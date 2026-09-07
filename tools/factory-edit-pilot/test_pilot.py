@@ -15,6 +15,7 @@ import torch
 
 from acceptance import Catalog, Invalid, check, port_geometry
 from environment import Environment, serialize
+from commands import Command
 from policy import Policy, advantages, batch, single, update, PreparedRollout
 from run import refresh_actor
 import run as runner
@@ -37,7 +38,7 @@ class PilotTests(unittest.TestCase):
     def execute(self, actions):
         total = 0
         for action in actions:
-            self.assertIn(action, self.env.candidates())
+            self.assertIn(action, self.env.candidates().to_dicts())
             reward, _, result = self.env.step(action)
             self.assertTrue(result["applied"], result)
             total += reward
@@ -146,7 +147,7 @@ class PilotTests(unittest.TestCase):
                 observation = self.env.observe(candidates)
                 self.assertTrue(np.isfinite(observation["raster"]).all())
                 self.assertTrue(np.isfinite(observation["objects"]).all())
-                command = candidates[rng.randrange(len(candidates))]
+                command = candidates.commands[rng.randrange(len(candidates.commands))].to_dict()
                 _, _, outcome = self.env.step(command)
                 self.assertTrue(outcome["applied"], (command, outcome))
 
@@ -189,7 +190,7 @@ class PilotTests(unittest.TestCase):
             candidates = env.candidates()
             observation = env.observe(candidates)
             action, log_prob, value = model.act(observation)
-            reward, done, _ = env.step(candidates[action])
+            reward, done, _ = env.step(candidates.commands[action].to_dict())
             for key, item in (("observations", observation), ("actions", action), ("log_probs", log_prob),
                               ("values", value), ("rewards", reward), ("dones", done)):
                 rollout[key].append(item)
@@ -235,7 +236,7 @@ class PilotTests(unittest.TestCase):
             candidates = env.candidates()
             observation = env.observe(candidates)
             action, log_prob, value = actor.act(observation)
-            reward, done, _ = env.step(candidates[action])
+            reward, done, _ = env.step(candidates.commands[action].to_dict())
             for key, value in (("observations", observation), ("actions", action), ("log_probs", log_prob),
                                ("values", value), ("rewards", reward), ("dones", done)):
                 rollout[key].append(value)
@@ -274,31 +275,40 @@ class PilotTests(unittest.TestCase):
         self.assertIsNone(limited.tensors)
 
     def test_canonical_command_cache_eviction_preserves_json_order(self):
-        first = {"op": "EXTEND", "network": self.env.nids[0], "anchor": [0, 0],
-                 "growth": "forward", "direction": "N", "length": 1}
-        expected = json.dumps(first, sort_keys=True)
+        first = Command("EXTEND", (self.env.nids[0], (0, 0), "forward", "N", 1))
+        expected = json.dumps(first.to_dict(), sort_keys=True)
         self.assertEqual(self.env.canonical_command_key(first), expected)
         for x in range(1, 4200):
-            command = {**first, "anchor": [x, 0]}
-            self.assertEqual(self.env.canonical_command_key(command), json.dumps(command, sort_keys=True))
-        self.assertEqual(len(self.env.sort_keys), 4096)
+            command = Command("EXTEND", (self.env.nids[0], (x, 0), "forward", "N", 1))
+            self.assertEqual(self.env.canonical_command_key(command), json.dumps(command.to_dict(), sort_keys=True))
+        self.assertEqual(self.env.canonical_command_key.cache_info().currsize, 4096)
         self.assertEqual(self.env.canonical_command_key(first), expected)
-        candidates = self.env.candidates()
+        candidates = self.env.candidates().to_dicts()
         self.assertEqual(candidates, sorted(candidates, key=lambda c: json.dumps(c, sort_keys=True)))
 
     def test_candidate_encoding_eviction_preserves_observation(self):
         candidates = self.env.candidates()
         before = self.env.observe(candidates)
-        categories = ("EXTEND", None, None, self.env.nids[0], None, "N", "forward", -1)
-        original = self.env.encode_candidate(categories, (0, 0), (0, -1), 1, 0)
+        first = Command("EXTEND", (self.env.nids[0], (0, 0), "forward", "N", 1))
+        original, points = self.env.encode_candidate(first, None)
         self.assertFalse(original.flags.writeable)
         for x in range(1, 4200):
-            self.env.encode_candidate(categories, (x, 0), (x, -1), 1, 0)
+            command = Command("EXTEND", (self.env.nids[0], (x, 0), "forward", "N", 1))
+            self.env.encode_candidate(command, None)
         self.assertEqual(self.env.encode_candidate.cache_info().currsize, 4096)
-        np.testing.assert_array_equal(original, self.env.encode_candidate(categories, (0, 0), (0, -1), 1, 0))
+        np.testing.assert_array_equal(original, self.env.encode_candidate(first, None)[0])
         after = self.env.observe(candidates)
         for key in before:
             np.testing.assert_array_equal(before[key], after[key])
+
+    def test_candidate_snapshot_rejects_observation_after_state_change(self):
+        candidates = self.env.candidates()
+        self.env.step({"op": "UNBIND_TERMINALS", "terminal": "quartz:source"})
+        with self.assertRaisesRegex(ValueError, "observation.stale_candidates"):
+            self.env.observe(candidates)
+        self.env.reset()
+        with self.assertRaisesRegex(ValueError, "observation.stale_candidates"):
+            self.env.observe(candidates)
 
     def test_single_observation_view_matches_padded_batch_without_mutation(self):
         observation = self.env.observe(self.env.candidates())

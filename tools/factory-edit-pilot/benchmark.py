@@ -91,7 +91,7 @@ def main():
         candidates = env.candidates()
         observation = env.observe(candidates)
         action, log_prob, value = model.act(observation, generator)
-        reward, done, _ = env.step(candidates[action])
+        reward, done, _ = env.step(candidates.commands[action].to_dict())
         for key, value in (("observations", observation), ("actions", action), ("log_probs", log_prob),
                            ("values", value), ("rewards", reward), ("dones", done)):
             rollout[key].append(value)

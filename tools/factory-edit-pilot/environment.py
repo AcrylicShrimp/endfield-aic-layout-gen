@@ -1,6 +1,6 @@
 """Explicit local edits; no route search, repair, or outcome-ranked candidates."""
 
-from collections import Counter, defaultdict, OrderedDict
+from collections import Counter, defaultdict
 from copy import deepcopy
 from functools import lru_cache
 import json
@@ -10,6 +10,7 @@ import time
 import numpy as np
 
 from acceptance import DIRECTIONS, SIDES, check
+from commands import Command, CandidateSet
 
 
 OPERATIONS = ("SET_PLACEMENTS", "UNBIND_TERMINALS", "BIND_TERMINALS", "ERASE_TRANSPORT",
@@ -80,8 +81,7 @@ class Environment:
             self.feature_columns.append({value: offset+i for i, value in enumerate(values)})
             offset += len(values)
         self.feature_numeric_offset = offset
-        self.feature_templates = {}
-        self.sort_keys = OrderedDict()
+        self.canonical_command_key = lru_cache(maxsize=4096)(self.canonical_command_key)
         self.encode_candidate = lru_cache(maxsize=4096)(self.encode_candidate)
         self.root = initial_layout(catalog)
         admission = check(catalog, serialize(self.root))
@@ -303,8 +303,9 @@ class Environment:
     def candidates(self):
         started = time.perf_counter()
         s = self.draft
-        bodies, occupied, ins, outs, protected, used = self.index(s)
-        candidates = [{"op": "DISCARD_EDIT"}]
+        index = self.index(s)
+        bodies, occupied, ins, outs, protected, used = index
+        candidates = [Command("DISCARD_EDIT")]
         port_use = {(self.catalog.terminal(tid)[2].get("facility"), b.get("port"))
                     for tid, b in s["bindings"].items() if b is not None and "port" in b}
         unbound_facilities = []
@@ -320,7 +321,7 @@ class Environment:
             blocked = occupied - bodies[fid]
             for pose in sorted(poses):
                 if not self.body(fid, pose) & blocked:
-                    candidates.append({"op": "SET_PLACEMENTS", "assignments": {fid: list(pose)}})
+                    candidates.append(Command("SET_PLACEMENTS", ((fid, pose),)))
         for i, a in enumerate(unbound_facilities):
             for b in unbound_facilities[i+1:]:
                 pa, pb = s["placements"][a], s["placements"][b]
@@ -328,11 +329,11 @@ class Environment:
                 body_a, body_b = self.body(a, aa), self.body(b, bb)
                 blocked = occupied - bodies[a] - bodies[b]
                 if not body_a & body_b and not (body_a | body_b) & blocked:
-                    candidates.append({"op": "SET_PLACEMENTS", "assignments": {a: aa, b: bb}})
+                    candidates.append(Command("SET_PLACEMENTS", ((a, tuple(aa)), (b, tuple(bb)))))
         for tid in self.tids:
             nid, role, endpoint = self.catalog.terminal(tid)
             if s["bindings"][tid] is not None:
-                candidates.append({"op": "UNBIND_TERMINALS", "terminal": tid})
+                candidates.append(Command("UNBIND_TERMINALS", (tid,)))
                 continue
             options = []
             if "facility" in endpoint:
@@ -352,14 +353,15 @@ class Environment:
                 own, other = (ins[nid][c], outs[nid][c]) if role == "source" else (outs[nid][c], ins[nid][c])
                 if own or (other and other[0] == arm):
                     continue
-                candidates.append({"op": "BIND_TERMINALS", "terminal": tid, "binding": binding})
+                typed = ("port", binding["port"]) if "port" in binding else ("boundary", tuple(binding["cell"]), binding["side"])
+                candidates.append(Command("BIND_TERMINALS", (tid, typed)))
         for nid, n in s["networks"].items():
             removable = n["cells"] - protected[nid]
             for c in sorted(removable):
-                candidates.append({"op": "ERASE_TRANSPORT", "network": nid, "cells": [list(c)]})
+                candidates.append(Command("ERASE_TRANSPORT", (nid, (c,))))
             for a, b in sorted(n["edges"]):
                 if a in removable and b in removable:
-                    candidates.append({"op": "ERASE_TRANSPORT", "network": nid, "cells": [list(a), list(b)]})
+                    candidates.append(Command("ERASE_TRANSPORT", (nid, (a, b))))
             for c in sorted(n["cells"]):
                 for growth, own, other in (("forward", outs[nid][c], ins[nid][c]), ("backward", ins[nid][c], outs[nid][c])):
                     if own:
@@ -371,8 +373,7 @@ class Environment:
                             path = [(c[0]+dx*k, c[1]+dy*k) for k in range(1, length+1)]
                             if any(p in occupied for p in path):
                                 continue
-                            candidates.append({"op": "EXTEND", "network": nid, "anchor": list(c),
-                                               "growth": growth, "direction": direction, "length": length})
+                            candidates.append(Command("EXTEND", (nid, c, growth, direction, length)))
                 if not outs[nid][c]:
                     for dx, dy in DIRECTIONS.values():
                         d = c[0]+dx, c[1]+dy
@@ -381,84 +382,71 @@ class Environment:
                                 continue
                             if outs[nid][d] and outs[nid][d][0] == (-dx, -dy):
                                 continue
-                            candidates.append({"op": "CONNECT", "network": nid, "source": list(c), "target": list(d)})
+                            candidates.append(Command("CONNECT", (nid, c, d)))
         candidates.sort(key=self.canonical_command_key)
         self.counters["candidate_commands"] += len(candidates)
+        cache = self.canonical_command_key.cache_info()
+        self.counters["sort_cache_hits"] = cache.hits
+        self.counters["sort_cache_misses"] = cache.misses
+        self.counters["sort_cache_entries"] = cache.currsize
         self.seconds["candidates"] += time.perf_counter()-started
-        return candidates
+        return CandidateSet(tuple(candidates), self.revision, s, index)
 
     def canonical_command_key(self, command):
-        """Memoize exact JSON keys for generated typed commands, including every field."""
-        op = command["op"]
-        if op == "SET_PLACEMENTS":
-            key = op, tuple((fid, tuple(pose)) for fid, pose in sorted(command["assignments"].items()))
-        elif op == "BIND_TERMINALS":
-            binding = command["binding"]
-            key = op, command["terminal"], binding.get("port"), tuple(binding.get("cell", ())), binding.get("side")
-        elif op == "UNBIND_TERMINALS":
-            key = op, command["terminal"]
+        return COMMAND_ENCODER.encode(command.to_dict())
+
+    def command_context(self, command):
+        if command.op == "UNBIND_TERMINALS":
+            return self.location(self.draft, command.args[0])[0]
+        if command.op == "BIND_TERMINALS":
+            return self.location(self.draft, command.args[0], command.to_dict()["binding"])[0]
+        if command.op == "DISCARD_EDIT":
+            return tuple(self.draft["placements"][self.fids[0]][:2])
+        return None
+
+    def encode_candidate(self, command, context):
+        """Decode only a cache miss; state-dependent absolute points are explicit keys."""
+        op, args = command
+        if context is not None:
+            a = b = context
+        elif op == "SET_PLACEMENTS":
+            a, b = args[0][1][:2], args[-1][1][:2]
         elif op == "ERASE_TRANSPORT":
-            key = op, command["network"], tuple(tuple(c) for c in command["cells"])
+            a, b = args[1][0], args[1][-1]
         elif op == "EXTEND":
-            key = op, command["network"], tuple(command["anchor"]), command["growth"], command["direction"], command["length"]
+            a = args[1]
+            dx, dy = DIRECTIONS[args[3]]
+            b = a[0]+dx*args[4], a[1]+dy*args[4]
         elif op == "CONNECT":
-            key = op, command["network"], tuple(command["source"]), tuple(command["target"])
-        elif op == "DISCARD_EDIT":
-            key = (op,)
+            a, b = args[1:]
         else:
-            raise Mechanical(f"Unknown generated command for canonical ordering: {op}")
-        encoded = self.sort_keys.get(key)
-        if encoded is None:
-            encoded = COMMAND_ENCODER.encode(command)
-            self.sort_keys[key] = encoded
-            if len(self.sort_keys) > 4096:
-                self.sort_keys.popitem(last=False)
-            self.counters["sort_cache_misses"] += 1
-        else:
-            self.sort_keys.move_to_end(key)
-            self.counters["sort_cache_hits"] += 1
-        self.counters["sort_cache_entries"] = len(self.sort_keys)
-        return encoded
-
-    def points(self, command):
-        op = command["op"]
-        if op == "SET_PLACEMENTS":
-            points = [tuple(v[:2]) for v in command["assignments"].values()]
-            return points[0], points[-1]
-        if op in ("UNBIND_TERMINALS", "BIND_TERMINALS"):
-            c = self.location(self.draft, command["terminal"], command.get("binding"))[0]
-            return c, c
-        if op == "ERASE_TRANSPORT":
-            return tuple(command["cells"][0]), tuple(command["cells"][-1])
-        if op == "EXTEND":
-            c = tuple(command["anchor"])
-            dx, dy = DIRECTIONS[command["direction"]]
-            return c, (c[0]+dx*command["length"], c[1]+dy*command["length"])
-        if op == "CONNECT":
-            return tuple(command["source"]), tuple(command["target"])
-        return tuple(self.draft["placements"][self.fids[0]][:2]), tuple(self.draft["placements"][self.fids[0]][:2])
-
-    def encode_candidate(self, categories, a, b, length, placements):
-        """Pure encoding: the key includes all dynamic inputs; catalog/scale are fixed."""
-        template = self.feature_templates.get(categories)
-        if template is None:
-            template = np.zeros(self.feature_numeric_offset, dtype=np.float32)
-            for columns, value in zip(self.feature_columns, categories):
-                column = columns.get(value)
-                if column is not None:
-                    template[column] = 1
-            self.feature_templates[categories] = template
-        feature = np.empty(self.feature_numeric_offset+8, dtype=np.float32)
-        feature[:self.feature_numeric_offset] = template
+            raise Mechanical(f"Unsupported typed candidate: {command}")
+        payload = command.to_dict()
+        assignments = payload.get("assignments", {})
+        selected = list(assignments)
+        tid = payload.get("terminal")
+        nid = payload.get("network", self.catalog.terminal(tid)[0] if tid else None)
+        rotation = assignments[selected[0]][2] if selected else -1
+        categories = (op, selected[0] if selected else None, selected[1] if len(selected) > 1 else None,
+                      nid, tid, payload.get("direction", payload.get("binding", {}).get("side")),
+                      payload.get("growth"), rotation)
+        feature = np.zeros(self.feature_numeric_offset+8, dtype=np.float32)
+        for columns, value in zip(self.feature_columns, categories):
+            column = columns.get(value)
+            if column is not None:
+                feature[column] = 1
         feature[self.feature_numeric_offset:] = [
             a[0]/self.scale, a[1]/self.scale, b[0]/self.scale, b[1]/self.scale,
-            (b[0]-a[0])/self.scale, (b[1]-a[1])/self.scale, length/2, placements/2]
+            (b[0]-a[0])/self.scale, (b[1]-a[1])/self.scale,
+            payload.get("length", len(payload.get("cells", [])))/2, len(assignments)/2]
         feature.flags.writeable = False
-        return feature
+        return feature, (a[0], a[1], b[0], b[1])
 
     def observe(self, candidates):
         started = time.perf_counter()
-        indexes = [self.index(s) for s in (self.draft, self.base)]
+        if not isinstance(candidates, CandidateSet) or candidates.state is not self.draft or candidates.revision != self.revision:
+            raise Mechanical("observation.stale_candidates: regenerate candidates for the current draft")
+        indexes = [candidates.index, self.index(self.base)]
         all_points = indexes[0][1] | indexes[1][1]
         xs, ys = zip(*all_points)
         halo = self.config["halo"]
@@ -507,22 +495,9 @@ class Environment:
         raster[-3] = np.arange(x0, x1+1, dtype=np.float32)[None, :]/self.scale
         raster[-2] = np.arange(y0, y1+1, dtype=np.float32)[:, None]/self.scale
         raster[-1] = 1
-        features, points = [], []
-        for command in candidates:
-            op = command["op"]
-            assignments = command.get("assignments", {})
-            selected = list(assignments)
-            tid = command.get("terminal")
-            nid = command.get("network", self.catalog.terminal(tid)[0] if tid else None)
-            a, b = self.points(command)
-            rotation = assignments[selected[0]][2] if selected else -1
-            categories = (op, selected[0] if selected else None,
-                          selected[1] if len(selected) > 1 else None, nid, tid,
-                          command.get("direction", command.get("binding", {}).get("side")),
-                          command.get("growth"), rotation)
-            features.append(self.encode_candidate(categories, a, b,
-                                                   command.get("length", len(command.get("cells", []))), len(assignments)))
-            points.append([a[0]-x0, a[1]-y0, b[0]-x0, b[1]-y0])
+        features, absolute_points = zip(*(self.encode_candidate(command, self.command_context(command))
+                                         for command in candidates.commands))
+        points = np.asarray(absolute_points, dtype=np.int64)-np.array([x0, y0, x0, y0], dtype=np.int64)
         stats = [(self.config["horizon"]-self.steps)/self.config["horizon"],
                  self.best_score[0]/self.initial_score[0], self.base_score[0]/self.initial_score[0],
                  self.best_score[1]/self.initial_score[0], self.base_score[1]/self.initial_score[0],
@@ -530,7 +505,7 @@ class Environment:
                  sum(b is None for b in self.draft["bindings"].values())/len(self.tids)]
         observation = {"raster": raster, "objects": np.asarray(objects, dtype=np.float32),
                        "stats": np.asarray(stats, dtype=np.float32),
-                       "candidates": np.asarray(features, dtype=np.float32), "points": np.asarray(points, dtype=np.int64)}
+                       "candidates": np.asarray(features, dtype=np.float32), "points": points}
         cache = self.encode_candidate.cache_info()
         self.counters["encoding_cache_hits"] = cache.hits
         self.counters["encoding_cache_misses"] = cache.misses

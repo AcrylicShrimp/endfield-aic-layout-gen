@@ -168,3 +168,19 @@ compares exact-input cost reductions with observed full-run time and memory. `co
 <before-run> <after-run> --output <fresh-directory>` produces a non-overlapping cost report.
 For a conservative within-episode reuse check, add `--reset-caches-per-episode` to the environment
 benchmark; it clears both LRUs and category templates at every episode boundary.
+
+## Immutable internal candidates
+
+`Environment.candidates()` now returns `CandidateSet`, with immutable `Command` entries,
+current draft identity/revision, and its geometry index. Training serializes only the selected
+command for `step`; `to_dicts()` is reserved for explicit diagnostic domain inspection. External
+edit/witness/trace JSON remains unchanged. Observation rejects stale candidate snapshots and
+reuses the current snapshot's index. Cached feature encodings include state-dependent terminal
+or discard positions. The old dict-candidate/prefix-cache production path has been removed.
+See the [cutover contract](../../docs/designs/2026-09-07.07-factory-edit-typed-candidates.md).
+
+`actor_benchmark.py` probes CPU/CUDA execution, inference-mode context, and one/two-episode
+batching on fixed retained observations. It reports preparation, completed forward/transfer,
+and CPU sampling separately. It does not change production collection or enable deterministic
+training. Two-episode GPU batching remains a prospective collection change, not a selected
+execution path in this slice.
