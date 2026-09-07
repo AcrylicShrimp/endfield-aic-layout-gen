@@ -221,3 +221,8 @@ replays selected traces and verifies source/exposure/checkpoints, and
 Setup actions, curriculum episode gains and original-root gains remain separate.
 Interrupted checkpoints retain per-stream state, RNG, partial rollout and pending
 transition evidence; no automatic resume is claimed.
+
+The completed [curriculum/concurrent results](../../docs/reports/2026-09-08.13-curriculum-parallel-ppo-results.md)
+report all 12 runs, separate throughput from root learning outcomes, and link compact
+provenance. `curriculum_evaluation_replay.py` reproduces every positive original-root
+evaluation in a completed run and independently replays its native transitions.

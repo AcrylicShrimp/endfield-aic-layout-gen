@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "study": "battery-curriculum-parallel-ppo",
+  "training_source_commit": "3445ec844f90ee4cf702261b5b48c86c55734f3b",
+  "report": "docs/reports/2026-09-08.13-curriculum-parallel-ppo-results.md",
+  "server_artifact_root": "/home/ashrimp/Srv/endfield-aic-layout-gen/artifacts/factory-edit-pilot/curriculum-parallel-learning",
+  "retention": "Full checkpoints retained on the server; JSON/JSONL and selected PNG summaries also retained locally. Ignored artifacts are not backups.",
+  "totals": {
+    "runs": 12,
+    "sampled_training_edits": 786432,
+    "curriculum_setup_edits": 2880,
+    "training_episodes": 6144,
+    "ppo_updates": 768,
+    "optimizer_steps": 49152,
+    "evaluation_edits": 589824,
+    "checkpoints": 72
+  },
+  "inputs_sha256": {
+    "tools/factory-edit-pilot/curriculum-parallel-study.json": "25cb096bc72421a42420b36920918cc93279916ed9abc181aae83be9818565bd",
+    "tools/factory-edit-pilot/run-server-cuda.json": "e81ad98b68c52e518b8286af0d0d7b972a00f797227e34a2cbb3379b868f865a",
+    "tools/factory-edit-pilot/case.json": "ceca22302120f271e730a99b8c0769805281a194c09266a4b438793ca83a24a3",
+    "tools/factory-edit-pilot/case-spread.json": "d2ea857d25f51947fa2b6d2b40f38177dae1e72686081ca911024156892cc76c"
+  },
+  "native": {
+    "library_sha256": "5998f571cc5283b9db7b0c6daf03390e3b4c81d6d43a923fadcc2e787a4b24ba",
+    "engine_version": 1,
+    "snapshot_version": 2
+  },
+  "runtime": {
+    "python": "3.12.13",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.5.3",
+    "platform": "Linux-7.2.3-arch1-3-x86_64-with-glibc2.44",
+    "machine": "x86_64"
+  },
+  "comparison_sha256": "f0b4437cfea5ba85594ccb945cdd061734f8987e64ad5238b52f3c5195755518",
+  "matrix_sha256": "7832fe904b9727a09817077eff7a943c4f53b208c7258f52b9c3954767fe6507",
+  "benchmark_sha256": {
+    "benchmark.json": "7a2e9a3ca85925be0bdb09226ac98baafab0b41a9d07a9fd9d45944b14ee073c",
+    "fixed-replay.json": "a5472ade35ac209cde9bed817dc21a15c63f45bb0b376071387cf3f28b093131"
+  },
+  "start_domains_sha256": "c3927ac35278abdce19d198624318652b4ca13b8806ba5fdab03c61dc5714482",
+  "positive_root_replay_sha256": {
+    "A-32768-seed100027-layout.json": "75a60d27d1830b61aaa7585e1d175da0e9342b26875a74e1b586e0d2e77666fd",
+    "A-32768-seed100027-trace.json": "42578c1c31a3bf0ee77a49ae2761d3930c506e298ec87dbd62fe198b6c89a5ee",
+    "replay.json": "e7ac7c818b372a5649d9742a2595166d4f8817544bbc09e73df9b1372d6b1655"
+  },
+  "positive_root_replay_helper_sha256": "e658ec5822900aa85a5d19292618957cdc2a0886feb8f30b635a06445df47d04",
+  "runs": [
+    {
+      "condition": "root-serial",
+      "seed": 17,
+      "files_sha256": {
+        "metadata.json": "204175a0740ec7d3c50c791ff3a7850dff712d7bfe43a5b64aa4c09bf7e26d66",
+        "study-audit.json": "5170b484f41c4cdc756d94f335911ff4359a9231a3f7cab0f6ccdcb5155f0bac",
+        "evaluations.jsonl": "ad2018786c877561058d2a2f30a1de022559377778b52f00972681e74f6040e2",
+        "episodes.jsonl": "a4d6d7aca50028e4969a6eea32eb66e69281d2b4b9b21a2f3ff18568df6fbc09",
+        "updates.jsonl": "19e5389b45bff391b8c79c09f561e56201209efbacf5d75e5175af9e9044451d",
+        "starts.json": "8db2edd8c7cbb7747be9b2f11b906f6ac85c07d977852ed0e525533ab66eae5c"
+      },
+      "checkpoints_sha256": {
+        "0": "1098f7a2b6926e87e997a99dd157aefff85085f641567cf756b06d7bb9ce74c2",
+        "8192": "3a04fb62d02797c431ee3c733a4d55433abf614ab6c3aee165936326f1547e5b",
+        "16384": "4b452f4b43b1aeb36f047e27b1b63c6fad458c19054d35cd5e8e8ba8f0647cd6",
+        "24576": "73d825a971e6316a8fac3ed13e183b3674afe2dd87bd6b22fb9c974d1aef43fe",
+        "32768": "335ea6516d998ca324ca6133bbae300eed70250a272c5f060ab94dada02be768",
+        "65536": "e752c26183897b984016fe699df33c5753b026365a31a8244e7bd0ef2ad40841"
+      }
+    },
+    {
+      "condition": "root-serial",
+      "seed": 29,
+      "files_sha256": {
+        "metadata.json": "ba164f0cfc69134ddd85d86da5566921e5d13eb54347e1b04fd60948bff23e05",
+        "study-audit.json": "481c3a5bcc2c8fc0be00f25f6a084eec227c9865949db3494b0f7c7ddc93dc40",
+        "evaluations.jsonl": "c2975aeb63f9905471e829a7003aa534d59a5300b119e6ed263eb207adb2d39f",
+        "episodes.jsonl": "07b11bfd3abf2eac8c6589a2178224c598a3ef0a5836100e09ffcf3e84e1e0f7",
+        "updates.jsonl": "95b66228560287f1eb16fdf90fed7f3d67aac1eafaab4bfdd6440df95aaa27fa",
+        "starts.json": "8db2edd8c7cbb7747be9b2f11b906f6ac85c07d977852ed0e525533ab66eae5c"
+      },
+      "checkpoints_sha256": {
+        "0": "aa35e9745c66ada29d0f93bf77f4eabb07e03ba2dcba5a6638203298cd246cf7",
+        "8192": "136d149b096acd7e601d18521efde4bc0f8e0f3b7b5fe8fdd1349da890d173ef",
+        "16384": "d19f3224e38d165426a9e0e10b082356c3cfb26823143b82f1be8b5e2f0d7028",
+        "24576": "9faede2dbaca41a61be7f754ef02064fbe7c390b28a6c1b955b3406db36ef655",
+        "32768": "eefab72307f04d8d867c20a75a12524c28b0b139c3ed5a394605bc73ec11402d",
+        "65536": "e0352be185649a108a5028635229d803d3c607070c578c4ea1f6b78911c1aeeb"
+      }
+    },
+    {
+      "condition": "root-serial",
+      "seed": 43,
+      "files_sha256": {
+        "metadata.json": "ecbd0bca9ac5a453c1aacee17c84a4aa3270af277886b1b75384f4144cb3d48a",
+        "study-audit.json": "32eb26dd99b1ae637113dbe7205be8bc67edb757fcf14285826aa28ab35aa72f",
+        "evaluations.jsonl": "9113ac75b60162d5a7216dfaf65e193781a31c19e7b4b59735399e772b6ea8e9",
+        "episodes.jsonl": "eddb440fd1cdcaa21b73b2df05d9f7d162ea4355b981917aaf2d319cca77527b",
+        "updates.jsonl": "3eee309c14416efbb2ca5a80b924c275975ddb7edab0bc92031b215e5294ca35",
+        "starts.json": "8db2edd8c7cbb7747be9b2f11b906f6ac85c07d977852ed0e525533ab66eae5c"
+      },
+      "checkpoints_sha256": {
+        "0": "9d8e518fbcf11859781bdc4a42de1ce158826ef56541fd9c4a08e67fc9105015",
+        "8192": "0363e73e05bd864f525081f6165c5587f455263a220486d22f787e4cb6212217",
+        "16384": "75ec2c384876de9d49038d2ef7536cc1b8ea82416343b2bb9822161cc10d391f",
+        "24576": "9b0bb3797dab619202aa7422e0c7246a52203e7ab7186e4d701c923522649d2e",
+        "32768": "8601853733717d7fedbc583839e8498b4b940d9f47667c4eba8ac6ef6aba4ad1",
+        "65536": "bc278b181070c359667b6e3d03b9e717e80690fd511d2bcd9e0c71369a586136"
+      }
+    },
+    {
+      "condition": "curriculum-serial",
+      "seed": 17,
+      "files_sha256": {
+        "metadata.json": "10683bca9bf79985b1b5be275e3fbb6452f90dac6ae03807b714a0fba6591ff3",
+        "study-audit.json": "195b4f4405c077758425c1ca1fdc042aa8707cf964b64acd860419596048b5c6",
+        "evaluations.jsonl": "852c895df512cb7ea8d418697f73307b90519c7778e66bd2e3883f0b269223ba",
+        "episodes.jsonl": "a613d125fe60a6cbdff4216c52eb27b40b6cbdaf7aef08164339d0ab8550ea28",
+        "updates.jsonl": "1afc380d9b1c4269375637065b38a110342247a5cf4fa28f29e6e92c7444d9d1",
+        "starts.json": "8db2edd8c7cbb7747be9b2f11b906f6ac85c07d977852ed0e525533ab66eae5c"
+      },
+      "checkpoints_sha256": {
+        "0": "eb2a7e74f745905c316aaf94ab17f1789bb3a8b78f8b03f0f78d7c496e2d3361",
+        "8192": "5a9809f37f981d590dfe5e17a3e401e348cbfc004e074769e6562f6f29c55303",
+        "16384": "0685935dff53b4d41fbc040806e43e1ca331eb31e55d27a661f5bbe2a0624803",
+        "24576": "3dc38cf80d69bbfb30e90fa4f270aaae3254cddf467a831b9196519c2156c918",
+        "32768": "abdafc153e58a99a8c24ed7768464f21c709833c33697d3ce579c6ec63acb7bc",
+        "65536": "f6a2da63666fae8ffc365cd14463e0ebb1a7fe921fd9484814397283b414cd82"
+      }
+    },
+    {
+      "condition": "curriculum-serial",
+      "seed": 29,
+      "files_sha256": {
+        "metadata.json": "459e800ec8e07a2542d2e98f62b122c108e150cfe663eb23988262b925d0eb6f",
+        "study-audit.json": "7bd31efc604abbb9a0937af3b9dda04a2a35d4a2781140b72073bca13f3a8a02",
+        "evaluations.jsonl": "502e7c871f3b6cba07dc560596a5e40ee8948a2a37fa910f1687fc8b1d37345b",
+        "episodes.jsonl": "cbd73c3aa5f451cec0f7c98294e9878d755ab61db8e0090fbd5110952fdc36f9",
+        "updates.jsonl": "82e706b5ed7d0dba4ebaaea1f3ebbd01b894fe23d5a3db06ecb35f06d5dd36b7",
+        "starts.json": "8db2edd8c7cbb7747be9b2f11b906f6ac85c07d977852ed0e525533ab66eae5c"
+      },
+      "checkpoints_sha256": {
+        "0": "fe6162ddd84830ad022af56de53d35a9d26db49c15aa508fcabea69a3d8ce673",
+        "8192": "0d448bd0cd3e3349801b116f50a40549abdab38f73874626861c7f8166d1ce5d",
+        "16384": "62c8b7950fbcac05f35b7968375493897902fcd55890dca78774c55dd05e45fe",
+        "24576": "c80876eb195334259ac6161ddbd8db25fe04b65df25a01633d7d5d3ed1c7fb56",
+        "32768": "16b7449d4b9bb3708da47cd0330c2c5f22accab43f39b697f3e5a58bbe417f88",
+        "65536": "bc3cd7f8d12d8c45a8056ba2328267c610d18ccedd1daf2c0fc2a1a160920481"
+      }
+    },
+    {
+      "condition": "curriculum-serial",
+      "seed": 43,
+      "files_sha256": {
+        "metadata.json": "382824971bc8efccfaabc2459ef8430bd4caf03e70245bbafa15ab896b3bb6e3",
+        "study-audit.json": "8effffa18207ec1151e0a34062c74345cde02b6edf1e5881e0b2b728a9c6ce1f",
+        "evaluations.jsonl": "ed7d6903333a2b425650cecb87fd3d0f709082097bd25c7b20f2796dfc935d4f",
+        "episodes.jsonl": "5d1be68434585b712e5cc956eed8b93b81da5c0c7e90e0877703539b44e9a4da",
+        "updates.jsonl": "a3c57cd355f2e7c76a2fd6bb9da17ce0ce2b0f4959efa91ddb15e14b6166b043",
+        "starts.json": "8db2edd8c7cbb7747be9b2f11b906f6ac85c07d977852ed0e525533ab66eae5c"
+      },
+      "checkpoints_sha256": {
+        "0": "4bf204fd5aad07b7cc64a6a9dd2eb7692535ffacdd58a624dff37322ec1cb30f",
+        "8192": "0267ee218e8f3c0591b773c974eb83609287245f91bd9f3be66aa4dc69a9f24d",
+        "16384": "22f258de72c89a33511f49226eab5340472eab028b71c3a47c0759f7e753c5d4",
+        "24576": "9fe97de20f4d6cfd73b903de36daa879d2f60c0db4d257b6513a4f64c4078af4",
+        "32768": "f4bc0b9d8ff20582c77210be9f6bfa717c3ffbef90544019a486aec8743c230c",
+        "65536": "263912b00fa3155f5a143de20b1fe6cc360c97103c034a255619c3a8c9aa77ff"
+      }
+    },
+    {
+      "condition": "root-parallel",
+      "seed": 17,
+      "files_sha256": {
+        "metadata.json": "7d544e7129d0b2e63866e718ffeb13ef35420c2f8ec3c0ef300376ce06016f0f",
+        "study-audit.json": "5708a331a28e913f31c56f725e50fe19f9f5ee1c6e8659db9252d986f17de895",
+        "evaluations.jsonl": "733984b0bcd96e3d06880b22c36677603d160ce9e9e36ded8094f12e3f21dc27",
+        "episodes.jsonl": "cf6dc9e00d4b5d8286d5d86ab0d7eac14244c2e0cfb13a4dc9e14b823088297d",
+        "updates.jsonl": "d553d967c09cd016159ef12455bf21d239c4f5fdcbf5ded8efe76c7c6a2d4773",
+        "starts.json": "8db2edd8c7cbb7747be9b2f11b906f6ac85c07d977852ed0e525533ab66eae5c"
+      },
+      "checkpoints_sha256": {
+        "0": "26eeae30adcc63dc11faeb4e37df607f8c11502a4fe2322eddda9135f9e648eb",
+        "8192": "4bbabe581c8e182bfcc0fb448d3d76674d398c4579fb9d63908c9aa59a557992",
+        "16384": "dff72378b8100ead12303d083cf9f6f4813c2f651a069e7fe007988259adcccb",
+        "24576": "f707b8dc5854d64ae6d778862c8efd38ff6fe32faf88461d686b1786de17198d",
+        "32768": "141f02a1764cd03886014849c689c389acc7d0a145a903efc1b82da354c37c72",
+        "65536": "f5a71c0c221e9aacad13fe7d266db08d28155daa9e855daec973b2f340f04a13"
+      }
+    },
+    {
+      "condition": "root-parallel",
+      "seed": 29,
+      "files_sha256": {
+        "metadata.json": "155f7362ee81f5797cf2c40cc0245a62a9019e85ae5acc804381628fd58c7dcb",
+        "study-audit.json": "ae99571caac7394dbaf95034af0714a33f0f14f47a085e40bcda1922e8b9bba8",
+        "evaluations.jsonl": "d878cdf3c40e04aad31086dcebf7aecb157da631f64e1230349c05342413104c",
+        "episodes.jsonl": "90c09a5a73f25e1ec60f12233c11983d48da975af2c19970a0c1f63558dff541",
+        "updates.jsonl": "d2996ccf1ba89dbfcc174be7f78a7c580082ff1fdc339ab13e201f2c5379aff4",
+        "starts.json": "8db2edd8c7cbb7747be9b2f11b906f6ac85c07d977852ed0e525533ab66eae5c"
+      },
+      "checkpoints_sha256": {
+        "0": "549a2a50090cc561cdedd190e1ea0c40c50d7853d36c9487e1ed3a83f364bd13",
+        "8192": "4213d4d2b04da570d73454f22b2067231a0c5410aa4712370fab37732ac45278",
+        "16384": "a2efb4ccb845bc5f888c2bf5bca0e88e41b01b52b00a4c61ef4034f71fac60d4",
+        "24576": "c684e34a7441315740c5cb925851552507d7ae7310aeb0b4dc88d53c08e62fe3",
+        "32768": "14b4e7f5ef0c468a27e95d5eedc793da61b74c388c8a7752007d9f610db11850",
+        "65536": "e5e13445256d33de6cb1ec519b442a8b2139e0caaffedd79d7e2e9d18d2b37bb"
+      }
+    },
+    {
+      "condition": "root-parallel",
+      "seed": 43,
+      "files_sha256": {
+        "metadata.json": "7fd4daf19724f68ea762e3eae35fe1400f24797b2c41ce6fccd4537dfa45e19c",
+        "study-audit.json": "51c76a118fd78874b42ba6fac16a3492d023a6df78b2d28948afb1ec952c04bd",
+        "evaluations.jsonl": "da51d6f786a45d139615a1910671c1130c0b82b72bb88bc1585ac3a009f7e804",
+        "episodes.jsonl": "d5f15ac52fe2e90388c214728b416c67d29c0496ac785f47a9cdd1bea13ba3ed",
+        "updates.jsonl": "19aa71ef6dc0302c9e259cf83b33266796dae081f8204951bc81f5887606568c",
+        "starts.json": "8db2edd8c7cbb7747be9b2f11b906f6ac85c07d977852ed0e525533ab66eae5c"
+      },
+      "checkpoints_sha256": {
+        "0": "e1618aacca8900891b5ac832beaa149816cbb6f3aad61ebeaec77f457df69cee",
+        "8192": "e7a18ded57ab2f99ca8be319c753f98e1f0af9bf2d042fc57faa94a2b6e83757",
+        "16384": "7adc68e685d5d251398a810ec81fc6511ad99cda04ec4ac88dec8611d39377a8",
+        "24576": "e57a4d1e584684fe6f9b8355416d6c1c7b7e01ee196c5f97401f23f8d9421a75",
+        "32768": "cad73516e3d2da86a1a88f4473f3a87ffe21b46dfa7777d7e031bbce97705e22",
+        "65536": "5ce77a848d79ab464b704e3925ed6e0cc71baa5813b5a086c4e2d4aef6ea1ce8"
+      }
+    },
+    {
+      "condition": "curriculum-parallel",
+      "seed": 17,
+      "files_sha256": {
+        "metadata.json": "5cbe9d61ef9ff1b7a08b4a0ca4d070bd41db022180bbfe81cfcf8e26def3c103",
+        "study-audit.json": "223b506e4cda2af19fc58e5464e70f2b4a056a74cb9865d044c03770e5d9b822",
+        "evaluations.jsonl": "700e90567f788bb812c64d21ac1bd90f23aed7b851e6b08a422056c158db5930",
+        "episodes.jsonl": "74c7c065a145ebac8682a6c76f154ca70007aed8e234049c745ff75cc9f99a12",
+        "updates.jsonl": "c4de4545a364228c9ad5a5e0fd5f64a070706602cd7037822c4c24f4dc618cbc",
+        "starts.json": "8db2edd8c7cbb7747be9b2f11b906f6ac85c07d977852ed0e525533ab66eae5c"
+      },
+      "checkpoints_sha256": {
+        "0": "ed055e67caa1f9959af7bbd9831b9e8a771a9d278c2dae24166934530c3bda5d",
+        "8192": "85e5f4c7fdaa1a679e785975df9c9864b8af2b748fd07e5bbea0312f8263948d",
+        "16384": "1dcc36be733f8ae82bebaacdb5395bf60c8def46c6ed312a0e9ad76886eec13c",
+        "24576": "72d58202a75f6ba192655e3910e499429c2565032ab62588339d592cc87f62ec",
+        "32768": "76cf132d48f779b28cfe8bb908d7b798c8b6ab42df6066d3941279c373a78042",
+        "65536": "477720f180dbb512617e3b12da83407243db8d400cde50671d4ee5d59fd56eb0"
+      }
+    },
+    {
+      "condition": "curriculum-parallel",
+      "seed": 29,
+      "files_sha256": {
+        "metadata.json": "c87b951b527093f8e464a9f1c99e26b98b6e6c634c03b8fe876e2277c3e20bc2",
+        "study-audit.json": "72feb3cca36fed9a4e6da6a7474c1953259c0e740b8ced24f8c49447b3bb22cc",
+        "evaluations.jsonl": "77092d5183ee1a6318d9db486ad938d22b91d219ec1753afbd472e1321d43802",
+        "episodes.jsonl": "cd8ca60ac4e0753c6f877081d62b3728821dfe87f8d5fb9bd6a6a786a22c3c3b",
+        "updates.jsonl": "ef290d1992768ee82fc08efbe050f0fa445df29395828e7d1770ad8be0339cfc",
+        "starts.json": "8db2edd8c7cbb7747be9b2f11b906f6ac85c07d977852ed0e525533ab66eae5c"
+      },
+      "checkpoints_sha256": {
+        "0": "ca9c037b4b560b2e965a5b3d0615656d4dd5fe88148bfa94968a7b549a633f12",
+        "8192": "44e4386252cc32fbbbdfc9d8fa5233d19a699cc114af71af3c2aaf8ed38d5715",
+        "16384": "db282d81fdb7b7dd927a8106ffc031ac52ea948bc6089f7f788ec1ed7e89167b",
+        "24576": "8e0bce79c0072422bc7f3cfb093e06470c8b36e2a5eb52f03b825a8464346a88",
+        "32768": "6a15c1f51bb65a704d62f900f223c70417cc00507761d5aabcb7257f16328307",
+        "65536": "27bc3fe0778a6ed49554fcc042ab98cff388c2bc816966ea449d83c18b0e4260"
+      }
+    },
+    {
+      "condition": "curriculum-parallel",
+      "seed": 43,
+      "files_sha256": {
+        "metadata.json": "edb53dcdcdbe61f2ac4c9e6379e429a81d3a8ad2f35db1bde4f91ff55fff388f",
+        "study-audit.json": "e4878b2b0379f69584a7021e253099a7bb6ec8ec70fb1436c4542688541e425c",
+        "evaluations.jsonl": "c571bccb71ede408d376ad8d26d56e9a0bb16b39f0f024f1f9bfcad26b698998",
+        "episodes.jsonl": "bf789210dde46cdd9ceba03b09c377d5171c542259ffb5c6c4ef6d5ffe4112c0",
+        "updates.jsonl": "4896a58d6e57520af013db0fbbcecaa6860a13196f50ac32cd7d9be9a6678a78",
+        "starts.json": "8db2edd8c7cbb7747be9b2f11b906f6ac85c07d977852ed0e525533ab66eae5c"
+      },
+      "checkpoints_sha256": {
+        "0": "3c5a7b05b5c4bf6d2eb7d0afa16751d4391c9a882c21f1ded4a399d1700b2760",
+        "8192": "3549b2a0e708d2fb7d2df40fcbfd23b10d8381bb209d03d9e1abc29dda4626da",
+        "16384": "da7105f59bfa4d3406f614635ae438a279b4260d9d3b01a74ac41d1298caf84f",
+        "24576": "9d84ce6f23defae025a9e5e388962537559e16f1dd10bdd2b71fb4e3ff7cfbc7",
+        "32768": "941c91bc898ea16bcc5bbfffad4bbfa86ad958f13f7c2bc6186136f26dfda294",
+        "65536": "69d82976bff48d58e1d5981f6394fe0d2f8108c3247f422b7782f141e3ffe626"
+      }
+    }
+  ],
+  "hardware": {
+    "cpu": "Intel Core Ultra 9 285K",
+    "gpu": "NVIDIA GeForce RTX 5090",
+    "driver": "610.57.04",
+    "torch_cpu_threads": 16,
+    "learner_precision": "float32",
+    "tf32": false
+  }
+}
