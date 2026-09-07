@@ -1,6 +1,9 @@
 # Remaining uncommitted source changes
 
-Status: inspected and archived, not deleted or integrated, 2026-09-07.
+Status: inspected and archived; subsequently retained in a user-requested source
+checkpoint on 2026-09-07. The inventory and recommendations below describe the
+pre-checkpoint state. Committing these files does not complete the experiments or
+approve their production-policy integration. Learning and diagnostic runs remain paused.
 
 "User changes" in earlier handoffs meant pre-existing or unrelated work that must not be
 overwritten. It was not proof that the user personally authored every file. Authorship

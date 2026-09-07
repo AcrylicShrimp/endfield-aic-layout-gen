@@ -31,7 +31,7 @@ test('visualization includes actual ports, pending scope and script-safe inline 
   const d=buildFixture(catalogs,spec,true,true);d.case='</script>';
   const html=render(d,{covered_geometry_validated:true,recipe_terminals:[]},{transports:catalogs.transports});
   assert(html.includes('catalog_ports'));assert(html.includes('SCALED CAPACITY VIOLATION'));
-  assert(html.includes('not the complete heavy-xiranite'));assert(html.includes('\\u003c/script>'));
+  assert(html.includes('partial production graph, not a complete factory'));assert(html.includes('\\u003c/script>'));
 });
 test('full-rate dedicated pairs use six lanes and two preplanned bridge cells',()=>{
   const spec=JSON.parse(fs.readFileSync(new URL('./full-fixture.json',import.meta.url))),result=buildDedicated(catalogs,spec);

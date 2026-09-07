@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "target": { "item": "item-proc-battery-3", "quantity": 1, "duration_ms": 10000 },
+  "source_selections": [
+    { "path": "/target/recipe:tools-proc-battery-3-1/input:item-iron-enr-cmpt/recipe:component-iron-enr-cmpt-1/input:item-iron-enr/recipe:furnance-iron-enr-1/input:item-iron-enr-powder/recipe:thickener-iron-enr-powder-1/input:item-iron-powder/recipe:grinder-iron-powder-1/input:item-iron-nugget", "source": { "kind": "recipe", "recipe": "furnance-iron-nugget-1" } }
+  ]
+}

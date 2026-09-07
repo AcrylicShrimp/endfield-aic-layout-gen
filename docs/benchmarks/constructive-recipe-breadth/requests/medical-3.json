@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "target": { "item": "item-bottled-rec-hp-3", "quantity": 1, "duration_ms": 10000 },
+  "source_selections": [
+    { "path": "/target/recipe:filling-bottled-rec-hp-3-1/input:item-iron-enr-bottle", "source": { "kind": "recipe", "recipe": "shaper-iron-enr-bottle-1" } },
+    { "path": "/target/recipe:filling-bottled-rec-hp-3-1/input:item-iron-enr-bottle/recipe:shaper-iron-enr-bottle-1/input:item-iron-enr/recipe:furnance-iron-enr-1/input:item-iron-enr-powder/recipe:thickener-iron-enr-powder-1/input:item-iron-powder/recipe:grinder-iron-powder-1/input:item-iron-nugget", "source": { "kind": "recipe", "recipe": "furnance-iron-nugget-1" } }
+  ]
+}
