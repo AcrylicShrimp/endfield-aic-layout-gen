@@ -191,8 +191,9 @@ Immutable candidate measurements and remaining actor costs are recorded in
 Runtime-derived terminal features and port rotations are specified in
 [the observation-table contract](../../docs/designs/2026-09-08.00-factory-edit-observation-tables.md).
 `actor_compile_benchmark.py --case <case> --config <config> --input <retained-input.pt>
---cache-directory <persistent-cache-directory> --output <fresh-directory>` measures compiled CPU inference, cold cost, numerical agreement
-on every retained shape, and weight refresh. It does not enable compilation in training.
+--cache-directory <persistent-cache-directory> --output <fresh-directory>` measures compiled inference, cold cost, numerical agreement
+on every retained shape, and weight refresh. Add `--device cuda --batch-size 2` for the GPU
+batch probe; defaults remain CPU and one observation. It does not enable compilation in training.
 
 [Observation-table measurements](../../docs/reports/2026-09-08.01-factory-edit-observation-tables.md)
 separate fixed-input gains, a slower full sampled run, and compiled actor amortization.
@@ -214,3 +215,9 @@ counters are isolated runtime diagnostics, verified on the deployed Linux/PyTorc
 262,144-command comparisons. Exact completed CPU continuation requires an eager actor and
 checks the immutable command module hash in addition to policy, environment, acceptance and
 catalog data. Compiled CPU continuation has not established cross-process bitwise equivalence.
+
+`actor_parity.py --case <case> --config <config> --checkpoints <checkpoint.pt> ...
+--cache-directory <cache> --output <fresh-directory>` compares the actual action API using
+shared weights, identical observations and cloned sampling RNG. It follows the eager stream
+and retains the first action disagreement if present. The [compiled actor report](../../docs/reports/2026-09-08.03-factory-edit-compiled-actor.md)
+separates fixed-input gains, full-run quality, cache costs and controlled behavior parity.
