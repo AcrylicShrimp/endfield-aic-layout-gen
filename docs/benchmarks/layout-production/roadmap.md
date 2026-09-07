@@ -113,3 +113,10 @@ with 64 are approximately flat, development futility remains 79.58%, and the tar
 29.69% empty area. The fixed 14-facility case loses its area improvement despite reduced
 wiring, confirmed visually. Continue the unchanged learners to the fixed 1024 endpoint.
 This finite plateau does not exclude longer-training benefits or prove goal impossibility.
+The user's subsequent challenge to peer-rank credit requires an explicit
+[objective-alignment distinction](../layout-direct/rank-objective-limits.md): an unbiased
+fixed-opponent tournament gradient is not a proof of improving expected area or meeting
+the release gates. A verified abstract counterexample separates those claims. Keep the
+ongoing allocation frozen; before a later credit intervention, define the new objective,
+its relationship to the unchanged score priority and density/waste requirements, and a
+controlled comparison. Neither a nonzero gradient nor tournament wins alone closes this gap.
