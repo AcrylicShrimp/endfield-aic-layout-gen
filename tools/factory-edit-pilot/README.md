@@ -109,3 +109,5 @@ and the cumulative training champion. Under this reward, one episode's total equ
 relative area reduction. `factory-comparison.png` shows initial, representative evaluation,
 training-best, and scripted witness layouts with independent complete scores. A witness is
 explicitly labeled as unlearned. A flat curve remains a reportable first result.
+
+The completed [same-server report](../../docs/reports/2026-09-07.02-server-cpu-cuda-pilot.md) separates update throughput from final learned quality. `compare.py --runs <cpu-run> <cuda-run> --output <comparison-directory>` renders the paired outcome, reward, and timing evidence.
