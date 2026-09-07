@@ -4,6 +4,7 @@ import argparse
 from copy import deepcopy
 import json
 import hashlib
+import os
 from pathlib import Path
 import statistics
 import time
@@ -44,9 +45,14 @@ def main():
     parser.add_argument("--actor-threads", type=int, help="CPU inference threads, defaulting to each measured update setting")
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu", help="PPO learner device; action sampling stays on CPU")
+    parser.add_argument("--deterministic", action="store_true", help="Diagnose repeatability with deterministic PyTorch algorithms")
     parser.add_argument("--channels-last", action="store_true")
     parser.add_argument("--convolution", choices=("native", "unfold", "view-unfold"), default="native")
     args = parser.parse_args()
+    if args.deterministic:
+        os.environ.setdefault("CUBLAS_WORKSPACE_CONFIG", ":4096:8")
+    torch.use_deterministic_algorithms(args.deterministic)
+    torch.backends.cudnn.deterministic = args.deterministic
     if args.device == "cuda" and not torch.cuda.is_available():
         parser.error("CUDA requested but unavailable")
     if args.output.exists():
@@ -95,6 +101,7 @@ def main():
     actor = deepcopy(model) if args.device == "cuda" else model
     model.to(args.device)
     rows = []
+    first_parameters = {}
     # Alternate order each round; the first round warms each setting and is excluded.
     for repeat in range(args.repeats+1):
         for threads in args.threads[::1 if repeat % 2 == 0 else -1]:
@@ -117,6 +124,12 @@ def main():
                    "update_seconds": elapsed, "inference_seconds": time.perf_counter()-started,
                    "snapshot_seconds": snapshot_seconds,
                    "metrics": metrics}
+            # Outside measured clocks: detect repeatability of the identical update,
+            # separately for each thread setting. Retain the first result, including warm-up.
+            parameters = {key: value.detach().cpu().clone() for key, value in model.state_dict().items()}
+            previous = first_parameters.setdefault(threads, parameters)
+            row["parameter_sha256"] = hashlib.sha256(b"".join(value.numpy().tobytes() for value in parameters.values())).hexdigest()
+            row["max_parameter_difference_from_first"] = max(float((value-previous[key]).abs().max()) for key, value in parameters.items())
             rows.append(row)
             print(json.dumps(row), flush=True)
     summary = [{"threads": t, **{key: statistics.median(row[key] for row in rows if row["threads"] == t and not row["warmup"])
@@ -125,6 +138,8 @@ def main():
                                      "source_sha256": hashlib.sha256((args.input or args.checkpoint).read_bytes()).hexdigest(),
                                      "device": args.device, "actor_device": "cpu", "tf32": False,
                                      "actor_threads": args.actor_threads,
+                                     "deterministic_algorithms": torch.are_deterministic_algorithms_enabled(),
+                                     "cudnn_deterministic": torch.backends.cudnn.deterministic,
                                      "cuda_runtime": torch.version.cuda,
                                      "gpu_name": torch.cuda.get_device_name() if args.device == "cuda" else None,
                                      "channels_last": args.channels_last,

@@ -134,3 +134,11 @@ feature changes, state cache, or validation reduction accompanies this optimizat
 `environment_benchmark.py --case <case> --config <config> --input <retained-input.pt> [<input.pt> ...] --reference-source <trusted-git-commit> --output <fresh-directory>` compares every candidate in order, observation byte, and transition against the named historical environment and recorded observations. It alternates implementations after warm-up and retains timing/parity evidence.
 
 The [continuation result](../../docs/reports/2026-09-07.03-fixed-factory-continuation.md) remained flat at 4.545% through 131,072 commands. `plots.py --parent <parent-run>` adds verified parent rows to a separate `learning-curves-with-parent` figure without changing raw records.
+
+The [observation optimization report](../../docs/reports/2026-09-07.04-observation-construction-speed.md)
+records exact-input environment reductions, the full CUDA rerun, and numerical repeatability.
+`benchmark.py` records updated parameter hashes and differences outside measured clocks.
+Its optional `--deterministic` requests deterministic PyTorch/cuDNN algorithms and supplies a
+cuBLAS workspace configuration when absent. This is a diagnostic setting; the training runner
+keeps its prior default. Exact repeatability within CUDA does not imply CPU/CUDA bit equality
+or successful learning.
