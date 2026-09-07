@@ -98,3 +98,12 @@ admission explicit; this study is not medium/large generalization or a release g
 Do not turn the user's area-reward hypothesis into an untested implementation decision or
 claim product success from the visually strongest pair. Report the actual cumulative curve
 before making further training-budget claims.
+The [64-update checkpoint](../layout-direct/budget-curve-64-report.md) is now verified for all
+three cumulative learners. Each has a positive observed development win-minus-loss estimate,
+but roughly 79-80% futile actions and unchanged target quality remain. The current stream has
+actually trained twelve new medium factories through 64 updates, reaching 52 facilities, all
+with connected internal graphs; this does not resolve parallel-component admission or provide
+held-out medium/large evaluation. Direct inspection confirms a real three-field improvement in
+the fixed 14-facility case but substantial remaining whitespace/routing, and unchanged target
+geometry. Continue the same learners to 256/1024; do not confuse this first checkpoint with the
+longer-budget result or choose a favorable early checkpoint.

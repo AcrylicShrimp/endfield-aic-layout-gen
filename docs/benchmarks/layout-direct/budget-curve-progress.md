@@ -52,6 +52,11 @@ This is implementation evidence, not an efficacy result. Seeds 2901 and 3901 hav
 with the identical frozen evaluation set in their respective `layout-direct-budget-seed-*-01`
 directories. All three commands remain live at this handoff; no final result is available.
 
+Subsequent checkpoint: all three seeds have passed 64 updates, exact replay and their prospective
+evaluations, then continued beyond 64 with uninterrupted state chains. See
+`budget-curve-64-report.md` for the verified early outcomes and direct geometry inspection.
+This is not completion of the declared 256/1024 allocation.
+
 ## Verification and boundaries
 
 - Thirty-five Python tests pass, including exact update replay/credit references and ten new
