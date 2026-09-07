@@ -27,6 +27,7 @@ def load_parent(path, catalog, config, current_provenance):
     checkpoint = torch.load(path, map_location="cpu", weights_only=False)
     require(parent["status"] == "complete", "parent run is not complete")
     require(config["device"] == parent["device"] == "cpu", "continuation currently requires CPU")
+    require(not config.get("compile_actor", False), "exact CPU continuation currently requires the eager actor")
     require(checkpoint["commands"] == parent["completed_commands"] == parent["config"]["commands"],
             "only the completed parent's final checkpoint is supported")
     require(checkpoint["optimizer_steps"] == parent["optimizer_steps"] and checkpoint["episode"] == parent["episodes"],
@@ -42,7 +43,7 @@ def load_parent(path, catalog, config, current_provenance):
     for key in ("python", "torch", "numpy", "platform", "machine"):
         require(previous[key] == current_provenance[key], f"runtime field changed: {key}")
     source = Path(__file__).resolve().parent
-    semantic = [source/name for name in ("policy.py", "environment.py", "acceptance.py")]
+    semantic = [source/name for name in ("policy.py", "environment.py", "commands.py", "acceptance.py")]
     for file in [*semantic, catalog.path.resolve(), *catalog.paths.values()]:
         key = str(file.relative_to(catalog.root))
         require(previous["files_sha256"].get(key) == current_provenance["files_sha256"].get(key),

@@ -82,8 +82,8 @@ class Policy(nn.Module):
         return logits, self.value(context).squeeze(-1)
 
     @torch.no_grad()
-    def act(self, observation, generator=None):
-        logits, values = self(single(observation))
+    def act(self, observation, generator=None, forward=None):
+        logits, values = (self if forward is None else forward)(single(observation))
         log_probs = logits.log_softmax(-1)
         selected = torch.multinomial(log_probs.exp()[0], 1, generator=generator).item()
         return selected, log_probs[0, selected].item(), values[0].item()

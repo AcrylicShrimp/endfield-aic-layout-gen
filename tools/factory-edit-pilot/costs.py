@@ -20,6 +20,8 @@ def costs(directory):
              "observation": env["observation"], "candidates": env["candidates"],
              "validation": env["validation"], "other_environment_step": env["step"]-env["validation"],
              "actor_snapshot": metadata.get("snapshot_seconds", 0)}
+    if metadata.get("actor_compile_setup_seconds", 0):
+        parts["actor_compile_setup"] = metadata["actor_compile_setup_seconds"]
     update_parts = {f"ppo_{key}": sum(row["seconds"][key] for row in updates)
                     for key in ("batch", "forward_loss", "backward", "optimizer")}
     parts["other_ppo_update"] = metadata["update_seconds"]-sum(update_parts.values())

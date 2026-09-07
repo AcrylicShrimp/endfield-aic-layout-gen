@@ -191,7 +191,7 @@ Immutable candidate measurements and remaining actor costs are recorded in
 Runtime-derived terminal features and port rotations are specified in
 [the observation-table contract](../../docs/designs/2026-09-08.00-factory-edit-observation-tables.md).
 `actor_compile_benchmark.py --case <case> --config <config> --input <retained-input.pt>
---output <fresh-directory>` measures compiled CPU inference, cold cost, numerical agreement
+--cache-directory <persistent-cache-directory> --output <fresh-directory>` measures compiled CPU inference, cold cost, numerical agreement
 on every retained shape, and weight refresh. It does not enable compilation in training.
 
 [Observation-table measurements](../../docs/reports/2026-09-08.01-factory-edit-observation-tables.md)
@@ -201,3 +201,16 @@ separate fixed-input gains, a slower full sampled run, and compiled actor amorti
 --output <fresh-directory>` probes complete serial/batched collection with replay and acceptance.
 [The measured decision](../../docs/reports/2026-09-08.02-factory-edit-batched-collection-probe.md)
 keeps runner integration separate from the [collection contract](../../docs/designs/2026-09-08.01-factory-edit-batched-collection.md).
+
+The [compiled actor contract](../../docs/designs/2026-09-08.02-factory-edit-compiled-actor.md)
+adds explicit `compile_actor` and `compiler_cache_directory` run settings. The CPU actor's
+forward pass is compiled; CUDA learning, CPU sampling, and eager frozen evaluation keep their
+existing execution. Parameter checkpoints stay ordinary model state dictionaries. First setup
+is included in training time; later compiler events are nested in inference time. Reusing the
+explicit cache can reduce setup in a new process. Compiler callbacks and local graph-cache
+counters are isolated runtime diagnostics, verified on the deployed Linux/PyTorch environment.
+
+`run-server-cuda-long-eager.json` and `run-server-cuda-long-compiled.json` provide matched
+262,144-command comparisons. Exact completed CPU continuation requires an eager actor and
+checks the immutable command module hash in addition to policy, environment, acceptance and
+catalog data. Compiled CPU continuation has not established cross-process bitwise equivalence.

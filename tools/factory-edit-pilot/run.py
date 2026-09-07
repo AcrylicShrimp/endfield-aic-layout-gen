@@ -17,7 +17,7 @@ import torch
 
 from acceptance import Catalog, check
 from environment import Environment, serialize
-from policy import Policy, update
+from policy import Policy, update, single
 
 
 def write(path, value):
@@ -125,6 +125,8 @@ def train(catalog, config, config_path, output, resume_path=None):
         raise ValueError("First pilot requires rollout and checkpoint boundaries at complete episodes")
     if any(c % config["rollout_commands"] for c in config["checkpoints"]):
         raise ValueError("Checkpoints must align with completed PPO rollouts")
+    if config.get("compile_actor", False) and not config.get("compiler_cache_directory"):
+        raise ValueError(f"actor.compile_cache_missing: {config_path}: compiler_cache_directory is required")
     output.mkdir(parents=True, exist_ok=True)
     torch.set_num_threads(config["threads"])
     torch.set_num_interop_threads(1)
@@ -137,7 +139,8 @@ def train(catalog, config, config_path, output, resume_path=None):
     rng = np.random.default_rng(config["seed"])
     verification = verify_environment(catalog, config, output)
     env = Environment(catalog, config)
-    model = Policy(env.observe(env.candidates()))
+    example = env.observe(env.candidates())
+    model = Policy(example)
     actor = deepcopy(model) if config["device"] == "cuda" else model
     model.to(config["device"])
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
@@ -169,9 +172,13 @@ def train(catalog, config, config_path, output, resume_path=None):
     started = time.perf_counter()
     evaluation_seconds, inference_seconds, update_seconds = 0.0, 0.0, 0.0
     snapshot_seconds = 0.0
+    actor_compile_setup_seconds = 0.0
+    compiled_actor = None
     all_counts = Counter(parent_checkpoint["counts"] if parent_checkpoint else {})
 
     def save_checkpoint():
+        if compiled_actor is not None:
+            metadata["actor_compilation"] = compiled_actor.report()
         torch.save({"schema_version": 1, "commands": commands, "episode": episode,
                     "policy": model.state_dict(), "optimizer": optimizer.state_dict(),
                     "torch_rng": torch.get_rng_state(), "numpy_rng": rng.bit_generator.state,
@@ -184,6 +191,20 @@ def train(catalog, config, config_path, output, resume_path=None):
                    output/f"checkpoint-{commands}.pt")
 
     try:
+        if config.get("compile_actor", False):
+            from compiled_actor import CompiledActor
+            setup_started = time.perf_counter()
+            try:
+                compiled_actor = CompiledActor(actor, catalog.root/config["compiler_cache_directory"])
+                with torch.no_grad():
+                    compiled_actor(single(example))
+            finally:
+                actor_compile_setup_seconds = time.perf_counter()-setup_started
+            compiled_actor.phase = "training"
+            metadata["actor_compilation"] = compiled_actor.report()
+            metadata["actor_compile_setup_seconds"] = actor_compile_setup_seconds
+            print(json.dumps({"event": "actor_ready", "setup_seconds": actor_compile_setup_seconds,
+                              "compilation": compiled_actor.report()}), flush=True)
         save_checkpoint()
         summary = evaluate(actor, catalog, config, output, commands, 0.0)
         evaluation_seconds += summary["evaluation_seconds"]
@@ -196,7 +217,7 @@ def train(catalog, config, config_path, output, resume_path=None):
                 candidates = env.candidates()
                 observation = env.observe(candidates)
                 inference_started = time.perf_counter()
-                action, log_prob, value = actor.act(observation)
+                action, log_prob, value = actor.act(observation, forward=compiled_actor)
                 inference_seconds += time.perf_counter()-inference_started
                 reward, done, outcome = env.step(candidates.commands[action].to_dict())
                 commands += 1
@@ -249,6 +270,8 @@ def train(catalog, config, config_path, output, resume_path=None):
                          "environment_counters": dict(env.counters), "counts": dict(all_counts),
                          "peak_rss_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*(1 if platform.system() == "Darwin" else 1024),
                          "training_champion_score": champion_score})
+        metadata["actor_compilation"] = compiled_actor.report() if compiled_actor else {"enabled": False}
+        metadata["actor_compile_setup_seconds"] = actor_compile_setup_seconds
         write(output/"metadata.json", metadata)
         render(output, catalog)
         print(json.dumps({"event": "complete", "commands": commands, "training_seconds": metadata["training_seconds"],
@@ -261,6 +284,8 @@ def train(catalog, config, config_path, output, resume_path=None):
                          "environment_seconds": dict(env.seconds), "environment_counters": dict(env.counters),
                          "error": {"code": "run.interrupted", "severity": "error", "stage": "run",
                                    "message": str(e) or type(e).__name__, "entity": str(output)}})
+        metadata["actor_compilation"] = compiled_actor.report() if compiled_actor else {"enabled": False}
+        metadata["actor_compile_setup_seconds"] = actor_compile_setup_seconds
         write(output/"metadata.json", metadata)
         # Preserve the last complete training checkpoint; partial rollout observations are
         # retained separately so an interrupted on-policy stream is not represented by a seed.
@@ -272,6 +297,9 @@ def train(catalog, config, config_path, output, resume_path=None):
                     "partial_rollout": locals().get("rollout"), "episode_return": locals().get("episode_return")},
                    output/"interrupted-state.pt")
         raise
+    finally:
+        if compiled_actor is not None:
+            compiled_actor.close()
 
 
 def main():

@@ -6,6 +6,7 @@ import io
 import json
 from pathlib import Path
 import random
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -340,6 +341,47 @@ class PilotTests(unittest.TestCase):
         for key in expected:
             np.testing.assert_array_equal(third[key], expected[key])
 
+    @unittest.skipUnless(sys.platform == "linux", "Compiled CPU actor is deployed on Linux")
+    def test_compiled_actor_dynamic_shapes_refresh_and_rng(self):
+        from compiled_actor import CompiledActor
+        first = self.env.observe(self.env.candidates())
+        self.execute([{"op": "UNBIND_TERMINALS", "terminal": "quartz:source"},
+                      {"op": "EXTEND", "network": "quartz", "anchor": [1, 19], "growth": "backward", "direction": "W", "length": 2}])
+        second = self.env.observe(self.env.candidates())
+        actor = Policy(first)
+        before = [{key: value.copy() for key, value in o.items()} for o in (first, second)]
+        callbacks = len(torch._dynamo.callback_handler.start_callbacks)
+        with tempfile.TemporaryDirectory(dir=ROOT/"target") as directory:
+            compiled = CompiledActor(actor, directory)
+            try:
+                rng = torch.get_rng_state().clone()
+                with torch.no_grad():
+                    for observation in (first, second):
+                        for actual, expected in zip(compiled(single(observation)), actor(single(observation))):
+                            torch.testing.assert_close(actual, expected, atol=1e-5, rtol=1e-5)
+                self.assertTrue(torch.equal(rng, torch.get_rng_state()))
+                events = len(compiled.events)
+                self.assertGreater(events, 0)
+                learner = deepcopy(actor)
+                with torch.no_grad():
+                    for parameter in learner.parameters():
+                        parameter.add_(0.001)
+                refresh_actor(learner, actor)
+                with torch.no_grad():
+                    for observation in (first, second):
+                        for actual, expected in zip(compiled(single(observation)), actor(single(observation))):
+                            torch.testing.assert_close(actual, expected, atol=1e-5, rtol=1e-5)
+                self.assertEqual(len(compiled.events), events)
+                selected, log_prob, value = actor.act(second, torch.Generator().manual_seed(7), forward=compiled)
+                self.assertLess(selected, len(second["candidates"]))
+                self.assertTrue(np.isfinite([log_prob, value]).all())
+            finally:
+                compiled.close()
+        self.assertEqual(len(torch._dynamo.callback_handler.start_callbacks), callbacks)
+        for observation, expected in zip((first, second), before):
+            for key in observation:
+                np.testing.assert_array_equal(observation[key], expected[key])
+
     def test_completed_cpu_continuation_matches_uninterrupted_training(self):
         config = {**self.config, "device": "cpu", "threads": 1,
                   "horizon": 8, "commands": 32, "rollout_commands": 16, "epochs": 1,
@@ -389,11 +431,13 @@ class PilotTests(unittest.TestCase):
                 run("invalid-config", {**continuation, "learning_rate": .001}, parent)
             with self.assertRaisesRegex(ValueError, "final checkpoint"):
                 run("invalid-checkpoint", continuation, first/"checkpoint-0.pt")
-            altered = json.loads((first/"metadata.json").read_text())
-            altered["provenance"]["files_sha256"]["tools/factory-edit-pilot/environment.py"] = "changed"
-            (first/"metadata.json").write_text(json.dumps(altered))
-            with self.assertRaisesRegex(ValueError, "semantic/catalog hash changed"):
-                run("invalid-semantics", continuation, parent)
+            original = json.loads((first/"metadata.json").read_text())
+            for module in ("environment.py", "commands.py"):
+                altered = deepcopy(original)
+                altered["provenance"]["files_sha256"][f"tools/factory-edit-pilot/{module}"] = "changed"
+                (first/"metadata.json").write_text(json.dumps(altered))
+                with self.assertRaisesRegex(ValueError, "semantic/catalog hash changed"):
+                    run(f"invalid-{module}", continuation, parent)
 
     def test_runner_preserves_interruption_diagnostics(self):
         config = {**self.config, "device": "cpu", "threads": 2,
