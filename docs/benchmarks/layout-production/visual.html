@@ -1,0 +1,67 @@
+<div id="production-layout-audit">
+  <style>
+    #production-layout-audit svg { width:100%; display:block; }
+    #production-layout-audit svg text { fill:var(--foreground); font-size:12px; pointer-events:none; }
+    #production-layout-audit .legend { display:flex; flex-wrap:wrap; gap:12px; font-size:12px; }
+    #production-layout-audit .swatch { display:inline-block; width:12px; height:8px; margin-right:4px; }
+    #production-layout-audit .detail { min-height:36px; overflow-wrap:anywhere; }
+  </style>
+  <h3>Heavy Xiranite · best known validated geometry</h3>
+  <div id="production-density" class="tabular-nums"></div>
+  <svg id="production-map" role="img" aria-label="59-facility Heavy Xiranite factory with exact belts, pipes, and largest empty rectangle"></svg>
+  <div class="legend">
+    <span><i class="swatch" style="background:var(--secondary);border:1px solid var(--foreground)"></i>Facility</span>
+    <span><i class="swatch" style="background:var(--viz-series-1)"></i>Belt</span>
+    <span><i class="swatch" style="background:var(--viz-series-2)"></i>Pipe</span>
+    <span><i class="swatch" style="background:var(--viz-series-3)"></i>Largest void · 7 × 10</span>
+    <span>○ External terminal · ◇ Logistics component</span>
+  </div>
+  <div id="production-detail" class="detail text-small" aria-live="polite"></div>
+  <script type="application/json" id="production-data">__AUDIT_DATA__</script>
+  <script>
+  (() => {
+    const root=document.getElementById('production-layout-audit');
+    const data=JSON.parse(root.querySelector('#production-data').textContent), svg=root.querySelector('#production-map');
+    const d=data.drawing, density=data.density, detail=root.querySelector('#production-detail');
+    const el=(tag,attrs,text)=>{const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text!==undefined)n.textContent=text;return n;};
+    const color=k=>`var(--viz-series-${k==='pipe'?2:1})`;
+    let selection=null;
+    root.querySelector('#production-density').textContent=`${density.bounds.width} × ${density.bounds.height} · ${density.empty_xy_cells} / ${density.area} cells empty (${density.percent_empty.toFixed(2)}%) · target ≤ 1%`;
+    function draw() {
+      const width=root.getBoundingClientRect().width, pad=16, scale=(width-pad*2)/density.bounds.width;
+      const x=v=>pad+v*scale,y=v=>pad+v*scale,height=density.bounds.height*scale+pad*2;
+      svg.replaceChildren();svg.setAttribute('viewBox',`0 0 ${width} ${height}`);svg.style.height=`${height}px`;
+      svg.append(el('desc',{},`Exact independently validated factory geometry. ${density.empty_xy_cells} unused cells; no global optimality claim.`));
+      for(let a=0;a<=density.bounds.width;a++)svg.append(el('line',{x1:x(a),x2:x(a),y1:y(0),y2:y(density.bounds.height),stroke:'var(--border)','stroke-width':.5}));
+      for(let b=0;b<=density.bounds.height;b++)svg.append(el('line',{x1:x(0),x2:x(density.bounds.width),y1:y(b),y2:y(b),stroke:'var(--border)','stroke-width':.5}));
+      const v=density.largest_empty_rectangle;
+      svg.append(el('rect',{x:x(v.x-density.bounds.minX),y:y(v.y-density.bounds.minY),width:v.width*scale,height:v.height*scale,fill:'var(--viz-series-3)','fill-opacity':.14,stroke:'var(--viz-series-3)','stroke-dasharray':'4 3'}));
+      for(const [i,n]of d.networks.entries()){
+        const active=selection?.network===i;
+        for(const [a,b]of n.cells){
+          const r=el('rect',{x:x(a+.1),y:y(b+.1),width:scale*.8,height:scale*.8,fill:color(n.kind),'fill-opacity':active?.65:.25,'data-network':i});
+          r.append(el('title',{},`${n.kind} · ${n.item}`));r.addEventListener('click',()=>{selection={network:i};draw();});svg.append(r);
+        }
+        for(const [a,b,c,e]of n.segments){
+          svg.append(el('line',{x1:x(a+.5),y1:y(b+.5),x2:x(c+.5),y2:y(e+.5),stroke:color(n.kind),'stroke-width':scale*(active?.32:.2),'pointer-events':'none'}));
+          const mx=(a+c)/2+.5,my=(b+e)/2+.5,dx=c-a,dy=e-b;
+          svg.append(el('path',{d:`M${x(mx+dx*.21)},${y(my+dy*.21)} L${x(mx-dx*.13-dy*.13)},${y(my-dy*.13+dx*.13)} L${x(mx-dx*.13+dy*.13)},${y(my-dy*.13-dx*.13)}Z`,fill:color(n.kind),'pointer-events':'none'}));
+        }
+        for(const t of n.terminals)if(t.owner==='External')svg.append(el('circle',{cx:x(t.xy[0]+.5),cy:y(t.xy[1]+.5),r:scale*.28,fill:'var(--background)',stroke:color(n.kind),'stroke-width':1.5}));
+      }
+      for(const c of d.components){const a=x(c.xy[0]+.5),b=y(c.xy[1]+.5),r=scale*.34;svg.append(el('path',{d:`M${a},${b-r}L${a+r},${b}L${a},${b+r}L${a-r},${b}Z`,fill:color(c.transport),stroke:'var(--foreground)','stroke-width':.6}));}
+      for(const p of d.facilities){
+        const active=selection?.facility===p.alias;
+        const r=el('rect',{x:x(p.x)+.5,y:y(p.y)+.5,width:p.width*scale-1,height:p.height*scale-1,fill:active?'var(--viz-series-3)':'var(--secondary)',stroke:'var(--foreground)','stroke-opacity':.7,'data-facility':p.alias});
+        r.append(el('title',{},`${p.alias} · ${p.facility} · ${p.rotation}°`));r.addEventListener('click',()=>{selection={facility:p.alias};draw();});svg.append(r);
+        if(p.width*scale>=28)svg.append(el('text',{x:x(p.x+p.width/2),y:y(p.y+p.height/2),'text-anchor':'middle','dominant-baseline':'central'},p.alias));
+      }
+      svg.append(el('rect',{x:x(0),y:y(0),width:density.bounds.width*scale,height:density.bounds.height*scale,fill:'none',stroke:'var(--foreground)','pointer-events':'none'}));
+      if(selection?.facility){const p=d.facilities.find(p=>p.alias===selection.facility);detail.textContent=`${p.alias} · ${p.facility} · ${p.recipe} · ${p.rotation}°`;}
+      else if(selection?.network!==undefined){const n=d.networks[selection.network];detail.textContent=`${n.kind} · ${n.item} · ${n.cells.length} cells · ${n.terminals.length} terminals`;}
+      else detail.textContent='59 facilities · original production and external obligations validated';
+    }
+    new ResizeObserver(draw).observe(root);draw();
+  })();
+  </script>
+</div>

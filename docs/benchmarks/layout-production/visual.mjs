@@ -1,0 +1,23 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { args, read, write, hash, catalogKeys } from '../layout-rl/io.mjs';
+import { drawing } from '../layout-rl/visualize.mjs';
+
+const options=args(['report','output-directory']);
+const reportPath=path.resolve(options.report), report=read(reportPath);
+const source=report.cases.find(c=>c.id==='strongest-geometric');
+if(!source?.coverage.factory_validated || hash(source.witness.path)!==source.witness.sha256) throw new Error('Missing or changed validated visual source');
+for(const p of report.provenance)if(hash(p.path)!==p.sha256)throw new Error(`Changed baseline provenance: ${p.path}`);
+const planPath=report.provenance[0].path,plan=read(planPath),dataset=read(path.resolve(path.dirname(planPath),plan.roots));
+const root=dataset.roots.find(r=>r.id===report.mandatory_target.root);
+const catalogs=Object.fromEntries(catalogKeys.map(k=>[k,read(dataset.options[k])]));
+const aliases=new Map(root.witness.placements.map((p,i)=>[p.instance,`F${String(i+1).padStart(2,'0')}`]));
+const payload={drawing:drawing(read(source.witness.path),aliases,catalogs),density:source.density};
+const templatePath=fileURLToPath(new URL('./visual.html',import.meta.url));
+const fragment=fs.readFileSync(templatePath,'utf8').replace('__AUDIT_DATA__',JSON.stringify(payload).replaceAll('<','\\u003c'));
+if(Buffer.byteLength(fragment)>=1000000)throw new Error('Visual exceeds 1 MB');
+const output=path.resolve(options['output-directory']);fs.mkdirSync(output);
+fs.writeFileSync(path.join(output,'heavy-xiranite-audit.html'),fragment,{flag:'wx'});
+write(path.join(output,'source.json'),{schema_version:1,source,aliases:[...aliases],provenance:[reportPath,templatePath,fileURLToPath(import.meta.url)].map(p=>({path:p,sha256:hash(p)}))});
+console.log(JSON.stringify({status:'rendered',output,bytes:Buffer.byteLength(fragment)}));
