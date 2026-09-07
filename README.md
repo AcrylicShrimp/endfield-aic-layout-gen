@@ -4,8 +4,9 @@ CLI tools for generating construction layouts for the Arknights: Endfield Automa
 
 Current design discussion: [learned factory edit policy](docs/designs/2026-09-07.00-learned-factory-edit-policy.md)
 and [design tracker](docs/todos/2026-09-07.04-learned-factory-edit-design.md). This is a fresh,
-documentation-only RL design for improving existing factories; no new experiment or production
-cutover has started, and the historical learning study remains stopped.
+documentation-only RL hypothesis notebook: all design choices are revisable and the first pilot
+should identify problems with minimal commitments. No new experiment or production cutover has
+started, and the historical learning study remains stopped.
 
 ## Workspace
 
