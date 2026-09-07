@@ -8,6 +8,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
+import numpy as np
+
 from acceptance import Catalog, check
 from environment import Environment, serialize
 from native_observation import load_native
@@ -43,12 +45,80 @@ class NativeEngineTests(unittest.TestCase):
         self.engine.restore_state_json(json.dumps(snapshot))
 
     def domain(self):
-        expected = self.reference.candidates().to_dicts()
+        reference_candidates = self.reference.candidates()
+        expected = reference_candidates.to_dicts()
         handle, count = self.engine.candidates()
         actual = json.loads(self.engine.export_candidates_json(handle))
         self.assertEqual(count, len(expected))
         self.assertEqual(actual, expected)
+        self.compare_observation(self.engine.observe_candidates(handle), self.reference.observe(reference_candidates))
         return handle, actual
+
+    def compare_observation(self, actual, expected):
+        self.assertEqual(set(actual), set(expected))
+        for key in expected:
+            self.assertEqual(actual[key].dtype, expected[key].dtype, key)
+            self.assertEqual(actual[key].shape, expected[key].shape, key)
+            self.assertEqual(actual[key].tobytes(), expected[key].tobytes(), key)
+
+    def test_observe_bundle_owns_arrays_and_rejects_stale_handles(self):
+        actual, handle = self.engine.observe()
+        expected = self.reference.observe(self.reference.candidates())
+        self.compare_observation(actual, expected)
+        saved = {key: value.copy() for key, value in actual.items()}
+        for command in self.catalog.case["witness"]:
+            self.execute(command)
+        for key in saved:
+            np.testing.assert_array_equal(actual[key], saved[key])
+            actual[key].fill(123)
+        self.domain()
+        with self.assertRaisesRegex(ValueError, "engine.stale_handle"):
+            self.engine.observe_candidates(handle)
+        self.engine.reset()
+        self.reference.reset()
+        self.domain()
+
+    def test_observation_guard_and_restore_after_large_used_span(self):
+        # Admit the catalog and initial paths but exhaust the raster at observation time.
+        config = {key: self.config[key] for key in CONFIG_KEYS}
+        config["raster_cell_guard"] = 32
+        engine = self.module.Engine.open(str(ROOT), str(DIRECTORY / "case.json"), json.dumps(config))
+        snapshot = json.loads(engine.export_state_json())
+        with self.assertRaisesRegex(ValueError, "observation.resource_guard"):
+            engine.observe()
+        failed = json.loads(engine.export_state_json())
+        for field in ("draft", "base", "best", "steps", "revision", "trace", "episode_counts"):
+            self.assertEqual(snapshot[field], failed[field])
+        engine.restore_state_json(json.dumps(failed))
+        with self.assertRaisesRegex(ValueError, "observation.resource_guard"):
+            engine.observe()
+
+    def test_native_coordinate_channels_and_unbound_rotations(self):
+        for tid in self.reference.tids:
+            self.execute({"op": "UNBIND_TERMINALS", "terminal": tid})
+        for rotation in (0, 90, 180, 270):
+            snapshot = self.snapshot()
+            self.reference.draft["placements"]["F"][2] = rotation
+            snapshot["draft"] = serialize(self.reference.draft)
+            self.restore(snapshot)
+            self.domain()
+        for shift in (-103, 2**24, 2**24+1, -(2**24), -(2**24)-3, 2**53+3):
+            self.reference.reset()
+            self.engine.reset()
+            for state in (self.reference.draft, self.reference.base, self.reference.best):
+                for pose in state["placements"].values():
+                    pose[:2] = [x+shift for x in pose[:2]]
+                for network in state["networks"].values():
+                    network["cells"] = {(x+shift, y+shift) for x, y in network["cells"]}
+                    network["edges"] = {((a[0]+shift, a[1]+shift), (b[0]+shift, b[1]+shift)) for a, b in network["edges"]}
+                for binding in state["bindings"].values():
+                    if binding and "cell" in binding:
+                        binding["cell"] = [x+shift for x in binding["cell"]]
+            snapshot = self.snapshot()
+            for field in ("draft", "base", "best"):
+                snapshot[field] = serialize(getattr(self.reference, field))
+            self.restore(snapshot)
+            self.domain()
 
     def compare_state(self):
         snapshot = self.snapshot()
@@ -149,6 +219,17 @@ class NativeEngineTests(unittest.TestCase):
         self.engine = restored
         for command in self.catalog.case["witness"][3:]:
             self.execute(command)
+
+    def test_snapshot_preserves_float_bits_after_positive_reward(self):
+        for command in self.catalog.case["witness"]:
+            self.execute(command)
+        snapshot = self.snapshot()
+        rng = random.Random(17)
+        snapshot["seconds"] = {str(i): rng.random()*10**rng.randint(-12, 12) for i in range(1000)}
+        self.restore(snapshot)
+        actual = self.snapshot()
+        self.assertEqual(actual["seconds"], snapshot["seconds"])
+        self.assertEqual(actual["trace"], snapshot["trace"])
 
     def test_identifier_escaping_preserves_canonical_order(self):
         case = deepcopy(self.catalog.case)
@@ -262,6 +343,16 @@ class NativeEngineTests(unittest.TestCase):
             expected = check(self.catalog, layout)
             self.assertTrue(expected["valid"])
             self.assertEqual(json.loads(self.engine.check_layout_json(json.dumps(layout))), expected)
+            snapshot = self.snapshot()
+            for field in ("draft", "base", "best"):
+                snapshot[field] = deepcopy(layout)
+                state = deepcopy(layout)
+                for network in state["networks"].values():
+                    network["cells"] = {tuple(c) for c in network["cells"]}
+                    network["edges"] = {(tuple(a), tuple(b)) for a, b in network["edges"]}
+                setattr(self.reference, field, state)
+            self.restore(snapshot)
+            self.domain()
         for shift in (-103, 2**24, -(2**24)):
             shifted = deepcopy(layout)
             for pose in shifted["placements"].values():

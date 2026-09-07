@@ -1,6 +1,9 @@
 //! Explicit native engine boundary. JSON is restricted to setup and diagnostic exports.
 
 use std::path::Path;
+use std::time::Instant;
+
+use numpy::IntoPyArray;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -10,6 +13,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use crate::acceptance::{self, Acceptance};
 use crate::diagnostic::Diagnostic;
 use crate::engine::{Engine, Handle, SNAPSHOT_VERSION};
+use crate::observation::Observation;
 use crate::transition::Outcome;
 
 fn py_error(error: impl std::fmt::Display) -> PyErr {
@@ -52,6 +56,16 @@ fn outcome<'py>(py: Python<'py>, value: Outcome) -> PyResult<Bound<'py, PyDict>>
     }
     output.set_item("diagnostics", diagnostics)?;
     Ok(output)
+}
+
+fn observation<'py>(py: Python<'py>, value: Observation) -> PyResult<Bound<'py, PyDict>> {
+    let result = PyDict::new(py);
+    result.set_item("raster", value.raster.into_pyarray(py))?;
+    result.set_item("objects", value.objects.into_pyarray(py))?;
+    result.set_item("stats", value.stats.into_pyarray(py))?;
+    result.set_item("candidates", value.candidates.into_pyarray(py))?;
+    result.set_item("points", value.points.into_pyarray(py))?;
+    Ok(result)
 }
 
 #[pymethods]
@@ -115,6 +129,35 @@ impl PythonEngine {
             .candidates()
             .map(|(value, count)| (PythonHandle { value }, count))
             .map_err(py_error)
+    }
+
+    fn observe<'py>(&mut self, py: Python<'py>) -> PyResult<(Bound<'py, PyDict>, PythonHandle)> {
+        let (value, _) = self.engine.candidates().map_err(py_error)?;
+        let data = self.engine.observation(value).map_err(py_error)?;
+        let started = Instant::now();
+        let output = observation(py, data)?;
+        *self
+            .engine
+            .seconds
+            .entry("array_export".into())
+            .or_default() += started.elapsed().as_secs_f64();
+        Ok((output, PythonHandle { value }))
+    }
+
+    fn observe_candidates<'py>(
+        &mut self,
+        py: Python<'py>,
+        handle: &PythonHandle,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        let data = self.engine.observation(handle.value).map_err(py_error)?;
+        let started = Instant::now();
+        let output = observation(py, data)?;
+        *self
+            .engine
+            .seconds
+            .entry("array_export".into())
+            .or_default() += started.elapsed().as_secs_f64();
+        Ok(output)
     }
 
     fn export_candidates_json(&self, handle: &PythonHandle) -> PyResult<String> {

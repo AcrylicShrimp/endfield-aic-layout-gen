@@ -15,6 +15,7 @@ use crate::candidates;
 use crate::catalog::{Catalog, hash};
 use crate::command::{self, Command};
 use crate::diagnostic::{Diagnostic, Result};
+use crate::observation::{CandidateFeature, FeatureKey, Tables};
 use crate::state::{Index, Layout, Score, State};
 use crate::transition::Outcome;
 
@@ -109,6 +110,8 @@ pub struct Engine {
     pub seconds: BTreeMap<String, f64>,
     pub domain: Option<Domain>,
     pub sort_keys: Cache<Command, Arc<str>>,
+    pub observation_tables: Tables,
+    pub feature_cache: Cache<FeatureKey, CandidateFeature>,
 }
 
 impl Engine {
@@ -153,6 +156,8 @@ impl Engine {
                     None,
                 )
             })?;
+        let scale = (initial_score[0] as f64).sqrt();
+        let observation_tables = Tables::new(&catalog, scale)?;
         Ok(Self {
             catalog,
             config,
@@ -166,7 +171,7 @@ impl Engine {
             initial_score,
             base_score: initial_score,
             best_score: initial_score,
-            scale: (initial_score[0] as f64).sqrt(),
+            scale,
             steps: 0,
             revision: 0,
             trace: Vec::new(),
@@ -175,6 +180,8 @@ impl Engine {
             seconds: BTreeMap::new(),
             domain: None,
             sort_keys: Cache::new(4096),
+            observation_tables,
+            feature_cache: Cache::new(4096),
         })
     }
 
@@ -314,6 +321,7 @@ impl Engine {
         self.seconds = snapshot.seconds;
         self.domain = None;
         self.sort_keys = Cache::new(4096);
+        self.feature_cache = Cache::new(4096);
         Ok(())
     }
 
@@ -409,6 +417,12 @@ impl Engine {
             "terminal_ids":self.catalog.terminals.iter().map(|t| &t.id).collect::<Vec<_>>(),
             "facility_types":self.catalog.types,"recipes":self.catalog.recipes,
             "operations":self.operation_names(),
+            "observation_dimensions":{
+                "raster_channels":self.observation_tables.per_state*2+3,
+                "object_features":self.observation_tables.object_template.shape()[1],
+                "candidate_features":self.observation_tables.feature_numeric+8,
+                "stats":8,
+            },
         })
     }
 }

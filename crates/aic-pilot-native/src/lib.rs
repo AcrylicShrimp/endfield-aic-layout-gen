@@ -8,6 +8,7 @@ mod command;
 mod diagnostic;
 mod edits;
 mod engine;
+mod observation;
 mod python_engine;
 mod state;
 mod transition;
