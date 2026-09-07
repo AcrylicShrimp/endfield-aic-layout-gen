@@ -42,12 +42,17 @@ The user specifically requested this restart posture in addition to the pause.
    resume the old study, change reward/model, or delete those changes without new direction.
 5. The user also questioned repository growth. A read-only
    [size investigation](repository-size.md) found verbose tracked benchmark artifacts
-   dominate line count; ignored build/research files dominate disk usage. No cleanup
-   or history rewrite was authorized or performed. The exact 1.4-million-line UI
-   comparison base was not established.
+   dominate line count; ignored build/research files dominate disk usage. That initial
+   inspection performed no cleanup. The exact 1.4-million-line UI comparison base was
+   not established. The later cleanup decision below supersedes its retention advice.
 6. The user explicitly instructed the next session not to trust the inherited direction
    and to review it aggressively before any reuse. Apply the mandatory posture above
    before adopting even the diagnostic suggestions in this handoff.
+7. The user subsequently authorized reducing `target/`, discarding regenerable raw data,
+   and keeping generated outputs out of Git by default. The
+   [cleanup record](artifact-cleanup.md) documents removed dev builds and old constructor
+   candidates. The paused learning study, checkpoints, final selected constructor
+   witnesses, required inputs, and uncommitted source overlay were preserved.
 
 The overall product objective is unachieved, not abandoned or proven impossible. A goal
 record that still says active or that the target needs clarification does not override
@@ -88,7 +93,8 @@ environment workers. Do not reuse old PIDs as future kill targets: PIDs can be r
 | 3901 | 389 | 796,672 | layout-direct-budget-seed-3901-01 |
 
 The interrupted next groups and any partial files remain on disk but are excluded from
-completed counts. No experiment artifacts were deleted. There is no 1024 checkpoint,
+completed counts. No artifacts from these three training runs were deleted, including
+during the subsequent constructor/build cleanup. There is no 1024 checkpoint,
 1024 evaluation, final training report, or completed final budget curve.
 
 Full model/Adam snapshots exist only at 0, 64 and 256. The last completed group numbers

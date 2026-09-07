@@ -2,6 +2,10 @@
 
 Status: measured read-only, 2026-09-07. No cleanup or history rewrite performed.
 
+Historical snapshot: a subsequent user-authorized [cleanup](artifact-cleanup.md)
+reduced `target/` and established a generated-artifact policy. Its results supersede
+the retention recommendation below; the original measurements remain unchanged.
+
 The user observed roughly 1.4 million added lines. The exact UI comparison base is
 unknown; the measurements below do not claim to reproduce that displayed diff.
 

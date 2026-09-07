@@ -40,6 +40,15 @@
 - Runtime data must come from external files loaded on each execution.
 - Schema definitions and validators may live in code, but actual game data must remain external.
 
+## Generated Artifact Policy
+
+- Do not commit regenerable run outputs by default: raw solver or training traces, per-candidate JSON, generated HTML/SVG views, logs, and build caches belong outside tracked source directories.
+- Put disposable build and experiment outputs under ignored `target/`. Put retained local checkpoints or evidence under ignored `artifacts/`, outside Cargo cleanup. Neither location is a backup.
+- Commit concise human-written findings, reproduction commands/configuration, source scripts, and compact provenance/hash manifests. Keep required runtime data and deliberately selected test fixtures tracked; do not blanket-ignore JSON, HTML, or SVG extensions.
+- Before retaining generated content in Git as a fixture or essential evidence, document why it is needed and keep the smallest sufficient payload. Do not force-add raw output just because it was used in a report.
+- Existing tracked benchmark artifacts require a reference-aware migration: some are later-stage inputs. Do not bulk-delete or untrack them based only on extension.
+- Clean up regenerable intermediate candidates after recording the run summary and preserving required selected results and inputs. Preserve non-replayable checkpoints and irreplaceable evidence; a seed alone does not guarantee an interrupted training stream can be reproduced.
+
 ## CLI Policy
 
 - All user-facing interaction is through command line interfaces.
