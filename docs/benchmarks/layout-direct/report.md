@@ -2,6 +2,9 @@
 
 Status: measured; not production-ready and no reliable learned advantage established.
 
+Historical schema-1 source/config: commit `8d317f5`. Current training accepts schema 2;
+the subsequent temporal-credit run and explicit migration are in `credit-report.md`.
+
 ## Outcome
 
 The main path now generates new catalog-derived production requests, constructs complete

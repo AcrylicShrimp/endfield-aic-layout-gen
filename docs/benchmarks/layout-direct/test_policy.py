@@ -7,7 +7,7 @@ import torch
 
 from client import Pool
 from policy import DirectPolicy, decode, checkpoint, restore, location_mask
-from train import terminal_advantages, validate
+from train import terminal_advantages, validate, credit_signals
 
 
 class DirectPolicyTests(unittest.TestCase):
@@ -67,8 +67,29 @@ class DirectPolicyTests(unittest.TestCase):
         self.assertEqual(terminal_advantages([[100, 99, 5], [101, 0, 0]]), [1, -1])
         self.assertEqual(terminal_advantages([[100, 9, 5], [100, 9, 5]]), [0, 0])
         validate(json.loads(Path(__file__).with_name("train.json").read_text()))
+        validate(json.loads(Path(__file__).with_name("credit.json").read_text()))
         with self.assertRaises(ValueError):
             validate(dict(schema_version=1))
+
+    def test_futility_tiebreak_cannot_outvote_any_quality_field(self):
+        self.assertEqual(terminal_advantages([[100, 99, 5, 999], [101, 0, 0, 0]]), [1, -1])
+        self.assertEqual(terminal_advantages([[100, 9, 99, 999], [100, 10, 0, 0]]), [1, -1])
+        self.assertEqual(terminal_advantages([[100, 9, 5, 999], [100, 9, 6, 0]]), [1, -1])
+        self.assertEqual(terminal_advantages([[100, 9, 5, 1], [100, 9, 5, 2]]), [1, -1])
+
+    def test_temporal_baseline_uses_only_pre_action_history(self):
+        def entry(score, futile=0):
+            return (dict(best_score=score, futile=futile), [], {})
+        histories = [[entry([100, 9, 5]), entry([90, 9, 5])], [entry([100, 9, 5]), entry([100, 9, 5])]]
+        summaries = [dict(best_score=dict(tuple=q), waste=dict(futile=0)) for q in ([90, 9, 5], [100, 9, 5])]
+        credit = credit_signals(histories, summaries, "quality-futility-prefix")
+        self.assertEqual(credit["signals"], [[1, 0], [-1, 0]])
+        self.assertEqual(credit_signals(histories, summaries, "terminal-score")["signals"], [[1, 1], [-1, -1]])
+        # Delayed success is credited before its later improvement; no valid-worse penalty.
+        histories[0][1] = entry([100, 9, 5])
+        self.assertEqual(credit_signals(histories, summaries, "quality-futility-prefix")["signals"], [[1, 1], [-1, -1]])
+        with self.assertRaises(ValueError):
+            credit_signals([histories[0], []], summaries, "quality-futility-prefix")
 
 
 if __name__ == "__main__":

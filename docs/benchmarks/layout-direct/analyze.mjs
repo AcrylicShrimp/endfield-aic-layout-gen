@@ -26,7 +26,8 @@ export function summarize(r){
       const xs=rows.filter(e=>e.model===model);
       models[model]={roots:xs.length,mean_area_ratio:mean(xs.map(e=>e.summary.best_score.area/e.summary.initial_score.area)),
         futile_fraction:mean(xs.map(e=>e.summary.waste.futile_fraction)),mean_route_expansions:mean(xs.map(e=>e.summary.work.route_expansions)),
-        mean_episode_seconds:mean(xs.map(e=>e.summary.elapsed_ms/1000)),mean_environment_preprocessing_seconds:mean(xs.map(e=>e.summary.work.preprocess_ms/1000))};
+        mean_episode_seconds:mean(xs.map(e=>e.summary.elapsed_ms/1000)),mean_environment_preprocessing_seconds:mean(xs.map(e=>e.summary.work.preprocess_ms/1000)),
+        mean_decoding_masking_seconds:xs.every(e=>Number.isFinite(e.inference_seconds))?mean(xs.map(e=>e.inference_seconds)):null};
     }
     const comparisons={};
     for(const model of ['initial','uniform'])comparisons[`trained_vs_${model}`]=counts(rows.filter(e=>e.model==='trained'),e=>{
@@ -35,7 +36,8 @@ export function summarize(r){
     });
     evaluation.push({horizon,seed,models,comparisons});
   }
-  return {schema_version:1,status:'measured-not-production-ready',scope:r.scope,elapsed_seconds:r.elapsed_seconds,
+  const maxTraining=Math.max(0,...r.generation.filter(g=>g.split==='train'&&g.learning_eligible).map(g=>g.facilities));
+  return {schema_version:1,status:'measured-not-production-ready',scope:r.scope,config:r.config,elapsed_seconds:r.elapsed_seconds,
     training:Object.fromEntries(Object.entries(r.training).filter(([k])=>k!=='groups')),generation,evaluation,
     target:r.evaluation.filter(e=>e.root==='heavy-strong').map(e=>({model:e.model,horizon:e.horizon,seed:e.seed,
       best:e.summary.best_score.tuple,percent_empty:e.summary.density.percent_empty,waste:e.summary.waste,work:e.summary.work,elapsed_ms:e.summary.elapsed_ms})),
@@ -44,11 +46,12 @@ export function summarize(r){
     audited_episodes:audits.length,evaluation_episodes:r.evaluation.length,
     proposal_counts:counts(r.evaluation,e=>`${e.horizon}:${e.summary.work.proposals}`),test_evaluations:r.test_evaluations,
     limitations:['One model seed and one evaluation seed; development evidence only.',
-      'Direct decoder masking/inference time is included in episode wall time but not separated per evaluation row in this run.',
+      r.evaluation.every(e=>Number.isFinite(e.inference_seconds))?'Direct decoding/masking time is recorded separately; it is also included in episode wall time.':
+        'Direct decoder masking/inference time is included in episode wall time but not separated per evaluation row in this run.',
       'Episode wall time includes co-batched worker/inference waits; not isolated per-factory latency.',
       'Same selected-action limits and per-action routing caps, not equal consumed routing work.',
       'Source cycle references are not proof that every cycle is active in the solved production graph.',
-      'No eligible fresh training factory exceeded ten facilities; heavy-strong is explicit training replay.',
+      `Maximum eligible fresh training size is ${maxTraining} facilities; heavy-strong is explicit training replay.`,
       'Semantic fingerprint includes source-path identities; it is not general graph-isomorphism deduplication.',
       'Current-extent and frozen external-anchor execution restrictions remain; no global impossibility claim.']};
 }

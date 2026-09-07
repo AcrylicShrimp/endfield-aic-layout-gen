@@ -55,6 +55,9 @@ complete. See `../layout-direct/report.md`: no reliable learned advantage, rough
 development actions, small-factory-biased generation and unchanged target density. Improve the
 connected learner's credit and actual stream breadth. The fixed-root baseline is archived in
 `../layout-sequential/report.md`.
+The measured temporal-credit follow-up (`../layout-direct/credit-report.md`) supplies target
+task gradients but still has mixed quality, about 82% development waste and unchanged target
+density. Next broaden actual production-load sampling before scaling this training configuration.
 Neither a working RL loop nor changed weights satisfies the release criteria. Judge advancement
 by independent layout quality, futile-action rate, actual environment breadth, target density
 and visual inspection. Do not call a sampled negative result universal action uselessness.

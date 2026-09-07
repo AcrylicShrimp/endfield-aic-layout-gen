@@ -26,8 +26,10 @@ def sha(path):
 
 
 def validate(config):
-    if config.get("schema_version") != 1:
+    if config.get("schema_version") != 2:
         raise ValueError("Unsupported streaming training schema")
+    if config.get("credit") not in ("terminal-score", "quality-futility-prefix"):
+        raise ValueError("Invalid streaming credit contract")
     for key, limit in (("groups", 10000), ("workers", 16), ("horizon", 16384), ("threads", 16), ("width", 256),
                        ("target_interval", 10000), ("generation_attempts_per_root", 1000), ("episode_ms", 300000),
                        ("evaluation_roots", 300), ("minimum_training_facilities", 128)):
@@ -50,6 +52,23 @@ def terminal_advantages(values):
     return [sum((b > a) - (b < a) for b in scores) / (len(scores) - 1) for a in scores]
 
 
+def credit_signals(histories, summaries, mode):
+    if len({len(h) for h in histories}) != 1 or not histories or not histories[0]:
+        raise ValueError("Temporal credit requires nonempty equal-length trajectories")
+    quality = [s["best_score"]["tuple"] for s in summaries]
+    outcomes = [q + [s["waste"]["futile"]] if mode == "quality-futility-prefix" else q for q, s in zip(quality, summaries)]
+    terminal = terminal_advantages(outcomes)
+    signals = [[v] * len(h) for v, h in zip(terminal, histories)]
+    if mode == "quality-futility-prefix":
+        for t in range(len(histories[0])):
+            prefix = terminal_advantages([h[t][0]["best_score"] + [h[t][0]["futile"]] for h in histories])
+            for i in range(len(histories)):
+                signals[i][t] -= prefix[i]
+    elif mode != "terminal-score":
+        raise ValueError("Unknown temporal credit mode")
+    return dict(outcomes=outcomes, terminal=terminal, quality_terminal=terminal_advantages(quality), signals=signals)
+
+
 def rng(seed, root, worker=0):
     value = int.from_bytes(hashlib.sha256(json.dumps([seed, root, worker]).encode()).digest()[:8], "little")
     return torch.Generator().manual_seed(value)
@@ -61,33 +80,51 @@ def rollout(pool, model, roots, horizon, config, seed, *, uniform=False, record=
     generators = [rng(seed, r["id"], i if record else 0) for i, r in enumerate(roots)]
     histories = [[] for _ in workers]
     states = [{} for _ in workers]
-    inference = 0.0
+    inference = [0.0 for _ in workers]
+    futile = [0 for _ in workers]
+    seen = [{o["state"]["state"]} for o in obs]
     for step in range(horizon):
         active = [i for i, o in enumerate(obs) if not o["done"]]
         if not active:
             break
-        start = time.perf_counter()
-        actions = {}
+        actions, pending = {}, {}
         with torch.no_grad():
             for i in active:
+                start = time.perf_counter()
                 action, decisions, _, _ = decode(model, obs[i], generator=generators[i], uniform=uniform)
+                inference[i] += time.perf_counter() - start
                 actions[i] = action
                 if record:
                     identity = obs[i]["state"]["state"]
                     state = states[i].setdefault(identity, obs[i]["state"])
-                    histories[i].append((dict(obs[i], state=state), decisions, action))
-        inference += time.perf_counter() - start
+                    pending[i] = (dict(obs[i], state=state, futile=futile[i]), decisions, action)
         futures = [(i, pool.executor.submit(workers[i].call, "step", action=actions[i])) for i in active]
         for i, future in futures:
             obs[i] = future.result()
+            transition = obs[i]["transition"]
+            if transition.get("performed") is False:
+                continue
+            if record:
+                histories[i].append(pending[i])
+            if not transition["accepted"] or transition["witness_sha256"] in seen[i]:
+                futile[i] += 1
+            if transition["accepted"]:
+                seen[i].add(transition["witness_sha256"])
     summaries = [w.call("summary") for w in workers]
+    if any(s["waste"]["futile"] != n for s, n in zip(summaries, futile)):
+        raise RuntimeError("Python and worker futile-action accounting disagree")
+    if record and any(len(h) != horizon for h in histories):
+        raise RuntimeError("Training horizon was truncated; do not rank unequal effort as equal trajectories")
     audits = [w.call("audit") for w in workers]
     artifacts = [w.call("save") for w in workers]
-    return dict(observations=obs, histories=histories, summaries=summaries, audits=audits, artifacts=artifacts, inference_seconds=inference)
+    return dict(observations=obs, histories=histories, summaries=summaries, audits=audits, artifacts=artifacts,
+                inference_seconds=sum(inference), inference_seconds_by_worker=inference)
 
 
 def run(options):
     config = read(options.config)
+    if options.seed is not None:
+        config["seed"] = options.seed
     validate(config)
     output = Path(options.output_directory).resolve()
     output.mkdir()
@@ -131,7 +168,8 @@ def run(options):
             started = time.perf_counter()
             root = target if (group + 1) % config["target_interval"] == 0 else generate("train")
             result = rollout(pool, model, [root] * config["workers"], config["horizon"], config, config["seed"] + group, record=True)
-            advantage = terminal_advantages([o["best_score"] for o in result["observations"]])
+            credit = credit_signals(result["histories"], result["summaries"], config["credit"])
+            advantage = credit["terminal"]
             samples = sum(len(h) for h in result["histories"])
             if not samples:
                 raise RuntimeError("No training action fit the declared episode budget")
@@ -140,8 +178,8 @@ def run(options):
             entropy_sum = 0.0
             update_start = time.perf_counter()
             # Recompute on-policy decisions before the single update, bounding autograd memory.
-            for signal, history in zip(advantage, result["histories"]):
-                for obs, decisions, original_action in history:
+            for signals, history in zip(credit["signals"], result["histories"]):
+                for signal, (obs, decisions, original_action) in zip(signals, history):
                     action, _, logp, entropy = decode(model, obs, decisions=decisions)
                     if action != original_action:
                         raise RuntimeError("Direct action replay changed before optimizer update")
@@ -155,11 +193,15 @@ def run(options):
             optimizer.step()
             row = dict(group=group + 1, root=root["id"], family=root["family"], generation=root["generation"],
                        sampled_transitions=samples, terminal_advantages=advantage, task_loss=task_loss, entropy=entropy_sum,
+                       quality_terminal_advantages=credit["quality_terminal"], terminal_outcomes=credit["outcomes"],
+                       credited_transitions=sum(v != 0 for xs in credit["signals"] for v in xs),
                        gradient_norm=norm, inference_seconds=result["inference_seconds"], update_seconds=time.perf_counter() - update_start,
                        summaries=result["summaries"], audits=result["audits"], artifacts=result["artifacts"], elapsed_seconds=time.perf_counter() - started)
             groups.append(row)
             write(output / f"group-{group + 1:04d}.json", row)
             print(json.dumps(dict(stage="streaming-optimizer-update", group=group + 1, root=root["id"], informative=any(advantage),
+                                  quality_informative=any(credit["quality_terminal"]), credited=row["credited_transitions"],
+                                  futile=[s["waste"]["futile_fraction"] for s in result["summaries"]],
                                   best=[s["best_score"]["tuple"] for s in result["summaries"]], elapsed_seconds=row["elapsed_seconds"])), flush=True)
         final = checkpoint(model)
         restored = restore(final)
@@ -171,6 +213,8 @@ def run(options):
                 raise RuntimeError("Direct checkpoint round trip changed predictions")
         write(output / "model.json", final)
         training = dict(groups=groups, optimizer_steps=len(groups), informative_groups=sum(any(g["terminal_advantages"]) for g in groups),
+                        quality_informative_groups=sum(any(g["quality_terminal_advantages"]) for g in groups),
+                        credited_transitions=sum(g["credited_transitions"] for g in groups),
                         changed_weight_elements=sum(int(torch.count_nonzero(v.detach() - before[k])) for k, v in model.state_dict().items()),
                         sampled_transitions=sum(g["sampled_transitions"] for g in groups),
                         dynamic_groups=sum(g["generation"] == "dynamic-catalog" for g in groups),
@@ -186,6 +230,8 @@ def run(options):
                         result = rollout(pool, policy, batch, horizon, config, seed, uniform=name == "uniform")
                         for i, root in enumerate(batch):
                             row = dict(model=name, root=root["id"], family=root["family"], split=root["split"], horizon=horizon, seed=seed,
+                                       inference_seconds=result["inference_seconds_by_worker"][i],
+                                       inference_batch_seconds=result["inference_seconds"], batch_roots=[r["id"] for r in batch],
                                        summary=result["summaries"][i], audit=result["audits"][i], artifact=result["artifacts"][i])
                             evaluation.append(row)
                             write(output / f"evaluation-{len(evaluation):04d}.json", row)
@@ -204,6 +250,7 @@ if __name__ == "__main__":
     parser.add_argument("--plan", required=True)
     parser.add_argument("--config", required=True)
     parser.add_argument("--output-directory", required=True)
+    parser.add_argument("--seed", type=int, help="Explicit model/training-stream seed override, recorded in the report")
     try:
         run(parser.parse_args())
     except Exception as error:
