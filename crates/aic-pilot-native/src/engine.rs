@@ -2,19 +2,38 @@
 
 use std::collections::BTreeMap;
 use std::path::Path;
+use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::Instant;
 
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 
 use crate::acceptance;
+use crate::cache::Cache;
+use crate::candidates;
 use crate::catalog::{Catalog, hash};
+use crate::command::{self, Command};
 use crate::diagnostic::{Diagnostic, Result};
-use crate::state::{Layout, Score, State};
+use crate::state::{Index, Layout, Score, State};
+use crate::transition::Outcome;
 
 pub const ENGINE_VERSION: u32 = 1;
 pub const SNAPSHOT_VERSION: u32 = 2;
 static NEXT_ENGINE: AtomicU64 = AtomicU64::new(1);
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Handle {
+    pub identity: u64,
+    pub generation: u64,
+    pub revision: u64,
+}
+
+pub struct Domain {
+    pub handle: Handle,
+    pub commands: Vec<Command>,
+    pub index: Index,
+}
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
@@ -88,6 +107,8 @@ pub struct Engine {
     pub episode_counts: BTreeMap<String, u64>,
     pub counters: BTreeMap<String, u64>,
     pub seconds: BTreeMap<String, f64>,
+    pub domain: Option<Domain>,
+    pub sort_keys: Cache<Command, Arc<str>>,
 }
 
 impl Engine {
@@ -152,6 +173,8 @@ impl Engine {
             episode_counts: BTreeMap::new(),
             counters: BTreeMap::new(),
             seconds: BTreeMap::new(),
+            domain: None,
+            sort_keys: Cache::new(4096),
         })
     }
 
@@ -174,6 +197,7 @@ impl Engine {
         self.trace.clear();
         self.episode_counts.clear();
         self.generation = generation;
+        self.domain = None;
         Ok(())
     }
 
@@ -288,7 +312,90 @@ impl Engine {
         self.episode_counts = snapshot.episode_counts;
         self.counters = snapshot.counters;
         self.seconds = snapshot.seconds;
+        self.domain = None;
+        self.sort_keys = Cache::new(4096);
         Ok(())
+    }
+
+    pub fn candidates(&mut self) -> Result<(Handle, usize)> {
+        let started = Instant::now();
+        let index = Index::build(&self.catalog, &self.draft)?;
+        let commands = candidates::generate(&self.catalog, &self.config, &self.draft, &index)?;
+        let mut keyed = Vec::with_capacity(commands.len());
+        for command in commands {
+            let key = if let Some(key) = self.sort_keys.get(&command) {
+                *self.counters.entry("sort_cache_hits".into()).or_default() += 1;
+                key.clone()
+            } else {
+                *self.counters.entry("sort_cache_misses".into()).or_default() += 1;
+                let key: Arc<str> = command::canonical(&command.export(&self.catalog)).into();
+                self.sort_keys.insert(command.clone(), key.clone());
+                key
+            };
+            keyed.push((key, command));
+        }
+        keyed.sort_by(|a, b| a.0.cmp(&b.0));
+        let commands: Vec<_> = keyed.into_iter().map(|(_, c)| c).collect();
+        let count = commands.len();
+        *self
+            .counters
+            .entry("candidate_commands".into())
+            .or_default() += count as u64;
+        self.counters
+            .insert("sort_cache_entries".into(), self.sort_keys.len() as u64);
+        *self.seconds.entry("candidates".into()).or_default() += started.elapsed().as_secs_f64();
+        let handle = Handle {
+            identity: self.identity,
+            generation: self.generation,
+            revision: self.revision,
+        };
+        self.domain = Some(Domain {
+            handle,
+            commands,
+            index,
+        });
+        Ok((handle, count))
+    }
+
+    pub fn domain(&self, handle: Handle) -> Result<&Domain> {
+        self.domain
+            .as_ref()
+            .filter(|d| d.handle == handle)
+            .ok_or_else(|| {
+                Diagnostic::new(
+                    "engine.stale_handle",
+                    "engine",
+                    "Candidate handle is stale or belongs to another engine",
+                    None,
+                )
+            })
+    }
+
+    pub fn step(&mut self, handle: Handle, action_index: usize) -> Result<(f64, bool, Outcome)> {
+        let command = self
+            .domain(handle)?
+            .commands
+            .get(action_index)
+            .cloned()
+            .ok_or_else(|| {
+                Diagnostic::new(
+                    "engine.action_index",
+                    "engine",
+                    "Action index is outside the candidate domain",
+                    None,
+                )
+            })?;
+        let trace = command.export(&self.catalog);
+        self.attempt(Ok(command), trace)
+    }
+
+    pub fn export_candidates(&self, handle: Handle) -> Result<Vec<Value>> {
+        Ok(self
+            .domain(handle)?
+            .commands
+            .iter()
+            .map(|c| c.export(&self.catalog))
+            .collect())
     }
 
     pub fn metadata(&self) -> Value {
@@ -301,6 +408,7 @@ impl Engine {
             "network_ids":self.catalog.case.networks.iter().map(|n| &n.id).collect::<Vec<_>>(),
             "terminal_ids":self.catalog.terminals.iter().map(|t| &t.id).collect::<Vec<_>>(),
             "facility_types":self.catalog.types,"recipes":self.catalog.recipes,
+            "operations":self.operation_names(),
         })
     }
 }

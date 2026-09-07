@@ -1,11 +1,16 @@
 //! Native pilot environment and the isolated observation experiment.
 
 mod acceptance;
+mod cache;
+mod candidates;
 mod catalog;
+mod command;
 mod diagnostic;
+mod edits;
 mod engine;
 mod python_engine;
 mod state;
+mod transition;
 
 use std::collections::{HashMap, HashSet};
 
@@ -314,6 +319,7 @@ impl GeometryEncoder {
 
 #[pymodule]
 fn aic_pilot_native(module: &Bound<'_, PyModule>) -> PyResult<()> {
+    module.add_class::<python_engine::PythonHandle>()?;
     module.add_class::<python_engine::PythonEngine>()?;
     module.add_class::<GeometryEncoder>()?;
     Ok(())

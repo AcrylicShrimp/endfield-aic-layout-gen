@@ -15,7 +15,7 @@ pub type Score = [i64; 3];
 pub const ARMS: [Point; 4] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 pub const SIDES: [&str; 4] = ["N", "E", "S", "W"];
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[serde(untagged, deny_unknown_fields)]
 pub enum Binding {
     Port { port: String },
@@ -374,15 +374,28 @@ impl State {
 pub type Arms = BTreeMap<Point, Vec<Point>>;
 
 pub struct Index {
+    pub bodies: Vec<BTreeSet<Point>>,
+    pub occupied: BTreeSet<Point>,
     pub incoming: Vec<Arms>,
     pub outgoing: Vec<Arms>,
+    pub protected: Vec<BTreeSet<Point>>,
+    pub used: Bounds,
 }
 
 impl Index {
     pub fn build(catalog: &Catalog, state: &State) -> Result<Self> {
+        let bodies: Vec<_> = state
+            .poses
+            .iter()
+            .enumerate()
+            .map(|(fi, p)| body(catalog, fi, *p))
+            .collect::<Result<_>>()?;
+        let mut occupied: BTreeSet<_> = bodies.iter().flatten().copied().collect();
         let mut incoming = Vec::new();
         let mut outgoing = Vec::new();
+        let mut protected = vec![BTreeSet::new(); state.networks.len()];
         for (ni, n) in state.networks.iter().enumerate() {
+            occupied.extend(&n.cells);
             let (mut ins, mut outs) = (Arms::new(), Arms::new());
             for &[a, b] in &n.edges {
                 let d = arm(a, b)?;
@@ -401,11 +414,19 @@ impl Index {
                     .entry(cell)
                     .or_default()
                     .push(arm);
+                    protected[ni].insert(cell);
                 }
             }
             incoming.push(ins);
             outgoing.push(outs);
         }
-        Ok(Self { incoming, outgoing })
+        Ok(Self {
+            used: bounds(&occupied)?,
+            bodies,
+            occupied,
+            protected,
+            incoming,
+            outgoing,
+        })
     }
 }

@@ -4,11 +4,13 @@ use std::path::Path;
 
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::{PyDict, PyList};
 use serde::{Serialize, de::DeserializeOwned};
 
 use crate::acceptance::{self, Acceptance};
 use crate::diagnostic::Diagnostic;
-use crate::engine::{Engine, SNAPSHOT_VERSION};
+use crate::engine::{Engine, Handle, SNAPSHOT_VERSION};
+use crate::transition::Outcome;
 
 fn py_error(error: impl std::fmt::Display) -> PyErr {
     PyValueError::new_err(error.to_string())
@@ -25,6 +27,31 @@ fn decode<T: DeserializeOwned>(value: &str, code: &str) -> PyResult<T> {
 #[pyclass(name = "Engine")]
 pub struct PythonEngine {
     pub engine: Engine,
+}
+
+#[pyclass(frozen, name = "CandidateHandle")]
+pub struct PythonHandle {
+    pub value: Handle,
+}
+
+fn outcome<'py>(py: Python<'py>, value: Outcome) -> PyResult<Bound<'py, PyDict>> {
+    let output = PyDict::new(py);
+    output.set_item("applied", value.applied)?;
+    output.set_item("complete", value.complete)?;
+    output.set_item("new_completion", value.new_completion)?;
+    output.set_item("improved", value.improved)?;
+    let diagnostics = PyList::empty(py);
+    for d in value.diagnostics {
+        let item = PyDict::new(py);
+        item.set_item("code", d.code)?;
+        item.set_item("severity", d.severity)?;
+        item.set_item("stage", d.stage)?;
+        item.set_item("message", d.message)?;
+        item.set_item("entity", d.entity)?;
+        diagnostics.append(item)?;
+    }
+    output.set_item("diagnostics", diagnostics)?;
+    Ok(output)
 }
 
 #[pymethods]
@@ -81,5 +108,46 @@ impl PythonEngine {
             ))),
         };
         encode(&result)
+    }
+
+    fn candidates(&mut self) -> PyResult<(PythonHandle, usize)> {
+        self.engine
+            .candidates()
+            .map(|(value, count)| (PythonHandle { value }, count))
+            .map_err(py_error)
+    }
+
+    fn export_candidates_json(&self, handle: &PythonHandle) -> PyResult<String> {
+        encode(
+            &self
+                .engine
+                .export_candidates(handle.value)
+                .map_err(py_error)?,
+        )
+    }
+
+    fn step<'py>(
+        &mut self,
+        py: Python<'py>,
+        handle: &PythonHandle,
+        action_index: usize,
+    ) -> PyResult<(f64, bool, Bound<'py, PyDict>)> {
+        let (reward, done, result) = self
+            .engine
+            .step(handle.value, action_index)
+            .map_err(py_error)?;
+        Ok((reward, done, outcome(py, result)?))
+    }
+
+    fn diagnostic_step_json<'py>(
+        &mut self,
+        py: Python<'py>,
+        command_json: &str,
+    ) -> PyResult<(f64, bool, Bound<'py, PyDict>)> {
+        let (reward, done, result) = self
+            .engine
+            .diagnostic_step(decode(command_json, "command.malformed")?)
+            .map_err(py_error)?;
+        Ok((reward, done, outcome(py, result)?))
     }
 }
