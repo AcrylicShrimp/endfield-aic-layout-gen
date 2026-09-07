@@ -18,6 +18,7 @@ OPERATIONS = ("SET_PLACEMENTS", "UNBIND_TERMINALS", "BIND_TERMINALS", "ERASE_TRA
 
 
 COMMAND_ENCODER = json.JSONEncoder(sort_keys=True)
+ARM_COLUMNS = {arm: i for i, arm in enumerate(DIRECTIONS.values())}
 
 
 class Mechanical(ValueError):
@@ -89,9 +90,38 @@ class Environment:
             raise Mechanical(f"Initial fixture {catalog.path} failed admission: {admission['diagnostics']}")
         self.initial_score = admission["score"]
         self.scale = math.sqrt(self.initial_score[0])
+        self.prepare_catalog_tables()
         self.counters = Counter()
         self.seconds = Counter()
         self.reset()
+
+    def prepare_catalog_tables(self):
+        self.terminal_metadata = {tid: self.catalog.terminal(tid) for tid in self.tids}
+        self.port_offsets = {}
+        for fid in self.fids:
+            definition = self.catalog.facility_type(fid)
+            w, h = definition["footprint"]["width"], definition["footprint"]["height"]
+            for port in definition["ports"]:
+                u, v = port["position"]["x"], port["position"]["y"]
+                for rotation, (x, y) in ((0, (u, v)), (90, (h-1-v, u)),
+                                         (180, (w-1-u, h-1-v)), (270, (v, w-1-u))):
+                    side = SIDES[(SIDES.index(port["edge"][0].upper())+rotation//90) % 4]
+                    dx, dy = DIRECTIONS[side]
+                    self.port_offsets[fid, port["id"], rotation] = (x+dx, y+dy), (-dx, -dy)
+        rows = []
+        for tid in self.tids:
+            nid, role, endpoint = self.terminal_metadata[tid]
+            fid = endpoint.get("facility")
+            ft = self.catalog.facility_type(fid) if fid else None
+            rows.append([float(nid == n) for n in self.nids] + [float(fid == f) for f in self.fids]
+                        + [float("external" in endpoint), float(role == "source"), 0.0]
+                        + [0.0]*6
+                        + [float(self.catalog.rate(nid)/self.catalog.capacity), float(self.catalog.capacity)]
+                        + ([ft["footprint"]["width"]/self.scale, ft["footprint"]["height"]/self.scale] if ft else [0, 0])
+                        + [0.0]*6)
+        self.object_template = np.asarray(rows*2, dtype=np.float32)
+        self.object_template.flags.writeable = False
+        self.object_dynamic_offset = len(self.nids)+len(self.fids)+2
 
     def reset(self):
         self.draft, self.base, self.best = clone(self.root), clone(self.root), clone(self.root)
@@ -114,19 +144,13 @@ class Environment:
             binding = state["bindings"][tid]
         if binding is None:
             return None
-        nid, role, endpoint = self.catalog.terminal(tid)
+        nid, role, endpoint = self.terminal_metadata[tid]
         if "external" in endpoint:
             return tuple(binding["cell"]), DIRECTIONS[binding["side"]]
         fid = endpoint["facility"]
-        f = self.catalog.facility_type(fid)
-        p = next(p for p in f["ports"] if p["id"] == binding["port"])
-        x, y, r = state["placements"][fid]
-        u, v = p["position"]["x"], p["position"]["y"]
-        w, h = f["footprint"]["width"], f["footprint"]["height"]
-        uv = {0: (u, v), 90: (h-1-v, u), 180: (w-1-u, h-1-v), 270: (v, w-1-u)}[r]
-        edge = SIDES[(SIDES.index(p["edge"][0].upper())+r//90) % 4]
-        dx, dy = DIRECTIONS[edge]
-        return (x+uv[0]+dx, y+uv[1]+dy), (-dx, -dy)
+        x, y, rotation = state["placements"][fid]
+        (u, v), direction = self.port_offsets[fid, binding["port"], rotation]
+        return (x+u, y+v), direction
 
     def index(self, state):
         bodies = {fid: self.body(fid, pose) for fid, pose in state["placements"].items()}
@@ -456,7 +480,7 @@ class Environment:
             raise SpatialGuard(f"observation.resource_guard: {width}x{height} exceeds declared raster-work guard")
         per_state = len(self.fids)+len(self.nids)+8+len(self.tids)
         raster = np.zeros((2*per_state+3, height, width), dtype=np.float32)
-        objects = []
+        objects = self.object_template.copy()
         for state_index, (s, index) in enumerate(zip((self.draft, self.base), indexes)):
             offset = state_index*per_state
             bodies, _, ins, outs, _, _ = index
@@ -471,27 +495,27 @@ class Environment:
                     raster[net_offset+ni, y-y0, x-x0] = 1
                     for io, arms in enumerate((ins[nid][x, y], outs[nid][x, y])):
                         for arm in arms:
-                            raster[arm_offset+io*4+list(DIRECTIONS.values()).index(arm), y-y0, x-x0] = 1
+                            raster[arm_offset+io*4+ARM_COLUMNS[arm], y-y0, x-x0] = 1
             for ti, tid in enumerate(self.tids):
                 nid, role, endpoint = self.catalog.terminal(tid)
                 binding = s["bindings"][tid]
                 loc = self.location(s, tid)
                 position = loc[0] if loc else (0, 0)
-                direction = list(DIRECTIONS.values()).index(loc[1]) if loc else -1
+                direction = ARM_COLUMNS[loc[1]] if loc else -1
                 if loc:
                     raster[terminal_offset+ti, position[1]-y0, position[0]-x0] = 1
                 fid = endpoint.get("facility")
                 pose = s["placements"][fid] if fid else [0, 0, 0]
-                ft = self.catalog.facility_type(fid) if fid else None
-                row = ([float(nid == n) for n in self.nids] + [float(fid == f) for f in self.fids]
-                       + [float("external" in endpoint), float(role == "source"), float(binding is not None)]
-                       + [position[0]/self.scale, position[1]/self.scale]
-                       + [float(direction == i) for i in range(4)]
-                       + [float(self.catalog.rate(nid)/self.catalog.capacity), float(self.catalog.capacity)]
-                       + ([ft["footprint"]["width"]/self.scale, ft["footprint"]["height"]/self.scale] if ft else [0, 0])
-                       + [pose[0]/self.scale, pose[1]/self.scale]
-                       + [float(fid is not None and pose[2] == r) for r in (0, 90, 180, 270)])
-                objects.append(row)
+                row = objects[state_index*len(self.tids)+ti]
+                dynamic = self.object_dynamic_offset
+                row[dynamic] = binding is not None
+                row[dynamic+1:dynamic+3] = position[0]/self.scale, position[1]/self.scale
+                if direction >= 0:
+                    row[dynamic+3+direction] = 1
+                row[dynamic+11:dynamic+13] = pose[0]/self.scale, pose[1]/self.scale
+                if fid is not None:
+                    row[dynamic+13+pose[2]//90] = 1
+
         raster[-3] = np.arange(x0, x1+1, dtype=np.float32)[None, :]/self.scale
         raster[-2] = np.arange(y0, y1+1, dtype=np.float32)[:, None]/self.scale
         raster[-1] = 1
@@ -503,7 +527,7 @@ class Environment:
                  self.best_score[1]/self.initial_score[0], self.base_score[1]/self.initial_score[0],
                  self.best_score[2]/self.initial_score[0], self.base_score[2]/self.initial_score[0],
                  sum(b is None for b in self.draft["bindings"].values())/len(self.tids)]
-        observation = {"raster": raster, "objects": np.asarray(objects, dtype=np.float32),
+        observation = {"raster": raster, "objects": objects,
                        "stats": np.asarray(stats, dtype=np.float32),
                        "candidates": np.asarray(features, dtype=np.float32), "points": points}
         cache = self.encode_candidate.cache_info()

@@ -187,3 +187,9 @@ execution path in this slice.
 
 Immutable candidate measurements and remaining actor costs are recorded in
 [the typed candidate report](../../docs/reports/2026-09-08.00-factory-edit-typed-candidate-speed.md).
+
+Runtime-derived terminal features and port rotations are specified in
+[the observation-table contract](../../docs/designs/2026-09-08.00-factory-edit-observation-tables.md).
+`actor_compile_benchmark.py --case <case> --config <config> --input <retained-input.pt>
+--output <fresh-directory>` measures compiled CPU inference, cold cost, numerical agreement
+on every retained shape, and weight refresh. It does not enable compilation in training.

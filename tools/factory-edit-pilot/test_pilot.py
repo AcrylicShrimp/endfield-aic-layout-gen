@@ -327,15 +327,18 @@ class PilotTests(unittest.TestCase):
     def test_observation_categories_do_not_alias_later_observations(self):
         candidates = self.env.candidates()
         first = self.env.observe(candidates)
-        expected = first["candidates"].copy()
-        first["candidates"].fill(-1)
+        expected = {key: value.copy() for key, value in first.items()}
+        for value in first.values():
+            value.fill(-1)
         second = self.env.observe(candidates)
-        np.testing.assert_array_equal(second["candidates"], expected)
+        for key in expected:
+            np.testing.assert_array_equal(second[key], expected[key])
         self.env.step({"op": "UNBIND_TERMINALS", "terminal": "quartz:source"})
         self.env.observe(self.env.candidates())
         self.env.reset()
         third = self.env.observe(self.env.candidates())
-        np.testing.assert_array_equal(third["candidates"], expected)
+        for key in expected:
+            np.testing.assert_array_equal(third[key], expected[key])
 
     def test_completed_cpu_continuation_matches_uninterrupted_training(self):
         config = {**self.config, "device": "cpu", "threads": 1,
