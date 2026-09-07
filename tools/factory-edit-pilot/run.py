@@ -114,7 +114,7 @@ def refresh_actor(learner, actor):
         actor.load_state_dict({key: value.detach().cpu() for key, value in learner.state_dict().items()})
 
 
-def train(catalog, config, config_path, output):
+def train(catalog, config, config_path, output, resume_path=None):
     if (output/"metadata.json").exists():
         raise ValueError(f"Refusing to overwrite existing experiment {output}")
     if config["device"] not in ("cpu", "cuda"):
@@ -148,15 +148,28 @@ def train(catalog, config, config_path, output):
                 "gpu_name": torch.cuda.get_device_name() if config["device"] == "cuda" else None,
                 "update_timing": "synchronized_stage_wall_seconds_including_transfers",
                 "verification": verification, "provenance": provenance(catalog, config_path)}
+    parent_checkpoint = None
+    if resume_path is not None:
+        from resume import load_parent, restore, copy_champion
+        parent_checkpoint, lineage = load_parent(resume_path, catalog, config, metadata["provenance"])
+        restore(parent_checkpoint, model, optimizer, rng)
+        metadata["lineage"] = lineage
+    metadata["timing_scope"] = "current_invocation_only"
+    metadata["resumed_commands"] = parent_checkpoint["commands"] if parent_checkpoint else 0
     write(output/"metadata.json", metadata)
     write(output/"training-best.json", serialize(env.best))
+    if parent_checkpoint:
+        copy_champion(resume_path, output)
     print(json.dumps({"event": "started", "parameters": model.parameter_count, "device": config["device"], "output": str(output)}), flush=True)
     champion_score = list(env.initial_score)
     commands, episode, optimizer_steps = 0, 0, 0
+    if parent_checkpoint:
+        champion_score = list(parent_checkpoint["champion_score"])
+        commands, episode, optimizer_steps = (parent_checkpoint[k] for k in ("commands", "episode", "optimizer_steps"))
     started = time.perf_counter()
     evaluation_seconds, inference_seconds, update_seconds = 0.0, 0.0, 0.0
     snapshot_seconds = 0.0
-    all_counts = Counter()
+    all_counts = Counter(parent_checkpoint["counts"] if parent_checkpoint else {})
 
     def save_checkpoint():
         torch.save({"schema_version": 1, "commands": commands, "episode": episode,
@@ -219,7 +232,7 @@ def train(catalog, config, config_path, output):
             if commands % 2048 == 0:
                 elapsed = time.perf_counter()-started-evaluation_seconds
                 print(json.dumps({"event": "progress", "commands": commands, "episodes": episode,
-                                  "training_seconds": round(elapsed, 2), "commands_per_second": round(commands/max(elapsed, .001), 2),
+                                  "training_seconds": round(elapsed, 2), "commands_per_second": round((commands-metadata["resumed_commands"])/max(elapsed, .001), 2),
                                   "champion_score": champion_score, "positive_reward_commands": all_counts["positive_rewards"]}), flush=True)
             if commands in config["checkpoints"]:
                 save_checkpoint()
@@ -227,6 +240,7 @@ def train(catalog, config, config_path, output):
                 evaluation_seconds += summary["evaluation_seconds"]
                 render(output, catalog)
         metadata.update({"status": "complete", "completed_commands": commands, "episodes": episode,
+                         "segment_commands": commands-metadata["resumed_commands"],
                          "optimizer_steps": optimizer_steps, "training_seconds": time.perf_counter()-started-evaluation_seconds,
                          "evaluation_seconds": evaluation_seconds, "inference_seconds": inference_seconds,
                          "update_seconds": update_seconds, "environment_seconds": dict(env.seconds),
@@ -266,6 +280,7 @@ def main():
     parser.add_argument("--case", required=True, type=Path)
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--resume", type=Path, help="Continue a trusted completed CPU run final checkpoint")
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[2])
     args = parser.parse_args()
     catalog = Catalog(args.root.resolve(), args.case.resolve())
@@ -273,9 +288,11 @@ def main():
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     if args.command == "check":
+        if args.resume is not None:
+            parser.error("--resume is only valid with train")
         print(json.dumps(verify_environment(catalog, config, output), indent=2))
     else:
-        train(catalog, config, args.config, output)
+        train(catalog, config, args.config, output, args.resume)
 
 
 if __name__ == "__main__":

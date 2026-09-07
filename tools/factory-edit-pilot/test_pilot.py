@@ -251,6 +251,61 @@ class PilotTests(unittest.TestCase):
         self.assertTrue(all(p.device.type == "cpu" for p in actor.parameters()))
         actor.act(rollout["observations"][0], torch.Generator().manual_seed(19))
 
+    def test_completed_cpu_continuation_matches_uninterrupted_training(self):
+        config = {**self.config, "device": "cpu", "threads": 1,
+                  "horizon": 8, "commands": 32, "rollout_commands": 16, "epochs": 1,
+                  "minibatch": 8, "checkpoints": [0, 16, 32], "evaluation_seeds": 2}
+        (ROOT/"target").mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=ROOT/"target") as temporary:
+            root = Path(temporary)
+            def run(name, settings, parent=None):
+                output = root/name
+                output.mkdir()
+                path = output/"config.json"
+                path.write_text(json.dumps(settings))
+                with patch("torch.set_num_interop_threads"), patch("plots.render"), redirect_stdout(io.StringIO()):
+                    runner.train(self.catalog, settings, path, output, parent)
+                return output
+            full = run("full", config)
+            first = run("first", {**config, "commands": 16, "checkpoints": [0, 16]})
+            parent = first/"checkpoint-16.pt"
+            continuation = {**config, "checkpoints": [16, 32]}
+            second = run("second", continuation, parent)
+            a = torch.load(full/"checkpoint-32.pt", weights_only=False)
+            b = torch.load(second/"checkpoint-32.pt", weights_only=False)
+            def equal(a, b):
+                if isinstance(a, torch.Tensor):
+                    self.assertTrue(torch.equal(a, b))
+                elif isinstance(a, np.ndarray):
+                    np.testing.assert_array_equal(a, b)
+                elif isinstance(a, dict):
+                    self.assertEqual(a.keys(), b.keys())
+                    for key in a:
+                        equal(a[key], b[key])
+                elif isinstance(a, (tuple, list)):
+                    self.assertEqual(len(a), len(b))
+                    for x, y in zip(a, b):
+                        equal(x, y)
+                else:
+                    self.assertEqual(a, b)
+            for key in ("policy", "optimizer", "torch_rng", "numpy_rng", "numpy_legacy_rng", "python_rng",
+                        "commands", "episode", "optimizer_steps", "counts", "champion_score"):
+                equal(a[key], b[key])
+            self.assertEqual((full/"episodes.jsonl").read_text(),
+                             (first/"episodes.jsonl").read_text()+(second/"episodes.jsonl").read_text())
+            metadata = json.loads((second/"metadata.json").read_text())
+            self.assertEqual(metadata["resumed_commands"], 16)
+            self.assertEqual(metadata["segment_commands"], 16)
+            with self.assertRaisesRegex(ValueError, "configuration changed"):
+                run("invalid-config", {**continuation, "learning_rate": .001}, parent)
+            with self.assertRaisesRegex(ValueError, "final checkpoint"):
+                run("invalid-checkpoint", continuation, first/"checkpoint-0.pt")
+            altered = json.loads((first/"metadata.json").read_text())
+            altered["provenance"]["files_sha256"]["tools/factory-edit-pilot/environment.py"] = "changed"
+            (first/"metadata.json").write_text(json.dumps(altered))
+            with self.assertRaisesRegex(ValueError, "semantic/catalog hash changed"):
+                run("invalid-semantics", continuation, parent)
+
     def test_runner_preserves_interruption_diagnostics(self):
         config = {**self.config, "device": "cpu", "threads": 2,
                   "horizon": 8, "commands": 16, "rollout_commands": 16, "epochs": 1,

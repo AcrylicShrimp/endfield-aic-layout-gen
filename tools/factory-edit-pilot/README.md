@@ -111,3 +111,19 @@ training-best, and scripted witness layouts with independent complete scores. A 
 explicitly labeled as unlearned. A flat curve remains a reportable first result.
 
 The completed [same-server report](../../docs/reports/2026-09-07.02-server-cpu-cuda-pilot.md) separates update throughput from final learned quality. `compare.py --runs <cpu-run> <cuda-run> --output <comparison-directory>` renders the paired outcome, reward, and timing evidence.
+
+## Continue a completed CPU run
+
+`run.py train --resume <trusted-final-checkpoint.pt>` restores the completed parent's policy,
+Adam optimizer, training RNG states, counters, and retained champion. The new configuration
+may change only total commands and evaluation checkpoints. Every episode still starts from
+the original factory. Interrupted or intermediate checkpoints, semantic changes, and runtime
+changes are rejected. See the [continuation contract](../../docs/designs/2026-09-07.04-fixed-factory-continuation.md).
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/run.py train --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run-server-cpu-continue.json --resume artifacts/factory-edit-pilot/server-cpu-t16-seed17/checkpoint-65536.pt --output artifacts/factory-edit-pilot/server-cpu-t16-seed17-continue
+```
+
+Episode/command/update counters are cumulative; raw rows and timing fields cover only the new
+segment. Metadata records `resumed_commands`, `segment_commands`, `timing_scope`, and checkpoint
+lineage including inherited training time. Keep the parent directory alongside its continuation.
