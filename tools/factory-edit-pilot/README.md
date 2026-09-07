@@ -193,3 +193,6 @@ Runtime-derived terminal features and port rotations are specified in
 `actor_compile_benchmark.py --case <case> --config <config> --input <retained-input.pt>
 --output <fresh-directory>` measures compiled CPU inference, cold cost, numerical agreement
 on every retained shape, and weight refresh. It does not enable compilation in training.
+
+[Observation-table measurements](../../docs/reports/2026-09-08.01-factory-edit-observation-tables.md)
+separate fixed-input gains, a slower full sampled run, and compiled actor amortization.
