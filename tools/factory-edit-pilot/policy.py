@@ -3,6 +3,7 @@
 import numpy as np
 import torch
 from torch import nn
+import time
 
 
 def batch(observations):
@@ -104,11 +105,15 @@ def update(model, optimizer, rollout, config, rng):
     advantage = (advantage-advantage.mean())/(advantage.std()+1e-8)
     totals = {"policy_loss": 0.0, "value_loss": 0.0, "entropy": 0.0, "approx_kl": 0.0, "gradient_norm": 0.0}
     batches = 0
+    seconds = {key: 0.0 for key in ("batch", "forward_loss", "backward", "optimizer")}
     for _ in range(config["epochs"]):
         permutation = rng.permutation(len(advantage))
         for start in range(0, len(advantage), config["minibatch"]):
             indices = permutation[start:start+config["minibatch"]]
+            started = time.perf_counter()
             data = batch([rollout["observations"][i] for i in indices])
+            seconds["batch"] += time.perf_counter()-started
+            started = time.perf_counter()
             logits, value = model(data)
             log_probs = logits.log_softmax(-1)
             selected = torch.tensor([rollout["actions"][i] for i in indices], dtype=torch.long)
@@ -123,12 +128,18 @@ def update(model, optimizer, rollout, config, rng):
             if not torch.isfinite(loss):
                 raise RuntimeError("learning.nonfinite_loss: PPO loss is not finite")
             optimizer.zero_grad(set_to_none=True)
+            seconds["forward_loss"] += time.perf_counter()-started
+            started = time.perf_counter()
             loss.backward()
+            seconds["backward"] += time.perf_counter()-started
+            started = time.perf_counter()
             grad = torch.nn.utils.clip_grad_norm_(model.parameters(), config["gradient_norm"], error_if_nonfinite=True)
             optimizer.step()
+            seconds["optimizer"] += time.perf_counter()-started
             values = {"policy_loss": policy_loss.item(), "value_loss": value_loss.item(), "entropy": entropy.item(),
                       "approx_kl": ((ratio-1)-(log_prob-old)).mean().item(), "gradient_norm": float(grad)}
             for key in totals:
                 totals[key] += values[key]
             batches += 1
-    return {**{key: value/batches for key, value in totals.items()}, "optimizer_steps": batches}
+    return {**{key: value/batches for key, value in totals.items()}, "optimizer_steps": batches,
+            "seconds": seconds}

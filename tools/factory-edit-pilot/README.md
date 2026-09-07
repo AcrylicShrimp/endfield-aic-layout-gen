@@ -24,6 +24,12 @@ geometry and complete external obligations define this overfit task. It includes
 witness for environment checks only. `run.json` is the prospective run configuration. Neither
 file is a generated solver/training result. No historical run artifact is a required input.
 
+The current CPU default is four PyTorch intra-operation threads, selected by a local timing
+comparison; the first published result used one. Inter-operation threads remain one. This
+keeps PyTorch's standard convolutions, autograd, model size, PPO settings, and command budgets.
+`updates.jsonl` now separates batch preparation, forward/loss, backward, and optimizer time.
+See the [CPU timing report](../../docs/reports/2026-09-07.01-factory-edit-cpu-speed.md).
+
 From the repository root:
 
 ```sh
@@ -39,6 +45,18 @@ raw episode/evaluation/update rows, complete checkpoint state, selected layouts/
 plots. Disposable preflight output and retained experiment evidence are ignored under `artifacts/`.
 Checkpoints may include non-replayable interrupted rollout state; do not delete them on the
 assumption that a seed can restore an interrupted stream.
+
+To select CPU threads on another host, supply a trusted local checkpoint as an explicit input:
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/benchmark.py --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run.json --checkpoint artifacts/factory-edit-pilot/cpu-100898-seed17/checkpoint-65536.pt --threads 1 2 4 8 --repeats 3 --output artifacts/factory-edit-pilot/thread-benchmark
+```
+
+This records one fixed sampled rollout, resets model/Adam/minibatch RNG before each update
+measurement, excludes a warm-up round, alternates setting order, and reports median times.
+It retains the exact input tensors under the ignored output directory. Optional `--channels-last`
+and `--convolution unfold` / `view-unfold` are benchmark-only experiments; training uses standard
+PyTorch Conv2d and autograd. Neither alternate convolution is selected by `run.json`.
 
 Independent acceptance of an exported factory, without running the environment or policy:
 

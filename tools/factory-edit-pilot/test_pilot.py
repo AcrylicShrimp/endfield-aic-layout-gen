@@ -191,7 +191,8 @@ class PilotTests(unittest.TestCase):
             if done:
                 env.reset()
         result = update(model, optimizer, rollout, config, np.random.default_rng(7))
-        self.assertTrue(all(np.isfinite(v) for v in result.values()))
+        self.assertTrue(all(np.isfinite(v) for k, v in result.items() if k != "seconds"))
+        self.assertTrue(all(np.isfinite(v) and v >= 0 for v in result["seconds"].values()))
         self.assertGreater(result["gradient_norm"], 0)
         self.assertTrue(any(not torch.equal(v, before[k]) for k, v in model.state_dict().items()))
 
