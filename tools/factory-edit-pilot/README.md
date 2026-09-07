@@ -196,3 +196,8 @@ on every retained shape, and weight refresh. It does not enable compilation in t
 
 [Observation-table measurements](../../docs/reports/2026-09-08.01-factory-edit-observation-tables.md)
 separate fixed-input gains, a slower full sampled run, and compiled actor amortization.
+
+`collection_benchmark.py --case <case> --config <config> --input <retained-input.pt>
+--output <fresh-directory>` probes complete serial/batched collection with replay and acceptance.
+[The measured decision](../../docs/reports/2026-09-08.02-factory-edit-batched-collection-probe.md)
+keeps runner integration separate from the [collection contract](../../docs/designs/2026-09-08.01-factory-edit-batched-collection.md).
