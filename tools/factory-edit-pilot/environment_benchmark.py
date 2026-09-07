@@ -17,9 +17,10 @@ from environment import Environment, serialize
 from run import provenance, write
 
 
-def replay(environment, catalog, config, rollout):
+def replay(environment, catalog, config, rollout, reset_caches=False):
     env = environment(catalog, config)
     rows = []
+    cache_hits, cache_misses = 0, 0
     started = time.perf_counter()
     for selected in rollout["actions"]:
         candidates = env.candidates()
@@ -28,9 +29,23 @@ def replay(environment, catalog, config, rollout):
         rows.append((candidates, observation, result))
         if result[1]:
             env.reset()
+            if reset_caches:
+                if hasattr(env, "encode_candidate"):
+                    info = env.encode_candidate.cache_info()
+                    cache_hits += info.hits
+                    cache_misses += info.misses
+                    env.encode_candidate.cache_clear()
+                    env.sort_keys.clear()
+                if hasattr(env, "feature_templates"):
+                    env.feature_templates.clear()
     elapsed = time.perf_counter()-started
     states = [serialize(s) for s in (env.draft, env.base, env.best)]
-    return rows, states, elapsed, dict(env.seconds), dict(env.counters)
+    counts = dict(env.counters)
+    if hasattr(env, "encode_candidate"):
+        info = env.encode_candidate.cache_info()
+        counts.update(encoding_cache_hits=cache_hits+info.hits, encoding_cache_misses=cache_misses+info.misses,
+                      encoding_cache_entries=info.currsize, sort_cache_entries=len(env.sort_keys))
+    return rows, states, elapsed, dict(env.seconds), counts
 
 
 def compare_rows(actual, expected, recorded):
@@ -52,6 +67,7 @@ def main():
     parser.add_argument("--input", type=Path, nargs="+", required=True)
     parser.add_argument("--reference-source", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--reset-caches-per-episode", action="store_true", help="Measure reuse within an episode only")
     parser.add_argument("--repeats", type=int, default=3)
     args = parser.parse_args()
     if args.output.exists() or args.repeats < 1:
@@ -71,7 +87,7 @@ def main():
             results = {}
             implementations = [("reference", reference.Environment), ("current", Environment)]
             for label, implementation in implementations[::1 if repeat % 2 == 0 else -1]:
-                result = replay(implementation, catalog, config, rollout)
+                result = replay(implementation, catalog, config, rollout, args.reset_caches_per_episode)
                 results[label] = result
                 rows.append({"input": str(path), "implementation": label, "repeat": repeat,
                              "warmup": repeat == 0, "seconds": result[2], "environment_seconds": result[3],
@@ -82,6 +98,7 @@ def main():
                 if row["input"] == str(path) and row["implementation"] == label and not row["warmup"])
                 for label in ("reference", "current")}} for path in args.input]
     write(args.output/"result.json", {"schema_version": 1, "reference_source": args.reference_source,
+                                     "cache_scope": "episode" if args.reset_caches_per_episode else "environment_lifetime",
                                      "reference_sha256": hashlib.sha256(source.encode()).hexdigest(),
                                      "input_sha256": {str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in args.input},
                                      "provenance": provenance(catalog, args.config), "parity": "bit_exact",

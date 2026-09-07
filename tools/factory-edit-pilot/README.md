@@ -162,3 +162,9 @@ For fixed-input comparisons, `benchmark.py --reference-update <trusted-commit>` 
 and current update implementations with identical model/Adam/data/minibatch states.
 `rollout_benchmark.py --reference-policy <trusted-commit>` similarly isolates actor inference
 while replaying the same environment sequence. See the [preparation contract](../../docs/designs/2026-09-07.06-factory-edit-feature-reuse.md).
+
+The [profile-guided preparation report](../../docs/reports/2026-09-07.05-factory-edit-data-preparation-speed.md)
+compares exact-input cost reductions with observed full-run time and memory. `costs.py --runs
+<before-run> <after-run> --output <fresh-directory>` produces a non-overlapping cost report.
+For a conservative within-episode reuse check, add `--reset-caches-per-episode` to the environment
+benchmark; it clears both LRUs and category templates at every episode boundary.
