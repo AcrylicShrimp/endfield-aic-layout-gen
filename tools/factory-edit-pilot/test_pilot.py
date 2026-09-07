@@ -15,7 +15,7 @@ import torch
 
 from acceptance import Catalog, Invalid, check, port_geometry
 from environment import Environment, serialize
-from policy import Policy, advantages, batch, update
+from policy import Policy, advantages, batch, single, update, PreparedRollout
 from run import refresh_actor
 import run as runner
 
@@ -196,7 +196,7 @@ class PilotTests(unittest.TestCase):
             if done:
                 env.reset()
         result = update(model, optimizer, rollout, config, np.random.default_rng(7))
-        self.assertTrue(all(np.isfinite(v) for k, v in result.items() if k != "seconds"))
+        self.assertTrue(all(np.isfinite(v) for k, v in result.items() if k not in ("seconds", "preparation")))
         self.assertTrue(all(np.isfinite(v) and v >= 0 for v in result["seconds"].values()))
         self.assertGreater(result["gradient_norm"], 0)
         self.assertTrue(any(not torch.equal(v, before[k]) for k, v in model.state_dict().items()))
@@ -242,7 +242,7 @@ class PilotTests(unittest.TestCase):
             if done:
                 env.reset()
         metrics = update(learner, optimizer, rollout, config, np.random.default_rng(7))
-        self.assertTrue(all(np.isfinite(v) for k, v in metrics.items() if k != "seconds"))
+        self.assertTrue(all(np.isfinite(v) for k, v in metrics.items() if k not in ("seconds", "preparation")))
         self.assertGreater(metrics["gradient_norm"], 0)
         self.assertTrue(all(torch.equal(value, before[key]) for key, value in actor.state_dict().items()))
         refresh_actor(learner, actor)
@@ -250,6 +250,69 @@ class PilotTests(unittest.TestCase):
         self.assertTrue(all(torch.equal(value, learner.state_dict()[key].cpu()) for key, value in actor.state_dict().items()))
         self.assertTrue(all(p.device.type == "cpu" for p in actor.parameters()))
         actor.act(rollout["observations"][0], torch.Generator().manual_seed(19))
+
+    def test_prepared_rollout_preserves_minibatch_shapes_values_and_budget(self):
+        observations = [self.env.observe(self.env.candidates())]
+        self.execute([{"op": "UNBIND_TERMINALS", "terminal": "quartz:source"},
+                      {"op": "EXTEND", "network": "quartz", "anchor": [1, 19], "growth": "backward", "direction": "W", "length": 2}])
+        observations.append(self.env.observe(self.env.candidates()))
+        rollout = {"observations": observations, "actions": [0, 1], "log_probs": [-1.0, -2.0]}
+        advantage = np.array([.25, -.25], dtype=np.float32)
+        returns = np.array([.5, 0], dtype=np.float32)
+        prepared = PreparedRollout(rollout, advantage, returns, torch.device("cpu"))
+        for indices in (np.array([0]), np.array([1]), np.array([1, 0])):
+            selected = prepared.select(indices)
+            expected = batch([observations[i] for i in indices])
+            for key, value in expected.items():
+                self.assertEqual(selected[key].shape, value.shape)
+                self.assertEqual(selected[key].dtype, value.dtype)
+                self.assertTrue(torch.equal(selected[key], value))
+            self.assertTrue(torch.equal(selected["advantage"], torch.from_numpy(advantage[indices])))
+            self.assertTrue(torch.equal(selected["returns"], torch.from_numpy(returns[indices])))
+        self.assertEqual(sum(v.numel()*v.element_size() for v in prepared.tensors.values()), prepared.estimated_bytes)
+        limited = PreparedRollout(rollout, advantage, returns, torch.device("cpu"), maximum_bytes=1)
+        self.assertIsNone(limited.tensors)
+
+    def test_canonical_command_cache_eviction_preserves_json_order(self):
+        first = {"op": "EXTEND", "network": self.env.nids[0], "anchor": [0, 0],
+                 "growth": "forward", "direction": "N", "length": 1}
+        expected = json.dumps(first, sort_keys=True)
+        self.assertEqual(self.env.canonical_command_key(first), expected)
+        for x in range(1, 4200):
+            command = {**first, "anchor": [x, 0]}
+            self.assertEqual(self.env.canonical_command_key(command), json.dumps(command, sort_keys=True))
+        self.assertEqual(len(self.env.sort_keys), 4096)
+        self.assertEqual(self.env.canonical_command_key(first), expected)
+        candidates = self.env.candidates()
+        self.assertEqual(candidates, sorted(candidates, key=lambda c: json.dumps(c, sort_keys=True)))
+
+    def test_candidate_encoding_eviction_preserves_observation(self):
+        candidates = self.env.candidates()
+        before = self.env.observe(candidates)
+        categories = ("EXTEND", None, None, self.env.nids[0], None, "N", "forward", -1)
+        original = self.env.encode_candidate(categories, (0, 0), (0, -1), 1, 0)
+        self.assertFalse(original.flags.writeable)
+        for x in range(1, 4200):
+            self.env.encode_candidate(categories, (x, 0), (x, -1), 1, 0)
+        self.assertEqual(self.env.encode_candidate.cache_info().currsize, 4096)
+        np.testing.assert_array_equal(original, self.env.encode_candidate(categories, (0, 0), (0, -1), 1, 0))
+        after = self.env.observe(candidates)
+        for key in before:
+            np.testing.assert_array_equal(before[key], after[key])
+
+    def test_single_observation_view_matches_padded_batch_without_mutation(self):
+        observation = self.env.observe(self.env.candidates())
+        before = {key: value.copy() for key, value in observation.items()}
+        model = Policy(observation)
+        view, padded = single(observation), batch([observation])
+        for key in padded:
+            self.assertTrue(torch.equal(view[key], padded[key]))
+        with torch.no_grad():
+            for actual, expected in zip(model(view), model(padded)):
+                torch.testing.assert_close(actual, expected, atol=0, rtol=0)
+        model.act(observation, torch.Generator().manual_seed(7))
+        for key in before:
+            np.testing.assert_array_equal(before[key], observation[key])
 
     def test_observation_categories_do_not_alias_later_observations(self):
         candidates = self.env.candidates()

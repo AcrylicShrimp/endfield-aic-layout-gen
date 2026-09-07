@@ -30,7 +30,7 @@ def replay(environment, catalog, config, rollout):
             env.reset()
     elapsed = time.perf_counter()-started
     states = [serialize(s) for s in (env.draft, env.base, env.best)]
-    return rows, states, elapsed, dict(env.seconds)
+    return rows, states, elapsed, dict(env.seconds), dict(env.counters)
 
 
 def compare_rows(actual, expected, recorded):
@@ -74,7 +74,8 @@ def main():
                 result = replay(implementation, catalog, config, rollout)
                 results[label] = result
                 rows.append({"input": str(path), "implementation": label, "repeat": repeat,
-                             "warmup": repeat == 0, "seconds": result[2], "environment_seconds": result[3]})
+                             "warmup": repeat == 0, "seconds": result[2], "environment_seconds": result[3],
+                             "environment_counters": result[4]})
             compare_rows(results["current"], results["reference"], rollout)
         print(json.dumps({"input": str(path), "commands": len(rollout["actions"]), "parity": "bit_exact"}), flush=True)
     summary = [{"input": str(path), **{label: statistics.median(row["seconds"] for row in rows

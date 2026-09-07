@@ -142,3 +142,23 @@ Its optional `--deterministic` requests deterministic PyTorch/cuDNN algorithms a
 cuBLAS workspace configuration when absent. This is a diagnostic setting; the training runner
 keeps its prior default. Exact repeatability within CUDA does not imply CPU/CUDA bit equality
 or successful learning.
+
+## Reuse data preparation work
+
+CUDA PPO updates now prepare a collected rollout once and reuse its tensors across epochs.
+Each sampled minibatch is cropped to its original maximum raster/candidate dimensions before
+selection, preserving samples, ordering, values, and neural workload. Prepared tensor payloads
+are bounded to 1 GiB; larger estimates use ordinary minibatch preparation and report that mode.
+CPU updates keep ordinary minibatch construction. `updates.jsonl` records `preparation.mode`
+and `estimated_rollout_bytes`; all preparation/selection time remains charged to `seconds.batch`.
+
+The environment uses separate 4,096-entry LRU caches for exact typed-command JSON sort strings
+and pure candidate encodings. Keys include all relevant fields/coordinates; mutable geometry
+and validation results are never cached. Eviction changes only computation cost. Global
+`environment_counters` record cache hits, misses, and current entries. Observation arrays own
+copies of cached encodings. CPU single-observation inference uses read-only tensor views.
+
+For fixed-input comparisons, `benchmark.py --reference-update <trusted-commit>` alternates old
+and current update implementations with identical model/Adam/data/minibatch states.
+`rollout_benchmark.py --reference-policy <trusted-commit>` similarly isolates actor inference
+while replaying the same environment sequence. See the [preparation contract](../../docs/designs/2026-09-07.06-factory-edit-feature-reuse.md).

@@ -30,6 +30,12 @@ def batch(observations):
             "stats": torch.from_numpy(np.stack([o["stats"] for o in observations]))}
 
 
+def single(observation):
+    """Read-only zero-copy input views; the forward pass never modifies observations."""
+    return {**{key: torch.from_numpy(value).unsqueeze(0) for key, value in observation.items()},
+            "mask": torch.ones((1, len(observation["candidates"])), dtype=torch.bool)}
+
+
 class Policy(nn.Module):
     def __init__(self, example):
         super().__init__()
@@ -77,7 +83,7 @@ class Policy(nn.Module):
 
     @torch.no_grad()
     def act(self, observation, generator=None):
-        logits, values = self(batch([observation]))
+        logits, values = self(single(observation))
         log_probs = logits.log_softmax(-1)
         selected = torch.multinomial(log_probs.exp()[0], 1, generator=generator).item()
         return selected, log_probs[0, selected].item(), values[0].item()
@@ -99,6 +105,41 @@ def advantages(rewards, values, dones, last_value, gamma, lam):
     return result, result+np.asarray(values, dtype=np.float32)
 
 
+class PreparedRollout:
+    """A bounded device copy, cropped back to each unchanged minibatch's exact shape."""
+
+    def __init__(self, rollout, advantage, returns, device, maximum_bytes=1 << 30):
+        observations = rollout["observations"]
+        self.extents = np.asarray([(o["raster"].shape[1], o["raster"].shape[2], len(o["candidates"]))
+                                   for o in observations])
+        h, w, n = self.extents.max(axis=0).tolist()
+        first = observations[0]
+        count = len(observations)
+        self.estimated_bytes = count*(first["raster"].shape[0]*h*w*4
+                                     + n*(first["candidates"].shape[1]*4+4*8+1)
+                                     + first["objects"].nbytes+first["stats"].nbytes+8+3*4)
+        self.tensors = None
+        if self.estimated_bytes <= maximum_bytes:
+            self.tensors = {key: value.to(device) for key, value in batch(observations).items()}
+            self.tensors.update(actions=torch.tensor(rollout["actions"], dtype=torch.long, device=device),
+                                old=torch.tensor(rollout["log_probs"], device=device),
+                                advantage=torch.from_numpy(advantage).to(device),
+                                returns=torch.from_numpy(returns).to(device))
+
+    def select(self, indices):
+        h, w, n = self.extents[indices].max(axis=0).tolist()
+        device = self.tensors["raster"].device
+        selection = torch.as_tensor(indices, device=device)
+        result = {}
+        for key, value in self.tensors.items():
+            if key == "raster":
+                value = value[:, :, :h, :w]
+            elif key in ("candidates", "points", "mask"):
+                value = value[:, :n]
+            result[key] = value.index_select(0, selection)
+        return result
+
+
 def update(model, optimizer, rollout, config, rng):
     device = next(model.parameters()).device
 
@@ -114,17 +155,26 @@ def update(model, optimizer, rollout, config, rng):
     totals = {"policy_loss": 0.0, "value_loss": 0.0, "entropy": 0.0, "approx_kl": 0.0, "gradient_norm": 0.0}
     batches = 0
     seconds = {key: 0.0 for key in ("batch", "forward_loss", "backward", "optimizer")}
+    prepared = None
+    if device.type == "cuda":
+        started = time.perf_counter()
+        prepared = PreparedRollout(rollout, advantage, returns, device)
+        seconds["batch"] += completed_time()-started
     for _ in range(config["epochs"]):
         permutation = rng.permutation(len(advantage))
         for start in range(0, len(advantage), config["minibatch"]):
             indices = permutation[start:start+config["minibatch"]]
             started = time.perf_counter()
-            data = batch([rollout["observations"][i] for i in indices])
-            data = {key: value.to(device) for key, value in data.items()}
-            selected = torch.tensor([rollout["actions"][i] for i in indices], dtype=torch.long, device=device)
-            old = torch.tensor([rollout["log_probs"][i] for i in indices], device=device)
-            adv = torch.from_numpy(advantage[indices]).to(device)
-            target = torch.from_numpy(returns[indices]).to(device)
+            if prepared is not None and prepared.tensors is not None:
+                data = prepared.select(indices)
+                selected, old, adv, target = (data[k] for k in ("actions", "old", "advantage", "returns"))
+            else:
+                data = batch([rollout["observations"][i] for i in indices])
+                data = {key: value.to(device) for key, value in data.items()}
+                selected = torch.tensor([rollout["actions"][i] for i in indices], dtype=torch.long, device=device)
+                old = torch.tensor([rollout["log_probs"][i] for i in indices], device=device)
+                adv = torch.from_numpy(advantage[indices]).to(device)
+                target = torch.from_numpy(returns[indices]).to(device)
             seconds["batch"] += completed_time()-started
             started = time.perf_counter()
             logits, value = model(data)
@@ -152,4 +202,6 @@ def update(model, optimizer, rollout, config, rng):
                 totals[key] += values[key]
             batches += 1
     return {**{key: value/batches for key, value in totals.items()}, "optimizer_steps": batches,
-            "seconds": seconds}
+            "seconds": seconds,
+            "preparation": {"mode": "rollout_device" if prepared is not None and prepared.tensors is not None else "minibatch",
+                            "estimated_rollout_bytes": prepared.estimated_bytes if prepared is not None else 0}}

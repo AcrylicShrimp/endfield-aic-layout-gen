@@ -8,7 +8,8 @@ import os
 from pathlib import Path
 import statistics
 import time
-from types import MethodType
+from types import MethodType, ModuleType
+import subprocess
 
 import numpy as np
 import torch
@@ -45,6 +46,7 @@ def main():
     parser.add_argument("--actor-threads", type=int, help="CPU inference threads, defaulting to each measured update setting")
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu", help="PPO learner device; action sampling stays on CPU")
+    parser.add_argument("--reference-update", help="Trusted historical policy source for a fixed-input update comparison")
     parser.add_argument("--deterministic", action="store_true", help="Diagnose repeatability with deterministic PyTorch algorithms")
     parser.add_argument("--channels-last", action="store_true")
     parser.add_argument("--convolution", choices=("native", "unfold", "view-unfold"), default="native")
@@ -100,40 +102,53 @@ def main():
     torch.save({"rollout": rollout, "policy": state, "optimizer": checkpoint["optimizer"]}, args.output/"input.pt")
     actor = deepcopy(model) if args.device == "cuda" else model
     model.to(args.device)
+    variants = [("current", update)]
+    reference_hash = None
+    if args.reference_update:
+        source = subprocess.run(["git", "show", f"{args.reference_update}:tools/factory-edit-pilot/policy.py"],
+                                cwd=catalog.root, capture_output=True, text=True, check=True).stdout
+        reference = ModuleType("reference_policy")
+        exec(compile(source, "reference_policy.py", "exec"), reference.__dict__)
+        variants.insert(0, ("reference", reference.update))
+        reference_hash = hashlib.sha256(source.encode()).hexdigest()
     rows = []
     first_parameters = {}
     # Alternate order each round; the first round warms each setting and is excluded.
     for repeat in range(args.repeats+1):
         for threads in args.threads[::1 if repeat % 2 == 0 else -1]:
-            torch.set_num_threads(threads)
-            model.load_state_dict(state)
-            optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
-            optimizer.load_state_dict(deepcopy(checkpoint["optimizer"]))
-            started = time.perf_counter()
-            metrics = update(model, optimizer, rollout, config, np.random.default_rng(700017))
-            elapsed = time.perf_counter()-started
-            started = time.perf_counter()
-            refresh_actor(model, actor)
-            snapshot_seconds = time.perf_counter()-started
-            torch.set_num_threads(args.actor_threads or threads)
-            started = time.perf_counter()
-            for observation in rollout["observations"]:
-                actor.act(observation, generator)
-            row = {"threads": threads, "warmup": repeat == 0, "repeat": repeat,
-                   "actor_threads": args.actor_threads or threads,
-                   "update_seconds": elapsed, "inference_seconds": time.perf_counter()-started,
-                   "snapshot_seconds": snapshot_seconds,
-                   "metrics": metrics}
-            # Outside measured clocks: detect repeatability of the identical update,
-            # separately for each thread setting. Retain the first result, including warm-up.
-            parameters = {key: value.detach().cpu().clone() for key, value in model.state_dict().items()}
-            previous = first_parameters.setdefault(threads, parameters)
-            row["parameter_sha256"] = hashlib.sha256(b"".join(value.numpy().tobytes() for value in parameters.values())).hexdigest()
-            row["max_parameter_difference_from_first"] = max(float((value-previous[key]).abs().max()) for key, value in parameters.items())
-            rows.append(row)
-            print(json.dumps(row), flush=True)
-    summary = [{"threads": t, **{key: statistics.median(row[key] for row in rows if row["threads"] == t and not row["warmup"])
-                                  for key in ("update_seconds", "inference_seconds", "snapshot_seconds")}} for t in args.threads]
+            for label, update_function in variants[::1 if repeat % 2 == 0 else -1]:
+                torch.set_num_threads(threads)
+                model.load_state_dict(state)
+                optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
+                optimizer.load_state_dict(deepcopy(checkpoint["optimizer"]))
+                started = time.perf_counter()
+                metrics = update_function(model, optimizer, rollout, config, np.random.default_rng(700017))
+                elapsed = time.perf_counter()-started
+                started = time.perf_counter()
+                refresh_actor(model, actor)
+                snapshot_seconds = time.perf_counter()-started
+                torch.set_num_threads(args.actor_threads or threads)
+                started = time.perf_counter()
+                for observation in rollout["observations"]:
+                    actor.act(observation, generator)
+                row = {"threads": threads, "implementation": label, "warmup": repeat == 0, "repeat": repeat,
+                       "actor_threads": args.actor_threads or threads,
+                       "update_seconds": elapsed, "inference_seconds": time.perf_counter()-started,
+                       "snapshot_seconds": snapshot_seconds,
+                       "metrics": metrics}
+                # Outside measured clocks: detect repeatability of the identical update,
+                # separately for each thread setting. Retain the first result, including warm-up.
+                parameters = {key: value.detach().cpu().clone() for key, value in model.state_dict().items()}
+                previous = first_parameters.setdefault((threads, label), parameters)
+                row["parameter_sha256"] = hashlib.sha256(b"".join(value.numpy().tobytes() for value in parameters.values())).hexdigest()
+                row["max_parameter_difference_from_first"] = max(float((value-previous[key]).abs().max()) for key, value in parameters.items())
+                rows.append(row)
+                print(json.dumps(row), flush=True)
+    summary = [{"threads": t, "implementation": label,
+                **{key: statistics.median(row[key] for row in rows if row["threads"] == t
+                                         and row["implementation"] == label and not row["warmup"])
+                   for key in ("update_seconds", "inference_seconds", "snapshot_seconds")}}
+               for t in args.threads for label, _ in variants]
     write(args.output/"result.json", {"schema_version": 1, "config": config, "source": str(args.input or args.checkpoint),
                                      "source_sha256": hashlib.sha256((args.input or args.checkpoint).read_bytes()).hexdigest(),
                                      "device": args.device, "actor_device": "cpu", "tf32": False,
@@ -144,6 +159,7 @@ def main():
                                      "gpu_name": torch.cuda.get_device_name() if args.device == "cuda" else None,
                                      "channels_last": args.channels_last,
                                      "convolution": args.convolution,
+                                     "reference_update": args.reference_update, "reference_update_sha256": reference_hash,
                                      "provenance": provenance(catalog, args.config), "rows": rows, "summary": summary})
     print(json.dumps({"summary": summary}), flush=True)
 
