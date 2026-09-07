@@ -1,0 +1,73 @@
+<div id="streaming-policy-comparison">
+  <style>
+    #streaming-policy-comparison .drawings { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; }
+    #streaming-policy-comparison .drawing { min-width:0; }
+    #streaming-policy-comparison .factory-map { width:100%; display:block; }
+    #streaming-policy-comparison .factory-map text { fill:var(--foreground); font-size:12px; pointer-events:none; }
+    #streaming-policy-comparison .detail { overflow-wrap:anywhere; }
+    #streaming-policy-comparison .swatch { display:inline-block; width:14px; height:8px; margin-right:4px; }
+    @media(max-width:640px) { #streaming-policy-comparison .drawings { grid-template-columns:minmax(0,1fr); } }
+  </style>
+  <div class="viz-controls">
+    <label class="form-label">Validation factory <select class="form-select" id="stream-case"></select></label>
+    <label class="form-label">Facility <select class="form-select" id="stream-facility"></select></label>
+  </div>
+  <div class="text-small" id="stream-budget"></div>
+  <div class="drawings">
+    <section class="drawing"><h3>Untrained policy</h3><div class="tabular-nums" id="stream-untrained-score"></div><svg class="factory-map" id="stream-untrained-map" role="img" aria-label="Untrained policy retained layout"></svg></section>
+    <section class="drawing"><h3>Trained policy</h3><div class="tabular-nums" id="stream-trained-score"></div><svg class="factory-map" id="stream-trained-map" role="img" aria-label="Trained policy retained layout"></svg></section>
+  </div>
+  <div class="viz-row text-small">
+    <span><i class="swatch" style="background:var(--secondary);border:1px solid var(--foreground)"></i>Facility</span>
+    <span><i class="swatch" style="background:var(--viz-series-1)"></i>Belt</span>
+    <span><i class="swatch" style="background:var(--viz-series-2)"></i>Pipe</span>
+    <span>○ External terminal · ◇ Logistics component · Same tile scale</span>
+  </div>
+  <div class="detail text-small" id="stream-detail" aria-live="polite"></div>
+  <script type="application/json" id="stream-visual-data">__STREAM_VISUAL_DATA__</script>
+  <script>
+  (()=>{
+    const root=document.getElementById('streaming-policy-comparison');
+    const data=JSON.parse(root.querySelector('#stream-visual-data').textContent),picker=root.querySelector('#stream-case'),facility=root.querySelector('#stream-facility');
+    const node=(tag,attrs,text)=>{const e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const [k,v]of Object.entries(attrs))e.setAttribute(k,v);if(text!==undefined)e.textContent=text;return e;};
+    const option=(value,text)=>{const o=document.createElement('option');o.value=value;o.textContent=text;return o;};
+    data.cases.forEach((c,i)=>picker.append(option(i,c.label)));
+    const current=()=>data.cases[Number(picker.value)];
+    const metric=d=>`${d.score.width} × ${d.score.height} · area ${d.score.area} · tiles ${d.score.physical_tiles} · turns ${d.score.turns} · empty ${d.density.percent_empty.toFixed(1)}%`;
+    function drawMap(svg,d,width,scale,bounds){
+      const pad=18,x=v=>pad+v*scale,y=v=>pad+v*scale,height=bounds.height*scale+pad*2,color=k=>`var(--viz-series-${k==='pipe'?2:1})`;
+      svg.replaceChildren();svg.setAttribute('viewBox',`0 0 ${width} ${height}`);svg.style.height=`${height}px`;
+      svg.append(node('desc',{},`${d.facilities.length} facilities. ${metric(d)}. Independently validated exact geometry, common tile scale.`));
+      for(let i=0;i<=bounds.width;i++)svg.append(node('line',{x1:x(i),x2:x(i),y1:y(0),y2:y(bounds.height),stroke:'var(--border)','stroke-width':.5}));
+      for(let i=0;i<=bounds.height;i++)svg.append(node('line',{x1:x(0),x2:x(bounds.width),y1:y(i),y2:y(i),stroke:'var(--border)','stroke-width':.5}));
+      for(const n of d.networks){
+        for(const [a,b]of n.cells)svg.append(node('rect',{x:x(a+.1),y:y(b+.1),width:scale*.8,height:scale*.8,fill:color(n.kind),'fill-opacity':.25,'data-network':n.kind}));
+        for(const [a,b,c,e]of n.segments){
+          svg.append(node('line',{x1:x(a+.5),y1:y(b+.5),x2:x(c+.5),y2:y(e+.5),stroke:color(n.kind),'stroke-width':Math.max(.8,scale*.2)}));
+          if(scale>=7){const mx=(a+c)/2+.5,my=(b+e)/2+.5,dx=c-a,dy=e-b;svg.append(node('path',{d:`M${x(mx+dx*.21)},${y(my+dy*.21)}L${x(mx-dx*.13-dy*.13)},${y(my-dy*.13+dx*.13)}L${x(mx-dx*.13+dy*.13)},${y(my-dy*.13-dx*.13)}Z`,fill:color(n.kind)}));}
+        }
+        for(const t of n.terminals)if(t.owner==='External')svg.append(node('circle',{cx:x(t.xy[0]+.5),cy:y(t.xy[1]+.5),r:Math.max(1,scale*.27),fill:'var(--background)',stroke:color(n.kind),'stroke-width':1.2}));
+      }
+      for(const c of d.components){const a=x(c.xy[0]+.5),b=y(c.xy[1]+.5),r=Math.max(1,scale*.34);svg.append(node('path',{d:`M${a},${b-r}L${a+r},${b}L${a},${b+r}L${a-r},${b}Z`,fill:color(c.transport),stroke:'var(--foreground)','stroke-width':.6}));}
+      for(const p of d.facilities){
+        const active=facility.value===p.alias;
+        const r=node('rect',{x:x(p.x)+.5,y:y(p.y)+.5,width:p.width*scale-1,height:p.height*scale-1,fill:active?'var(--viz-series-3)':'var(--secondary)',
+          'fill-opacity':active?.3:1,stroke:'var(--foreground)','stroke-opacity':.7,'data-facility':p.alias,'data-tooltip':`${p.alias} · ${p.facility} · ${p.rotation}°`});
+        r.addEventListener('click',()=>{facility.value=p.alias;draw();});svg.append(r);
+        if(p.width*scale>=30&&p.height*scale>=18)svg.append(node('text',{x:x(p.x+p.width/2),y:y(p.y+p.height/2),'text-anchor':'middle','dominant-baseline':'central'},p.alias));
+      }
+      svg.append(node('rect',{x:x(0),y:y(0),width:d.score.width*scale,height:d.score.height*scale,fill:'none',stroke:'var(--foreground)','pointer-events':'none'}));
+    }
+    function draw(){
+      const c=current(),maps=['untrained','trained'].map(k=>root.querySelector(`#stream-${k}-map`)),widths=maps.map(s=>s.parentElement.getBoundingClientRect().width);
+      const bounds={width:Math.max(c.untrained.score.width,c.trained.score.width),height:Math.max(c.untrained.score.height,c.trained.score.height)},scale=(Math.min(...widths)-36)/bounds.width;
+      ['untrained','trained'].forEach((k,i)=>{root.querySelector(`#stream-${k}-score`).textContent=metric(c[k]);drawMap(maps[i],c[k],widths[i],scale,bounds);});
+      root.querySelector('#stream-budget').textContent=`${c.horizon} proposals each · rollout seed ${c.seed} · original factory obligations validated`;
+      const a=c.untrained.facilities.find(p=>p.alias===facility.value),b=c.trained.facilities.find(p=>p.alias===facility.value);
+      root.querySelector('#stream-detail').textContent=a?`${a.alias} · ${a.facility} · (${a.x}, ${a.y}) → (${b.x}, ${b.y}) · ${a.rotation}° → ${b.rotation}°`:c.family;
+    }
+    function select(){facility.replaceChildren(option('','All facilities'));current().untrained.facilities.forEach(p=>facility.append(option(p.alias,`${p.alias} · ${p.facility}`)));draw();}
+    picker.addEventListener('change',select);facility.addEventListener('change',draw);new ResizeObserver(draw).observe(root.querySelector('.drawings'));select();
+  })();
+  </script>
+</div>
