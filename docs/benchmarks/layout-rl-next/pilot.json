@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "roots": "../../../target/layout-rl-next-corpus-01/roots.json",
+  "seed": 7,
+  "workers": 8,
+  "threads": 4,
+  "training_actions_per_arm": 8192,
+  "horizons": [16, 32, 64],
+  "zero_control_horizon": 16,
+  "training_timeout_seconds": 300,
+  "evaluation_timeout_seconds": 600,
+  "evaluation_proposals": [128, 512, 1024],
+  "rollout_seeds": [101]
+}

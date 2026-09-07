@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "previous_roots": "../../../target/layout-rl-roots-03/roots.json",
+  "catalogs": {
+    "recipes": "../../../data/game/normalized/recipes.json",
+    "facilities": "../../../data/game/normalized/facilities.json",
+    "items": "../../../data/game/normalized/items.json",
+    "transports": "../../../data/game/normalized/transports.json",
+    "components": "../../../data/game/normalized/logistics-components.json"
+  },
+  "validator": "../../../target/release/aic-witness-probe",
+  "families": [
+    {"id": "copper-components", "recipe": "component-copper-cmpt-1", "split": "train"},
+    {"id": "glass-components", "recipe": "component-glass-cmpt-1", "split": "train"},
+    {"id": "enriched-iron-components", "recipe": "component-iron-enr-cmpt-1", "split": "train"},
+    {"id": "enriched-glass-components", "recipe": "component-glass-enr-cmpt-1", "split": "train"},
+    {"id": "basic-battery", "recipe": "tools-proc-battery-1-1", "split": "train"},
+    {"id": "advanced-battery", "recipe": "tools-proc-battery-3-1", "split": "train"},
+    {"id": "explosive-production", "recipe": "tools-proc-bomb-1-1", "split": "train"},
+    {"id": "enriched-carbon-powder", "recipe": "thickener-carbon-enr-powder-1", "split": "train"},
+    {"id": "enriched-copper-components", "recipe": "component-copper-enr-cmpt-1", "split": "validation"},
+    {"id": "enriched-quartz-powder", "recipe": "thickener-quartz-enr-powder-1", "split": "validation"},
+    {"id": "enriched-moss-one", "recipe": "thickener-plant-moss-enr-powder-1-1", "split": "test"},
+    {"id": "enriched-moss-two", "recipe": "thickener-plant-moss-enr-powder-2-1", "split": "test"}
+  ],
+  "depths": [2, 4],
+  "utilizations": [{"numerator": 1, "denominator": 4}, {"numerator": 1, "denominator": 1}],
+  "first_families": ["straight", "fold"],
+  "policy": {"families": ["straight", "left", "right", "fold"], "gaps": [0, 1, 2, 3], "ports_per_side": 6, "slides_per_pose": 5, "port_order": "spatial"},
+  "boundary": {"margins": [1, 2, 4], "endpoint_limit": 16},
+  "construction_budget": {"proposals": 512, "route_expansions": 100000, "validations": 256, "elapsed_ms": 2000},
+  "total_elapsed_ms": 180000,
+  "minimum_new_training_families": 4
+}
