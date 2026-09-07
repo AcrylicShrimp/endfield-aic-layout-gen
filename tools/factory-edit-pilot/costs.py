@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 
 from plots import read_rows
-from run import write
+from evidence import write
 
 
 def costs(directory):
@@ -22,6 +22,8 @@ def costs(directory):
              "actor_snapshot": metadata.get("snapshot_seconds", 0)}
     if metadata.get("actor_compile_setup_seconds", 0):
         parts["actor_compile_setup"] = metadata["actor_compile_setup_seconds"]
+    if env.get("array_export", 0):
+        parts["native_array_export"] = env["array_export"]
     update_parts = {f"ppo_{key}": sum(row["seconds"][key] for row in updates)
                     for key in ("batch", "forward_loss", "backward", "optimizer")}
     parts["other_ppo_update"] = metadata["update_seconds"]-sum(update_parts.values())

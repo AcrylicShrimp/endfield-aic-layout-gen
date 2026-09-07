@@ -4,6 +4,7 @@ from copy import deepcopy
 from contextlib import redirect_stdout
 import io
 import json
+import os
 from pathlib import Path
 import random
 import sys
@@ -14,11 +15,12 @@ from unittest.mock import patch
 import numpy as np
 import torch
 
-from acceptance import Catalog, Invalid, check, port_geometry
-from environment import Environment, serialize
-from commands import Command
+from reference.acceptance import Catalog, Invalid, check, port_geometry
+from reference.environment import Environment, serialize
+from reference.commands import Command
 from policy import Policy, advantages, batch, single, update, PreparedRollout
 from run import refresh_actor
+from native import Runtime
 import run as runner
 
 
@@ -395,6 +397,7 @@ class PilotTests(unittest.TestCase):
             for key in observation:
                 np.testing.assert_array_equal(observation[key], expected[key])
 
+    @unittest.skipUnless(os.environ.get("AIC_NATIVE_LIBRARY"), "explicit native build path required")
     def test_completed_cpu_continuation_matches_uninterrupted_training(self):
         config = {**self.config, "device": "cpu", "threads": 1,
                   "horizon": 8, "commands": 32, "rollout_commands": 16, "epochs": 1,
@@ -408,7 +411,8 @@ class PilotTests(unittest.TestCase):
                 path = output/"config.json"
                 path.write_text(json.dumps(settings))
                 with patch("torch.set_num_interop_threads"), patch("plots.render"), redirect_stdout(io.StringIO()):
-                    runner.train(self.catalog, settings, path, output, parent)
+                    runtime = Runtime(ROOT, DIRECTORY/"case.json", settings, os.environ["AIC_NATIVE_LIBRARY"])
+                    runner.train(runtime, settings, path, output, parent)
                 return output
             full = run("full", config)
             first = run("first", {**config, "commands": 16, "checkpoints": [0, 16]})
@@ -445,13 +449,72 @@ class PilotTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "final checkpoint"):
                 run("invalid-checkpoint", continuation, first/"checkpoint-0.pt")
             original = json.loads((first/"metadata.json").read_text())
-            for module in ("environment.py", "commands.py"):
+            for module in ("native.py", "run.py"):
                 altered = deepcopy(original)
                 altered["provenance"]["files_sha256"][f"tools/factory-edit-pilot/{module}"] = "changed"
                 (first/"metadata.json").write_text(json.dumps(altered))
-                with self.assertRaisesRegex(ValueError, "semantic/catalog hash changed"):
+                with self.assertRaisesRegex(ValueError, "provenance disagree"):
                     run(f"invalid-{module}", continuation, parent)
+            (first/"metadata.json").write_text(json.dumps(original))
+            saved = torch.load(parent, weights_only=False)
+            legacy = deepcopy(saved)
+            legacy["schema_version"] = 1
+            legacy_path = first/"legacy.pt"
+            torch.save(legacy, legacy_path)
+            with self.assertRaisesRegex(ValueError, "resume.legacy_checkpoint"):
+                run("invalid-legacy", continuation, legacy_path)
+            changed = deepcopy(saved)
+            changed["environment"]["best_score"][0] = 1
+            changed_path = first/"invalid-native-state.pt"
+            torch.save(changed, changed_path)
+            with self.assertRaisesRegex(ValueError, "snapshot.score"):
+                run("invalid-native-state", continuation, changed_path)
 
+    @unittest.skipUnless(os.environ.get("AIC_NATIVE_LIBRARY"), "explicit native build path required")
+    def test_interrupted_collection_restores_partial_native_episode(self):
+        config = {**self.config, "device": "cpu", "threads": 1,
+                  "horizon": 8, "commands": 16, "rollout_commands": 16, "epochs": 1,
+                  "minibatch": 8, "checkpoints": [0, 16], "evaluation_seeds": 2}
+        original_act = Policy.act
+        calls = 0
+        def interrupt(policy, *args, **kwargs):
+            nonlocal calls
+            calls += 1
+            if calls == 20:  # Sixteen frozen-evaluation actions, then three training edits.
+                raise KeyboardInterrupt
+            return original_act(policy, *args, **kwargs)
+        (ROOT/"target").mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=ROOT/"target") as directory:
+            output = Path(directory)
+            path = output/"config.json"
+            path.write_text(json.dumps(config))
+            runtime = Runtime(ROOT, DIRECTORY/"case.json", config, os.environ["AIC_NATIVE_LIBRARY"])
+            with patch.object(Policy, "act", interrupt), patch("torch.set_num_interop_threads"), \
+                    patch("plots.render"), redirect_stdout(io.StringIO()):
+                with self.assertRaises(KeyboardInterrupt):
+                    runner.train(runtime, config, path, output)
+            saved = torch.load(output/"interrupted-state.pt", weights_only=False)
+            self.assertEqual(saved["phase"], "collection")
+            self.assertEqual(saved["commands"], 3)
+            self.assertEqual(saved["environment"]["steps"], 3)
+            self.assertEqual(len(saved["partial_rollout"]["actions"]), 3)
+            restored = runtime.new_engine()
+            restored.restore_state_json(json.dumps(saved["environment"]))
+            reference = Environment(self.catalog, config)
+            for event in saved["environment"]["trace"]:
+                reference.step(event["command"])
+            candidates = reference.candidates()
+            expected = reference.observe(candidates)
+            actual, handle = restored.observe()
+            for key in expected:
+                self.assertEqual(actual[key].tobytes(), expected[key].tobytes())
+            model = Policy(actual)
+            model.load_state_dict(saved["actor_policy"])
+            torch.set_rng_state(saved["torch_rng"])
+            selected, _, _ = model.act(actual)
+            self.assertEqual(restored.step(handle, selected), reference.step(candidates.commands[selected].to_dict()))
+
+    @unittest.skipUnless(os.environ.get("AIC_NATIVE_LIBRARY"), "explicit native build path required")
     def test_runner_preserves_interruption_diagnostics(self):
         config = {**self.config, "device": "cpu", "threads": 2,
                   "horizon": 8, "commands": 16, "rollout_commands": 16, "epochs": 1,
@@ -464,7 +527,8 @@ class PilotTests(unittest.TestCase):
             with patch.object(runner, "update", side_effect=KeyboardInterrupt), \
                     patch("torch.set_num_interop_threads"), patch("plots.render"), redirect_stdout(io.StringIO()):
                 with self.assertRaises(KeyboardInterrupt):
-                    runner.train(self.catalog, config, config_path, output)
+                    runtime = Runtime(ROOT, DIRECTORY/"case.json", config, os.environ["AIC_NATIVE_LIBRARY"])
+                    runner.train(runtime, config, config_path, output)
             metadata = json.loads((output/"metadata.json").read_text())
             self.assertEqual(metadata["status"], "interrupted")
             self.assertEqual(metadata["completed_commands"], 16)
@@ -473,6 +537,11 @@ class PilotTests(unittest.TestCase):
             self.assertGreater(metadata["environment_seconds"]["observation"], 0)
             retained = torch.load(output/"interrupted-state.pt", weights_only=False, map_location="cpu")
             self.assertEqual(len(retained["partial_rollout"]["observations"]), 16)
+            self.assertEqual(retained["schema_version"], 2)
+            self.assertEqual(retained["environment"]["schema_version"], 2)
+            restored = runtime.new_engine()
+            restored.restore_state_json(json.dumps(retained["environment"]))
+            self.assertEqual(json.loads(restored.export_state_json())["draft"], retained["environment"]["draft"])
         torch.set_num_threads(1)
 
 

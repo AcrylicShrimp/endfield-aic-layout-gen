@@ -10,9 +10,9 @@ import json
 import numpy as np
 import torch
 
-from acceptance import Catalog
-from environment import Environment
-from run import provenance, write
+from reference.acceptance import Catalog
+from reference.environment import Environment
+from evidence import provenance, write
 
 
 def main():

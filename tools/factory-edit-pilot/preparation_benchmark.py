@@ -13,8 +13,8 @@ import numpy as np
 import torch
 
 import policy
-from acceptance import Catalog
-from run import provenance, write
+from reference.acceptance import Catalog
+from evidence import provenance, write
 
 
 def main():

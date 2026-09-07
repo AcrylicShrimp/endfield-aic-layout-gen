@@ -10,20 +10,21 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 import numpy as np
 
-from acceptance import Catalog, check, footprint
+from native import Runtime
 
 
 def read_rows(path):
     return [json.loads(line) for line in Path(path).read_text().splitlines() if line.strip()] if Path(path).exists() else []
 
 
-def render(output, catalog, parent=None):
+def render(output, runtime, parent=None):
     output = Path(output)
     metadata = json.loads((output/"metadata.json").read_text())
     episodes = read_rows(output/"episodes.jsonl")
     evaluations = read_rows(output/"evaluations.jsonl")
     summaries = read_rows(output/"evaluation-summary.jsonl")
     config = metadata["config"]
+    inspector = runtime.new_engine()
     curve_name = "learning-curves"
     if parent is not None:
         parent = Path(parent)
@@ -48,7 +49,7 @@ def render(output, catalog, parent=None):
     std = np.array([s["std_return"] for s in summaries])*100
     axes[0].plot(x, mean, "o-", color="#2368a0", label="Frozen policy: mean")
     axes[0].fill_between(x, mean-std, mean+std, color="#2368a0", alpha=.16, label="Rollout +/-1 SD")
-    axes[0].plot(x, [s["max_return"]*100 for s in summaries], "s--", color="#009b77", label="Best of 32 evaluation episodes")
+    axes[0].plot(x, [s["max_return"]*100 for s in summaries], "s--", color="#009b77", label=f"Best of {config['evaluation_seeds']} evaluation episodes")
     axes[0].set(title="Factory outcome", ylabel="Final area reduction (%)", xlabel="Training commands")
     axes[0].legend(fontsize=8)
     if episodes:
@@ -75,7 +76,7 @@ def render(output, catalog, parent=None):
     count = episodes[-1]["commands"] if episodes else 0
     continuation_label = f" | continued at {boundary:,} (dotted line)" if parent is not None else ""
     fig.suptitle(f"{metadata['device'].upper()} learner / CPU actor | {metadata['parameters']:,} parameters | {count:,} commands | one training seed{continuation_label}\n"
-                 "Same initial layout and 128 edits per episode; raw episode reward equals relative area reduction", fontsize=12)
+                 f"Same initial layout and {config['horizon']} edits per episode; raw episode reward equals relative area reduction", fontsize=12)
     fig.savefig(output/f"{curve_name}.png", dpi=170)
     fig.savefig(output/f"{curve_name}.svg")
     plt.close(fig)
@@ -85,19 +86,19 @@ def render(output, catalog, parent=None):
                ("training-best.json", "Best discovered during training"),
                ("witness.json", "Scripted environment witness (not learned)")]
     layouts = [(json.loads((output/name).read_text()), title) for name, title in choices if (output/name).exists()]
-    layout_bounds = [check(catalog, layout)["bounds"] for layout, _ in layouts]
+    inspections = [json.loads(inspector.inspect_layout_json(json.dumps(layout))) for layout, _ in layouts]
+    for (_, title), inspection in zip(layouts, inspections):
+        if not inspection["acceptance"]["valid"]:
+            raise ValueError(f"Refusing a complete-factory visualization: {title}: {inspection['acceptance']}")
+    layout_bounds = [inspection["acceptance"]["bounds"] for inspection in inspections]
     common = (min(b[0] for b in layout_bounds), min(b[1] for b in layout_bounds),
               max(b[2] for b in layout_bounds), max(b[3] for b in layout_bounds))
     fig, axes = plt.subplots(1, len(layouts), figsize=(4*len(layouts), 8), constrained_layout=True, squeeze=False)
-    network_colors = {nid: plt.get_cmap("tab10")(i) for i, nid in enumerate(catalog.networks)}
-    for ax, (layout, title) in zip(axes[0], layouts):
-        validation = check(catalog, layout)
-        if not validation["valid"]:
-            raise ValueError(f"Refusing a complete-factory visualization: {title}: {validation}")
+    network_colors = {network["id"]: plt.get_cmap("tab10")(i) for i, network in enumerate(runtime.case["networks"])}
+    for ax, (layout, title), inspection in zip(axes[0], layouts, inspections):
+        validation = inspection["acceptance"]
         for fid, pose in layout["placements"].items():
-            body = footprint(catalog, fid, pose)
-            xs, ys = zip(*body)
-            x, y, w, h = min(xs), min(ys), max(xs)-min(xs)+1, max(ys)-min(ys)+1
+            x, y, w, h = inspection["facility_boxes"][fid]
             ax.add_patch(Rectangle((x-.5, y-.5), w, h, facecolor="#dce7ef", edgecolor="#354b60", linewidth=1.5))
             ax.text(x+(w-1)/2, y+(h-1)/2, fid, ha="center", va="center", weight="bold", fontsize=15)
         for nid, network in layout["networks"].items():
@@ -121,7 +122,7 @@ def render(output, catalog, parent=None):
         ax.set_xticks(range(common[0], common[2]+1, 2))
         ax.set_yticks(range(common[1], common[3]+1, 2))
         ax.grid(alpha=.12)
-    labels = ", ".join(f"{fid}: {f['recipe']}" for fid, f in catalog.facilities.items())
+    labels = ", ".join(f"{f['id']}: {f['recipe']}" for f in runtime.case["facilities"])
     fig.suptitle("Complete validated factories | all original production obligations preserved\n"+labels, fontsize=10)
     fig.savefig(output/"factory-comparison.png", dpi=160)
     fig.savefig(output/"factory-comparison.svg")
@@ -135,6 +136,9 @@ if __name__ == "__main__":
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--parent", type=Path, help="Include the verified immediate parent training segment")
     parser.add_argument("--case", required=True, type=Path)
+    parser.add_argument("--native-library", required=True, type=Path)
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[2])
     args = parser.parse_args()
-    print(json.dumps(render(args.output, Catalog(args.root, args.case), args.parent), indent=2))
+    config = json.loads((args.output/"metadata.json").read_text())["config"]
+    runtime = Runtime(args.root, args.case, config, args.native_library)
+    print(json.dumps(render(args.output, runtime, args.parent), indent=2))

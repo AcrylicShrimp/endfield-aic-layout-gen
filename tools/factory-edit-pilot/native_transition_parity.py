@@ -8,12 +8,9 @@ from pathlib import Path
 
 import torch
 
-from acceptance import Catalog
-from environment import Environment, serialize
-from native_observation import load_native
-
-
-CONFIG_KEYS = ("horizon", "halo", "raster_cell_guard", "move_lengths", "segment_lengths")
+from reference.acceptance import Catalog
+from reference.environment import Environment, serialize
+from native import Runtime
 
 
 def main():
@@ -27,14 +24,13 @@ def main():
     args = parser.parse_args()
     if args.output.exists():
         parser.error(f"output must be fresh: {args.output}")
-    module = load_native(args.native_library)
     config = json.loads(args.config.read_text())
-    config_json = json.dumps({key: config[key] for key in CONFIG_KEYS})
+    runtime = Runtime(args.root, args.case, config, args.native_library)
     catalog = Catalog(args.root, args.case)
     results = []
     for path in args.input:
         rollout = torch.load(path, weights_only=False, map_location="cpu")["rollout"]
-        native = module.Engine.open(str(args.root), str(args.case), config_json)
+        native = runtime.new_engine()
         reference = Environment(catalog, config)
         operations = Counter()
         for step, selected in enumerate(rollout["actions"]):
@@ -79,6 +75,7 @@ def main():
                args.root / "crates/aic-pilot-native/Cargo.toml", args.root / "crates/aic-pilot-native/build.rs",
                args.config, args.native_library]
     report = {"schema_version": 2, "parity": "bit_exact", "rows": results,
+              "native_provenance": runtime.provenance,
               "metadata": json.loads(native.metadata_json()),
               "sha256": {str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in sources}}
     args.output.parent.mkdir(parents=True, exist_ok=True)

@@ -12,10 +12,10 @@ import types
 import numpy as np
 import torch
 
-from acceptance import Catalog
-from environment import Environment, serialize
-from commands import CandidateSet
-from run import provenance, write
+from reference.acceptance import Catalog
+from reference.environment import Environment, serialize
+from reference.commands import CandidateSet
+from evidence import provenance, write
 
 
 def replay(environment, catalog, config, rollout, reset_caches=False):
@@ -95,7 +95,10 @@ def main():
     source = subprocess.run(["git", "show", f"{args.reference_source}:tools/factory-edit-pilot/environment.py"],
                             cwd=root, capture_output=True, check=True, text=True).stdout
     reference = types.ModuleType("reference_environment")
-    exec(compile(source, "reference_environment.py", "exec"), reference.__dict__)
+    # Historical source imports are explicitly scoped to the isolated oracle namespace.
+    scoped = source.replace("from acceptance import", "from reference.acceptance import").replace(
+        "from commands import", "from reference.commands import")
+    exec(compile(scoped, "reference_environment.py", "exec"), reference.__dict__)
     rows = []
     for path in args.input:
         rollout = torch.load(path, weights_only=False, map_location="cpu")["rollout"]

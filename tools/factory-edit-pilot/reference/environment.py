@@ -9,8 +9,8 @@ import time
 
 import numpy as np
 
-from acceptance import DIRECTIONS, SIDES, check
-from commands import Command, CandidateSet
+from .acceptance import DIRECTIONS, SIDES, check
+from .commands import Command, CandidateSet
 
 
 OPERATIONS = ("SET_PLACEMENTS", "UNBIND_TERMINALS", "BIND_TERMINALS", "ERASE_TRANSPORT",

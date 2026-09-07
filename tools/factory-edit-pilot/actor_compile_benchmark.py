@@ -12,8 +12,8 @@ import torch
 from actor_benchmark import measure
 from compiled_actor import CompiledActor
 from policy import Policy, single, batch
-from acceptance import Catalog
-from run import provenance, write
+from reference.acceptance import Catalog
+from evidence import provenance, write
 
 
 def main():

@@ -9,9 +9,9 @@ import time
 
 import torch
 
-from acceptance import Catalog
+from reference.acceptance import Catalog
 from policy import Policy, batch, single
-from run import provenance, write
+from evidence import provenance, write
 
 
 def measure(model, observations, batch_size, device, inference):

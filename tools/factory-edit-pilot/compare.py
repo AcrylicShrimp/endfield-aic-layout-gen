@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from plots import read_rows
-from run import write
+from evidence import write
 
 
 def compare(directories, output):

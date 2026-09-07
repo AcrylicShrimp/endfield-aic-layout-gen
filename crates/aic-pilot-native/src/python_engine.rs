@@ -89,6 +89,61 @@ impl PythonEngine {
         encode(&self.engine.metadata())
     }
 
+    #[staticmethod]
+    fn build_info_json() -> &'static str {
+        env!("AIC_PILOT_BUILD_INFO")
+    }
+
+    #[getter]
+    fn initial_score(&self) -> Vec<i64> {
+        self.engine.initial_score.to_vec()
+    }
+
+    #[getter]
+    fn best_score(&self) -> Vec<i64> {
+        self.engine.best_score.to_vec()
+    }
+
+    fn trace_json(&self) -> PyResult<String> {
+        encode(&self.engine.trace)
+    }
+
+    fn performance_json(&self) -> PyResult<String> {
+        encode(&serde_json::json!({"seconds":self.engine.seconds,"counters":self.engine.counters}))
+    }
+
+    fn restart_measurements(&mut self) {
+        self.engine.seconds.clear();
+        self.engine.counters.clear();
+    }
+
+    fn episode_json(&self) -> PyResult<String> {
+        encode(
+            &serde_json::json!({"steps":self.engine.steps,"revision":self.engine.revision,
+            "best_score":self.engine.best_score,"base_score":self.engine.base_score,
+            "counts":self.engine.episode_counts,
+            "draft_acceptance":Acceptance::from_result(acceptance::check(&self.engine.catalog,&self.engine.draft))}),
+        )
+    }
+
+    fn inspect_layout_json(&self, layout_json: &str) -> PyResult<String> {
+        let layout = decode(layout_json, "layout.malformed")?;
+        let state = crate::state::State::import(&self.engine.catalog, layout).map_err(py_error)?;
+        let accepted = Acceptance::from_result(acceptance::check(&self.engine.catalog, &state));
+        let mut boxes = std::collections::BTreeMap::new();
+        if accepted.valid {
+            for (fi, &pose) in state.poses.iter().enumerate() {
+                let body = crate::state::body(&self.engine.catalog, fi, pose).map_err(py_error)?;
+                let [x0, y0, x1, y1] = crate::state::bounds(&body).map_err(py_error)?;
+                boxes.insert(
+                    self.engine.catalog.case.facilities[fi].id.clone(),
+                    [x0, y0, x1 - x0 + 1, y1 - y0 + 1],
+                );
+            }
+        }
+        encode(&serde_json::json!({"acceptance":accepted,"facility_boxes":boxes}))
+    }
+
     fn export_layout_json(&self, which: &str) -> PyResult<String> {
         encode(&self.engine.export_layout(which).map_err(py_error)?)
     }

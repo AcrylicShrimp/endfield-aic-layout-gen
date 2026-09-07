@@ -3,60 +3,48 @@
 import argparse
 from collections import Counter
 from copy import deepcopy
-import hashlib
 import json
 import platform
 from pathlib import Path
 import random
 import resource
-import subprocess
 import time
 
 import numpy as np
 import torch
 
-from acceptance import Catalog, check
-from environment import Environment, serialize
+from native import Runtime, layout, snapshot, check, trace, performance
+from evidence import write, append, provenance
 from policy import Policy, update, single
 
 
-def write(path, value):
-    path = Path(path)
-    temp = path.with_suffix(path.suffix+".tmp")
-    temp.write_text(json.dumps(value, indent=2)+"\n")
-    temp.replace(path)
-
-
-def append(path, value):
-    with Path(path).open("a") as stream:
-        stream.write(json.dumps(value)+"\n")
-
-
-def verify_environment(catalog, config, output):
-    env = Environment(catalog, config)
-    write(output/"initial.json", serialize(env.root))
+def verify_environment(runtime, config, output):
+    env = runtime.new_engine()
+    write(output/"initial.json", layout(env, "root"))
     reward = 0.0
-    for command in catalog.case["witness"]:
-        if command not in env.candidates().to_dicts():
+    for command in runtime.case["witness"]:
+        handle, _ = env.candidates()
+        candidates = json.loads(env.export_candidates_json(handle))
+        if command not in candidates:
             raise RuntimeError(f"Witness action outside the model's actual domain: {command}")
-        r, done, result = env.step(command)
+        r, done, result = env.step(handle, candidates.index(command))
         if not result["applied"] or done:
             raise RuntimeError(f"Witness action failed: {command}: {result}")
         reward += r
-    result = check(catalog, serialize(env.best))
+    result = check(env, layout(env, "best"))
     if not result["valid"] or result["score"][0] >= env.initial_score[0]:
         raise RuntimeError(f"No independently validated improving witness: {result}")
     if abs(reward-(env.initial_score[0]-result["score"][0])/env.initial_score[0]) > 1e-12:
         raise RuntimeError("Witness reward does not telescope to final outcome")
-    write(output/"witness.json", serialize(env.best))
-    write(output/"witness-trace.json", env.trace)
-    return {"initial": check(catalog, serialize(env.root)), "witness": result,
-            "witness_return": reward, "witness_commands": len(catalog.case["witness"])}
+    write(output/"witness.json", layout(env, "best"))
+    write(output/"witness-trace.json", trace(env))
+    return {"initial": check(env, layout(env, "root")), "witness": result,
+            "witness_return": reward, "witness_commands": len(runtime.case["witness"])}
 
 
-def evaluate(model, catalog, config, output, commands, training_seconds):
+def evaluate(model, runtime, config, output, commands, training_seconds):
     started = time.perf_counter()
-    env = Environment(catalog, config)
+    env = runtime.new_engine()
     rows, layouts, traces = [], [], []
     model.eval()
     with torch.no_grad():
@@ -66,21 +54,21 @@ def evaluate(model, catalog, config, output, commands, training_seconds):
             env.reset()
             total = 0.0
             for _ in range(config["horizon"]):
-                candidates = env.candidates()
-                observation = env.observe(candidates)
+                observation, handle = env.observe()
                 selected, _, _ = model.act(observation, generator)
-                reward, _, _ = env.step(candidates.commands[selected].to_dict())
+                reward, _, _ = env.step(handle, selected)
                 total += reward
-            layout = serialize(env.best)
-            accepted = check(catalog, layout)
+            selected_layout = layout(env, "best")
+            accepted = check(env, selected_layout)
             if not accepted["valid"]:
                 raise RuntimeError(f"Evaluation export failed independent acceptance: {accepted}")
+            episode_stats = json.loads(env.episode_json())
             row = {"commands": commands, "rollout_seed": seed, "return": total,
-                   "score": accepted["score"], "counts": dict(env.episode_counts)}
+                   "score": accepted["score"], "counts": episode_stats["counts"]}
             append(output/"evaluations.jsonl", row)
             rows.append(row)
-            layouts.append(layout)
-            traces.append(deepcopy(env.trace))
+            layouts.append(selected_layout)
+            traces.append(trace(env))
     returns = np.array([r["return"] for r in rows])
     summary = {"commands": commands, "training_seconds": training_seconds, "mean_return": float(returns.mean()),
                "median_return": float(np.median(returns)), "std_return": float(returns.std(ddof=1)),
@@ -98,23 +86,13 @@ def evaluate(model, catalog, config, output, commands, training_seconds):
     return summary
 
 
-def provenance(catalog, config_path):
-    directory = Path(__file__).resolve().parent
-    files = sorted(set([*directory.glob("*.py"), *directory.glob("*.toml"), *directory.glob("*.lock"),
-                        catalog.path.resolve(), config_path.resolve(), *catalog.paths.values()]))
-    hashes = {str(p.relative_to(catalog.root)): hashlib.sha256(p.read_bytes()).hexdigest() for p in files}
-    git = subprocess.run(["git", "rev-parse", "HEAD"], cwd=catalog.root, text=True, capture_output=True, check=True).stdout.strip()
-    return {"git_head": git, "files_sha256": hashes, "python": platform.python_version(), "torch": torch.__version__,
-            "numpy": np.__version__, "platform": platform.platform(), "machine": platform.machine()}
-
-
 def refresh_actor(learner, actor):
     """Copy a completed learner update before the next on-policy CPU rollout."""
     if actor is not learner:
         actor.load_state_dict({key: value.detach().cpu() for key, value in learner.state_dict().items()})
 
 
-def train(catalog, config, config_path, output, resume_path=None):
+def train(runtime, config, config_path, output, resume_path=None):
     if (output/"metadata.json").exists():
         raise ValueError(f"Refusing to overwrite existing experiment {output}")
     if config["device"] not in ("cpu", "cuda"):
@@ -130,6 +108,8 @@ def train(catalog, config, config_path, output, resume_path=None):
     budget = config.get("prepared_rollout_max_bytes", 1 << 30)
     if type(budget) is not int or budget < 0:
         raise ValueError(f"preparation.invalid_budget: {config_path}: prepared_rollout_max_bytes must be a nonnegative integer")
+    if not isinstance(runtime, Runtime):
+        raise TypeError("run.native_required: training requires an explicit native Runtime")
     output.mkdir(parents=True, exist_ok=True)
     torch.set_num_threads(config["threads"])
     torch.set_num_interop_threads(1)
@@ -140,30 +120,30 @@ def train(catalog, config, config_path, output, resume_path=None):
     np.random.seed(config["seed"])
     random.seed(config["seed"])
     rng = np.random.default_rng(config["seed"])
-    verification = verify_environment(catalog, config, output)
-    env = Environment(catalog, config)
-    example = env.observe(env.candidates())
+    verification = verify_environment(runtime, config, output)
+    env = runtime.new_engine()
+    example, _ = env.observe()
     model = Policy(example)
     actor = deepcopy(model) if config["device"] == "cuda" else model
     model.to(config["device"])
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
-    metadata = {"schema_version": 1, "status": "running", "config": config, "case": catalog.case["id"],
+    metadata = {"schema_version": 2, "status": "running", "config": config, "case": runtime.case["id"],
                 "parameters": model.parameter_count, "dimensions": model.dimensions, "device": config["device"],
-                "actor_device": "cpu", "precision": "float32", "tf32": False,
+                "actor_device": "cpu", "environment_backend": "rust", "precision": "float32", "tf32": False,
                 "cuda_runtime": torch.version.cuda,
                 "gpu_name": torch.cuda.get_device_name() if config["device"] == "cuda" else None,
                 "update_timing": "synchronized_stage_wall_seconds_including_transfers",
-                "verification": verification, "provenance": provenance(catalog, config_path)}
+                "verification": verification, "provenance": provenance(runtime, config_path)}
     parent_checkpoint = None
     if resume_path is not None:
         from resume import load_parent, restore, copy_champion
-        parent_checkpoint, lineage = load_parent(resume_path, catalog, config, metadata["provenance"])
-        restore(parent_checkpoint, model, optimizer, rng)
+        parent_checkpoint, lineage = load_parent(resume_path, runtime, config, metadata["provenance"])
+        restore(parent_checkpoint, model, optimizer, rng, env)
         metadata["lineage"] = lineage
     metadata["timing_scope"] = "current_invocation_only"
     metadata["resumed_commands"] = parent_checkpoint["commands"] if parent_checkpoint else 0
     write(output/"metadata.json", metadata)
-    write(output/"training-best.json", serialize(env.best))
+    write(output/"training-best.json", layout(env, "best"))
     if parent_checkpoint:
         copy_champion(resume_path, output)
     print(json.dumps({"event": "started", "parameters": model.parameter_count, "device": config["device"], "output": str(output)}), flush=True)
@@ -177,12 +157,14 @@ def train(catalog, config, config_path, output, resume_path=None):
     snapshot_seconds = 0.0
     actor_compile_setup_seconds = 0.0
     compiled_actor = None
+    phase = "setup"
     all_counts = Counter(parent_checkpoint["counts"] if parent_checkpoint else {})
 
     def save_checkpoint():
         if compiled_actor is not None:
             metadata["actor_compilation"] = compiled_actor.report()
-        torch.save({"schema_version": 1, "commands": commands, "episode": episode,
+        torch.save({"schema_version": 2, "checkpoint_kind": "complete_rollout", "commands": commands, "episode": episode,
+                    "environment": snapshot(env),
                     "policy": model.state_dict(), "optimizer": optimizer.state_dict(),
                     "torch_rng": torch.get_rng_state(), "numpy_rng": rng.bit_generator.state,
                     "cuda_rng": torch.cuda.get_rng_state_all() if config["device"] == "cuda" else None,
@@ -190,7 +172,7 @@ def train(catalog, config, config_path, output, resume_path=None):
                     "config": config, "metadata": metadata, "champion_score": champion_score,
                     "optimizer_steps": optimizer_steps, "counts": dict(all_counts),
                     "training_seconds": time.perf_counter()-started-evaluation_seconds,
-                    "environment_seconds": dict(env.seconds), "environment_counters": dict(env.counters)},
+                    "environment_seconds": performance(env)["seconds"], "environment_counters": performance(env)["counters"]},
                    output/f"checkpoint-{commands}.pt")
 
     try:
@@ -198,7 +180,7 @@ def train(catalog, config, config_path, output, resume_path=None):
             from compiled_actor import CompiledActor
             setup_started = time.perf_counter()
             try:
-                compiled_actor = CompiledActor(actor, catalog.root/config["compiler_cache_directory"])
+                compiled_actor = CompiledActor(actor, runtime.root/config["compiler_cache_directory"])
                 with torch.no_grad():
                     compiled_actor(single(example))
             finally:
@@ -208,46 +190,52 @@ def train(catalog, config, config_path, output, resume_path=None):
             metadata["actor_compile_setup_seconds"] = actor_compile_setup_seconds
             print(json.dumps({"event": "actor_ready", "setup_seconds": actor_compile_setup_seconds,
                               "compilation": compiled_actor.report()}), flush=True)
+        phase = "checkpoint"
         save_checkpoint()
-        summary = evaluate(actor, catalog, config, output, commands, 0.0)
+        phase = "evaluation"
+        summary = evaluate(actor, runtime, config, output, commands, 0.0)
         evaluation_seconds += summary["evaluation_seconds"]
         from plots import render
-        render(output, catalog)
+        phase = "render"
+        render(output, runtime)
         while commands < config["commands"]:
+            phase = "collection"
             rollout = {k: [] for k in ("observations", "actions", "log_probs", "values", "rewards", "dones")}
             episode_return = 0.0
             for _ in range(config["rollout_commands"]):
-                candidates = env.candidates()
-                observation = env.observe(candidates)
+                observation, handle = env.observe()
                 inference_started = time.perf_counter()
                 action, log_prob, value = actor.act(observation, forward=compiled_actor)
                 inference_seconds += time.perf_counter()-inference_started
-                reward, done, outcome = env.step(candidates.commands[action].to_dict())
+                reward, done, outcome = env.step(handle, action)
                 commands += 1
                 for key, item in (("observations", observation), ("actions", action), ("log_probs", log_prob),
                                   ("values", value), ("rewards", reward), ("dones", done)):
                     rollout[key].append(item)
                 episode_return += reward
-                if env.best_score < champion_score:
+                if outcome["improved"] and env.best_score < champion_score:
                     champion_score = list(env.best_score)
-                    write(output/"training-best.json", serialize(env.best))
-                    write(output/"training-best-trace.json", env.trace)
+                    write(output/"training-best.json", layout(env, "best"))
+                    write(output/"training-best-trace.json", trace(env))
                     print(json.dumps({"event": "discovery", "commands": commands, "score": champion_score}), flush=True)
                 if done:
                     episode += 1
+                    episode_stats = json.loads(env.episode_json())
                     row = {"episode": episode, "commands": commands, "return": episode_return,
-                           "score": list(env.best_score), "counts": dict(env.episode_counts),
+                           "score": episode_stats["best_score"], "counts": episode_stats["counts"],
                            "training_champion_reduction": (env.initial_score[0]-champion_score[0])/env.initial_score[0],
-                           "unfinished": not check(catalog, serialize(env.draft))["valid"]}
+                           "unfinished": not episode_stats["draft_acceptance"]["valid"]}
                     if abs(episode_return-(env.initial_score[0]-env.best_score[0])/env.initial_score[0]) > 1e-10:
                         raise RuntimeError("learning.reward_mismatch: episode return differs from outcome")
                     append(output/"episodes.jsonl", row)
-                    all_counts.update(env.episode_counts)
+                    all_counts.update(episode_stats["counts"])
                     env.reset()
                     episode_return = 0.0
+            phase = "update"
             update_started = time.perf_counter()
             metrics = update(model, optimizer, rollout, config, rng)
             update_seconds += time.perf_counter()-update_started
+            phase = "actor_snapshot"
             snapshot_started = time.perf_counter()
             refresh_actor(model, actor)
             snapshot_seconds += time.perf_counter()-snapshot_started
@@ -259,24 +247,27 @@ def train(catalog, config, config_path, output, resume_path=None):
                                   "training_seconds": round(elapsed, 2), "commands_per_second": round((commands-metadata["resumed_commands"])/max(elapsed, .001), 2),
                                   "champion_score": champion_score, "positive_reward_commands": all_counts["positive_rewards"]}), flush=True)
             if commands in config["checkpoints"]:
+                phase = "checkpoint"
                 save_checkpoint()
-                summary = evaluate(actor, catalog, config, output, commands, time.perf_counter()-started-evaluation_seconds)
+                phase = "evaluation"
+                summary = evaluate(actor, runtime, config, output, commands, time.perf_counter()-started-evaluation_seconds)
                 evaluation_seconds += summary["evaluation_seconds"]
-                render(output, catalog)
+                phase = "render"
+                render(output, runtime)
         metadata.update({"status": "complete", "completed_commands": commands, "episodes": episode,
                          "segment_commands": commands-metadata["resumed_commands"],
                          "optimizer_steps": optimizer_steps, "training_seconds": time.perf_counter()-started-evaluation_seconds,
                          "evaluation_seconds": evaluation_seconds, "inference_seconds": inference_seconds,
-                         "update_seconds": update_seconds, "environment_seconds": dict(env.seconds),
+                         "update_seconds": update_seconds, "environment_seconds": performance(env)["seconds"],
                          "snapshot_seconds": snapshot_seconds,
                          "peak_cuda_allocated_bytes": torch.cuda.max_memory_allocated() if config["device"] == "cuda" else 0,
-                         "environment_counters": dict(env.counters), "counts": dict(all_counts),
+                         "environment_counters": performance(env)["counters"], "counts": dict(all_counts),
                          "peak_rss_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*(1 if platform.system() == "Darwin" else 1024),
                          "training_champion_score": champion_score})
         metadata["actor_compilation"] = compiled_actor.report() if compiled_actor else {"enabled": False}
         metadata["actor_compile_setup_seconds"] = actor_compile_setup_seconds
         write(output/"metadata.json", metadata)
-        render(output, catalog)
+        render(output, runtime)
         print(json.dumps({"event": "complete", "commands": commands, "training_seconds": metadata["training_seconds"],
                           "champion_score": champion_score, "output": str(output)}), flush=True)
     except BaseException as e:
@@ -284,17 +275,21 @@ def train(catalog, config, config_path, output, resume_path=None):
                          "training_seconds": time.perf_counter()-started-evaluation_seconds,
                          "evaluation_seconds": evaluation_seconds, "inference_seconds": inference_seconds,
                          "update_seconds": update_seconds, "snapshot_seconds": snapshot_seconds,
-                         "environment_seconds": dict(env.seconds), "environment_counters": dict(env.counters),
-                         "error": {"code": "run.interrupted", "severity": "error", "stage": "run",
+                         "environment_seconds": performance(env)["seconds"], "environment_counters": performance(env)["counters"],
+                         "error": {"code": "run.interrupted", "severity": "error", "stage": f"run.{phase}",
                                    "message": str(e) or type(e).__name__, "entity": str(output)}})
         metadata["actor_compilation"] = compiled_actor.report() if compiled_actor else {"enabled": False}
         metadata["actor_compile_setup_seconds"] = actor_compile_setup_seconds
         write(output/"metadata.json", metadata)
         # Preserve the last complete training checkpoint; partial rollout observations are
         # retained separately so an interrupted on-policy stream is not represented by a seed.
-        torch.save({"commands": commands, "policy": model.state_dict(), "optimizer": optimizer.state_dict(),
-                    "environment": serialize(env.draft), "base": serialize(env.base), "best": serialize(env.best),
-                    "episode_step": env.steps, "torch_rng": torch.get_rng_state(), "numpy_rng": rng.bit_generator.state,
+        torch.save({"schema_version": 2, "checkpoint_kind": "interrupted", "phase": phase, "commands": commands,
+                    "episode": episode, "optimizer_steps": optimizer_steps, "counts": dict(all_counts),
+                    "champion_score": champion_score, "metadata": metadata,
+                    "policy": model.state_dict(), "optimizer": optimizer.state_dict(),
+                    "environment": snapshot(env),
+                    "torch_rng": torch.get_rng_state(), "numpy_rng": rng.bit_generator.state,
+                    "numpy_legacy_rng": np.random.get_state(), "python_rng": random.getstate(),
                     "cuda_rng": torch.cuda.get_rng_state_all() if config["device"] == "cuda" else None,
                     "actor_policy": actor.state_dict(),
                     "partial_rollout": locals().get("rollout"), "episode_return": locals().get("episode_return")},
@@ -309,21 +304,22 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("command", choices=("check", "train"))
     parser.add_argument("--case", required=True, type=Path)
+    parser.add_argument("--native-library", required=True, type=Path, help="Explicit release Rust extension library")
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--resume", type=Path, help="Continue a trusted completed CPU run final checkpoint")
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[2])
     args = parser.parse_args()
-    catalog = Catalog(args.root.resolve(), args.case.resolve())
     config = json.loads(args.config.read_text())
+    runtime = Runtime(args.root, args.case, config, args.native_library)
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     if args.command == "check":
         if args.resume is not None:
             parser.error("--resume is only valid with train")
-        print(json.dumps(verify_environment(catalog, config, output), indent=2))
+        print(json.dumps(verify_environment(runtime, config, output), indent=2))
     else:
-        train(catalog, config, args.config, output, args.resume)
+        train(runtime, config, args.config, output, args.resume)
 
 
 if __name__ == "__main__":

@@ -15,10 +15,11 @@ import numpy as np
 import torch
 from torch.nn import functional as F
 
-from acceptance import Catalog
-from environment import Environment
+from reference.acceptance import Catalog
+from reference.environment import Environment
 from policy import Policy, update
-from run import provenance, refresh_actor, write
+from run import refresh_actor
+from evidence import provenance, write
 
 
 def unfolded_convolution(layer, spatial):

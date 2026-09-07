@@ -12,10 +12,10 @@ import time
 import numpy as np
 import torch
 
-from acceptance import Catalog
-from environment import Environment
+from reference.acceptance import Catalog
+from reference.environment import Environment
 from policy import Policy
-from run import provenance, write
+from evidence import provenance, write
 
 
 def main():

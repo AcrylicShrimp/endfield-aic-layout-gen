@@ -9,14 +9,14 @@ import shutil
 import numpy as np
 import torch
 
-from acceptance import check
+from native import check
 
 
 def digest(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 
 
-def load_parent(path, catalog, config, current_provenance):
+def load_parent(path, runtime, config, current_provenance):
     path = Path(path).resolve()
 
     def require(condition, reason):
@@ -25,6 +25,10 @@ def load_parent(path, catalog, config, current_provenance):
 
     parent = json.loads((path.parent/"metadata.json").read_text())
     checkpoint = torch.load(path, map_location="cpu", weights_only=False)
+    require(checkpoint.get("schema_version") == parent.get("schema_version") == 2
+            and checkpoint.get("checkpoint_kind") == "complete_rollout"
+            and parent.get("environment_backend") == "rust",
+            "resume.legacy_checkpoint: only native schema-2 completed-rollout checkpoints are supported")
     require(parent["status"] == "complete", "parent run is not complete")
     require(config["device"] == parent["device"] == "cpu", "continuation currently requires CPU")
     require(not config.get("compile_actor", False), "exact CPU continuation currently requires the eager actor")
@@ -38,22 +42,32 @@ def load_parent(path, catalog, config, current_provenance):
     require(config["commands"] > checkpoint["commands"], "new cumulative allowance must exceed parent commands")
     require(config["checkpoints"][0] == checkpoint["commands"] and config["checkpoints"][-1] == config["commands"]
             and config["checkpoints"] == sorted(set(config["checkpoints"])), "evaluation schedule must span the continuation exactly")
-    require(parent["case"] == catalog.case["id"], "case identifier differs")
+    require(parent["case"] == runtime.case["id"], "case identifier differs")
     previous = parent["provenance"]
+    require(checkpoint["metadata"]["provenance"] == previous, "checkpoint and parent provenance disagree")
     for key in ("python", "torch", "numpy", "platform", "machine"):
         require(previous[key] == current_provenance[key], f"runtime field changed: {key}")
     source = Path(__file__).resolve().parent
-    semantic = [source/name for name in ("policy.py", "environment.py", "commands.py", "acceptance.py")]
-    for file in [*semantic, catalog.path.resolve(), *catalog.paths.values()]:
-        key = str(file.relative_to(catalog.root))
-        require(previous["files_sha256"].get(key) == current_provenance["files_sha256"].get(key),
+    semantic = [source/name for name in ("policy.py", "native.py", "run.py", "resume.py")]
+    native_previous, native_current = previous.get("native"), current_provenance.get("native")
+    require(native_previous is not None and native_current is not None, "native build provenance is missing")
+    for field in ("library_sha256", "build", "engine_version", "snapshot_version", "inputs", "root_identity"):
+        require(native_previous[field] == native_current[field], f"native build/input provenance changed: {field}")
+    semantic += [runtime.root/name for name in native_current["build"]["files_sha256"]]
+    for file in [*semantic, runtime.path.resolve(), *runtime.paths.values()]:
+        key = str(file.relative_to(runtime.root)) if file.is_relative_to(runtime.root) else str(file)
+        hash_field = "files_sha256" if file.is_relative_to(runtime.root) else "external_files_sha256"
+        require(previous[hash_field].get(key) == current_provenance[hash_field].get(key),
                 f"semantic/catalog hash changed: {key}")
     champion = json.loads((path.parent/"training-best.json").read_text())
-    accepted = check(catalog, champion)
+    engine = runtime.new_engine()
+    accepted = check(engine, champion)
     require(accepted["valid"] and accepted["score"] == checkpoint["champion_score"] == parent["training_champion_score"],
             "retained champion does not match the independently validated parent score")
     require(accepted["score"] == parent["verification"]["initial"]["score"] or (path.parent/"training-best-trace.json").is_file(),
             "improved champion has no retained trace")
+    require(checkpoint.get("environment", {}).get("steps") == 0, "completed-rollout environment is not at an episode boundary")
+    engine.restore_state_json(json.dumps(checkpoint["environment"]))
     lineage = {"checkpoint": str(path), "checkpoint_sha256": digest(path),
                "parent_metadata_sha256": digest(path.parent/"metadata.json"),
                "resumed_commands": checkpoint["commands"],
@@ -61,13 +75,15 @@ def load_parent(path, catalog, config, current_provenance):
     return checkpoint, lineage
 
 
-def restore(checkpoint, model, optimizer, rng):
+def restore(checkpoint, model, optimizer, rng, environment):
     model.load_state_dict(checkpoint["policy"])
     optimizer.load_state_dict(checkpoint["optimizer"])
     torch.set_rng_state(checkpoint["torch_rng"])
     rng.bit_generator.state = checkpoint["numpy_rng"]
     np.random.set_state(checkpoint["numpy_legacy_rng"])
     random.setstate(checkpoint["python_rng"])
+    environment.restore_state_json(json.dumps(checkpoint["environment"]))
+    environment.restart_measurements()
 
 
 def copy_champion(parent_checkpoint, output):

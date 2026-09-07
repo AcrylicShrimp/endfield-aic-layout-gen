@@ -1,268 +1,157 @@
 # Fixed-factory edit pilot
 
-An isolated first learning experiment, authorized by the user after the collaborative design
-phase. See the [execution contract](../../docs/designs/2026-09-07.02-fixed-factory-pilot-execution.md)
-and [pilot hypotheses](../../docs/designs/2026-09-07.01-factory-edit-learning-pilot.md).
-The [first result](../../docs/reports/2026-09-07.00-first-cpu-factory-edit-pilot.md) records the
-completed 65,536-command seed, outcome/reward curves, learned edit, and interpretation limits.
+This is the explicit local-edit learning pilot, separate from the production constructor and
+isolated global exact research. A 100,898-parameter CNN/object MLP scores the seven declared
+local commands. PPO starts from fresh weights; every episode starts from the same complete
+factory. There is no demonstration pretraining, route search, repair macro or global fallback.
+See the [pilot contract](../../docs/designs/2026-09-07.01-factory-edit-learning-pilot.md) and
+[Rust ownership contract](../../docs/designs/2026-09-08.04-rust-owned-factory-edit-environment.md).
 
-The model is a 100,898-parameter CNN plus per-object MLP, with shared policy/value features
-and a typed local-command scorer. PPO starts from fresh weights. There is no GNN, demonstration
-pretraining, route-search helper, repair macro, or production fallback. All episodes start from
-the same complete factory; only learner state persists. The first run has one training seed,
-65,536 commands, and 128 commands per episode. It does not test generalization.
+Rust now owns runtime catalogs, exact request validation, draft/working-base/episode-best state,
+geometry, candidates, edits, independent acceptance, scores/reward, traces and observation arrays.
+Python owns PyTorch inference/sampling, PPO/GAE/Adam, rollout storage, evaluation scheduling,
+plots and top-level checkpoints. Training and frozen evaluation use the same Rust engine.
+The hot boundary returns owned NumPy arrays and an opaque candidate handle and accepts one
+selected index. Python does not reconstruct factories or run a second rule implementation.
 
-The deliberately narrow geometry domain is non-crossing belt paths with one source/demand per
-commodity network. Four facilities produce a catalog battery from two catalog-external raw
-materials. Rates, rotations, footprints, ports, and capacity come from runtime catalog files.
-The executor supports the seven parent commands using the local domain in the execution contract;
-the policy scores all mechanically proposed commands rather than an outcome-ranked shortlist.
-Automatic final checking retains a complete best result, including the unchanged root if needed.
+The current geometry scope is non-crossing directed belt paths with one source/demand per
+commodity network. The four-facility battery case and its rates, poses, rotations, ports and
+transport capacity come from external files. `case.json` is a compact human-authored fixture;
+its improving witness checks the environment and is not training data. Width/height are actual
+used outputs. The raster-work guard is an operational resource control, not a game boundary.
 
-`case.json` is a compact human-authored input fixture retained because the identical starting
-geometry and complete external obligations define this overfit task. It includes one improving
-witness for environment checks only. `run.json` is the prospective run configuration. Neither
-file is a generated solver/training result. No historical run artifact is a required input.
-
-The current CPU default is four PyTorch intra-operation threads, selected by a local timing
-comparison; the first published result used one. Inter-operation threads remain one. This
-keeps PyTorch's standard convolutions, autograd, model size, PPO settings, and command budgets.
-`updates.jsonl` now separates batch preparation, forward/loss, backward, and optimizer time.
-See the [CPU timing report](../../docs/reports/2026-09-07.01-factory-edit-cpu-speed.md).
+## Build and run
 
 From the repository root:
 
 ```sh
 uv sync --project tools/factory-edit-pilot --locked
-tools/factory-edit-pilot/.venv/bin/python -m unittest discover -s tools/factory-edit-pilot -p 'test_*.py' -v
-tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/run.py check --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run.json --output artifacts/factory-edit-pilot/preflight
-tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/run.py train --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run.json --output artifacts/factory-edit-pilot/cpu-100898-seed17
-```
-
-An existing experiment directory is not overwritten. Use a new output directory for a new run.
-The training command records catalog/source/configuration hashes and actual package versions,
-raw episode/evaluation/update rows, complete checkpoint state, selected layouts/traces, and PNG/SVG
-plots. Disposable preflight output and retained experiment evidence are ignored under `artifacts/`.
-Checkpoints may include non-replayable interrupted rollout state; do not delete them on the
-assumption that a seed can restore an interrupted stream.
-
-To select CPU threads on another host, supply a trusted local checkpoint as an explicit input:
-
-```sh
-tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/benchmark.py --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run.json --checkpoint artifacts/factory-edit-pilot/cpu-100898-seed17/checkpoint-65536.pt --threads 1 2 4 8 --repeats 3 --output artifacts/factory-edit-pilot/thread-benchmark
-```
-
-This records one fixed sampled rollout, resets model/Adam/minibatch RNG before each update
-measurement, excludes a warm-up round, alternates setting order, and reports median times.
-It retains the exact input tensors under the ignored output directory. Optional `--channels-last`
-and `--convolution unfold` / `view-unfold` are benchmark-only experiments; training uses standard
-PyTorch Conv2d and autograd. Neither alternate convolution is selected by `run.json`.
-
-## CPU and CUDA learners
-
-The `device` configuration selects `cpu` or `cuda` for PPO updates. Both paths collect
-observations, sample actions, and validate layouts on CPU. CUDA runs refresh a CPU policy
-snapshot after each complete update, before the next rollout. GPU availability is required
-when requested; no automatic CPU fallback is used. The first CUDA comparison uses float32,
-with TF32 and mixed precision disabled. See the [comparison contract](../../docs/designs/2026-09-07.03-factory-edit-cuda-comparison.md).
-
-`updates.jsonl` records synchronized wall-clock stages, including CPU preparation and transfers
-in `batch`. Synchronization makes completed GPU work visible and adds diagnostic overhead.
-These stage clocks are not pure kernel timings. Metadata also records CPU snapshot-copy time,
-GPU identity/runtime, peak GPU allocation, and the CPU actor device; checkpoints retain CUDA
-RNG state. CPU and CUDA floating-point trajectories need not produce identical trained policies.
-
-For a fixed-input device comparison, run `benchmark.py --input <retained-input.pt> --device cpu`
-and `--device cuda` with the same config and threads, each in a fresh output directory. Both
-load the exact same observations, weights, and optimizer state. Input tensors and checkpoints
-must be trusted local files. The server checkout and its environment live under
-`~/Srv/endfield-aic-layout-gen`; long jobs run through SSH in detached tmux sessions with
-file logs and exit-status files. No Jupyter service is required.
-
-The `run-server-cpu.json` and `run-server-cuda.json` configs use 16 CPU threads
-on the measured server and otherwise share the original learning/evaluation allowance:
-
-```sh
-tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/run.py train --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run-server-cpu.json --output artifacts/factory-edit-pilot/server-cpu-t16-seed17
-tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/run.py train --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run-server-cuda.json --output artifacts/factory-edit-pilot/server-cuda-t16-seed17
-```
-
-An initial 24-thread CPU attempt exposed an inference slowdown on elongated inputs and was
-interrupted with its checkpoint/partial rollout retained. `rollout_benchmark.py` replays a saved
-input's action sequence while interleaving inference, candidate generation, observation, and
-validation. It checks every reconstructed observation against the saved tensors after timing.
-This complements the contiguous-inference microbenchmark. On actual interrupted-run inputs,
-16-thread inference was about 19x faster than 24-thread inference; 16 also won the larger-input
-update comparison. `benchmark.py --actor-threads` isolates inference threads when diagnosing
-update settings. Training uses the simpler single selected thread count.
-
-Independent acceptance of an exported factory, without running the environment or policy:
-
-```sh
-tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/acceptance.py --case tools/factory-edit-pilot/case.json --layout artifacts/factory-edit-pilot/cpu-100898-seed17/training-best.json
-tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/plots.py --case tools/factory-edit-pilot/case.json --output artifacts/factory-edit-pilot/cpu-100898-seed17
-tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/audit.py --case tools/factory-edit-pilot/case.json --output artifacts/factory-edit-pilot/cpu-100898-seed17 --source-commit 42ade74
-```
-
-`learning-curves.png` separates frozen-policy outcomes, training/evaluation episode rewards,
-and the cumulative training champion. Under this reward, one episode's total equals its final
-relative area reduction. `factory-comparison.png` shows initial, representative evaluation,
-training-best, and scripted witness layouts with independent complete scores. A witness is
-explicitly labeled as unlearned. A flat curve remains a reportable first result.
-
-The completed [same-server report](../../docs/reports/2026-09-07.02-server-cpu-cuda-pilot.md) separates update throughput from final learned quality. `compare.py --runs <cpu-run> <cuda-run> --output <comparison-directory>` renders the paired outcome, reward, and timing evidence.
-
-## Continue a completed CPU run
-
-`run.py train --resume <trusted-final-checkpoint.pt>` restores the completed parent's policy,
-Adam optimizer, training RNG states, counters, and retained champion. The new configuration
-may change only total commands and evaluation checkpoints. Every episode still starts from
-the original factory. Interrupted or intermediate checkpoints, semantic changes, and runtime
-changes are rejected. See the [continuation contract](../../docs/designs/2026-09-07.04-fixed-factory-continuation.md).
-
-```sh
-tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/run.py train --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run-server-cpu-continue.json --resume artifacts/factory-edit-pilot/server-cpu-t16-seed17/checkpoint-65536.pt --output artifacts/factory-edit-pilot/server-cpu-t16-seed17-continue
-```
-
-Episode/command/update counters are cumulative; raw rows and timing fields cover only the new
-segment. Metadata records `resumed_commands`, `segment_commands`, `timing_scope`, and checkpoint
-lineage including inherited training time. Keep the parent directory alongside its continuation.
-
-Candidate observations now reuse finite catalog/action one-hot templates and fill owned NumPy
-arrays directly. Candidate sorting reuses the same standard JSON encoder. No action pruning,
-feature changes, state cache, or validation reduction accompanies this optimization.
-`environment_benchmark.py --case <case> --config <config> --input <retained-input.pt> [<input.pt> ...] --reference-source <trusted-git-commit> --output <fresh-directory>` compares every candidate in order, observation byte, and transition against the named historical environment and recorded observations. It alternates implementations after warm-up and retains timing/parity evidence.
-
-The [continuation result](../../docs/reports/2026-09-07.03-fixed-factory-continuation.md) remained flat at 4.545% through 131,072 commands. `plots.py --parent <parent-run>` adds verified parent rows to a separate `learning-curves-with-parent` figure without changing raw records.
-
-The [observation optimization report](../../docs/reports/2026-09-07.04-observation-construction-speed.md)
-records exact-input environment reductions, the full CUDA rerun, and numerical repeatability.
-`benchmark.py` records updated parameter hashes and differences outside measured clocks.
-Its optional `--deterministic` requests deterministic PyTorch/cuDNN algorithms and supplies a
-cuBLAS workspace configuration when absent. This is a diagnostic setting; the training runner
-keeps its prior default. Exact repeatability within CUDA does not imply CPU/CUDA bit equality
-or successful learning.
-
-## Reuse data preparation work
-
-CUDA PPO updates now prepare a collected rollout once and reuse its tensors across epochs.
-Each sampled minibatch is cropped to its original maximum raster/candidate dimensions before
-selection, preserving samples, ordering, values, and neural workload. Prepared tensor payloads
-default to a 1 GiB ceiling; `prepared_rollout_max_bytes` selects a nonnegative payload limit
-(zero disables preparation). The 32 GiB server config uses 4 GiB. Larger estimates use ordinary
-minibatch preparation and report that mode. This ceiling excludes model/gradient memory.
-CPU updates keep ordinary minibatch construction. `updates.jsonl` records `preparation.mode`
-and `estimated_rollout_bytes`; all preparation/selection time remains charged to `seconds.batch`.
-
-The environment uses separate 4,096-entry LRU caches for exact typed-command JSON sort strings
-and pure candidate encodings. Keys include all relevant fields/coordinates; mutable geometry
-and validation results are never cached. Eviction changes only computation cost. Global
-`environment_counters` record cache hits, misses, and current entries. Observation arrays own
-copies of cached encodings. CPU single-observation inference uses read-only tensor views.
-
-For fixed-input comparisons, `benchmark.py --reference-update <trusted-commit>` alternates old
-and current update implementations with identical model/Adam/data/minibatch states.
-`rollout_benchmark.py --reference-policy <trusted-commit>` similarly isolates actor inference
-while replaying the same environment sequence. See the [preparation contract](../../docs/designs/2026-09-07.06-factory-edit-feature-reuse.md).
-
-The [profile-guided preparation report](../../docs/reports/2026-09-07.05-factory-edit-data-preparation-speed.md)
-compares exact-input cost reductions with observed full-run time and memory. `costs.py --runs
-<before-run> <after-run> --output <fresh-directory>` produces a non-overlapping cost report.
-For a conservative within-episode reuse check, add `--reset-caches-per-episode` to the environment
-benchmark; it clears both LRUs and category templates at every episode boundary.
-
-## Immutable internal candidates
-
-`Environment.candidates()` now returns `CandidateSet`, with immutable `Command` entries,
-current draft identity/revision, and its geometry index. Training serializes only the selected
-command for `step`; `to_dicts()` is reserved for explicit diagnostic domain inspection. External
-edit/witness/trace JSON remains unchanged. Observation rejects stale candidate snapshots and
-reuses the current snapshot's index. Cached feature encodings include state-dependent terminal
-or discard positions. The old dict-candidate/prefix-cache production path has been removed.
-See the [cutover contract](../../docs/designs/2026-09-07.07-factory-edit-typed-candidates.md).
-
-`actor_benchmark.py` probes CPU/CUDA execution, inference-mode context, and one/two-episode
-batching on fixed retained observations. It reports preparation, completed forward/transfer,
-and CPU sampling separately. It does not change production collection or enable deterministic
-training. Two-episode GPU batching remains a prospective collection change, not a selected
-execution path in this slice.
-
-Immutable candidate measurements and remaining actor costs are recorded in
-[the typed candidate report](../../docs/reports/2026-09-08.00-factory-edit-typed-candidate-speed.md).
-
-Runtime-derived terminal features and port rotations are specified in
-[the observation-table contract](../../docs/designs/2026-09-08.00-factory-edit-observation-tables.md).
-`actor_compile_benchmark.py --case <case> --config <config> --input <retained-input.pt>
---cache-directory <persistent-cache-directory> --output <fresh-directory>` measures compiled inference, cold cost, numerical agreement
-on every retained shape, and weight refresh. Add `--device cuda --batch-size 2` for the GPU
-batch probe; defaults remain CPU and one observation. It does not enable compilation in training.
-
-[Observation-table measurements](../../docs/reports/2026-09-08.01-factory-edit-observation-tables.md)
-separate fixed-input gains, a slower full sampled run, and compiled actor amortization.
-
-`collection_benchmark.py --case <case> --config <config> --input <retained-input.pt>
---output <fresh-directory>` probes complete serial/batched collection with replay and acceptance.
-[The measured decision](../../docs/reports/2026-09-08.02-factory-edit-batched-collection-probe.md)
-keeps runner integration separate from the [collection contract](../../docs/designs/2026-09-08.01-factory-edit-batched-collection.md).
-
-The [compiled actor contract](../../docs/designs/2026-09-08.02-factory-edit-compiled-actor.md)
-adds explicit `compile_actor` and `compiler_cache_directory` run settings. The CPU actor's
-forward pass is compiled; CUDA learning, CPU sampling, and eager frozen evaluation keep their
-existing execution. Parameter checkpoints stay ordinary model state dictionaries. First setup
-is included in training time; later compiler events are nested in inference time. Reusing the
-explicit cache can reduce setup in a new process. Compiler callbacks and local graph-cache
-counters are isolated runtime diagnostics, verified on the deployed Linux/PyTorch environment.
-
-`run-server-cuda-long-eager.json` and `run-server-cuda-long-compiled.json` provide matched
-262,144-command comparisons. Exact completed CPU continuation requires an eager actor and
-checks the immutable command module hash in addition to policy, environment, acceptance and
-catalog data. Compiled CPU continuation has not established cross-process bitwise equivalence.
-
-`actor_parity.py --case <case> --config <config> --checkpoints <checkpoint.pt> ...
---cache-directory <cache> --output <fresh-directory>` compares the actual action API using
-shared weights, identical observations and cloned sampling RNG. It follows the eager stream
-and retains the first action disagreement if present. The [compiled actor report](../../docs/reports/2026-09-08.03-factory-edit-compiled-actor.md)
-separates fixed-input gains, full-run quality, cache costs and controlled behavior parity.
-
-`preparation_benchmark.py --case <case> --config <config> --input <retained-input.pt>
---output <fresh-directory>` compares 1/4 GiB preparation ceilings with deterministic CUDA
-updates. It repeats the retained input eight times only inside this diagnostic, preserving
-identical data/optimizer exposure across the pair, and checks resulting parameter hashes.
-
-`profile_environment.py --case <case> --config <config> --input <input.pt> ...
---output <fresh-directory>` profiles environment-only recorded replay and verifies all
-observations outside the profile. See the [native boundary investigation](../../docs/reports/2026-09-08.05-factory-edit-native-boundary.md);
-its instrumented clocks do not establish uninstrumented throughput or a Rust speedup.
-
-## Native observation experiment
-
-The isolated `aic-pilot-native` crate implements bulk raster/object geometry with PyO3 and
-rust-numpy. `native_observation.py` is an explicit experimental wrapper; normal training still
-uses the Python environment. Candidate generation, candidate features, coordinate channels,
-statistics, transitions and independent acceptance keep their existing implementation.
-
-Build against this experiment's Python interpreter from the repository root:
-
-```sh
 PYO3_PYTHON="$PWD/tools/factory-edit-pilot/.venv/bin/python" cargo build --release -p aic-pilot-native --features extension-module
 ```
 
-The library is `target/release/libaic_pilot_native.so` on Linux or
-`target/release/libaic_pilot_native.dylib` on macOS. No Python package installation or generated
-library is committed. Set `AIC_NATIVE_LIBRARY` to its absolute path to run
-`python -m unittest discover -s tools/factory-edit-pilot -p test_native_observation.py` with
-the same virtual-environment interpreter.
+Select the built library explicitly: `target/release/libaic_pilot_native.so` on Linux or
+`target/release/libaic_pilot_native.dylib` on macOS. For example, on Linux:
 
-`native_observation_benchmark.py --case <case> --config <config> --input <input.pt> ...
---native-library <library> --output <fresh-directory>` compares all observations/commands/
-transitions and complete environment replay time. Add `--cuda-inference` for the identical
-recorded replay interleaved with CUDA policy inference and CPU sampling. It charges conversion
-and returned-array work, excludes one-time environment setup (reported separately), and records
-native source/library/compiler provenance. It does not execute a new sampled training run.
-See the [slice contract](../../docs/designs/2026-09-08.03-factory-edit-native-observation.md).
+```sh
+export AIC_NATIVE_LIBRARY="$PWD/target/release/libaic_pilot_native.so"
+tools/factory-edit-pilot/.venv/bin/python -m unittest discover -s tools/factory-edit-pilot -v
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/run.py check --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run.json --native-library "$AIC_NATIVE_LIBRARY" --output artifacts/factory-edit-pilot/preflight
+tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/run.py train --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run.json --native-library "$AIC_NATIVE_LIBRARY" --output artifacts/factory-edit-pilot/native-cpu-seed17
+```
 
-For comparisons that create a fresh environment per replay, add `--collect-before-replay`
-to remove prior-trial garbage before setup. Automatic GC remains enabled during replay.
-The result separately records GC events over the entire replay call (including untimed
-serialization); these clocks cannot be subtracted from the timed loop. The [native trial report](../../docs/reports/2026-09-08.06-factory-edit-native-observation.md)
-records the scope, controlled speedup, parity, and initial GC-contaminated comparisons.
+`--native-library` is required; a missing, incompatible or stale build is an explicit error.
+The library embeds compiler/profile/target information and the hashes of its Rust sources,
+manifests, build script and lockfile. Runtime startup checks those hashes against the checkout.
+Rebuild after changing native source or Cargo inputs. Generated libraries and run outputs remain
+ignored. An existing experiment metadata file is not overwritten; use fresh output directories.
+
+A run records source/config/catalog/build hashes, actual package versions, raw training and
+frozen-evaluation rows, full checkpoints, selected layouts/traces, and PNG/SVG figures.
+The default allowance is 65,536 commands, 128 per episode, one training seed and five frozen
+checkpoints. This fixed-root experiment does not test generalization. Flat learning is a valid
+reported result. Score priority is used area, physical transport tiles, then turns; task reward
+is only the improvement in best validated area relative to the initial area.
+
+## CPU and CUDA execution
+
+`device` selects the PPO learner. Both CPU and CUDA runs use the same native CPU environment,
+CPU actor and CPU action-sampling RNG. CUDA learning refreshes the CPU actor after each complete
+update. Float32, TF32 disabled, ordinary convolutions/autograd, model dimensions and the original
+rollout/horizon/GAE ordering are preserved. CUDA availability is required when selected.
+
+`run-server-cpu.json` and `run-server-cuda.json` use 16 intra-operation threads on the measured
+server; `run.json` uses four on the local host. Inter-operation threads remain one. For example:
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/run.py train --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run-server-cuda.json --native-library "$AIC_NATIVE_LIBRARY" --output artifacts/factory-edit-pilot/native-cuda-seed17
+```
+
+CUDA PPO prepares each rollout once when its payload fits `prepared_rollout_max_bytes` and
+reuses tensors across epochs, cropping every minibatch to its original dimensions. The default
+payload ceiling is 1 GiB; the 32 GiB server configuration selects 4 GiB. Zero disables preparation.
+Larger estimates use ordinary minibatch preparation with an explicit reported mode. The payload
+ceiling excludes model/gradient memory. CPU updates keep ordinary minibatch preparation.
+
+Optional `compile_actor` plus `compiler_cache_directory` compiles the CPU actor forward pass.
+CUDA learning, CPU sampling and eager frozen evaluation retain their established behavior.
+The matched `run-server-cuda-long-{eager,compiled}.json` files are historical long-run configs.
+GPU batched collection remains a separate experiment and is not selected by this migration.
+
+Metadata separates native candidates/observation/step/validation, array export, inference,
+PPO stages and actor snapshot time. Validation is nested inside step; array export is separate
+from observation. `costs.py` avoids double-counting those clocks. FFI dispatch and remaining
+runner work stay in the residual wall time. All timings include actual work/transfer where
+stated; they are not pure CUDA kernel times.
+
+## Validate, visualize and audit
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/native.py check-layout --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run.json --native-library "$AIC_NATIVE_LIBRARY" --layout artifacts/factory-edit-pilot/native-cpu-seed17/training-best.json
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/plots.py --case tools/factory-edit-pilot/case.json --native-library "$AIC_NATIVE_LIBRARY" --output artifacts/factory-edit-pilot/native-cpu-seed17
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/audit.py --case tools/factory-edit-pilot/case.json --output artifacts/factory-edit-pilot/native-cpu-seed17 --source-commit <recorded-source-commit>
+```
+
+Plots draw native-validated geometry and scores. `audit.py` deliberately uses the isolated
+`reference/` Python oracle to replay retained traces and independently accept selected layouts.
+Normal training/evaluation/plotting never import that oracle. The audit checks source/input
+provenance and, for native runs, embedded build hashes and the selected library artifact.
+`learning-curves.png` separates frozen outcomes, episode reward and the training discovery
+record. `factory-comparison.png` labels the scripted witness as unlearned.
+
+## Checkpoints and continuation
+
+Native run/checkpoint schema 2 replaces the former Python contract. Environment snapshots
+contain all mutable layouts, scores, step/revision/generation, traces, counters, input identity
+and configuration. Restore rebuilds acceptance and rejects incompatible inputs, malformed
+accounting or false score claims before changing the live state. JSON float parsing preserves
+roundtrip bits. Candidate handles from another engine or before reset/restore are invalid.
+
+`run.py train --resume <trusted-final-checkpoint.pt>` supports completed CPU runs with an eager
+actor. It restores model/Adam/RNG state, native environment state, cumulative episode/command
+counts and the champion. Only total allowance and evaluation checkpoints may change. Runtime,
+semantic source and native build changes are rejected. Legacy Python schema-1 checkpoints
+produce `resume.legacy_checkpoint`; they are not silently converted or resumed.
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/run.py train --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run-server-cpu-continue.json --native-library "$AIC_NATIVE_LIBRARY" --resume artifacts/factory-edit-pilot/native-cpu-seed17/checkpoint-65536.pt --output artifacts/factory-edit-pilot/native-cpu-seed17-continue
+```
+
+Continuation timing covers the current invocation; inherited time is retained in lineage.
+Keep the parent directory. `plots.py --parent <parent-directory>` adds verified parent rows.
+Interrupted runs retain a separate schema-2 `interrupted-state.pt`: native snapshot, partial
+rollout, learner/actor/optimizer state, all RNG streams and the interrupted phase. It preserves
+partial episodes for inspection/recovery; automatic CLI continuation still requires a completed
+CPU final checkpoint. Do not discard this evidence assuming a seed can reproduce it.
+
+## Parity and research tools
+
+`native_transition_parity.py --case <case> --config <config> --input <input.pt> ...
+--native-library <library> --output <fresh-result.json>` compares candidate order, every
+observation byte, transitions, all mutable states, traces and counters with both the Python
+oracle and retained observations. Direct native tests cover rotations, large coordinates,
+array ownership, guards, handle errors, snapshot atomicity and continuation.
+
+`native_engine_benchmark.py` takes the same inputs with a fresh output directory, `--repeats 11`
+and `--collect-before-replay`. It alternates Python-reference/native timing after warm-up while
+preserving automatic GC. Optional `--inference cpu` interleaves the actual CPU actor, and
+`--inference cuda` probes GPU inference on the same recorded trajectory; inferred actions are
+discarded. Setup and native array export are reported separately. The timed native loop uses
+`observe()`/`step(handle, index)` and performs no diagnostic candidate/state export.
+
+Historical Python-only environment and actor/update probes explicitly import `reference/`.
+They remain research tools, never training fallbacks: `benchmark.py`, `environment_benchmark.py`,
+`rollout_benchmark.py`, `actor_benchmark.py`, `actor_compile_benchmark.py`, `actor_parity.py`,
+`collection_benchmark.py`, `preparation_benchmark.py` and `profile_environment.py`.
+`compare.py --runs <run> ... --output <fresh-directory>` and `costs.py --runs <run> ...
+--output <fresh-directory>` summarize retained outcomes and costs.
+
+The old observation-only `GeometryEncoder` and Python bridge/benchmark/tests were removed.
+To reproduce that historical experiment, check out `bcfcf34` and follow its README. Its
+[report](../../docs/reports/2026-09-08.06-factory-edit-native-observation.md) measures a partial
+migration and does not describe the current production environment.
+
+Migration evidence: [state/snapshots](../../docs/reports/2026-09-08.07-factory-edit-native-state.md),
+[candidates/transitions](../../docs/reports/2026-09-08.08-factory-edit-native-transitions.md), and
+[complete observations](../../docs/reports/2026-09-08.09-factory-edit-native-observations.md).
+Earlier learning and CPU/CUDA findings remain under `docs/reports/`; native migration does not
+turn those single-case measurements into generalization or optimizer claims.

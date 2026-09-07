@@ -9,11 +9,11 @@ import time
 
 import torch
 
-from acceptance import Catalog
+from reference.acceptance import Catalog
 from compiled_actor import CompiledActor
-from environment import Environment, serialize
+from reference.environment import Environment, serialize
 from policy import Policy
-from run import provenance, write
+from evidence import provenance, write
 
 
 def main():

@@ -10,10 +10,10 @@ import time
 
 import torch
 
-from acceptance import Catalog, check
-from environment import Environment, serialize
+from reference.acceptance import Catalog, check
+from reference.environment import Environment, serialize
 from policy import Policy, batch, single
-from run import provenance, write
+from evidence import provenance, write
 
 
 def collect(model, catalog, config, size, device, inference):

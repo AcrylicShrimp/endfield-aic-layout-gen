@@ -4,15 +4,16 @@ from copy import deepcopy
 import json
 import os
 import random
+import shutil
 from pathlib import Path
 import tempfile
 import unittest
 
 import numpy as np
 
-from acceptance import Catalog, check
-from environment import Environment, serialize
-from native_observation import load_native
+from reference.acceptance import Catalog, check
+from reference.environment import Environment, serialize
+from native import Runtime, load_native
 
 ROOT = Path(__file__).resolve().parents[2]
 DIRECTORY = Path(__file__).resolve().parent
@@ -406,6 +407,29 @@ class NativeEngineTests(unittest.TestCase):
             missing = Path(directory) / "missing.json"
             with self.assertRaisesRegex(ValueError, "input.read.*missing.json"):
                 self.open(missing)
+
+    def test_runtime_rejects_stale_build_and_changed_inputs(self):
+        library = os.environ["AIC_NATIVE_LIBRARY"]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            build = json.loads(self.module.Engine.build_info_json())
+            for relative in build["files_sha256"]:
+                path = root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ROOT / relative, path)
+            path = root / "crates/aic-pilot-native/src/lib.rs"
+            path.write_text(path.read_text() + "\n// Deliberate stale-build test.\n")
+            with self.assertRaisesRegex(ValueError, "native.stale_build"):
+                Runtime(root, DIRECTORY / "case.json", self.config, library)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "case.json"
+            case = deepcopy(self.catalog.case)
+            path.write_text(json.dumps(case))
+            runtime = Runtime(ROOT, path, self.config, library)
+            case["id"] += "-changed"
+            path.write_text(json.dumps(case))
+            with self.assertRaisesRegex(ValueError, "native.inputs_changed"):
+                runtime.new_engine()
 
     def test_integer_and_geometry_range_rejection(self):
         for value in (True, 1.5, 2**63):
