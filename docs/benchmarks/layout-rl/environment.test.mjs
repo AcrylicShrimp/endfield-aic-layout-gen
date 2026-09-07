@@ -12,6 +12,7 @@ import { canonicalKey, transform } from './geometry.mjs';
 import { score, compare, terminalAdvantages } from './score.mjs';
 import { semanticKey, checkRoot } from './coverage.mjs';
 import { catalogKeys, read, Probe, digest } from './io.mjs';
+import { drawing } from './visualize.mjs';
 
 const repo = fileURLToPath(new URL('../../../', import.meta.url));
 const options = Object.fromEntries(catalogKeys.map(k => [k, path.join(repo, 'data/game/normalized', `${k === 'components' ? 'logistics-components' : k}.json`)]));
@@ -33,6 +34,32 @@ test.before(async () => {
 });
 test.after(() => probe?.close());
 const environment = () => new Environment({ environment: plan, options, roots: [root] }, probe);
+
+test('visual projection preserves source geometry, identities and score without mutating the factory', () => {
+  const witness = root.witness, original = digest(witness);
+  const aliases = new Map(witness.placements.map((p, i) => [p.instance, `F${i + 1}`]));
+  const picture = drawing(witness, aliases, catalogs);
+  assert.deepEqual(picture.score, score(witness, catalogs));
+  assert.equal(picture.facilities.length, witness.placements.length);
+  const dx = witness.placements[0].x - picture.facilities[0].x;
+  const dy = witness.placements[0].y - picture.facilities[0].y;
+  const xy = p => [p.x - dx, p.y - dy];
+  for (const [i, p] of witness.placements.entries()) {
+    assert.deepEqual(picture.facilities[i], { alias: aliases.get(p.instance), facility: p.facility,
+      recipe: p.recipe, x: p.x - dx, y: p.y - dy, width: p.width, height: p.height, rotation: p.rotation });
+  }
+  assert.equal(picture.networks.length, witness.transport_networks.length);
+  for (const [i, network] of witness.transport_networks.entries()) {
+    assert.deepEqual(picture.networks[i].cells, network.cells.map(xy));
+    assert.deepEqual(picture.networks[i].segments, network.segments.map(s => [...xy(s.from), ...xy(s.to)]));
+    assert.deepEqual(picture.networks[i].terminals, network.terminals.map(t => ({ xy: xy(t.position),
+      direction: t.direction, owner: t.endpoint.kind === 'facility' ? aliases.get(t.endpoint.instance) : 'External',
+      port: t.endpoint.port ?? null })));
+  }
+  assert.deepEqual(picture.components, witness.logistics_components.map(c => ({ xy: xy(c.position),
+    kind: c.kind, transport: c.transport, rotation: c.rotation })));
+  assert.equal(digest(witness), original);
+});
 
 test('terminal comparisons preserve score priority, ties and delayed credit without weighted sums', () => {
   assert.equal(compare([10, 999, 999], [11, 0, 0]), -1);

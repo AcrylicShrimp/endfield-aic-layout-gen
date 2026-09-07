@@ -1,0 +1,88 @@
+<div id="rl-layout-comparison">
+  <style>
+    #rl-layout-comparison .drawings { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; }
+    #rl-layout-comparison .drawing { min-width:0; }
+    #rl-layout-comparison .factory-map { width:100%; display:block; }
+    #rl-layout-comparison .factory-map text { fill:var(--foreground); font-size:12px; }
+    #rl-layout-comparison .metadata { overflow-wrap:anywhere; }
+    #rl-layout-comparison .swatch { display:inline-block; width:14px; height:8px; margin-right:4px; }
+    #rl-layout-comparison [data-kind="facility"] { background:var(--secondary); border:1px solid var(--foreground); }
+    #rl-layout-comparison [data-kind="belt"] { background:var(--viz-series-1); }
+    #rl-layout-comparison [data-kind="pipe"] { background:var(--viz-series-2); }
+    @media(max-width:640px) { #rl-layout-comparison .drawings { grid-template-columns:minmax(0,1fr); } }
+  </style>
+  <div class="viz-controls">
+    <label class="form-label">Generated factory <select class="form-select" id="rl-case"></select></label>
+    <label class="form-label">Facility detail <select class="form-select" id="rl-facility"></select></label>
+  </div>
+  <div class="text-small metadata" id="rl-provenance"></div>
+  <div class="text-small">Best observed of 9 policy/rollout combinations · 128 proposals · not a typical-result estimate</div>
+  <div class="drawings">
+    <section class="drawing"><h3>Before</h3><div class="tabular-nums" id="rl-before-score"></div><svg class="factory-map" id="rl-before-map" role="img" aria-label="Original generated factory"></svg></section>
+    <section class="drawing"><h3>After RL</h3><div class="tabular-nums" id="rl-after-score"></div><svg class="factory-map" id="rl-after-map" role="img" aria-label="Best validated factory retained by the learned policy"></svg></section>
+  </div>
+  <div class="viz-row text-small">
+    <span><span class="swatch" data-kind="facility"></span>Facility</span>
+    <span><span class="swatch" data-kind="belt"></span>Belt</span>
+    <span><span class="swatch" data-kind="pipe"></span>Pipe</span>
+    <span>○ External terminal · ◇ Logistics component</span>
+  </div>
+  <div class="text-small">Same tile scale · origins normalized · dashed boundary: original footprint · both factories independently validated</div>
+  <div class="text-small metadata" id="rl-detail" aria-live="polite"></div>
+  <script type="application/json" id="rl-comparison-data">__COMPARISON_DATA__</script>
+  <script>
+  (() => {
+    const root = document.getElementById('rl-layout-comparison');
+    const data = JSON.parse(root.querySelector('#rl-comparison-data').textContent);
+    const picker = root.querySelector('#rl-case'), facilityPicker = root.querySelector('#rl-facility');
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const node = (tag, attrs, text) => { const e = document.createElementNS(svgNS, tag); for(const [k,v] of Object.entries(attrs ?? {})) e.setAttribute(k,v); if(text !== undefined)e.textContent=text; return e; };
+    const option = (value,text) => {const o=document.createElement('option');o.value=value;o.textContent=text;return o;};
+    data.cases.forEach((c,i)=>picker.append(option(i,c.label)));
+    const current = () => data.cases[Number(picker.value)];
+    const metric = s => `${s.width} × ${s.height} · area ${s.area.toLocaleString()} · tiles ${s.physical_tiles.toLocaleString()} · turns ${s.turns}`;
+    function drawMap(svg, drawing, width, scale, before, selected) {
+      svg.replaceChildren(); const pad=18, height=(Math.max(current().before.score.height,current().after.score.height))*scale+pad*2;
+      svg.setAttribute('viewBox',`0 0 ${width} ${height}`); svg.style.height=`${height}px`;
+      svg.append(node('desc',{},`${drawing.facilities.length} facilities, ${metric(drawing.score)}. Exact geometry, one common tile scale for both panels.`));
+      const x=v=>pad+v*scale, y=v=>pad+v*scale, color=k=>`var(--viz-series-${k==='pipe'?2:1})`;
+      const step=scale>=8?1:10;
+      for(let i=0;i<=before.width;i+=step) svg.append(node('line',{x1:x(i),y1:y(0),x2:x(i),y2:y(before.height),stroke:'var(--border)','stroke-width':.5}));
+      for(let i=0;i<=before.height;i+=step) svg.append(node('line',{x1:x(0),y1:y(i),x2:x(before.width),y2:y(i),stroke:'var(--border)','stroke-width':.5}));
+      svg.append(node('rect',{x:x(0),y:y(0),width:before.width*scale,height:before.height*scale,fill:'none',stroke:'var(--muted-foreground)','stroke-width':1,'stroke-dasharray':'4 4'}));
+      svg.append(node('rect',{x:x(0),y:y(0),width:drawing.score.width*scale,height:drawing.score.height*scale,fill:'none',stroke:'var(--foreground)','stroke-width':1.2}));
+      for(const n of drawing.networks) {
+        for(const [a,b] of n.cells) svg.append(node('rect',{x:x(a+.13),y:y(b+.13),width:scale*.74,height:scale*.74,fill:color(n.kind),'fill-opacity':.3}));
+        for(const [a,b,c,d] of n.segments) {
+          svg.append(node('line',{x1:x(a+.5),y1:y(b+.5),x2:x(c+.5),y2:y(d+.5),stroke:color(n.kind),'stroke-width':Math.max(.8,scale*.22)}));
+          if(scale>=8) { const mx=(a+c)/2+.5,my=(b+d)/2+.5,dx=c-a,dy=d-b;
+            svg.append(node('path',{d:`M${x(mx+dx*.21)},${y(my+dy*.21)} L${x(mx-dx*.13-dy*.13)},${y(my-dy*.13+dx*.13)} L${x(mx-dx*.13+dy*.13)},${y(my-dy*.13-dx*.13)}Z`,fill:color(n.kind)})); }
+        }
+        for(const t of n.terminals) if(t.owner==='External') svg.append(node('circle',{cx:x(t.xy[0]+.5),cy:y(t.xy[1]+.5),r:Math.max(1,scale*.25),fill:'var(--background)',stroke:color(n.kind),'stroke-width':1.2}));
+      }
+      for(const c of drawing.components) {const a=x(c.xy[0]+.5),b=y(c.xy[1]+.5),r=Math.max(1,scale*.33);svg.append(node('path',{d:`M${a},${b-r} L${a+r},${b} L${a},${b+r} L${a-r},${b}Z`,fill:color(c.transport),stroke:'var(--foreground)','stroke-width':.5}));}
+      for(const p of drawing.facilities) {
+        const active=selected===p.alias;
+        const rect=node('rect',{x:x(p.x)+.5,y:y(p.y)+.5,width:p.width*scale-1,height:p.height*scale-1,fill:active?'var(--viz-series-3)':'var(--secondary)',
+          'fill-opacity':active?.3:1,stroke:active?'var(--viz-series-3)':'var(--foreground)','stroke-opacity':active?1:.6,'stroke-width':active?2:1,
+          'data-tooltip':`${p.alias} · ${p.facility} · ${p.rotation}°`});
+        rect.addEventListener('click',()=>{facilityPicker.value=p.alias;draw();}); svg.append(rect);
+        if(p.width*scale>p.alias.length*7+6&&p.height*scale>16) svg.append(node('text',{x:x(p.x+p.width/2),y:y(p.y+p.height/2),'text-anchor':'middle','dominant-baseline':'central','pointer-events':'none'},p.alias));
+      }
+    }
+    function draw() {
+      const c=current(), selected=facilityPicker.value, maps=[root.querySelector('#rl-before-map'),root.querySelector('#rl-after-map')];
+      const widths=maps.map(m=>m.parentElement.getBoundingClientRect().width), scale=(Math.min(...widths)-36)/Math.max(c.before.score.width,c.after.score.width);
+      root.querySelector('#rl-before-score').textContent=metric(c.before.score);
+      root.querySelector('#rl-after-score').textContent=metric(c.after.score);
+      root.querySelector('#rl-provenance').textContent=`${c.policy} · rollout ${c.rollout_seed} · ${(c.elapsed_ms/1000).toFixed(2)} s · area −${((1-c.after.score.area/c.before.score.area)*100).toFixed(1)}%`;
+      maps.forEach((m,i)=>drawMap(m,i?c.after:c.before,widths[i],scale,c.before.score,selected));
+      const a=c.before.facilities.find(p=>p.alias===selected),b=c.after.facilities.find(p=>p.alias===selected);
+      root.querySelector('#rl-detail').textContent=a?`${a.alias} · ${a.facility} · (${a.x}, ${a.y}) → (${b.x}, ${b.y}) · rotation ${a.rotation}° → ${b.rotation}°`:'Facility identities, recipes, rates and ports are preserved.';
+    }
+    function selectCase() { facilityPicker.replaceChildren(option('','All facilities'));current().before.facilities.forEach(p=>facilityPicker.append(option(p.alias,`${p.alias} · ${p.facility}`)));draw(); }
+    picker.addEventListener('change',selectCase); facilityPicker.addEventListener('change',draw);
+    new ResizeObserver(draw).observe(root.querySelector('.drawings')); selectCase();
+  })();
+  </script>
+</div>

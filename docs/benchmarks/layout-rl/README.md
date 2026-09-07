@@ -126,6 +126,31 @@ training metrics, audits, CPU measurements and source/artifact hashes. Full traj
 artifacts remain under the paths in `results-plan.json`, outside Git. Keep those directories
 to rerun exact artifact audits; the compact snapshot is not a replacement for model weights.
 
+## Stored-policy before/after diagrams
+
+```sh
+node docs/benchmarks/layout-rl/visualize.mjs \
+  --plan docs/benchmarks/layout-rl/visual-comparison.json \
+  --output-directory target/layout-rl-visual-comparison-01
+```
+
+This reads existing evaluation episodes; it neither retrains nor runs a new policy search.
+The explicit plan selects the best observed terminal-policy result among nine model/rollout
+seed combinations at 128 proposals for each of two held-out factories. These are illustrative
+best cases, not typical-performance estimates or nine-run portfolio timings.
+The original constructor witness is compared with the episode's **best**, not last, witness.
+Both sides are checked afresh by the independent validator and original-request coverage checks;
+source hashes, semantic identity and scores must match the frozen evaluation.
+
+The command writes an inline `optimization-before-after.html` fragment and `report.json` with
+four validation audits and input provenance. Each pair uses the same tile scale, separately
+normalized origins, unchanged orientation, full geometry and a dashed original-footprint frame.
+Select a factory or facility to inspect corresponding positions. Compact facility aliases are
+display labels only; source identities, recipes, rates and ports remain unchanged.
+The nine-facility example reduces area from 476 to 336 while increasing transport tiles from
+36 to 65 and turns from 6 to 21. The 59-facility example improves all three score components:
+`[12900, 2401, 268]` to `[9548, 1769, 236]`. Area retains first priority.
+
 ## Tests and diagnostic interface
 
 ```sh
