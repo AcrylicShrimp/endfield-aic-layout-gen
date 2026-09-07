@@ -13,6 +13,7 @@ import torch
 from acceptance import Catalog, Invalid, check, port_geometry
 from environment import Environment, serialize
 from policy import Policy, advantages, batch, update
+from run import refresh_actor
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -195,6 +196,56 @@ class PilotTests(unittest.TestCase):
         self.assertTrue(all(np.isfinite(v) and v >= 0 for v in result["seconds"].values()))
         self.assertGreater(result["gradient_norm"], 0)
         self.assertTrue(any(not torch.equal(v, before[k]) for k, v in model.state_dict().items()))
+
+    @unittest.skipUnless(torch.cuda.is_available(), "CUDA device required")
+    def test_cuda_outputs_and_gradients_agree_on_padded_inputs(self):
+        torch.backends.cuda.matmul.allow_tf32 = False
+        torch.backends.cudnn.allow_tf32 = False
+        first = self.env.observe(self.env.candidates())
+        self.execute([{"op": "UNBIND_TERMINALS", "terminal": "quartz:source"},
+                      {"op": "EXTEND", "network": "quartz", "anchor": [1, 19], "growth": "backward", "direction": "W", "length": 2}])
+        data = batch([first, self.env.observe(self.env.candidates())])
+        cpu = Policy(first)
+        cuda = deepcopy(cpu).to("cuda")
+        outputs = []
+        for model in (cpu, cuda):
+            logits, values = model({key: value.to(next(model.parameters()).device) for key, value in data.items()})
+            log_probs = logits.log_softmax(-1)
+            (log_probs[:, 0].mean()+values.square().mean()).backward()
+            outputs.append((log_probs.detach().cpu(), values.detach().cpu()))
+        for a, b in zip(*outputs):
+            torch.testing.assert_close(a, b, atol=2e-6, rtol=2e-4)
+        for a, b in zip(cpu.parameters(), cuda.parameters()):
+            torch.testing.assert_close(a.grad, b.grad.cpu(), atol=2e-6, rtol=2e-4)
+
+    @unittest.skipUnless(torch.cuda.is_available(), "CUDA device required")
+    def test_cuda_ppo_refreshes_cpu_actor_after_update(self):
+        config = {**self.config, "horizon": 8, "epochs": 1, "minibatch": 8}
+        env = Environment(self.catalog, config)
+        actor = Policy(env.observe(env.candidates()))
+        learner = deepcopy(actor).to("cuda")
+        optimizer = torch.optim.Adam(learner.parameters(), lr=config["learning_rate"])
+        before = deepcopy(actor.state_dict())
+        rollout = {k: [] for k in ("observations", "actions", "log_probs", "values", "rewards", "dones")}
+        for _ in range(16):
+            candidates = env.candidates()
+            observation = env.observe(candidates)
+            action, log_prob, value = actor.act(observation)
+            reward, done, _ = env.step(candidates[action])
+            for key, value in (("observations", observation), ("actions", action), ("log_probs", log_prob),
+                               ("values", value), ("rewards", reward), ("dones", done)):
+                rollout[key].append(value)
+            if done:
+                env.reset()
+        metrics = update(learner, optimizer, rollout, config, np.random.default_rng(7))
+        self.assertTrue(all(np.isfinite(v) for k, v in metrics.items() if k != "seconds"))
+        self.assertGreater(metrics["gradient_norm"], 0)
+        self.assertTrue(all(torch.equal(value, before[key]) for key, value in actor.state_dict().items()))
+        refresh_actor(learner, actor)
+        self.assertTrue(any(not torch.equal(value, before[key]) for key, value in actor.state_dict().items()))
+        self.assertTrue(all(torch.equal(value, learner.state_dict()[key].cpu()) for key, value in actor.state_dict().items()))
+        self.assertTrue(all(p.device.type == "cpu" for p in actor.parameters()))
+        actor.act(rollout["observations"][0], torch.Generator().manual_seed(19))
 
 
 if __name__ == "__main__":

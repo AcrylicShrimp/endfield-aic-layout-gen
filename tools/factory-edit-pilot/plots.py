@@ -53,7 +53,7 @@ def render(output, catalog):
         ax.grid(alpha=.2)
         ax.ticklabel_format(axis="x", style="sci", scilimits=(0, 0))
     count = episodes[-1]["commands"] if episodes else 0
-    fig.suptitle(f"CPU fixed-factory pilot | {metadata['parameters']:,} parameters | {count:,} commands | one training seed\n"
+    fig.suptitle(f"{metadata['device'].upper()} learner / CPU actor | {metadata['parameters']:,} parameters | {count:,} commands | one training seed\n"
                  "Same initial layout and 128 edits per episode; raw episode reward equals relative area reduction", fontsize=12)
     fig.savefig(output/"learning-curves.png", dpi=170)
     fig.savefig(output/"learning-curves.svg")

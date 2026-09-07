@@ -1,4 +1,4 @@
-"""CPU CNN plus per-object MLP and a shared explicit-command scorer."""
+"""CNN plus per-object MLP, CPU action sampling, and CPU/CUDA PPO updates."""
 
 import numpy as np
 import torch
@@ -100,6 +100,14 @@ def advantages(rewards, values, dones, last_value, gamma, lam):
 
 
 def update(model, optimizer, rollout, config, rng):
+    device = next(model.parameters()).device
+
+    def completed_time():
+        # Stage clocks include completed device work, not just asynchronous dispatch.
+        if device.type == "cuda":
+            torch.cuda.synchronize(device)
+        return time.perf_counter()
+
     advantage, returns = advantages(rollout["rewards"], rollout["values"], rollout["dones"], 0.0,
                                     config["gamma"], config["gae_lambda"])
     advantage = (advantage-advantage.mean())/(advantage.std()+1e-8)
@@ -112,30 +120,32 @@ def update(model, optimizer, rollout, config, rng):
             indices = permutation[start:start+config["minibatch"]]
             started = time.perf_counter()
             data = batch([rollout["observations"][i] for i in indices])
-            seconds["batch"] += time.perf_counter()-started
+            data = {key: value.to(device) for key, value in data.items()}
+            selected = torch.tensor([rollout["actions"][i] for i in indices], dtype=torch.long, device=device)
+            old = torch.tensor([rollout["log_probs"][i] for i in indices], device=device)
+            adv = torch.from_numpy(advantage[indices]).to(device)
+            target = torch.from_numpy(returns[indices]).to(device)
+            seconds["batch"] += completed_time()-started
             started = time.perf_counter()
             logits, value = model(data)
             log_probs = logits.log_softmax(-1)
-            selected = torch.tensor([rollout["actions"][i] for i in indices], dtype=torch.long)
             log_prob = log_probs.gather(1, selected[:, None]).squeeze(1)
-            old = torch.tensor([rollout["log_probs"][i] for i in indices])
             ratio = (log_prob-old).exp()
-            adv = torch.from_numpy(advantage[indices])
             policy_loss = torch.maximum(-adv*ratio, -adv*ratio.clamp(1-config["clip"], 1+config["clip"])).mean()
-            value_loss = (value-torch.from_numpy(returns[indices])).square().mean()
+            value_loss = (value-target).square().mean()
             entropy = -(log_probs.exp()*log_probs).sum(-1).mean()
             loss = policy_loss+config["value_coefficient"]*value_loss-config["entropy_coefficient"]*entropy
             if not torch.isfinite(loss):
                 raise RuntimeError("learning.nonfinite_loss: PPO loss is not finite")
             optimizer.zero_grad(set_to_none=True)
-            seconds["forward_loss"] += time.perf_counter()-started
+            seconds["forward_loss"] += completed_time()-started
             started = time.perf_counter()
             loss.backward()
-            seconds["backward"] += time.perf_counter()-started
+            seconds["backward"] += completed_time()-started
             started = time.perf_counter()
             grad = torch.nn.utils.clip_grad_norm_(model.parameters(), config["gradient_norm"], error_if_nonfinite=True)
             optimizer.step()
-            seconds["optimizer"] += time.perf_counter()-started
+            seconds["optimizer"] += completed_time()-started
             values = {"policy_loss": policy_loss.item(), "value_loss": value_loss.item(), "entropy": entropy.item(),
                       "approx_kl": ((ratio-1)-(log_prob-old)).mean().item(), "gradient_norm": float(grad)}
             for key in totals:

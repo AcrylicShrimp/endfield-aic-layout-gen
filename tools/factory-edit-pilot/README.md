@@ -1,4 +1,4 @@
-# CPU fixed-factory edit pilot
+# Fixed-factory edit pilot
 
 An isolated first learning experiment, authorized by the user after the collaborative design
 phase. See the [execution contract](../../docs/designs/2026-09-07.02-fixed-factory-pilot-execution.md)
@@ -6,7 +6,7 @@ and [pilot hypotheses](../../docs/designs/2026-09-07.01-factory-edit-learning-pi
 The [first result](../../docs/reports/2026-09-07.00-first-cpu-factory-edit-pilot.md) records the
 completed 65,536-command seed, outcome/reward curves, learned edit, and interpretation limits.
 
-The model is a 100,898-parameter CPU CNN plus per-object MLP, with shared policy/value features
+The model is a 100,898-parameter CNN plus per-object MLP, with shared policy/value features
 and a typed local-command scorer. PPO starts from fresh weights. There is no GNN, demonstration
 pretraining, route-search helper, repair macro, or production fallback. All episodes start from
 the same complete factory; only learner state persists. The first run has one training seed,
@@ -57,6 +57,35 @@ measurement, excludes a warm-up round, alternates setting order, and reports med
 It retains the exact input tensors under the ignored output directory. Optional `--channels-last`
 and `--convolution unfold` / `view-unfold` are benchmark-only experiments; training uses standard
 PyTorch Conv2d and autograd. Neither alternate convolution is selected by `run.json`.
+
+## CPU and CUDA learners
+
+The `device` configuration selects `cpu` or `cuda` for PPO updates. Both paths collect
+observations, sample actions, and validate layouts on CPU. CUDA runs refresh a CPU policy
+snapshot after each complete update, before the next rollout. GPU availability is required
+when requested; no automatic CPU fallback is used. The first CUDA comparison uses float32,
+with TF32 and mixed precision disabled. See the [comparison contract](../../docs/designs/2026-09-07.03-factory-edit-cuda-comparison.md).
+
+`updates.jsonl` records synchronized wall-clock stages, including CPU preparation and transfers
+in `batch`. Synchronization makes completed GPU work visible and adds diagnostic overhead.
+These stage clocks are not pure kernel timings. Metadata also records CPU snapshot-copy time,
+GPU identity/runtime, peak GPU allocation, and the CPU actor device; checkpoints retain CUDA
+RNG state. CPU and CUDA floating-point trajectories need not produce identical trained policies.
+
+For a fixed-input device comparison, run `benchmark.py --input <retained-input.pt> --device cpu`
+and `--device cuda` with the same config and threads, each in a fresh output directory. Both
+load the exact same observations, weights, and optimizer state. Input tensors and checkpoints
+must be trusted local files. The server checkout and its environment live under
+`~/Srv/endfield-aic-layout-gen`; long jobs run through SSH in detached tmux sessions with
+file logs and exit-status files. No Jupyter service is required.
+
+The prospective `run-server-cpu.json` and `run-server-cuda.json` configs use 24 CPU threads
+on the measured server and otherwise share the original learning/evaluation allowance:
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/run.py train --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run-server-cpu.json --output artifacts/factory-edit-pilot/server-cpu-seed17
+tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/run.py train --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run-server-cuda.json --output artifacts/factory-edit-pilot/server-cuda-seed17
+```
 
 Independent acceptance of an exported factory, without running the environment or policy:
 

@@ -1,4 +1,4 @@
-"""Run the bounded CPU factory edit pilot and retain raw, replayable evidence."""
+"""Run the bounded factory edit pilot and retain raw, replayable CPU/CUDA evidence."""
 
 import argparse
 from collections import Counter
@@ -108,11 +108,19 @@ def provenance(catalog, config_path):
             "numpy": np.__version__, "platform": platform.platform(), "machine": platform.machine()}
 
 
+def refresh_actor(learner, actor):
+    """Copy a completed learner update before the next on-policy CPU rollout."""
+    if actor is not learner:
+        actor.load_state_dict({key: value.detach().cpu() for key, value in learner.state_dict().items()})
+
+
 def train(catalog, config, config_path, output):
     if (output/"metadata.json").exists():
         raise ValueError(f"Refusing to overwrite existing experiment {output}")
-    if config["device"] != "cpu":
-        raise ValueError("This experiment requires device=cpu")
+    if config["device"] not in ("cpu", "cuda"):
+        raise ValueError(f"Unsupported learner device in {config_path}: {config['device']}")
+    if config["device"] == "cuda" and not torch.cuda.is_available():
+        raise ValueError(f"run.cuda_unavailable: CUDA requested by {config_path}, but unavailable")
     if config["rollout_commands"] % config["horizon"] or config["commands"] % config["rollout_commands"]:
         raise ValueError("First pilot requires rollout and checkpoint boundaries at complete episodes")
     if any(c % config["rollout_commands"] for c in config["checkpoints"]):
@@ -120,30 +128,41 @@ def train(catalog, config, config_path, output):
     output.mkdir(parents=True, exist_ok=True)
     torch.set_num_threads(config["threads"])
     torch.set_num_interop_threads(1)
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.allow_tf32 = False
+    torch.backends.cudnn.benchmark = False
     torch.manual_seed(config["seed"])
     np.random.seed(config["seed"])
     random.seed(config["seed"])
     rng = np.random.default_rng(config["seed"])
     verification = verify_environment(catalog, config, output)
     env = Environment(catalog, config)
-    model = Policy(env.observe(env.candidates())).to("cpu")
+    model = Policy(env.observe(env.candidates()))
+    actor = deepcopy(model) if config["device"] == "cuda" else model
+    model.to(config["device"])
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
     metadata = {"schema_version": 1, "status": "running", "config": config, "case": catalog.case["id"],
-                "parameters": model.parameter_count, "dimensions": model.dimensions, "device": "cpu",
+                "parameters": model.parameter_count, "dimensions": model.dimensions, "device": config["device"],
+                "actor_device": "cpu", "precision": "float32", "tf32": False,
+                "cuda_runtime": torch.version.cuda,
+                "gpu_name": torch.cuda.get_device_name() if config["device"] == "cuda" else None,
+                "update_timing": "synchronized_stage_wall_seconds_including_transfers",
                 "verification": verification, "provenance": provenance(catalog, config_path)}
     write(output/"metadata.json", metadata)
     write(output/"training-best.json", serialize(env.best))
-    print(json.dumps({"event": "started", "parameters": model.parameter_count, "device": "cpu", "output": str(output)}), flush=True)
+    print(json.dumps({"event": "started", "parameters": model.parameter_count, "device": config["device"], "output": str(output)}), flush=True)
     champion_score = list(env.initial_score)
     commands, episode, optimizer_steps = 0, 0, 0
     started = time.perf_counter()
     evaluation_seconds, inference_seconds, update_seconds = 0.0, 0.0, 0.0
+    snapshot_seconds = 0.0
     all_counts = Counter()
 
     def save_checkpoint():
         torch.save({"schema_version": 1, "commands": commands, "episode": episode,
                     "policy": model.state_dict(), "optimizer": optimizer.state_dict(),
                     "torch_rng": torch.get_rng_state(), "numpy_rng": rng.bit_generator.state,
+                    "cuda_rng": torch.cuda.get_rng_state_all() if config["device"] == "cuda" else None,
                     "numpy_legacy_rng": np.random.get_state(), "python_rng": random.getstate(),
                     "config": config, "metadata": metadata, "champion_score": champion_score,
                     "optimizer_steps": optimizer_steps, "counts": dict(all_counts),
@@ -153,7 +172,7 @@ def train(catalog, config, config_path, output):
 
     try:
         save_checkpoint()
-        summary = evaluate(model, catalog, config, output, commands, 0.0)
+        summary = evaluate(actor, catalog, config, output, commands, 0.0)
         evaluation_seconds += summary["evaluation_seconds"]
         from plots import render
         render(output, catalog)
@@ -164,7 +183,7 @@ def train(catalog, config, config_path, output):
                 candidates = env.candidates()
                 observation = env.observe(candidates)
                 inference_started = time.perf_counter()
-                action, log_prob, value = model.act(observation)
+                action, log_prob, value = actor.act(observation)
                 inference_seconds += time.perf_counter()-inference_started
                 reward, done, outcome = env.step(candidates[action])
                 commands += 1
@@ -192,6 +211,9 @@ def train(catalog, config, config_path, output):
             update_started = time.perf_counter()
             metrics = update(model, optimizer, rollout, config, rng)
             update_seconds += time.perf_counter()-update_started
+            snapshot_started = time.perf_counter()
+            refresh_actor(model, actor)
+            snapshot_seconds += time.perf_counter()-snapshot_started
             optimizer_steps += metrics["optimizer_steps"]
             append(output/"updates.jsonl", {"commands": commands, **metrics})
             if commands % 2048 == 0:
@@ -201,13 +223,15 @@ def train(catalog, config, config_path, output):
                                   "champion_score": champion_score, "positive_reward_commands": all_counts["positive_rewards"]}), flush=True)
             if commands in config["checkpoints"]:
                 save_checkpoint()
-                summary = evaluate(model, catalog, config, output, commands, time.perf_counter()-started-evaluation_seconds)
+                summary = evaluate(actor, catalog, config, output, commands, time.perf_counter()-started-evaluation_seconds)
                 evaluation_seconds += summary["evaluation_seconds"]
                 render(output, catalog)
         metadata.update({"status": "complete", "completed_commands": commands, "episodes": episode,
                          "optimizer_steps": optimizer_steps, "training_seconds": time.perf_counter()-started-evaluation_seconds,
                          "evaluation_seconds": evaluation_seconds, "inference_seconds": inference_seconds,
                          "update_seconds": update_seconds, "environment_seconds": dict(env.seconds),
+                         "snapshot_seconds": snapshot_seconds,
+                         "peak_cuda_allocated_bytes": torch.cuda.max_memory_allocated() if config["device"] == "cuda" else 0,
                          "environment_counters": dict(env.counters), "counts": dict(all_counts),
                          "peak_rss_bytes": resource.getrusage(resource.RUSAGE_SELF).ru_maxrss*(1 if platform.system() == "Darwin" else 1024),
                          "training_champion_score": champion_score})
@@ -225,6 +249,8 @@ def train(catalog, config, config_path, output):
         torch.save({"commands": commands, "policy": model.state_dict(), "optimizer": optimizer.state_dict(),
                     "environment": serialize(env.draft), "base": serialize(env.base), "best": serialize(env.best),
                     "episode_step": env.steps, "torch_rng": torch.get_rng_state(), "numpy_rng": rng.bit_generator.state,
+                    "cuda_rng": torch.cuda.get_rng_state_all() if config["device"] == "cuda" else None,
+                    "actor_policy": actor.state_dict(),
                     "partial_rollout": locals().get("rollout"), "episode_return": locals().get("episode_return")},
                    output/"interrupted-state.pt")
         raise

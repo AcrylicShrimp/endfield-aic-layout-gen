@@ -3,6 +3,7 @@
 import argparse
 from copy import deepcopy
 import json
+import hashlib
 from pathlib import Path
 import statistics
 import time
@@ -15,7 +16,7 @@ from torch.nn import functional as F
 from acceptance import Catalog
 from environment import Environment
 from policy import Policy, update
-from run import provenance, write
+from run import provenance, refresh_actor, write
 
 
 def unfolded_convolution(layer, spatial):
@@ -35,13 +36,18 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--case", type=Path, required=True)
     parser.add_argument("--config", type=Path, required=True)
-    parser.add_argument("--checkpoint", type=Path, required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("--checkpoint", type=Path)
+    source.add_argument("--input", type=Path, help="Previously retained benchmark input.pt")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--threads", type=int, nargs="+", default=[1, 2, 4, 8])
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu", help="PPO learner device; action sampling stays on CPU")
     parser.add_argument("--channels-last", action="store_true")
     parser.add_argument("--convolution", choices=("native", "unfold", "view-unfold"), default="native")
     args = parser.parse_args()
+    if args.device == "cuda" and not torch.cuda.is_available():
+        parser.error("CUDA requested but unavailable")
     if args.output.exists():
         raise ValueError(f"Refusing to overwrite benchmark {args.output}")
     if args.repeats < 1 or any(t < 1 for t in args.threads):
@@ -50,6 +56,9 @@ def main():
     torch.set_num_threads(1)
     torch.set_num_interop_threads(1)
     torch.manual_seed(17)
+    torch.backends.cuda.matmul.allow_tf32 = False
+    torch.backends.cudnn.allow_tf32 = False
+    torch.backends.cudnn.benchmark = False
     config = json.loads(args.config.read_text())
     catalog = Catalog(Path(__file__).resolve().parents[2], args.case.resolve())
     env = Environment(catalog, config)
@@ -64,12 +73,12 @@ def main():
             data, = inputs
             return ({**data, "raster": data["raster"].contiguous(memory_format=torch.channels_last)},)
         model.register_forward_pre_hook(channels_last)
-    checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
+    checkpoint = torch.load(args.input or args.checkpoint, map_location="cpu", weights_only=False)
     model.load_state_dict(checkpoint["policy"])
     state = deepcopy(model.state_dict())
     rollout = {key: [] for key in ("observations", "actions", "log_probs", "values", "rewards", "dones")}
     generator = torch.Generator().manual_seed(700017)
-    for _ in range(config["rollout_commands"]):
+    for _ in range(0 if args.input else config["rollout_commands"]):
         candidates = env.candidates()
         observation = env.observe(candidates)
         action, log_prob, value = model.act(observation, generator)
@@ -79,7 +88,11 @@ def main():
             rollout[key].append(value)
         if done:
             env.reset()
+    if args.input:
+        rollout = checkpoint["rollout"]
     torch.save({"rollout": rollout, "policy": state, "optimizer": checkpoint["optimizer"]}, args.output/"input.pt")
+    actor = deepcopy(model) if args.device == "cuda" else model
+    model.to(args.device)
     rows = []
     # Alternate order each round; the first round warms each setting and is excluded.
     for repeat in range(args.repeats+1):
@@ -92,16 +105,24 @@ def main():
             metrics = update(model, optimizer, rollout, config, np.random.default_rng(700017))
             elapsed = time.perf_counter()-started
             started = time.perf_counter()
+            refresh_actor(model, actor)
+            snapshot_seconds = time.perf_counter()-started
+            started = time.perf_counter()
             for observation in rollout["observations"]:
-                model.act(observation, generator)
+                actor.act(observation, generator)
             row = {"threads": threads, "warmup": repeat == 0, "repeat": repeat,
                    "update_seconds": elapsed, "inference_seconds": time.perf_counter()-started,
+                   "snapshot_seconds": snapshot_seconds,
                    "metrics": metrics}
             rows.append(row)
             print(json.dumps(row), flush=True)
     summary = [{"threads": t, **{key: statistics.median(row[key] for row in rows if row["threads"] == t and not row["warmup"])
-                                  for key in ("update_seconds", "inference_seconds")}} for t in args.threads]
-    write(args.output/"result.json", {"schema_version": 1, "config": config, "checkpoint": str(args.checkpoint),
+                                  for key in ("update_seconds", "inference_seconds", "snapshot_seconds")}} for t in args.threads]
+    write(args.output/"result.json", {"schema_version": 1, "config": config, "source": str(args.input or args.checkpoint),
+                                     "source_sha256": hashlib.sha256((args.input or args.checkpoint).read_bytes()).hexdigest(),
+                                     "device": args.device, "actor_device": "cpu", "tf32": False,
+                                     "cuda_runtime": torch.version.cuda,
+                                     "gpu_name": torch.cuda.get_device_name() if args.device == "cuda" else None,
                                      "channels_last": args.channels_last,
                                      "convolution": args.convolution,
                                      "provenance": provenance(catalog, args.config), "rows": rows, "summary": summary})
