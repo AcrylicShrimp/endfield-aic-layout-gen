@@ -63,6 +63,13 @@ seven-facility group, then exposes a verified admission gap: all 11 medium const
 one internal component and have no frontier into the remaining parallel components. A proposed
 component-admission extension is awaiting the user's construction-policy decision; do not
 substitute small roots or silently relax connected growth. No global impossibility is established.
+The user subsequently requested a rigorous learning-method investigation before further
+product-driven iteration. The [trajectory audit](../layout-direct/trajectory-audit.md) now takes
+priority: freeze the implementation for estimator/replay checks, record fixed checkpoint
+learning diagnostics, and separate training-budget, capacity, credit and data-distribution
+hypotheses in controlled experiments. This is not approval for the component-admission change
+or for replacing the main learning path with easy diagnostic tasks. Broadening construction
+remains a separate prerequisite for eventual medium/large generalization claims.
 Neither a working RL loop nor changed weights satisfies the release criteria. Judge advancement
 by independent layout quality, futile-action rate, actual environment breadth, target density
 and visual inspection. Do not call a sampled negative result universal action uselessness.
