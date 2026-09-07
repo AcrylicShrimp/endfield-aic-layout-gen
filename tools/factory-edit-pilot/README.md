@@ -152,6 +152,8 @@ migration and does not describe the current production environment.
 
 Migration evidence: [state/snapshots](../../docs/reports/2026-09-08.07-factory-edit-native-state.md),
 [candidates/transitions](../../docs/reports/2026-09-08.08-factory-edit-native-transitions.md), and
-[complete observations](../../docs/reports/2026-09-08.09-factory-edit-native-observations.md).
+[complete observations](../../docs/reports/2026-09-08.09-factory-edit-native-observations.md),
+[training cutover](../../docs/reports/2026-09-08.10-factory-edit-native-cutover.md), and
+[final server results](../../docs/reports/2026-09-08.11-factory-edit-native-results.md).
 Earlier learning and CPU/CUDA findings remain under `docs/reports/`; native migration does not
 turn those single-case measurements into generalization or optimizer claims.

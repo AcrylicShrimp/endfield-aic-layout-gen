@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "purpose": "Compact provenance only; generated run outputs and checkpoints remain ignored external evidence.",
+  "server_root": "/home/ashrimp/Srv/endfield-aic-layout-gen",
+  "artifact_prefix": "artifacts/factory-edit-pilot",
+  "source_commits": {
+    "python": "d8bcff7",
+    "native": "40b0159"
+  },
+  "native_library_sha256": "1158102894df857880b4c72c2c9e1fcb93a227d7c184a8a9d6bb59a94003d685",
+  "inputs_sha256": {
+    "artifacts/server-setup/initial-input.pt": "9a08b150832de25942cfed48c3ef72ccb94eac129586105760f6e52d493e547c",
+    "artifacts/server-setup/late-input.pt": "fa595530f85ff774516e84397529b911bbae1f7007b412eff75b0e3742eb5f0c",
+    "artifacts/server-setup/interrupted-input.pt": "7b6cf68628efdfaabf1d94f7411e9ee0f8338ef300dffa797ed1474731e55d43"
+  },
+  "runtime_inputs_sha256": {
+    "case": "ceca22302120f271e730a99b8c0769805281a194c09266a4b438793ca83a24a3",
+    "facilities": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e",
+    "recipes": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2",
+    "transports": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+  },
+  "summaries_sha256": {
+    "native-owned-parity/result.json": "7ee7e323b526c4df83c5d5fe2fbc65b393acd34fb9e619ee96039e2a76c46ea2",
+    "native-owned-benchmark-none/result.json": "9de46f7a10d1fe0b0edb97a32132e03c6972335f71f97d1f20c41085f29316d1",
+    "native-owned-benchmark-cpu/result.json": "0394f8e18bc25442b1d41e83b47fc27880063cca92d346974fcb344fc1051632",
+    "native-owned-benchmark-cuda/result.json": "dbd8923c5f17e6ff898f74c1d8c379ed85695454b5fad2f0ccdef128f4c85e5d",
+    "native-owned-python-training/metadata.json": "08cc55bf872b5d8cab9bedbc598f348832007ca7f52459048bfdae3ef79c4f21",
+    "native-owned-python-training/audit.json": "c856f63c6e3eeeec639e420b66bd67b2843ca03b659f9139861e3dc14714e86b",
+    "native-owned-rust-training/metadata.json": "0f4e8c0b2cd12cb0e14406066b7500d7ae3bb14f319a62371063cd368318eb50",
+    "native-owned-rust-training/audit.json": "1eeb144a4adac4df261cffe0e221472e3dbc44434227cd9de299a9f0ef7ba089",
+    "native-owned-training-comparison/result.json": "457adf85b1af306cdcf815fa510937be847086ef4b6b4e1e59d6f409bfe8d949",
+    "native-owned-learning-parity/result.json": "075fa567b7efeaa55de859f147b969820773f605d588994efe45ddd45d27ce03",
+    "native-owned-training-costs/costs.json": "485f39b9784760a7ed32bfcacd7132177aeb9335845bbadafd5b2a91ac7c9286"
+  },
+  "checkpoints_sha256": {
+    "0": {
+      "reference": "4c9f9afb4dfceab519019559d19bcad0f36621ee411d757945c99491bafd7786",
+      "native": "23ae1d1dc5e4f2c9a8a5ed14552f48a87d22fa1b78fc8f429a780b60221244c3"
+    },
+    "8192": {
+      "reference": "f2c886b6794be8cc9aac6617760f6936e3a4ae135225d28c015caff6cbef50c8",
+      "native": "7ea7b1a768cbaeaaea8ee87650717b195cdfe55e91dab0735b2808a111441eb9"
+    },
+    "16384": {
+      "reference": "2cd9c690137d6ba01ec4a3885286283859b9fe9bc5941e7dea0e06466ba181e5",
+      "native": "319f3e3268dd1826a716e1da6a317bc68d7ea354bf4898b65191db6557b31512"
+    },
+    "32768": {
+      "reference": "50859ee47ace3d8ece73f53f0713fbfe8c8a6557c0fd40b7cd4664c63812d811",
+      "native": "9924d6f91d20326fd68f4d0f6337b158e2178a121935ae1c00f743fee79ce17d"
+    },
+    "65536": {
+      "reference": "9fde084c6b2363558a3738c20ab6dc4a85dd9f4f86464f4f04ba16ab1213bdc2",
+      "native": "ba1bbc25d1822461fd1a73b477c7280acc8d150a1180bc6ccc1c1d757cb8ef39"
+    }
+  }
+}
