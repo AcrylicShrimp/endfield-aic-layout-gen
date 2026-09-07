@@ -57,6 +57,13 @@ evaluations, then continued beyond 64 with uninterrupted state chains. See
 `budget-curve-64-report.md` for the verified early outcomes and direct geometry inspection.
 This is not completion of the declared 256/1024 allocation.
 
+All three 256-update checkpoints and their fixed evaluations are now verified. The paired
+development endpoint against initial falls from 0.18056 at 64 to 0.09722 at 256; direct
+256-versus-64 comparisons are approximately flat (34 wins, 36 losses, two ties). The full
+target remains unchanged. See `budget-curve-256-report.md` for complete counts, work/futility,
+construction exposure and the common-scale actual-geometry inspection. The unchanged runs
+continue to 1024; neither a final budget curve nor production readiness is established.
+
 ## Verification and boundaries
 
 - Thirty-five Python tests pass, including exact update replay/credit references and ten new

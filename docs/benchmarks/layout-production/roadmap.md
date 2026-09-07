@@ -107,3 +107,9 @@ held-out medium/large evaluation. Direct inspection confirms a real three-field 
 the fixed 14-facility case but substantial remaining whitespace/routing, and unchanged target
 geometry. Continue the same learners to 256/1024; do not confuse this first checkpoint with the
 longer-budget result or choose a favorable early checkpoint.
+The [256-update checkpoint](../layout-direct/budget-curve-256-report.md) is now also verified
+for all three seeds. The initial-control mean endpoint drops to 0.09722; direct comparisons
+with 64 are approximately flat, development futility remains 79.58%, and the target still has
+29.69% empty area. The fixed 14-facility case loses its area improvement despite reduced
+wiring, confirmed visually. Continue the unchanged learners to the fixed 1024 endpoint.
+This finite plateau does not exclude longer-training benefits or prove goal impossibility.
