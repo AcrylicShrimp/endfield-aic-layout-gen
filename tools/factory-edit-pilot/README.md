@@ -233,3 +233,36 @@ identical data/optimizer exposure across the pair, and checks resulting paramete
 --output <fresh-directory>` profiles environment-only recorded replay and verifies all
 observations outside the profile. See the [native boundary investigation](../../docs/reports/2026-09-08.05-factory-edit-native-boundary.md);
 its instrumented clocks do not establish uninstrumented throughput or a Rust speedup.
+
+## Native observation experiment
+
+The isolated `aic-pilot-native` crate implements bulk raster/object geometry with PyO3 and
+rust-numpy. `native_observation.py` is an explicit experimental wrapper; normal training still
+uses the Python environment. Candidate generation, candidate features, coordinate channels,
+statistics, transitions and independent acceptance keep their existing implementation.
+
+Build against this experiment's Python interpreter from the repository root:
+
+```sh
+PYO3_PYTHON="$PWD/tools/factory-edit-pilot/.venv/bin/python" cargo build --release -p aic-pilot-native --features extension-module
+```
+
+The library is `target/release/libaic_pilot_native.so` on Linux or
+`target/release/libaic_pilot_native.dylib` on macOS. No Python package installation or generated
+library is committed. Set `AIC_NATIVE_LIBRARY` to its absolute path to run
+`python -m unittest discover -s tools/factory-edit-pilot -p test_native_observation.py` with
+the same virtual-environment interpreter.
+
+`native_observation_benchmark.py --case <case> --config <config> --input <input.pt> ...
+--native-library <library> --output <fresh-directory>` compares all observations/commands/
+transitions and complete environment replay time. Add `--cuda-inference` for the identical
+recorded replay interleaved with CUDA policy inference and CPU sampling. It charges conversion
+and returned-array work, excludes one-time environment setup (reported separately), and records
+native source/library/compiler provenance. It does not execute a new sampled training run.
+See the [slice contract](../../docs/designs/2026-09-08.03-factory-edit-native-observation.md).
+
+For comparisons that create a fresh environment per replay, add `--collect-before-replay`
+to remove prior-trial garbage before setup. Automatic GC remains enabled during replay.
+The result separately records GC events over the entire replay call (including untimed
+serialization); these clocks cannot be subtracted from the timed loop. The [native trial report](../../docs/reports/2026-09-08.06-factory-edit-native-observation.md)
+records the scope, controlled speedup, parity, and initial GC-contaminated comparisons.
