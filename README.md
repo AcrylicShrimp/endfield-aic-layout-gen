@@ -3,10 +3,10 @@
 CLI tools for generating construction layouts for the Arknights: Endfield Automated Industry Complex.
 
 Current design discussion: [learned factory edit policy](docs/designs/2026-09-07.00-learned-factory-edit-policy.md)
-and [design tracker](docs/todos/2026-09-07.04-learned-factory-edit-design.md). This is a fresh,
-documentation-only RL hypothesis notebook: all design choices are revisable and the first pilot
-should identify problems with minimal commitments. No new experiment or production cutover has
-started, and the historical learning study remains stopped.
+and [design tracker](docs/todos/2026-09-07.04-learned-factory-edit-design.md). All choices remain
+revisable. The user has authorized the [first CPU fixed-factory experiment](tools/factory-edit-pilot/README.md),
+prioritizing visible outcome/reward curves whether or not learning succeeds. This isolated
+experiment does not change production commands; the historical learning study remains stopped.
 
 ## Workspace
 
