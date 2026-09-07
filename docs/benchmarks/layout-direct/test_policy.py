@@ -1,4 +1,6 @@
 import json
+import copy
+import hashlib
 from pathlib import Path
 import tempfile
 import unittest
@@ -7,7 +9,9 @@ import torch
 
 from client import Pool
 from policy import DirectPolicy, decode, checkpoint, restore, location_mask
-from train import terminal_advantages, validate, credit_signals
+from train import terminal_advantages, validate, credit_signals, rollout
+from update import apply_update, distribution_changes
+from replay import snapshot, restore_snapshot, pack_histories, verify, file_reference
 
 
 class DirectPolicyTests(unittest.TestCase):
@@ -73,6 +77,100 @@ class DirectPolicyTests(unittest.TestCase):
             validate(dict(json.loads(Path(__file__).with_name("breadth.json").read_text()), training_size_schedule={"small": 1}))
         with self.assertRaises(ValueError):
             validate(dict(schema_version=1))
+
+    def test_trace_is_observational_and_covers_conditional_stages(self):
+        model = DirectPolicy(16)
+        stages, kinds = set(), set()
+        for seed in range(48):
+            a, b = torch.Generator().manual_seed(seed), torch.Generator().manual_seed(seed)
+            trace = []
+            with torch.no_grad():
+                plain = decode(model, self.obs, generator=a)
+                traced = decode(model, self.obs, generator=b, trace=trace)
+            self.assertEqual(plain[:2], traced[:2])
+            self.assertTrue(torch.equal(plain[2], traced[2]) and torch.equal(plain[3], traced[3]))
+            self.assertTrue(torch.equal(a.get_state(), b.get_state()))
+            kinds.add(plain[0]["kind"])
+            for row in trace:
+                stages.add(row["stage"])
+                self.assertAlmostEqual(sum(row["probabilities"]), 1, places=6)
+                self.assertTrue(row["legal"][row["chosen"]])
+                self.assertTrue(all(p == 0 and lp is None for p, lp, ok in zip(row["probabilities"], row["log_probabilities"], row["legal"]) if not ok))
+        self.assertEqual(kinds, {"relocate", "pose", "port", "reroute", "compact"})
+        self.assertEqual(stages, {"kind", "member", "rotation", "x", "y", "terminal", "port", "flag"})
+        for trace in (None, []):
+            model.zero_grad(set_to_none=True)
+            _, _, logp, entropy = decode(model, self.obs, decisions=plain[1], trace=trace)
+            (-logp - .0001 * entropy).backward()
+            gradients = [None if p.grad is None else p.grad.clone() for p in model.parameters()]
+            if trace is None:
+                expected = gradients
+            else:
+                self.assertTrue(all(a is None and b is None or a is not None and b is not None and torch.equal(a, b) for a, b in zip(expected, gradients)))
+
+    def test_capsule_reproduces_nonempty_adam_and_rejects_corruption(self):
+        model = DirectPolicy(16)
+        optimizer = torch.optim.Adam(model.parameters(), lr=.003)
+        sources = [dict(path=str(Path(__file__).with_name(name).resolve()),
+                        sha256=hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest())
+                   for name in ("train.py", "policy.py", "client.py", "update.py", "replay.py")]
+        worker_output = self.pool.workers[0].output
+        sources += json.loads((worker_output / "implementation.json").read_text()) + json.loads((worker_output / "generation/provenance.json").read_text())
+        for group in range(2):
+            episodes = [rollout(self.pool, model, [self.root], 4, dict(episode_ms=300000), 900 + group * 2 + i, record=True) for i in range(2)]
+            histories = [e["histories"][0] for e in episodes]
+            summaries = [e["summaries"][0] for e in episodes]
+            credit = credit_signals(histories, summaries, "quality-futility-prefix")
+            before = snapshot(model, optimizer)
+            if group:
+                self.assertTrue(optimizer.state)
+                self.assertTrue(any(torch.count_nonzero(s["exp_avg"]) for s in optimizer.state.values()))
+            # Independent legacy arithmetic: checks the refactor, not just self-replay.
+            reference, reference_optimizer = restore_snapshot(before)
+            samples = sum(map(len, histories))
+            reference_optimizer.zero_grad(set_to_none=True)
+            for signals, history in zip(credit["signals"], histories):
+                for signal, (obs, decisions, _) in zip(signals, history):
+                    _, _, logp, entropy = decode(reference, obs, decisions=decisions)
+                    ((-signal * logp - .0001 * entropy) / samples).backward()
+            torch.nn.utils.clip_grad_norm_(reference.parameters(), 1.0)
+            reference_optimizer.step()
+            expected = snapshot(reference, reference_optimizer)
+            update = apply_update(model, optimizer, histories, credit["signals"], .0001)
+            after = snapshot(model, optimizer)
+            self.assertEqual(after, expected)
+            root_path = Path(self.temp.name) / f"capsule-root-{group}.json"
+            with root_path.open("x") as stream:
+                json.dump(self.root, stream)
+            capsule = dict(schema_version=1, scope="single-on-policy-adam-update", sources=sources, root=self.root,
+                           root_artifact=file_reference(root_path), audits=[e["audits"][0] for e in episodes],
+                           episodes=[e["artifacts"][0] for e in episodes], rollouts=pack_histories(histories), summaries=summaries,
+                           credit_mode="quality-futility-prefix", entropy_weight=.0001, credit=credit, before=before,
+                           after=after, update=update, distribution_changes=distribution_changes(model, histories))
+            capsule = json.loads(json.dumps(capsule, allow_nan=False))
+            self.assertEqual(verify(capsule)["status"], "exact-update-reproduced")
+        for field in ("behavior", "credit", "state", "checkpoint", "root", "initial", "context", "source", "precision"):
+            bad = copy.deepcopy(capsule)
+            if field == "behavior":
+                bad["rollouts"]["histories"][0][0]["observation"]["behavior"]["log_probability"] += .1
+            elif field == "credit":
+                bad["credit"]["signals"][0][0] += .1
+            elif field == "state":
+                bad["rollouts"]["histories"][0][0]["state_ref"] = "absent"
+            elif field == "checkpoint":
+                bad["after"]["model"]["weights"]["head.2.bias"][0] += 1
+            elif field == "root":
+                bad["root"] = dict(id=bad["root"]["id"])
+            elif field == "initial":
+                bad["rollouts"]["histories"][0][0]["observation"]["initial_score"] = [1, 1, 1]
+            elif field == "context":
+                bad["rollouts"]["histories"][0][0]["observation"]["context"][0] = 0
+            elif field == "source":
+                bad["sources"] = [s for s in bad["sources"] if not s["path"].endswith("environment.mjs")]
+            else:
+                bad["before"]["runtime"]["matmul_precision"] = "changed"
+            with self.assertRaises((ValueError, KeyError), msg=field):
+                verify(bad)
 
     def test_futility_tiebreak_cannot_outvote_any_quality_field(self):
         self.assertEqual(terminal_advantages([[100, 99, 5, 999], [101, 0, 0, 0]]), [1, -1])

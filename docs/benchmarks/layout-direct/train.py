@@ -10,6 +10,8 @@ import torch
 
 from client import Pool
 from policy import DirectPolicy, decode, checkpoint, restore
+from update import apply_update, behavior, distribution_changes
+from replay import snapshot, pack_histories, save_capsule, file_reference
 
 
 def read(path):
@@ -18,7 +20,7 @@ def read(path):
 
 def write(path, value):
     with Path(path).open("x") as stream:
-        json.dump(value, stream)
+        json.dump(value, stream, allow_nan=False)
 
 
 def sha(path):
@@ -84,6 +86,8 @@ def rollout(pool, model, roots, horizon, config, seed, *, uniform=False, record=
     histories = [[] for _ in workers]
     states = [{} for _ in workers]
     inference = [0.0 for _ in workers]
+    trace_timing = {}
+    behavior_capture_seconds = 0.0
     futile = [0 for _ in workers]
     seen = [{o["state"]["state"]} for o in obs]
     for step in range(horizon):
@@ -94,13 +98,16 @@ def rollout(pool, model, roots, horizon, config, seed, *, uniform=False, record=
         with torch.no_grad():
             for i in active:
                 start = time.perf_counter()
-                action, decisions, _, _ = decode(model, obs[i], generator=generators[i], uniform=uniform)
+                trace = [] if record else None
+                action, decisions, logp, entropy = decode(model, obs[i], generator=generators[i], uniform=uniform, trace=trace, timing=trace_timing)
                 inference[i] += time.perf_counter() - start
                 actions[i] = action
                 if record:
+                    capture_start = time.perf_counter()
                     identity = obs[i]["state"]["state"]
                     state = states[i].setdefault(identity, obs[i]["state"])
-                    pending[i] = (dict(obs[i], state=state, futile=futile[i]), decisions, action)
+                    pending[i] = (dict(obs[i], state=state, futile=futile[i], behavior=behavior(logp, entropy, trace)), decisions, action)
+                    behavior_capture_seconds += time.perf_counter() - capture_start
         futures = [(i, pool.executor.submit(workers[i].call, "step", action=actions[i])) for i in active]
         for i, future in futures:
             obs[i] = future.result()
@@ -121,6 +128,7 @@ def rollout(pool, model, roots, horizon, config, seed, *, uniform=False, record=
     audits = [w.call("audit") for w in workers]
     artifacts = [w.call("save") for w in workers]
     return dict(observations=obs, histories=histories, summaries=summaries, audits=audits, artifacts=artifacts,
+                recording=dict(decoder_trace_seconds=trace_timing.get("trace_seconds", 0.0), behavior_capture_seconds=behavior_capture_seconds),
                 inference_seconds=sum(inference), inference_seconds_by_worker=inference)
 
 
@@ -132,7 +140,8 @@ def run(options):
     output = Path(options.output_directory).resolve()
     output.mkdir()
     provenance = [dict(path=str(p.resolve()), sha256=sha(p)) for p in
-                  [Path(__file__), Path(__file__).with_name("client.py"), Path(__file__).with_name("policy.py"), Path(options.plan), Path(options.config)]]
+                  [Path(__file__), *[Path(__file__).with_name(name) for name in ("client.py", "policy.py", "update.py", "replay.py")],
+                   Path(options.plan), Path(options.config)]]
     write(output / "provenance.json", provenance)
     torch.set_num_threads(config["threads"])
     torch.set_num_interop_threads(1)
@@ -143,6 +152,7 @@ def run(options):
     with Pool(Path(options.plan).resolve(), output, config["workers"]) as pool:
         if not pool.metadata.get("dynamic_generation") or pool.metadata.get("policy_type") != "conditional-direct-parameters":
             raise ValueError("Expected a dynamic direct-action worker")
+        environment_sources = read(pool.workers[0].output / "implementation.json") + read(pool.workers[0].output / "generation/provenance.json")
 
         def generate(split, stratum):
             # The validation stream is fixed across model seeds and never used for training.
@@ -190,29 +200,34 @@ def run(options):
             samples = sum(len(h) for h in result["histories"])
             if not samples:
                 raise RuntimeError("No training action fit the declared episode budget")
-            optimizer.zero_grad(set_to_none=True)
-            task_loss = 0.0
-            entropy_sum = 0.0
+            evidence_start = time.perf_counter()
+            root_path = output / f"root-{group + 1:04d}.json"
+            write(root_path, root)
+            root_artifact = file_reference(root_path)
+            prior = snapshot(model, optimizer)
+            packed = pack_histories(result["histories"])
+            evidence_seconds = time.perf_counter() - evidence_start
             update_start = time.perf_counter()
-            # Recompute on-policy decisions before the single update, bounding autograd memory.
-            for signals, history in zip(credit["signals"], result["histories"]):
-                for signal, (obs, decisions, original_action) in zip(signals, history):
-                    action, _, logp, entropy = decode(model, obs, decisions=decisions)
-                    if action != original_action:
-                        raise RuntimeError("Direct action replay changed before optimizer update")
-                    loss = (-signal * logp - config["entropy"] * entropy) / samples
-                    loss.backward()
-                    task_loss += float((-signal * logp).detach()) / samples
-                    entropy_sum += float(entropy.detach()) / samples
-            if not all(p.grad is None or torch.isfinite(p.grad).all() for p in model.parameters()):
-                raise RuntimeError("Nonfinite streaming gradient")
-            norm = float(torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0))
-            optimizer.step()
+            update_timing = {}
+            update = apply_update(model, optimizer, result["histories"], credit["signals"], config["entropy"], timing=update_timing)
+            update_seconds = time.perf_counter() - update_start
+            evidence_start = time.perf_counter()
+            after = snapshot(model, optimizer)
+            changes = distribution_changes(model, result["histories"])
+            capsule = save_capsule(output / f"update-{group + 1:04d}.json", dict(
+                schema_version=1, scope="single-on-policy-adam-update", group=group + 1, sources=provenance + environment_sources,
+                root=root, root_artifact=root_artifact, rollout_seed=config["seed"] + group, episodes=result["artifacts"], audits=result["audits"],
+                rollouts=packed, summaries=result["summaries"], credit_mode=config["credit"], entropy_weight=config["entropy"],
+                credit=credit, before=prior, after=after, update=update, distribution_changes=changes))
+            evidence_seconds += time.perf_counter() - evidence_start
             row = dict(group=group + 1, root=root["id"], family=root["family"], generation=root["generation"], facilities=len(root["witness"]["placements"]),
-                       sampled_transitions=samples, terminal_advantages=advantage, task_loss=task_loss, entropy=entropy_sum,
+                       sampled_transitions=samples, terminal_advantages=advantage, **update,
                        quality_terminal_advantages=credit["quality_terminal"], terminal_outcomes=credit["outcomes"],
                        credited_transitions=sum(v != 0 for xs in credit["signals"] for v in xs),
-                       gradient_norm=norm, inference_seconds=result["inference_seconds"], update_seconds=time.perf_counter() - update_start,
+                       inference_seconds=result["inference_seconds"], update_seconds=update_seconds,
+                       update_capsule=capsule, post_rollout_evidence_seconds=evidence_seconds, distribution_changes=changes,
+                       recording=dict(**result["recording"], update_recording_seconds=sum(update_timing.values()), update_components=update_timing,
+                                      note="Decoder trace is inside inference; update recording is inside update; do not add these subsets twice."),
                        summaries=result["summaries"], audits=result["audits"], artifacts=result["artifacts"], elapsed_seconds=time.perf_counter() - started)
             groups.append(row)
             write(output / f"group-{group + 1:04d}.json", row)

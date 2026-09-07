@@ -3,6 +3,8 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+import torch
+
 from train import rollout
 
 
@@ -28,7 +30,7 @@ class FakeWorker:
 
 class RolloutAccountingTests(unittest.TestCase):
     def execute(self, worker, horizon, record):
-        with ThreadPoolExecutor(max_workers=1) as executor, patch("train.decode", return_value=({"kind": "compact"}, [0], None, None)):
+        with ThreadPoolExecutor(max_workers=1) as executor, patch("train.decode", return_value=({"kind": "compact"}, [0], torch.tensor(0.), torch.tensor(0.))):
             pool = SimpleNamespace(workers=[worker], executor=executor)
             return rollout(pool, None, [dict(id="test")], horizon, dict(episode_ms=300000), 1, uniform=True, record=record)
 

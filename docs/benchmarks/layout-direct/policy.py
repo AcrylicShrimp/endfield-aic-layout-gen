@@ -1,6 +1,7 @@
 """Conditional direct action decoder: no complete mutation candidate list."""
 
 import math
+import time
 
 import torch
 from torch import nn
@@ -84,7 +85,7 @@ def location_mask(state, members, rotation=None):
     return dict(legal=legal, xmin=xmin, ymin=ymin, width=width, height=height)
 
 
-def decode(model, obs, *, generator=None, decisions=None, uniform=False):
+def decode(model, obs, *, generator=None, decisions=None, uniform=False, trace=None, timing=None):
     s, b = obs["state"], obs["state"]["bounds"]
     encoded = None if uniform else model.encode(obs)
     selected, recorded, logps, entropies = [], [], [], []
@@ -110,6 +111,16 @@ def decode(model, obs, *, generator=None, decisions=None, uniform=False):
         recorded.append(index)
         logps.append(dist.log_prob(torch.tensor(index)))
         entropies.append(dist.entropy())
+        if trace is not None:
+            trace_start = time.perf_counter()
+            legal = torch.isfinite(logits)
+            trace.append(dict(stage=STAGES[rows[0][:len(STAGES)].index(1.0)],
+                              chosen=index, vocabulary=len(rows), legal=legal.tolist(),
+                              log_probabilities=[float(v) if ok else None for v, ok in zip(dist.logits.detach(), legal)],
+                              probabilities=dist.probs.detach().tolist(),
+                              log_probability=float(logps[-1].detach()), entropy=float(entropies[-1].detach())))
+            if timing is not None:
+                timing["trace_seconds"] = timing.get("trace_seconds", 0.0) + time.perf_counter() - trace_start
         return index
 
     occupied_ports = {(t["endpoint"]["instance"], t["endpoint"]["port"]) for t in s["terminals"] if t["endpoint"]["kind"] == "facility"}
