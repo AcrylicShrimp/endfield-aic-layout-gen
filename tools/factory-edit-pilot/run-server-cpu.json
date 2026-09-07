@@ -2,7 +2,7 @@
   "schema_version": 1,
   "seed": 17,
   "device": "cpu",
-  "threads": 24,
+  "threads": 16,
   "horizon": 128,
   "commands": 65536,
   "checkpoints": [

@@ -241,8 +241,12 @@ def train(catalog, config, config_path, output):
                           "champion_score": champion_score, "output": str(output)}), flush=True)
     except BaseException as e:
         metadata.update({"status": "interrupted", "completed_commands": commands, "episodes": episode,
+                         "training_seconds": time.perf_counter()-started-evaluation_seconds,
+                         "evaluation_seconds": evaluation_seconds, "inference_seconds": inference_seconds,
+                         "update_seconds": update_seconds, "snapshot_seconds": snapshot_seconds,
+                         "environment_seconds": dict(env.seconds), "environment_counters": dict(env.counters),
                          "error": {"code": "run.interrupted", "severity": "error", "stage": "run",
-                                   "message": str(e), "entity": str(output)}})
+                                   "message": str(e) or type(e).__name__, "entity": str(output)}})
         write(output/"metadata.json", metadata)
         # Preserve the last complete training checkpoint; partial rollout observations are
         # retained separately so an interrupted on-policy stream is not represented by a seed.

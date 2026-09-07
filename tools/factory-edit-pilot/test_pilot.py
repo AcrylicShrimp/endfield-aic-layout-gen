@@ -1,11 +1,14 @@
 """Behavioral checks required before interpreting the first learning result."""
 
 from copy import deepcopy
+from contextlib import redirect_stdout
+import io
 import json
 from pathlib import Path
 import random
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import numpy as np
 import torch
@@ -14,6 +17,7 @@ from acceptance import Catalog, Invalid, check, port_geometry
 from environment import Environment, serialize
 from policy import Policy, advantages, batch, update
 from run import refresh_actor
+import run as runner
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -246,6 +250,29 @@ class PilotTests(unittest.TestCase):
         self.assertTrue(all(torch.equal(value, learner.state_dict()[key].cpu()) for key, value in actor.state_dict().items()))
         self.assertTrue(all(p.device.type == "cpu" for p in actor.parameters()))
         actor.act(rollout["observations"][0], torch.Generator().manual_seed(19))
+
+    def test_runner_preserves_interruption_diagnostics(self):
+        config = {**self.config, "device": "cpu", "threads": 2,
+                  "horizon": 8, "commands": 16, "rollout_commands": 16, "epochs": 1,
+                  "minibatch": 8, "checkpoints": [0, 16], "evaluation_seeds": 2}
+        (ROOT/"target").mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=ROOT/"target") as temporary:
+            output = Path(temporary)
+            config_path = output/"config.json"
+            config_path.write_text(json.dumps(config))
+            with patch.object(runner, "update", side_effect=KeyboardInterrupt), \
+                    patch("torch.set_num_interop_threads"), patch("plots.render"), redirect_stdout(io.StringIO()):
+                with self.assertRaises(KeyboardInterrupt):
+                    runner.train(self.catalog, config, config_path, output)
+            metadata = json.loads((output/"metadata.json").read_text())
+            self.assertEqual(metadata["status"], "interrupted")
+            self.assertEqual(metadata["completed_commands"], 16)
+            self.assertEqual(metadata["error"]["message"], "KeyboardInterrupt")
+            self.assertGreater(metadata["inference_seconds"], 0)
+            self.assertGreater(metadata["environment_seconds"]["observation"], 0)
+            retained = torch.load(output/"interrupted-state.pt", weights_only=False, map_location="cpu")
+            self.assertEqual(len(retained["partial_rollout"]["observations"]), 16)
+        torch.set_num_threads(1)
 
 
 if __name__ == "__main__":

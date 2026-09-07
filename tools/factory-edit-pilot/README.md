@@ -79,13 +79,22 @@ must be trusted local files. The server checkout and its environment live under
 `~/Srv/endfield-aic-layout-gen`; long jobs run through SSH in detached tmux sessions with
 file logs and exit-status files. No Jupyter service is required.
 
-The prospective `run-server-cpu.json` and `run-server-cuda.json` configs use 24 CPU threads
+The `run-server-cpu.json` and `run-server-cuda.json` configs use 16 CPU threads
 on the measured server and otherwise share the original learning/evaluation allowance:
 
 ```sh
-tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/run.py train --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run-server-cpu.json --output artifacts/factory-edit-pilot/server-cpu-seed17
-tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/run.py train --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run-server-cuda.json --output artifacts/factory-edit-pilot/server-cuda-seed17
+tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/run.py train --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run-server-cpu.json --output artifacts/factory-edit-pilot/server-cpu-t16-seed17
+tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/run.py train --case tools/factory-edit-pilot/case.json --config tools/factory-edit-pilot/run-server-cuda.json --output artifacts/factory-edit-pilot/server-cuda-t16-seed17
 ```
+
+An initial 24-thread CPU attempt exposed an inference slowdown on elongated inputs and was
+interrupted with its checkpoint/partial rollout retained. `rollout_benchmark.py` replays a saved
+input's action sequence while interleaving inference, candidate generation, observation, and
+validation. It checks every reconstructed observation against the saved tensors after timing.
+This complements the contiguous-inference microbenchmark. On actual interrupted-run inputs,
+16-thread inference was about 19x faster than 24-thread inference; 16 also won the larger-input
+update comparison. `benchmark.py --actor-threads` isolates inference threads when diagnosing
+update settings. Training uses the simpler single selected thread count.
 
 Independent acceptance of an exported factory, without running the environment or policy:
 

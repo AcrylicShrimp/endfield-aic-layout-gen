@@ -41,6 +41,7 @@ def main():
     source.add_argument("--input", type=Path, help="Previously retained benchmark input.pt")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--threads", type=int, nargs="+", default=[1, 2, 4, 8])
+    parser.add_argument("--actor-threads", type=int, help="CPU inference threads, defaulting to each measured update setting")
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--device", choices=("cpu", "cuda"), default="cpu", help="PPO learner device; action sampling stays on CPU")
     parser.add_argument("--channels-last", action="store_true")
@@ -50,7 +51,7 @@ def main():
         parser.error("CUDA requested but unavailable")
     if args.output.exists():
         raise ValueError(f"Refusing to overwrite benchmark {args.output}")
-    if args.repeats < 1 or any(t < 1 for t in args.threads):
+    if args.repeats < 1 or any(t < 1 for t in args.threads) or (args.actor_threads is not None and args.actor_threads < 1):
         parser.error("repeats and threads must be positive")
     args.output.mkdir(parents=True)
     torch.set_num_threads(1)
@@ -107,10 +108,12 @@ def main():
             started = time.perf_counter()
             refresh_actor(model, actor)
             snapshot_seconds = time.perf_counter()-started
+            torch.set_num_threads(args.actor_threads or threads)
             started = time.perf_counter()
             for observation in rollout["observations"]:
                 actor.act(observation, generator)
             row = {"threads": threads, "warmup": repeat == 0, "repeat": repeat,
+                   "actor_threads": args.actor_threads or threads,
                    "update_seconds": elapsed, "inference_seconds": time.perf_counter()-started,
                    "snapshot_seconds": snapshot_seconds,
                    "metrics": metrics}
@@ -121,6 +124,7 @@ def main():
     write(args.output/"result.json", {"schema_version": 1, "config": config, "source": str(args.input or args.checkpoint),
                                      "source_sha256": hashlib.sha256((args.input or args.checkpoint).read_bytes()).hexdigest(),
                                      "device": args.device, "actor_device": "cpu", "tf32": False,
+                                     "actor_threads": args.actor_threads,
                                      "cuda_runtime": torch.version.cuda,
                                      "gpu_name": torch.cuda.get_device_name() if args.device == "cuda" else None,
                                      "channels_last": args.channels_last,
