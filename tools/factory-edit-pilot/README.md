@@ -228,3 +228,8 @@ separates fixed-input gains, full-run quality, cache costs and controlled behavi
 --output <fresh-directory>` compares 1/4 GiB preparation ceilings with deterministic CUDA
 updates. It repeats the retained input eight times only inside this diagnostic, preserving
 identical data/optimizer exposure across the pair, and checks resulting parameter hashes.
+
+`profile_environment.py --case <case> --config <config> --input <input.pt> ...
+--output <fresh-directory>` profiles environment-only recorded replay and verifies all
+observations outside the profile. See the [native boundary investigation](../../docs/reports/2026-09-08.05-factory-edit-native-boundary.md);
+its instrumented clocks do not establish uninstrumented throughput or a Rust speedup.
