@@ -195,3 +195,29 @@ runtime/configuration and equal initial parameters within each training seed.
 The [completed three-seed results](../../docs/reports/2026-09-08.12-two-case-learning-results.md)
 contain all nine runs: no positive training or evaluation reward, despite verified improving
 witnesses. Neither matched-total nor matched-per-case comparison showed a benefit in this matrix.
+
+## Curriculum and concurrent PPO study
+
+The [frozen contract](../../docs/designs/2026-09-08.06-curriculum-parallel-ppo.md)
+compares root/curriculum starts with serial/concurrent collection. All conditions use
+1,024 sampled edits per PPO update. Curriculum uses verified zero-reward prefixes,
+never supervised action targets; every frozen evaluation starts at the original root.
+The concurrent collector runs eight native environments in a persistent thread pool
+with the GIL released for native observation/transition work, and batches inference
+on the learner device. It samples actions with independent CPU generators per stream.
+
+After rebuilding the extension, run the matrix from a clean committed checkout:
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/curriculum_matrix.py --protocol tools/factory-edit-pilot/curriculum-parallel-study.json --native-library target/release/libaic_pilot_native.so --output artifacts/factory-edit-pilot/fresh-curriculum-parallel
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/parallel_benchmark.py --protocol tools/factory-edit-pilot/curriculum-parallel-study.json --native-library target/release/libaic_pilot_native.so --output artifacts/factory-edit-pilot/fresh-parallel-benchmark --repeats 5
+```
+
+Use `.dylib` for the local macOS extension. The frozen full protocol requires CUDA;
+small CPU verification protocols can reference an explicit external configuration.
+`curriculum_study.py` runs one condition/seed, `curriculum_audit.py` independently
+replays selected traces and verifies source/exposure/checkpoints, and
+`curriculum_compare.py` checks the complete matched matrix and renders root outcomes.
+Setup actions, curriculum episode gains and original-root gains remain separate.
+Interrupted checkpoints retain per-stream state, RNG, partial rollout and pending
+transition evidence; no automatic resume is claimed.

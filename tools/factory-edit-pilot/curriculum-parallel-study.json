@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "id": "battery-curriculum-parallel-ppo",
+  "base_config": "tools/factory-edit-pilot/run-server-cuda.json",
+  "cases": {"A": "tools/factory-edit-pilot/case.json", "B": "tools/factory-edit-pilot/case-spread.json"},
+  "training_seeds": [17, 29, 43],
+  "commands": 65536,
+  "streams": 8,
+  "checkpoints": [0, 8192, 16384, 24576, 32768, 65536],
+  "curriculum": [{"until": 8192, "remaining": 1}, {"until": 16384, "remaining": 2}, {"until": 24576, "remaining": 3}],
+  "conditions": {
+    "root-serial": {"curriculum": false, "parallel": false},
+    "curriculum-serial": {"curriculum": true, "parallel": false},
+    "root-parallel": {"curriculum": false, "parallel": true},
+    "curriculum-parallel": {"curriculum": true, "parallel": true}
+  }
+}

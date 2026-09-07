@@ -85,6 +85,12 @@ impl PythonEngine {
         self.engine.reset().map_err(py_error)
     }
 
+    fn reset_with_prefix_json(&mut self, py: Python<'_>, prefix_json: &str) -> PyResult<()> {
+        let prefix = decode(prefix_json, "curriculum.prefix_json")?;
+        py.detach(|| self.engine.reset_with_prefix(prefix))
+            .map_err(py_error)
+    }
+
     fn metadata_json(&self) -> PyResult<String> {
         encode(&self.engine.metadata())
     }
@@ -187,8 +193,12 @@ impl PythonEngine {
     }
 
     fn observe<'py>(&mut self, py: Python<'py>) -> PyResult<(Bound<'py, PyDict>, PythonHandle)> {
-        let (value, _) = self.engine.candidates().map_err(py_error)?;
-        let data = self.engine.observation(value).map_err(py_error)?;
+        let (data, value) = py
+            .detach(|| {
+                let (value, _) = self.engine.candidates()?;
+                self.engine.observation(value).map(|data| (data, value))
+            })
+            .map_err(py_error)?;
         let started = Instant::now();
         let output = observation(py, data)?;
         *self
@@ -230,9 +240,9 @@ impl PythonEngine {
         handle: &PythonHandle,
         action_index: usize,
     ) -> PyResult<(f64, bool, Bound<'py, PyDict>)> {
-        let (reward, done, result) = self
-            .engine
-            .step(handle.value, action_index)
+        let value = handle.value;
+        let (reward, done, result) = py
+            .detach(|| self.engine.step(value, action_index))
             .map_err(py_error)?;
         Ok((reward, done, outcome(py, result)?))
     }

@@ -208,6 +208,55 @@ impl Engine {
         Ok(())
     }
 
+    /// Admit a zero-reward curriculum prefix without turning setup into policy edits.
+    pub fn reset_with_prefix(&mut self, prefix: Vec<Value>) -> Result<()> {
+        let previous = self.snapshot();
+        let result = (|| {
+            self.reset()?;
+            for value in prefix {
+                let command = Command::import(&self.catalog, &value)?;
+                let (handle, _) = self.candidates()?;
+                let index = self
+                    .domain(handle)?
+                    .commands
+                    .iter()
+                    .position(|c| c == &command)
+                    .ok_or_else(|| {
+                        Diagnostic::new(
+                            "curriculum.prefix_domain",
+                            "curriculum.start",
+                            "Prefix command is absent from the actual candidate domain",
+                            None,
+                        )
+                    })?;
+                let (reward, done, outcome) = self.step(handle, index)?;
+                if reward != 0.0
+                    || done
+                    || !outcome.applied
+                    || self.best != self.root
+                    || self.base != self.root
+                {
+                    return Err(Diagnostic::new(
+                        "curriculum.prefix_state",
+                        "curriculum.start",
+                        "Prefix must preserve original retained best/base without reward or horizon exhaustion",
+                        None,
+                    ));
+                }
+            }
+            self.steps = 0;
+            self.revision = 0;
+            self.trace.clear();
+            self.episode_counts.clear();
+            self.domain = None;
+            Ok(())
+        })();
+        if result.is_err() {
+            self.restore(previous)?;
+        }
+        result
+    }
+
     pub fn export_layout(&self, which: &str) -> Result<Layout> {
         Ok(match which {
             "root" => &self.root,

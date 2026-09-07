@@ -5,6 +5,7 @@ import hashlib
 import json
 from pathlib import Path
 import subprocess
+from collections import Counter
 
 from reference.acceptance import Catalog, check
 from reference.environment import Environment, serialize
@@ -50,6 +51,19 @@ def audit(root, case, output, source_commit):
         traces.append(output/"training-best-trace.json")
     for path in traces:
         env = Environment(catalog, config)
+        start_path = output / "training-best-start.json"
+        if path.name == "training-best-trace.json" and start_path.exists():
+            if metadata.get("experiment_family") != "curriculum_parallel":
+                raise ValueError(f"Unexpected curriculum start evidence: {start_path}")
+            prefix = json.loads(start_path.read_text())["prefix"]
+            for command in prefix:
+                if command not in env.candidates().to_dicts():
+                    raise ValueError(f"Curriculum prefix outside actual domain: {start_path}")
+                reward, done, outcome = env.step(command)
+                if (reward != 0 or done or not outcome["applied"]
+                        or serialize(env.best) != serialize(env.root) or serialize(env.base) != serialize(env.root)):
+                    raise ValueError(f"Curriculum prefix changes retained root or reward: {start_path}")
+            env.steps, env.revision, env.trace, env.episode_counts = 0, 0, [], Counter()
         total = 0.0
         rows = json.loads(path.read_text())
         for i, row in enumerate(rows):
