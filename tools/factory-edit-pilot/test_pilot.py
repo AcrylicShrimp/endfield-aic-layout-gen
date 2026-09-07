@@ -251,6 +251,19 @@ class PilotTests(unittest.TestCase):
         self.assertTrue(all(p.device.type == "cpu" for p in actor.parameters()))
         actor.act(rollout["observations"][0], torch.Generator().manual_seed(19))
 
+    def test_observation_categories_do_not_alias_later_observations(self):
+        candidates = self.env.candidates()
+        first = self.env.observe(candidates)
+        expected = first["candidates"].copy()
+        first["candidates"].fill(-1)
+        second = self.env.observe(candidates)
+        np.testing.assert_array_equal(second["candidates"], expected)
+        self.env.step({"op": "UNBIND_TERMINALS", "terminal": "quartz:source"})
+        self.env.observe(self.env.candidates())
+        self.env.reset()
+        third = self.env.observe(self.env.candidates())
+        np.testing.assert_array_equal(third["candidates"], expected)
+
     def test_completed_cpu_continuation_matches_uninterrupted_training(self):
         config = {**self.config, "device": "cpu", "threads": 1,
                   "horizon": 8, "commands": 32, "rollout_commands": 16, "epochs": 1,

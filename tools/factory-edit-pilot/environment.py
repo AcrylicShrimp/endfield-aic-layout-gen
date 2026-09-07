@@ -15,6 +15,9 @@ OPERATIONS = ("SET_PLACEMENTS", "UNBIND_TERMINALS", "BIND_TERMINALS", "ERASE_TRA
               "EXTEND", "CONNECT", "DISCARD_EDIT")
 
 
+COMMAND_ENCODER = json.JSONEncoder(sort_keys=True)
+
+
 class Mechanical(ValueError):
     pass
 
@@ -67,6 +70,16 @@ class Environment:
     def __init__(self, catalog, config):
         self.catalog, self.config = catalog, config
         self.fids, self.nids, self.tids = list(catalog.facilities), list(catalog.networks), catalog.terminal_ids
+        # Sparse category columns preserve the original dense feature order.
+        categories = (OPERATIONS, self.fids, self.fids, self.nids, self.tids,
+                      SIDES, ("forward", "backward"), (0, 90, 180, 270))
+        self.feature_columns = []
+        offset = 0
+        for values in categories:
+            self.feature_columns.append({value: offset+i for i, value in enumerate(values)})
+            offset += len(values)
+        self.feature_numeric_offset = offset
+        self.feature_templates = {}
         self.root = initial_layout(catalog)
         admission = check(catalog, serialize(self.root))
         if not admission["valid"]:
@@ -366,7 +379,7 @@ class Environment:
                             if outs[nid][d] and outs[nid][d][0] == (-dx, -dy):
                                 continue
                             candidates.append({"op": "CONNECT", "network": nid, "source": list(c), "target": list(d)})
-        candidates.sort(key=lambda c: json.dumps(c, sort_keys=True))
+        candidates.sort(key=COMMAND_ENCODER.encode)
         self.counters["candidate_commands"] += len(candidates)
         self.seconds["candidates"] += time.perf_counter()-started
         return candidates
@@ -440,8 +453,9 @@ class Environment:
         raster[-3] = np.arange(x0, x1+1, dtype=np.float32)[None, :]/self.scale
         raster[-2] = np.arange(y0, y1+1, dtype=np.float32)[:, None]/self.scale
         raster[-1] = 1
-        features, points = [], []
-        for command in candidates:
+        features = np.empty((len(candidates), self.feature_numeric_offset+8), dtype=np.float32)
+        points = np.empty((len(candidates), 4), dtype=np.int64)
+        for row_index, command in enumerate(candidates):
             op = command["op"]
             assignments = command.get("assignments", {})
             selected = list(assignments)
@@ -449,18 +463,26 @@ class Environment:
             nid = command.get("network", self.catalog.terminal(tid)[0] if tid else None)
             a, b = self.points(command)
             rotation = assignments[selected[0]][2] if selected else -1
-            row = ([float(op == o) for o in OPERATIONS]
-                   + [float(bool(selected) and selected[0] == f) for f in self.fids]
-                   + [float(len(selected) > 1 and selected[1] == f) for f in self.fids]
-                   + [float(nid == n) for n in self.nids] + [float(tid == t) for t in self.tids]
-                   + [float(command.get("direction", command.get("binding", {}).get("side")) == d) for d in SIDES]
-                   + [float(command.get("growth") == g) for g in ("forward", "backward")]
-                   + [float(rotation == r) for r in (0, 90, 180, 270)]
-                   + [a[0]/self.scale, a[1]/self.scale, b[0]/self.scale, b[1]/self.scale,
-                      (b[0]-a[0])/self.scale, (b[1]-a[1])/self.scale,
-                      command.get("length", len(command.get("cells", [])))/2, len(assignments)/2])
-            features.append(row)
-            points.append([a[0]-x0, a[1]-y0, b[0]-x0, b[1]-y0])
+            categories = (op, selected[0] if selected else None,
+                          selected[1] if len(selected) > 1 else None, nid, tid,
+                          command.get("direction", command.get("binding", {}).get("side")),
+                          command.get("growth"), rotation)
+            template = self.feature_templates.get(categories)
+            if template is None:
+                # This key contains finite catalog/action categories, never coordinates
+                # or mutable state. Each returned observation owns its copied values.
+                template = np.zeros(self.feature_numeric_offset, dtype=np.float32)
+                for columns, value in zip(self.feature_columns, categories):
+                    column = columns.get(value)
+                    if column is not None:
+                        template[column] = 1
+                self.feature_templates[categories] = template
+            features[row_index, :self.feature_numeric_offset] = template
+            features[row_index, self.feature_numeric_offset:] = [
+                a[0]/self.scale, a[1]/self.scale, b[0]/self.scale, b[1]/self.scale,
+                (b[0]-a[0])/self.scale, (b[1]-a[1])/self.scale,
+                command.get("length", len(command.get("cells", [])))/2, len(assignments)/2]
+            points[row_index] = [a[0]-x0, a[1]-y0, b[0]-x0, b[1]-y0]
         stats = [(self.config["horizon"]-self.steps)/self.config["horizon"],
                  self.best_score[0]/self.initial_score[0], self.base_score[0]/self.initial_score[0],
                  self.best_score[1]/self.initial_score[0], self.base_score[1]/self.initial_score[0],
@@ -468,6 +490,6 @@ class Environment:
                  sum(b is None for b in self.draft["bindings"].values())/len(self.tids)]
         observation = {"raster": raster, "objects": np.asarray(objects, dtype=np.float32),
                        "stats": np.asarray(stats, dtype=np.float32),
-                       "candidates": np.asarray(features, dtype=np.float32), "points": np.asarray(points, dtype=np.int64)}
+                       "candidates": features, "points": points}
         self.seconds["observation"] += time.perf_counter()-started
         return observation

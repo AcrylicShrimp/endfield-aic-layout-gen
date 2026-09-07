@@ -127,3 +127,8 @@ tools/factory-edit-pilot/.venv/bin/python -u tools/factory-edit-pilot/run.py tra
 Episode/command/update counters are cumulative; raw rows and timing fields cover only the new
 segment. Metadata records `resumed_commands`, `segment_commands`, `timing_scope`, and checkpoint
 lineage including inherited training time. Keep the parent directory alongside its continuation.
+
+Candidate observations now reuse finite catalog/action one-hot templates and fill owned NumPy
+arrays directly. Candidate sorting reuses the same standard JSON encoder. No action pruning,
+feature changes, state cache, or validation reduction accompanies this optimization.
+`environment_benchmark.py --case <case> --config <config> --input <retained-input.pt> [<input.pt> ...] --reference-source <trusted-git-commit> --output <fresh-directory>` compares every candidate in order, observation byte, and transition against the named historical environment and recorded observations. It alternates implementations after warm-up and retains timing/parity evidence.
