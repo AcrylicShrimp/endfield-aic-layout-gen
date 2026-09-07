@@ -89,7 +89,7 @@ target/release/aic-cli layouts construct-process-module \
   --transport-catalog data/game/normalized/transports.json \
   --root-instance 'facility-instance:recipe-occurrence:/target/recipe:xiranite-oven-xiranite-enr-powder-1/input:item-xiranite-powder/recipe:xiranite-oven-xiranite-powder-1/input:item-carbon-enr/recipe:furnance-carbon-enr-1/input:item-carbon-enr-powder/recipe:furnance-carbon-enr-powder-2/input:item-plant-moss-enr-powder-2:3' \
   --internal-item item-plant-moss-powder-2 \
-  --visualization-output docs/benchmarks/constructive-capacity-lanes/capacity-module.html \
+  --visualization-output artifacts/benchmarks/constructive-capacity-lanes/capacity-module.html \
   --localization-catalog data/game/normalized/localization.ko-KR.json
 ```
 

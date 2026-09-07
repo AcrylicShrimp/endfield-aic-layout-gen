@@ -112,9 +112,9 @@ are absent. From the repository root, use a fresh output path:
 
 ```sh
 node docs/benchmarks/constructive-cluster-packing/run.mjs \
-  --graph docs/benchmarks/constructive-chain-blocks/gap-1-placement.json \
-  --blocks docs/benchmarks/constructive-cycle-blocks/matrix.json \
-  --incumbent docs/benchmarks/constructive-factory-closure/matrix.json \
+  --graph artifacts/benchmarks/constructive-chain-blocks/gap-1-placement.json \
+  --blocks artifacts/benchmarks/constructive-cycle-blocks/matrix.json \
+  --incumbent artifacts/benchmarks/constructive-factory-closure/matrix.json \
   --recipes data/game/normalized/recipes.json \
   --facilities data/game/normalized/facilities.json \
   --items data/game/normalized/items.json \

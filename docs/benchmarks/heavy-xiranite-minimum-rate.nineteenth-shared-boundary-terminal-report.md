@@ -157,13 +157,13 @@ another heuristic fallback.
 
 - Contract: `docs/designs/shared-boundary-terminal-cutover.md`
 - Machine-readable comparison:
-  `docs/benchmarks/heavy-xiranite-shared-boundary-terminals/comparison.json`
+  `artifacts/benchmarks/heavy-xiranite-shared-boundary-terminals/comparison.json`
 - Five-second JSON and HTML:
-  `docs/benchmarks/heavy-xiranite-shared-boundary-terminals/12x12-phase0.json` and
-  `docs/benchmarks/heavy-xiranite-shared-boundary-terminals/12x12-phase0.html`
+  `artifacts/benchmarks/heavy-xiranite-shared-boundary-terminals/12x12-phase0.json` and
+  `artifacts/benchmarks/heavy-xiranite-shared-boundary-terminals/12x12-phase0.html`
 - Thirty-second JSON and HTML:
-  `docs/benchmarks/heavy-xiranite-shared-boundary-terminals/12x12-phase0.30s.json` and
-  `docs/benchmarks/heavy-xiranite-shared-boundary-terminals/12x12-phase0.30s.html`
+  `artifacts/benchmarks/heavy-xiranite-shared-boundary-terminals/12x12-phase0.30s.json` and
+  `artifacts/benchmarks/heavy-xiranite-shared-boundary-terminals/12x12-phase0.30s.html`
 
 ## Decision Boundary
 

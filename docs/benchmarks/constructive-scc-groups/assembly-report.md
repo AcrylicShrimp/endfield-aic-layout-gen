@@ -151,7 +151,7 @@ existing release validator, run each order/family combination in a fresh directo
 node docs/benchmarks/constructive-scc-groups/assemble.mjs \
   --graph target/scc-stop-grow-final/graph.json \
   --regions target/scc-stop-grow-final/regions.json \
-  --incumbent docs/benchmarks/constructive-shape-packing/full-matrix.json \
+  --incumbent artifacts/benchmarks/constructive-shape-packing/full-matrix.json \
   --recipes data/game/normalized/recipes.json \
   --facilities data/game/normalized/facilities.json \
   --items data/game/normalized/items.json \

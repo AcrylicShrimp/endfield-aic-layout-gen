@@ -124,8 +124,8 @@ tests, and 6 prior-terminal-pair CLI tests, all passing. Both release-profile ar
 regenerated with:
 
 ```bash
-partition_instance=$(jq -r '.partitioned_rotation_domains | keys[0]' \
-  docs/benchmarks/heavy-xiranite-bottom-up-rotation-root/summary.json)
+partition_instance=$(jq -r '.partition_facility' \
+  docs/benchmarks/heavy-xiranite-bottom-up-rotation-root/case.json)
 
 target/release/aic-bottom-up-ladder \
   --rung facility-ports-propagated \
@@ -135,7 +135,7 @@ target/release/aic-bottom-up-ladder \
   --placement-request data/benchmarks/requests/placement.50x50.request.json \
   --target-phase 30 \
   --time-limit-ms 5000 \
-  --output-dir docs/benchmarks/heavy-xiranite-bottom-up-rotation-root
+  --output-dir artifacts/benchmarks/heavy-xiranite-bottom-up-rotation-root
 
 target/release/aic-bottom-up-ladder \
   --rung facility-ports-propagated \
@@ -146,7 +146,7 @@ target/release/aic-bottom-up-ladder \
   --placement-request data/benchmarks/requests/placement.50x50.request.json \
   --target-phase 30 \
   --time-limit-ms 5000 \
-  --output-dir docs/benchmarks/heavy-xiranite-bottom-up-rotation-root-medium
+  --output-dir artifacts/benchmarks/heavy-xiranite-bottom-up-rotation-root-medium
 ```
 
 Both commands completed successfully. A normalized comparison that removes construction/root

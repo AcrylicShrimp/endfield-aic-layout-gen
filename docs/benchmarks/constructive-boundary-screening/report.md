@@ -39,7 +39,7 @@ The first separately profiled baseline was faster than its unprofiled distributi
 construction vs 11.646-11.702 s). Several operations, not only screening, were faster. The cause
 was not established; do not attribute that change to profiling or to M2. An additional pair in
 opposite order reproduced the baseline at 11.927 s and candidate at 4.441 s. Both profiles are
-retained in [summary.json](summary.json) and [profile-repeat.json](profile-repeat.json). Neither is
+retained in [summary.json](../../../artifacts/benchmarks/constructive-boundary-screening/summary.json) and [profile-repeat.json](../../../artifacts/benchmarks/constructive-boundary-screening/profile-repeat.json). Neither is
 mixed into the five-run unprofiled distributions.
 
 | Operation | Baseline profile 1 / repeat (s) | M2 profile 1 / repeat (s) |

@@ -8,7 +8,7 @@ if (!directory || fs.existsSync(directory)) throw new Error('Provide one new out
 fs.mkdirSync(directory, { recursive: true });
 const folder = path.resolve(directory), rows = [];
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
-const frozen = 'docs/benchmarks/constructive-supplier-groups/heavy.json';
+const frozen = 'artifacts/benchmarks/constructive-supplier-groups/heavy.json';
 const baseline = JSON.parse(fs.readFileSync(frozen));
 const modelHash = hash(fs.readFileSync('docs/benchmarks/constructive-chain-blocks/model.mjs'));
 const catalogArgs = ['--facilities', 'data/game/normalized/facilities.json', '--items', 'data/game/normalized/items.json'];

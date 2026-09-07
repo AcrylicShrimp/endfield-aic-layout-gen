@@ -1,3 +1,4 @@
+import { loadGraphSnapshot } from '../fixtures/constructive.mjs';
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,7 +10,7 @@ import { extractChains, reembed } from './model.mjs';
 import { connectedGroups, dependencyCones, emptyRectangles } from './groups.mjs';
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k, read(`../../../data/game/normalized/${k === 'components' ? 'logistics-components' : k}.json`)]));
-const graph = normalizeGraph(read('../constructive-chain-blocks/gap-1-placement.json'), catalogs), blocks = extractCycles(graph, catalogs).blocks;
+const graph = normalizeGraph(loadGraphSnapshot(), catalogs), blocks = extractCycles(graph, catalogs).blocks;
 
 test('dependency cones retain complete branch layers, stop at budgets and ignore external terminals', () => {
   const nodes = ['sink', 'a', 'b', 'aa', 'bb', 'source'].map(id => ({ id }));

@@ -121,7 +121,7 @@ training or other substantial work. Worker comparison checks identical action/st
 deterministic-work traces. Tensor cost uses actual factory observations, not random tensors,
 but its entropy-gradient update is a cost probe, not a quality evaluation.
 
-[results.json](results.json) is the committed compact snapshot of all final rows, seed/control
+[results.json](../../../artifacts/benchmarks/layout-rl/results.json) is an optional external snapshot of all final rows, seed/control
 training metrics, audits, CPU measurements and source/artifact hashes. Full trajectory/model
 artifacts remain under the paths in `results-plan.json`, outside Git. Keep those directories
 to rerun exact artifact audits; the compact snapshot is not a replacement for model weights.

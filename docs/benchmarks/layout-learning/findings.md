@@ -102,7 +102,7 @@ screened baseline. Pipe-family reward improves only 0.727 → 0.743; its uniform
 These are descriptive results over three seeds and synthetic held-out states, not confidence
 intervals, a scaling law, or evidence that eightfold data growth will keep producing the same
 gain. All seeds, curves, checkpoint hashes and counterfactual-label access counts are recorded
-in [results.json](results.json); full raw reports and models remain under `target/`.
+in [results.json](../../../artifacts/benchmarks/layout-learning/results.json); full raw reports and models remain under `target/`.
 
 ## CPU cost and the actual bottleneck
 

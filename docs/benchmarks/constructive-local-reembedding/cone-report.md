@@ -80,7 +80,7 @@ stage is declared complete.
 
 Use `run.mjs` with the common runtime catalog and validator flags, graph
 `target/adjacent-reciprocal-bank/graph.json`, baseline
-`docs/benchmarks/constructive-reciprocal-banks/results.json`, and:
+`artifacts/benchmarks/constructive-reciprocal-banks/results.json`, and:
 
 ```text
 --rounds 3 --mode joint --move-limit 256 --endpoint-policy terminal-flexible

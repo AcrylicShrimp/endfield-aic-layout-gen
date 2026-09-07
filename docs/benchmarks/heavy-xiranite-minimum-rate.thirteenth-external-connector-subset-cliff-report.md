@@ -182,7 +182,7 @@ Do not perform this experiment until the current report has been reviewed.
 ## Artifacts And Reproduction
 
 - Contract: `docs/designs/external-connector-subset-cliff-diagnosis.md`
-- Normalized matrix: `docs/benchmarks/heavy-xiranite-external-connector-subsets/summary.json`
+- Normalized matrix: `artifacts/benchmarks/heavy-xiranite-external-connector-subsets/summary.json`
 - Per-case JSON, HTML, and `/usr/bin/time -l` records:
   `docs/benchmarks/heavy-xiranite-external-connector-subsets/`
 

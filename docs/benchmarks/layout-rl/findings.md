@@ -110,7 +110,7 @@ Different denominators and repeated geometry must not be hidden by pooling raw s
 
 Per-root scores at 128 proposals illustrate why area alone is insufficient. The terminal column
 is the median exact tuple of nine independent policy/rollout combinations, not a best-of-nine
-portfolio given free extra work. All individual tuples/seeds remain in [results.json](results.json).
+portfolio given free extra work. All individual tuples/seeds remain in [results.json](../../../artifacts/benchmarks/layout-rl/results.json).
 
 | Root | Initial tuple | Terminal median | Greedy | Best-first |
 | --- | --- | --- | --- | --- |
@@ -199,7 +199,8 @@ Cost-probe reports separately retain Python `ru_maxrss`. Full trajectory artifac
 also a cost, and is deliberately outside Git.
 The final main training directory is about 1.1 GiB, targeted training 491 MiB, main evaluation
 400 MiB and main replay audit 513 MiB (rounded filesystem `du` readings). Retaining full
-geometry/trajectory evidence costs much more disk than the 1.46 MB committed summary.
+geometry/trajectory evidence costs much more disk than the 1.46 MB summary, now kept
+outside Git under `artifacts/benchmarks/layout-rl/results.json`.
 
 ## Verification, provenance and failed attempts
 

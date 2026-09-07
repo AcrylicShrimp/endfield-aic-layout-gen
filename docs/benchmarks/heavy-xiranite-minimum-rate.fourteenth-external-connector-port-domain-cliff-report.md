@@ -146,7 +146,7 @@ was introduced.
 
 - Contract: `docs/designs/external-connector-port-domain-cliff-diagnosis.md`
 - Normalized matrix:
-  `docs/benchmarks/heavy-xiranite-external-connector-port-domains/summary.json`
+  `artifacts/benchmarks/heavy-xiranite-external-connector-port-domains/summary.json`
 - Per-case JSON, self-contained HTML, and `/usr/bin/time -l` records:
   `docs/benchmarks/heavy-xiranite-external-connector-port-domains/`
 

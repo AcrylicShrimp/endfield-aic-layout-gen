@@ -59,7 +59,7 @@ Paired ports therefore prove an additional feasible move, not a better final sco
 Reproduce the bridge batches using `run.mjs` and the usual graph/catalog/validator flags:
 
 ```text
---baseline docs/benchmarks/constructive-local-reembedding/cone-results.json
+--baseline artifacts/benchmarks/constructive-local-reembedding/cone-results.json
 --rounds 3 --mode joint --move-limit 128 --move-family cone
 --endpoint-policy terminal-flexible --junction-policy downstream
 --max-new-crossings 4 --port-policy retained --output-directory NEW_PATH

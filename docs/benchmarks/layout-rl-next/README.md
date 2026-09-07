@@ -56,5 +56,14 @@ cargo test --workspace
 ```
 
 Full model/trajectory artifacts live under `target/`, outside Git. The committed gate report
-and [results snapshot](pilot-results.json) retain measurements and hashes; they cannot replace
+and external [results snapshot](../../../artifacts/benchmarks/layout-rl-next/pilot-results.json) retain measurements and hashes; they cannot replace
 those inputs for exact replay.
+
+To check the reported fields of that specific historical pilot, supply its external
+snapshot explicitly. This audit is not part of the unit suite, does not inspect actual
+artifact bytes, and is not a quality expectation for other runs:
+
+```sh
+node docs/benchmarks/layout-rl-next/audit-pilot-results.mjs \
+  --input artifacts/benchmarks/layout-rl-next/pilot-results.json
+```

@@ -159,7 +159,7 @@ for both outputs is a more direct experiment than increasing whole-factory rollb
 Reproduce the source module without composing it into the existing factory:
 
 ```bash
-aic_moss_root=$(jq -r '.root_instance' docs/benchmarks/constructive-network-attachments/moss-module.json)
+aic_moss_root=$(jq -r '.root_instance' artifacts/benchmarks/constructive-network-attachments/moss-module.json)
 target/release/aic-cli layouts construct-process-module \
   --recipes data/game/normalized/recipes.json \
   --source-plan data/examples/source-plan.game-heavy-xiranite-forge.request.json \
@@ -168,7 +168,7 @@ target/release/aic-cli layouts construct-process-module \
   --transport-catalog data/game/normalized/transports.json \
   --logistics-component-catalog data/game/normalized/logistics-components.json \
   --root-instance "$aic_moss_root" --internal-item item-plant-moss-2 \
-  --visualization-output docs/benchmarks/constructive-network-attachments/moss-module.html
+  --visualization-output artifacts/benchmarks/constructive-network-attachments/moss-module.html
 ```
 
 ## Fixed-layout accessibility and bridge probe
@@ -202,7 +202,7 @@ Reproduce accessibility evidence with:
 
 ```bash
 node docs/benchmarks/constructive-network-attachments/boundary-access.mjs \
-  docs/benchmarks/constructive-network-attachments/heavy-xiranite.json \
+  artifacts/benchmarks/constructive-network-attachments/heavy-xiranite.json \
   data/game/normalized/logistics-components.json
 ```
 
@@ -240,8 +240,8 @@ cargo build --release -p aic-cli
   --logistics-component-catalog data/game/normalized/logistics-components.json \
   --target-instance 'facility-instance:recipe-occurrence:/target:0' \
   --max-steps 12 \
-  --visualization-output docs/benchmarks/constructive-network-attachments/heavy-xiranite.html \
-  --report-output docs/benchmarks/constructive-network-attachments/heavy-xiranite.json \
+  --visualization-output artifacts/benchmarks/constructive-network-attachments/heavy-xiranite.html \
+  --report-output artifacts/benchmarks/constructive-network-attachments/heavy-xiranite.json \
   --localization-catalog data/game/normalized/localization.ko-KR.json
 ```
 

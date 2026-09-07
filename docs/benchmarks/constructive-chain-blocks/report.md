@@ -126,12 +126,12 @@ global solver, silently widen gaps, or report an allocated port count as a valid
 ```sh
 node docs/benchmarks/constructive-chain-blocks/run.mjs NEW_MATRIX_DIRECTORY
 node docs/benchmarks/constructive-chain-blocks/map.mjs \
-  --placement docs/benchmarks/constructive-chain-blocks/gap-6-placement.json \
+  --placement artifacts/benchmarks/constructive-chain-blocks/gap-6-placement.json \
   --items data/game/normalized/items.json --transports data/game/normalized/transports.json \
   --report-output NEW_INTERFACE_MAP_JSON
 node docs/benchmarks/constructive-chain-blocks/obstruction.mjs \
-  docs/benchmarks/constructive-chain-blocks/gap-6-placement.json \
-  docs/benchmarks/constructive-chain-blocks/gap-6-routing.json \
+  artifacts/benchmarks/constructive-chain-blocks/gap-6-placement.json \
+  artifacts/benchmarks/constructive-chain-blocks/gap-6-routing.json \
   data/game/normalized/transports.json NEW_OBSTRUCTION_JSON
 ```
 

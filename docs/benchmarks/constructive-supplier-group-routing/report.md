@@ -91,14 +91,14 @@ Browser-rendered images are saved under `target/shared-results/supplier-group-ro
 
 ```sh
 target/release/aic-fixed-routing-probe \
-  --placement docs/benchmarks/constructive-supplier-groups/heavy.json \
+  --placement artifacts/benchmarks/constructive-supplier-groups/heavy.json \
   --facilities data/game/normalized/facilities.json \
   --items data/game/normalized/items.json \
   --transports data/game/normalized/transports.json \
   --components data/game/normalized/logistics-components.json \
   --report-output NEW_ROUTING_JSON
 node docs/benchmarks/constructive-placement-only/route-view.mjs \
-  docs/benchmarks/constructive-supplier-groups/heavy.json NEW_ROUTING_JSON NEW_HTML
+  artifacts/benchmarks/constructive-supplier-groups/heavy.json NEW_ROUTING_JSON NEW_HTML
 ```
 
 The default 16-cell padding and 64-call connection limit are unchanged. Output paths must be new;

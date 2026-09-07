@@ -27,7 +27,7 @@ target/release/aic-cli research sweep-cumulative-scc-fixed-dimensions \
   --worker-count 12 \
   --case-time-limit-ms 5000 \
   --active-local-continuation \
-  --output-dir docs/benchmarks/heavy-xiranite-active-growth-cliff-16x16-5s
+  --output-dir artifacts/benchmarks/heavy-xiranite-active-growth-cliff-16x16-5s
 ```
 
 A separate ten-second run was used only to distinguish a budget-limited Phase 2 result from the next structural cliff. It is not a new default.

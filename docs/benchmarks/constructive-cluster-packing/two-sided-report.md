@@ -109,8 +109,8 @@ Final: `http://100.114.24.86:8765/bound-interconnect-closure-two-sided.html`.
 Failed neighbor: `http://100.114.24.86:8765/bound-interconnect-closure-two-sided-blocked.html`.
 
 Use the nesting reproduction command with `--placement-family two-sided --nesting-screen space`,
-`--incumbent docs/benchmarks/constructive-cluster-packing/refine-second-matrix.json` and
-`--refine-from docs/benchmarks/constructive-cluster-packing/refine-second-matrix.json --refine-radius 2`.
+`--incumbent artifacts/benchmarks/constructive-cluster-packing/refine-second-matrix.json` and
+`--refine-from artifacts/benchmarks/constructive-cluster-packing/refine-second-matrix.json --refine-radius 2`.
 Use a fresh output directory and retain the source details referenced by the prior reports. For a
 single closure use its packed `baseline.json` and the same `--placement-family` flag. Profiling uses
 Node's `--cpu-prof --cpu-prof-dir=<existing directory> --cpu-prof-name=closure.cpuprofile` before the

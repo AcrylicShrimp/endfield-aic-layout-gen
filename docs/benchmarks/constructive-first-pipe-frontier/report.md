@@ -44,7 +44,7 @@ target/release/aic-cli layouts construct-first-pipe-frontier \
   --source-plan data/examples/source-plan.game-heavy-xiranite-forge.request.json \
   --facility-catalog data/game/normalized/facilities.json \
   --item-catalog data/game/normalized/items.json \
-  --visualization-output docs/benchmarks/constructive-first-pipe-frontier/heavy-xiranite.html \
+  --visualization-output artifacts/benchmarks/constructive-first-pipe-frontier/heavy-xiranite.html \
   --localization-catalog data/game/normalized/localization.ko-KR.json
 ```
 

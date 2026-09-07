@@ -1,3 +1,4 @@
+import { loadGraphSnapshot } from '../fixtures/constructive.mjs';
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -8,7 +9,7 @@ import { compactInterface, witnessScore } from '../constructive-auto-interface/c
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k =>
   [k, read(`../../../data/game/normalized/${k === 'components' ? 'logistics-components' : k}.json`)]));
-const snapshot = read('../constructive-chain-blocks/gap-1-placement.json');
+const snapshot = loadGraphSnapshot();
 const graph = normalizeGraph(snapshot, catalogs), inventory = extractCycles(graph, catalogs);
 
 test('full graph terminal margins recover consistent exact utilizations and SCC ownership', () => {

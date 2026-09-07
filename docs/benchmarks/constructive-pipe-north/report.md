@@ -60,7 +60,7 @@ exception, not a change to connected transactional production construction or pi
 
 ```sh
 node docs/benchmarks/constructive-placement-only/time.mjs NEW_DIRECTORY 20
-node docs/benchmarks/constructive-placement-only/compare.mjs docs/benchmarks/constructive-corrected-ports/heavy.json NEW_DIRECTORY/00-placement.json NEW_COMPARISON_JSON
+node docs/benchmarks/constructive-placement-only/compare.mjs artifacts/benchmarks/constructive-corrected-ports/heavy.json NEW_DIRECTORY/00-placement.json NEW_COMPARISON_JSON
 ```
 
 Twenty sequential fresh-process repetitions with release graph CLI and Node v26.5.0 on darwin/arm64;

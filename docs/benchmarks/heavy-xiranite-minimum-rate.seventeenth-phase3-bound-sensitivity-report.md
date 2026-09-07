@@ -126,7 +126,7 @@ question and should be separately contracted if requested.
 - Experiment contract:
   `docs/designs/v2-phase3-bound-sensitivity-experiment.md`
 - 12 by 12 baseline:
-  `docs/benchmarks/heavy-xiranite-v2-cumulative-scc-growth/phase3.json`
+  `artifacts/benchmarks/heavy-xiranite-v2-cumulative-scc-growth/phase3.json`
 - 13 by 13 and 14 by 14 JSON, HTML, and process-time records:
   `docs/benchmarks/heavy-xiranite-v2-phase3-bound-sensitivity/`
 

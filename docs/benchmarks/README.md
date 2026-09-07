@@ -1,6 +1,29 @@
-# Layout Benchmark Artifacts
+# Layout Benchmark Sources and Findings
 
-This directory stores normalized diagnostic measurements, not generated layouts or expected solver answers.
+This directory stores source scripts, reproduction configuration, concise human findings,
+and deliberately selected small test inputs. Regenerable run outputs are not committed.
+
+## Artifact storage cutover
+
+Historical raw JSON, generated HTML, logs and compressed run archives formerly under
+this directory now live locally under ignored `artifacts/benchmarks/`, with the same
+relative paths. They are optional external evidence, not files supplied by a fresh clone
+or a durable backup. Old short artifact names in reports refer to that external location;
+source/config/template paths still refer to this directory. Recorded hashes describe
+the original bytes, not a new rerun. See the [cutover report](../maintenance/artifact-cutover.md).
+
+Reproduction commands must write new outputs under `target/` or `artifacts/`. A later
+experiment that consumes an earlier result must regenerate or explicitly supply it;
+there is no hidden fallback to a committed historical run. Preserve selected regression
+inputs independently in [fixtures](fixtures/README.md), not entire upstream reports.
+
+Every file under `docs/`, even a non-regenerable report or archive, is limited to 100 KiB.
+The reviewed asset allowlist distinguishes real inputs and authored HTML templates from
+generated data. Run the repository check before committing:
+
+```sh
+node docs/maintenance/check-tracked-files.mjs --index
+```
 
 ## Constructive Planner Checkpoints
 
@@ -40,7 +63,8 @@ inside the uncommitted cycle, not compactness optimization of the accepted parti
 `constructive-complete-graph/report.md` closes that checkpoint: catalog-backed independent-axis
 bridges, bridge-aware future access and physical external-I/O construction complete the unchanged
 Heavy Xiranite graph (59 facilities, 89 internal and seven external requirements). The directory
-contains a compact audit and losslessly compressed full JSON/HTML history. The next milestone is
+has a human report here and external audit/JSON/HTML history under
+`artifacts/benchmarks/constructive-complete-graph/`. The next milestone is
 improvement of an already complete validated factory, not further premature compact module packing.
 
 ## Heavy Xiranite Known-Bad Baseline
@@ -240,7 +264,7 @@ Regenerate it from a release binary with:
 
 ```bash
 python3 tools/capture_iterative_scc_baseline.py \
-  --output docs/benchmarks/heavy-xiranite-forge.iterative-scc.known-bad.json
+  --output artifacts/benchmarks/heavy-xiranite-forge.iterative-scc.known-bad.json
 ```
 
 The capture tool builds `aic-cli` before starting the timer, executes the exact command stored in the artifact, and commits only normalized metrics. It records input hashes, the source commit, host description, search bounds, independently measured used geometry, logical route cells, route edges, unique route tiles, turns, components, zero-flow routes, and solve time for every phase.

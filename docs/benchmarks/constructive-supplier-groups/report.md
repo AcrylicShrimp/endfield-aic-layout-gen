@@ -86,7 +86,7 @@ scoring and is not a placement-speed optimization.
 ```sh
 node docs/benchmarks/constructive-placement-only/time.mjs NEW_DIRECTORY 20
 node docs/benchmarks/constructive-placement-only/compare.mjs \
-  docs/benchmarks/constructive-pipe-north/heavy.json NEW_DIRECTORY/00-placement.json NEW_COMPARISON_JSON
+  artifacts/benchmarks/constructive-pipe-north/heavy.json NEW_DIRECTORY/00-placement.json NEW_COMPARISON_JSON
 ```
 
 `heavy.json` is the new frozen proposal; `comparison.json` maps old/new instances and geometric

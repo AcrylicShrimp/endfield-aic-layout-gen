@@ -132,10 +132,10 @@ Production solving is unchanged. This remains a measured research orchestration 
 
 - Contract: `docs/designs/parallel-exact-dimension-sweep.md`
 - Four-worker summary and selected incumbent:
-  `docs/benchmarks/heavy-xiranite-parallel-dimension-sweep/summary.json` and `summary.html`
+  `artifacts/benchmarks/heavy-xiranite-parallel-dimension-sweep/summary.json` and `summary.html`
 - Per-case JSON and HTML in the same directory;
 - Machine-readable comparison:
-  `docs/benchmarks/heavy-xiranite-parallel-dimension-sweep/comparison.json`
+  `artifacts/benchmarks/heavy-xiranite-parallel-dimension-sweep/comparison.json`
 - Previous fixed-case diagnosis:
   `docs/benchmarks/heavy-xiranite-minimum-rate.twenty-second-exact-dimension-partition-report.md`
 

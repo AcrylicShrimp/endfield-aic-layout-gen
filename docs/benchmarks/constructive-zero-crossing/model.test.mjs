@@ -1,3 +1,4 @@
+import { loadPlacementFixture, loadOrderFixture } from '../fixtures/constructive.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -34,7 +35,7 @@ test('tile checker rejects crossings even for compatible items, jumps and facili
 });
 test('full graph accounts for every requirement and never opens routing on local success', () => {
   const load = name => JSON.parse(fs.readFileSync(new URL(name, import.meta.url)));
-  const p = load('../constructive-chain-blocks/gap-6-placement.json');
+  const p = loadPlacementFixture('gap6');
   const r = analyzeZeroCrossing(p, load('../../../data/game/normalized/items.json'), load('../../../data/game/normalized/transports.json'));
   assert.equal(r.routing_allowed, false); assert.equal(r.global_zero_crossing_certified, false);
   assert.equal(r.gate.unresolved.length, 96); assert.equal(new Set(r.gate.unresolved.map(e => e.requirement)).size, 96);
@@ -46,7 +47,7 @@ test('full graph accounts for every requirement and never opens routing on local
 });
 test('joint solver witness preserves all facilities and resolves all twelve selected orders simultaneously', () => {
   const load = name => JSON.parse(fs.readFileSync(new URL(name, import.meta.url)));
-  const p = load('../constructive-chain-blocks/gap-6-placement.json'), oracle = load('./order-slice.json');
+  const p = loadPlacementFixture('gap6'), oracle = loadOrderFixture();
   const items = load('../../../data/game/normalized/items.json'), transports = load('../../../data/game/normalized/transports.json');
   const r = analyzeZeroCrossing(p, items, transports, 100000, oracle);
   assert.equal(r.composition.status, 'joint-sat-order-applied');

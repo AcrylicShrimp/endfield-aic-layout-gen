@@ -1,3 +1,4 @@
+import { loadGraphSnapshot } from '../fixtures/constructive.mjs';
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,7 +11,7 @@ import { nestingCandidates, pendingPorts, footprint, accessFailures } from './ne
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k,
   read(`../../../data/game/normalized/${k === 'components' ? 'logistics-components' : k}.json`)]));
-const graph = normalizeGraph(read('../constructive-chain-blocks/gap-1-placement.json'), catalogs);
+const graph = normalizeGraph(loadGraphSnapshot(), catalogs);
 const sources = extractCycles(graph, catalogs).blocks.map(b => ({ id: b.id, detail: compactInterface(constructCycle(catalogs, graph, b, 'root'), catalogs) }));
 
 test('dependency clusters preserve shared suppliers and ignore input ordering and display labels', () => {

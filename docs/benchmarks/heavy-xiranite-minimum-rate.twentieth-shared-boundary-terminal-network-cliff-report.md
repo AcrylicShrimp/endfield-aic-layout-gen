@@ -164,7 +164,7 @@ Do not implement this ablation until the user reviews the present boundary.
 - Experiment contract:
   `docs/designs/shared-boundary-terminal-phase0-cliff-diagnosis.md`
 - Machine-readable normalized matrix:
-  `docs/benchmarks/heavy-xiranite-shared-boundary-terminal-cliff/matrix.json`
+  `artifacts/benchmarks/heavy-xiranite-shared-boundary-terminal-cliff/matrix.json`
 - Raw per-case JSON, HTML, and single-case summaries:
   `docs/benchmarks/heavy-xiranite-shared-boundary-terminal-cliff/isolated/`
 

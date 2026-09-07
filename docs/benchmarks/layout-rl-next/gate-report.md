@@ -76,7 +76,7 @@ H16 and H32 each beat zero on two exact tuples and tie seven; H64 beats zero on 
 eight. H16 and H32 beat uniform on six roots and tie three, but much of this advantage is
 already present in the untrained architecture. Neither the best tuple nor the improvement
 count should be attributed wholly to learning. Full paired outcomes are in
-[pilot-results.json](pilot-results.json), including every validation row and within-rollout curve.
+[pilot-results.json](../../../artifacts/benchmarks/layout-rl-next/pilot-results.json), including every validation row and within-rollout curve.
 
 Crucially, H32 ties H16 on all nine exact final scores at 1,024 proposals; H64 ties eight
 and loses one on secondary transport/turn costs. All three tie on final area on all nine roots.
@@ -109,7 +109,7 @@ tail is only observed stagnation; the current local action/router restrictions r
 - `git diff --check`: passed. No Rust edit required formatting.
 
 Full inputs and source hashes are in `target/layout-rl-next-corpus-01/report.json` and
-`target/layout-rl-next-pilot-01/{report,audit}.json`. The compact committed snapshot pins all
+`target/layout-rl-next-pilot-01/{report,audit}.json`. The external results snapshot pins all
 three report hashes and model hashes. Keep these directories for exact audit/replay; they
 occupy approximately 13 MiB and 118 MiB respectively. Nothing was deleted.
 

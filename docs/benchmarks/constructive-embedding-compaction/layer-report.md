@@ -86,7 +86,7 @@ Diagnostic:
 
 ```text
 node docs/benchmarks/constructive-embedding-compaction/order-probe.mjs
-  --baseline docs/benchmarks/constructive-local-reembedding/crossing-results.json
+  --baseline artifacts/benchmarks/constructive-local-reembedding/crossing-results.json
   --catalog-directory data/game/normalized --output-directory NEW_PATH
 ```
 

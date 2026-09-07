@@ -122,13 +122,13 @@ case count and budget.
 
 - Experiment contract: `docs/designs/pair-feasibility-versus-optimization-diagnosis.md`
 - Machine-readable comparison:
-  `docs/benchmarks/heavy-xiranite-pair-search-mode/comparison.json`
+  `artifacts/benchmarks/heavy-xiranite-pair-search-mode/comparison.json`
 - Raw optimized JSON and HTML:
-  `docs/benchmarks/heavy-xiranite-pair-search-mode/optimize.json` and
-  `docs/benchmarks/heavy-xiranite-pair-search-mode/optimize.html`
+  `artifacts/benchmarks/heavy-xiranite-pair-search-mode/optimize.json` and
+  `artifacts/benchmarks/heavy-xiranite-pair-search-mode/optimize.html`
 - Raw feasibility-only JSON and HTML:
-  `docs/benchmarks/heavy-xiranite-pair-search-mode/feasibility-only.json` and
-  `docs/benchmarks/heavy-xiranite-pair-search-mode/feasibility-only.html`
+  `artifacts/benchmarks/heavy-xiranite-pair-search-mode/feasibility-only.json` and
+  `artifacts/benchmarks/heavy-xiranite-pair-search-mode/feasibility-only.html`
 
 ## Decision Boundary
 

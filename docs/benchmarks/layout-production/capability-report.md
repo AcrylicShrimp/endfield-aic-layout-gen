@@ -23,7 +23,7 @@ was visited and no per-action routing expansion limit was hit. Counts and scores
 in a second run; timings are observations, not a statistically controlled speed ranking.
 
 Machine-readable evidence, source hashes and retained-witness/trace hashes are in
-[capability-results.json](capability-results.json). Generated artifacts live under
+[capability-results.json](../../../artifacts/benchmarks/layout-production/capability-results.json). Generated artifacts live under
 `target/layout-capability-02/` and `target/layout-capability-strong-02/`.
 
 ## What the new freedom buys
@@ -124,3 +124,12 @@ committing, compared this slice to the accepted constructive planner design and 
 policy: all states used as factory results are complete and independently validated, the
 original request is preserved, score priority is unchanged, and no global exact solver,
 facility-only production fallback or caller-supplied canvas bound was introduced.
+
+The historical result-field check is now an explicit external-evidence audit, not a
+unit test requiring committed output. It checks this experiment's reported accounting
+and observations, not raw artifact bytes or a new factory's validity:
+
+```sh
+node docs/benchmarks/layout-production/audit-capability-results.mjs \
+  --input artifacts/benchmarks/layout-production/capability-results.json
+```

@@ -87,9 +87,9 @@ Obstruction: `http://100.114.24.86:8765/bound-interconnect-closure-nesting-obstr
 
 ```sh
 node docs/benchmarks/constructive-cluster-packing/run.mjs \
-  --graph docs/benchmarks/constructive-chain-blocks/gap-1-placement.json \
-  --blocks docs/benchmarks/constructive-cycle-blocks/matrix.json \
-  --incumbent docs/benchmarks/constructive-cluster-packing/matrix.json \
+  --graph artifacts/benchmarks/constructive-chain-blocks/gap-1-placement.json \
+  --blocks artifacts/benchmarks/constructive-cycle-blocks/matrix.json \
+  --incumbent artifacts/benchmarks/constructive-cluster-packing/matrix.json \
   --packing-family nesting --nesting-limit 12 \
   --recipes data/game/normalized/recipes.json \
   --facilities data/game/normalized/facilities.json \

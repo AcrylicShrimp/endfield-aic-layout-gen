@@ -46,7 +46,9 @@
 - Put disposable build and experiment outputs under ignored `target/`. Put retained local checkpoints or evidence under ignored `artifacts/`, outside Cargo cleanup. Neither location is a backup.
 - Commit concise human-written findings, reproduction commands/configuration, source scripts, and compact provenance/hash manifests. Keep required runtime data and deliberately selected test fixtures tracked; do not blanket-ignore JSON, HTML, or SVG extensions.
 - Before retaining generated content in Git as a fixture or essential evidence, document why it is needed and keep the smallest sufficient payload. Do not force-add raw output just because it was used in a report.
-- Existing tracked benchmark artifacts require a reference-aware migration: some are later-stage inputs. Do not bulk-delete or untrack them based only on extension.
+- Benchmark source assets must be explicitly listed in `docs/maintenance/benchmark-source-assets.json` and the matching `docs/benchmarks/.gitignore` exceptions. Generated reports are not source assets merely because another experiment reads them; use explicit external inputs or extract a minimal independent fixture.
+- Keep each file under `docs/` at or below 100 KiB, including human reports, handoffs, patches, manifests and fixtures. Non-regenerability is not an exemption. Summarize or externalize oversized records; do not evade the limit through compression, minification or arbitrary chunking.
+- Other source files have a 512 KiB review limit. Unmodified upstream game-source tables have a separate 4 MiB ceiling because they preserve identified external source snapshots; this is not an exemption for research output. Review growth before raising any limit.
 - Clean up regenerable intermediate candidates after recording the run summary and preserving required selected results and inputs. Preserve non-replayable checkpoints and irreplaceable evidence; a seed alone does not guarantee an interrupted training stream can be reproduced.
 
 ## CLI Policy
@@ -133,6 +135,7 @@
 
 ## Verification
 
+- Run `node docs/maintenance/check-tracked-files.mjs --worktree` after artifact or documentation changes and `node docs/maintenance/check-tracked-files.mjs --index` after staging, before committing. The index check also catches force-added ignored outputs and oversized staged content.
 - Run `cargo fmt --all` after Rust edits.
 - Run `cargo check --workspace` before considering code changes complete.
 - Run `cargo test --workspace` when behavior changes or tests exist.

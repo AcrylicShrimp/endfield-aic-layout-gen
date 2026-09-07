@@ -2,7 +2,7 @@
 
 Inspected 2026-09-07. This is a bounded, read-only source/schema audit, not a bulk scrape or
 permission to train on/repackage community content. Reproducible request URLs, HTTP status,
-response hashes, field names and measured counts are in [source-results.json](source-results.json).
+response hashes, field names and measured counts are in [source-results.json](../../../artifacts/benchmarks/layout-learning/source-results.json).
 The experiment itself trains only on its own catalog-backed synthetic states.
 
 ## Outcome

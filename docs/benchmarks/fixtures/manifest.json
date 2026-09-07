@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "origins": {
+    "graph": {
+      "path": "artifacts/benchmarks/constructive-chain-blocks/gap-1-placement.json",
+      "sha256": "5bc27708ce6b227dd78acef885032035fedd7e427fe16c9662f6e25d37670157"
+    },
+    "heavy": {
+      "path": "artifacts/benchmarks/constructive-supplier-groups/heavy.json",
+      "sha256": "e410d2f8600b0d2887ae914d4926d52204ab6b7722bb5d54bfd80abf3a1181e3"
+    },
+    "gap6": {
+      "path": "artifacts/benchmarks/constructive-chain-blocks/gap-6-placement.json",
+      "sha256": "d7a8879f79ac865846acff5772403cb6d2090b5b9d90d8d55b67a6c59d0677d7"
+    },
+    "attached": {
+      "path": "artifacts/benchmarks/constructive-reciprocal-strips/attached-graph.json",
+      "sha256": "41842797136485c2a3ec175d20a5f081e4f588a02e12e5deef61c2fb32baf5f5"
+    },
+    "regions": {
+      "path": "artifacts/benchmarks/constructive-scc-groups/regions.json",
+      "sha256": "5bcfed4c9a3e635c1cddcb21bbbde69ae73f641d9383c1cbf503354e577e56e2"
+    },
+    "order": {
+      "path": "artifacts/benchmarks/constructive-zero-crossing/order-slice.json",
+      "sha256": "54a27a104652c1a69dd4c20f74a37178de4bf67e2449035e743e506b5ea7e556"
+    }
+  },
+  "catalogs": {
+    "recipes": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2",
+    "items": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164",
+    "facilities": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e",
+    "transports": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+  },
+  "semantic_sha256": {
+    "graph": "1b61862836ca730ab6b0e339d60c09c8c8014afd7cec550f3e53d6c4d48c38f7",
+    "banks": "0cebe9c422677249895c1327756cbeecf4928bd01aa5832011d63f9fb8e99fba",
+    "heavy": "1ca07cf0f371849160aeba3a8c69d05af67f1ab54706a0fedec026a280902e1b",
+    "gap6": "7ea1c952843cbcfe2db8c0251000882e871ecc22fffd06f9ee019e7728ab3485",
+    "order": "20bfb40fd20f7ca4622ef9912cd02c555a973b469e2ae3bc0279f3aa914fae7c"
+  }
+}

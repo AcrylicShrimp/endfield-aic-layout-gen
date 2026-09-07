@@ -73,7 +73,7 @@ identity, rate, and solver status through click inspection.
 
 ## Artifacts
 
-- `docs/benchmarks/heavy-xiranite-external-connectors-phase0/phase0.12x12.json`
-- `docs/benchmarks/heavy-xiranite-external-connectors-phase0/phase0.12x12.html`
-- `docs/benchmarks/heavy-xiranite-external-connectors-phase0/phase0.12x12.30s.json`
-- `docs/benchmarks/heavy-xiranite-external-connectors-phase0/phase0.12x12.30s.html`
+- `artifacts/benchmarks/heavy-xiranite-external-connectors-phase0/phase0.12x12.json`
+- `artifacts/benchmarks/heavy-xiranite-external-connectors-phase0/phase0.12x12.html`
+- `artifacts/benchmarks/heavy-xiranite-external-connectors-phase0/phase0.12x12.30s.json`
+- `artifacts/benchmarks/heavy-xiranite-external-connectors-phase0/phase0.12x12.30s.html`

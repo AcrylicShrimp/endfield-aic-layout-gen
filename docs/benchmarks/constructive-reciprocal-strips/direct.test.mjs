@@ -1,3 +1,4 @@
+import { loadGraphSnapshot } from '../fixtures/constructive.mjs';
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,7 +11,7 @@ import { bodyCells } from '../constructive-local-reembedding/movement.mjs';
 import { key } from '../constructive-local-reembedding/path.mjs';
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k, read(`../../../data/game/normalized/${k === 'components' ? 'logistics-components' : k}.json`)]));
-const original = normalizeGraph(read('../constructive-chain-blocks/gap-1-placement.json'), catalogs), block = extractCycles(original, catalogs).blocks[0];
+const original = normalizeGraph(loadGraphSnapshot(), catalogs), block = extractCycles(original, catalogs).blocks[0];
 const core = stripPortfolio(original, catalogs, block).candidates.find(d => d.reallocation && d.witness.placements.every(p => p.rotation === 0 || p.rotation === 180));
 const graph = applyReallocation(original, core.reallocation), target = block.consumers.find(id => !block.cycle.includes(id));
 function freeze(x) { if (x && typeof x === 'object' && !Object.isFrozen(x)) { Object.freeze(x); Object.values(x).forEach(freeze); } return x; }

@@ -17,7 +17,7 @@ impl Fixture {
         Self {
             input: serde_json::from_slice(
                 &std::fs::read(
-                    root.join("docs/benchmarks/constructive-bound-interconnect/witness.json"),
+                    root.join("docs/benchmarks/constructive-bound-interconnect/fixtures/crossing-witness.json"),
                 )
                 .unwrap(),
             )

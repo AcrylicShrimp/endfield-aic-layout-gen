@@ -68,10 +68,10 @@ node --test docs/benchmarks/constructive-zero-crossing/model.test.mjs
 uv run --with 'ortools>=9,<10' python -m unittest discover \
   -s docs/benchmarks/constructive-zero-crossing -p '*_test.py'
 node docs/benchmarks/constructive-zero-crossing/run.mjs \
-  --placement docs/benchmarks/constructive-chain-blocks/gap-6-placement.json \
+  --placement artifacts/benchmarks/constructive-chain-blocks/gap-6-placement.json \
   --items data/game/normalized/items.json --facilities data/game/normalized/facilities.json \
   --transports data/game/normalized/transports.json \
-  --order-report docs/benchmarks/constructive-zero-crossing/order-slice.json \
+  --order-report artifacts/benchmarks/constructive-zero-crossing/order-slice.json \
   --report-output NEW_JSON --visualization-output NEW_HTML
 ```
 

@@ -1,3 +1,4 @@
+import { loadPlacementFixture } from '../fixtures/constructive.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -82,7 +83,7 @@ test('parallel demands and non-opposed belt interfaces are not silently contract
   assert.equal(chainBlocks(source, items).block_experiment.extraction[0].reason, 'non-opposed-belt-ports');
 });
 test('full graph preserves all catalog-relative ports, identities and channel clearance', () => {
-  const source = JSON.parse(fs.readFileSync(new URL('../constructive-supplier-groups/heavy.json', import.meta.url)));
+  const source = loadPlacementFixture('heavy');
   const catalogItems = JSON.parse(fs.readFileSync(new URL('../../../data/game/normalized/items.json', import.meta.url)));
   const report = chainBlocks(source, catalogItems, { minimumGap: 1 });
   assert.equal(report.block_experiment.summary.chains, 7);
@@ -108,8 +109,10 @@ test('full graph preserves all catalog-relative ports, identities and channel cl
 });
 test('explicit CLI validates runtime catalog provenance and uses compact completion', () => {
   const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'aic-chain-cli-'));
+  const placement = path.join(folder, 'placement.json');
+  fs.writeFileSync(placement, JSON.stringify(loadPlacementFixture('heavy')) + '\n');
   const args = ['docs/benchmarks/constructive-chain-blocks/place.mjs',
-    '--placement', 'docs/benchmarks/constructive-supplier-groups/heavy.json',
+    '--placement', placement,
     '--facilities', 'data/game/normalized/facilities.json', '--items', 'data/game/normalized/items.json',
     '--minimum-gap', '1', '--report-output', path.join(folder, 'result.json'), '--visualization-output', path.join(folder, 'result.html')];
   const result = spawnSync(process.execPath, args, { encoding: 'utf8' });

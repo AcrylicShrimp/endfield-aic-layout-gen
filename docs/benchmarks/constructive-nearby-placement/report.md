@@ -71,8 +71,8 @@ an incomplete graph's smaller area as a successful quality improvement.
 ## Controlled development results
 
 The first implementation did not align footprint selection with the router's pending-port corridor
-reservation. [Unguarded samples](unguarded.json) stop at 19/59 facilities for N=1 and 8/59 for N=4.
-[Additional counts](counts.json) N=2 and N=8 also stop at eight. Small cycles complete in all cases.
+reservation. [Unguarded samples](../../../artifacts/benchmarks/constructive-nearby-placement/unguarded.json) stop at 19/59 facilities for N=1 and 8/59 for N=4.
+[Additional counts](../../../artifacts/benchmarks/constructive-nearby-placement/counts.json) N=2 and N=8 also stop at eight. Small cycles complete in all cases.
 The old binary and zero mode retain exactly the same final/intermediate witnesses and search choices.
 
 Inspection of the failed N=4 node finds footprints at (2,1), (1,1), (2,2), (1,2), (2,3), (1,3)
@@ -81,7 +81,7 @@ multiple lanes under the runtime belt capacity. N=1 also leaves footprints in pe
 These observed collisions motivated the guard above; they do not prove that every failed route was
 impossible or that this guard alone would restore completion.
 
-The separate [budget control](budget.json) raises placements 256 -> 1,024 and route searches
+The separate [budget control](../../../artifacts/benchmarks/constructive-nearby-placement/budget.json) raises placements 256 -> 1,024 and route searches
 4,096 -> 16,384 per growth, leaving per-connection and candidate-enumeration limits unchanged.
 N=1 still stops at 19 (11.848 s planner); N=4 reaches 28 but stops after 162.870 s planner and
 18,350 total A* calls. More budget can change the frontier reached, but does not establish completion.
@@ -89,7 +89,7 @@ This is not a same-budget speed comparison or evidence of global infeasibility.
 
 ## Final guarded matrix
 
-The [guarded matrix](guarded.json) uses original budgets. Scores of partial nodes below are explicitly
+The [guarded matrix](../../../artifacts/benchmarks/constructive-nearby-placement/guarded.json) uses original budgets. Scores of partial nodes below are explicitly
 not comparable to the complete baseline as factory-quality results. Times are individual diagnostic
 planner samples; the repeated experiment supplies distributions separately.
 
@@ -146,7 +146,7 @@ global placement phase or W/H input is introduced by this experiment.
 
 ## Repetition and verification
 
-The [three rotated repeats](repeated.json) retain every sample and reproduce identical witnesses,
+The [three rotated repeats](../../../artifacts/benchmarks/constructive-nearby-placement/repeated.json) retain every sample and reproduce identical witnesses,
 scores, search choices and failure points within each mode. Zero mode also matches the preserved
 baseline exactly. No compiler, test or screenshot process overlaps these timings.
 

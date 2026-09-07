@@ -196,11 +196,11 @@ reformulation be applied to cumulative phases 2 and 3.
 - Full canonical cumulative JSON and HTML:
   `docs/benchmarks/heavy-xiranite-canonical-occupancy-cumulative/`
 - Machine-readable normalized comparison:
-  `docs/benchmarks/heavy-xiranite-canonical-occupancy-cumulative/comparison.json`
+  `artifacts/benchmarks/heavy-xiranite-canonical-occupancy-cumulative/comparison.json`
 - Previous v2 cumulative baseline:
   `docs/benchmarks/heavy-xiranite-v2-cumulative-scc-growth/`
 - Previous 13 by 13 baseline:
-  `docs/benchmarks/heavy-xiranite-v2-phase3-bound-sensitivity/13x13.json`
+  `artifacts/benchmarks/heavy-xiranite-v2-phase3-bound-sensitivity/13x13.json`
 
 ## Decision Boundary
 

@@ -1,9 +1,0 @@
-{
-  "schema_version": 1,
-  "stage": "offline-future-reservations",
-  "input": "/tmp/aic-downstream.kTgcr8/matrix/heavy-xiranite-0-closed-nearby-4.json",
-  "input_sha256": "208096eb0e5d3bcd0471490fb7d80ef9bac3aba6836bd86ae88ddb17676e048a",
-  "corridor_length": 3,
-  "scope": "Pending new-port endpoints overlapped by another port reservation. The route engine exempts both selected endpoints by port identity; consider the chosen pair before inferring rejection.",
-  "conflicts": []
-}

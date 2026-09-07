@@ -80,7 +80,7 @@ uv run --frozen --project docs/benchmarks/layout-learning python docs/benchmarks
   --plan docs/benchmarks/layout-direct/sampling.json --config docs/benchmarks/layout-direct/breadth.json \
   --output-directory target/layout-direct-breadth-01
 node docs/benchmarks/layout-direct/breadth-analysis.mjs \
-  --directory target/layout-direct-breadth-01 --output docs/benchmarks/layout-direct/breadth-results.json
+  --directory target/layout-direct-breadth-01 --output artifacts/benchmarks/layout-direct/breadth-results.json
 node --test docs/benchmarks/layout-direct/*.test.mjs
 uv run --frozen --project docs/benchmarks/layout-learning python -m unittest discover \
   -s docs/benchmarks/layout-direct -p 'test_*.py'

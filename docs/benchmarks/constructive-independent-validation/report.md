@@ -49,7 +49,7 @@ the current calling-thread-only profiler for worker-time conclusions. No M4 adop
 
 ## Final separate profile
 
-[summary.json](summary.json) records five unprofiled pairs and one separate profiled pair per
+[summary.json](../../../artifacts/benchmarks/constructive-independent-validation/summary.json) records five unprofiled pairs and one separate profiled pair per
 workload, with binary/input hashes, host/toolchain, CPU, memory and complete operation records.
 
 | Operation | Original / probe (s) | Indexed candidate (s) |
@@ -79,7 +79,7 @@ short completion line of approximately 250 bytes with these experiment paths.
 ## Measure before choosing the change
 
 The [contract](../../todos/2026-09-05.08-independent-validation.md) required a release probe of the
-unchanged validator before any indexing. [probe.json](probe.json) compares the preserved M2 binary
+unchanged validator before any indexing. [probe.json](../../../artifacts/benchmarks/constructive-independent-validation/probe.json) compares the preserved M2 binary
 with an instrumentation-only binary: its `candidate` label means the instrumented old algorithm,
 not the final optimized implementation. Both full and seed-cycle witness signatures match.
 

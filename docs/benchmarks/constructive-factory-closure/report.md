@@ -115,8 +115,8 @@ are absent; see the neighboring composition report. Then use a fresh output dire
 
 ```sh
 node docs/benchmarks/constructive-factory-closure/run.mjs \
-  --graph docs/benchmarks/constructive-chain-blocks/gap-1-placement.json \
-  --baseline docs/benchmarks/constructive-block-composition/matrix.json \
+  --graph artifacts/benchmarks/constructive-chain-blocks/gap-1-placement.json \
+  --baseline artifacts/benchmarks/constructive-block-composition/matrix.json \
   --recipes data/game/normalized/recipes.json \
   --facilities data/game/normalized/facilities.json \
   --items data/game/normalized/items.json \

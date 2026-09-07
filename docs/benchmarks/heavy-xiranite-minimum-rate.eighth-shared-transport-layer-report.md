@@ -72,7 +72,7 @@ target/release/aic-cli research compare-first-phase-shared-layer \
   --workspace-root . \
   --placement-request data/benchmarks/requests/placement.12x12.request.json \
   --time-limit-ms 5000 \
-  --output-dir docs/benchmarks/heavy-xiranite-shared-layer-comparison
+  --output-dir artifacts/benchmarks/heavy-xiranite-shared-layer-comparison
 ```
 
 ## Result

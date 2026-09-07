@@ -118,7 +118,7 @@ whole-graph composition or to minimize component count independently of area.
 
 ```sh
 node docs/benchmarks/constructive-cycle-blocks/run.mjs \
-  --graph docs/benchmarks/constructive-chain-blocks/gap-1-placement.json \
+  --graph artifacts/benchmarks/constructive-chain-blocks/gap-1-placement.json \
   --recipes data/game/normalized/recipes.json --facilities data/game/normalized/facilities.json \
   --items data/game/normalized/items.json --transports data/game/normalized/transports.json \
   --components data/game/normalized/logistics-components.json \

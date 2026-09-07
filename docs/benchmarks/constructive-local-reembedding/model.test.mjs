@@ -1,3 +1,4 @@
+import { loadGraphSnapshot } from '../fixtures/constructive.mjs';
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,7 +11,7 @@ import { witnessKey } from '../constructive-embedding-compaction/transactions.mj
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k =>
   [k, read(`../../../data/game/normalized/${k === 'components' ? 'logistics-components' : k}.json`)]));
-const graph = normalizeGraph(read('../constructive-chain-blocks/gap-1-placement.json'), catalogs), blocks = extractCycles(graph, catalogs).blocks;
+const graph = normalizeGraph(loadGraphSnapshot(), catalogs), blocks = extractCycles(graph, catalogs).blocks;
 const make = b => structuredClone(compactInterface(constructCycle(catalogs, graph, b, 'root'), catalogs));
 const margins = w => w.transport_networks.map(n => ({ id: n.id, item: n.item, transport: n.transport, requirement_ids: n.requirement_ids, terminals: n.terminals, component_ids: n.component_ids }));
 function freeze(value) { if (value && typeof value === 'object' && !Object.isFrozen(value)) { Object.freeze(value); for (const v of Object.values(value)) freeze(v); } return value; }

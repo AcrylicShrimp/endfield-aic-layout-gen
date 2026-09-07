@@ -180,13 +180,13 @@ the number of exact dimension cases it safely removes.
 
 - Contract: `docs/designs/exact-used-dimension-partition-diagnosis.md`
 - Machine-readable comparison:
-  `docs/benchmarks/heavy-xiranite-exact-dimensions/comparison.json`
+  `artifacts/benchmarks/heavy-xiranite-exact-dimensions/comparison.json`
 - Proven-infeasible `5x6` JSON and HTML:
-  `docs/benchmarks/heavy-xiranite-exact-dimensions/5x6.json` and `5x6.html`
+  `artifacts/benchmarks/heavy-xiranite-exact-dimensions/5x6.json` and `5x6.html`
 - Proven-infeasible `6x5` JSON and HTML:
-  `docs/benchmarks/heavy-xiranite-exact-dimensions/6x5.json` and `6x5.html`
+  `artifacts/benchmarks/heavy-xiranite-exact-dimensions/6x5.json` and `6x5.html`
 - Validated `5x7` JSON and HTML:
-  `docs/benchmarks/heavy-xiranite-exact-dimensions/5x7.json` and `5x7.html`
+  `artifacts/benchmarks/heavy-xiranite-exact-dimensions/5x7.json` and `5x7.html`
 
 ## Decision Boundary
 

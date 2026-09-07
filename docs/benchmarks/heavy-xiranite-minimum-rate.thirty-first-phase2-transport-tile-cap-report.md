@@ -95,7 +95,7 @@ target/release/aic-cli research diagnose-cumulative-transport-tile-caps \
   --prefix-worker-count 4 \
   --prefix-case-time-limit-ms 5000 \
   --case-time-limit-ms 5000 \
-  --output-dir docs/benchmarks/heavy-xiranite-phase2-transport-tile-caps-5s
+  --output-dir artifacts/benchmarks/heavy-xiranite-phase2-transport-tile-caps-5s
 ```
 
 The cases run sequentially so CPU contention cannot masquerade as a formulation improvement.

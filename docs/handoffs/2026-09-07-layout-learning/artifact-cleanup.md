@@ -3,6 +3,10 @@
 Status: completed scoped maintenance, 2026-09-07. Training and diagnosis remain paused.
 The user authorized discarding regenerable raw output and excluding it from commits.
 
+A subsequent [source-only cutover](../../maintenance/artifact-cutover.md) completed
+the tracked benchmark migration deferred below. These measurements describe the
+earlier disk cleanup, not the later relocation of tracked artifacts.
+
 ## Outcome
 
 `du -sk target` decreased from 86,806,476 KiB to 49,381,960 KiB:

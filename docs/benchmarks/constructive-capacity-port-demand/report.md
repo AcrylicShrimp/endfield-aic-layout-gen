@@ -71,7 +71,7 @@ target/release/aic-cli layouts auto-assemble-process-modules \
   --transport-catalog data/game/normalized/transports.json \
   --target-instance facility-instance:recipe-occurrence:/target:0 \
   --max-steps 6 \
-  --visualization-output docs/benchmarks/constructive-capacity-port-demand/heavy-xiranite.html \
-  --report-output docs/benchmarks/constructive-capacity-port-demand/report.json \
+  --visualization-output artifacts/benchmarks/constructive-capacity-port-demand/heavy-xiranite.html \
+  --report-output artifacts/benchmarks/constructive-capacity-port-demand/report.json \
   --localization-catalog data/game/normalized/localization.ko-KR.json
 ```

@@ -1,0 +1,587 @@
+{
+  "schema_version": 1,
+  "edges": [
+    {
+      "base": "wiring-edge:6b0699f3bc1d6ad293cc3181cfca4608a125014b88fd40d09247a414e7aa06ea"
+    },
+    {
+      "base": "wiring-edge:2c69b95684e822f9b56e5dea7340ea10ad030c8966ce79f4e266ef8c53ef7c03"
+    },
+    {
+      "base": "wiring-edge:768e8574c4dec25251756b1502ab15e61f022a994234a7648172e749666ae204"
+    },
+    {
+      "base": "wiring-edge:091c5a06bf6f7deebb33f108bd8c9f6235f5b2b88776f594d711e491bba96133"
+    },
+    {
+      "base": "wiring-edge:08f6e8c977535a8ac16c6a33077ddcac41d1030d31043546e1a345036dc06da3"
+    },
+    {
+      "base": "wiring-edge:d72810c0fad84b45bdb10aa34a5d8c7fee14b9097d1ff4431705762aeba3ae35"
+    },
+    {
+      "base": "wiring-edge:15d6ce06d7ea0fef8004f44de714fa58df799033df2fea749cf4c29dded2e64f"
+    },
+    {
+      "base": "wiring-edge:be409b83dcda429b63d3cff74e39303d606c18592119e62b47d57d7296e7e698"
+    },
+    {
+      "base": "wiring-edge:1c3388567cd48974f7170595086002b57ec96fdde0e92e65ab539fbaee613881"
+    },
+    {
+      "base": "wiring-edge:4d2d96e80fe684a2fd6bbca955963306c0ca06348fa1a237af5e7b79b2df7149"
+    },
+    {
+      "base": "wiring-edge:4808abba73956e901f7b27b0bc394f7cd98a4be4a2e168da08ef924d3b708c25"
+    },
+    {
+      "base": "wiring-edge:5ec109839dc19b1e0afc5996e10c8e3cb6b555f79ccde23fc87e794635568143"
+    },
+    {
+      "base": "wiring-edge:2204179c0c88f894349871e36399a5b6b346f55b37a7c015c1af5b1b8647c3fd"
+    },
+    {
+      "base": "wiring-edge:b29b99f922b4bd62d909c888f5e91be5c9be2528ff6c97709741f4633a3ef9a1"
+    },
+    {
+      "base": "wiring-edge:4cb849fc215cd655bf6c54a772c7fb48066d7ad879d4abc0c971f43749d5a231"
+    },
+    {
+      "base": "wiring-edge:91a73c19364287329744ef050fd41643c1c2e5b90810c181bb7f847f49586f2d"
+    },
+    {
+      "base": "wiring-edge:3983a3f0da829b97c5d3c106f0351691e80e0230f280e9f65743f23a1dad2e2d"
+    },
+    {
+      "base": "wiring-edge:8b27a55417191cb52ee2607ade8688babcf32aa5ffe0478269256232d620761d"
+    },
+    {
+      "base": "wiring-edge:731a02b8decf07cf1135f46b391405ce1e0465727cc8e9ed834b915addcbebb7"
+    },
+    {
+      "base": "wiring-edge:037fa5b7aa8741db140fa41b381ee7f3dcc7fdbb9f88a57d76ff638f65de1acc"
+    },
+    {
+      "base": "wiring-edge:8f8d2ba860a8626044f5319f11ed5d50ea21278802bcf35a5c7312197647a7c9"
+    },
+    {
+      "base": "wiring-edge:8dee9d24d17b98cf3cc8798a9c28a04499b0a77a3d7dea14045c6e199831aee7"
+    },
+    {
+      "base": "wiring-edge:b65b2f33f0ed666ff22c3c2dd875a38620d66269690f8b1e1bc3f900e4c226e9"
+    },
+    {
+      "base": "wiring-edge:21c5b34ce05a1a6145f4451f9000d03a9184f3301407bb9ecb356b9339b77043"
+    },
+    {
+      "base": "wiring-edge:83991942665a713b812f1f152e6c7eff67fdc93c2b73c285ae55a236d466a0cb"
+    },
+    {
+      "base": "wiring-edge:121c0d63102c8c4f409587a74e73fbc957b60f98e7976c6cc0c3ab11971344a2"
+    },
+    {
+      "base": "wiring-edge:6a3c9cb8b6801d699a1752f09f622e035b42f899651f3a50feb4530a02eb319a"
+    },
+    {
+      "base": "wiring-edge:a9f18ba528e2f61bcb2d6a90a5d8822f8fefb1752757551a25c23056a3fed78f"
+    },
+    {
+      "base": "wiring-edge:8c3d3a80e7c0e9aaa21f2a8d2c1450783462f7ec68f2161cde8a774ebca5cee8"
+    },
+    {
+      "base": "wiring-edge:9109f3f0f1cea1aed0d99906976fcc7d2753e33b3b4e4fd14e965379121916fb"
+    },
+    {
+      "base": "wiring-edge:898441b7891f9bdeafa02c7d8f5941c89ab802423dd9b5c2851b0e84f6041cd8"
+    },
+    {
+      "base": "wiring-edge:a563c1d10bb90b3f8ae65556cc7b5977a8dea90da3838074406d85e46967aa63"
+    },
+    {
+      "base": "wiring-edge:6e7e886bb2527e399bae69e67687b6f9beb004bff7efb16be97d8673a711103f"
+    },
+    {
+      "base": "wiring-edge:dc9bd4e56e19e49e58f0bf9175825e166e5c716072c08880f68c098129bc19a6"
+    },
+    {
+      "base": "wiring-edge:fd548170ead484434580be4a77d9478585a7ad78faf01f5debbcad3af7e7d23e"
+    },
+    {
+      "base": "wiring-edge:f959dd05789fc16f35b1e91f011554b72379039ba540182c0003a2974fcc13e6"
+    },
+    {
+      "base": "wiring-edge:477be53964427bd4f6019a2d169a428dbf72ad621333d501c9161299fe7755d4"
+    },
+    {
+      "base": "wiring-edge:d99c6bb230d20783d0bad99d0d0a5ba34943863858d5eff76f5d428e02727fd3"
+    },
+    {
+      "base": "wiring-edge:73f36e90398b68aa42387f2354fff999d50989d1bbd721fd6ffd65ba7ad03c42"
+    },
+    {
+      "base": "wiring-edge:69633717796936784c129d497cbe8656045bbefe2609ca7610fcc41f1044d548"
+    },
+    {
+      "base": "wiring-edge:9cc78f5ad1c5a03a94a533fe26e35517c481fb4860303ff01217159ff2418b09"
+    },
+    {
+      "base": "wiring-edge:7565bb835dbe056399c0de47fcf3bd21108488893615068a6cba7f69078572de"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-0\",\"item-plant-moss-2\",0]",
+      "item": "item-plant-moss-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F51",
+      "target": "F56"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-0\",\"item-plant-moss-2\",1]",
+      "item": "item-plant-moss-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F50",
+      "target": "F41"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-0\",\"item-plant-moss-seed-2\",0]",
+      "item": "item-plant-moss-seed-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F56",
+      "target": "F51"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-0\",\"item-plant-moss-seed-2\",1]",
+      "item": "item-plant-moss-seed-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F56",
+      "target": "F50"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-1\",\"item-plant-moss-2\",0]",
+      "item": "item-plant-moss-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F55",
+      "target": "F58"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-1\",\"item-plant-moss-2\",1]",
+      "item": "item-plant-moss-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F54",
+      "target": "F43"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-1\",\"item-plant-moss-seed-2\",0]",
+      "item": "item-plant-moss-seed-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F58",
+      "target": "F55"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-1\",\"item-plant-moss-seed-2\",1]",
+      "item": "item-plant-moss-seed-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F58",
+      "target": "F54"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-2\",\"item-plant-moss-3\",0]",
+      "item": "item-plant-moss-3",
+      "rate": {
+        "numerator": 1,
+        "denominator": 3
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F52",
+      "target": "F57"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-2\",\"item-plant-moss-3\",1]",
+      "item": "item-plant-moss-3",
+      "rate": {
+        "numerator": 1,
+        "denominator": 3
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F53",
+      "target": "F42"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-2\",\"item-plant-moss-seed-3\",0]",
+      "item": "item-plant-moss-seed-3",
+      "rate": {
+        "numerator": 1,
+        "denominator": 3
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F57",
+      "target": "F52"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-2\",\"item-plant-moss-seed-3\",1]",
+      "item": "item-plant-moss-seed-3",
+      "rate": {
+        "numerator": 1,
+        "denominator": 3
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F57",
+      "target": "F53"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-3\",\"item-plant-moss-2\",0]",
+      "item": "item-plant-moss-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F35",
+      "target": "F47"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-3\",\"item-plant-moss-2\",1]",
+      "item": "item-plant-moss-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F34",
+      "target": "F24"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-3\",\"item-plant-moss-seed-2\",0]",
+      "item": "item-plant-moss-seed-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F47",
+      "target": "F34"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-3\",\"item-plant-moss-seed-2\",1]",
+      "item": "item-plant-moss-seed-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F47",
+      "target": "F35"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-4\",\"item-plant-moss-2\",0]",
+      "item": "item-plant-moss-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F30",
+      "target": "F44"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-4\",\"item-plant-moss-2\",1]",
+      "item": "item-plant-moss-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F31",
+      "target": "F22"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-4\",\"item-plant-moss-seed-2\",0]",
+      "item": "item-plant-moss-seed-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F44",
+      "target": "F31"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-4\",\"item-plant-moss-seed-2\",1]",
+      "item": "item-plant-moss-seed-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F44",
+      "target": "F30"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-5\",\"item-plant-moss-2\",0]",
+      "item": "item-plant-moss-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F40",
+      "target": "F49"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-5\",\"item-plant-moss-2\",1]",
+      "item": "item-plant-moss-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F39",
+      "target": "F27"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-5\",\"item-plant-moss-seed-2\",0]",
+      "item": "item-plant-moss-seed-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F49",
+      "target": "F40"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-5\",\"item-plant-moss-seed-2\",1]",
+      "item": "item-plant-moss-seed-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F49",
+      "target": "F39"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-6\",\"item-plant-moss-2\",0]",
+      "item": "item-plant-moss-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F37",
+      "target": "F48"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-6\",\"item-plant-moss-2\",1]",
+      "item": "item-plant-moss-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F36",
+      "target": "F25"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-6\",\"item-plant-moss-seed-2\",0]",
+      "item": "item-plant-moss-seed-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F48",
+      "target": "F36"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-6\",\"item-plant-moss-seed-2\",1]",
+      "item": "item-plant-moss-seed-2",
+      "rate": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F48",
+      "target": "F37"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-7\",\"item-plant-moss-3\",0]",
+      "item": "item-plant-moss-3",
+      "rate": {
+        "numerator": 1,
+        "denominator": 3
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F32",
+      "target": "F45"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-7\",\"item-plant-moss-3\",1]",
+      "item": "item-plant-moss-3",
+      "rate": {
+        "numerator": 1,
+        "denominator": 9
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F32",
+      "target": "F46"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-7\",\"item-plant-moss-3\",2]",
+      "item": "item-plant-moss-3",
+      "rate": {
+        "numerator": 2,
+        "denominator": 9
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F33",
+      "target": "F46"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-7\",\"item-plant-moss-3\",3]",
+      "item": "item-plant-moss-3",
+      "rate": {
+        "numerator": 2,
+        "denominator": 9
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F33",
+      "target": "F23"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-7\",\"item-plant-moss-3\",4]",
+      "item": "item-plant-moss-3",
+      "rate": {
+        "numerator": 1,
+        "denominator": 3
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F38",
+      "target": "F26"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-7\",\"item-plant-moss-3\",5]",
+      "item": "item-plant-moss-3",
+      "rate": {
+        "numerator": 1,
+        "denominator": 9
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F38",
+      "target": "F23"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-7\",\"item-plant-moss-seed-3\",0]",
+      "item": "item-plant-moss-seed-3",
+      "rate": {
+        "numerator": 4,
+        "denominator": 9
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F45",
+      "target": "F32"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-7\",\"item-plant-moss-seed-3\",1]",
+      "item": "item-plant-moss-seed-3",
+      "rate": {
+        "numerator": 2,
+        "denominator": 9
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F45",
+      "target": "F33"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-7\",\"item-plant-moss-seed-3\",2]",
+      "item": "item-plant-moss-seed-3",
+      "rate": {
+        "numerator": 2,
+        "denominator": 9
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F46",
+      "target": "F33"
+    },
+    {
+      "id": "[\"concrete-source-allocation\",\"cycle-7\",\"item-plant-moss-seed-3\",3]",
+      "item": "item-plant-moss-seed-3",
+      "rate": {
+        "numerator": 4,
+        "denominator": 9
+      },
+      "transport": "belt",
+      "internal": true,
+      "source": "F46",
+      "target": "F38"
+    }
+  ]
+}

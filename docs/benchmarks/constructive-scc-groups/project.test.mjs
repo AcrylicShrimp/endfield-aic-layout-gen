@@ -1,3 +1,4 @@
+import { loadGraphSnapshot } from '../fixtures/constructive.mjs';
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -59,7 +60,7 @@ test('concrete flow decomposition preserves terminal margins and rejects missing
 });
 
 test('actual two-member SCC projection keeps exact internal flows and leaves omitted production pending', () => {
-  const original = normalizeGraph(read('../constructive-chain-blocks/gap-1-placement.json'), catalogs), block = extractCycles(original, catalogs).blocks[0];
+  const original = normalizeGraph(loadGraphSnapshot(), catalogs), block = extractCycles(original, catalogs).blocks[0];
   const core = stripPortfolio(original, catalogs, block).candidates.find(d => d.reallocation && d.witness.placements.every(p => p.rotation === 0 || p.rotation === 180));
   const graph = applyReallocation(original, core.reallocation), target = block.consumers.find(id => !block.cycle.includes(id));
   const parent = directAttachments(catalogs, graph, core, target)[0], seed = sourceSccs(graph).find(s => s.members.every(id => block.cycle.includes(id)));

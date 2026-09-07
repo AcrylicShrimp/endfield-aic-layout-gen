@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "roots": "../../../target/layout-rl-roots-03/roots.json",
-  "results": "results.json",
+  "results": "../../../artifacts/benchmarks/layout-rl/results.json",
   "selection": "Best observed terminal-policy result among nine model/rollout combinations per root at 128 proposals; illustrative, not typical performance or a free portfolio.",
   "cases": [
     {"row": 94, "root": "chain-iron-nine-108", "label": "Iron production · 9 facilities · unseen layout"},

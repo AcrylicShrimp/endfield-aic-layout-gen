@@ -1,16 +1,14 @@
+import { loadBankGraph } from '../fixtures/constructive.mjs';
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { bankCandidates, reciprocalFamily, allocateAdjacent, adjacentPairs } from './model.mjs';
-import { normalizeGraph } from '../constructive-cycle-blocks/graph.mjs';
-import { applyReallocation } from '../constructive-reciprocal-strips/graph-delta.mjs';
 import { witnessScore } from '../constructive-auto-interface/compact.mjs';
 import { add, rate, parseRate, dto } from '../constructive-interconnect/rates.mjs';
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const catalogs = Object.fromEntries(['recipes', 'items', 'facilities', 'transports', 'components'].map(k => [k,
   read(`../../../data/game/normalized/${k === 'components' ? 'logistics-components' : k}.json`)]));
-const graph = read('../constructive-scc-groups/regions.json').allocations.reduce(applyReallocation,
-  normalizeGraph(read('../constructive-reciprocal-strips/attached-graph.json'), catalogs));
+const graph = loadBankGraph(catalogs);
 const selected = ['F32', 'F33', 'F38', 'F45', 'F46', 'F23', 'F26'];
 const members = graph.nodes.filter(n => selected.includes(n.label)).map(n => n.id);
 const margins = edges => {

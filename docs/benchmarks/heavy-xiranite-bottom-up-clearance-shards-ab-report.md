@@ -154,7 +154,7 @@ reactivation. Neither should be stacked into this A/B result.
 ## Reproduction
 
 The machine-readable aggregate is
-`docs/benchmarks/heavy-xiranite-bottom-up-clearance-shards-ab/summary.json`. Raw self-contained HTML,
+`artifacts/benchmarks/heavy-xiranite-bottom-up-clearance-shards-ab/summary.json`. Raw self-contained HTML,
 JSON, and `/usr/bin/time -lp` outputs are under its `raw/` directory.
 
 The normal time-budget command shape is:

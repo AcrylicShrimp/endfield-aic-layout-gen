@@ -37,7 +37,7 @@ They do not allow a global facility-only placement stage, rigid group geometry, 
 
 ## Release measurements
 
-The [initial matrix](matrix.json) has ten runs. The [three-round repeat](repeated.json) has 30 runs,
+The [initial matrix](../../../artifacts/benchmarks/constructive-downstream-order/matrix.json) has ten runs. The [three-round repeat](../../../artifacts/benchmarks/constructive-downstream-order/repeated.json) has 30 runs,
 rotating variant order. Both use the same source plans/catalogs, seed, output mode, 256 growth steps,
 256 placement trials and 4,096 A* calls per growth transaction. Per-connection limit remains 64.
 Build and tests finish before timing; no compiler/test overlap. A 180-second per-run harness wall
@@ -88,7 +88,7 @@ The furnace's selected west-facing `input-belt-0` has connection cell `(54,25)`.
 
 That cell is also the actual connection cell (and reservation start) of a different placed grinder's south-facing input for
 requirements `1770726fc972...` and `833307cbcd65...`. See the complete identities/geometry in
-[coarse-reservations.json](coarse-reservations.json).
+[coarse-reservations.json](../../../artifacts/benchmarks/constructive-downstream-order/coarse-reservations.json).
 
 This directly explains the coarse endpoint obstruction under current policy:
 

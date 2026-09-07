@@ -168,8 +168,8 @@ the next decomposition target.
 The release trace was generated with:
 
 ```bash
-partition_instance=$(jq -r '.partitioned_rotation_domains | keys[0]' \
-  docs/benchmarks/heavy-xiranite-bottom-up-rotation-root/summary.json)
+partition_instance=$(jq -r '.partition_facility' \
+  docs/benchmarks/heavy-xiranite-bottom-up-rotation-root/case.json)
 
 target/release/aic-bottom-up-ladder \
   --rung facility-ports-propagated \
@@ -180,7 +180,7 @@ target/release/aic-bottom-up-ladder \
   --placement-request data/benchmarks/requests/placement.50x50.request.json \
   --target-phase 30 \
   --time-limit-ms 5000 \
-  --output-dir docs/benchmarks/heavy-xiranite-bottom-up-rotation-search-provenance
+  --output-dir artifacts/benchmarks/heavy-xiranite-bottom-up-rotation-search-provenance
 ```
 
 The CLI emits both machine-readable JSON and a self-contained HTML table. The trace report

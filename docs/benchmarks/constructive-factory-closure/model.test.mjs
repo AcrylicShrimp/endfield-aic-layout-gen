@@ -1,3 +1,4 @@
+import { loadGraphSnapshot } from '../fixtures/constructive.mjs';
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,7 +10,7 @@ import { growCandidates, ready, routeTemplates, inspectCoverage, placements, pen
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k,
   read(`../../../data/game/normalized/${k === 'components' ? 'logistics-components' : k}.json`)]));
-const graph = normalizeGraph(read('../constructive-chain-blocks/gap-1-placement.json'), catalogs);
+const graph = normalizeGraph(loadGraphSnapshot(), catalogs);
 let cached;
 function baseline() {
   if (cached) return cached;

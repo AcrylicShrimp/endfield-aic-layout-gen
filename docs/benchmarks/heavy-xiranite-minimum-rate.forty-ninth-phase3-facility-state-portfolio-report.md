@@ -33,7 +33,7 @@ target/release/aic-cli research diagnose-cumulative-facility-states \
   --worker-count 12 \
   --prefix-case-time-limit-ms 10000 \
   --state-case-time-limit-ms 5000 \
-  --output-dir docs/benchmarks/heavy-xiranite-phase3-active-state-partition-16x16-x5-y5-5s
+  --output-dir artifacts/benchmarks/heavy-xiranite-phase3-active-state-partition-16x16-x5-y5-5s
 ```
 
 The ten-second prefix budget only obtains the preceding three-facility exact hint. Every Phase 3

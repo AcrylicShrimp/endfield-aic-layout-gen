@@ -121,7 +121,7 @@ node docs/benchmarks/constructive-complete-graph/capture.mjs \
 To inspect the stored HTML without rerunning construction:
 
 ```bash
-gzip -dc docs/benchmarks/constructive-complete-graph/complete-history.html.gz > /tmp/aic-complete.html
+gzip -dc artifacts/benchmarks/constructive-complete-graph/complete-history.html.gz > /tmp/aic-complete.html
 open /tmp/aic-complete.html
 ```
 

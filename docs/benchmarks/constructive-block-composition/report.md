@@ -120,8 +120,8 @@ if its witness directories are absent. Then run from the repository root with a 
 
 ```sh
 node docs/benchmarks/constructive-block-composition/run.mjs \
-  --graph docs/benchmarks/constructive-chain-blocks/gap-1-placement.json \
-  --blocks docs/benchmarks/constructive-cycle-blocks/matrix.json \
+  --graph artifacts/benchmarks/constructive-chain-blocks/gap-1-placement.json \
+  --blocks artifacts/benchmarks/constructive-cycle-blocks/matrix.json \
   --frontier ready --steps 4 \
   --recipes data/game/normalized/recipes.json \
   --facilities data/game/normalized/facilities.json \

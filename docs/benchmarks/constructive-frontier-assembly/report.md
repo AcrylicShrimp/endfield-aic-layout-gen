@@ -103,7 +103,7 @@ area remains the acceptance objective; bridge count and fill are not substitutes
 
 Run `run.mjs` with the CLI documented in `contract.md`, graph
 `target/scc-stop-grow-final/graph.json`, inventory in the same directory, and incumbent
-`docs/benchmarks/constructive-shape-packing/full-matrix.json`. For refinement use the
+`artifacts/benchmarks/constructive-shape-packing/full-matrix.json`. For refinement use the
 successful attempt's `closure-5/report.json` as baseline, not the top-level report which
 selects the retained incumbent. `summarize.mjs` verifies and reduces both controls.
 

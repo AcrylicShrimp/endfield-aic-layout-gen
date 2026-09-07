@@ -56,7 +56,7 @@ The 689 worker floods are separate from the main operation map. Profile scope is
 `calling-thread-with-separate-worker-aggregates`; worker wall sum is 1.342 s and dispatch/join
 critical-path wall is 0.449 s. These overlap and must not be summed. Peak worker workspace is
 1,290,500 bytes; maximum concurrently live workers is four. Native process CPU/RSS is recorded
-separately in [summary.json](summary.json). See the [M4 matrix](../constructive-parallel-analysis/report.md)
+separately in [summary.json](../../../artifacts/benchmarks/constructive-runtime-checkpoint/summary.json). See the [M4 matrix](../constructive-parallel-analysis/report.md)
 for one/two/four/eight-worker distributions and default-selection evidence.
 
 The next largest construction aggregate is independent validation, spread over cell, segment,
@@ -93,9 +93,9 @@ and route repair require the next explicitly scoped quality contract, not a retu
 ## Reproduction, verification and milestone closure
 
 Host: Darwin 25.6.0 arm64, 10 logical CPUs; Rust stable 1.98.0. Both binaries are release opt-level 3.
-[summary.json](summary.json) contains binary/input hashes, all 24 runs, CPU/RSS, output sizes,
+[summary.json](../../../artifacts/benchmarks/constructive-runtime-checkpoint/summary.json) contains binary/input hashes, all 24 runs, CPU/RSS, output sizes,
 separate profiles and five-sample distributions. The M0 binary hash matches the preserved original
-[M1 baseline](../constructive-indexed-paths/summary.json). The current binary is the same one tested
+[M1 baseline](../../../artifacts/benchmarks/constructive-indexed-paths/summary.json). The current binary is the same one tested
 and measured for M4, not a rebuilt or instrumented-only candidate.
 
 ```sh

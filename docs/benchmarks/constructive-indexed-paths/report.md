@@ -121,8 +121,8 @@ trend and exact examined-work counts support the mechanism independently of the 
 ## Measurement and reproduction
 
 Baseline is `f8ce096`, copied from its verified release CLI before source edits. Candidate is this
-slice. [summary.json](summary.json) records both binary hashes, input hashes, host, toolchain,
-all 24 run records, separate profiles and distributions. [scaling.json](scaling.json) records all
+slice. [summary.json](../../../artifacts/benchmarks/constructive-indexed-paths/summary.json) records both binary hashes, input hashes, host, toolchain,
+all 24 run records, separate profiles and distributions. [scaling.json](../../../artifacts/benchmarks/constructive-indexed-paths/scaling.json) records all
 40 operation samples. The host is Darwin 25.6.0 arm64 with 10 logical CPUs, Rust stable 1.98.0.
 Both binaries use release optimization. No compilation or test process overlaps timed runs.
 An earlier correctness smoke run overlapped compilation and is explicitly excluded from timings.

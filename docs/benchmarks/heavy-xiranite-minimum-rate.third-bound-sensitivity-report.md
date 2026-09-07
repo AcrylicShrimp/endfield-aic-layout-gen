@@ -38,8 +38,8 @@ target/release/aic-cli research solve-first-phase \
   --workspace-root . \
   --placement-request data/benchmarks/requests/placement.NxN.request.json \
   --time-limit-ms 5000 \
-  --output docs/benchmarks/heavy-xiranite-bound-sensitivity/phase0.NxN.json \
-  --visualization-output docs/benchmarks/heavy-xiranite-bound-sensitivity/phase0.NxN.html
+  --output artifacts/benchmarks/heavy-xiranite-bound-sensitivity/phase0.NxN.json \
+  --visualization-output artifacts/benchmarks/heavy-xiranite-bound-sensitivity/phase0.NxN.html
 ```
 
 Replace both occurrences of `N` with one measured side. The command intentionally returns a

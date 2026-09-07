@@ -96,7 +96,7 @@ not silently start a new global optimizer or remove independent validation.
 
 ## Results and adoption
 
-The [machine-readable evidence](summary.json) records every sample, input/binary hashes and native
+The [machine-readable evidence](../../../artifacts/benchmarks/constructive-parallel-analysis/summary.json) records every sample, input/binary hashes and native
 CPU/RSS. Times below are seconds; brackets are the five-sample range. RSS is decimal MB.
 
 | Heavy Xiranite | CLI median [range] | Planner median [range] | RSS median [range] | User / system median |

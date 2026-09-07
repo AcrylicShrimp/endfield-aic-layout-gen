@@ -132,7 +132,7 @@ target/release/aic-cli layouts auto-assemble-process-modules \
   --transport-catalog data/game/normalized/transports.json \
   --target-instance 'facility-instance:recipe-occurrence:/target:0' \
   --max-steps 12 \
-  --visualization-output docs/benchmarks/constructive-growth-cliff-diagnosis/heavy-xiranite.html \
-  --report-output docs/benchmarks/constructive-growth-cliff-diagnosis/report.json \
+  --visualization-output artifacts/benchmarks/constructive-growth-cliff-diagnosis/heavy-xiranite.html \
+  --report-output artifacts/benchmarks/constructive-growth-cliff-diagnosis/report.json \
   --localization-catalog data/game/normalized/localization.ko-KR.json
 ```

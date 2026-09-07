@@ -76,7 +76,7 @@ uv run --frozen --project docs/benchmarks/layout-learning python docs/benchmarks
   --plan docs/benchmarks/layout-direct/sampling.json --config docs/benchmarks/layout-direct/credit.json \
   --output-directory target/layout-direct-credit-01
 node docs/benchmarks/layout-direct/analyze.mjs \
-  --report target/layout-direct-credit-01/report.json --output docs/benchmarks/layout-direct/credit-results.json
+  --report target/layout-direct-credit-01/report.json --output artifacts/benchmarks/layout-direct/credit-results.json
 uv run --frozen --project docs/benchmarks/layout-learning python -m unittest discover \
   -s docs/benchmarks/layout-direct -p 'test_*.py'
 node --test docs/benchmarks/layout-direct/*.test.mjs

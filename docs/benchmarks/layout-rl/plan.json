@@ -11,8 +11,8 @@
   "validator": "../../../target/release/aic-witness-probe",
   "chain_comparison": "../../../target/chain-m5-comparison-release/report.json",
   "closure_sources": [
-    {"id": "closure-original", "report": "../constructive-factory-closure/matrix.json", "request": "../constructive-chain-blocks/gap-1-placement.json"},
-    {"id": "closure-refined", "report": "../constructive-factory-closure/output-space-refined.json", "request": "../constructive-chain-blocks/gap-1-placement.json"}
+    {"id": "closure-original", "report": "../../../artifacts/benchmarks/constructive-factory-closure/matrix.json", "request": "../../../artifacts/benchmarks/constructive-chain-blocks/gap-1-placement.json"},
+    {"id": "closure-refined", "report": "../../../artifacts/benchmarks/constructive-factory-closure/output-space-refined.json", "request": "../../../artifacts/benchmarks/constructive-chain-blocks/gap-1-placement.json"}
   ],
   "environment": {
     "horizon": 16,

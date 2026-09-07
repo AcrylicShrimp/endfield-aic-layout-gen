@@ -1,3 +1,4 @@
+import { loadGraphSnapshot } from '../fixtures/constructive.mjs';
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,7 +10,7 @@ import { rate, add, parseRate, dto } from '../constructive-interconnect/rates.mj
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k,
   read(`../../../data/game/normalized/${k === 'components' ? 'logistics-components' : k}.json`)]));
-const graph = normalizeGraph(read('../constructive-chain-blocks/gap-1-placement.json'), catalogs), inventory = extractCycles(graph, catalogs);
+const graph = normalizeGraph(loadGraphSnapshot(), catalogs), inventory = extractCycles(graph, catalogs);
 const id = label => graph.nodes.find(n => n.label === label).id;
 const regions = inventory.blocks.map(b => ({ id: b.id, detail: compactInterface(constructCycle(catalogs, graph, b, 'root'), catalogs) }));
 function inputs(targets) {
@@ -82,7 +83,7 @@ test('retained identifiers are reindexed without recursively escaping prior comp
 });
 
 test('prototype-named facility IDs survive normalization, portfolio cloning and JSON serialization', () => {
-  const snapshot = read('../constructive-chain-blocks/gap-1-placement.json'), previous = id('F28');
+  const snapshot = loadGraphSnapshot(), previous = id('F28');
   snapshot.placements.find(p => p.instance === previous).instance = '__proto__';
   for (const e of [...snapshot.internal_requirements, ...snapshot.external_requirements]) {
     if (e.source === previous) e.source = '__proto__'; if (e.target === previous) e.target = '__proto__';

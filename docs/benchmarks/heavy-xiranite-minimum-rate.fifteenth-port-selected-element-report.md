@@ -132,9 +132,9 @@ observations; structural counts are deterministic for this revision.
 - v1 diagnosis:
   `docs/benchmarks/heavy-xiranite-minimum-rate.fourteenth-external-connector-port-domain-cliff-report.md`
 - v1 normalized baseline:
-  `docs/benchmarks/heavy-xiranite-external-connector-port-domains/summary.json`
+  `artifacts/benchmarks/heavy-xiranite-external-connector-port-domains/summary.json`
 - v2 normalized comparison:
-  `docs/benchmarks/heavy-xiranite-external-connector-port-elements/summary.json`
+  `artifacts/benchmarks/heavy-xiranite-external-connector-port-elements/summary.json`
 - v2 per-case JSON, HTML, and `/usr/bin/time -l` records:
   `docs/benchmarks/heavy-xiranite-external-connector-port-elements/`
 

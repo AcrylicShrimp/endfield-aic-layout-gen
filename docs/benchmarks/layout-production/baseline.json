@@ -5,8 +5,8 @@
   "references": [
     {"id": "original-constructor", "kind": "root", "root": "closure-original"},
     {"id": "refined-constructor", "kind": "root", "root": "closure-refined"},
-    {"id": "learned-example", "kind": "evaluation-row", "report": "../layout-rl/results.json", "row": 672},
-    {"id": "strongest-geometric", "kind": "selected-directory", "report": "../constructive-local-reembedding/lookahead-results.json"}
+    {"id": "learned-example", "kind": "evaluation-row", "report": "../../../artifacts/benchmarks/layout-rl/results.json", "row": 672},
+    {"id": "strongest-geometric", "kind": "selected-directory", "report": "../../../artifacts/benchmarks/constructive-local-reembedding/lookahead-results.json"}
   ],
   "policy_evaluation": "../../../target/layout-rl-next-pilot-01/evaluation/report.json"
 }

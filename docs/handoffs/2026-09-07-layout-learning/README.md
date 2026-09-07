@@ -53,6 +53,11 @@ The user specifically requested this restart posture in addition to the pause.
    [cleanup record](artifact-cleanup.md) documents removed dev builds and old constructor
    candidates. The paused learning study, checkpoints, final selected constructor
    witnesses, required inputs, and uncommitted source overlay were preserved.
+8. The user then explicitly requested removing generated benchmark payloads from Git,
+   keeping concise non-regenerable findings and rejecting oversized files even when
+   they are non-regenerable. The [source-only cutover](../../maintenance/artifact-cutover.md)
+   moved 2,246 raw files to ignored `artifacts/benchmarks/`, extracted independent test
+   inputs and introduced a 100 KiB limit for every documentation/fixture file.
 
 The overall product objective is unachieved, not abandoned or proven impossible. A goal
 record that still says active or that the target needs clarification does not override
@@ -232,8 +237,15 @@ or architecture change before the diagnosis supports it. Preserve uncommitted wo
   All twelve reconstructed files were byte-identical in an isolated Git index.
 - [Overlay manifest](remaining-worktree-manifest.json) pins the exact base commit, patch
   hash and original file hashes. Do not apply the patch over this already-dirty workspace.
+- The artifact cutover moved the old `gap-1-placement.json` to
+  `artifacts/benchmarks/constructive-chain-blocks/` and updated `sampling.json` to refer
+  there. The study's recorded source-path/hash set therefore no longer matches the
+  current checkout, although its checkpoints and episode bytes are unchanged. For an
+  exact historical audit, restore the pre-cutover source and archived overlay with the
+  original path layout. Do not rewrite historical provenance to bless new source bytes.
 
 Important commits before this handoff: `31bfebc` cumulative runner; `37c0278` 64-update
 report/visual; `424ac80` 256-update report/visual; `44a854f` rank-objective limits.
-The handoff commit intentionally does not incorporate the remaining source edits as
-finished code. No production cutover, new learning run or artifact deletion was performed.
+The original handoff commit intentionally did not incorporate the remaining source edits
+as finished code. It performed no production cutover, new learning run or artifact deletion;
+the subsequently authorized repository maintenance is documented above.

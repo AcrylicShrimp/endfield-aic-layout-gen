@@ -97,14 +97,14 @@ and `profile.json` preserve this milestone's witness, input/binary hashes and me
 ```sh
 cargo build --release -p aic-cli --bin aic-fixed-routing-probe
 target/release/aic-fixed-routing-probe \
-  --placement docs/benchmarks/constructive-pipe-north/heavy.json \
+  --placement artifacts/benchmarks/constructive-pipe-north/heavy.json \
   --facilities data/game/normalized/facilities.json \
   --items data/game/normalized/items.json \
   --transports data/game/normalized/transports.json \
   --components data/game/normalized/logistics-components.json \
   --report-output NEW_ROUTING_JSON
 node docs/benchmarks/constructive-placement-only/route-view.mjs \
-  docs/benchmarks/constructive-pipe-north/heavy.json NEW_ROUTING_JSON NEW_HTML
+  artifacts/benchmarks/constructive-pipe-north/heavy.json NEW_ROUTING_JSON NEW_HTML
 ```
 
 Add `--profile` for operation counters/timings in the JSON file. Output paths must be new. Exit zero

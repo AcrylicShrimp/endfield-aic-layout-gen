@@ -110,10 +110,10 @@ cargo check --workspace
 cargo test --workspace
 ```
 
-[results.json](results.json) is a compact measured snapshot: all seed/control metrics and
+[results.json](../../../artifacts/benchmarks/layout-learning/results.json) is a compact measured snapshot: all seed/control metrics and
 checkpoint hashes, aggregate mean/min/max, generation costs, fresh audit counts and tensor
 costs. Run `curves` are `[update, training mean reward, validation mean reward]`; aggregate
-seed ranges are not confidence intervals. [source-results.json](source-results.json) stores
+seed ranges are not confidence intervals. [source-results.json](../../../artifacts/benchmarks/layout-learning/source-results.json) stores
 source/schema observations and response hashes, not a redistributed blueprint corpus.
 
 Full immutable artifacts on the experiment machine:

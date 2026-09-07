@@ -73,7 +73,7 @@ target/release/aic-cli research compare-first-phase-factored-endpoints \
   --workspace-root . \
   --placement-request data/benchmarks/requests/placement.12x12.request.json \
   --time-limit-ms 5000 \
-  --output-dir docs/benchmarks/heavy-xiranite-factored-endpoint-comparison
+  --output-dir artifacts/benchmarks/heavy-xiranite-factored-endpoint-comparison
 ```
 
 ## Result

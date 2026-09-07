@@ -1,3 +1,4 @@
+import { loadGraphSnapshot } from '../fixtures/constructive.mjs';
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,7 +11,7 @@ import { witnessScore } from '../constructive-auto-interface/compact.mjs';
 import { distance, key } from '../constructive-local-reembedding/path.mjs';
 const read = p => JSON.parse(fs.readFileSync(new URL(p, import.meta.url)));
 const catalogs = Object.fromEntries(['recipes', 'facilities', 'items', 'transports', 'components'].map(k => [k, read(`../../../data/game/normalized/${k === 'components' ? 'logistics-components' : k}.json`)]));
-const graph = normalizeGraph(read('../constructive-chain-blocks/gap-1-placement.json'), catalogs), blocks = extractCycles(graph, catalogs).blocks;
+const graph = normalizeGraph(loadGraphSnapshot(), catalogs), blocks = extractCycles(graph, catalogs).blocks;
 const freeze = x => { if (x && typeof x === 'object' && !Object.isFrozen(x)) { Object.freeze(x); Object.values(x).forEach(freeze); } return x; };
 const snapshot = structuredClone({ graph, catalogs, blocks }); freeze(graph); freeze(catalogs); freeze(blocks);
 const result = stripCandidates(graph, catalogs, blocks[0]);

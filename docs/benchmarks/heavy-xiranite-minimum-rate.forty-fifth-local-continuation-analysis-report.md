@@ -149,5 +149,5 @@ target/release/aic-cli research diagnose-phase2-possible-graph-connectivity \
   --prefix-case-time-limit-ms 5000 \
   --reference-time-limit-ms 30000 \
   --case-time-limit-ms 10000 \
-  --output-dir docs/benchmarks/heavy-xiranite-phase2-local-continuation-non-bridge-10s
+  --output-dir artifacts/benchmarks/heavy-xiranite-phase2-local-continuation-non-bridge-10s
 ```

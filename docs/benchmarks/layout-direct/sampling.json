@@ -26,7 +26,7 @@
   "validator_ms": 3000,
   "environment": {"grid_cells": 65536, "max_tokens": 512, "max_members": 16, "per_action_expansions": 5000, "validator_ms": 3000},
   "target": {
-    "request": "../constructive-chain-blocks/gap-1-placement.json",
+    "request": "../../../artifacts/benchmarks/constructive-chain-blocks/gap-1-placement.json",
     "witness": "../../../target/layout-production-baseline-03/strongest-geometric/witness.json",
     "sha256": "38829b5ec2949cfa3a04542a5faf73979b2802c011cebde69733e4bcae104299"
   }
