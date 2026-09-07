@@ -71,5 +71,9 @@ hypotheses in controlled experiments. This is not approval for the component-adm
 or for replacing the main learning path with easy diagnostic tasks. Broadening construction
 remains a separate prerequisite for eventual medium/large generalization claims.
 Neither a working RL loop nor changed weights satisfies the release criteria. Judge advancement
+after the [update-replay gate](../layout-direct/update-replay-report.md) and direct
+[trajectory inspection](../layout-direct/trajectory-inspection-report.md). Next isolate credit
+and gradient signal on frozen behavior batches; do not interpret the two-update plumbing run
+as a capacity or training-budget experiment. Continue judging product readiness
 by independent layout quality, futile-action rate, actual environment breadth, target density
 and visual inspection. Do not call a sampled negative result universal action uselessness.

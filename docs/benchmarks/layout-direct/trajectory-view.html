@@ -1,0 +1,61 @@
+<div id="trajectory-inspection">
+  <style>
+    #trajectory-inspection .maps { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px; }
+    #trajectory-inspection section { min-width:0; }
+    #trajectory-inspection svg { width:100%;display:block; }
+    #trajectory-inspection svg text { font-size:12px;fill:var(--foreground); }
+    #trajectory-inspection .legend { display:flex;gap:16px;flex-wrap:wrap;font-size:12px; }
+    #trajectory-inspection .swatch { display:inline-block;width:14px;height:8px;margin-right:4px; }
+    #trajectory-inspection #trajectory-detail { overflow-wrap:anywhere; }
+    @media(max-width:640px) { #trajectory-inspection .maps { grid-template-columns:minmax(0,1fr); } }
+  </style>
+  <label class="form-label">Recorded trajectory event <select id="trajectory-event" class="form-select"></select></label>
+  <div class="text-small" id="trajectory-detail"></div>
+  <div class="maps">
+    <section><h3>Before action</h3><div id="trajectory-before-score" class="text-small"></div><svg id="trajectory-before" role="img" aria-label="Validated factory before recorded action"></svg></section>
+    <section><h3>After action</h3><div id="trajectory-after-score" class="text-small"></div><svg id="trajectory-after" role="img" aria-label="Validated factory after recorded action"></svg></section>
+  </div>
+  <div class="legend">
+    <span><i class="swatch" style="background:var(--viz-series-1)"></i>Belt</span>
+    <span><i class="swatch" style="background:var(--viz-series-2)"></i>Pipe</span>
+    <span>Bright routes: changed network · ○ External terminal</span>
+    <span>Dashed: rejected destination only · Same tile scale</span>
+  </div>
+  <script type="application/json" id="trajectory-data">__TRAJECTORY_DATA__</script>
+  <script>
+  (()=>{
+    const root=document.getElementById('trajectory-inspection'),data=JSON.parse(root.querySelector('#trajectory-data').textContent),picker=root.querySelector('#trajectory-event');
+    const el=(tag,attrs,text)=>{const n=document.createElementNS('http://www.w3.org/2000/svg',tag);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text!==undefined)n.textContent=text;return n;};
+    data.cases.forEach((c,i)=>{const o=document.createElement('option');o.value=i;o.textContent=c.label;picker.append(o);});
+    function draw(){
+      const c=data.cases[Number(picker.value)],svgs=['before','after'].map(k=>root.querySelector(`#trajectory-${k}`));
+      const widths=svgs.map(s=>s.parentElement.getBoundingClientRect().width),cols=Math.max(c.before.score.width,c.after.score.width),rows=Math.max(c.before.score.height,c.after.score.height);
+      const scale=(Math.min(...widths)-24)/cols,pad=12,x=v=>pad+v*scale,y=v=>pad+v*scale;
+      root.querySelector('#trajectory-detail').textContent=`${c.action_label} · ${c.status} · credit ${c.credit.toFixed(3)} · best ${c.best.join(' / ')}`;
+      ['before','after'].forEach((side,index)=>{
+        const d=c[side],svg=svgs[index],height=rows*scale+24;svg.replaceChildren();svg.setAttribute('viewBox',`0 0 ${widths[index]} ${height}`);svg.style.height=`${height}px`;
+        root.querySelector(`#trajectory-${side}-score`).textContent=`${d.score.width} × ${d.score.height} · area ${d.score.area} · transport ${d.score.physical_tiles} · turns ${d.score.turns}`;
+        svg.append(el('desc',{},`${c.label}. ${side}. Complete independently validated geometry. Rejected destination overlays are not accepted factory geometry.`));
+        for(let a=0;a<=cols;a++)svg.append(el('line',{x1:x(a),x2:x(a),y1:y(0),y2:y(rows),stroke:'var(--border)','stroke-width':.4}));
+        for(let a=0;a<=rows;a++)svg.append(el('line',{x1:x(0),x2:x(cols),y1:y(a),y2:y(a),stroke:'var(--border)','stroke-width':.4}));
+        d.networks.forEach((n,ni)=>{
+          const color=`var(--viz-series-${n.kind==='pipe'?2:1})`,changed=c.changed_networks.includes(ni),opacity=changed?.95:.28;
+          for(const[a,b,z,w]of n.segments)svg.append(el('line',{x1:x(a+.5),y1:y(b+.5),x2:x(z+.5),y2:y(w+.5),stroke:color,'stroke-width':changed?Math.max(1.5,scale*.22):Math.max(.8,scale*.13),'stroke-opacity':opacity,'data-network':ni}));
+          for(const t of n.terminals)if(t.owner==='External')svg.append(el('circle',{cx:x(t.xy[0]+.5),cy:y(t.xy[1]+.5),r:Math.max(1.5,scale*.22),fill:'var(--background)',stroke:color}));
+        });
+        for(const p of d.facilities){
+          const active=c.focus.includes(p.alias);
+          svg.append(el('rect',{x:x(p.x)+.5,y:y(p.y)+.5,width:p.width*scale-1,height:p.height*scale-1,fill:active?'var(--viz-series-3)':'var(--secondary)','fill-opacity':active?.3:1,stroke:'var(--foreground)','stroke-opacity':.7,'data-facility':p.alias}));
+          if(p.width*scale>=31&&p.height*scale>=18)svg.append(el('text',{x:x(p.x+p.width/2),y:y(p.y+p.height/2),'text-anchor':'middle','dominant-baseline':'central'},p.alias));
+        }
+        for(const q of d.components){const a=x(q.xy[0]+.5),b=y(q.xy[1]+.5),r=scale*.25;svg.append(el('path',{d:`M${a},${b-r}L${a+r},${b}L${a},${b+r}L${a-r},${b}Z`,fill:'var(--foreground)'}));}
+        if(side==='after')for(const p of c.rejected_destinations){
+          svg.append(el('rect',{x:x(p.x),y:y(p.y),width:p.width*scale,height:p.height*scale,fill:'none',stroke:'var(--viz-series-4)','stroke-width':2,'stroke-dasharray':'5 3','data-attempt':p.alias}));
+        }
+        svg.append(el('rect',{x:x(0),y:y(0),width:d.score.width*scale,height:d.score.height*scale,fill:'none',stroke:'var(--foreground)'}));
+      });
+    }
+    picker.addEventListener('change',draw);new ResizeObserver(draw).observe(root.querySelector('.maps'));draw();
+  })();
+  </script>
+</div>
