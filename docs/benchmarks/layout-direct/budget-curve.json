@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "plan": "sampling.json",
+  "seeds": [1901, 2901, 3901],
+  "checkpoints": [64, 256, 1024],
+  "workers": 4,
+  "horizon": 512,
+  "evaluation_horizon": 1024,
+  "evaluation_roots": 12,
+  "evaluation_seeds": [101, 211],
+  "generation_attempts_per_root": 200,
+  "minimum_training_facilities": 2,
+  "target_interval": 8,
+  "credit": "quality-futility-prefix",
+  "threads": 4,
+  "width": 32,
+  "learning_rate": 0.003,
+  "entropy": 0.0001,
+  "episode_ms": 300000,
+  "output_bytes": 17179869184,
+  "minimum_free_bytes": 21474836480,
+  "wall_seconds": 86400
+}

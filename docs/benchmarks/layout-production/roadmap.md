@@ -87,6 +87,14 @@ single-update trials and 40,960 proposals. Small-root paired quality remains unc
 target prefix outcomes tie the unchanged policy on all 32 pairs, with no area reduction.
 Observed prefix gradient dispersion improves on the target but worsens on the small root.
 Peer-rank reassignment is not an independent noise control because tournament scores couple
-workers. Next isolate learnability of known improving choices on complete states before
-choosing a capacity/credit intervention. Do not turn the user's area-reward hypothesis into
-an untested implementation decision or claim product success from the visually strongest pair.
+workers. A known-improving-choice fit diagnostic was drafted but has not been executed.
+The user's subsequent training-budget question correctly identifies an untested hypothesis:
+single-update trials and two confounded 64-update runs do not rule out undertraining.
+The [cumulative budget study](../layout-direct/budget-curve-contract.md) now takes priority:
+three independent streaming learners, unchanged credit/model/horizon, nested 64/256/1024
+checkpoints, and one prospectively frozen full-factory evaluation set. Poor early quality is
+not a stopping rule. Keep the small-biased construction exposure and unapproved component
+admission explicit; this study is not medium/large generalization or a release gate shortcut.
+Do not turn the user's area-reward hypothesis into an untested implementation decision or
+claim product success from the visually strongest pair. Report the actual cumulative curve
+before making further training-budget claims.
