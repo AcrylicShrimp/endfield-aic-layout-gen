@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "id": "battery-first-root-relocation-selection",
+  "source_commit": "b0e9ff0",
+  "source_run_root": "artifacts/factory-edit-pilot/relocation-curriculum-learning",
+  "condition": "relocation-mastery-rehearsal",
+  "training_seeds": [
+    17,
+    29,
+    43
+  ],
+  "selection": "first_joint_root_mastery",
+  "horizon": 128,
+  "seed_banks": [
+    400000,
+    410000
+  ],
+  "evaluation_episodes": 32,
+  "required_successes": 26,
+  "require_translation": true
+}
