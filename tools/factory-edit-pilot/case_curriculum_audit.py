@@ -175,7 +175,7 @@ def audit_study(root, protocol_path, output, source_commit):
                 or not case_metadata["provenance"]["git_worktree_clean"]
                 or case_metadata["provenance"]["git_head"] != source_commit):
             raise ValueError(f"case_curriculum_audit.provenance: {directory}: inconsistent or uncommitted source")
-        checked = audit(root, root / path, directory, source_commit, external_inputs=[protocol_path])
+        checked = audit(root, root / path, directory, source_commit, external_inputs=[protocol_path, root / path])
         result["cases"][key] = checked
         initial = checked["layouts"]["initial.json"]
         subset = [row for row in episodes if row["case"] == key]
