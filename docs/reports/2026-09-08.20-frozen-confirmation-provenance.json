@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "source_commit": "c3b7caff645c7a30c1f013eeacbcea5868dc16ca",
+  "selection_sha256": "4f08623dbaba8c29b967dd2c2f4acf9c420afaa3e4b7c1589262b567870c0969",
+  "protocol_sha256": "82b30819bb5e03fed366babd1f403214ad17124a277602dec7bb76adbbd3a024",
+  "policies": [
+    {
+      "seed": 17,
+      "commands": 245760,
+      "checkpoint_sha256": "32fdefdc4091f3936d9a4f0af444ff09dcdc231255ed2cdf1fc03814b6fb6bbc",
+      "source_audit_sha256": "5c31dd73269ec93145490727bf748c1a1e073560adaaedc2308e5399db86c648",
+      "policy_sha256": "b8e747c2726237376fa70f7e399b9c0b008465734a1a4173b9607b6b6d938bfd",
+      "export_sha256": "34578ae70ac37054552f5b10d9344d45621c1ef7bed8dfb17830e2c6c29dcca2",
+      "confirmation": [
+        {
+          "case": "R",
+          "qualified_successes": 60,
+          "passed": true,
+          "summary": {
+            "commands": 245760,
+            "training_seconds": 87.27507720697031,
+            "mean_return": 0.09868421052631579,
+            "median_return": 0.10526315789473684,
+            "std_return": 0.02568158086706666,
+            "max_return": 0.10526315789473684,
+            "improvement_frequency": 0.9375,
+            "evaluation_episodes": 64,
+            "evaluation_seconds": 0.35201882399996975,
+            "best_score": [
+              119,
+              13,
+              3
+            ],
+            "counts": {
+              "BIND_TERMINALS": 221,
+              "ERASE_TRANSPORT": 156,
+              "EXTEND": 198,
+              "SET_PLACEMENTS": 98,
+              "UNBIND_TERMINALS": 333,
+              "applied": 1024,
+              "commands": 1024,
+              "complete": 93,
+              "improved": 60,
+              "network.cells": 73,
+              "new_completion": 62,
+              "positive_rewards": 60,
+              "terminal.unbound": 838,
+              "DISCARD_EDIT": 17,
+              "network.degree": 14,
+              "terminal.boundary": 6,
+              "CONNECT": 1
+            },
+            "case": "R",
+            "case_commands": 245760,
+            "multiple_improvement_frequency": 0.0,
+            "mean_positive_improvements": 0.9375,
+            "best_moved_facilities": [
+              "F"
+            ],
+            "median_moved_facilities": [
+              "F"
+            ]
+          },
+          "validation": {
+            "status": "passed",
+            "representative_score": [
+              119,
+              13,
+              3
+            ],
+            "commands": 16
+          }
+        }
+      ]
+    },
+    {
+      "seed": 29,
+      "commands": 262144,
+      "checkpoint_sha256": "5e159a30803a0a8a5dde331426edf78dbe40805808e64af5a0cdddb1b3dbefa9",
+      "source_audit_sha256": "3335ddb5df93eac3d007c5c491d7aaecac2d545b654b83946d0cee112144de27",
+      "policy_sha256": "fb0da7bedbb894291350a711397850d31463ee821687b2edc0aea44a23962dcb",
+      "export_sha256": "d6248e3c0ae3c3a148a5a385406f6572357a76a2eac12bb0d34374a3a83bce17",
+      "confirmation": [
+        {
+          "case": "R",
+          "qualified_successes": 60,
+          "passed": true,
+          "summary": {
+            "commands": 262144,
+            "training_seconds": 95.29825534600968,
+            "mean_return": 0.09868421052631579,
+            "median_return": 0.10526315789473684,
+            "std_return": 0.02568158086706666,
+            "max_return": 0.10526315789473684,
+            "improvement_frequency": 0.9375,
+            "evaluation_episodes": 64,
+            "evaluation_seconds": 0.3219062349962769,
+            "best_score": [
+              119,
+              12,
+              2
+            ],
+            "counts": {
+              "BIND_TERMINALS": 244,
+              "ERASE_TRANSPORT": 217,
+              "EXTEND": 131,
+              "SET_PLACEMENTS": 63,
+              "UNBIND_TERMINALS": 313,
+              "applied": 1024,
+              "commands": 1024,
+              "complete": 115,
+              "improved": 60,
+              "network.degree": 330,
+              "new_completion": 62,
+              "positive_rewards": 60,
+              "terminal.unbound": 568,
+              "terminal.boundary": 11,
+              "DISCARD_EDIT": 52,
+              "CONNECT": 4
+            },
+            "case": "R",
+            "case_commands": 262144,
+            "multiple_improvement_frequency": 0.0,
+            "mean_positive_improvements": 0.9375,
+            "best_moved_facilities": [
+              "F"
+            ],
+            "median_moved_facilities": [
+              "F"
+            ]
+          },
+          "validation": {
+            "status": "passed",
+            "representative_score": [
+              119,
+              12,
+              2
+            ],
+            "commands": 16
+          }
+        }
+      ]
+    },
+    {
+      "seed": 43,
+      "commands": 229376,
+      "checkpoint_sha256": "a0b36e93e0e14e4f17cd8333733ca49867a4ae734d078293da6d63e4dd4f94b1",
+      "source_audit_sha256": "c70b61a763146cb44c4215223dbdcc0d069d7ecc43c9000aa05c3dcae4aea55c",
+      "policy_sha256": "04b9ce87e8a78d82f9631ecb96b387649099fa7aa21395323191fbb8196e568a",
+      "export_sha256": "39f8f4be695ae8719d57f8cb94f8888211d9a9ab86cc550cd54fe5e8c3dfefdf",
+      "confirmation": [
+        {
+          "case": "R",
+          "qualified_successes": 49,
+          "passed": false,
+          "summary": {
+            "commands": 229376,
+            "training_seconds": 80.09999273199355,
+            "mean_return": 0.07976973684210525,
+            "median_return": 0.10526315789473684,
+            "std_return": 0.044965690653780775,
+            "max_return": 0.10526315789473684,
+            "improvement_frequency": 0.765625,
+            "evaluation_episodes": 64,
+            "evaluation_seconds": 0.3223535460056155,
+            "best_score": [
+              119,
+              12,
+              1
+            ],
+            "counts": {
+              "BIND_TERMINALS": 234,
+              "CONNECT": 37,
+              "ERASE_TRANSPORT": 182,
+              "EXTEND": 157,
+              "SET_PLACEMENTS": 72,
+              "UNBIND_TERMINALS": 337,
+              "applied": 1024,
+              "commands": 1024,
+              "terminal.unbound": 915,
+              "complete": 79,
+              "improved": 49,
+              "new_completion": 52,
+              "positive_rewards": 49,
+              "network.degree": 19,
+              "network.cells": 6,
+              "terminal.boundary": 5,
+              "DISCARD_EDIT": 5
+            },
+            "case": "R",
+            "case_commands": 229376,
+            "multiple_improvement_frequency": 0.0,
+            "mean_positive_improvements": 0.765625,
+            "best_moved_facilities": [
+              "F"
+            ],
+            "median_moved_facilities": [
+              "F"
+            ]
+          },
+          "validation": {
+            "status": "passed",
+            "representative_score": [
+              119,
+              12,
+              1
+            ],
+            "commands": 16
+          }
+        }
+      ]
+    }
+  ]
+}
