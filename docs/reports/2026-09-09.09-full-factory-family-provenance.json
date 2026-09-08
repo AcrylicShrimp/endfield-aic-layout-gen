@@ -1,0 +1,356 @@
+{
+  "schema_version": 1,
+  "scope": "Canonical family admission, imported identical roots, corrected capability, all-best audit and ten inspected comparisons; generated payloads remain ignored",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-admission/generator-source.mjs",
+      "sha256": "6e09430e8d19f2c53028f1ba2e67bbc55228169fa2ead449ee1ad6ad23a7cfba",
+      "bytes": 12846
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-admission-canonical/provenance.json",
+      "sha256": "114ed13cd0a82b650da969cd22de1595d9d60b2c66b7fe4835fa5e605c8246ec",
+      "bytes": 7298
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-admission-canonical/report.json",
+      "sha256": "857614ad8f9ed500261861ba9e81246f0aa944b8f366907c0a5e0c3bea3b68a6",
+      "bytes": 22732
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-admission-canonical/roots.json",
+      "sha256": "39b703e9bd48b77329a581ed4a04ddbd5919e603520577bcd8f808c93dd72605",
+      "bytes": 1465101
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability/probe-source.py",
+      "sha256": "df9a8b73304e4a4f6a81575da7e5ef7be90c622e34d93477d1cca786b5103a29",
+      "bytes": 6808
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/audit.json",
+      "sha256": "8d7373503a46b028ca062027f601a47920e857061caa0ad5b657927494369a3e",
+      "bytes": 3718
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/copper-liquid-liquid-rate-0--geometry/best.json.gz",
+      "sha256": "6b7778d038e46f6c538b5b4c7606f170653fa39169f37b68c083b19402212afd",
+      "bytes": 1681
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/copper-liquid-liquid-rate-0--geometry/episode.json.gz",
+      "sha256": "5f38dacb78fca92dba0f5b3f4dbc69c61764a7a612aafe05e2f67a3301ca6298",
+      "bytes": 1322
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/copper-liquid-liquid-rate-0--internal-pipe-0/best.json.gz",
+      "sha256": "1f3129d4c639fcb411faa5ee56e21d71d5f1c0ede7e076f4b3a97f2e5ff2b22f",
+      "bytes": 1832
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/copper-liquid-liquid-rate-0--internal-pipe-0/episode.json.gz",
+      "sha256": "2d2dcaeb0bd935aebf28cc94c0c41670819db7cd13fe2d4ca19655693f704585",
+      "bytes": 601
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/copper-liquid-liquid-rate-0-view/comparison.png",
+      "sha256": "9f1581a508743b327a64890f283532f581e12e142805ce1a4fcef3cebe853624",
+      "bytes": 103868
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/copper-liquid-liquid-rate-0-view/comparison.svg",
+      "sha256": "a4c0c5c3947cc9dcd125fffe9799b09e61727d4458b5821cb6e8c4e37916b38e",
+      "bytes": 123488
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/copper-liquid-liquid-rate-0-view/view.json",
+      "sha256": "255ef2641bb6d5c25a1c8de9211f4752594b1c069aea071a7d7a02241587f0eb",
+      "bytes": 1139
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/copper-liquid-liquid-rate-1--geometry/best.json.gz",
+      "sha256": "3cbe9b5ddf145fd2f3ba9b6622c5cefe156fd057860a0732e051ae5e1a61310d",
+      "bytes": 1684
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/copper-liquid-liquid-rate-1--geometry/episode.json.gz",
+      "sha256": "a20cc9050d623cd78b7b8e951c8fa3fd8ac0342e9d9cd3d3d667af8d7b295668",
+      "bytes": 1326
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/copper-liquid-liquid-rate-1--internal-pipe-0/best.json.gz",
+      "sha256": "0835d63a4cea6cf6fee59a610b2ae08d738c6face6772509af751131f6cb8264",
+      "bytes": 1830
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/copper-liquid-liquid-rate-1--internal-pipe-0/episode.json.gz",
+      "sha256": "019d88d72d53570027acc4a8030dd096d70bda1b7fcc80434407d96e2abf0c4a",
+      "bytes": 594
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/copper-liquid-liquid-rate-1-view/comparison.png",
+      "sha256": "04a49e54d3b91fda39a512bd9212545ef0d89ef7aa92fdee9a979eb7a9c6dc6a",
+      "bytes": 103609
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/copper-liquid-liquid-rate-1-view/comparison.svg",
+      "sha256": "cba7877b692a8330381c35b3a457e12f962b1c50b6f491e88c6cafe5e44784d5",
+      "bytes": 123488
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/copper-liquid-liquid-rate-1-view/view.json",
+      "sha256": "62892e13f24c0522c08feeceae749fd2950e7f43aa6116a0a2b889b31960b474",
+      "bytes": 1139
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-food-rate-0--geometry/best.json.gz",
+      "sha256": "8a77e72b07336d6e2504d471270265e88c96d298e2c1a40f75b1bf0be64ac802",
+      "bytes": 6121
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-food-rate-0--geometry/episode.json.gz",
+      "sha256": "6cd1e69f6966d67ad3c95e2e58674afabc150d7a8b6ff26a3f15c4cda40bb8ef",
+      "bytes": 1369
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-food-rate-0-view/comparison.png",
+      "sha256": "6095005e4512941b6f918ed2e536f227fca4359a802ef5ade295fffc52dbaf85",
+      "bytes": 148367
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-food-rate-0-view/comparison.svg",
+      "sha256": "a4a3a0aa17af149e1f15f818a746796bfa91cb33b665b8b6f61673a1623cd59c",
+      "bytes": 356434
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-food-rate-0-view/view.json",
+      "sha256": "f5c2a980bdb6516cfa52fbc1107c065433fbec1e1becf427428ae25053fb82ca",
+      "bytes": 1164
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-food-rate-1--geometry/best.json.gz",
+      "sha256": "d7629b5081c059fca19f677655365b6aefa34dce2a849b67a53dc0174962d5d0",
+      "bytes": 7276
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-food-rate-1--geometry/episode.json.gz",
+      "sha256": "5b161aded99e10403fbeaf3aac875e52146b3c085c0e98ff86ada2dfa64f0e6b",
+      "bytes": 1341
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-food-rate-1-view/comparison.png",
+      "sha256": "e7cb5d5b43f818f798cd21fa6683744e92253c1921b88cd23731f97f6eb3eeeb",
+      "bytes": 165283
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-food-rate-1-view/comparison.svg",
+      "sha256": "9bc1ddd683ce7f2c475cba2f4c29ac93d20abce8620f5fdfd5817363738cf956",
+      "bytes": 432818
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-food-rate-1-view/view.json",
+      "sha256": "48036dd192baef191fa1239f8e344c342a7080b091ff06bfb9b4594346958e9d",
+      "bytes": 1164
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-food-rate-2--geometry/best.json.gz",
+      "sha256": "3774988f1ef30faf02a1aa7f0123219a5e7411569481f73cea75fa0394056282",
+      "bytes": 38441
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-food-rate-2--geometry/episode.json.gz",
+      "sha256": "1842fdff4559770049468bbe90f42fcf4d5664da9caaa98695af7e6c17748a7f",
+      "bytes": 1343
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-food-rate-2-view/comparison.png",
+      "sha256": "0aeb5b21627e3d2040efd4fd566c6a8a66af4094ffe9fc379a0b41a341f44aa2",
+      "bytes": 275954
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-food-rate-2-view/comparison.svg",
+      "sha256": "ce0c1cc3f1df0e96ce2ad8f9013ff4578b18e9c69c5cd025d0eb9fafc09917ac",
+      "bytes": 2470442
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-food-rate-2-view/view.json",
+      "sha256": "4299087013e4571a3d86c1fc0b0e9a62854dd2066477295817ec1897100f3f38",
+      "bytes": 1180
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-medical-rate-0--geometry/best.json.gz",
+      "sha256": "6847f89092aeb6dc6d50f7a0d6836e78a040db1a2b4908dff66750ea8e638f44",
+      "bytes": 6329
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-medical-rate-0--geometry/episode.json.gz",
+      "sha256": "1988b1b43e569490c4c635df6cd33c00e7bf12ebc110eae699b7a0a65db5e3a6",
+      "bytes": 1334
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-medical-rate-0-view/comparison.png",
+      "sha256": "960d908412a81db6b0aabcd8c98f17959a916424b5d14620f93d46a31db8c3ac",
+      "bytes": 157501
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-medical-rate-0-view/comparison.svg",
+      "sha256": "d2b524f8b0ce11093f99c930fb20dfb7bab57b52cf1405b9eb3b171b3732ca1d",
+      "bytes": 366654
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-medical-rate-0-view/view.json",
+      "sha256": "b9bd2f6c346ae534a9d0eba267a6d696563ff6961942f5c9b487fc7cdb1eb073",
+      "bytes": 1173
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-medical-rate-1--geometry/best.json.gz",
+      "sha256": "7e5de256af769895974ff3da9330c78149cb21f455ff8429791e527b9c28f819",
+      "bytes": 7675
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-medical-rate-1--geometry/episode.json.gz",
+      "sha256": "1a6de63d515c49076c1b7473506b73b33f153d4d0d5aef46278f28e87445de4b",
+      "bytes": 1319
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-medical-rate-1-view/comparison.png",
+      "sha256": "acc279ba2fc3331d7875fef1f9953fe7535b9ac3013d671fc9ae402c162f5863",
+      "bytes": 166341
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-medical-rate-1-view/comparison.svg",
+      "sha256": "2202ffac44a62eb7262a07e1ab55ada80afe2e86a9973aa3cfaf8963a79a7624",
+      "bytes": 461039
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-medical-rate-1-view/view.json",
+      "sha256": "0cc1744beea506e6e99c9bbfddaff90c87318dbb45f1823ff0d0a44d94517add",
+      "bytes": 1173
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-medical-rate-2--geometry/best.json.gz",
+      "sha256": "8d0dc8c872ef0f5d88b8693c846e3210c955b078052ae3a0a9d57ec1f1d8790f",
+      "bytes": 30460
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-medical-rate-2--geometry/episode.json.gz",
+      "sha256": "d08cef2789bac4fa0b5667e36a42690682ffebfa911d57dd96de10228b36273a",
+      "bytes": 1363
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-medical-rate-2-view/comparison.png",
+      "sha256": "bb50a17c6602cbc524a4b39027ad904498815fff6404dada95a2fb11c2889180",
+      "bytes": 301706
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-medical-rate-2-view/comparison.svg",
+      "sha256": "87885ca8a68c66735248ff8562ed9e89c4d07f475fb2bcf13b1606b0e1602e10",
+      "bytes": 1920250
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/enriched-consumables-medical-rate-2-view/view.json",
+      "sha256": "d66dadefe5fb6451a0092d6d48b6abecdada42537d644f3762e6336cdeedcf81",
+      "bytes": 1189
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/protocol.json",
+      "sha256": "6d67b0483eb5c4e40adda14e60e0be84788894127a79a1cc874b7d0e356bff17",
+      "bytes": 16707
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/report.json",
+      "sha256": "35d7402584829e01b9b898bb59ec25b1eb77805d3270e32317a4211d10ac66b0",
+      "bytes": 15236
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/watered-grass-grass-rate-0--geometry/best.json.gz",
+      "sha256": "ef16733c4842bf82e21b555289d26e39e89f1772f2b624df76855da37b5220f2",
+      "bytes": 1199
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/watered-grass-grass-rate-0--geometry/episode.json.gz",
+      "sha256": "cde3d5c032cd268f9ee7d736ab45c3c65b72b5a834260a62d1bf173beddd8eba",
+      "bytes": 1329
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/watered-grass-grass-rate-0-view/comparison.png",
+      "sha256": "122180eda3e66d51a2f2d1e5c1900ec417f52308386c4b6fbcce9c5cf6c0d20f",
+      "bytes": 92557
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/watered-grass-grass-rate-0-view/comparison.svg",
+      "sha256": "8c55ce16a74370af11906eb4196075504ff469b166484b608cf7b47017c33f2d",
+      "bytes": 88560
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/watered-grass-grass-rate-0-view/view.json",
+      "sha256": "d975dfb455e721c4f440b88cd81cfb9200cc92e58df5f5cdfb9d5ffb48e663da",
+      "bytes": 1130
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/watered-grass-grass-rate-1--geometry/best.json.gz",
+      "sha256": "2113b55643a59707d2084a598b52d92394a97adb29c0ed715717d7ec2b1bfe46",
+      "bytes": 1234
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/watered-grass-grass-rate-1--geometry/episode.json.gz",
+      "sha256": "54fe3ba39a16e15cf4cda593192aa00b7acd8e4803776e3599d8c2044d3e8e20",
+      "bytes": 1323
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/watered-grass-grass-rate-1-view/comparison.png",
+      "sha256": "cce447044051f2d382c3ec9a9b9c1665a8f920e9f29ceebe3658641049790415",
+      "bytes": 98767
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/watered-grass-grass-rate-1-view/comparison.svg",
+      "sha256": "4d3fde75adc9e0b34def4fded7ebf6f81b1e11c01bda45aa63101bb3ae17871d",
+      "bytes": 95156
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-capability-cached/watered-grass-grass-rate-1-view/view.json",
+      "sha256": "48910064ceb4c80e0401f6b9681706d4130d950bd058205d2fdcada79f4620db",
+      "bytes": 1131
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-family-inputs/inputs.json",
+      "sha256": "d9064df22806cb71b25a2a99320ce1b0acfa3fbb9bd16008d11147071935c4e8",
+      "bytes": 11010
+    },
+    {
+      "path": "tools/factory-edit-pilot/family-copper-liquid.json",
+      "sha256": "cbe39033dec359340edd22e7582cfb9359549439ce495b31a178da9a92c47e00",
+      "bytes": 1094
+    },
+    {
+      "path": "tools/factory-edit-pilot/family-watered-grass.json",
+      "sha256": "2fa879c0ea9f556e488da7bca36875f4e050ed90efda4e32c98c98a7bd7cd14a",
+      "bytes": 438
+    },
+    {
+      "path": "tools/factory-edit-pilot/full-factory-family-study.json",
+      "sha256": "f8a91b11d3f7cf8d86c29c6b9c91923106b28baffba710fd86bb2bb869531a5f",
+      "bytes": 2243
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_families.mjs",
+      "sha256": "18dea3ee6c99f1615f80c45469030d8f84dc016bdfe330649486fcbe59e601a9",
+      "bytes": 12813
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_families.test.mjs",
+      "sha256": "a91b08b3d3f9ee212b8f5aea7a908fbb672c2fb5e8925b6c2d24443c135764d8",
+      "bytes": 1949
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_family_audit.mjs",
+      "sha256": "5f39c2dea961bce514cb1fec917d84fc126d8f8339f633da81fcba5db6523337",
+      "bytes": 4230
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_family_probe.py",
+      "sha256": "a4f3ece697d86c4a269d0ec5ead85dce7ef6574205efeb55e54642b183e3fa9d",
+      "bytes": 6844
+    }
+  ]
+}

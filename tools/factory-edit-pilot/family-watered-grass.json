@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "target": {
+    "item": "item-plant-grass-1",
+    "quantity": 1,
+    "duration_ms": 10000
+  },
+  "source_selections": [
+    {
+      "path": "/target",
+      "source": {
+        "kind": "recipe",
+        "recipe": "planter-plant-grass-1-1"
+      }
+    },
+    {
+      "path": "/target/recipe:planter-plant-grass-1-1/input:item-liquid-water",
+      "source": {
+        "kind": "external-input"
+      }
+    }
+  ]
+}
