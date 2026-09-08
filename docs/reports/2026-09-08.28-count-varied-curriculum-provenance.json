@@ -1,0 +1,917 @@
+{
+  "schema_version": 1,
+  "manifest_path": "artifacts/factory-edit-pilot/generated-chains/manifest.json",
+  "manifest_sha256": "4dbf1272b73dd52543744a6c4bd1d0893f2a780fcb0396a26d12027f3ace8624",
+  "cases_sha256": "2479ab7bafbb6ea9802c27f93df5038329d175316f39d51dcd924f6bbccdd930",
+  "inputs_sha256": {
+    "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e",
+    "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2",
+    "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1",
+    "/Users/ashrimp/Devel/endfield-aic-layout-gen/target/release/libaic_pilot_native.dylib": "c6980043e9dce6e93f2694f563b53f4944755653914cec2debd6e08d70fc7df7",
+    "/Users/ashrimp/Devel/endfield-aic-layout-gen/tools/factory-edit-pilot/case-relocation.json": "9c7a67452c547b87244a2a82af9632c2da0da7d7f83da9fbb2b75be2030f15c1",
+    "/Users/ashrimp/Devel/endfield-aic-layout-gen/tools/factory-edit-pilot/chain-augmentation.json": "ef6168c14605106ec0e4510dcf143e0e93d2af955c28b390ec051bb51dc9d22f",
+    "/Users/ashrimp/Devel/endfield-aic-layout-gen/tools/factory-edit-pilot/run-capacity-width1.json": "e556a6cdea201b4ecd2e0b8734433bf77ff861536dd378520872e17dbdf146ae"
+  },
+  "cases": [
+    {
+      "id": "train-glass-two-gap0-turn0",
+      "path": "train-glass-two-gap0-turn0.json",
+      "split": "train",
+      "template": "glass-two",
+      "gap_extension": 0,
+      "quarter_turns": 0,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "cde8e825cd6b22a9716a5d4ca6472a1b2dfaef2aaeadabfef28d3cb1f9e98586",
+      "case_sha256": "c6f8ddeb141a0af23e90970f08bf3327570aa2e733a5fece13dabe36cfe13eae",
+      "initial_score": [
+        33,
+        5,
+        0
+      ],
+      "witness_score": [
+        27,
+        3,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "train-glass-two-gap0-turn1",
+      "path": "train-glass-two-gap0-turn1.json",
+      "split": "train",
+      "template": "glass-two",
+      "gap_extension": 0,
+      "quarter_turns": 1,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "3e7ff7f96d7a884daf623dee9a859c70b2ebb00b263aa662cab942ce42eff9b0",
+      "case_sha256": "3b13acc8b55b87f303da6e07d9d9edb2d885d01ad2cb63e3be045bb8aa4ceec7",
+      "initial_score": [
+        33,
+        5,
+        0
+      ],
+      "witness_score": [
+        27,
+        3,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "train-glass-two-gap0-turn2",
+      "path": "train-glass-two-gap0-turn2.json",
+      "split": "train",
+      "template": "glass-two",
+      "gap_extension": 0,
+      "quarter_turns": 2,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "c0f1df8ca68d1bfc9ba5ca2b070b4c23f1e65defc76133032f3f272fa8778f78",
+      "case_sha256": "fbc948e437a1d8496357b4626140e78221f587764716f81255eabea3217d757f",
+      "initial_score": [
+        33,
+        5,
+        0
+      ],
+      "witness_score": [
+        27,
+        3,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "train-glass-two-gap0-turn3",
+      "path": "train-glass-two-gap0-turn3.json",
+      "split": "train",
+      "template": "glass-two",
+      "gap_extension": 0,
+      "quarter_turns": 3,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "2e60f322b5b35c67e03e8a82f869a449466c064c56b60c87dfacfb5b1989cdb0",
+      "case_sha256": "39aae1f9515cf9f6858c1104a85041409c2c360a80fd81f09ff659d25b3f810e",
+      "initial_score": [
+        33,
+        5,
+        0
+      ],
+      "witness_score": [
+        27,
+        3,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "train-glass-two-gap4-turn0",
+      "path": "train-glass-two-gap4-turn0.json",
+      "split": "train",
+      "template": "glass-two",
+      "gap_extension": 4,
+      "quarter_turns": 0,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "995daa274b4688c7a4173696c342b4d805d8e1d8370ef6968b41d9bf764b9f03",
+      "case_sha256": "2aab233e1174a23f7c02c3814a1cc6f31516c4d1431acfd1a4117ab579c933dc",
+      "initial_score": [
+        45,
+        9,
+        0
+      ],
+      "witness_score": [
+        39,
+        7,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "train-glass-two-gap4-turn1",
+      "path": "train-glass-two-gap4-turn1.json",
+      "split": "train",
+      "template": "glass-two",
+      "gap_extension": 4,
+      "quarter_turns": 1,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "a9e92e064056bb9c5eeb74f6ab275adf2daee610ef8c864d85f042be7f270214",
+      "case_sha256": "90ff07c07ded1151a15d16c0550573a82413fbffac90c319c179f853aa51d054",
+      "initial_score": [
+        45,
+        9,
+        0
+      ],
+      "witness_score": [
+        39,
+        7,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "train-glass-two-gap4-turn2",
+      "path": "train-glass-two-gap4-turn2.json",
+      "split": "train",
+      "template": "glass-two",
+      "gap_extension": 4,
+      "quarter_turns": 2,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "3157124a83775198f602987791559795dd68ca70ef62e07d3021d51dc3734331",
+      "case_sha256": "ead58879c5aa999e6ca034bf248e936ebaf0dec1260d8d610fba9d56a28a2dcd",
+      "initial_score": [
+        45,
+        9,
+        0
+      ],
+      "witness_score": [
+        39,
+        7,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "train-glass-two-gap4-turn3",
+      "path": "train-glass-two-gap4-turn3.json",
+      "split": "train",
+      "template": "glass-two",
+      "gap_extension": 4,
+      "quarter_turns": 3,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "88e10c4d0f7da479fece3ca2b02ecf0f0c859cce4bc3086849bea8eba36210ef",
+      "case_sha256": "e1efd1e20a6fb371cf306d4568774986bcaa38dc72600d17f50838b43d2f3dbc",
+      "initial_score": [
+        45,
+        9,
+        0
+      ],
+      "witness_score": [
+        39,
+        7,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "train-battery-four-gap0-turn0",
+      "path": "train-battery-four-gap0-turn0.json",
+      "split": "train",
+      "template": "battery-four",
+      "gap_extension": 0,
+      "quarter_turns": 0,
+      "facilities": 4,
+      "networks": 6,
+      "terminals": 12,
+      "geometry_sha256": "8a4f85deab4249c3ee40da5bce7890c4d0637464864f90cc6f8913e8b0fa7044",
+      "case_sha256": "217fd7bb229018c7b456c0b2127fdde69fa417bcf4420dd63d94ddd0c4fade74",
+      "initial_score": [
+        133,
+        14,
+        1
+      ],
+      "witness_score": [
+        119,
+        12,
+        1
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "train-battery-four-gap0-turn1",
+      "path": "train-battery-four-gap0-turn1.json",
+      "split": "train",
+      "template": "battery-four",
+      "gap_extension": 0,
+      "quarter_turns": 1,
+      "facilities": 4,
+      "networks": 6,
+      "terminals": 12,
+      "geometry_sha256": "56ac0a5c886444c81a052db31f2e82186c2eaa3f333e83691e53897c1a4a9807",
+      "case_sha256": "52d1f6548a96552f06af223710c793fae404ac9cfe0c1cc0016898e832cc26fb",
+      "initial_score": [
+        133,
+        14,
+        1
+      ],
+      "witness_score": [
+        119,
+        12,
+        1
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "train-battery-four-gap0-turn2",
+      "path": "train-battery-four-gap0-turn2.json",
+      "split": "train",
+      "template": "battery-four",
+      "gap_extension": 0,
+      "quarter_turns": 2,
+      "facilities": 4,
+      "networks": 6,
+      "terminals": 12,
+      "geometry_sha256": "60e9eb6fc4f688ae663e68c9ea72c573c0cec3cef0c92d54a3aa91247f932ebf",
+      "case_sha256": "3899cc9249ff24360ca15e11b5399134fab904b74f1f2e05b341dfeb5951a08e",
+      "initial_score": [
+        133,
+        14,
+        1
+      ],
+      "witness_score": [
+        119,
+        12,
+        1
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "train-battery-four-gap0-turn3",
+      "path": "train-battery-four-gap0-turn3.json",
+      "split": "train",
+      "template": "battery-four",
+      "gap_extension": 0,
+      "quarter_turns": 3,
+      "facilities": 4,
+      "networks": 6,
+      "terminals": 12,
+      "geometry_sha256": "bc58920e07c86ab380eca7f8060c337d831138afc21ad1b95f6643a2486b0213",
+      "case_sha256": "8f048729cbedf108fb54f4eb35961df6950f4ad9ca3065de577562f3480a8147",
+      "initial_score": [
+        133,
+        14,
+        1
+      ],
+      "witness_score": [
+        119,
+        12,
+        1
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "train-battery-four-gap4-turn0",
+      "path": "train-battery-four-gap4-turn0.json",
+      "split": "train",
+      "template": "battery-four",
+      "gap_extension": 4,
+      "quarter_turns": 0,
+      "facilities": 4,
+      "networks": 6,
+      "terminals": 12,
+      "geometry_sha256": "3361e63a228deb8c3e962b914b1f19ab696a343dfd50a85e93fae5771f88c703",
+      "case_sha256": "fb8b2d090954f2a90c89bf379f72b3839242638583bc10f9d1c37fc396d3bf7e",
+      "initial_score": [
+        161,
+        18,
+        1
+      ],
+      "witness_score": [
+        147,
+        16,
+        1
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "train-battery-four-gap4-turn1",
+      "path": "train-battery-four-gap4-turn1.json",
+      "split": "train",
+      "template": "battery-four",
+      "gap_extension": 4,
+      "quarter_turns": 1,
+      "facilities": 4,
+      "networks": 6,
+      "terminals": 12,
+      "geometry_sha256": "c3c60898e0fa33642832c1731b5c67a4dccffdf4d961cd21c408f665e70af21c",
+      "case_sha256": "d306bb1b24aabf011633ab15eb9f7dc561133654764546d23357f02e5b96798f",
+      "initial_score": [
+        161,
+        18,
+        1
+      ],
+      "witness_score": [
+        147,
+        16,
+        1
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "train-battery-four-gap4-turn2",
+      "path": "train-battery-four-gap4-turn2.json",
+      "split": "train",
+      "template": "battery-four",
+      "gap_extension": 4,
+      "quarter_turns": 2,
+      "facilities": 4,
+      "networks": 6,
+      "terminals": 12,
+      "geometry_sha256": "109894dec9d38676c364eb8eaaa9c8e1d45bb5351fd92811f353955adc9f1c8c",
+      "case_sha256": "75d12e3fbf9edb564fc60caa8e1b8a69e3453f553763804f608000900fa888bb",
+      "initial_score": [
+        161,
+        18,
+        1
+      ],
+      "witness_score": [
+        147,
+        16,
+        1
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "train-battery-four-gap4-turn3",
+      "path": "train-battery-four-gap4-turn3.json",
+      "split": "train",
+      "template": "battery-four",
+      "gap_extension": 4,
+      "quarter_turns": 3,
+      "facilities": 4,
+      "networks": 6,
+      "terminals": 12,
+      "geometry_sha256": "618228a7e0008617c2c4e14f8fddf11420e473261048fd16b6702068cb7c6979",
+      "case_sha256": "ffe87439725f898bac69197d59f6d5957d8e88a86552a27213d9bdffa0f50f9d",
+      "initial_score": [
+        161,
+        18,
+        1
+      ],
+      "witness_score": [
+        147,
+        16,
+        1
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "development-glass-two-gap2-turn0",
+      "path": "development-glass-two-gap2-turn0.json",
+      "split": "development",
+      "template": "glass-two",
+      "gap_extension": 2,
+      "quarter_turns": 0,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "f1910d9b3a571d135891e46e4ce71b859e1c9d2529ca412e5f4bfa90e0450960",
+      "case_sha256": "25930ac1f9e94d2b13db92651c33cb59673521ca3f186f3fcec6662863122916",
+      "initial_score": [
+        39,
+        7,
+        0
+      ],
+      "witness_score": [
+        33,
+        5,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "development-glass-two-gap2-turn1",
+      "path": "development-glass-two-gap2-turn1.json",
+      "split": "development",
+      "template": "glass-two",
+      "gap_extension": 2,
+      "quarter_turns": 1,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "752686d9f9f4714cfa92fe06265e5b3152c0acc338ee0b6090e641714fcdbbf9",
+      "case_sha256": "e5bf820e76c8580316c2e6d111e39c45119c4caf45d789bba0e7889235c9cb92",
+      "initial_score": [
+        39,
+        7,
+        0
+      ],
+      "witness_score": [
+        33,
+        5,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "development-glass-two-gap2-turn2",
+      "path": "development-glass-two-gap2-turn2.json",
+      "split": "development",
+      "template": "glass-two",
+      "gap_extension": 2,
+      "quarter_turns": 2,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "d84f3c340163dd4f87457511e34a255ff3b4665e85ec7dcdc45d82a13b697fb4",
+      "case_sha256": "cf303dcb50c918be3bb5e8475f8cd3d68bcc651e918d47b8ecd55a9c0510b453",
+      "initial_score": [
+        39,
+        7,
+        0
+      ],
+      "witness_score": [
+        33,
+        5,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "development-glass-two-gap2-turn3",
+      "path": "development-glass-two-gap2-turn3.json",
+      "split": "development",
+      "template": "glass-two",
+      "gap_extension": 2,
+      "quarter_turns": 3,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "ebebee74778b4d8a08de2259757183f0952f0b62a5c7896585e115d1813f6179",
+      "case_sha256": "f97ad2d351e07b6a9301268198ce73e8c15972f689fab41495cdcad8cfbb5ac7",
+      "initial_score": [
+        39,
+        7,
+        0
+      ],
+      "witness_score": [
+        33,
+        5,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "development-battery-four-gap2-turn0",
+      "path": "development-battery-four-gap2-turn0.json",
+      "split": "development",
+      "template": "battery-four",
+      "gap_extension": 2,
+      "quarter_turns": 0,
+      "facilities": 4,
+      "networks": 6,
+      "terminals": 12,
+      "geometry_sha256": "cb0006142a6ef400e640c182bab80f692efe810ab0d1ae00abb4558b1ca1d5d9",
+      "case_sha256": "686861991102738331127c020be8f9daa0c0aa4d9b97fab3f18b772a7519bf5b",
+      "initial_score": [
+        147,
+        16,
+        1
+      ],
+      "witness_score": [
+        133,
+        14,
+        1
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "development-battery-four-gap2-turn1",
+      "path": "development-battery-four-gap2-turn1.json",
+      "split": "development",
+      "template": "battery-four",
+      "gap_extension": 2,
+      "quarter_turns": 1,
+      "facilities": 4,
+      "networks": 6,
+      "terminals": 12,
+      "geometry_sha256": "edd108a99af5c793579f4da366d3dbe58d02b52f8a8ba8e87459b1da4b2872c5",
+      "case_sha256": "0dfe0fbff56cafb7a6925125464e40365ee8c1ee7826fe9afb944e825b39fa8c",
+      "initial_score": [
+        147,
+        16,
+        1
+      ],
+      "witness_score": [
+        133,
+        14,
+        1
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "development-battery-four-gap2-turn2",
+      "path": "development-battery-four-gap2-turn2.json",
+      "split": "development",
+      "template": "battery-four",
+      "gap_extension": 2,
+      "quarter_turns": 2,
+      "facilities": 4,
+      "networks": 6,
+      "terminals": 12,
+      "geometry_sha256": "f185bd0b5331a92a9ac420f69d89f602ca007b6e0fa77a2440773db0d0fbc000",
+      "case_sha256": "f9401dd92d5a19bf49445aff1aa99dbf77157a9a093c1228d3b38b6b1791ba8f",
+      "initial_score": [
+        147,
+        16,
+        1
+      ],
+      "witness_score": [
+        133,
+        14,
+        1
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "development-battery-four-gap2-turn3",
+      "path": "development-battery-four-gap2-turn3.json",
+      "split": "development",
+      "template": "battery-four",
+      "gap_extension": 2,
+      "quarter_turns": 3,
+      "facilities": 4,
+      "networks": 6,
+      "terminals": 12,
+      "geometry_sha256": "b90fef96e326a81551353ef9d12c879f4f34b9288afd41ade103f7954ce1bf77",
+      "case_sha256": "3b2b825c6b5cbb21e6311e8d0ec554cee902198c6281e2eaafe5db45823d7ea2",
+      "initial_score": [
+        147,
+        16,
+        1
+      ],
+      "witness_score": [
+        133,
+        14,
+        1
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "development-crystal-two-gap2-turn0",
+      "path": "development-crystal-two-gap2-turn0.json",
+      "split": "development",
+      "template": "crystal-two",
+      "gap_extension": 2,
+      "quarter_turns": 0,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "5f7628ebe0e6414ba4e8927dd03bbcc3b7dee56e61f4cf6f225fa347d7df1389",
+      "case_sha256": "5db838b8d675b69c4f489d27284c5523b972621cdce8a44ea0cbdf2b1a0cd496",
+      "initial_score": [
+        39,
+        7,
+        0
+      ],
+      "witness_score": [
+        33,
+        5,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "development-crystal-two-gap2-turn1",
+      "path": "development-crystal-two-gap2-turn1.json",
+      "split": "development",
+      "template": "crystal-two",
+      "gap_extension": 2,
+      "quarter_turns": 1,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "4ad1238c700354b20239bff456e1b3fe734050c69215cbaf1116737af55f0c7c",
+      "case_sha256": "56ebc9845113b8b7476db53bd936d4237da2f5df5eaa2bf216340ebeaa749820",
+      "initial_score": [
+        39,
+        7,
+        0
+      ],
+      "witness_score": [
+        33,
+        5,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "development-crystal-two-gap2-turn2",
+      "path": "development-crystal-two-gap2-turn2.json",
+      "split": "development",
+      "template": "crystal-two",
+      "gap_extension": 2,
+      "quarter_turns": 2,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "beb6a35fd0482b4b377425deeee6426d14d98f32e27bf567ed81fc8a134f5461",
+      "case_sha256": "e7e28ad5b3465a7a44b863fc1207440a3c0116c8d401883474d0bad611452c83",
+      "initial_score": [
+        39,
+        7,
+        0
+      ],
+      "witness_score": [
+        33,
+        5,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "development-crystal-two-gap2-turn3",
+      "path": "development-crystal-two-gap2-turn3.json",
+      "split": "development",
+      "template": "crystal-two",
+      "gap_extension": 2,
+      "quarter_turns": 3,
+      "facilities": 2,
+      "networks": 3,
+      "terminals": 6,
+      "geometry_sha256": "848388c214334f40d496225ee3a45411f36686709b060fa235b865019ade11bd",
+      "case_sha256": "6638a2d5d59ef1f70bacd10bd03488384f66c52ff2a6601eb03a0d48b2fdaf04",
+      "initial_score": [
+        39,
+        7,
+        0
+      ],
+      "witness_score": [
+        33,
+        5,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "heldout-crystal-three-gap0-turn0",
+      "path": "heldout-crystal-three-gap0-turn0.json",
+      "split": "heldout",
+      "template": "crystal-three",
+      "gap_extension": 0,
+      "quarter_turns": 0,
+      "facilities": 3,
+      "networks": 4,
+      "terminals": 8,
+      "geometry_sha256": "f70dac14be88c95f6ed38ffca8201ecd0b688fb15d3ff11e923f4175a620d16e",
+      "case_sha256": "ad2f7b117dfb76515e3598fc8b2df37dbcc6ee2fc041c624949788b415e9404c",
+      "initial_score": [
+        51,
+        8,
+        0
+      ],
+      "witness_score": [
+        45,
+        6,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "heldout-crystal-three-gap0-turn1",
+      "path": "heldout-crystal-three-gap0-turn1.json",
+      "split": "heldout",
+      "template": "crystal-three",
+      "gap_extension": 0,
+      "quarter_turns": 1,
+      "facilities": 3,
+      "networks": 4,
+      "terminals": 8,
+      "geometry_sha256": "e5f6958b0e015799352b4c7d41d1d9bf538bcab7256e3fe81c1b951f1820159e",
+      "case_sha256": "09fb8bed6472a4e92682c606ba01263d6ab94c0dce6457955577d8f885ba4983",
+      "initial_score": [
+        51,
+        8,
+        0
+      ],
+      "witness_score": [
+        45,
+        6,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "heldout-crystal-three-gap0-turn2",
+      "path": "heldout-crystal-three-gap0-turn2.json",
+      "split": "heldout",
+      "template": "crystal-three",
+      "gap_extension": 0,
+      "quarter_turns": 2,
+      "facilities": 3,
+      "networks": 4,
+      "terminals": 8,
+      "geometry_sha256": "dc3a4e4c4e362783ea62328ee78829586d5928f9655dc08fe4aa81c112ce287b",
+      "case_sha256": "8c7d7c9071cf6f12860ae793f3e8f3b3d29d111a847c7e7a243b19370edcc434",
+      "initial_score": [
+        51,
+        8,
+        0
+      ],
+      "witness_score": [
+        45,
+        6,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "heldout-crystal-three-gap0-turn3",
+      "path": "heldout-crystal-three-gap0-turn3.json",
+      "split": "heldout",
+      "template": "crystal-three",
+      "gap_extension": 0,
+      "quarter_turns": 3,
+      "facilities": 3,
+      "networks": 4,
+      "terminals": 8,
+      "geometry_sha256": "4dfb2689df72dd9c2f28cbe0dbbcb2f076f7ab4f9554924064bac3f4f4456d73",
+      "case_sha256": "7f20ebf195c20acd72b3ec1cf22bd1abc495764b58dd2cc24a2ac5692fc0bd0b",
+      "initial_score": [
+        51,
+        8,
+        0
+      ],
+      "witness_score": [
+        45,
+        6,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "heldout-crystal-three-gap4-turn0",
+      "path": "heldout-crystal-three-gap4-turn0.json",
+      "split": "heldout",
+      "template": "crystal-three",
+      "gap_extension": 4,
+      "quarter_turns": 0,
+      "facilities": 3,
+      "networks": 4,
+      "terminals": 8,
+      "geometry_sha256": "13403e5973cb26007fe0d04de3fd48277d3e935e39e9998106afd55175648f00",
+      "case_sha256": "60475a4eb9dc124a8084bad02e7bff23f4a34abef1e198f1f297e03283ae7b55",
+      "initial_score": [
+        63,
+        12,
+        0
+      ],
+      "witness_score": [
+        57,
+        10,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "heldout-crystal-three-gap4-turn1",
+      "path": "heldout-crystal-three-gap4-turn1.json",
+      "split": "heldout",
+      "template": "crystal-three",
+      "gap_extension": 4,
+      "quarter_turns": 1,
+      "facilities": 3,
+      "networks": 4,
+      "terminals": 8,
+      "geometry_sha256": "fb7c70dbab400095ec53fb093009fbaf00d0f6f97e99069e55a6bcd7f18454a3",
+      "case_sha256": "0bafcb9d7abdeabcd40acae52904e25c41e710575d1edca69e87f9e2f040a9da",
+      "initial_score": [
+        63,
+        12,
+        0
+      ],
+      "witness_score": [
+        57,
+        10,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "heldout-crystal-three-gap4-turn2",
+      "path": "heldout-crystal-three-gap4-turn2.json",
+      "split": "heldout",
+      "template": "crystal-three",
+      "gap_extension": 4,
+      "quarter_turns": 2,
+      "facilities": 3,
+      "networks": 4,
+      "terminals": 8,
+      "geometry_sha256": "d987e469afa7690256323d805accf9d248b6fad7b123d493edbc6ea8eb6cdd29",
+      "case_sha256": "cadda2605afc31a2d478b63660ebf50ff498802294783ead4e1f4be4bd333832",
+      "initial_score": [
+        63,
+        12,
+        0
+      ],
+      "witness_score": [
+        57,
+        10,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    },
+    {
+      "id": "heldout-crystal-three-gap4-turn3",
+      "path": "heldout-crystal-three-gap4-turn3.json",
+      "split": "heldout",
+      "template": "crystal-three",
+      "gap_extension": 4,
+      "quarter_turns": 3,
+      "facilities": 3,
+      "networks": 4,
+      "terminals": 8,
+      "geometry_sha256": "fe9cb4896b056e69380dd9c86fb7b6459274eacd26e4aaec947304ebb16338dd",
+      "case_sha256": "6ed2530e39f32602f1c057305c873aa539ec6baa31e53333c72511dd1b28f64c",
+      "initial_score": [
+        63,
+        12,
+        0
+      ],
+      "witness_score": [
+        57,
+        10,
+        0
+      ],
+      "first_reward_distance": 9,
+      "curriculum_levels": 9
+    }
+  ]
+}

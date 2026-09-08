@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "catalogs": {
+    "recipes": "data/game/normalized/recipes.json",
+    "facilities": "data/game/normalized/facilities.json",
+    "transports": "data/game/normalized/transports.json"
+  },
+  "config": "tools/factory-edit-pilot/run-capacity-width1.json",
+  "templates": {
+    "glass-two": {
+      "recipes": [
+        "furnance-quartz-glass-1",
+        "component-glass-cmpt-1"
+      ],
+      "target_rate": [
+        1,
+        4
+      ]
+    },
+    "battery-four": {
+      "case": "tools/factory-edit-pilot/case-relocation.json"
+    },
+    "crystal-two": {
+      "recipes": [
+        "grinder-originium-powder-1",
+        "furnance-crystal-powder-1"
+      ],
+      "target_rate": [
+        1,
+        4
+      ]
+    },
+    "crystal-three": {
+      "recipes": [
+        "grinder-originium-powder-1",
+        "furnance-crystal-powder-1",
+        "furnance-crystal-shell-2"
+      ],
+      "target_rate": [
+        1,
+        4
+      ]
+    }
+  },
+  "splits": {
+    "train": [
+      {
+        "template": "glass-two",
+        "gap_extensions": [
+          0,
+          4
+        ],
+        "quarter_turns": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "template": "battery-four",
+        "gap_extensions": [
+          0,
+          4
+        ],
+        "quarter_turns": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    ],
+    "development": [
+      {
+        "template": "glass-two",
+        "gap_extensions": [
+          2
+        ],
+        "quarter_turns": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "template": "battery-four",
+        "gap_extensions": [
+          2
+        ],
+        "quarter_turns": [
+          0,
+          1,
+          2,
+          3
+        ]
+      },
+      {
+        "template": "crystal-two",
+        "gap_extensions": [
+          2
+        ],
+        "quarter_turns": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    ],
+    "heldout": [
+      {
+        "template": "crystal-three",
+        "gap_extensions": [
+          0,
+          4
+        ],
+        "quarter_turns": [
+          0,
+          1,
+          2,
+          3
+        ]
+      }
+    ]
+  }
+}
