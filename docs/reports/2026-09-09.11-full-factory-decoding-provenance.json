@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "scope": "Frozen decoding, all-best audit and two inspected complete views; detailed episode hashes are in the retained audit",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-decoding/audit.json",
+      "sha256": "5630f511d5770677276c100cf3fcc19111fea490da82d59a18047b77dab650f1",
+      "bytes": 12937
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-decoding/enriched-consumables-food-rate-2-view/comparison.png",
+      "sha256": "76fa721a3b29603b7f899f9bbcef0d6b18ce49301d3c49940f1777105d523ba6",
+      "bytes": 279723
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-decoding/enriched-consumables-food-rate-2-view/comparison.svg",
+      "sha256": "dd0ea1de1ca86046870169a35ccd48f41b19301f42fb3907b5368ed91437b52e",
+      "bytes": 2472034
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-decoding/enriched-consumables-food-rate-2-view/view.json",
+      "sha256": "b98f26c58cb32a767a4a44a744ace9b6c6ce8e44a29b7a28970c5dcd4e268937",
+      "bytes": 1190
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-decoding/protocol.json",
+      "sha256": "c68bb08bf8630c6d2871ef5ff31880f9f5c673ab022ad20dfe3f08091a8684b1",
+      "bytes": 20476
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-decoding/report.json",
+      "sha256": "76a3431a80a19026b4f5491be131c1f9bf76919ef468e85c8be2844ce32c4557",
+      "bytes": 60303
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-decoding/summary.json",
+      "sha256": "20d7863b4c0022e80e4783a59a9881ff14a2f2ff5cf984a0adccc9baf56179be",
+      "bytes": 2726
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-decoding/watered-grass-grass-rate-0-view/comparison.png",
+      "sha256": "405645253b36f3258972a9bb67fff32095e41bc8df429ada85ac39b2a59c17a3",
+      "bytes": 95683
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-decoding/watered-grass-grass-rate-0-view/comparison.svg",
+      "sha256": "8ef8dcec16bc395e60b4ef848f31926523b13b4940d024d96660def723e0c31a",
+      "bytes": 90541
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-decoding/watered-grass-grass-rate-0-view/view.json",
+      "sha256": "1975b2fa8c2d4f65b415d13869bfcca2cba7f591337254eb8993d627e13fa610",
+      "bytes": 1140
+    },
+    {
+      "path": "docs/reports/2026-09-09.10-full-factory-trajectory-learning-provenance.json",
+      "sha256": "03743c71e22a17c9727fba4c25421f2e167ec8c4244b326b079ff663257487f8",
+      "bytes": 6544
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_decoding.py",
+      "sha256": "bc7b9e6de49ea6087b0677af1ac28670a8be107eb6a961c0f326b651a82d13be",
+      "bytes": 4980
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_decoding_audit.mjs",
+      "sha256": "0d566d111b9645bcbeb73f57fb67aa09e6807512b0cab7f483aabb9f4267bbc6",
+      "bytes": 3789
+    },
+    {
+      "path": "tools/factory-edit-pilot/test_full_factory_decoding.py",
+      "sha256": "1270a8445261468e2c9ec14cd251459997a5209bffd9d300bed3aabd66b78aa6",
+      "bytes": 1153
+    }
+  ]
+}
