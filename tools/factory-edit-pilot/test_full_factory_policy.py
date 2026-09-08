@@ -104,6 +104,27 @@ class FactoryPolicyTests(unittest.TestCase):
                     if a!=b:
                         self.assertFalse(any(c['axis']==axis and c['position']==max(a,b) for c in actions))
 
+    def test_observation_cache_preserves_descriptors_and_tracks_state_and_options(self):
+        self.runtime.description_cache.clear();self.runtime.description_cache_bytes=0
+        e=self.episode();first=e.describe();again=e.describe()
+        self.assertEqual(first['poses']['observation_cache'],'miss')
+        self.assertEqual(again['poses']['observation_cache'],'hit')
+        self.assertEqual(again['poses']['seconds'],0)
+        for field in ('actions','ports','chains'):
+            self.assertEqual(first[field],again[field])
+        again['actions'].clear()
+        self.assertEqual(e.describe()['actions'],first['actions'])
+        alternative=e.describe(dict(mode='distant'))
+        self.assertEqual(alternative['poses']['observation_cache'],'miss')
+        self.assertEqual(e.describe(dict(mode='distant'))['poses']['observation_cache'],'hit')
+        action=next(a for a in first['actions'] if a['kind']=='insert')
+        self.assertTrue(e.step(action)['acceptance']['candidate_validated'])
+        changed=e.describe()
+        self.assertEqual(changed['poses']['observation_cache'],'miss')
+        self.assertNotEqual(changed['actions'],first['actions'])
+        self.assertLessEqual(len(self.runtime.description_cache),16)
+        self.assertLessEqual(self.runtime.description_cache_bytes,32*1024*1024)
+
     def test_rejected_executor_and_rollback_are_charged(self):
         e = self.episode()
         initial = deepcopy(e.state['best'])

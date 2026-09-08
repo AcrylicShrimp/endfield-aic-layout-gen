@@ -27,7 +27,7 @@ def run(args):
             raise ValueError(f'factory.view-invalid: {args.best}: {acceptance["diagnostics"]}')
         final=json.loads(episode.session.snapshot_json())
         states=[(initial['current'],initial['current_metrics'],'Original input'),
-                (final['current'],final['current_metrics'],'Selected final-policy rollout')]
+                (final['current'],final['current_metrics'],'Selected valid layout')]
         width=max(m['width'] for _,m,_ in states);height=max(m['height'] for _,m,_ in states)
         labels={p['instance']:str(i+1) for i,p in enumerate(states[0][0]['placements'])}
         items=sorted({n['item'] for w,_,_ in states for n in w['transport_networks']})
@@ -66,7 +66,7 @@ def run(args):
         manifest=dict(schema_version=1,case=args.case,caption=args.caption,best_source=str(args.best.resolve()),
                       best_source_sha256=hashlib.sha256(args.best.read_bytes()).hexdigest(),
                       initial_metrics=initial['current_metrics'],selected_metrics=final['current_metrics'],
-                      factory_validated=True,scope='Native original-request acceptance; illustration selected after the complete screen')
+                      factory_validated=True,scope='Native original-request acceptance; caption identifies selection provenance')
         (args.output/'view.json').write_text(json.dumps(manifest,indent=2)+'\n')
         print(json.dumps(dict(status='complete',output=str(args.output))))
     finally:

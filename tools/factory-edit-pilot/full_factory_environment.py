@@ -1,5 +1,6 @@
 """Selected-action accounting around the full physical factory acceptance API."""
 import hashlib
+from collections import OrderedDict
 import json
 from pathlib import Path
 import subprocess
@@ -27,9 +28,24 @@ class FactoryRuntime:
                                         '--catalogs', str(catalogs)], stdin=subprocess.PIPE,
                                        stdout=subprocess.PIPE, text=True)
         self.serial = 0
+        # Cache only deterministic observations of exact ordered witness DTOs.
+        # Routing, selected edits and native acceptance always execute afresh.
+        self.description_cache = OrderedDict()
+        self.description_cache_bytes = 0
 
     def rpc(self, op, witness, **kwargs):
         self.serial += 1
+        cache_key = digest(dict(witness=witness, **kwargs)) if op == 'describe' else None
+        if cache_key in self.description_cache:
+            encoded = self.description_cache[cache_key]
+            self.description_cache.move_to_end(cache_key)
+            result = json.loads(encoded)
+            result['id'] = self.serial
+            result['seconds'] = 0
+            result['poses']['seconds'] = 0
+            result['poses']['translation']['seconds'] = 0
+            result['poses']['observation_cache'] = 'hit'
+            return result
         self.worker.stdin.write(json.dumps(dict(schema_version=3, id=self.serial, op=op, witness=witness, **kwargs)) + '\n')
         self.worker.stdin.flush()
         line = self.worker.stdout.readline()
@@ -38,6 +54,17 @@ class FactoryRuntime:
         result = json.loads(line)
         if result.get('status') == 'error' or result.get('id') != self.serial or result.get('schema_version') != 3:
             raise RuntimeError(f'factory.executor-protocol: {result}')
+        if cache_key is not None:
+            result['poses']['observation_cache'] = 'miss'
+            encoded = json.dumps(result, separators=(',', ':')).encode()
+            if len(encoded) <= 32*1024*1024:
+                while self.description_cache and (len(self.description_cache) >= 16 or self.description_cache_bytes+len(encoded) > 32*1024*1024):
+                    _, previous = self.description_cache.popitem(last=False)
+                    self.description_cache_bytes -= len(previous)
+                self.description_cache[cache_key] = encoded
+                self.description_cache_bytes += len(encoded)
+            else:
+                result['poses']['observation_cache'] = 'oversize_uncached'
         return result
 
     def close(self):

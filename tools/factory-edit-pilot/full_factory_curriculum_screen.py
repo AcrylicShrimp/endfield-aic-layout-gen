@@ -66,9 +66,9 @@ def run(args):
                     if remaining<=0:raise TimeoutError(f'factory.evaluation-cell-budget: {case["id"]}')
                     bounded=argparse.Namespace(**vars(args));bounded.episode_seconds=remaining
                     summary,best,_,_=episode(runtime,case,policy,CONFIG,bank+attempt,bounded)
-                    if summary['selected']!=8:raise TimeoutError(f'factory.evaluation-episode-budget: {case["id"]}')
                     summary.update(arm=label,phase='evaluation',bank=bank,attempt=attempt)
                     attempts.append(retain(summary,best,f'{label}--{case["id"]}--{bank}--{attempt}'))
+                    if summary['selected']!=8:raise TimeoutError(f'factory.evaluation-episode-budget: {case["id"]}')
                 seconds=time.perf_counter()-cell_start
                 if seconds>args.episode_seconds:raise TimeoutError('factory.evaluation-cell-recording-budget')
                 chosen=min(attempts,key=lambda r:r['best_metrics']['score'])
@@ -121,8 +121,8 @@ def run(args):
                     else:case=roots[group%len(roots)]
                     for attempt in range(4):
                         guard();summary,best,logps,ents=episode(runtime,case,policy,CONFIG,1850000+group*4+attempt,args,training=True)
-                        if summary['selected']!=8:raise TimeoutError('factory.training-episode-budget')
                         summary.update(arm=label,phase='training',group=group,attempt=attempt);retain(summary,best,f'{label}-train-{group}-{attempt}')
+                        if summary['selected']!=8:raise TimeoutError('factory.training-episode-budget')
                         scores.append(tuple(summary['best_metrics']['score']));terms.append(torch.stack(logps).mean());entropies.extend(ents)
                     ranks=advantages(scores);loss=-(torch.stack(terms)*torch.tensor(ranks)).mean()-.01*torch.stack(entropies).mean()
                     optimizer.zero_grad();loss.backward();grad=float(torch.nn.utils.clip_grad_norm_(policy.parameters(),.5))
