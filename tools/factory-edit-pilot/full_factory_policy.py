@@ -1,13 +1,13 @@
-"""Schema-one full-factory spatial / sparse relational policy; no legacy weights."""
+"""Schema-two full-factory spatial / sparse relational policy; no legacy weights."""
 import math
 
 import numpy as np
 import torch
 from torch import nn
 
-SCHEMA = 'full-factory-spatial-relational-v1'
-KINDS = ('move', 'rotate', 'port', 'reroute', 'component', 'release_bridge', 'insert', 'contract', 'restore_best')
-NODE_WIDTH, EDGE_WIDTH, ACTION_WIDTH, RASTER_WIDTH, CONTEXT_WIDTH = 32, 16, 24, 28, 8
+SCHEMA = 'full-factory-spatial-relational-v2'
+KINDS = ('relocate', 'rotate', 'port', 'reroute', 'component', 'release_bridge', 'insert', 'contract', 'restore_best')
+NODE_WIDTH, EDGE_WIDTH, ACTION_WIDTH, RASTER_WIDTH, CONTEXT_WIDTH = 32, 16, 32, 28, 8
 
 
 def rate_features(rate):
@@ -17,6 +17,8 @@ def rate_features(rate):
 
 def observe(w, description, state, remaining):
     """IDs address relationships only. Rates retain value and numerator/denominator signals."""
+    if description.get('schema_version') != 2:
+        raise ValueError('factory.description-schema: expected schema 2')
     box = state['current_metrics']
     # Accepted states are canonically translated, including external terminals.
     width, height = box['width'], box['height']
@@ -125,11 +127,12 @@ def observe(w, description, state, remaining):
                 edge(refs['network'][ai], refs['network'][bi], 10)
                 edge(refs['network'][bi], refs['network'][ai], 10)
     actions, operands, locations = [], [], []
-    for a in description['actions']:
+    member_nodes, member_actions, member_xy = [], [], []
+    for ai, a in enumerate(description['actions']):
         f = np.zeros(ACTION_WIDTH, np.float32)
         f[KINDS.index(a['kind'])] = 1
         f[9:11] = [a['x']/sx, a['y']/sy]
-        f[11:13] = [a.get('dx', 0)/2, a.get('dy', 0)/2]
+        f[11:13] = [a.get('dx', 0)/sx, a.get('dy', 0)/sy]
         angle = math.radians(a.get('rotation', 0))
         f[13:15] = [math.sin(angle), math.cos(angle)]
         if 'transport' in a:
@@ -148,6 +151,18 @@ def observe(w, description, state, remaining):
             op, secondary = (refs['cell'][c['network'], p['x'], p['y']] for p in (c['cells'][0], c['cells'][-1]))
             f[20:23] = rate_features(c['rate'])
             f[23] = math.log1p(len(c['cells']))
+        if a['kind'] == 'relocate':
+            members = a['members']
+            if not members or len(members) > 16 or len(set(members)) != len(members) or any(type(i) is not int or i < 0 or i >= len(w['placements']) for i in members):
+                raise ValueError('factory.relocation-members')
+            f[24:30] = [math.log1p(len(members)), a['width']/width, a['height']/height,
+                        a['body_area']/(width*height), a['source_x']/sx, a['source_y']/sy]
+            for index in members:
+                p = w['placements'][index]
+                member_nodes.append(refs['facility'][p['instance']])
+                member_actions.append(ai)
+                member_xy.append([min(width-1, max(0, p['x']+(p['width']-1)//2+a['dx'])),
+                                  min(height-1, max(0, p['y']+(p['height']-1)//2+a['dy']))])
         actions.append(f)
         operands.append([op+1, secondary+1])  # 0 is the explicit absent operand.
         locations.append([min(width-1, max(0, a['x'])), min(height-1, max(0, a['y']))])
@@ -158,6 +173,8 @@ def observe(w, description, state, remaining):
     return dict(schema=SCHEMA, raster=raster, nodes=np.asarray(nodes), node_xy=np.asarray(xy),
                 edges=np.asarray(edges, dtype=np.int64).reshape(-1, 2), edge_values=np.asarray(edge_values).reshape(-1, EDGE_WIDTH),
                 actions=np.asarray(actions), operands=np.asarray(operands), action_xy=np.asarray(locations),
+                member_nodes=np.asarray(member_nodes, dtype=np.int64), member_actions=np.asarray(member_actions, dtype=np.int64),
+                member_xy=np.asarray(member_xy, dtype=np.int64).reshape(-1, 2),
                 context=np.asarray(context, dtype=np.float32))
 
 
@@ -172,7 +189,7 @@ class FullFactoryPolicy(nn.Module):
         self.messages = nn.ModuleList(nn.Linear(width, width) for _ in range(depth))
         self.updates = nn.ModuleList(nn.Linear(2*width, width) for _ in range(depth))
         self.norms = nn.ModuleList(nn.LayerNorm(width) for _ in range(depth))
-        self.score = nn.Sequential(nn.Linear(ACTION_WIDTH+5*width+CONTEXT_WIDTH, width), nn.SiLU(), nn.Linear(width, 1))
+        self.score = nn.Sequential(nn.Linear(ACTION_WIDTH+7*width+CONTEXT_WIDTH, width), nn.SiLU(), nn.Linear(width, 1))
 
     def forward(self, obs):
         if obs['schema'] != SCHEMA:
@@ -192,4 +209,9 @@ class FullFactoryPolicy(nn.Module):
         operands = tensor('operands', torch.long)
         operands_h = torch.cat((torch.zeros(1, self.width, device=device), h))[operands].flatten(1)
         global_h = torch.cat((h.mean(0), raster.mean((1, 2)), tensor('context'))).expand(len(operands), -1)
-        return self.score(torch.cat((tensor('actions'), operands_h, raster[:, axy[:, 1], axy[:, 0]].T, global_h), dim=1)).squeeze(1)
+        member_actions = tensor('member_actions', torch.long)
+        member_nodes, member_xy = tensor('member_nodes', torch.long), tensor('member_xy', torch.long)
+        counts = torch.zeros(len(operands), 1, device=device).index_add_(0, member_actions, torch.ones(len(member_actions), 1, device=device)).clamp_min(1)
+        source = torch.zeros(len(operands), self.width, device=device).index_add_(0, member_actions, h[member_nodes])/counts
+        destination = torch.zeros_like(source).index_add_(0, member_actions, raster[:, member_xy[:, 1], member_xy[:, 0]].T)/counts
+        return self.score(torch.cat((tensor('actions'), operands_h, raster[:, axy[:, 1], axy[:, 0]].T, source, destination, global_h), dim=1)).squeeze(1)

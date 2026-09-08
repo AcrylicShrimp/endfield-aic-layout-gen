@@ -36,7 +36,7 @@ def episode(runtime,case,policy,config,seed,args,training=False):
     observation_seconds=selection_seconds=0
     while not env.done:
         start=time.perf_counter()
-        desc=env.describe()
+        desc=env.describe(config.get('relocation'))
         obs=observe(env.state['current'],desc,env.state,1-env.selected/config['horizon']) if policy is not None else None
         observation_seconds+=time.perf_counter()-start
         start=time.perf_counter()
@@ -59,7 +59,7 @@ def episode(runtime,case,policy,config,seed,args,training=False):
         current_key=before if row['unchanged'] else physical_key(env.state['current'])
         physical_unchanged,physical_revisited=memory.record(before,current_key,keys[index])
         if row['status']=='improved':best_key=current_key
-        row.update(physical_before=before,physical_after=current_key,physical_unchanged=physical_unchanged,
+        row.update(relocation=desc['relocation'],physical_before=before,physical_after=current_key,physical_unchanged=physical_unchanged,
                    physical_revisited=physical_revisited,action_key=keys[index],available=len(allowed),
                    masked=sum(not x for x in allowed),memory_exhausted=exhausted)
         selection_seconds+=time.perf_counter()-start

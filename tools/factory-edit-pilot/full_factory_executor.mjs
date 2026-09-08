@@ -9,7 +9,7 @@ import {project} from '../../docs/benchmarks/constructive-factory-closure/model.
 
 const key=p=>`${p.x},${p.y}`;
 const equal=(a,b)=>BigInt(a.numerator)*BigInt(b.denominator)===BigInt(b.numerator)*BigInt(a.denominator);
-const steps=[[1,0],[-1,0],[0,1],[0,-1],[2,0],[-2,0],[0,2],[0,-2]];
+import {LOCAL_STEPS as steps,relocationActions} from './full_factory_relocation.mjs';
 const fail=message=>{throw Object.assign(new Error(message),{code:'factory.edit-parameters'});};
 
 export function strips(w,axis){
@@ -63,11 +63,10 @@ export function stripEdit(w,axis,position,insert){
   return result;
 }
 
-export function describe(w,catalogs){
+export function describe(w,catalogs,options={}){
   const began=performance.now(),ports=project(w,catalogs),chains=extractChains(w).chains;
-  const actions=[];
+  const relocation=relocationActions(w,options),actions=[...relocation.actions];
   for(const p of w.placements){
-    for(const [dx,dy]of steps)actions.push({kind:'move',instance:p.instance,dx,dy,x:p.x,y:p.y});
     for(const rotation of catalogs.facilities.facilities.find(f=>f.id===p.facility).allowed_rotations)
       if(rotation!==p.rotation)actions.push({kind:'rotate',instance:p.instance,rotation,x:p.x,y:p.y});
   }
@@ -87,7 +86,7 @@ export function describe(w,catalogs){
     for(const position of options.remove)actions.push({kind:'contract',axis,position,x:axis==='x'?position:0,y:axis==='y'?position:0});
   }
   actions.push({kind:'restore_best',x:0,y:0});
-  return {schema_version:1,ports,chains,actions,seconds:(performance.now()-began)/1000};
+  return {schema_version:2,ports,chains,actions,relocation:relocation.report,seconds:(performance.now()-began)/1000};
 }
 
 export function execute(w,catalogs,action,work=5000){
@@ -98,7 +97,11 @@ export function execute(w,catalogs,action,work=5000){
     const options={endpointPolicy:'terminal-flexible',junctionPolicy:'internal',maxNewCrossings:2,
       workBudget:work,totalWorkBudget:work,onRouteResult:r=>{expanded+=r.expanded;}};
     switch(action.kind){
-      case 'move':options.moves=[{instances:[action.instance],dx:action.dx,dy:action.dy}];break;
+      case 'relocate':
+        if(!Array.isArray(action.members)||!action.members.length||action.members.length>16||
+           new Set(action.members).size!==action.members.length||action.members.some(i=>!Number.isSafeInteger(i)||i<0||i>=w.placements.length)||
+           !Number.isSafeInteger(action.dx)||!Number.isSafeInteger(action.dy)||(!action.dx&&!action.dy))fail('Relocation requires 1..16 distinct placement indices and a nonzero integer translation');
+        options.moves=[{instances:action.members.map(i=>w.placements[i].instance),dx:action.dx,dy:action.dy}];break;
       case 'rotate':options.moves=[{instances:[action.instance],dx:0,dy:0}];options.facilityRotations=[{instance:action.instance,rotation:action.rotation}];break;
       case 'port':options.portAssignments=[{terminal:action.terminal,port:action.port}];break;
       case 'reroute':options.chainIds=[action.chain];break;
@@ -112,7 +115,7 @@ export function execute(w,catalogs,action,work=5000){
     const result=reembed({witness:w,labels:{}},catalogs,options);
     return {status:result.status,witness:result.status==='candidate'?result.detail.witness:result.status==='unchanged'?w:null,
       diagnostics:result.diagnostics??[],route_expansions:expanded,seconds:(performance.now()-began)/1000};
-  }catch(e){return {status:'executor_rejected',diagnostics:[{code:e.code??'factory.executor-error',message:e.message}],route_expansions:expanded,seconds:(performance.now()-began)/1000};}
+  }catch(e){return {status:'executor_rejected',diagnostics:[{code:e.code??'factory.executor-error',message:e.message,severity:e.severity??'info',stage:e.stage??'factory-edit',entity:e.entity??action}],route_expansions:expanded,seconds:(performance.now()-began)/1000};}
 }
 
 async function main(){
@@ -120,10 +123,10 @@ async function main(){
   const paths=JSON.parse(fs.readFileSync(process.argv[i+1],'utf8'));
   const catalogs=Object.fromEntries(Object.entries(paths).map(([k,p])=>[k,JSON.parse(fs.readFileSync(p,'utf8'))]));
   for await(const line of readline.createInterface({input:process.stdin,crlfDelay:Infinity})){
-    try{const r=JSON.parse(line);if(r.schema_version!==1)fail('Unsupported executor request');
-      const result=r.op==='describe'?describe(r.witness,catalogs):r.op==='execute'?execute(r.witness,catalogs,r.action,r.work):fail('Unknown executor operation');
-      process.stdout.write(JSON.stringify({id:r.id,...result})+'\n');
-    }catch(e){process.stdout.write(JSON.stringify({status:'error',message:e.message})+'\n');}
+    try{const r=JSON.parse(line);if(r.schema_version!==2)throw Object.assign(new Error('Expected factory executor schema 2'),{code:'factory.executor-schema'});
+      const result=r.op==='describe'?describe(r.witness,catalogs,r.options):r.op==='execute'?execute(r.witness,catalogs,r.action,r.work):fail('Unknown executor operation');
+      process.stdout.write(JSON.stringify({id:r.id,schema_version:2,...result})+'\n');
+    }catch(e){process.stdout.write(JSON.stringify({schema_version:2,status:'error',code:e.code??'factory.executor-error',message:e.message})+'\n');}
   }
 }
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url))main().catch(e=>{console.error(e.message);process.exitCode=1;});

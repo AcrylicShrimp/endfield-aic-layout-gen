@@ -33,6 +33,7 @@ def run(args):
             for phase in ('untrained','final'):
                 label = f'd{depth}-s{seed}-{phase}'
                 saved = torch.load(args.screen/f'{label}.pt', map_location='cpu', weights_only=False)
+                if saved.get('schema') != SCHEMA:raise ValueError(f'factory.checkpoint-schema: {label} requires {SCHEMA}')
                 assert saved['schema'] == SCHEMA
                 model = FullFactoryPolicy(depth)
                 model.load_state_dict(saved['policy'])

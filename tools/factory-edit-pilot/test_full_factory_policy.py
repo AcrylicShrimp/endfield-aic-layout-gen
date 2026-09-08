@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import subprocess
 import unittest
 
 import numpy as np
@@ -136,3 +137,61 @@ class FactoryPolicyTests(unittest.TestCase):
         broken = dict(obs,schema='legacy')
         with self.assertRaisesRegex(ValueError,'observation-schema'):
             p(broken)
+
+
+    def test_group_reachability_and_required_closure(self):
+        subprocess.run(['node',str(Path(__file__).with_name('test_full_factory_relocation.mjs'))],check=True,capture_output=True)
+
+    def test_old_executor_description_and_member_contracts_rejected(self):
+        e=self.episode()
+        self.runtime.worker.stdin.write(json.dumps(dict(schema_version=1,op='describe',witness=e.state['current']))+'\n')
+        self.runtime.worker.stdin.flush()
+        self.assertEqual(json.loads(self.runtime.worker.stdout.readline())['code'],'factory.executor-schema')
+        d=e.describe()
+        with self.assertRaisesRegex(ValueError,'description-schema'):
+            observe(e.state['current'],dict(d,schema_version=1),e.state,1)
+        for action in [dict(kind='move',instance=e.state['current']['placements'][0]['instance'],dx=1,dy=0),
+                       dict(kind='relocate',members=[0,0],dx=1,dy=0),dict(kind='relocate',members=[-1],dx=1,dy=0)]:
+            self.assertEqual(e.step(action)['status'],'executor_rejected')
+
+    def test_all_group_members_and_destinations_receive_gradients(self):
+        e=self.episode();d=e.describe()
+        ps=e.state['current']['placements']
+        x,y=min(p['x'] for p in ps[:2]),min(p['y'] for p in ps[:2])
+        a=dict(kind='relocate',members=[0,1],dx=1,dy=0,x=x+1,y=y,source_x=x,source_y=y,
+               width=max(p['x']+p['width'] for p in ps[:2])-x,height=max(p['y']+p['height'] for p in ps[:2])-y,
+               body_area=sum(p['width']*p['height'] for p in ps[:2]))
+        obs=observe(e.state['current'],dict(d,actions=[a]),e.state,1)
+        self.assertEqual(obs['member_nodes'].tolist(),[0,1])
+        torch.manual_seed(11);model=FullFactoryPolicy(0)
+        # Isolate the two new pooled operands; global/action features cannot explain this gradient.
+        start=32+3*model.width
+        with torch.no_grad():
+            model.score[0].weight.zero_();model.score[0].weight[:,start:start+2*model.width]=.1
+            model.score[0].bias.fill_(.1);model.score[2].weight.fill_(.1)
+        obs['nodes']=torch.tensor(obs['nodes'],requires_grad=True)
+        raster=[]
+        def capture(module,inputs,output):
+            output.retain_grad();raster.append(output)
+        handle=model.raster.register_forward_hook(capture)
+        model(obs).sum().backward();handle.remove()
+        for index in obs['member_nodes']:
+            self.assertGreater(float(obs['nodes'].grad[index].abs().sum()),0)
+        for x,y in obs['member_xy']:
+            self.assertGreater(float(raster[0].grad[0,:,y,x].abs().sum()),0)
+
+    def test_original_heavy_distant_and_connected_group_native_acceptance(self):
+        source=ROOT/'artifacts/factory-edit-pilot/full-factory-inputs-verified/inputs.json'
+        if not source.exists():self.skipTest('Optional retained original 59-facility evidence absent')
+        case=next(r for r in json.loads(source.read_text())['rows'] if r['id']=='closure-original')
+        for members,dx,dy in [([0,2],1,0),([0],-3,0)]:
+            e=FactoryEpisode(self.runtime,case)
+            a=next(a for a in e.describe()['actions'] if a['kind']=='relocate' and a['members']==members and a['dx']==dx and a['dy']==dy)
+            before=deepcopy(e.state['current'])
+            result=e.step(a)
+            self.assertTrue(result['acceptance']['candidate_validated'])
+            self.assertFalse(result['unchanged'])
+            self.assertLessEqual(result['route_expansions'],5000)
+            for index in members:
+                self.assertEqual(e.state['current']['placements'][index]['x'],before['placements'][index]['x']+dx)
+                self.assertEqual(e.state['current']['placements'][index]['y'],before['placements'][index]['y']+dy)

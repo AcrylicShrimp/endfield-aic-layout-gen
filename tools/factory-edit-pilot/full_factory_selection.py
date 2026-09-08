@@ -22,7 +22,9 @@ def physical_key(witness):
 
 def action_key(action,description,witness,best_key):
     value=dict(action)
-    if value['kind']=='reroute':
+    if value['kind']=='relocate':
+        value['members']=sorted(witness['placements'][i]['instance'] for i in value['members'])
+    elif value['kind']=='reroute':
         chain=description['chains'][value.pop('chain')]
         value['network']=witness['transport_networks'][chain['network']]['id']
         # The direction of a chain's cell sequence matters; do not canonical-sort it.
@@ -30,7 +32,7 @@ def action_key(action,description,witness,best_key):
         value['rate']=chain['rate']
     elif value['kind']=='restore_best':
         value['best_key']=best_key
-    return json.dumps(value,sort_keys=True,separators=(',',':'))
+    return hashlib.sha256(json.dumps(value,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 
 
 class SelectionMemory:
@@ -70,13 +72,12 @@ def geometry_choice(witness,actions,allowed):
         if allowed[i] and a['kind']=='contract':return i
     centers=[sum(p[axis]+p[extent]/2 for p in witness['placements'])/len(witness['placements'])
              for axis,extent in [('x','width'),('y','height')]]
-    placements={p['instance']:p for p in witness['placements']}
     scores=[]
     for i,a in enumerate(actions):
-        if allowed[i] and a['kind']=='move':
-            p=placements[a['instance']]
+        if allowed[i] and a['kind']=='relocate':
             gain=sum(abs(p[axis]+p[extent]/2-c)-abs(p[axis]+p[extent]/2+a[delta]-c)
-                     for axis,extent,delta,c in [('x','width','dx',centers[0]),('y','height','dy',centers[1])])
+                     for index in a['members'] for p in [witness['placements'][index]]
+                     for axis,extent,delta,c in [('x','width','dx',centers[0]),('y','height','dy',centers[1])])/len(a['members'])
             scores.append((gain,-i,i))
     if scores:return max(scores)[2]
     # Exhaustion is explicit; no uncharged candidate search or implicit stopping.

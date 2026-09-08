@@ -8,7 +8,7 @@ import time
 import torch
 
 from full_factory_environment import FactoryRuntime,FactoryEpisode
-from full_factory_policy import FullFactoryPolicy,observe
+from full_factory_policy import SCHEMA,FullFactoryPolicy,observe
 from full_factory_selection import physical_key,action_key,SelectionMemory,distribution,geometry_choice
 from full_factory_screen import sha
 
@@ -32,6 +32,7 @@ def run(args):
     for a in p['arms']:
         for phase in ('untrained','final'):
             label=a['id']+'-'+phase;checkpoint=torch.load(args.landscape/f'{label}.pt',map_location='cpu',weights_only=False)
+            if checkpoint.get('schema') != SCHEMA:raise ValueError(f'factory.checkpoint-schema: {label} requires {SCHEMA}')
             model=FullFactoryPolicy(0);model.load_state_dict(checkpoint['policy']);models[label]=model
     originals={label:{k:v.clone() for k,v in model.state_dict().items()} for label,model in models.items()}
     runtime=FactoryRuntime(args.native_library,inputs['catalogs']);count=sampling=0
@@ -44,7 +45,7 @@ def run(args):
             model=models.get(row['arm']) if row['phase']=='evaluation' else models[row['arm']+'-untrained'] if row['group']==0 else None
             verify_sampling=row['phase']=='evaluation' or row['group']==0
             for t in recorded['trace']:
-                desc=env.describe();keys=[action_key(a,desc,env.state['current'],best) for a in desc['actions']]
+                desc=env.describe(config.get('relocation'));keys=[action_key(a,desc,env.state['current'],best) for a in desc['actions']]
                 allowed,exhausted=memory.mask(current,keys,desc['actions'],config['memory'])
                 index=desc['actions'].index(t['action'])
                 assert allowed[index],(row['directory'],'selected masked action')

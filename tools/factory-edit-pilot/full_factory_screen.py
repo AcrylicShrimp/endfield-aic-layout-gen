@@ -38,20 +38,8 @@ def advantages(scores):
 
 
 def geometry_action(w, actions):
-    for i, action in enumerate(actions):
-        if action['kind'] == 'contract':
-            return i
-    center = [sum(p[axis]+p[extent]/2 for p in w['placements'])/len(w['placements'])
-              for axis, extent in (('x', 'width'), ('y', 'height'))]
-    by_id = {p['instance']: p for p in w['placements']}
-    scored = []
-    for i, a in enumerate(actions):
-        if a['kind'] == 'move':
-            p = by_id[a['instance']]
-            gain = sum(abs(p[axis]+p[extent]/2-c)-abs(p[axis]+p[extent]/2+a[delta]-c)
-                       for axis, extent, delta, c in (('x','width','dx',center[0]), ('y','height','dy',center[1])))
-            scored.append((gain, -i, i))
-    return max(scored)[2] if scored else len(actions)-1
+    from full_factory_selection import geometry_choice
+    return geometry_choice(w, actions, [True]*len(actions))
 
 
 def run_episode(runtime, case, policy, method, sample_seed, args, training=False):
