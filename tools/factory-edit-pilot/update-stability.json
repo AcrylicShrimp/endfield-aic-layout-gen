@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "purpose": "single_update_stability",
+  "geometry_protocol": "tools/factory-edit-pilot/entity-learning-matrix.json",
+  "training_source_commit": "13af265",
+  "width": 1,
+  "training_seed": 43,
+  "checkpoint_commands": 3145728,
+  "anchor_commands": 1179648,
+  "learning_rate_multipliers": [0, 0.1, 0.3, 1],
+  "collection_seed": 1026000,
+  "shuffle_seed": 1027000,
+  "collection_horizon": 16,
+  "collection_rounds": 4,
+  "device": "cpu",
+  "threads": 1,
+  "horizon": 128,
+  "episodes": 16,
+  "sampling_seed_start": 1028000,
+  "batch_size": 16
+}
