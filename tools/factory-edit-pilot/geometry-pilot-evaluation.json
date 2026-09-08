@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "id": "generated-geometry-pilot-evaluation",
+  "source_commit": "b26a67f",
+  "source_run": "artifacts/factory-edit-pilot/geometry-pilot/geometry-mastery-rehearsal-seed17",
+  "condition": "geometry-mastery-rehearsal",
+  "training_seeds": [
+    17
+  ],
+  "selection": "first_joint_root_mastery",
+  "geometry_directory": "artifacts/factory-edit-pilot/generated-geometry",
+  "manifest_cases_sha256": "b8ba843ebe50529381bfbb442b54ad9e52b90315638fcb654e87349dac8e12cd",
+  "development": {
+    "horizon": 128,
+    "episodes": 64,
+    "required_successes": 52,
+    "seed_banks": [
+      500000
+    ]
+  },
+  "heldout": {
+    "horizon": 128,
+    "episodes": 32,
+    "required_successes": 26,
+    "seed_banks": [
+      510000,
+      520000
+    ]
+  }
+}
