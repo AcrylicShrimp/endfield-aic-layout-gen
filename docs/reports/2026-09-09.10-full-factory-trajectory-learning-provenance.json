@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "scope": "Corrected original-context learning screen, all-best/teacher audit, retained checkpoints and three inspected learned views; per-lesson and per-episode hashes are in retained lesson/audit artifacts",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning/audit.json",
+      "sha256": "4e8d29f99308e0b8fd2c966e2bf9d74b02b32ba6934e5a10745b9b96f84fc079",
+      "bytes": 27590
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning/protocol.json",
+      "sha256": "afcbd32c4b54ba81e9cddf1f70194c7d9e8c9bb1757b01305e25892878e254c9",
+      "bytes": 35748
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning/report.json",
+      "sha256": "df8ad4bac31692792f2d5005c336cbf3f55160b8bcd8a4f7f6f81134c947695e",
+      "bytes": 125599
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning/screen-source.py",
+      "sha256": "9c5cddc3325887d9c873880bf309493a4864a760a80d76a6212a60f63f0ea759",
+      "bytes": 13927
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/audit.json",
+      "sha256": "f03d271403cde871dc6f76782e22f005a88fb1c10823dfd7eb4d6fd3c92cb92d",
+      "bytes": 27590
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/copper-liquid-liquid-rate-0-view/comparison.png",
+      "sha256": "a931d1bb9954c339b7163aa71690865596f9e1432d03c5e4f979407fde85b614",
+      "bytes": 105585
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/copper-liquid-liquid-rate-0-view/comparison.svg",
+      "sha256": "2c2bb0fb62fe1ecaccb9d0571fcf28f141912457a3e613ea9f2fbee137853207",
+      "bytes": 125607
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/copper-liquid-liquid-rate-0-view/view.json",
+      "sha256": "665be9354cf0194558bf062f240e2c43b793af956cba1d5f48782d43a528b915",
+      "bytes": 1159
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/enriched-consumables-medical-rate-2-view/comparison.png",
+      "sha256": "91378fed423525214075dc28c1c008da1ff94ce745a38f91f28c84ff11cf9a03",
+      "bytes": 314572
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/enriched-consumables-medical-rate-2-view/comparison.svg",
+      "sha256": "6a7fccb897d1e0bd47f6bae90c1b4f0f7d5e31e52755fd23e0929f6ae8656fef",
+      "bytes": 1922839
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/enriched-consumables-medical-rate-2-view/view.json",
+      "sha256": "5c53c3ac1dfc25bb3bb981d3749bbf4f625e252238deab727bcf281f59bcc92d",
+      "bytes": 1209
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/label-scores.json",
+      "sha256": "04ec731d05b78cec8d5de57af0f686fea1cbe111fccac2eb45cae13ff366352d",
+      "bytes": 32407
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/learned.pt",
+      "sha256": "fa1f2bec129fde1e7343bfe0da3b12f994d4132eb017b34bd88da523662a0995",
+      "bytes": 514077
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/lessons.json",
+      "sha256": "704ada18e95cbbf2540bdd840095f9980e75c41917c6bb60d0ddfba71f980e44",
+      "bytes": 180244
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/protocol.json",
+      "sha256": "577f20a57dc1f0b71929d1e7312a413ba4652363c9180c95b28e11186552c3c9",
+      "bytes": 35748
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/report.json",
+      "sha256": "78323396d9266702e3b62cfcd09e82cfeca48b7a96b9f0e769cb0bf7e45bf08e",
+      "bytes": 126370
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/summary.json",
+      "sha256": "26cc06772bceb9b7a47395c5cc30f41dff6cfa5377a66416e47f0c0d8eae961e",
+      "bytes": 7362
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/untrained.pt",
+      "sha256": "0a1ad6389dd8d3db3c6acaf42f6ef5fc9d90c83a1542f141f5b216575352fb53",
+      "bytes": 173970
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/updates.json",
+      "sha256": "cb8556563a89bb63a61803c7c3337820f440035aafaf8882a6be48247b6b1a3b",
+      "bytes": 38965
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/watered-grass-grass-rate-1-view/comparison.png",
+      "sha256": "fdb1f15c6f09d5f3c8f624b02c009c346af75fee7de6dae84004a2826b288bad",
+      "bytes": 99614
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/watered-grass-grass-rate-1-view/comparison.svg",
+      "sha256": "4a44700a4f1f1aebdb0ee0f07f678147b98b0c7ee39b27bdbb665f9225bcbd95",
+      "bytes": 95786
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/watered-grass-grass-rate-1-view/view.json",
+      "sha256": "5bff29a947baeb9cf23f9107489dd3c21ec3151f740773e73950f898c059edfb",
+      "bytes": 1151
+    },
+    {
+      "path": "docs/reports/2026-09-09.09-full-factory-family-provenance.json",
+      "sha256": "013ebd39510adf3aa0a9f7a838dc4e06f5fc5257964aa5de00deaece009e0c8b",
+      "bytes": 17202
+    },
+    {
+      "path": "tools/factory-edit-pilot/full-factory-trajectory-learning.json",
+      "sha256": "e2914916b0d30cbedd9006febb4d4a92e3aaae3077449468b0b80245d02d4e6e",
+      "bytes": 1050
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_trajectory_learning.py",
+      "sha256": "d03a97d7e9a52400117ecd87de6520d45cb94cd46ecf925136ef6a4f1a5fef5b",
+      "bytes": 14921
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_trajectory_learning_audit.mjs",
+      "sha256": "e58789c6c80470550295b80d07c8ce562be1e840608dcc3dc37ba2a43afc14f6",
+      "bytes": 6817
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_trajectory_learning_summary.py",
+      "sha256": "5628b43b712146fe0f7d0e3e7c20a7969c3bc2ca6321085ced4b46c3058b3c7b",
+      "bytes": 3074
+    },
+    {
+      "path": "tools/factory-edit-pilot/test_full_factory_trajectory_learning.py",
+      "sha256": "51e62e41844034c507b3e9b098ea9469c1ecbcf5dbe1a7e9730fd79c49fd42c2",
+      "bytes": 2250
+    }
+  ]
+}

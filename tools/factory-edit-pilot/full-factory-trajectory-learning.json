@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "admission": "../../artifacts/factory-edit-pilot/full-factory-family-admission-canonical/report.json",
+  "inputs": "../../artifacts/factory-edit-pilot/full-factory-family-inputs/inputs.json",
+  "teacher": "../../artifacts/factory-edit-pilot/full-factory-family-capability-cached",
+  "additional_evaluation": [
+    {
+      "id": "closure-original",
+      "family": "heavy-xiranite",
+      "inputs": "../../artifacts/factory-edit-pilot/full-factory-inputs-verified/inputs.json",
+      "case": "closure-original"
+    },
+    {
+      "id": "heavy-incumbent-374",
+      "family": "heavy-xiranite",
+      "inputs": "../../artifacts/factory-edit-pilot/full-factory-inputs-verified/inputs.json",
+      "case": "closure-original",
+      "initial": "../../artifacts/factory-edit-pilot/full-factory-pose-generator-best/witness.json"
+    }
+  ],
+  "updates": 256,
+  "horizon": 8,
+  "episode_seconds": 30,
+  "route_work": 5000,
+  "screen_seconds": 1200,
+  "banks": [
+    1310000,
+    1320000
+  ],
+  "observation_cache_bytes": 134217728
+}
