@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "scope": "First large frozen transfer and cold-runtime control; episode/best hashes reside in the audits",
+  "production_revision": "94f72ca",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bridge-transfer/protocol.json",
+      "sha256": "f75d0792c55f17984e435d79b4385dc02b8a02768e463d50d8a6d8dd98d723fb",
+      "bytes": 23023
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bridge-transfer/report.json",
+      "sha256": "3124c616d57ce2702074f75d255d2eb10e45dc5e7f037f7bf875a8d4e9daf05b",
+      "bytes": 19126
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bridge-transfer/audit.json",
+      "sha256": "502a9d760ac186ba7a086800456e823498c189bed3f2ec6a04d2d5070287c26d",
+      "bytes": 3921
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bridge-cold-transfer/protocol.json",
+      "sha256": "c1122f99c667417da6577bacad0de42e8a90b7f1347500e400b515463264a9b1",
+      "bytes": 20450
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bridge-cold-transfer/report.json",
+      "sha256": "6db9f0696abd7f50317682487734c19dacd76ed2f480b6ed13652a581e683f65",
+      "bytes": 4275
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bridge-cold-transfer/audit.json",
+      "sha256": "e12a169a463b32b723d235dd59f4e288a5fe57a1f7c346f34b0c156aa4e9f3e8",
+      "bytes": 1225
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bridge-transfer/summary.json",
+      "sha256": "9345ffe2dfb5c4cfe9aa4c413f6133f73e0f28eee9f0f05bc60041116704cb0e",
+      "bytes": 33994
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bridge-transfer/pose-graph-audit.json",
+      "sha256": "698fd7015181ec47f2a78b6003d46719fded689a157c66d09849222dd7fb82d9",
+      "bytes": 3173
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bridge-transfer/large-learned-view/view.json",
+      "sha256": "d63d2c26bdd1377d060a2c3c42b6ecfac52d5f5305749fa37ac05c4ee01d77d9",
+      "bytes": 1225
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bridge-transfer/large-learned-view/comparison.png",
+      "sha256": "96d83e5c236b64aac1386d78f34ec4e0e3c62c3533aa7b78e8334d1f8a4e0341",
+      "bytes": 526444
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bridge-transfer/large-learned-view/comparison.svg",
+      "sha256": "65b8f674ee3dc3c2b6371da90632e91d1f71b4f6e0b6a00a68c0def9803e2e31",
+      "bytes": 10002581
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/inputs.json",
+      "sha256": "5fd2ade699fec6628c2fb9ffcbee60ed7266ac92aa4baeb32e68b0e783cee8d9",
+      "bytes": 3711
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-admission/report.json",
+      "sha256": "7d8ad68cf5c27796dc416c0a0060688a5361d62efa8941d8cbde589edaa84e7d",
+      "bytes": 13833
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/best-mass-final.pt",
+      "sha256": "5ad5fab1753d7852f71a2257f10c921adc11c6794cebb51304f2252c0acd9969",
+      "bytes": 515605
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/learned.pt",
+      "sha256": "fa1f2bec129fde1e7343bfe0da3b12f994d4132eb017b34bd88da523662a0995",
+      "bytes": 514077
+    },
+    {
+      "path": "target/same-item-bridge-build/release/libaic_pilot_native.dylib",
+      "sha256": "3b0c80bba6ed020cc581d29ec915f977da461576b0c7dcdb80ada3fdedb39f37",
+      "bytes": 3127040
+    }
+  ]
+}
