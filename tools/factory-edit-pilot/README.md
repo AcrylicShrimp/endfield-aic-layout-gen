@@ -290,3 +290,7 @@ tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/case_curricul
 The collector now requires one level per stream, and start tables enumerate all
 witness-prefix levels. Earlier controlled studies supply uniform level vectors;
 historical artifacts remain associated with their original source revisions.
+
+The [full case-curriculum results](../../docs/reports/2026-09-08.17-case-curriculum-results.md)
+show original-root learning on both cases, followed by late regression in two policies.
+The declared final-checkpoint milestone remains unmet.
