@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "purpose": "factory_learning_landscape_screen",
+  "anchor": "artifacts/factory-edit-pilot/entity-learning/width1-seed17/checkpoint-3145728.pt",
+  "anchor_sha256": "a9988c89d18a05fafc34f49afcb7aab663bc026c357b410633ecb4c5f47e1931",
+  "base_config": "tools/factory-edit-pilot/run-entity-batched-width1.json",
+  "geometry_protocol": "tools/factory-edit-pilot/entity-learning-matrix.json",
+  "seed": 17,
+  "evaluation_seed_start": 1300000,
+  "evaluation_episodes": 4,
+  "evaluation_horizon": 32,
+  "evaluation_commands": 128,
+  "ppo_command_budget": 32768,
+  "imitation_epochs": 40,
+  "maximum_seconds": 1800,
+  "arms": [
+    {
+      "id": "old-roots-h16",
+      "split": "old",
+      "starts": "roots",
+      "horizon": 16,
+      "method": "ppo"
+    },
+    {
+      "id": "broad-roots-h16",
+      "split": "broad",
+      "starts": "roots",
+      "horizon": 16,
+      "method": "ppo"
+    },
+    {
+      "id": "broad-mixed-h16",
+      "split": "broad",
+      "starts": "mixed",
+      "horizon": 16,
+      "method": "ppo"
+    },
+    {
+      "id": "broad-roots-h64",
+      "split": "broad",
+      "starts": "roots",
+      "horizon": 64,
+      "method": "ppo"
+    },
+    {
+      "id": "broad-mixed-h64",
+      "split": "broad",
+      "starts": "mixed",
+      "horizon": 64,
+      "method": "ppo"
+    },
+    {
+      "id": "broad-imitation",
+      "split": "broad",
+      "starts": "roots",
+      "horizon": 16,
+      "method": "imitation"
+    },
+    {
+      "id": "broad-imitation-ppo-h64",
+      "split": "broad",
+      "starts": "roots",
+      "horizon": 64,
+      "method": "imitation_then_ppo"
+    }
+  ]
+}
