@@ -31,3 +31,10 @@ collision, full actual-catalog factory validation and original-graph negative co
 Compare prior incumbent, singleton/group/coalescence portfolios and an explicit F36
 reproduction derived from the input labels. Inspect every published native result.
 Area is the first objective; no global optimum/infeasibility or arbitrary recipe claim.
+
+The [terminal-rejoining extension](../../designs/2026-09-09.04-full-factory-terminal-rejoin-curriculum.md)
+also supports the inverse of isolated detachment: one direct equal-rate chain may
+become one shared cell with exactly its two original facility terminals. All other
+anchor/body/component collisions remain checked. This changes executor eligibility,
+not witness schema or native acceptance. See the
+[measured curriculum result](../../reports/2026-09-09.06-full-factory-inverse-curriculum.md).

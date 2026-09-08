@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "0335ece",
+  "scope": "Compact hashes of retained local evidence; raw experiments, checkpoints, plots and logs are deliberately untracked",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-curriculum-verified/protocol.json",
+      "sha256": "f9d8e09c97019b45847494dcea557da06632381598580784e9fb52c025919130"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-curriculum-verified/curriculum.json",
+      "sha256": "a0eb4d42d370dc31f189c8fefcd08c4cc3c29dac19fb025bd350257f1f18fbe3"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-curriculum-verified/root-4-discovery.json",
+      "sha256": "34a9991d401da61d00c30046c7c20dfc8c83d25d941dccedf856604c11997da3"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-curriculum-verified-audit.json",
+      "sha256": "8d7548b503cc7a339d8861a0f1730dc280cacbd6e16303ede27fceaba9293f9a"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified/protocol.json",
+      "sha256": "77d764770ed80ff95633cf2439e953289240ae6fac5cee48bfc54545c4a77619"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified/screen.json",
+      "sha256": "faa6941c8484cf98b43baafa05ed36c07433aff62a4146e87ed00da8c068047f"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified/runtime-metadata.json",
+      "sha256": "94ed9a42fe7b547eaaa4293a5215b4aa90ecd868d039808c3ccd86ef8ca14184"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified-summary.json",
+      "sha256": "e048a09a67aa64f7fa0d735d9af4ce65b5f2e5b2856cd41823cba3bd70d34797"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified-audit.json",
+      "sha256": "8a9c8c1fae62feb77eeaaf07947eb0e85566d6d5efc8f0347b6e03f56a842a5f"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified-replay.json",
+      "sha256": "49a0d1f092b41fcf45ed99a322bdc60914104dc5f9fdc5343bb9de40a9d8338e"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified/untrained-d0.pt",
+      "sha256": "8d043db196edd064cc14c5c91f0c26188e47b9c3e57695a0e2d17d1575e7ad0e"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified/untrained-d2.pt",
+      "sha256": "e0893a27640ec98911e10cf03f91b661d2e67a13cf9cf931252a0c1d56168182"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified/root-pg-final.pt",
+      "sha256": "a450034ef3f483b6a97747b38011c899cd90d3c24616851081a677bc49407ef7"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified/mixed-pg-final.pt",
+      "sha256": "c488fa4ee9669877b99e11251c90af251153d36504608edf68b9c99a900350d0"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified/inverse-d0-final.pt",
+      "sha256": "b1d8af9532d14db3321ae4bddb0cda7193c5755cf3e524bf0f2f7869eb72a0d2"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified/inverse-d2-final.pt",
+      "sha256": "1b6edaf25b04b9754430fdc808f08109041814f8b952d28ccd4eeb851c66c9b8"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-heavy-best/witness.json",
+      "sha256": "bc476ca54ac74754281d2b2c249ce0cce8bb8513827bd59d8b8b0267e51fab82"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-heavy-best/report.json",
+      "sha256": "db564f8f77f192cad6245aaa9fb2c7f6896b49d7ae3fb58c59d5da22e19b4ce7"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified-view/comparison.png",
+      "sha256": "d496a20bba9ba5839bd77c7ad9c7a87f06a84d7f461da3c3d66370e59b46266c"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified-view/comparison.svg",
+      "sha256": "0201b5f207dbb72ee7f13fe506d31f33fa3694ea3e1aee0286294cddd169630f"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified-view/view.json",
+      "sha256": "3e72d7f4422d699ef20c03cd1387d74ed99676bd317b7b209d0028b07b15bf98"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified/mixed-pg-final--closure-generator--1260000--3/best.json.gz",
+      "sha256": "de563ec9eabd9efd0f6e437cdca46003c162f3cac8e413f222e55c17afd16d02"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning-verified/mixed-pg-final--closure-generator--1260000--3/episode.json.gz",
+      "sha256": "7a392ca0de4ebe0ccb6c69b99f08d859349eed6c3e3443b29994842d8c9fb815"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-curriculum/terminal-identity-before-optional-metadata.mjs",
+      "sha256": "43237a6e007d56f6a7a87f5bb2c23b92656c2fdb0a09da68c351b445d91bac30"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-curriculum/full_factory_environment-before-draining.py",
+      "sha256": "eaaa12aa122e62bbbdee0a60f7fa5f7a526781b396b401db9b2bd4bb62c55658"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-inverse-learning/partial.json",
+      "sha256": "96e933976fbf7bcf0e91536dc74c2ce2554fe6597a49431a83fc5df1760f75f5"
+    },
+    {
+      "path": "target/full-factory-rejoin-all-js-tests-final.log",
+      "sha256": "da74d0b6ba90387a403409a0c31a8ac39a0cd7bf22d522f890d1f2033dba4ea9"
+    },
+    {
+      "path": "target/full-factory-inverse-all-python-tests.log",
+      "sha256": "95c2cbfb24a2a5b4d0eadfdf647be084c3456caecbd7a48ec6ad0636ca6cf773"
+    },
+    {
+      "path": "target/full-factory-inverse-cargo-check.log",
+      "sha256": "4f27ac380b22e1d975eee20ce727fa8cbc09061177f6253af0777fd4de7b7506"
+    },
+    {
+      "path": "target/full-factory-inverse-cargo-test.log",
+      "sha256": "aa053c9073dd91297c8e7bd29cc1c54943e1577a110ff2412432c49432411fc6"
+    }
+  ]
+}
