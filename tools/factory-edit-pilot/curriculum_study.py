@@ -141,7 +141,7 @@ def train(root, protocol_path, condition, seed, library, output):
             remaining = remaining_at(protocol, condition, commands)
             phase = "collection"
             clock = time.perf_counter()
-            rollout, rows = collector.collect(actor, remaining)
+            rollout, rows = collector.collect(actor, [remaining] * len(collector.envs))
             seconds["collection"] += time.perf_counter() - clock
             for key, env, row in zip(collector.keys, collector.envs, rows):
                 commands += config["horizon"]

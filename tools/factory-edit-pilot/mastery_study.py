@@ -163,7 +163,7 @@ def train(root, protocol_path, condition, seed, library, output):
             for _ in range(config["rollout_commands"] // (protocol["streams"] * training_config["horizon"])):
                 collector.partial, collector.pending, collector.completed_steps = None, None, 0
                 clock = time.perf_counter()
-                part, rows = collector.collect(actor, remaining)
+                part, rows = collector.collect(actor, [remaining] * len(collector.envs))
                 seconds["collection"] += time.perf_counter() - clock
                 for key, values in part.items():
                     rollout[key].extend(values)

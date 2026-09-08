@@ -41,7 +41,7 @@ def prefixes(runtime):
     if len(path) < 3:
         raise ValueError(f"curriculum.witness_short: {runtime.path}: three curriculum levels required")
     result = {0: []}
-    for remaining in (1, 2, 3):
+    for remaining in range(1, len(path) + 1):
         prefix = path[:-remaining]
         env.reset_with_prefix_json(json.dumps(prefix))
         state = snapshot(env)
@@ -98,13 +98,16 @@ class Collector:
             raise errors[0]
         return results
 
-    def collect(self, model, remaining):
+    def collect(self, model, levels):
+        if (len(levels) != len(self.envs)
+                or any(type(level) is not int or level not in self.starts[key] for key, level in zip(self.keys, levels))):
+            raise ValueError("collection.levels: one valid declared level is required for every stream")
         started = time.perf_counter()
-        self.mapped(lambda pair: pair[0].reset_with_prefix_json(json.dumps(self.starts[pair[1]][remaining])),
-                    list(zip(self.envs, self.keys)))
+        self.mapped(lambda pair: pair[0].reset_with_prefix_json(json.dumps(self.starts[pair[1]][pair[2]])),
+                    list(zip(self.envs, self.keys, levels)))
         self.seconds["setup"] += time.perf_counter() - started
         rows = [{key: [] for key in FIELDS} for _ in self.envs]
-        self.partial = {"remaining": remaining, "streams": rows}
+        self.partial = {"schema_version": 2, "levels": list(levels), "streams": rows}
         self.pending = None
         self.completed_steps = 0
         groups = [list(range(len(self.envs)))] if self.parallel else [[i] for i in range(len(self.envs))]

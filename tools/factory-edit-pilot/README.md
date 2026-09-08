@@ -273,3 +273,20 @@ tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/mastery_matri
 The [completed BN comparison](../../docs/reports/2026-09-08.16-batchnorm-policy-results.md)
 reports higher B success consistency in all three seeds, limited A transfer and
 calibration cost. The baseline remains available for controlled follow-up.
+
+## Case-specific full curriculum
+
+The [stage-one contract](../../docs/designs/2026-09-08.09-case-specific-curriculum.md)
+advances A and B independently through every first-success witness prefix to their
+own original roots. Fresh on-policy rehearsal occupies one quarter of each case's
+episodes once easier stages exist. `case_curriculum_study.py` records per-stream
+levels and actual root exposure; `case_curriculum_audit.py` reconstructs advancement
+and rehearsal independently. Original-root outcome gates remain separate from feedback.
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/case_curriculum_matrix.py --protocol tools/factory-edit-pilot/case-curriculum-study.json --native-library target/release/libaic_pilot_native.so --output artifacts/factory-edit-pilot/fresh-case-curriculum
+```
+
+The collector now requires one level per stream, and start tables enumerate all
+witness-prefix levels. Earlier controlled studies supply uniform level vectors;
+historical artifacts remain associated with their original source revisions.

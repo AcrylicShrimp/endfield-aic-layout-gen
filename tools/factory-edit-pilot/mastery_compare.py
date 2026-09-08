@@ -81,6 +81,21 @@ def compare(protocol_path, paths, output):
               "replication_unit": "Independent trained policy; fixed evaluation seeds vary sampling within a policy",
               "scope": "Original roots of two training cases; no unseen-case or optimality claim",
               "artifacts_sha256": {run["directory"]: run["hashes"] for run in runs.values()}}
+    if "stage_acceptance" in protocol:
+        criterion = protocol["stage_acceptance"]
+        checkpoints = protocol["checkpoints"][-criterion["consecutive_final_checkpoints"]:]
+        checked = []
+        for summary in summaries:
+            if summary["commands"] not in checkpoints:
+                continue
+            for row in summary["seeds"]:
+                if row["evaluation_episodes"] != criterion["evaluation_episodes"]:
+                    raise ValueError("mastery_compare.stage_acceptance: outcome episode count differs from the declared criterion")
+                successes = round(row["improvement_frequency"] * row["evaluation_episodes"])
+                checked.append({"condition": summary["condition"], "commands": summary["commands"], "case": summary["case"],
+                                "seed": row["seed"], "successes": successes, "passed": successes >= criterion["root_successes"]})
+        result["stage_acceptance"] = {"status": "passed" if all(row["passed"] for row in checked) else "not_met",
+                                      "criterion": criterion, "checks": checked}
     write(output / "comparison.json", result)
     fig, axes = plt.subplots(1, len(protocol["cases"]), figsize=(12, 5), constrained_layout=True, squeeze=False)
     for axis, case in zip(axes[0], protocol["cases"]):
@@ -90,7 +105,8 @@ def compare(protocol_path, paths, output):
             values = [row["across_training_seeds"]["mean_return"] for row in selected]
             line, = axis.plot(x, [100*v["mean"] for v in values], "o-", label=condition)
             axis.fill_between(x, [100*v["minimum"] for v in values], [100*v["maximum"] for v in values], color=line.get_color(), alpha=.1)
-        axis.axvline(protocol["fixed_curriculum"][-1]["until"], color="gray", ls=":", label="Fixed schedule switches to roots")
+        if "fixed_curriculum" in protocol:
+            axis.axvline(protocol["fixed_curriculum"][-1]["until"], color="gray", ls=":", label="Fixed schedule switches to roots")
         axis.set(title=f"Case {case}: original-root evaluation", xlabel="Sampled training edits", ylabel="Mean returned area reduction (%)")
         axis.grid(alpha=.2)
         axis.legend(fontsize=8)
@@ -107,7 +123,8 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     result = compare(args.protocol.resolve(), [p.resolve() for p in args.runs], args.output.resolve())
-    print(json.dumps({"status": "passed", "contrasts": result["contrasts"]}, indent=2))
+    print(json.dumps({"status": "passed", "contrasts": result["contrasts"],
+                      "stage_acceptance": result.get("stage_acceptance")}, indent=2))
 
 
 if __name__ == "__main__":

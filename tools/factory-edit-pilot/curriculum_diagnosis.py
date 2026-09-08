@@ -111,7 +111,7 @@ def diagnose(root, matrix, library, output):
             if count == 0 and metadata["condition"] in ("root-serial", "curriculum-serial"):
                 collector = Collector(runtimes, config, metadata["protocol"]["streams"], metadata["seed"], False)
                 try:
-                    rollout, streams = collector.collect(model, 1 if metadata["condition"].startswith("curriculum") else 0)
+                    rollout, streams = collector.collect(model, [1 if metadata["condition"].startswith("curriculum") else 0] * len(collector.envs))
                     expected = rows(path / "episodes.jsonl")[:len(streams)]
                     matched = all(sum(row["rewards"]) == original["return"] for row, original in zip(streams, expected))
                     if not matched:

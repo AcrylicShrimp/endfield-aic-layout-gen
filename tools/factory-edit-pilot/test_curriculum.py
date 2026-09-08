@@ -112,7 +112,7 @@ class CurriculumTests(unittest.TestCase):
             collector = Collector(self.runtimes, self.config, 2, 17, parallel)
             try:
                 model = Policy(collector.envs[0].observe()[0])
-                rollout, streams = collector.collect(model, 1)
+                rollout, streams = collector.collect(model, [1] * len(collector.envs))
                 expected = np.concatenate([advantages(row["rewards"], row["values"], row["dones"], 0, 1, .95)[0]
                                            for row in streams])
                 actual = advantages(rollout["rewards"], rollout["values"], rollout["dones"], 0, 1, .95)[0]

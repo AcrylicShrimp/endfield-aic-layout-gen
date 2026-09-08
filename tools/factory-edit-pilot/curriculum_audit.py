@@ -37,7 +37,7 @@ def audit_study(root, protocol_path, output, source_commit):
             if env.step(command)[0] > 0:
                 first_gain = i + 1
                 break
-        if first_gain is None or starts[key] != {str(n): witness[:first_gain-n] if n else [] for n in (0, 1, 2, 3)}:
+        if first_gain is None or starts[key] != {str(n): witness[:first_gain-n] if n else [] for n in range(first_gain + 1)}:
             raise ValueError(f"curriculum_audit.starts: {output}: {key}: starts differ from declared first-success prefixes")
     episodes = rows(output / "episodes.jsonl")
     exposure, stages, setup = Counter(), Counter(), 0
