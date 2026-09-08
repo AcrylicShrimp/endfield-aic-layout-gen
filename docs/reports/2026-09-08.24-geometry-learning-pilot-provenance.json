@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "training_source": "b26a67fa01f20be39ea4c3d9a88b674a5e9b0853",
+  "evaluation_source": "f990f7889e1c1258461106cd5c2558eaa70beb77",
+  "status": "not_met",
+  "files_sha256": {
+    "tools/factory-edit-pilot/geometry-pilot-study.json": "0bc9f47e0bf8929a6172a854a69b2238741f9064d84c7ac93cd3d5e0329beb02",
+    "tools/factory-edit-pilot/geometry-pilot-evaluation.json": "77aa2a4d486979051f55206bb8baf3a473045574f2524ea302b2feecbe392179",
+    "artifacts/factory-edit-pilot/generated-geometry/manifest.json": "b8021272eabf7aab23f12e6be9eaf5697236d781ba07e38ec2e85438bacd9d0b",
+    "artifacts/factory-edit-pilot/geometry-pilot/geometry-mastery-rehearsal-seed17/metadata.json": "423e5d8a6b1cca0c6b1e56611f81a3b6d677397798e68664499c94eef865ff42",
+    "artifacts/factory-edit-pilot/geometry-pilot/geometry-mastery-rehearsal-seed17/study-audit.json": "9e7d0836487083fb1e87363e2fedab6b0e146c388ebccae012acc1b03cf2f49d",
+    "artifacts/factory-edit-pilot/geometry-pilot/geometry-mastery-rehearsal-seed17/checkpoint-1474560.pt": "da3ccda93954d801aa6f485f91250d44d50e894d775d55cce6a8d27a042b44cc",
+    "artifacts/factory-edit-pilot/geometry-pilot-evaluation/evaluation.json": "cad277139194c87f2c0b8f4ac86a1e1fa052b0857c60606875face9fa8aa75f0",
+    "artifacts/factory-edit-pilot/geometry-pilot-evaluation/selected-policy.pt": "d3c0a82a310ae770d815411b437e218317348e9f9d28050bbc036e18e0163fa4"
+  }
+}
