@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "source_commit": "5922fce1c8e9cee6dfde9b434db1a4fe6d80493a",
+  "policy_sha256": "e66841e19d28b117b436b376296106c30d5adfe1d291e6cbb6889b86756ffa47",
+  "status": "passed",
+  "selected_attempt_horizon": 32,
+  "files_sha256": {
+    "tools/factory-edit-pilot/geometry-restart-diagnosis.json": "4ae8a9ee703b80304b468b8054e592af52192589a8c88a74b2477a42515c8595",
+    "artifacts/factory-edit-pilot/geometry-restart-diagnosis/diagnosis.json": "c3c5509d02688082995a7792c896a9ee685f63d25218b2ffc665b91994d770a2"
+  }
+}
