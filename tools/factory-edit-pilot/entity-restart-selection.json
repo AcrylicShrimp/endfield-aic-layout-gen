@@ -1,0 +1,426 @@
+{
+  "schema_version": 1,
+  "purpose": "deployment_matched_entity_retention",
+  "source_matrix_sha256": "ca19630b7387903b21b6493470ea485389312c2ab21474b4ee0c81d76809dd7b",
+  "reference_comparison_sha256": "8c90c0a7baaec3ca9add26224ae3979b2c8aa251accdd3dce2061725a19b6eee",
+  "actors": [
+    {
+      "width": 1,
+      "seed": 17,
+      "commands": 0,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "b7a8fb2bf6897755f367d9134d7c82f5b2026419f2447b1458e18c79addca5b9"
+    },
+    {
+      "width": 1,
+      "seed": 17,
+      "commands": 393216,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "8c91b25b6677ab9842d1a3c810e962fc079a3d938dfb3bb8046173bbf88f0433"
+    },
+    {
+      "width": 1,
+      "seed": 17,
+      "commands": 786432,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "b945445971acf8a45ccfda6880bec200131538c6ab0cebc19abd128e368d72f6"
+    },
+    {
+      "width": 1,
+      "seed": 17,
+      "commands": 1179648,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "3d79c0da11691ced63aedba7b1d815e518161f8119634cb8ee8c1fbbcee6c36a"
+    },
+    {
+      "width": 1,
+      "seed": 17,
+      "commands": 1572864,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "de3b0e0e99ffd1f834e76241426793a8db606687b6ef8fa138eaad38440e0233"
+    },
+    {
+      "width": 1,
+      "seed": 17,
+      "commands": 1966080,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "6bd0cb5a642bb2f920404297787676d9349ccff887ca12207f8cad3a4e8a8e64"
+    },
+    {
+      "width": 1,
+      "seed": 17,
+      "commands": 2359296,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "215d7bc268589732af6a46bbefebb662aa5c714900acb02dae4e7cd53d3bc167"
+    },
+    {
+      "width": 1,
+      "seed": 17,
+      "commands": 2752512,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "3aff89836835b3c6b6fe48386c7fede968b3b3364a0b71ed5ee7a5673603bddf"
+    },
+    {
+      "width": 1,
+      "seed": 17,
+      "commands": 3145728,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "a9988c89d18a05fafc34f49afcb7aab663bc026c357b410633ecb4c5f47e1931"
+    },
+    {
+      "width": 2,
+      "seed": 17,
+      "commands": 0,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "3b8610451d651a98af8365f4e311ea9448ac5ac8e31f762f3db06ba1b4b04403"
+    },
+    {
+      "width": 2,
+      "seed": 17,
+      "commands": 393216,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "5ebecba3f332c61d866c0970ae5854d35ff7f74d3a5350e970cb158871e855c6"
+    },
+    {
+      "width": 2,
+      "seed": 17,
+      "commands": 786432,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "a7b2d4d8220dc004abe1403c5231275253e8109365bc0976f253879b87dbe226"
+    },
+    {
+      "width": 2,
+      "seed": 17,
+      "commands": 1179648,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "1a94da6a57339e0b892f714cd9e88e044af3c7ff9f8bb2e377cd63d5dcb42d9b"
+    },
+    {
+      "width": 2,
+      "seed": 17,
+      "commands": 1572864,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "871ab41f333578a4e4690825111eb069645900932381d39522ae998c5e23ba86"
+    },
+    {
+      "width": 2,
+      "seed": 17,
+      "commands": 1966080,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "69163bbe32783dbf1278444b2417bd7d59a28984d716c5466394d4d52a7961d2"
+    },
+    {
+      "width": 2,
+      "seed": 17,
+      "commands": 2359296,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "2053882ebd8e98a111e62ae06841f838eacf245d36eb87fa52ff35a04dc01d6b"
+    },
+    {
+      "width": 2,
+      "seed": 17,
+      "commands": 2752512,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "968c364b77286956071f8ad69e8c6aa1d491bd03495580ecde3c452b343ab60d"
+    },
+    {
+      "width": 2,
+      "seed": 17,
+      "commands": 3145728,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "068c352f7796299c9b308e91ab5968fbeb0fc1944063d577ee4803383df59122"
+    },
+    {
+      "width": 2,
+      "seed": 29,
+      "commands": 0,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "8b17bbf585fc24f3c1e1391be1fbfd31701e5ef98d8630d349dbf019ade4b9d9"
+    },
+    {
+      "width": 2,
+      "seed": 29,
+      "commands": 393216,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "6cc69a61abec394e620afb4be8a5d2732837cd4386ce0b80b0b9e89450eb8760"
+    },
+    {
+      "width": 2,
+      "seed": 29,
+      "commands": 786432,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "56de748675bc90dcce3a8e55c1eb92123ba659e257a3898efe9b996a7edc455c"
+    },
+    {
+      "width": 2,
+      "seed": 29,
+      "commands": 1179648,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "574a30298a3ce8ca15bae99e83d29203d1e23ebd6582140155a9e16191e645ad"
+    },
+    {
+      "width": 2,
+      "seed": 29,
+      "commands": 1572864,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "791a40be5e9d2d0b2eef255b7eec92d42dc667db0aa658c9846b0ce02cc4f661"
+    },
+    {
+      "width": 2,
+      "seed": 29,
+      "commands": 1966080,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "9e8d7e9ac551a51b117bb1fff55d57677c97c3a1dc7febb0df1cef2c7745cb39"
+    },
+    {
+      "width": 2,
+      "seed": 29,
+      "commands": 2359296,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "c2c6457e448f80450e3000136b8e461d2443dde60698ae7d5e645aec461406ab"
+    },
+    {
+      "width": 2,
+      "seed": 29,
+      "commands": 2752512,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "b00dd153af8a8d13d8ce01dbcb72c38f0ef42edca0c8aadeffcb571e18ceed5f"
+    },
+    {
+      "width": 2,
+      "seed": 29,
+      "commands": 3145728,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "cb0c68e0ff6836ebe0855ab7d732bf0155c78ce5fe73e9b678cfbf018cd6a433"
+    },
+    {
+      "width": 1,
+      "seed": 29,
+      "commands": 0,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "4b4cf6dcd4ee827dbcbf8336661ff2d7bbf15bb30587e7dc5b0221447f14401b"
+    },
+    {
+      "width": 1,
+      "seed": 29,
+      "commands": 393216,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "635dea4c6078a2cfe10ffff117c6dfacf5bd3796eb5582d79b26d64a85c65b52"
+    },
+    {
+      "width": 1,
+      "seed": 29,
+      "commands": 786432,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "9098f57959971b57c6385aafed1a6bce4abbd66e2bd21618a5e51b9df1fdd9fb"
+    },
+    {
+      "width": 1,
+      "seed": 29,
+      "commands": 1179648,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "13ffcd239c21b86d7fbc32d327aa6be569790a403a6509b8d240c74022ccf913"
+    },
+    {
+      "width": 1,
+      "seed": 29,
+      "commands": 1572864,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "4330a7dfe9a98d6d024f34696874e3e418f868d25798912cdf7cc05849645240"
+    },
+    {
+      "width": 1,
+      "seed": 29,
+      "commands": 1966080,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "00dddb5d6aa99445194bad053b2247418d5e7073624737f6105004517a2103d5"
+    },
+    {
+      "width": 1,
+      "seed": 29,
+      "commands": 2359296,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "566779572fe5ade340f29c3c613957b047bf257474be22a30b573025b309f518"
+    },
+    {
+      "width": 1,
+      "seed": 29,
+      "commands": 2752512,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "6839a343edf7df19011acec8d38ceddd502b71993a648662cf72b9902fce3420"
+    },
+    {
+      "width": 1,
+      "seed": 29,
+      "commands": 3145728,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "0b82743b1156635b95fcceadedce844e509b5ff09c4f737c4979e269dcd40ab5"
+    },
+    {
+      "width": 1,
+      "seed": 43,
+      "commands": 0,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "b52ef2a4a85258b4cf01fe4b8d1bdcadc63a69df500d195faf1f99181a43d253"
+    },
+    {
+      "width": 1,
+      "seed": 43,
+      "commands": 393216,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "5c5f1bfa9b7236baceb024e5cb4f37c7d42c0a8530cbe644300c241ff9bae850"
+    },
+    {
+      "width": 1,
+      "seed": 43,
+      "commands": 786432,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "e91f6e24f9bd828e1c969cdec056d945f5cc3e6bfcdf0ee628e9a6f450f4f9a5"
+    },
+    {
+      "width": 1,
+      "seed": 43,
+      "commands": 1179648,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "c4e40f363f1dd4a27831aec995a1574afb62647752b98fc9380fbe77945f6e14"
+    },
+    {
+      "width": 1,
+      "seed": 43,
+      "commands": 1572864,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "0cb184b11c85c00a0e9087bbebd316f1b61a0af8eeb36fe708f1b5b550ea1e0c"
+    },
+    {
+      "width": 1,
+      "seed": 43,
+      "commands": 1966080,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "de84cb4ad9b90fed312dcf8bb65a3c358bdb9ddae9ca4d84e24ecd72e1ea6638"
+    },
+    {
+      "width": 1,
+      "seed": 43,
+      "commands": 2359296,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "8219c979620ae38cfc99fec27068c0c672c014f85a23b9eb193f309bb983f4a1"
+    },
+    {
+      "width": 1,
+      "seed": 43,
+      "commands": 2752512,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "643023fa18e86636f04ac52387b4869eb9699f7283e831f9e9daada221d0f856"
+    },
+    {
+      "width": 1,
+      "seed": 43,
+      "commands": 3145728,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "53860e099829e6f0d1ef9b4988c5649d11f929c9ef06f2cdde54d722fedf1105"
+    },
+    {
+      "width": 2,
+      "seed": 43,
+      "commands": 0,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "1e6edf78d24ae40f8c53a8d9d8b3e4b51b9769507bb9c792ed99b51eb41dc8cf"
+    },
+    {
+      "width": 2,
+      "seed": 43,
+      "commands": 393216,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "8ea369636079c0dc7550942f9abceb0cd7cbbc434e5ee9b9499ec3e36676021d"
+    },
+    {
+      "width": 2,
+      "seed": 43,
+      "commands": 786432,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "316fccf2649901053b6bb7cd6af2fea41cbda950916b93a768049fa94ca69fd4"
+    },
+    {
+      "width": 2,
+      "seed": 43,
+      "commands": 1179648,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "ae0030abc9d22c92f97afc4deec9f4a0ac3bf54b90e9fb235ad55e97caa2fcc6"
+    },
+    {
+      "width": 2,
+      "seed": 43,
+      "commands": 1572864,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "16e409ed5811b71efddac69b7b973b74a4e4d8f9e1c536bc6a4bb57c8178a357"
+    },
+    {
+      "width": 2,
+      "seed": 43,
+      "commands": 1966080,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "a23fa6c4cac38a8b091022498f8902ab677a7b1c45c6d3454c98b5beacd96246"
+    },
+    {
+      "width": 2,
+      "seed": 43,
+      "commands": 2359296,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "d1a8b75d986973c4e17aad7b8e554a8eacf7b43136ab09f37d0d33bb2587cedf"
+    },
+    {
+      "width": 2,
+      "seed": 43,
+      "commands": 2752512,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "23e3d22e85b0985a004a4b78164a2dcb2d935aa2806b55f9a09e5b96c75f1db8"
+    },
+    {
+      "width": 2,
+      "seed": 43,
+      "commands": 3145728,
+      "cohort": "scheduled",
+      "checkpoint_sha256": "062c9bd2067d82af87b314920faf91d7bcd01d143d34fac68792462205d4357b"
+    }
+  ],
+  "attempt_horizon": 32,
+  "total_commands": 128,
+  "batch_size": 16,
+  "device": "cuda",
+  "maximum_seconds": 3600,
+  "expected_native_source_changes": [
+    "crates/aic-pilot-native/src/engine.rs"
+  ],
+  "stages": {
+    "selection": {
+      "episodes": 32,
+      "required_successes": 26,
+      "seed_banks": [
+        1170000
+      ]
+    },
+    "root_confirmation": {
+      "episodes": 32,
+      "required_successes": 26,
+      "seed_banks": [
+        1180000,
+        1190000
+      ]
+    },
+    "development": {
+      "episodes": 64,
+      "required_successes": 52,
+      "seed_banks": [
+        940000
+      ]
+    },
+    "heldout": {
+      "episodes": 32,
+      "required_successes": 26,
+      "seed_banks": [
+        950000,
+        960000
+      ]
+    }
+  }
+}
