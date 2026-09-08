@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "9b9e204",
+  "scope": "Compact retained-local-evidence identities; generated states, traces, requests and source snapshots remain ignored",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-south/protocol.json",
+      "sha256": "2350713a11ccdd1185ef4df5ab6003182ad972c4555e5c86ab9cc1767457c001"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-south/trajectory.json",
+      "sha256": "f3de8a2be6ffb1b00b7e26d1b780dcedee43aa70f3c6d51312e8ad33326f264f"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-south-replay/replay.json",
+      "sha256": "2cf97b9f66efe8e8b64f02541836fd3ca2b971fb3460395aaf24bfebddcb3f44"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-south-audit.json",
+      "sha256": "3755b0b772e38b0a29f24867565d563b3e73595fd632199ef51198194db7b51c"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-west/protocol.json",
+      "sha256": "5935a8686501996461fb7cbc55cc5ce12c314816fafbf0015da70fa018dd68c1"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-west/trajectory.json",
+      "sha256": "6065123163749eeb820d1cd79514424499c1af710bff5007c840e3c6c7702b73"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-west-replay/replay.json",
+      "sha256": "bceabbd31912316a304e58e9136d1129f49ac4c9ac065a8b3a8fdf4f6fbe56d4"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-west-audit.json",
+      "sha256": "4f460d3128872887d0fed2d5ed16cb3a59d46dafdcd1210ce720944cbe008100"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-joint-bridge-probe/protocol.json",
+      "sha256": "3434c2fb7ddd13a0a13310b70d14f7cec39ea4894c43da3afdb3c2fb53f95a55"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-joint-bridge-probe/probe.json",
+      "sha256": "5ca9a20ba11ed8df26feb9ccc9ebbbbb9aede7ab2a40fd19ae3647d52e9b2e86"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-joint-bridge-probe/source.mjs",
+      "sha256": "f1ebc9be79ea532c9c42f73bf08717c5441aa08bd56414723fac5f9c8f8d9c0c"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-joint-adjacent-probe/protocol.json",
+      "sha256": "2462c4f49d1f6d325e4e7fcd5113f8efe544e6f326ea57818dc66f195e102c2e"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-joint-adjacent-probe/probe.json",
+      "sha256": "47c9abe2919a3c85cef75def9ee2c5502baa4c90699edc0555bf0b2aaf4e2943"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-joint-adjacent-probe/source.mjs",
+      "sha256": "cd6a1d4016df671839be73c964ab80bb324340a1f30f41c65abd1ab8b3245ef0"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-joint-port-probe/protocol.json",
+      "sha256": "2bd2e3a30d050b55a6fe5df52b9cd0ec2b102f9280826f2c86d054cd4c83c92c"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-joint-port-probe/probe.json",
+      "sha256": "85b4afc325cf0b5970cfea04f6cc2adb73fc0e1804713848dc3f006b05785cf4"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-cooperative-probe/protocol.json",
+      "sha256": "f9ce9a77f83c064fed4df5f40a203943df99fb99a3f251d33d35966c8903bca2"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-cooperative-probe/probe.json",
+      "sha256": "fd125291661d81c685ba7c6c8b490a1e38a8f039026baaa229717bb9ef1d8c01"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-block-pair-probe/protocol.json",
+      "sha256": "1a7b51e87437cae0fb7ab8584017e6862b341e23a2de1e031423e3748d442c34"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-block-pair-probe/probe.json",
+      "sha256": "6f4c76d47f5214cb3868142be25e3d51727f13e5da4967081cc5ffc76bb695ec"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-port-sequence/probe.json",
+      "sha256": "b9c93c72e959152b971a98c79129098ee07c2a5892717428f51518a00e826482"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-port-sequence/state-1.json.gz",
+      "sha256": "f7e6b9a03f4fb4186dcaa8ea49266007f7492605a28caa2c7c28051a3df7e3c6"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-port-sequence/state-2.json.gz",
+      "sha256": "ca75240028259fdb54c2d18474ca270ba322c933225baa8203b31572a374f02b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-port-sequence/downstream-ports.json",
+      "sha256": "ac4f6a1a945c719ab3e2ae1befdeb20e5df9f177196d1a2800d084ff92e4139b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-south/progress-22.json",
+      "sha256": "e43c5da3a83564a9d72eaa933029635c87abcec9eabe163c4759d0781f122ad5"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-south/joint-repair-spec.json",
+      "sha256": "887990ef1467c948b086b4b35b9d044e4d908382618f872d7e0a5a660ee81bbb"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-south/block-pair-requests.json",
+      "sha256": "9c24857ba7735e8172efdae1dca297bc038be1ceee4a7ba974b2351cad5379b6"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-heavy-best/witness.json",
+      "sha256": "887f3537869ffd1edac64f2c357c75f0f65ee17947be67563e701e6f8e70c2a2"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-boundary-heavy-best/report.json",
+      "sha256": "a37ac4f1a6f3ecea87d2c8410d6e69816b2cc8e585077bf8616dbb7bb44037e2"
+    },
+    {
+      "path": "target/full-factory-boundary-cargo-check.log",
+      "sha256": "d47283cda33df2f7f66092c694343eebd321080188fb4cf054846d293faaf48d"
+    },
+    {
+      "path": "target/full-factory-boundary-cargo-test.log",
+      "sha256": "c1f36758b1af8278b9a7e99998bf695ad9e726045a6efd3f3cb0b82a98e644b4"
+    },
+    {
+      "path": "target/full-factory-boundary-python-tests.log",
+      "sha256": "baff0acd48b70584948290b709f95384810b6d81001c61d83886a9ad866db353"
+    }
+  ]
+}
