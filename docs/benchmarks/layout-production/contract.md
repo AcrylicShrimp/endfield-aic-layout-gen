@@ -1,8 +1,10 @@
 # Production-ready learned improvement acceptance contract
 
-Status: unmet goal; work paused by the user, 2026-09-07. No model is certified production-ready.
-Acceptance requirements remain unchanged. See the
-[paused handoff](../../handoffs/2026-09-07-layout-learning/README.md) before resuming work.
+Status: unmet release goal; incremental work resumed with explicit user authorization,
+2026-09-08. No model is certified production-ready. Acceptance requirements remain
+unchanged. Follow the [active staged goal](../../todos/2026-09-08.05-factory-improver-goal.md);
+the [2026-09-07 handoff](../../handoffs/2026-09-07-layout-learning/README.md) remains
+historical evidence and does not authorize resuming its old training streams.
 
 ## User target and invariants
 
