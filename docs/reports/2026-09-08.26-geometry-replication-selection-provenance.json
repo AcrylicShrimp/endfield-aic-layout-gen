@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "result_path": "artifacts/factory-edit-pilot/geometry-restart-confirmation/confirmation.json",
+  "result_sha256": "4ef910324a624e0ae6a5a8a416201d420a4803a290df53821974d181df5aa8cf",
+  "source_commit": "75ba31fa25bd99780d3bd27f1df60257d552d695",
+  "protocol_sha256": "1385159c12025737adc2ec70f7a170c1e47bae51f08b62c161558190fcd17002",
+  "status": "not_met",
+  "diagnostic": {
+    "code": "geometry_confirmation.no_mastered_policy",
+    "stage": "selection",
+    "severity": "info",
+    "message": "At least one training seed lacks joint root mastery"
+  },
+  "selection": {
+    "17": {
+      "commands": 1474560,
+      "eligible": true,
+      "source_audit_sha256": "9e7d0836487083fb1e87363e2fedab6b0e146c388ebccae012acc1b03cf2f49d",
+      "metadata_sha256": "423e5d8a6b1cca0c6b1e56611f81a3b6d677397798e68664499c94eef865ff42",
+      "historical_training_seconds": 604.4572251020145
+    },
+    "29": {
+      "commands": null,
+      "eligible": false,
+      "source_audit_sha256": "de015a5631bb40abc68d537638aa8700c9ec115967b6d98a4ed408867e279bb0",
+      "metadata_sha256": "b88d06240a35109f23f601a07a08a7c054552c8ea264a50aca83585411d08870",
+      "historical_training_seconds": 596.4615826279987
+    },
+    "43": {
+      "commands": 1458176,
+      "eligible": true,
+      "source_audit_sha256": "8a03339c0f599c7a2ff0970b46309e0db7f9268a62932322d2930f49a5e7447f",
+      "metadata_sha256": "c5d06251ff1dc9c6c36271b02c3a7785304572d385d53d7493a33905301bda5b",
+      "historical_training_seconds": 608.5355662030343
+    }
+  },
+  "outcome_cells": 0
+}
