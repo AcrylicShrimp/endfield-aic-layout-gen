@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "id": "battery-first-root-mastery-selection",
+  "source_commit": "bc43df8",
+  "source_run_root": "artifacts/factory-edit-pilot/case-curriculum-learning",
+  "condition": "case-mastery-rehearsal",
+  "training_seeds": [17, 29, 43],
+  "selection": "first_joint_root_mastery",
+  "horizon": 128,
+  "seed_banks": [300000, 310000],
+  "evaluation_episodes": 32,
+  "required_successes": 26
+}

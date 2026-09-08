@@ -294,3 +294,12 @@ historical artifacts remain associated with their original source revisions.
 The [full case-curriculum results](../../docs/reports/2026-09-08.17-case-curriculum-results.md)
 show original-root learning on both cases, followed by late regression in two policies.
 The declared final-checkpoint milestone remains unmet.
+
+The [mastery retention follow-up](../../docs/designs/2026-09-08.10-mastery-policy-selection.md)
+selects the first jointly mastered checkpoint using development feedback, then evaluates
+it on two untouched root sampling banks. It does not revise the failed continued-training
+criterion. Keep the audited source checkpoints available at the protocol's source run root.
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/mastery_policy_selection.py --protocol tools/factory-edit-pilot/mastery-selection-study.json --native-library target/release/libaic_pilot_native.so --output artifacts/factory-edit-pilot/fresh-mastery-selection
+```
