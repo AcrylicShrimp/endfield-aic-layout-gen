@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "purpose": "selected_training_prefix_recovery",
+  "geometry_protocol": "tools/factory-edit-pilot/entity-learning-matrix.json",
+  "training_source_commit": "13af265",
+  "widths": [1, 2],
+  "training_seed": 17,
+  "checkpoint_commands": 3145728,
+  "device": "cpu",
+  "threads": 1,
+  "horizon": 128,
+  "horizons": [16, 128],
+  "episodes": 32,
+  "sampling_seed_start": 1013000,
+  "batch_size": 16,
+  "case": "train-battery-four-gap0-turn2",
+  "evidence_directory": "width2-seed17/train-battery-four-gap0-turn2",
+  "starts": [
+    {"id": "root", "file": null, "commands": 0},
+    {"id": "witness", "file": "witness-trace.json", "commands": 6, "sha256": "c71b8382b2eb5dd0580eea747be47713ce11acb73d72708df80d5fbf129262b1"},
+    {"id": "failed", "file": "evaluation-3145728-representative-trace.json", "commands": 5, "sha256": "bb349ab8e340974359ed9926a83686c34c09f11c0c64d0870e057e60ae7caadc"}
+  ]
+}
