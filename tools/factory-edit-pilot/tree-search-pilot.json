@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "purpose": "training_only_tree_allocation",
+  "geometry_protocol": "tools/factory-edit-pilot/entity-learning-matrix.json",
+  "training_source_commit": "13af265",
+  "width": 1,
+  "training_seed": 17,
+  "checkpoint_commands": 3145728,
+  "device": "cpu",
+  "threads": 1,
+  "horizon": 32,
+  "sampling_seeds": [1000000, 1000001, 1000002],
+  "transition_budgets": [128, 1024, 8192],
+  "methods": ["random_rollouts", "policy_rollouts", "uct", "puct"],
+  "max_seconds": 60,
+  "max_nodes": 16384,
+  "max_tree_bytes": 1048576
+}
