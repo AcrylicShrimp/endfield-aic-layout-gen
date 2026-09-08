@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "purpose": "checkpoint_buffer_intervention",
+  "geometry_protocol": "tools/factory-edit-pilot/entity-learning-matrix.json",
+  "training_source_commit": "13af265",
+  "width": 1,
+  "training_seed": 43,
+  "checkpoint_commands": 3145728,
+  "checkpoint_pair": [1179648, 1212416],
+  "conditions": ["old_old", "new_new", "new_old", "old_new"],
+  "device": "cpu",
+  "threads": 1,
+  "horizon": 128,
+  "episodes": 32,
+  "sampling_seed_start": 1025000,
+  "batch_size": 16
+}
