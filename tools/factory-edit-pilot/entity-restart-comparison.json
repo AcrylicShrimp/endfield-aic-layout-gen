@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "purpose": "frozen_entity_restart_comparison",
+  "source_matrix_sha256": "ca19630b7387903b21b6493470ea485389312c2ab21474b4ee0c81d76809dd7b",
+  "actors": [
+    {
+      "width": 1,
+      "seed": 17,
+      "commands": 3145728,
+      "cohort": "final",
+      "checkpoint_sha256": "a9988c89d18a05fafc34f49afcb7aab663bc026c357b410633ecb4c5f47e1931"
+    },
+    {
+      "width": 2,
+      "seed": 17,
+      "commands": 3145728,
+      "cohort": "final",
+      "checkpoint_sha256": "068c352f7796299c9b308e91ab5968fbeb0fc1944063d577ee4803383df59122"
+    },
+    {
+      "width": 2,
+      "seed": 29,
+      "commands": 3145728,
+      "cohort": "final",
+      "checkpoint_sha256": "cb0c68e0ff6836ebe0855ab7d732bf0155c78ce5fe73e9b678cfbf018cd6a433"
+    },
+    {
+      "width": 1,
+      "seed": 29,
+      "commands": 3145728,
+      "cohort": "final",
+      "checkpoint_sha256": "0b82743b1156635b95fcceadedce844e509b5ff09c4f737c4979e269dcd40ab5"
+    },
+    {
+      "width": 1,
+      "seed": 43,
+      "commands": 3145728,
+      "cohort": "final",
+      "checkpoint_sha256": "53860e099829e6f0d1ef9b4988c5649d11f929c9ef06f2cdde54d722fedf1105"
+    },
+    {
+      "width": 2,
+      "seed": 43,
+      "commands": 3145728,
+      "cohort": "final",
+      "checkpoint_sha256": "062c9bd2067d82af87b314920faf91d7bcd01d143d34fac68792462205d4357b"
+    },
+    {
+      "width": 1,
+      "seed": 43,
+      "cohort": "retained",
+      "commands": 1179648,
+      "checkpoint_sha256": "c4e40f363f1dd4a27831aec995a1574afb62647752b98fc9380fbe77945f6e14"
+    }
+  ],
+  "attempt_horizons": [
+    128,
+    32
+  ],
+  "total_commands": 128,
+  "episodes": 32,
+  "seed_banks": [
+    1150000,
+    1160000
+  ],
+  "required_successes": 26,
+  "batch_size": 16,
+  "device": "cuda",
+  "maximum_seconds": 1800,
+  "expected_native_source_changes": [
+    "crates/aic-pilot-native/src/engine.rs"
+  ]
+}
