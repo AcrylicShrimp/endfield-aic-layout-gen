@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "scope": "Original-root collection, all-action replay, binary ranking, all-best audit and three inspected full views; per-best hashes reside in contrasts/audit artifacts",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-contrasts/audit.json",
+      "sha256": "00c2258de822e5553837643eeee227f0e73ea68927f07707cfa3a3acbd239ab3",
+      "bytes": 96819
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-contrasts/contrasts.json",
+      "sha256": "502d0a580dd5e3a47946c0d7165551f34a968635ed5f845a614ec0cb1a7c9bf5",
+      "bytes": 1973819
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-contrasts/protocol.json",
+      "sha256": "48de8a0202b2c4a752b488d2d4746070e31529d2a11f4f5eca787e1e53b9cca0",
+      "bytes": 20442
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/audit.json",
+      "sha256": "1f857b326646fb2e73343d0400e81c732f6781cc38a3b81577d37d5c2cdde09e",
+      "bytes": 13077
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/enriched-consumables-medical-rate-0-ranked-view/comparison.png",
+      "sha256": "08754227d962680817d8f942fc71a84a7dc6e696ef197719f75509e307cd471c",
+      "bytes": 149912
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/enriched-consumables-medical-rate-0-ranked-view/comparison.svg",
+      "sha256": "71e5e83e1913dc4098e92da0cd54c0165c997a3a57fcf8cd2ce8991c47baefe2",
+      "bytes": 365315
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/enriched-consumables-medical-rate-0-ranked-view/view.json",
+      "sha256": "36d50af368e18c2d967fea2800e967a8dc9241b78daa2f2ace25f5aa29d7b446",
+      "bytes": 1160
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/enriched-consumables-medical-rate-0-teacher-view/comparison.png",
+      "sha256": "85da1b25e48d9283bc454199d47d33cb6902099a0b0c1c7dd9910ca2a1d6467d",
+      "bytes": 158424
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/enriched-consumables-medical-rate-0-teacher-view/comparison.svg",
+      "sha256": "8eb109124074e5e86594f1bc2e8ad9d3403344b69a6a878d45e5ab712736458f",
+      "bytes": 399775
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/enriched-consumables-medical-rate-0-teacher-view/view.json",
+      "sha256": "09db2bd104cd944046a4aa75cb1df28045f9f64e78dd56a68c602e730f199c6a",
+      "bytes": 1145
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/label-scores.json",
+      "sha256": "1ee8f322dd7929144f7a87fa73df3256c0778e2d95ce207e66d5651afa9b294b",
+      "bytes": 154110
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/learned.pt",
+      "sha256": "4226597631635ddf73c83980ddf82dc212122bfdfc2ed5e2bf6d3bdcdad63689",
+      "bytes": 514077
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/protocol.json",
+      "sha256": "2b9c1c7cc798a4308856a914db69144214c3e431798ce091bfb7cdcfca6cd1d6",
+      "bytes": 94653
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/report.json",
+      "sha256": "bd5c2d4752b60a589011a9d6cac0a348a553f5ed6f5a072f2cfc73823918e649",
+      "bytes": 63054
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/summary.json",
+      "sha256": "5c881df02677d1137e0ca378ebd6234b5e7b8a84152e45304b4c061d64bf43f5",
+      "bytes": 10861
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/updates.json",
+      "sha256": "9c828cf9f43ac96fa581deb1633461da1944c767499c9c27590a4ef7db49c9ee",
+      "bytes": 73784
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/view-inputs.json",
+      "sha256": "2d785fc8c6c123f9eef281e4272a1062f1d4b8076dd6ee82cb7f8d50accac016",
+      "bytes": 13225
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/watered-grass-grass-rate-0-teacher-view/comparison.png",
+      "sha256": "2321c5a4ae2ff9b55a75d6cac9fc05facf51b6ab571e4cf8cd193a4e9ef1634c",
+      "bytes": 90289
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/watered-grass-grass-rate-0-teacher-view/comparison.svg",
+      "sha256": "6bd98fd69a7d7e5304aec1b4bd796b4f3df58bd54db690498d8a99d74b6cd6b2",
+      "bytes": 93023
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-ranking/watered-grass-grass-rate-0-teacher-view/view.json",
+      "sha256": "d7cb0c32cb5d3fa0cf1cd9686c335e4faf1157fe1527a6b3f3e38d8adfbb3d85",
+      "bytes": 1113
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/learned.pt",
+      "sha256": "fa1f2bec129fde1e7343bfe0da3b12f994d4132eb017b34bd88da523662a0995",
+      "bytes": 514077
+    }
+  ]
+}
