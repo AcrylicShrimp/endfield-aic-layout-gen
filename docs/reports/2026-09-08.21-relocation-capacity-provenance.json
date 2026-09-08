@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "training_source": "3bf5f8d",
+  "confirmation_source": "21664d6",
+  "selected_width": 1,
+  "files_sha256": {
+    "artifacts/factory-edit-pilot/capacity-pilot/width1/relocation-mastery-rehearsal-seed43/metadata.json": "9f677cb8596f360e217d0d1ae702eac2ea580b083c88702343dfe8e924c27094",
+    "artifacts/factory-edit-pilot/capacity-pilot/width1/relocation-mastery-rehearsal-seed43/study-audit.json": "6983da5e60ebed5ba45c2b8fefe78b367a622b8dca48cffce1dbb7263c42340a",
+    "artifacts/factory-edit-pilot/capacity-pilot/width1/relocation-mastery-rehearsal-seed43/checkpoint-311296.pt": "e0333d9ec64629081e5562877c5c382eb9cc3412f2be3cbfcf5a1a69ef7109ae",
+    "artifacts/factory-edit-pilot/capacity-pilot/confirmation-width1/selection.json": "cf25ae3bb6e4f0a7922e28e695b17eff70df1f8430a79582b47fad2f9796b555",
+    "artifacts/factory-edit-pilot/capacity-pilot/confirmation-width1/seed43/selected-policy.pt": "b2f164c111bd7bd0a697096e72227848c8664691a3db62913026716e25d532e2",
+    "tools/factory-edit-pilot/capacity-width1-study.json": "ab57e2cde30556e8ce6c4a94883210f61b3457df6db37b28719cdf2e4dae1a8e",
+    "tools/factory-edit-pilot/capacity-width1-confirmation.json": "f8af309d021378812e9d52ce63a5fad063073ed010228d3aa2d9959a4d772a46",
+    "artifacts/factory-edit-pilot/capacity-pilot/width2/relocation-mastery-rehearsal-seed43/metadata.json": "2b35a33e438022b02d08420a11967c8e7ba49ada51094e9cfd818516c6d299b3",
+    "artifacts/factory-edit-pilot/capacity-pilot/width2/relocation-mastery-rehearsal-seed43/study-audit.json": "077094054645cfc60238f1a44440c7f5d3d608443a0086762172b7c83aa0e49d",
+    "artifacts/factory-edit-pilot/capacity-pilot/width2/relocation-mastery-rehearsal-seed43/checkpoint-229376.pt": "395ff4d703e117daa10daecb47442406667eee837f9d07ba489755225eabd584",
+    "artifacts/factory-edit-pilot/capacity-pilot/confirmation-width2/selection.json": "802c494839bcdf9432400c6d45555a55a616f599852e60ec9a3ee24126f37086",
+    "artifacts/factory-edit-pilot/capacity-pilot/confirmation-width2/seed43/selected-policy.pt": "0115759007fb9861579728fbb3a2a4d0a0bd20cf3c4f51e77c49168e485e657d",
+    "tools/factory-edit-pilot/capacity-width2-study.json": "dfe85d214538849d3455c9590cd141e82bf04798e2ef5697c15d4bad5c61c943",
+    "tools/factory-edit-pilot/capacity-width2-confirmation.json": "b8715b2eef402ddaba36519eac1393f5fb0a0673b92c6fe56c9f18fdb6ebafda"
+  }
+}
