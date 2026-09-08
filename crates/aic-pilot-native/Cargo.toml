@@ -13,6 +13,7 @@ crate-type = ["cdylib", "rlib"]
 extension-module = ["pyo3/extension-module"]
 
 [dependencies]
+aic-data.workspace = true
 pyo3.workspace = true
 numpy.workspace = true
 serde = { workspace = true, features = ["derive"] }

@@ -1,3 +1,10 @@
+pub use constructive::{
+    FactoryEditBudget, FactoryEditCatalogs, FactoryEditDiagnostic, FactoryEditEndpoint,
+    FactoryEditInstance, FactoryEditOutcome, FactoryEditRequest, FactoryEditSession,
+    FactoryEditSnapshot, FactoryEditStatus, FactoryEditTerminal, FactoryLayoutAcceptance,
+    FactoryLayoutMetrics, validate_factory_layout,
+};
+
 mod constructive;
 mod growth;
 mod integrated;

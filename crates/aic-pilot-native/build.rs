@@ -35,6 +35,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         root.join("Cargo.lock"),
     ];
     sources(&directory.join("src"), &mut files)?;
+    // Full-factory acceptance depends on these shared production rules.
+    files.push(root.join("crates/aic-data/Cargo.toml"));
+    sources(&root.join("crates/aic-data/src"), &mut files)?;
     files.sort();
     let mut hashes = BTreeMap::new();
     for path in files {

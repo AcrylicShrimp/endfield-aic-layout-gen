@@ -15,6 +15,14 @@ use crate::recipes::Rate;
 
 use super::integrated::{LayoutVisualizationPage, render_layout_history_html};
 
+mod factory_edit;
+pub use factory_edit::{
+    FactoryEditBudget, FactoryEditCatalogs, FactoryEditDiagnostic, FactoryEditEndpoint,
+    FactoryEditInstance, FactoryEditOutcome, FactoryEditRequest, FactoryEditSession,
+    FactoryEditSnapshot, FactoryEditStatus, FactoryEditTerminal, FactoryLayoutAcceptance,
+    FactoryLayoutMetrics, validate_factory_layout,
+};
+
 mod assembly;
 mod fixed_probe;
 pub use fixed_probe::{FixedRoutingInput, FixedRoutingReport, probe_fixed_routing};
