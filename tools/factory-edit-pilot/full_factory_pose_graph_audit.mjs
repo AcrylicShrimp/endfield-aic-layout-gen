@@ -37,4 +37,4 @@ function main(o){
     sources:[o.witness,fileURLToPath(import.meta.url),fileURLToPath(new URL('./full_factory_poses.mjs',import.meta.url))].map(p=>({path:p,sha256:hash(p)}))};
   write(o.output,result);console.log(JSON.stringify({actual:actual.length,expected:expected.length,extra:extra.length,missing:missing.length}));
 }
-if(process.argv[1]&&fileURLToPath(import.meta.url)===process.argv[1])main(args(['witness','output']));
+if(process.argv[1]&&fileURLToPath(import.meta.url)===process.argv[1])main(args(['witness','output'],['require-equal']));

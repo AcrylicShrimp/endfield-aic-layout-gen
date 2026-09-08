@@ -41,8 +41,11 @@ export function poseOptions(w,catalogs,poses){
 export function productionEdges(w){
   const indices=new Map(w.placements.map((p,i)=>[p.instance,i])),edges=new Map();
   for(const n of w.transport_networks){
-    const out=new Map(),sinks=new Map();
-    for(const s of n.segments){const k=key(s.from),a=out.get(k)??[];a.push(key(s.to));out.set(k,a);}
+    const out=new Map(),sinks=new Map(),bridges=new Set(w.logistics_components
+      .filter(c=>c.kind==='bridge'&&c.transport===n.transport).map(c=>key(c.position)));
+    // Validated bridges carry independent straight channels, even for one item.
+    const vertex=(p,s)=>bridges.has(key(p))?`${key(p)}/${s.from.y===s.to.y?'h':'v'}`:key(p);
+    for(const s of n.segments){const k=vertex(s.from,s),a=out.get(k)??[];a.push(vertex(s.to,s));out.set(k,a);}
     for(const t of n.terminals)if(t.direction==='input'&&t.endpoint.kind==='facility'){
       const k=key(t.position),a=sinks.get(k)??[];a.push(indices.get(t.endpoint.instance));sinks.set(k,a);
     }

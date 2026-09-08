@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "pre_cutover_revision": "e1d10d1",
+  "scope": "Selected evidence for exact bridge-channel proposal graph and frozen cold controls; generated outputs remain ignored",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/pose-graph-channel-audit/pose-graph-audit.json",
+      "sha256": "ddf10be7c7ea1827c6a82e5186aecdd0e4d03fe09f696f9d6f69ff0b4e1bf99f",
+      "bytes": 2220
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/pose-graph-channel-audit/runtime-cutover.json",
+      "sha256": "f190dd47c6c37f3b4107196ce99bd58d60ab74e9a97e67dbaae8b56090665228",
+      "bytes": 615
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/pose-graph-channel-transfer/protocol.json",
+      "sha256": "4b97911ae6788a24aad3fea563bbed73b10aa1516be71fe916f163fd1e17d1e6",
+      "bytes": 21705
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/pose-graph-channel-transfer/report.json",
+      "sha256": "954c65b0faf8c6ce10535b54b00610bb01598fbc46f21ac0ba0147065d6a78ea",
+      "bytes": 4257
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/pose-graph-channel-transfer/audit.json",
+      "sha256": "78b1dedc7d9fc37906cbefabd82b7a92266caec939ab2da18965abf6d5d00d05",
+      "bytes": 1225
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/pose-graph-channel-transfer/comparison-audit.json",
+      "sha256": "2aaa1e9207ab0b94d4bbce4873e9fa0ddab62ab0d83c5565b8d13d36e45127ed",
+      "bytes": 9064
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/pose-graph-channel-transfer/cleanup.json",
+      "sha256": "5f34d01c65b56218ad4e108d631f47c1c7c7fbecafae0c618c367e6ce977e8d7",
+      "bytes": 570
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bridge-cold-transfer/protocol.json",
+      "sha256": "c1122f99c667417da6577bacad0de42e8a90b7f1347500e400b515463264a9b1",
+      "bytes": 20450
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bridge-cold-transfer/report.json",
+      "sha256": "6db9f0696abd7f50317682487734c19dacd76ed2f480b6ed13652a581e683f65",
+      "bytes": 4275
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/pose-graph-channel-transfer/parent/best.json.gz",
+      "sha256": "48d3a0332b2c383f0c683bf25259f9001ea3426e471426421ba8a263229284b4",
+      "bytes": 143137
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/pose-graph-channel-transfer/parent/episode.json.gz",
+      "sha256": "7ac0b0cb9db0043d330890f2342dc216bd8f9185a8bb0aa3df42a2ff84285f09",
+      "bytes": 2020
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/pose-graph-channel-transfer/learned/best.json.gz",
+      "sha256": "665db7b84a61a25bc0100ef34672628c3a7193f60d0db82e2c24b8e8f2946c58",
+      "bytes": 143137
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/pose-graph-channel-transfer/learned/episode.json.gz",
+      "sha256": "04dec70914ef64fa243334b0f8e1a19dbfc617333eae1b079318c46986757c70",
+      "bytes": 2512
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/pose-graph-channel-transfer/geometry/best.json.gz",
+      "sha256": "0aed99d9d496e0181deb009a972e990610271ad7c90db72ff951c81c4c50d10a",
+      "bytes": 143137
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/pose-graph-channel-transfer/geometry/episode.json.gz",
+      "sha256": "81adfc5a4fe720908c4bd5e6804ca58ea7696210d248df1dff8cb1fba6849576",
+      "bytes": 2032
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/best-mass-final.pt",
+      "sha256": "5ad5fab1753d7852f71a2257f10c921adc11c6794cebb51304f2252c0acd9969",
+      "bytes": 515605
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/learned.pt",
+      "sha256": "fa1f2bec129fde1e7343bfe0da3b12f994d4132eb017b34bd88da523662a0995",
+      "bytes": 514077
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/enriched-consumables-medical-fresh-rate-2/initial.json",
+      "sha256": "3761e3e1831b0357e38cfbc8de1b5f42f8c089af76dabfcaaabe75a563b7ca42",
+      "bytes": 1706294
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/enriched-consumables-medical-fresh-rate-2/original-request.json",
+      "sha256": "c0e103c275ff84d3a9826c61a5665ff7a312e869418811a4ed7e0b10b8b43417",
+      "bytes": 179150
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/enriched-consumables-medical-fresh-rate-2/request.json",
+      "sha256": "35860538c4a0e8160b39c9c4c33a3b9cf20dd430855144a94c5f0bbb0d1e664a",
+      "bytes": 135142
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_poses.mjs",
+      "sha256": "7dd300695751f8befe8741f43e593045a3850dcd5942517fe97c9fd27ef0cb3d",
+      "bytes": 20676
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_cold_transfer.py",
+      "sha256": "2c5cb2e0a6bd19eb642e635424c4f6ced66124365a80f081492c268c2e7c89a3",
+      "bytes": 5991
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_pose_graph_audit.mjs",
+      "sha256": "543986e82eb0395c17fe2380f0103bb24620367b77e5f5b014f5f2339238ed28",
+      "bytes": 2799
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_pose_graph_comparison.mjs",
+      "sha256": "2e540ff15f3bf18e294897e8da63d6baa755ce469625adfc6d29e5cbdc694a63",
+      "bytes": 1651
+    }
+  ]
+}
