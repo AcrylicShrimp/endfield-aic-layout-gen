@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "source_commit": "39528fae9ea2861aa1ad8909c025c518bfcc3cfb",
+  "sources": {
+    "1": "artifacts/factory-edit-pilot/entity-cost-width1/entity-mastery-rehearsal-seed17",
+    "2": "artifacts/factory-edit-pilot/entity-cost-width2/entity-mastery-rehearsal-seed17"
+  },
+  "commands": 16384,
+  "cases": [
+    "train-glass-two-gap0-turn0",
+    "train-battery-four-gap4-turn0"
+  ],
+  "episodes": 16,
+  "horizon": 32,
+  "seed_start": 900000,
+  "cpu_threads": [
+    1,
+    4,
+    16
+  ],
+  "batch_sizes": [
+    1,
+    16
+  ],
+  "repeats": 3
+}
