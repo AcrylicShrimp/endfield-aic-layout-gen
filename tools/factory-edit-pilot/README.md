@@ -269,3 +269,7 @@ pass per update; calibration counts/time and buffers are retained. See the
 ```sh
 tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/mastery_matrix.py --protocol tools/factory-edit-pilot/mastery-batchnorm-study.json --native-library target/release/libaic_pilot_native.so --output artifacts/factory-edit-pilot/fresh-batchnorm-learning
 ```
+
+The [completed BN comparison](../../docs/reports/2026-09-08.16-batchnorm-policy-results.md)
+reports higher B success consistency in all three seeds, limited A transfer and
+calibration cost. The baseline remains available for controlled follow-up.

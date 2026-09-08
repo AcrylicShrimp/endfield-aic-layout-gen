@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "study": "battery-short-mastery-batchnorm",
+  "training_source_commit": "97e9d047a0019d9ddbbdfc863d6c4c3c3ba46ec0",
+  "report": "docs/reports/2026-09-08.16-batchnorm-policy-results.md",
+  "server_artifact_root": "/home/ashrimp/Srv/endfield-aic-layout-gen/artifacts/factory-edit-pilot/batchnorm-learning",
+  "baseline_provenance": "docs/reports/2026-09-08.15-mastery-curriculum-provenance.json",
+  "baseline_provenance_sha256": "d4e908ad4108e295da62c315c123b7e8d1eee8911d9336d91083d6ea94990ba6",
+  "totals": {
+    "runs": 3,
+    "sampled_training_edits": 196608,
+    "training_episodes": 24576,
+    "training_setup_edits": 68608,
+    "ppo_updates": 192,
+    "optimizer_steps": 12288,
+    "root_evaluation_edits": 172032,
+    "assessment_edits": 24576,
+    "independent_assessment_replay_edits": 24576,
+    "checkpoints": 27,
+    "calibration_observations": 196608,
+    "calibration_batches": 3072
+  },
+  "inputs_sha256": {
+    "tools/factory-edit-pilot/mastery-batchnorm-study.json": "8c8f190cd4312ec2fe10dacd6740340ae0b738075c2aa16fb67ddf8f27f01fae",
+    "tools/factory-edit-pilot/run-server-cuda-batchnorm.json": "4570163a1445cb9f4cafa4805e52ffa8cf46dd64afcf8dca9a03fa4f00aa1e32",
+    "tools/factory-edit-pilot/case.json": "ceca22302120f271e730a99b8c0769805281a194c09266a4b438793ca83a24a3",
+    "tools/factory-edit-pilot/case-spread.json": "d2ea857d25f51947fa2b6d2b40f38177dae1e72686081ca911024156892cc76c"
+  },
+  "native": {
+    "library_sha256": "5998f571cc5283b9db7b0c6daf03390e3b4c81d6d43a923fadcc2e787a4b24ba",
+    "engine_version": 1,
+    "snapshot_version": 2
+  },
+  "runtime": {
+    "python": "3.12.13",
+    "torch": "2.14.0+cu130",
+    "numpy": "2.5.3",
+    "platform": "Linux-7.2.3-arch1-3-x86_64-with-glibc2.44",
+    "machine": "x86_64"
+  },
+  "comparison_sha256": "176b3f74cde296188e929656a2e749a87e1a5e1625c67a5aaad2ed74dd77bbcc",
+  "matrix_sha256": "07f5151610c368afc06d8c7c4848a6c55c6de0da340f0b05748258449e3e08c9",
+  "baseline_comparison_sha256": "d85f871c2b128d3c0a93b5d08e4279ca7a69e8c7063fca56759478dd5d019f05",
+  "runs": [
+    {
+      "condition": "short-mastery",
+      "seed": 17,
+      "files_sha256": {
+        "metadata.json": "7915352e1b650c64b249bbb27cf91424d14a0f1f315fe2fe66fe1df5d45c0939",
+        "study-audit.json": "0d30b0ddbb5474b54bfbddcda72336729780f7dda09957916ad4899893376a46",
+        "episodes.jsonl": "6e788a4fdd186dd8beaa09f15395372dbf6a8e502a879b4f952dde86bd0bd608",
+        "evaluations.jsonl": "857bcf96300a3808eddf3d65101cd74e55fc9c51045f15a6cbf9db92c422f4db",
+        "assessments.jsonl": "44d492fe2c408d78b6e7470f28443e75438b1f0054ac618ed5c54970e7b8dd8b",
+        "updates.jsonl": "b1e90dc88a70cd736a70f16e158b61fb827af06e9923c2f68bc58e873535732d",
+        "starts.json": "8db2edd8c7cbb7747be9b2f11b906f6ac85c07d977852ed0e525533ab66eae5c"
+      },
+      "checkpoints_sha256": {
+        "0": "48efdc6e36afd4c14c235f17683e43de7d6a35f58bf4c1c3bd18ab026f64e031",
+        "8192": "6ac894fab56ce1c81d112201271fa25d9fb0e35a6a67b8716c96a27db06306e8",
+        "16384": "85fc6ad9b81b6124588ed4884564250465dea963482dc6d75edcdef98536b534",
+        "24576": "71159dd3c99daf156c194ece285e0bb3e9c3eeb32bc4923a99147f2907d5f5da",
+        "32768": "df5c1a9a0780f4fef40828bf79c9c35fd425cad3a5565bea42cfd5a82d72a572",
+        "40960": "8081acbd3a08b8cf71704056f6bc291d0c971243efacf7e75a0c65b455bd4642",
+        "49152": "556807b945c55dc808ab0f7e6a295c9a3abf8a3999b089af80e3bf5260cef36d",
+        "57344": "c8e3f33d1405e4bf4c72fe306eaadb2d24115265a05fc0292654ec4468a467b2",
+        "65536": "56274a24579538981a265aa26b6ecd9fdf3a7ed5145c7ac6d5abcb1f53824bf9"
+      }
+    },
+    {
+      "condition": "short-mastery",
+      "seed": 29,
+      "files_sha256": {
+        "metadata.json": "a87013e89ba2a80ea2111ed10cdb51eb36a4ea589b1629f96943aa8110e051f6",
+        "study-audit.json": "090b41537cbe9824ef330b1e1a5350f3d0e6235a74d516f52675a1b6b4ca44e7",
+        "episodes.jsonl": "89a139011e87d5f11727c9066d58b326b33aec68cbc511ec04d32be0f755694d",
+        "evaluations.jsonl": "09db998edd57c3a50d0acfc42a708b0f94f15cb509d9567f93dec0b82b0548f2",
+        "assessments.jsonl": "452905c220d52c199d14ef812ae753a4a05c1369c9ea6ddf77be0064c294f84e",
+        "updates.jsonl": "e7272ebeeaad6f417f110c0aeb5db75c12f8efb43ec51935b854817af8be04a5",
+        "starts.json": "8db2edd8c7cbb7747be9b2f11b906f6ac85c07d977852ed0e525533ab66eae5c"
+      },
+      "checkpoints_sha256": {
+        "0": "8235e0b41f67a7d2f18976f84e281dba994be38ac4b6761569277d7b48bf65b0",
+        "8192": "45d52281a05aa326877b3396e80760c313ef261f0c066eecd1486e4ed1967487",
+        "16384": "3b5ff3736866b40b3478096454da943c61a3711231ed7d3c107a275d1efa3f4f",
+        "24576": "7a64d7ba337cd3cc745585e2809ce875e0c8e738c61f48029f5fd10e31b71b87",
+        "32768": "a7a1bda0e78db70f69f35941f86837c990b8dc1932ce455f7ca8383c5d3fec13",
+        "40960": "49bc61bdfc2035a35d1ecd8fe2b3c5a0a3f8f35feb36781e9a1f54c427f28fd5",
+        "49152": "c08d13bfe81a420c8b3cef94ef388328314f7adc9d7501d94afb2428aac6d503",
+        "57344": "956d7a374e6cc58d33c9163c1a8535921306aab0f7db3d218404bacc697cbf65",
+        "65536": "c3747e83cdc57a938cb8fea646ef7a2b48669c295fcd46066ca8f08bc60bdecb"
+      }
+    },
+    {
+      "condition": "short-mastery",
+      "seed": 43,
+      "files_sha256": {
+        "metadata.json": "169994fcc6868db04def562558f09e674603125a5422b0e5a63f1c88c0ffec16",
+        "study-audit.json": "8ad25c7b30ef724f1612e9bf2ccdab19c9a80712ca5e833ee64549585a8aed04",
+        "episodes.jsonl": "0b2571dc52553eea8db1efaaf88052ec829cc1fd43744f873267d9fdaa923dc9",
+        "evaluations.jsonl": "fe3863f29dfa40ae98feb3f0b78e71eff68cd84fa738b0e25e4d414ff0e1dea7",
+        "assessments.jsonl": "0e833b9a82cf1ac7548a3ed440e6c75baaea7cf2628a4d2f8bea06e66a55bec8",
+        "updates.jsonl": "118c4cc18b73a5a4bc1bcc15d37cfd877899ce887003abff8b1bd7e3cebe336c",
+        "starts.json": "8db2edd8c7cbb7747be9b2f11b906f6ac85c07d977852ed0e525533ab66eae5c"
+      },
+      "checkpoints_sha256": {
+        "0": "e2049e5e7cf31e2b12faeef51be1e3ed77b0653cae8284a6994d4896d82b3461",
+        "8192": "66b18c22df5ade481d9550198c3ff4d85c647ad1d65c6f70cb45af44e8c27b9f",
+        "16384": "e88eb6b7e673d95765e4a9a0527d453dade5b3c2a2e46c6a8f575d663883dd1d",
+        "24576": "9d11327ee5d2790430ffc7844578e3ef4a85e5d63b72edcf62a06bc15501187b",
+        "32768": "6e7f5e2ec5a12efb37115b4e1c38255f49fd9a43581d0d9c240d681180736638",
+        "40960": "8bf7456d229e00467d89f3e5445a723360c12e8ea4f3f0dc24ac3c14dc8a7111",
+        "49152": "fff4b24a4de68f561d9e69710f778909a455e5ecdea781d62e051ce8ba539fe6",
+        "57344": "9159545a7dd78a6ca17db8fcc912eb976d5911f83684692eb70e9c80d1ccc6e4",
+        "65536": "75c80bda886cc13df260c03058999d0b530c7ee1e3bfe7ab9f23aa5353de0af6"
+      }
+    }
+  ]
+}
