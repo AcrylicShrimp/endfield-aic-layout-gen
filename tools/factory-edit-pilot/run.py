@@ -16,6 +16,7 @@ import torch
 from native import Runtime, layout, snapshot, check, trace, performance
 from evidence import write, append, provenance
 from policy import Policy, update, single
+from evaluation_batch import batch_size, episodes as evaluation_episodes
 
 
 def verify_environment(runtime, config, output):
@@ -44,20 +45,11 @@ def verify_environment(runtime, config, output):
 
 def evaluate(model, runtime, config, output, commands, training_seconds):
     started = time.perf_counter()
-    env = runtime.new_engine()
     rows, layouts, traces = [], [], []
     model.eval()
     with torch.no_grad():
-        for i in range(config["evaluation_seeds"]):
-            seed = config["evaluation_seed_start"]+i
-            generator = torch.Generator(device="cpu").manual_seed(seed)
-            env.reset()
-            total = 0.0
-            for _ in range(config["horizon"]):
-                observation, handle = env.observe()
-                selected, _, _ = model.act(observation, generator)
-                reward, _, _ = env.step(handle, selected)
-                total += reward
+        for seed, env, total in evaluation_episodes(model, runtime, config["evaluation_seeds"], config["horizon"],
+                                                   config["evaluation_seed_start"], batch_size(config)):
             selected_layout = layout(env, "best")
             accepted = check(env, selected_layout)
             if not accepted["valid"]:
@@ -91,9 +83,9 @@ def evaluate(model, runtime, config, output, commands, training_seconds):
 
 
 def refresh_actor(learner, actor):
-    """Copy a completed learner update before the next on-policy CPU rollout."""
+    """Copy a completed learner update directly to the frozen actor device."""
     if actor is not learner:
-        actor.load_state_dict({key: value.detach().cpu() for key, value in learner.state_dict().items()})
+        actor.load_state_dict(learner.state_dict())
 
 
 def train(runtime, config, config_path, output, resume_path=None):

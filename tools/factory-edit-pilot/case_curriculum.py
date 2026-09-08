@@ -6,7 +6,9 @@ import json
 import torch
 
 from curriculum import prefixes
-from native import check, layout
+from native import check, layout, trace
+from evaluation_batch import batch_size, episodes as evaluation_episodes
+from native_training_comparison import policy_hash
 
 
 class CaseCurriculum:
@@ -51,27 +53,23 @@ class CaseCurriculum:
 
 
 @torch.no_grad()
-def assess_cases(actor, runtimes, protocol, levels):
+def assess_cases(actor, runtimes, protocol, levels, config):
     spec = protocol["assessment"]
     rows, successes = [], {}
+    before = policy_hash(actor.state_dict())
     for key, runtime in runtimes.items():
         prefix = prefixes(runtime)[levels[key]]
-        env = runtime.new_engine()
         wins = 0
-        for index in range(spec["episodes"]):
-            seed = spec["seed_start"] + index
-            generator = torch.Generator(device="cpu").manual_seed(seed)
-            env.reset_with_prefix_json(json.dumps(prefix))
-            total = 0.0
-            for _ in range(spec["horizon"]):
-                observation, handle = env.observe()
-                action, _, _ = actor.act(observation, generator)
-                total += env.step(handle, action)[0]
+        for seed, env, total in evaluation_episodes(actor, runtime, spec["episodes"], spec["horizon"],
+                                                   spec["seed_start"], batch_size(config), prefix):
             accepted = check(env, layout(env, "best"))
             if not accepted["valid"] or abs(total-(env.initial_score[0]-accepted["score"][0])/env.initial_score[0]) > 1e-10:
                 raise RuntimeError("case_curriculum.accounting: invalid assessment layout or reward")
             wins += total > 0
             rows.append({"case": key, "seed": seed, "level": levels[key], "return": total,
-                         "score": accepted["score"], "counts": json.loads(env.episode_json())["counts"]})
+                         "score": accepted["score"], "counts": json.loads(env.episode_json())["counts"],
+                         "actions": [row["command"] for row in trace(env)]})
         successes[key] = wins
-    return {"level": dict(levels), "successes": successes, "rows": rows}
+    if policy_hash(actor.state_dict()) != before:
+        raise RuntimeError("case_curriculum.evaluation_mutation: assessment changed policy or BN buffers")
+    return {"schema_version": 2, "policy_sha256": before, "level": dict(levels), "successes": successes, "rows": rows}

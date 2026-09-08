@@ -14,6 +14,7 @@ import torch
 from curriculum import Collector
 from case_curriculum import CaseCurriculum, assess_cases
 from evidence import append, write
+from evaluation_batch import batch_size
 from native import Runtime, layout, snapshot, trace
 from native_training_comparison import policy_hash
 from policy import Policy, update
@@ -51,6 +52,10 @@ def load(root, protocol_path, condition, seed, library):
         raise ValueError(f"case_curriculum.budget: {protocol_path}: invalid horizon, streams, budgets or assessment")
     if training["device"] == "cuda" and not torch.cuda.is_available():
         raise ValueError(f"case_curriculum.cuda: {base_path}: CUDA is unavailable")
+    evaluation_device = evaluation.get("evaluation_device", "cpu")
+    if evaluation_device not in ("cpu", "cuda") or (evaluation_device == "cuda" and not torch.cuda.is_available()):
+        raise ValueError("case_curriculum.evaluation_device: unavailable or unsupported evaluation device")
+    batch_size(evaluation)
     groups = []
     for config in (evaluation, training, assessment):
         runtimes = {key: Runtime(root, root / path, config, library) for key, path in protocol["cases"].items()}
@@ -87,7 +92,7 @@ def train(root, protocol_path, condition, seed, library, output):
     model = Policy(example, normalization=config.get("normalization", "none"),
                        width_multiplier=config.get("width_multiplier", 1))
     initial_hash = policy_hash(model.state_dict())
-    evaluation_actor = deepcopy(model)
+    evaluation_actor = deepcopy(model).to(config.get("evaluation_device", "cpu"))
     model.to(config["device"])
     actor = model if parallel else evaluation_actor
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
@@ -112,7 +117,8 @@ def train(root, protocol_path, condition, seed, library, output):
                  "counts": {key: dict(value) for key, value in counts.items()}, "champions": champions,
                  "seconds": dict(seconds), "collector_seconds": dict(collector.seconds),
                  "training_seconds": time.perf_counter() - started - seconds["evaluation"] - seconds["assessment"],
-                 "actor_device": str(next(actor.parameters()).device), "evaluation_device": "cpu",
+                 "actor_device": str(next(actor.parameters()).device), "evaluation_device": str(next(evaluation_actor.parameters()).device),
+                 "evaluation_batch_size": config.get("evaluation_batch_size", 16),
                  "native_workers": protocol["streams"] if parallel else 1,
                  "parameters": model.parameter_count, "dimensions": model.dimensions,
                  "cuda_peak_allocated_bytes": torch.cuda.max_memory_allocated() if config["device"] == "cuda" else 0,
@@ -211,7 +217,7 @@ def train(root, protocol_path, condition, seed, library, output):
                 phase = "assessment"
                 clock = time.perf_counter()
                 try:
-                    gate = assess_cases(evaluation_actor, assessment_runtimes, protocol, current_levels)
+                    gate = assess_cases(evaluation_actor, assessment_runtimes, protocol, current_levels, config)
                     gate["transition"] = controller.observe(gate["successes"], protocol)
                     append(output / "assessments.jsonl", {"commands": commands, "training_level": current_levels, **gate})
                 finally:

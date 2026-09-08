@@ -12,12 +12,35 @@ import numpy as np
 import torch
 
 from audit import audit
-from policy import Policy
 from reference.environment import serialize
 from evidence import write
 from native_training_comparison import policy_hash, rows
 from reference.acceptance import Catalog, check
 from reference.environment import Environment
+
+
+def replay_assessment(catalog, config, prefix, row, horizon):
+    actions = row.get("actions")
+    if not isinstance(actions, list) or len(actions) != horizon:
+        raise ValueError("case_curriculum_audit.actions: assessment command count differs from horizon")
+    env = Environment(catalog, {**config, "horizon": horizon})
+    for command in prefix:
+        if command not in env.candidates().to_dicts() or env.step(command)[0] != 0:
+            raise ValueError("case_curriculum_audit.prefix: invalid assessment setup")
+    env.steps, env.revision, env.trace, env.episode_counts = 0, 0, [], Counter()
+    total = 0.0
+    for command in actions:
+        if not any(candidate.to_dict() == command for candidate in env.candidates().commands):
+            raise ValueError("case_curriculum_audit.actions: recorded assessment command is outside the domain")
+        reward, _, outcome = env.step(command)
+        if not outcome["applied"]:
+            raise ValueError("case_curriculum_audit.actions: recorded assessment command did not apply")
+        total += reward
+    accepted = check(catalog, serialize(env.best))
+    if not accepted["valid"] or abs(total-(env.initial_score[0]-accepted["score"][0])/env.initial_score[0]) > 1e-10:
+        raise ValueError("case_curriculum_audit.layout: assessment replay or reward is invalid")
+    return {"case": row["case"], "seed": row["seed"], "level": row["level"], "return": total,
+            "score": accepted["score"], "counts": dict(env.episode_counts), "actions": actions}
 
 
 def verify_case_provenance(root, output, source_commit, metadata, cases, config, training):
@@ -79,34 +102,22 @@ def audit_study(root, protocol_path, output, source_commit):
         if gate["training_level"] != level or gate["level"] != assessed:
             raise ValueError(f"case_curriculum_audit.level: {output}: {count}: wrong assessed stage")
         saved = torch.load(output / f"checkpoint-{count}.pt", map_location="cpu", weights_only=False)
-        example_env = Environment(next(iter(catalogs.values())), config)
-        actor = Policy(example_env.observe(example_env.candidates()), normalization=config.get("normalization", "none"),
-                       width_multiplier=config.get("width_multiplier", 1))
-        actor.load_state_dict(saved["evaluation_policy"])
-        actor.eval()
+        if gate.get("schema_version") != 2:
+            raise ValueError("case_curriculum_audit.schema: assessment schema 2 required; use frozen source for legacy records")
+        if gate.get("policy_sha256") != policy_hash(saved["evaluation_policy"]):
+            raise ValueError("case_curriculum_audit.policy: assessment policy differs from checkpoint")
+        if len(gate["rows"]) != len(catalogs)*gate_spec["episodes"]:
+            raise ValueError("case_curriculum_audit.assessments: wrong recorded episode count")
         expected_rows, successes = [], {}
         for key, catalog in catalogs.items():
-            env = Environment(catalog, {**config, "horizon": gate_spec["horizon"]})
             wins = 0
             for index in range(gate_spec["episodes"]):
-                env.reset()
-                for command in starts[key][str(assessed[key])]:
-                    if command not in env.candidates().to_dicts() or env.step(command)[0] != 0:
-                        raise ValueError(f"case_curriculum_audit.prefix: {output}: invalid assessment setup")
-                env.steps, env.revision, env.trace, env.episode_counts = 0, 0, [], Counter()
-                seed = gate_spec["seed_start"] + index
-                generator = torch.Generator(device="cpu").manual_seed(seed)
-                total = 0.0
-                for _ in range(gate_spec["horizon"]):
-                    domain = env.candidates()
-                    action, _, _ = actor.act(env.observe(domain), generator)
-                    total += env.step(domain.to_dicts()[action])[0]
-                accepted = check(catalog, serialize(env.best))
-                if not accepted["valid"]:
-                    raise ValueError(f"case_curriculum_audit.layout: {output}: assessment replay is invalid")
-                wins += total > 0
-                expected_rows.append({"case": key, "seed": seed, "level": assessed[key], "return": total,
-                                      "score": accepted["score"], "counts": dict(env.episode_counts)})
+                row = gate["rows"][len(expected_rows)]
+                if (row["case"] != key or row["seed"] != gate_spec["seed_start"]+index or row["level"] != assessed[key]):
+                    raise ValueError("case_curriculum_audit.assessments: wrong case, seed or level")
+                expected_row = replay_assessment(catalog, config, starts[key][str(assessed[key])], row, gate_spec["horizon"])
+                wins += expected_row["return"] > 0
+                expected_rows.append(expected_row)
             successes[key] = wins
         if gate["rows"] != expected_rows or gate["successes"] != successes:
             raise ValueError(f"case_curriculum_audit.replay: {output}: {count}: native assessment differs from independent reference")
@@ -183,7 +194,7 @@ def audit_study(root, protocol_path, output, source_commit):
     if [(row["commands"], row["case"]) for row in summaries] != [(count, key) for count in config["checkpoints"] for key in protocol["cases"]]:
         raise ValueError(f"case_curriculum_audit.evaluation_matrix: {output}: missing or duplicate evaluations")
     result = {"schema_version": 1, "condition": condition, "seed": metadata["seed"], "source_commit": source_commit,
-              "assessment_replay": "All native assessment rows reproduced by the independent Python environment",
+              "assessment_replay": "All recorded native assessment commands independently replayed with exact domain, reward, score and counters",
               "training_horizon": training["horizon"], "controller": metadata["controller"],
               "initial_policy_sha256": metadata["initial_policy_sha256"], "case_commands": dict(exposure),
               "stage_commands": dict(stages), "setup_commands": setup, "checkpoints_sha256": hashes, "cases": {}}

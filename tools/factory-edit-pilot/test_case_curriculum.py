@@ -78,7 +78,7 @@ class CaseCollectionTests(unittest.TestCase):
             self.assertEqual(collector.partial["levels"], levels)
             self.assertTrue(all(row["dones"] == [False]*7+[True] for row in rows))
             rng = torch.get_rng_state().clone()
-            result = assess_cases(actor, runtimes, protocol, {"A":6,"B":3})
+            result = assess_cases(actor, runtimes, protocol, {"A":6,"B":3}, config)
             self.assertEqual(len(result["rows"]), 8)
             self.assertEqual({row["case"]:row["level"] for row in result["rows"]}, {"A":6,"B":3})
             torch.testing.assert_close(torch.get_rng_state(), rng)

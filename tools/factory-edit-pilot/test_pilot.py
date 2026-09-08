@@ -481,7 +481,7 @@ class PilotTests(unittest.TestCase):
         def interrupt(policy, *args, **kwargs):
             nonlocal calls
             calls += 1
-            if calls == 20:  # Sixteen frozen-evaluation actions, then three training edits.
+            if calls == 4:  # Batched evaluation does not call act; interrupt after three training edits.
                 raise KeyboardInterrupt
             return original_act(policy, *args, **kwargs)
         (ROOT/"target").mkdir(exist_ok=True)
