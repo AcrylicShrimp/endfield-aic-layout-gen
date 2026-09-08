@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "scope": "Two full-score learning arms, all-best audit, all improving-pose episode replay and three inspected full views; per-episode hashes reside in audit",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-contrasts/audit.json",
+      "sha256": "00c2258de822e5553837643eeee227f0e73ea68927f07707cfa3a3acbd239ab3",
+      "bytes": 96819
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-contrasts/contrasts.json",
+      "sha256": "502d0a580dd5e3a47946c0d7165551f34a968635ed5f845a614ec0cb1a7c9bf5",
+      "bytes": 1973819
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-action-contrasts/protocol.json",
+      "sha256": "48de8a0202b2c4a752b488d2d4746070e31529d2a11f4f5eca787e1e53b9cca0",
+      "bytes": 20442
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/audit-capabilities.json",
+      "sha256": "25959d8eb9fdcccf75cd484583b73bb4b7e4008a30cb436d0b3a66ea2af39d65",
+      "bytes": 30330
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/best-mass-final.pt",
+      "sha256": "5ad5fab1753d7852f71a2257f10c921adc11c6794cebb51304f2252c0acd9969",
+      "bytes": 515605
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/best-pair-final.pt",
+      "sha256": "12662e0a8888a74d1f6d1be3b6d81581a5107f843cacbdcd63dd230255972e16",
+      "bytes": 515605
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/enriched-consumables-food-rate-1-view/comparison.png",
+      "sha256": "1f58c7fb9681fd8e1f1330e71e075d0206d92e341d28d3105a46c3990efb6f8f",
+      "bytes": 167549
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/enriched-consumables-food-rate-1-view/comparison.svg",
+      "sha256": "28b277802909dfae18e52ffc6968ebe22bedec8f7e40a8198f4ba7eb774c7ad5",
+      "bytes": 435051
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/enriched-consumables-food-rate-1-view/view.json",
+      "sha256": "74501f55ac3782952dd7478e60fe1e45330983d1f7655bb70dc24ee5cc7c68a7",
+      "bytes": 1173
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/enriched-consumables-medical-rate-0-view/comparison.png",
+      "sha256": "99d1f100d3970ba23c74aa9b7f18262d2f3f1e52cdcf47ffc3655aa594e9be86",
+      "bytes": 161532
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/enriched-consumables-medical-rate-0-view/comparison.svg",
+      "sha256": "35159df6c8192953e3ca1b152bf39345a6804e55c78d21416e2ff4b1947f358b",
+      "bytes": 398313
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/enriched-consumables-medical-rate-0-view/view.json",
+      "sha256": "5a098205c097d2616874fd41ebc15d4cf8a96ef49e3582841e0b1003ce975410",
+      "bytes": 1179
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/label-scores.json",
+      "sha256": "0c182e5d23cc2acda480581fcd550ed6d4ae76178448c30d427d77787af99b1a",
+      "bytes": 131059
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/protocol.json",
+      "sha256": "4d8b3f5a5a7b559a2e0ade412279dc4aa55f43c7e83053d93db6a575cd4f95bd",
+      "bytes": 146981
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/report.json",
+      "sha256": "c852624877735809da80f8b55819c8dcf5714358ce579671422df126a8089996",
+      "bytes": 132056
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/summary.json",
+      "sha256": "aea5d8fefcf01399fdd368013b585a2fe7718c9984120be2b0428ebedf4620d0",
+      "bytes": 19643
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/updates.json",
+      "sha256": "471474afa1d51a6d397bf3a520cf8ec861b27e4d5ff54bb1f835255852272104",
+      "bytes": 206087
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/view-inputs.json",
+      "sha256": "2d785fc8c6c123f9eef281e4272a1062f1d4b8076dd6ee82cb7f8d50accac016",
+      "bytes": 13225
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/watered-grass-grass-rate-0-view/comparison.png",
+      "sha256": "d5ca5a2f48c42c0b9b7ed0fb0b4ac048127ec3aee6215ef615472c2265bcfb6d",
+      "bytes": 91482
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/watered-grass-grass-rate-0-view/comparison.svg",
+      "sha256": "58ef50674f63847334f0aca02205c3b9de067c49c8e9773d746f187cb0791642",
+      "bytes": 88645
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/watered-grass-grass-rate-0-view/view.json",
+      "sha256": "c6238c4755ad92507bfeba4cd427c8c250fdc619ae5801ec9c80a6b992511cad",
+      "bytes": 1151
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/learned.pt",
+      "sha256": "fa1f2bec129fde1e7343bfe0da3b12f994d4132eb017b34bd88da523662a0995",
+      "bytes": 514077
+    },
+    {
+      "path": "target/release/aic-witness-probe",
+      "sha256": "0eed4022daa6103ccd6d7bc55104005de88aa2d09243b717a9eff455850aa628",
+      "bytes": 2138352
+    }
+  ]
+}
