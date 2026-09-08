@@ -57,22 +57,13 @@ def load_study(root, protocol_path, condition, seed, native_library):
     return protocol, base_path, config, runtimes
 
 
-def production_signature(case):
-    return {"catalogs": case["catalogs"], "target": case["target"],
-            "facilities": [{key: value for key, value in row.items() if key != "pose"}
-                           for row in case["facilities"]],
-            "networks": [{key: value for key, value in row.items()
-                          if key not in ("corners", "source_binding", "target_binding")}
-                         for row in case["networks"]]}
-
-
 def validate_compatibility(runtimes):
     first = next(iter(runtimes.values()))
-    fields = ("engine_version", "snapshot_version", "facility_ids", "facility_types", "network_ids",
-              "terminal_ids", "recipes", "operations", "observation_dimensions")
+    fields = ("engine_version", "snapshot_version", "operations", "observation_dimensions")
     for runtime in runtimes.values():
-        if production_signature(runtime.case) != production_signature(first.case):
-            raise ValueError(f"study.production: {runtime.path}: case production semantics or category order differ")
+        if set(runtime.paths) != set(first.paths) or any(
+                runtime.provenance["inputs"][key] != first.provenance["inputs"][key] for key in runtime.paths):
+            raise ValueError(f"study.catalogs: {runtime.path}: incompatible runtime catalogs")
         for field in fields:
             if runtime.metadata[field] != first.metadata[field]:
                 raise ValueError(f"study.features: {runtime.path}: incompatible feature meaning: {field}")

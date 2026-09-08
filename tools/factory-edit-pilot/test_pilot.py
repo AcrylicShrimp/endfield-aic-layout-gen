@@ -149,7 +149,7 @@ class PilotTests(unittest.TestCase):
                 candidates = self.env.candidates()
                 observation = self.env.observe(candidates)
                 self.assertTrue(np.isfinite(observation["raster"]).all())
-                self.assertTrue(np.isfinite(observation["objects"]).all())
+                self.assertTrue(np.isfinite(observation["entities"]).all())
                 command = candidates.commands[rng.randrange(len(candidates.commands))].to_dict()
                 _, _, outcome = self.env.step(command)
                 self.assertTrue(outcome["applied"], (command, outcome))
@@ -306,7 +306,7 @@ class PilotTests(unittest.TestCase):
         candidates = self.env.candidates()
         before = self.env.observe(candidates)
         first = Command("EXTEND", (self.env.nids[0], (0, 0), "forward", "N", 1))
-        original, points = self.env.encode_candidate(first, None)
+        original, *operands = self.env.encode_candidate(first, None)
         self.assertFalse(original.flags.writeable)
         for x in range(1, 4200):
             command = Command("EXTEND", (self.env.nids[0], (x, 0), "forward", "N", 1))
@@ -328,7 +328,7 @@ class PilotTests(unittest.TestCase):
 
     def test_single_observation_view_matches_padded_batch_without_mutation(self):
         observation = self.env.observe(self.env.candidates())
-        before = {key: value.copy() for key, value in observation.items()}
+        before = deepcopy(observation)
         model = Policy(observation)
         view, padded = single(observation), batch([observation])
         for key in padded:
@@ -343,9 +343,10 @@ class PilotTests(unittest.TestCase):
     def test_observation_categories_do_not_alias_later_observations(self):
         candidates = self.env.candidates()
         first = self.env.observe(candidates)
-        expected = {key: value.copy() for key, value in first.items()}
-        for value in first.values():
-            value.fill(-1)
+        expected = deepcopy(first)
+        for key, value in first.items():
+            if key != "schema_version":
+                value.fill(-1)
         second = self.env.observe(candidates)
         for key in expected:
             np.testing.assert_array_equal(second[key], expected[key])
@@ -364,7 +365,7 @@ class PilotTests(unittest.TestCase):
                       {"op": "EXTEND", "network": "quartz", "anchor": [1, 19], "growth": "backward", "direction": "W", "length": 2}])
         second = self.env.observe(self.env.candidates())
         actor = Policy(first)
-        before = [{key: value.copy() for key, value in o.items()} for o in (first, second)]
+        before = deepcopy([first, second])
         callbacks = len(torch._dynamo.callback_handler.start_callbacks)
         with tempfile.TemporaryDirectory(dir=ROOT/"target") as directory:
             compiled = CompiledActor(actor, directory)
@@ -507,7 +508,7 @@ class PilotTests(unittest.TestCase):
             expected = reference.observe(candidates)
             actual, handle = restored.observe()
             for key in expected:
-                self.assertEqual(actual[key].tobytes(), expected[key].tobytes())
+                np.testing.assert_array_equal(actual[key], expected[key])
             model = Policy(actual)
             model.load_state_dict(saved["actor_policy"])
             torch.set_rng_state(saved["torch_rng"])

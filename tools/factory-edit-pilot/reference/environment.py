@@ -11,6 +11,7 @@ import numpy as np
 
 from .acceptance import DIRECTIONS, SIDES, check
 from .commands import Command, CandidateSet
+from . import observation
 
 
 OPERATIONS = ("SET_PLACEMENTS", "UNBIND_TERMINALS", "BIND_TERMINALS", "ERASE_TRANSPORT",
@@ -73,15 +74,6 @@ class Environment:
     def __init__(self, catalog, config):
         self.catalog, self.config = catalog, config
         self.fids, self.nids, self.tids = list(catalog.facilities), list(catalog.networks), catalog.terminal_ids
-        # Sparse category columns preserve the original dense feature order.
-        categories = (OPERATIONS, self.fids, self.fids, self.nids, self.tids,
-                      SIDES, ("forward", "backward"), (0, 90, 180, 270))
-        self.feature_columns = []
-        offset = 0
-        for values in categories:
-            self.feature_columns.append({value: offset+i for i, value in enumerate(values)})
-            offset += len(values)
-        self.feature_numeric_offset = offset
         self.canonical_command_key = lru_cache(maxsize=4096)(self.canonical_command_key)
         self.encode_candidate = lru_cache(maxsize=4096)(self.encode_candidate)
         self.root = initial_layout(catalog)
@@ -108,20 +100,7 @@ class Environment:
                     side = SIDES[(SIDES.index(port["edge"][0].upper())+rotation//90) % 4]
                     dx, dy = DIRECTIONS[side]
                     self.port_offsets[fid, port["id"], rotation] = (x+dx, y+dy), (-dx, -dy)
-        rows = []
-        for tid in self.tids:
-            nid, role, endpoint = self.terminal_metadata[tid]
-            fid = endpoint.get("facility")
-            ft = self.catalog.facility_type(fid) if fid else None
-            rows.append([float(nid == n) for n in self.nids] + [float(fid == f) for f in self.fids]
-                        + [float("external" in endpoint), float(role == "source"), 0.0]
-                        + [0.0]*6
-                        + [float(self.catalog.rate(nid)/self.catalog.capacity), float(self.catalog.capacity)]
-                        + ([ft["footprint"]["width"]/self.scale, ft["footprint"]["height"]/self.scale] if ft else [0, 0])
-                        + [0.0]*6)
-        self.object_template = np.asarray(rows*2, dtype=np.float32)
-        self.object_template.flags.writeable = False
-        self.object_dynamic_offset = len(self.nids)+len(self.fids)+2
+        observation.prepare(self)
 
     def reset(self):
         self.draft, self.base, self.best = clone(self.root), clone(self.root), clone(self.root)
@@ -419,120 +398,6 @@ class Environment:
     def canonical_command_key(self, command):
         return COMMAND_ENCODER.encode(command.to_dict())
 
-    def command_context(self, command):
-        if command.op == "UNBIND_TERMINALS":
-            return self.location(self.draft, command.args[0])[0]
-        if command.op == "BIND_TERMINALS":
-            return self.location(self.draft, command.args[0], command.to_dict()["binding"])[0]
-        if command.op == "DISCARD_EDIT":
-            return tuple(self.draft["placements"][self.fids[0]][:2])
-        return None
-
-    def encode_candidate(self, command, context):
-        """Decode only a cache miss; state-dependent absolute points are explicit keys."""
-        op, args = command
-        if context is not None:
-            a = b = context
-        elif op == "SET_PLACEMENTS":
-            a, b = args[0][1][:2], args[-1][1][:2]
-        elif op == "ERASE_TRANSPORT":
-            a, b = args[1][0], args[1][-1]
-        elif op == "EXTEND":
-            a = args[1]
-            dx, dy = DIRECTIONS[args[3]]
-            b = a[0]+dx*args[4], a[1]+dy*args[4]
-        elif op == "CONNECT":
-            a, b = args[1:]
-        else:
-            raise Mechanical(f"Unsupported typed candidate: {command}")
-        payload = command.to_dict()
-        assignments = payload.get("assignments", {})
-        selected = list(assignments)
-        tid = payload.get("terminal")
-        nid = payload.get("network", self.catalog.terminal(tid)[0] if tid else None)
-        rotation = assignments[selected[0]][2] if selected else -1
-        categories = (op, selected[0] if selected else None, selected[1] if len(selected) > 1 else None,
-                      nid, tid, payload.get("direction", payload.get("binding", {}).get("side")),
-                      payload.get("growth"), rotation)
-        feature = np.zeros(self.feature_numeric_offset+8, dtype=np.float32)
-        for columns, value in zip(self.feature_columns, categories):
-            column = columns.get(value)
-            if column is not None:
-                feature[column] = 1
-        feature[self.feature_numeric_offset:] = [
-            a[0]/self.scale, a[1]/self.scale, b[0]/self.scale, b[1]/self.scale,
-            (b[0]-a[0])/self.scale, (b[1]-a[1])/self.scale,
-            payload.get("length", len(payload.get("cells", [])))/2, len(assignments)/2]
-        feature.flags.writeable = False
-        return feature, (a[0], a[1], b[0], b[1])
-
-    def observe(self, candidates):
-        started = time.perf_counter()
-        if not isinstance(candidates, CandidateSet) or candidates.state is not self.draft or candidates.revision != self.revision:
-            raise Mechanical("observation.stale_candidates: regenerate candidates for the current draft")
-        indexes = [candidates.index, self.index(self.base)]
-        all_points = indexes[0][1] | indexes[1][1]
-        xs, ys = zip(*all_points)
-        halo = self.config["halo"]
-        x0, y0, x1, y1 = min(xs)-halo, min(ys)-halo, max(xs)+halo, max(ys)+halo
-        width, height = x1-x0+1, y1-y0+1
-        if width*height > self.config["raster_cell_guard"]:
-            raise SpatialGuard(f"observation.resource_guard: {width}x{height} exceeds declared raster-work guard")
-        per_state = len(self.fids)+len(self.nids)+8+len(self.tids)
-        raster = np.zeros((2*per_state+3, height, width), dtype=np.float32)
-        objects = self.object_template.copy()
-        for state_index, (s, index) in enumerate(zip((self.draft, self.base), indexes)):
-            offset = state_index*per_state
-            bodies, _, ins, outs, _, _ = index
-            for fi, fid in enumerate(self.fids):
-                for x, y in bodies[fid]:
-                    raster[offset+fi, y-y0, x-x0] = 1
-            net_offset = offset+len(self.fids)
-            arm_offset = net_offset+len(self.nids)
-            terminal_offset = arm_offset+8
-            for ni, nid in enumerate(self.nids):
-                for x, y in s["networks"][nid]["cells"]:
-                    raster[net_offset+ni, y-y0, x-x0] = 1
-                    for io, arms in enumerate((ins[nid][x, y], outs[nid][x, y])):
-                        for arm in arms:
-                            raster[arm_offset+io*4+ARM_COLUMNS[arm], y-y0, x-x0] = 1
-            for ti, tid in enumerate(self.tids):
-                nid, role, endpoint = self.catalog.terminal(tid)
-                binding = s["bindings"][tid]
-                loc = self.location(s, tid)
-                position = loc[0] if loc else (0, 0)
-                direction = ARM_COLUMNS[loc[1]] if loc else -1
-                if loc:
-                    raster[terminal_offset+ti, position[1]-y0, position[0]-x0] = 1
-                fid = endpoint.get("facility")
-                pose = s["placements"][fid] if fid else [0, 0, 0]
-                row = objects[state_index*len(self.tids)+ti]
-                dynamic = self.object_dynamic_offset
-                row[dynamic] = binding is not None
-                row[dynamic+1:dynamic+3] = position[0]/self.scale, position[1]/self.scale
-                if direction >= 0:
-                    row[dynamic+3+direction] = 1
-                row[dynamic+11:dynamic+13] = pose[0]/self.scale, pose[1]/self.scale
-                if fid is not None:
-                    row[dynamic+13+pose[2]//90] = 1
-
-        raster[-3] = np.arange(x0, x1+1, dtype=np.float32)[None, :]/self.scale
-        raster[-2] = np.arange(y0, y1+1, dtype=np.float32)[:, None]/self.scale
-        raster[-1] = 1
-        features, absolute_points = zip(*(self.encode_candidate(command, self.command_context(command))
-                                         for command in candidates.commands))
-        points = np.asarray(absolute_points, dtype=np.int64)-np.array([x0, y0, x0, y0], dtype=np.int64)
-        stats = [(self.config["horizon"]-self.steps)/self.config["horizon"],
-                 self.best_score[0]/self.initial_score[0], self.base_score[0]/self.initial_score[0],
-                 self.best_score[1]/self.initial_score[0], self.base_score[1]/self.initial_score[0],
-                 self.best_score[2]/self.initial_score[0], self.base_score[2]/self.initial_score[0],
-                 sum(b is None for b in self.draft["bindings"].values())/len(self.tids)]
-        observation = {"raster": raster, "objects": objects,
-                       "stats": np.asarray(stats, dtype=np.float32),
-                       "candidates": np.asarray(features, dtype=np.float32), "points": points}
-        cache = self.encode_candidate.cache_info()
-        self.counters["encoding_cache_hits"] = cache.hits
-        self.counters["encoding_cache_misses"] = cache.misses
-        self.counters["encoding_cache_entries"] = cache.currsize
-        self.seconds["observation"] += time.perf_counter()-started
-        return observation
+    command_context = observation.command_context
+    encode_candidate = observation.encode_candidate
+    observe = observation.observe
