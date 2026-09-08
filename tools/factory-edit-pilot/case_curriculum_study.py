@@ -69,6 +69,8 @@ def train(root, protocol_path, condition, seed, library, output):
     torch.backends.cuda.matmul.allow_tf32 = False
     torch.backends.cudnn.allow_tf32 = False
     torch.backends.cudnn.benchmark = False
+    if config["device"] == "cuda":
+        torch.cuda.reset_peak_memory_stats()
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
@@ -112,7 +114,9 @@ def train(root, protocol_path, condition, seed, library, output):
                  "training_seconds": time.perf_counter() - started - seconds["evaluation"] - seconds["assessment"],
                  "actor_device": str(next(actor.parameters()).device), "evaluation_device": "cpu",
                  "native_workers": protocol["streams"] if parallel else 1,
-                 "parameters": model.parameter_count, "dimensions": model.dimensions}
+                 "parameters": model.parameter_count, "dimensions": model.dimensions,
+                 "cuda_peak_allocated_bytes": torch.cuda.max_memory_allocated() if config["device"] == "cuda" else 0,
+                 "cuda_peak_reserved_bytes": torch.cuda.max_memory_reserved() if config["device"] == "cuda" else 0}
         if error:
             value["error"] = error
         return value
