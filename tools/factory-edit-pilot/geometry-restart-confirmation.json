@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "id": "replicated-geometry-restart-confirmation",
+  "selection": "first_joint_root_mastery",
+  "condition": "geometry-mastery-rehearsal",
+  "training_seeds": [
+    17,
+    29,
+    43
+  ],
+  "sources": {
+    "17": {
+      "source_commit": "b26a67fa01f20be39ea4c3d9a88b674a5e9b0853",
+      "run": "artifacts/factory-edit-pilot/geometry-pilot/geometry-mastery-rehearsal-seed17"
+    },
+    "29": {
+      "source_commit": "cb353720a8e8ef071e647c18497c30f03c9e030b",
+      "run": "artifacts/factory-edit-pilot/geometry-replication/seed29"
+    },
+    "43": {
+      "source_commit": "cb353720a8e8ef071e647c18497c30f03c9e030b",
+      "run": "artifacts/factory-edit-pilot/geometry-replication/seed43"
+    }
+  },
+  "geometry_directory": "artifacts/factory-edit-pilot/geometry-confirmation-cases",
+  "manifest_cases_sha256": "d101c19f5ca2ec57febb9738bccce2e4ef915fa621806bf8e46aa90065d87dd2",
+  "total_commands": 128,
+  "attempt_horizon": 32,
+  "development": {
+    "episodes": 64,
+    "required_successes": 52,
+    "seed_banks": [
+      800000
+    ]
+  },
+  "heldout": {
+    "episodes": 32,
+    "required_successes": 26,
+    "seed_banks": [
+      810000,
+      820000
+    ]
+  }
+}
