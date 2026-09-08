@@ -1,0 +1,1993 @@
+{
+  "schema_version": 1,
+  "result_path": "artifacts/factory-edit-pilot/geometry-first-pass-confirmation/confirmation.json",
+  "result_sha256": "c87fe4ddc29f5de7441cdca0c4a84aa71fd51b008085fdd9d693bc78f9ea0624",
+  "source_commit": "de61dd59c5153e74b2c1ca0a60c30eb0ee634bb3",
+  "protocol_sha256": "22622f7f6fecf88af06598e04e13db01539e3219d3645abf43067103e5a4ba69",
+  "status": "passed",
+  "total_seconds": 252.03346592299204,
+  "selection": {
+    "17": {
+      "commands": 1114112,
+      "eligible": true,
+      "source_audit_sha256": "9e7d0836487083fb1e87363e2fedab6b0e146c388ebccae012acc1b03cf2f49d",
+      "metadata_sha256": "423e5d8a6b1cca0c6b1e56611f81a3b6d677397798e68664499c94eef865ff42",
+      "historical_training_seconds": 604.4572251020145,
+      "policy_sha256": "30c4ae48a9c142f69e4041e51b1b65a6ced198c1cbd59e5a3b7914b7394dfd69",
+      "checkpoint_sha256": "506e072127e0940e04df0c1e84ee6240fccb7fdf913d3f42c5d5070aeb9a0c6b",
+      "export_sha256": "3c749c241a5178c12d1dfae83edf8cefe6963e6008052801e4e6822b17ad1300"
+    },
+    "29": {
+      "commands": 802816,
+      "eligible": true,
+      "source_audit_sha256": "de015a5631bb40abc68d537638aa8700c9ec115967b6d98a4ed408867e279bb0",
+      "metadata_sha256": "b88d06240a35109f23f601a07a08a7c054552c8ea264a50aca83585411d08870",
+      "historical_training_seconds": 596.4615826279987,
+      "policy_sha256": "c793980107dd4999d76a1d3f816ea25ce648d9b4b6891406cea7206d53f34905",
+      "checkpoint_sha256": "9ae8101a2a6b7bc353bf40a30fbd96ad2c6b5ecd645489d8355d3bb19f50f783",
+      "export_sha256": "3f220ea1f13e41b71e8bdb1ec776385949a35de9af762f9e7da2cdb9e91392e8"
+    },
+    "43": {
+      "commands": 1310720,
+      "eligible": true,
+      "source_audit_sha256": "8a03339c0f599c7a2ff0970b46309e0db7f9268a62932322d2930f49a5e7447f",
+      "metadata_sha256": "c5d06251ff1dc9c6c36271b02c3a7785304572d385d53d7493a33905301bda5b",
+      "historical_training_seconds": 608.5355662030343,
+      "policy_sha256": "6478736796bcbdc1425ffc50847ef82e405fee0c38fccb71fc1293cfb70e1770",
+      "checkpoint_sha256": "6ca4567fc561b0174371c5dde66eb825b7c1161f53bb4b19f15c5dcf4943bd98",
+      "export_sha256": "5dcaafd6d3025ea2d6a1ea9bb905023163fd3bb4aa099611b6e9e71dc23f41de"
+    }
+  },
+  "stages": {
+    "root_confirmation": [
+      {
+        "training_seed": 17,
+        "case": "train-gap0-turn0",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "train-gap0-turn1",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "train-gap0-turn2",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "train-gap0-turn3",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "train-gap4-turn0",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          119,
+          13,
+          3
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "train-gap4-turn1",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          133,
+          14,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "train-gap4-turn2",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "train-gap4-turn3",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          133,
+          14,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "train-gap0-turn0",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "train-gap0-turn1",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "train-gap0-turn2",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "train-gap0-turn3",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "train-gap4-turn0",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          133,
+          14,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "train-gap4-turn1",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          133,
+          14,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "train-gap4-turn2",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          133,
+          14,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "train-gap4-turn3",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          133,
+          14,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "train-gap0-turn0",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "train-gap0-turn1",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "train-gap0-turn2",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "train-gap0-turn3",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "train-gap4-turn0",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          133,
+          14,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "train-gap4-turn1",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          133,
+          14,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "train-gap4-turn2",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          133,
+          14,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "train-gap4-turn3",
+        "seed_start": 790000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          133,
+          14,
+          1
+        ],
+        "charged_commands": 8192
+      }
+    ],
+    "development": [
+      {
+        "training_seed": 17,
+        "case": "development-gap2-turn0",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          13,
+          3
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "development-gap2-turn1",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "development-gap2-turn2",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "development-gap2-turn3",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "development-gap6-turn0",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          147,
+          16,
+          1
+        ],
+        "best_score": [
+          133,
+          14,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "development-gap6-turn1",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          147,
+          16,
+          1
+        ],
+        "best_score": [
+          147,
+          16,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "development-gap6-turn2",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          147,
+          16,
+          1
+        ],
+        "best_score": [
+          147,
+          16,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "development-gap6-turn3",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          147,
+          16,
+          1
+        ],
+        "best_score": [
+          140,
+          15,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "development-gap8-turn0",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          147,
+          16,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "development-gap8-turn1",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "development-gap8-turn2",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          147,
+          16,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 17,
+        "case": "development-gap8-turn3",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          147,
+          16,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "development-gap2-turn0",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "development-gap2-turn1",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "development-gap2-turn2",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "development-gap2-turn3",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "development-gap6-turn0",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          147,
+          16,
+          1
+        ],
+        "best_score": [
+          147,
+          16,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "development-gap6-turn1",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          147,
+          16,
+          1
+        ],
+        "best_score": [
+          147,
+          16,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "development-gap6-turn2",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          147,
+          16,
+          1
+        ],
+        "best_score": [
+          147,
+          16,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "development-gap6-turn3",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          147,
+          16,
+          1
+        ],
+        "best_score": [
+          133,
+          14,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "development-gap8-turn0",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "development-gap8-turn1",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          147,
+          16,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "development-gap8-turn2",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 29,
+        "case": "development-gap8-turn3",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          147,
+          16,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "development-gap2-turn0",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "development-gap2-turn1",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          133,
+          14,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "development-gap2-turn2",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "development-gap2-turn3",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          119,
+          12,
+          1
+        ],
+        "best_score": [
+          119,
+          12,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "development-gap6-turn0",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          147,
+          16,
+          1
+        ],
+        "best_score": [
+          147,
+          16,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "development-gap6-turn1",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          147,
+          16,
+          1
+        ],
+        "best_score": [
+          147,
+          16,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "development-gap6-turn2",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          147,
+          16,
+          1
+        ],
+        "best_score": [
+          133,
+          14,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "development-gap6-turn3",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          147,
+          16,
+          1
+        ],
+        "best_score": [
+          133,
+          14,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "development-gap8-turn0",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "development-gap8-turn1",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          147,
+          16,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "development-gap8-turn2",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          147,
+          16,
+          1
+        ],
+        "best_score": [
+          147,
+          16,
+          1
+        ],
+        "charged_commands": 8192
+      },
+      {
+        "training_seed": 43,
+        "case": "development-gap8-turn3",
+        "seed_start": 800000,
+        "translated_successes": 64,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          147,
+          16,
+          1
+        ],
+        "charged_commands": 8192
+      }
+    ],
+    "heldout": [
+      {
+        "training_seed": 17,
+        "case": "heldout-gap10-turn0",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 17,
+        "case": "heldout-gap10-turn1",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 17,
+        "case": "heldout-gap10-turn2",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 17,
+        "case": "heldout-gap10-turn3",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 17,
+        "case": "heldout-gap12-turn0",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          189,
+          22,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 17,
+        "case": "heldout-gap12-turn1",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          189,
+          22,
+          1
+        ],
+        "best_score": [
+          189,
+          22,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 17,
+        "case": "heldout-gap12-turn2",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          189,
+          22,
+          1
+        ],
+        "best_score": [
+          189,
+          22,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 17,
+        "case": "heldout-gap12-turn3",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 17,
+        "case": "heldout-gap10-turn0",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 17,
+        "case": "heldout-gap10-turn1",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 17,
+        "case": "heldout-gap10-turn2",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 17,
+        "case": "heldout-gap10-turn3",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 17,
+        "case": "heldout-gap12-turn0",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          189,
+          22,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 17,
+        "case": "heldout-gap12-turn1",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          189,
+          22,
+          1
+        ],
+        "best_score": [
+          189,
+          22,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 17,
+        "case": "heldout-gap12-turn2",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          189,
+          22,
+          1
+        ],
+        "best_score": [
+          189,
+          22,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 17,
+        "case": "heldout-gap12-turn3",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap10-turn0",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap10-turn1",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap10-turn2",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap10-turn3",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap12-turn0",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          189,
+          22,
+          1
+        ],
+        "best_score": [
+          189,
+          22,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap12-turn1",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap12-turn2",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          189,
+          22,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap12-turn3",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap10-turn0",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap10-turn1",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap10-turn2",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap10-turn3",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap12-turn0",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          189,
+          22,
+          1
+        ],
+        "best_score": [
+          189,
+          22,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap12-turn1",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap12-turn2",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          189,
+          22,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 29,
+        "case": "heldout-gap12-turn3",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap10-turn0",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap10-turn1",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap10-turn2",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap10-turn3",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap12-turn0",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          203,
+          24,
+          1
+        ],
+        "best_score": [
+          189,
+          22,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap12-turn1",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          189,
+          22,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap12-turn2",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap12-turn3",
+        "seed_start": 810000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          189,
+          22,
+          1
+        ],
+        "best_score": [
+          189,
+          22,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap10-turn0",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap10-turn1",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap10-turn2",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          161,
+          18,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap10-turn3",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          161,
+          18,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap12-turn0",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          203,
+          24,
+          1
+        ],
+        "best_score": [
+          189,
+          22,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap12-turn1",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          189,
+          22,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap12-turn2",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          175,
+          20,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      },
+      {
+        "training_seed": 43,
+        "case": "heldout-gap12-turn3",
+        "seed_start": 820000,
+        "translated_successes": 32,
+        "passed": true,
+        "median_score": [
+          189,
+          22,
+          1
+        ],
+        "best_score": [
+          175,
+          20,
+          1
+        ],
+        "charged_commands": 4096
+      }
+    ]
+  }
+}
