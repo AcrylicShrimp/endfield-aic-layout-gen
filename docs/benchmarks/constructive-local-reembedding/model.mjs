@@ -132,8 +132,8 @@ export function reembed(detail, catalogs, options = {}) {
   const jobs = [...changed].map(i => {
     const c = chains[i], start = relocated(c, false), end = relocated(c, true);
     const arm = (p, d) => d === null ? null : (d + (movement?.anchorTurns.get(`${c.transport}:${key(p)}`) ?? 0)) % 4;
-    return { ...c, start, end, first: changedPort(c, false) || flexible.has(`${c.transport}:${key(c.cells[0])}`) ? null : arm(c.cells[0], c.first),
-      last: changedPort(c, true) || flexible.has(`${c.transport}:${key(c.cells.at(-1))}`) ? null : arm(c.cells.at(-1), c.last) };
+    return { ...c, start, end, zero_length: c.zero_length || movement?.joined.has(c.id), first: movement?.joined.has(c.id) || changedPort(c, false) || flexible.has(`${c.transport}:${key(c.cells[0])}`) ? null : arm(c.cells[0], c.first),
+      last: movement?.joined.has(c.id) || changedPort(c, true) || flexible.has(`${c.transport}:${key(c.cells.at(-1))}`) ? null : arm(c.cells.at(-1), c.last) };
   }).sort((a, b) => (priority.get(a.id) ?? routePriority.length) - (priority.get(b.id) ?? routePriority.length) ||
     (order === 'near' ? 1 : -1) * (distance(a.start, a.end) - distance(b.start, b.end)) || a.id - b.id);
   const body = new Set(w.placements.flatMap(cellsOf).map(key)), occupied = { belt: new Set(), pipe: new Set() };
@@ -198,7 +198,7 @@ export function reembed(detail, catalogs, options = {}) {
   const score = witnessScore(w), candidate = { schema_version: 1, case: 'complete-local-reembedding', embedding: 'local-astar', labels: structuredClone(detail.labels),
     witness: structuredClone(w), catalog_ports: project(w, catalogs), port_groups: { sources: [], targets: [] }, accepted: false, factory_validated: false,
     reembedding: { chain_schema_version: 2, move_schema_version: 4, facility_rotations: structuredClone(facilityRotations), endpoint_policy: endpointPolicy, junction_policy: junctionPolicy, route_priority: [...routePriority], max_new_crossings: maxNewCrossings,
-      new_crossings: installedCrossings, released_bridges: [...releaseBridges], port_assignments: structuredClone(portAssignments), component_poses: structuredClone(componentPoses), moves: structuredClone(moves), order, carried_components: movement?.components ?? [], translated_chains: movement ? [...movement.fixedChains.keys()].filter(id => !changed.has(id)) : [], affected_chains: jobs.map(j => j.id), routes: results } };
+      joined_chains: [...(movement?.joined ?? [])], new_crossings: installedCrossings, released_bridges: [...releaseBridges], port_assignments: structuredClone(portAssignments), component_poses: structuredClone(componentPoses), moves: structuredClone(moves), order, carried_components: movement?.components ?? [], translated_chains: movement ? [...movement.fixedChains.keys()].filter(id => !changed.has(id)) : [], affected_chains: jobs.map(j => j.id), routes: results } };
   return { status: 'candidate', detail: candidate, score, affected_chains: jobs.map(j => ({ id: j.id, item: j.item })), routes: results, elapsed_ms: performance.now() - began };
 }
 

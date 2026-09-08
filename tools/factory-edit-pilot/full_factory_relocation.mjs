@@ -1,7 +1,7 @@
 // Finite, unranked relocation domains. No routing or complete candidate validation here.
 import {extractChains,extentOf} from '../../docs/benchmarks/constructive-local-reembedding/model.mjs';
 import {movementPlan,bodyCells} from '../../docs/benchmarks/constructive-local-reembedding/movement.mjs';
-import {detachablePairs} from '../../docs/benchmarks/constructive-local-reembedding/terminal-identity.mjs';
+import {detachablePairs,joinableChains} from '../../docs/benchmarks/constructive-local-reembedding/terminal-identity.mjs';
 const key=p=>`${p.x},${p.y}`;
 export const LOCAL_STEPS=[[1,0],[-1,0],[0,1],[0,-1],[2,0],[-2,0],[0,2],[0,-2]];
 const tag=(transport,p)=>`${transport}:${key(p)}`;
@@ -79,9 +79,9 @@ function prefix(bounds,points){
     return data[(y+h)*stride+x+w]-data[y*stride+x+w]-data[(y+h)*stride+x]+data[y*stride+x];};
 }
 
-export function preflightGroup(w,group,chains,anchors,bounds){
+export function preflightGroup(w,group,chains,anchors,bounds,joinable=joinableChains(w,chains)){
   const ids=group.members.map(i=>w.placements[i].instance),selected=new Set(ids);
-  const plan=movementPlan(w,chains,anchors,[{instances:ids,dx:0,dy:0}],{junctionPolicy:'internal'});
+  const plan=movementPlan(w,chains,anchors,[{instances:ids,dx:0,dy:0}],{junctionPolicy:'internal',joinable});
   const bodies=w.placements.filter(p=>selected.has(p.instance)),stationary=w.placements.filter(p=>!selected.has(p.instance)).flatMap(bodyCells);
   const fixed={belt:new Set(),pipe:new Set()},moving={belt:new Map(),pipe:new Map()};
   const add=(tr,p)=>moving[tr].set(key(p),p);
@@ -89,6 +89,14 @@ export function preflightGroup(w,group,chains,anchors,bounds){
   for(const n of w.transport_networks)for(const t of n.terminals)if(t.endpoint.kind==='facility'&&selected.has(t.endpoint.instance))add(n.transport,t.position);
   for(const c of w.logistics_components)if(plan.components.includes(c.id))add(c.transport,c.position);
   for(const c of chains)if(plan.fixedChains.has(c.id))for(const p of plan.fixedChains.get(c.id))add(c.transport,p);
+  const joinVectors=new Map(),joinOrigins=new Map();
+  for(const c of joinable){
+    const a=c.startTerminals[0],b=c.endTerminals[0],ownA=selected.has(a.endpoint.instance),ownB=selected.has(b.endpoint.instance);
+    if(ownA===ownB)continue;
+    const [own,other]=ownA?[a,b]:[b,a],dx=other.position.x-own.position.x,dy=other.position.y-own.position.y;
+    joinVectors.set(`${dx},${dy}`,[dx,dy]);
+    joinOrigins.set(`${c.transport}:${key(own.position)}:${dx},${dy}`,key(other.position));
+  }
   const points=[...bodies.flatMap(p=>[p,{x:p.x+p.width-1,y:p.y+p.height-1}]),...Object.values(moving).flatMap(m=>[...m.values()])];
   const box=points.reduce((b,p)=>({minX:Math.min(b.minX,p.x),maxX:Math.max(b.maxX,p.x),minY:Math.min(b.minY,p.y),maxY:Math.max(b.maxY,p.y)}),{minX:Infinity,minY:Infinity,maxX:-Infinity,maxY:-Infinity});
   const anchorPoints=[...new Set([...fixed.belt,...fixed.pipe])].map(k=>{const [x,y]=k.split(',').map(Number);return{x,y};});
@@ -96,10 +104,10 @@ export function preflightGroup(w,group,chains,anchors,bounds){
   const check=(dx,dy)=>{
     if(box.minX+dx<bounds.minX||box.maxX+dx>bounds.maxX||box.minY+dy<bounds.minY||box.maxY+dy>bounds.maxY)return 'bounds';
     if(bodies.some(p=>occupied(p.x+dx,p.y+dy,p.width,p.height)))return 'body_or_anchor';
-    for(const tr of ['belt','pipe'])for(const p of moving[tr].values())if(body(p.x+dx,p.y+dy,1,1)||fixed[tr].has(`${p.x+dx},${p.y+dy}`))return 'carried_or_terminal';
+    for(const tr of ['belt','pipe'])for(const p of moving[tr].values())if(body(p.x+dx,p.y+dy,1,1)||(fixed[tr].has(`${p.x+dx},${p.y+dy}`)&&joinOrigins.get(`${tr}:${key(p)}:${dx},${dy}`)!==`${p.x+dx},${p.y+dy}`))return 'carried_or_terminal';
     return null;
   };
-  return {box,check,moving_points:Object.values(moving).reduce((n,m)=>n+m.size,0)};
+  return {box,check,join_vectors:[...joinVectors.values()],moving_points:Object.values(moving).reduce((n,m)=>n+m.size,0)};
 }
 
 export function relocationActions(w,{mode='groups',scans_per_group=256,candidates_per_group=32}={}){
@@ -107,14 +115,14 @@ export function relocationActions(w,{mode='groups',scans_per_group=256,candidate
      !Number.isSafeInteger(candidates_per_group)||candidates_per_group<8||candidates_per_group>256)fail('factory.vocabulary-options','Invalid relocation mode or scan/candidate bounds');
   const began=performance.now(),bounds=extentOf(w),area=(bounds.maxX-bounds.minX+1)*(bounds.maxY-bounds.minY+1);
   if(!Number.isSafeInteger(area)||area>200000)fail('factory.vocabulary-area-budget','Current observation/enumeration area exceeds the explicit 200000-cell guard');
-  const {chains,anchors}=extractChains(w),generated=mode==='local'?{groups:w.placements.map((_,i)=>({members:[i],source:'singleton'})),omitted:[]}:relocationGroups(w,mode==='groups');
-  const groups=generated.groups.slice(0,512),actions=[],rejected={},diagnostics=[...generated.omitted];let examined=0,capped=0;
+  const {chains,anchors}=extractChains(w),joinable=joinableChains(w,chains),generated=mode==='local'?{groups:w.placements.map((_,i)=>({members:[i],source:'singleton'})),omitted:[]}:relocationGroups(w,mode==='groups');
+  const groups=generated.groups.slice(0,512),actions=[],rejected={},diagnostics=[...generated.omitted];let examined=0,capped=0,joinExamined=0;
   const reject=code=>{rejected[code]=(rejected[code]??0)+1;};
   for(const group of groups){
     const bodies=group.members.map(i=>w.placements[i]),x=Math.min(...bodies.map(p=>p.x)),y=Math.min(...bodies.map(p=>p.y)),
       width=Math.max(...bodies.map(p=>p.x+p.width))-x,height=Math.max(...bodies.map(p=>p.y+p.height))-y,bodyArea=bodies.reduce((n,p)=>n+p.width*p.height,0);
     let preflight;
-    if(mode!=='local')try{preflight=preflightGroup(w,group,chains,anchors,bounds);}catch(e){
+    if(mode!=='local')try{preflight=preflightGroup(w,group,chains,anchors,bounds,joinable);}catch(e){
       if(!e.code)throw e;diagnostics.push({...group,code:e.code});continue;
     }
     let retained=0;const seen=new Set();
@@ -125,6 +133,7 @@ export function relocationActions(w,{mode='groups',scans_per_group=256,candidate
     };
     for(const [dx,dy]of LOCAL_STEPS)examine(dx,dy);
     if(!['distant','groups'].includes(mode))continue;
+    for(const [dx,dy]of preflight.join_vectors){if(retained>=candidates_per_group)break;joinExamined++;examine(dx,dy);}
     const b=preflight.box,loX=bounds.minX-b.minX,loY=bounds.minY-b.minY,nx=bounds.maxX-b.maxX-loX+1,ny=bounds.maxY-b.maxY-loY+1,total=nx*ny;
     if(total<=0)continue;
     const gcd=(a,b)=>b?gcd(b,a%b):a;let stride=Math.max(1,Math.floor(total*.61803398875));while(gcd(stride,total)!==1)stride++;
@@ -135,5 +144,5 @@ export function relocationActions(w,{mode='groups',scans_per_group=256,candidate
     if(i<total)capped++;
   }
   return {actions,report:{mode,groups:groups.length,groups_generated:generated.groups.length,groups_budget_omitted:Math.max(0,generated.groups.length-groups.length),
-    omitted:diagnostics.map(d=>({...d,...diagnostic(d.code,'Group omitted from the bounded retained-terminal relocation vocabulary',{members:d.members,source:d.source})})),examined,static_rejected:rejected,capped_groups:capped,actions:actions.length,scans_per_group,candidates_per_group,seconds:(performance.now()-began)/1000}};
+    omitted:diagnostics.map(d=>({...d,...diagnostic(d.code,'Group omitted from the bounded retained-terminal relocation vocabulary',{members:d.members,source:d.source})})),examined,static_rejected:rejected,capped_groups:capped,join_vectors_examined:joinExamined,actions:actions.length,scans_per_group,candidates_per_group,seconds:(performance.now()-began)/1000}};
 }

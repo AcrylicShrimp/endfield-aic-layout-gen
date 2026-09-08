@@ -25,11 +25,15 @@ test('simultaneous exchange succeeds when either sequential move collides, rerou
   assert.equal(r.fixedChains.size, 0); assert.deepEqual([...r.changed], [0]); assert.deepEqual(w, before);
 });
 
-test('same shifts preserve interiors, conflicting moved anchors and overlapping membership reject', () => {
+test('same shifts preserve interiors, isolated pairs rejoin and ambiguous anchor collisions reject', () => {
   const w = fixture(), { chains, anchors } = extractChains(w);
   const same = movementPlan(w, chains, anchors, [{ instances: ['a'], dx: 0, dy: 3 }, { instances: ['b'], dx: 0, dy: 3 }]);
   assert.equal(same.fixedChains.size, 1); assert.equal(same.changed.size, 0);
-  assert.throws(() => movementPlan(w, chains, anchors, [{ instances: ['a'], dx: 2, dy: 0 }, { instances: ['b'], dx: -2, dy: 0 }]), { code: 'local-carried-collision' });
+  const inward = [{ instances: ['a'], dx: 2, dy: 0 }, { instances: ['b'], dx: -2, dy: 0 }];
+  assert.deepEqual([...movementPlan(w, chains, anchors, inward).joined], [0]);
+  const ambiguous = structuredClone(w); ambiguous.transport_networks[0].terminals[0].rate = { numerator: 2, denominator: 1 };
+  const extracted = extractChains(ambiguous);
+  assert.throws(() => movementPlan(ambiguous, extracted.chains, extracted.anchors, inward), { code: 'local-carried-collision' });
   assert.throws(() => movementPlan(w, chains, anchors, [{ instances: ['a'], dx: 0, dy: 0 }, { instances: ['a'], dx: 1, dy: 0 }]), { code: 'local-move-input' });
   assert.throws(() => movementPlan(w, chains, anchors, { instances: ['a'], dx: 0, dy: 0 }), { code: 'local-move-input' });
 });

@@ -1,10 +1,10 @@
 import { key } from './path.mjs';
-import { detachablePairs } from './terminal-identity.mjs';
+import { detachablePairs, joinableChains, terminalJoinPlan } from './terminal-identity.mjs';
 export const bodyCells = p => Array.from({ length: p.width * p.height }, (_, i) => ({ x: p.x + i % p.width, y: p.y + Math.floor(i / p.width) }));
 const fail = (code, message, entity = null) => { throw Object.assign(new Error(message), { code, severity: 'info', stage: 'local-movement', entity }); };
 const tag = (tr, p) => `${tr}:${key(p)}`;
 
-export function movementPlan(w, chains, anchors, moves, { junctionPolicy = 'internal', componentChanges = new Map(), facilityChanges = new Map(), rerouteChains = new Set() } = {}) {
+export function movementPlan(w, chains, anchors, moves, { junctionPolicy = 'internal', componentChanges = new Map(), facilityChanges = new Map(), rerouteChains = new Set(), joinable = joinableChains(w, chains) } = {}) {
   if (!['internal', 'downstream'].includes(junctionPolicy)) fail('local-junction-policy', 'Expected internal or downstream junction ownership');
   if (!Array.isArray(moves) || moves.length > 4 || moves.some(move => !move || !Array.isArray(move.instances) || !move.instances.length ||
     !move.instances.every(id => w.placements.some(p => p.instance === id)) || !Number.isSafeInteger(move.dx) || !Number.isSafeInteger(move.dy) ||
@@ -70,11 +70,12 @@ export function movementPlan(w, chains, anchors, moves, { junctionPolicy = 'inte
   const cells = new Set(bodies.flatMap(bodyCells).map(key)), stationary = new Set(w.placements.filter(p => !selected.has(p.instance)).flatMap(bodyCells).map(key));
   if (cells.size !== bodies.reduce((n, p) => n + p.width * p.height, 0) || [...cells].some(k => stationary.has(k)))
     fail('local-body-collision', 'Simultaneous translated bodies overlap each other or a retained facility', instances);
+  const joined = terminalJoinPlan(w, joinable, shiftTerminal, c => shiftAnchor(c.transport, c.position));
   const movedAnchors = { belt: new Set(), pipe: new Set() };
   const origins = { belt: new Map(), pipe: new Map() };
   const carry = (tr, before, after) => {
     const k = key(after), original = key(before);
-    if (origins[tr].has(k) && origins[tr].get(k) !== original) fail('local-carried-collision', 'Different carried cells collide on one layer', { transport: tr, position: after });
+    if (origins[tr].has(k) && origins[tr].get(k) !== original && !(joined.allows(tr, k, original) && joined.allows(tr, k, origins[tr].get(k)))) fail('local-carried-collision', 'Different carried cells collide on one layer', { transport: tr, position: after });
     origins[tr].set(k, original);
   };
   for (const n of w.transport_networks) for (const p of n.cells) if (movable(n.transport, p)) {
@@ -86,7 +87,7 @@ export function movementPlan(w, chains, anchors, moves, { junctionPolicy = 'inte
   }
   for (const tr of ['belt', 'pipe']) for (const k of anchors[tr]) if (!moved.has(`${tr}:${k}`) && !separated.has(`${tr}:${k}`)) {
     if (cells.has(k)) fail('local-anchor-collision', 'Translated body intersects a fixed anchor', k);
-    if (movedAnchors[tr].has(k)) fail('local-terminal-collision', 'Translated anchor intersects a retained anchor', k);
+    if (movedAnchors[tr].has(k) && !joined.allows(tr, k, k)) fail('local-terminal-collision', 'Translated anchor intersects a retained anchor', k);
   }
   for (const tr of ['belt', 'pipe']) for (const k of movedAnchors[tr])
     if (stationary.has(k) || cells.has(k)) fail('local-endpoint-body', 'Translated anchor intersects a facility body', k);
@@ -102,8 +103,8 @@ export function movementPlan(w, chains, anchors, moves, { junctionPolicy = 'inte
   const carried = { belt: new Set([...movedAnchors.belt]), pipe: new Set([...movedAnchors.pipe]) };
   for (const c of chains) if (fixedChains.has(c.id)) for (const p of fixedChains.get(c.id)) carried[c.transport].add(key(p));
   for (const tr of ['belt', 'pipe']) for (const k of anchors[tr])
-    if (!moved.has(`${tr}:${k}`) && !separated.has(`${tr}:${k}`) && carried[tr].has(k)) fail('local-internal-anchor-collision', 'Translated internal route intersects a retained anchor', k);
+    if (!moved.has(`${tr}:${k}`) && !separated.has(`${tr}:${k}`) && carried[tr].has(k) && !joined.allows(tr, k, k)) fail('local-internal-anchor-collision', 'Translated internal route intersects a retained anchor', k);
   for (const c of chains) if (!fixedChains.has(c.id) && (separated.has(tag(c.transport, c.cells[0])) || movable(c.transport, c.cells[0]) || movable(c.transport, c.cells.at(-1)) ||
     c.cells.some(p => cells.has(key(p)) || carried[c.transport].has(key(p))))) changed.add(c.id);
-  return { selected, moved, movable, shiftFacility, shiftAnchor, shiftTerminal, shiftEndpoint, separated, components, anchorTurns, fixedChains, changed, body: cells };
+  return { selected, moved, movable, joined: joined.chains, shiftFacility, shiftAnchor, shiftTerminal, shiftEndpoint, separated, components, anchorTurns, fixedChains, changed, body: cells };
 }

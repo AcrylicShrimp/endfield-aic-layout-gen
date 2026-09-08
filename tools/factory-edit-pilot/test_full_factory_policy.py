@@ -195,3 +195,28 @@ class FactoryPolicyTests(unittest.TestCase):
             for index in members:
                 self.assertEqual(e.state['current']['placements'][index]['x'],before['placements'][index]['x']+dx)
                 self.assertEqual(e.state['current']['placements'][index]['y'],before['placements'][index]['y']+dy)
+
+
+    def test_dense_root_terminal_rejoins_are_offered_and_native_validated(self):
+        source=ROOT/'artifacts/factory-edit-pilot/full-factory-relocation-hole-probe'
+        inputs=ROOT/'artifacts/factory-edit-pilot/full-factory-inputs-verified/inputs.json'
+        if not (source/'report.json').exists():self.skipTest('Optional retained dense-root evidence absent')
+        case=next(c for c in json.loads(inputs.read_text())['rows'] if c['id']=='closure-original')
+        records=json.loads((source/'report.json').read_text())['trace']
+        for index in [121,127,154]:
+            forward=next(t['action'] for t in records if t['candidate_index']==index)
+            e=FactoryEpisode(self.runtime,dict(case,initial=str(source/f'candidate-{index}.json')))
+            actions=e.describe()['actions']
+            inverse=next(a for a in actions if a['kind']=='relocate' and a['members']==forward['members'] and a['dx']==-forward['dx'] and a['dy']==-forward['dy'])
+            result=e.step(inverse)
+            self.assertEqual(result['status'],'improved')
+            self.assertTrue(result['acceptance']['candidate_validated'])
+            self.assertEqual(result['best_score'],[2132,385,146])
+
+
+    def test_runtime_close_drains_an_interrupted_large_response(self):
+        runtime=object.__new__(FactoryRuntime)
+        runtime.worker=subprocess.Popen(['node','-e',"process.stdin.resume();process.stdin.on('end',()=>process.stdout.write('x'.repeat(1000000)))"],
+                                        stdin=subprocess.PIPE,stdout=subprocess.PIPE,text=True)
+        runtime.close()
+        self.assertEqual(runtime.worker.returncode,0)

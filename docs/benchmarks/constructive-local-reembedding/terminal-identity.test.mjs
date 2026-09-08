@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { detachablePairs } from './terminal-identity.mjs';
+import { detachablePairs, joinableChains, terminalJoinPlan } from './terminal-identity.mjs';
 import { extractChains, reembed } from './model.mjs';
 import { movementPlan } from './movement.mjs';
 import { planFacilityRotations } from './facility-rotation.mjs';
@@ -96,4 +96,51 @@ test('catalog rotation separates a zero-length pair by identity and restores its
   assert.deepEqual(n.segments[0].from, n.terminals[0].position); assert.deepEqual(n.segments.at(-1).to, n.terminals[1].position);
   assert.ok(n.segments.every(s => JSON.stringify(s.rate) === JSON.stringify(n.terminals[0].rate)));
   assert.deepEqual(d, before);
+});
+
+
+test('separated direct terminals rejoin without retaining old path cells', () => {
+  for (const moves of [[{ instances: ['source'], dx: 0, dy: -2 }],
+    [{ instances: ['source'], dx: 0, dy: -2 }, { instances: ['target'], dx: 0, dy: -4 }]]) {
+    const { detail: original } = fixture(), frozen = structuredClone(original);
+    const separated = reembed(original, catalogs, { moves, endpointPolicy: 'terminal-flexible' });
+    assert.equal(separated.status, 'candidate'); const before = structuredClone(separated.detail);
+    const { chains } = extractChains(before.witness); assert.equal(joinableChains(before.witness, chains).length, 1);
+    const joined = reembed(separated.detail, catalogs, { moves: moves.map(m => ({ ...m, dx: -m.dx, dy: -m.dy })), endpointPolicy: 'terminal-flexible' });
+    assert.equal(joined.status, 'candidate'); assert.equal(joined.detail.reembedding.joined_chains.length, 1);
+    assert.deepEqual(joined.detail.witness.transport_networks[0], original.witness.transport_networks[0]);
+    assert.deepEqual(joined.detail.witness.transport_networks[1], original.witness.transport_networks[1]);
+    assert.deepEqual(joined.detail.witness.placements, original.witness.placements);
+    assert.deepEqual(separated.detail, before); assert.deepEqual(original, frozen);
+  }
+});
+
+test('rejoining eligibility rejects mismatched rates, external ends, components and extra incident chains', () => {
+  const { detail: original } = fixture();
+  const separated = reembed(original, catalogs, { moves: [{ instances: ['source'], dx: 0, dy: -2 }] }).detail.witness;
+  for (const mutate of [w => { w.transport_networks[0].terminals[0].rate = { numerator: 2, denominator: 3 }; },
+    w => { w.transport_networks[0].terminals[0].endpoint = { kind: 'external', node: 'outside' }; },
+    w => { w.logistics_components.push({ transport: 'belt', position: w.transport_networks[0].terminals[0].position }); },
+    w => { w.transport_networks[1].terminals[0].id = w.transport_networks[0].terminals[0].id; }]) {
+    const w = structuredClone(separated); mutate(w); assert.equal(joinableChains(w, extractChains(w).chains).length, 0);
+  }
+  const { chains } = extractChains(separated);
+  assert.equal(joinableChains(separated, [...chains, chains[0]]).length, 0);
+});
+
+test('a third final terminal or component prevents rejoining and anchor identity exceptions stay narrow', () => {
+  const { detail: original } = fixture();
+  const w = reembed(original, catalogs, { moves: [{ instances: ['source'], dx: 0, dy: -2 }] }).detail.witness;
+  const eligible = joinableChains(w, extractChains(w).chains), destination = eligible[0].endTerminals[0].position;
+  const shift = t => t.endpoint.instance === 'source' ? destination : t.position;
+  const plan = terminalJoinPlan(w, eligible, shift, c => c.position);
+  assert.equal(plan.chains.size, 1);
+  assert.equal(plan.allows('belt', key(destination), key(eligible[0].startTerminals[0].position)), true);
+  assert.equal(plan.allows('belt', key(destination), '999,999'), false);
+  assert.equal(plan.allows('pipe', key(destination), key(destination)), false);
+  const third = structuredClone(w); third.transport_networks[1].transport = 'belt';
+  third.transport_networks[1].terminals[0].position = destination;
+  assert.equal(terminalJoinPlan(third, eligible, shift, c => c.position).chains.size, 0);
+  const component = structuredClone(w); component.logistics_components.push({ transport: 'belt', position: destination });
+  assert.equal(terminalJoinPlan(component, eligible, shift, c => c.position).chains.size, 0);
 });

@@ -41,9 +41,16 @@ class FactoryRuntime:
         return result
 
     def close(self):
-        self.worker.stdin.close()
-        self.worker.wait(timeout=10)
-        self.worker.stdout.close()
+        # An interrupted RPC may leave a response larger than the pipe buffer.
+        # Drain stdout while closing, so the owned worker can finish and see EOF.
+        if self.worker.stdin is not None:
+            self.worker.stdin.close()
+            self.worker.stdin = None
+        try:
+            self.worker.communicate(timeout=10)
+        except subprocess.TimeoutExpired:
+            self.worker.kill()
+            self.worker.communicate()
 
 
 class FactoryEpisode:
