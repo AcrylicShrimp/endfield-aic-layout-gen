@@ -66,11 +66,13 @@ def compare(protocol_path, paths, output):
     costs = []
     for (condition, seed), run in runs.items():
         m = run["metadata"]
+        starts = json.loads((Path(run["directory"]) / "starts.json").read_text())
         costs.append({"condition": condition, "seed": seed, "training_seconds": m["training_seconds"],
                       "seconds": m["seconds"], "collector_seconds": m["collector_seconds"],
                       "setup_commands": m["setup_commands"], "stage_commands": m["stage_commands"],
                       "champions": m["champions"], "positive_training_episodes": sum(row["return"] > 0 for row in run["episodes"]),
-                      "positive_root_training_episodes": sum(row["return"] > 0 and row["remaining"] == 0 for row in run["episodes"]),
+                      "positive_root_training_episodes": sum(row["return"] > 0 and not starts[row["case"]][str(row["remaining"])]
+                                                              for row in run["episodes"]),
                       "training_horizon": m["training_config"]["horizon"], "episodes": m["episodes"], "controller": m["controller"],
                       "assessments": [{key: row[key] for key in ("commands", "training_level", "level", "successes", "transition")}
                                       for row in rows(Path(run["directory"]) / "assessments.jsonl")]})
