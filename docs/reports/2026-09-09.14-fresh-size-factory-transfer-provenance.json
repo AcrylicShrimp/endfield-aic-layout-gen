@@ -1,0 +1,136 @@
+{
+  "schema_version": 1,
+  "scope": "All six construction outcomes, retained failed-frontier inputs, frozen transfer, independent all-best audit and inspected full comparison; detailed source/binary hashes live in protocol",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/best-mass-final.pt",
+      "sha256": "5ad5fab1753d7852f71a2257f10c921adc11c6794cebb51304f2252c0acd9969",
+      "bytes": 515605
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/cleanup.json",
+      "sha256": "393405f7cbef29ddea5d089240a46e116963e624a6cb10d687a80cc18e71dbe6",
+      "bytes": 3335
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/enriched-consumables-food-fresh-rate-0/construction.json",
+      "sha256": "fa0cdb320f9e486f5c63d7d692fd33c10ee5140e995036f8afae66bb2d826ba5",
+      "bytes": 5105968
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/enriched-consumables-food-fresh-rate-0/wiring.json",
+      "sha256": "8fb8388e4f92320bd8052522050d0d4169df14f7796fed56ebd93167ddb714d0",
+      "bytes": 41852
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/enriched-consumables-food-fresh-rate-1/construction.json",
+      "sha256": "812ae1ffb65d2e49ca2ae172d0ee67e45e8a93898a3aabc34d2b2f1197fb3186",
+      "bytes": 21440081
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/enriched-consumables-food-fresh-rate-1/wiring.json",
+      "sha256": "455b9b9841ac86c1226531dd587874d6eff42a843bf355229f038f45ea24d2a8",
+      "bytes": 153093
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/enriched-consumables-food-fresh-rate-2/construction.json",
+      "sha256": "acac81d0b46988029674ba12f881cd3d8f202633b6fcb6514bbb01ca67793e62",
+      "bytes": 5071270
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/enriched-consumables-food-fresh-rate-2/wiring.json",
+      "sha256": "75447dc275d0813c54113c7ee5ca0b6ad08a0961a050a441782c866c601a0c9c",
+      "bytes": 199790
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/enriched-consumables-medical-fresh-rate-0/construction.json",
+      "sha256": "90aaf70af4d9b5075b1c25583d22e09e9bbbdb7572ccb117ddd4c924c41d7fa5",
+      "bytes": 10639272
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/enriched-consumables-medical-fresh-rate-0/wiring.json",
+      "sha256": "56f10ae3695d989f0a958ee8dfcde1f09cdbea6c4bc2fb847327ea03d42e69d3",
+      "bytes": 42054
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/enriched-consumables-medical-fresh-rate-1/construction.json",
+      "sha256": "dd14c5c25d401ad95060782a04b9249f51c30d0ca7107ca198c6fb1a8ccf4d95",
+      "bytes": 3466830
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/enriched-consumables-medical-fresh-rate-1/wiring.json",
+      "sha256": "cb7c87c648ab46ac5203a9d147e80413b4b6dea31066e8f4e936a9a71d40a549",
+      "bytes": 153843
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/enriched-consumables-medical-fresh-rate-2/construction.json",
+      "sha256": "190a91798acd06353a77bd618b6453b70c61239bbedf039d30e11e87b09dadc8",
+      "bytes": 4862933
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/enriched-consumables-medical-fresh-rate-2/wiring.json",
+      "sha256": "17f1145ee316a0693fab5c4aa422932b60815c301c2b56c815607332f4ee8c66",
+      "bytes": 200760
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/provenance.json",
+      "sha256": "643c56ef59ad581725ad2702ddbd60340ea26a0fe2af8606ee0838dac80c5d11",
+      "bytes": 6936
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/report.json",
+      "sha256": "21ddacc985dd81c2e1c91f25e1dd57b0b3b623ab11b48788fd7fd05926a4bebb",
+      "bytes": 14156
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-admission/roots.json",
+      "sha256": "28758eb9e5130dc8996eb56a29f2f41949a48577deabc8c385a95d0fc6945ba9",
+      "bytes": 211236
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-inputs/inputs.json",
+      "sha256": "d52ed57555274f8bf8b4a00b94e54a8226a5afad7ee2eec8029855fb959c4fcd",
+      "bytes": 2774
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-transfer/audit.json",
+      "sha256": "60aec4cca2500e92af7be137c2e6ab0952c733453aca44988216d0e7c7ce8a62",
+      "bytes": 2216
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-transfer/learned-view/comparison.png",
+      "sha256": "a1776f3565c55e468bdafa809c1b72148934995e8ea3100dc17de8f249c0df79",
+      "bytes": 198825
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-transfer/learned-view/comparison.svg",
+      "sha256": "cc5d0225eb9a16859e76cc2b8f7c97df0ac0f4b95d350bcc105d9f3353ad3a08",
+      "bytes": 845809
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-transfer/learned-view/view.json",
+      "sha256": "acf2fe88378d1d48b57280fac69dcced0fec82fd5b15b830cc957ac212f08a53",
+      "bytes": 1188
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-transfer/protocol.json",
+      "sha256": "56bd893ca2d08107fd9a20d7c20c311af390825439151b28b0f24e8b5d6f6ca2",
+      "bytes": 33777
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-transfer/report.json",
+      "sha256": "33549c4d248adc32c02a1a7b88def178fb904db97e62ba3b3c64b806bb73668d",
+      "bytes": 8931
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-size-transfer/summary.json",
+      "sha256": "6c4fd297e9fba0b44194a70562dde0b81f97d7355e969dfa4d4d668266a854e1",
+      "bytes": 40787
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/learned.pt",
+      "sha256": "fa1f2bec129fde1e7343bfe0da3b12f994d4132eb017b34bd88da523662a0995",
+      "bytes": 514077
+    }
+  ]
+}
