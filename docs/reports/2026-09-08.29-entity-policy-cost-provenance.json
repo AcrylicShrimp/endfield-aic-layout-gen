@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "runs": [
+    {
+      "width": 1,
+      "parameters": 70314,
+      "commands": 16384,
+      "training_seconds": 9.255480088992044,
+      "seconds": {
+        "evaluation": 97.22741850500461,
+        "assessment": 22.165134309005225,
+        "collection": 3.738087140969583,
+        "update": 5.37796821903612,
+        "actor_snapshot": 0.011883115032105707
+      },
+      "cuda_peak_allocated_bytes": 360484352,
+      "cuda_peak_reserved_bytes": 482344960,
+      "matrix_wall_seconds": 173.69706803000008,
+      "audit_status": "passed",
+      "metadata_sha256": "e30d09cbafe96ff692a88174c1d94f54f2fca40e304c3ac4a84bab54ae3a7a1e",
+      "audit_sha256": "51a8b08c1a41749a2fbe2a720ef5cf5b51576ecbdfb33200f9371bc45e0cd78e",
+      "source_commit": "39528fae9ea2861aa1ad8909c025c518bfcc3cfb",
+      "protocol_sha256": "f08e2e6ec808427e3ad7772654e2ed611ab3a1618402b52262cd72ea8fd8e381"
+    },
+    {
+      "width": 2,
+      "parameters": 264530,
+      "commands": 16384,
+      "training_seconds": 9.52251726599934,
+      "seconds": {
+        "evaluation": 138.7472293710016,
+        "assessment": 28.222272971004713,
+        "collection": 3.65244450699538,
+        "update": 5.716635742996004,
+        "actor_snapshot": 0.017779289002646692
+      },
+      "cuda_peak_allocated_bytes": 458216960,
+      "cuda_peak_reserved_bytes": 694157312,
+      "matrix_wall_seconds": 229.07607952100807,
+      "audit_status": "passed",
+      "metadata_sha256": "7882fb5794329a212a33af40378208054bf6d90ca47b2a39404b8c0d7219ed94",
+      "audit_sha256": "9e3b1b8e4eac5346a6d9f112d77614a30fdea5c81d571b7aa1e915ad2f9aa4a4",
+      "source_commit": "39528fae9ea2861aa1ad8909c025c518bfcc3cfb",
+      "protocol_sha256": "a3e305c9fbd9d91ac0bb21a8d9b10c9c02c29465eebd19da9b02ec62a1a63463"
+    }
+  ]
+}
