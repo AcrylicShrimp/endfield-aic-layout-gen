@@ -7,7 +7,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from geometry_restart_confirmation import learning_contract, validate_protocol, verify_training_inputs
+from geometry_restart_confirmation import evaluation_stages, learning_contract, validate_protocol, verify_training_inputs
 
 DIRECTORY = Path(__file__).resolve().parent
 
@@ -26,6 +26,23 @@ class GeometryConfirmationTests(unittest.TestCase):
             validate_protocol(spec)
         spec['heldout']['seed_banks'][0] = 800064
         validate_protocol(spec)
+
+    def test_first_pass_requires_fresh_root_confirmation_before_geometry(self):
+        spec = json.loads((DIRECTORY/'geometry-first-pass-confirmation.json').read_text())
+        self.assertEqual(evaluation_stages(spec), ('root_confirmation', 'development', 'heldout'))
+        self.assertEqual(validate_protocol(spec), [(790000, 64), (800000, 64), (810000, 32), (820000, 32)])
+        changed = deepcopy(spec)
+        del changed['root_confirmation']
+        with self.assertRaisesRegex(ValueError, 'requires independent'):
+            validate_protocol(changed)
+        changed = deepcopy(spec)
+        changed['root_confirmation']['seed_banks'] = [800010]
+        with self.assertRaisesRegex(ValueError, 'overlapping'):
+            validate_protocol(changed)
+        changed = deepcopy(spec)
+        changed['selection'] = 'first_joint_root_mastery'
+        with self.assertRaisesRegex(ValueError, 'requires independent'):
+            validate_protocol(changed)
 
     def test_replication_changes_only_admitted_seed_and_id(self):
         original = json.loads((DIRECTORY/'geometry-pilot-study.json').read_text())

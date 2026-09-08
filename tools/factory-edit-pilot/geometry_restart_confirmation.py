@@ -20,24 +20,31 @@ from policy import Policy
 def validate_protocol(spec):
     total, horizon = spec['total_commands'], spec['attempt_horizon']
     seeds = spec['training_seeds']
-    if (spec.get('schema_version') != 1 or spec.get('selection') != 'first_joint_root_mastery'
+    if (spec.get('schema_version') != 1 or spec.get('selection') not in ('first_joint_root_mastery', 'first_root_pass_then_frozen_confirmation')
             or not seeds or any(type(seed) is not int or seed < 0 for seed in seeds)
             or len(seeds) != len(set(seeds)) or set(spec['sources']) != {str(seed) for seed in seeds}
             or type(total) is not int or total <= 0 or type(horizon) is not int or horizon <= 0 or total % horizon):
         raise ValueError('geometry_confirmation.protocol: invalid selection, sources or restart budget')
+    first_pass = spec['selection'] == 'first_root_pass_then_frozen_confirmation'
+    if first_pass != ('root_confirmation' in spec):
+        raise ValueError('geometry_confirmation.protocol: first-pass selection requires independent root confirmation')
     banks = []
-    for stage in ('development', 'heldout'):
+    for stage in evaluation_stages(spec):
         cell = spec[stage]
         if (type(cell['episodes']) is not int or cell['episodes'] < 2
                 or type(cell['required_successes']) is not int
                 or not 1 <= cell['required_successes'] <= cell['episodes']
-                or len(cell['seed_banks']) != (1 if stage == 'development' else 2)
+                or len(cell['seed_banks']) != (2 if stage == 'heldout' else 1)
                 or any(type(seed) is not int or seed < 0 for seed in cell['seed_banks'])):
             raise ValueError(f'geometry_confirmation.protocol: invalid {stage} sampling budget')
         banks.extend((seed, cell['episodes']) for seed in cell['seed_banks'])
     if any(max(a, b) < min(a+n, b+m) for i, (a, n) in enumerate(banks) for b, m in banks[i+1:]):
         raise ValueError('geometry_confirmation.protocol: overlapping sampling banks')
     return banks
+
+
+def evaluation_stages(spec):
+    return (('root_confirmation',) if 'root_confirmation' in spec else ()) + ('development', 'heldout')
 
 
 def verify_training_inputs(root, metadata, train_cases):
@@ -96,7 +103,7 @@ def run(root, protocol_path, library, output):
             retained[seed] = (metadata, count, saved, source)
         if any(not row['eligible'] for row in result['selection'].values()):
             result.update(status='not_met', diagnostic={'code': 'geometry_confirmation.no_mastered_policy',
-                          'stage': stage, 'severity': 'info', 'message': 'At least one training seed lacks joint root mastery'})
+                          'stage': stage, 'severity': 'info', 'message': 'At least one training seed lacks the declared root-selection criterion'})
             result['total_seconds'] = time.perf_counter()-started
             write(output/'confirmation.json', result)
             return result
@@ -126,13 +133,13 @@ def run(root, protocol_path, library, output):
             row['export_sha256'] = digest(output/f'selected-policy-{seed}.pt')
         # All source policies are selected and frozen before either evaluation stage.
         write(output/'confirmation.json', result)
-        for stage in ('development', 'heldout'):
+        for stage in evaluation_stages(spec):
             cells = []
             result['stages'][stage] = cells
             cell_spec = {**spec[stage], 'total_commands': spec['total_commands']}
             for seed in spec['training_seeds']:
                 for bank in spec[stage]['seed_banks']:
-                    for key, path in cases[stage].items():
+                    for key, path in cases['train' if stage == 'root_confirmation' else stage].items():
                         runtime = Runtime(root, path, configs[seed], library)
                         cell = evaluate_cell(root, runtime, actors[seed], configs[seed], cell_spec,
                             spec['attempt_horizon'], bank, output/stage/f'seed{seed}'/f'bank{bank}'/key)
