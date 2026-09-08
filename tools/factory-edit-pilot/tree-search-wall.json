@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "purpose": "post_selected_training_case_wall_replication",
+  "geometry_protocol": "tools/factory-edit-pilot/entity-learning-matrix.json",
+  "selection_evidence_sha256": "f6853dd6661b428210ce11f83244cafafbd16194a89384230a2928b07a434891",
+  "case": "train-battery-four-gap0-turn0",
+  "additional_compaction_area_below": 119,
+  "training_source_commit": "13af265",
+  "width": 1,
+  "training_seed": 17,
+  "checkpoint_commands": 3145728,
+  "device": "cpu",
+  "threads": 1,
+  "horizon": 32,
+  "sampling_seed_start": 1002000,
+  "sampling_seeds": 32,
+  "methods": ["random_rollouts", "policy_rollouts", "uct", "puct"],
+  "max_seconds": 6,
+  "max_transitions": 1000000,
+  "max_nodes": 16384,
+  "max_tree_bytes": 1048576
+}
