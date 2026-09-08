@@ -31,7 +31,9 @@ export function extractChains(w, released = new Set()) {
     }
     for (const p of n.cells) {
       const k = key(p), a = ins.get(k) ?? [], b = outs.get(k) ?? [];
-      if (anchors[n.transport].has(k) || (layerOwners.get(`${n.transport}:${k}`) > 1 && !released.has(`${n.transport}:${k}`)) || a.length !== 1 || b.length !== 1 || !equalRate(a[0].rate, b[0].rate)) local.add(k);
+      // A validated release keeps straight channel identity while suppressing the anchor.
+      if (released.has(`${n.transport}:${k}`)) continue;
+      if (anchors[n.transport].has(k) || layerOwners.get(`${n.transport}:${k}`) > 1 || a.length !== 1 || b.length !== 1 || !equalRate(a[0].rate, b[0].rate)) local.add(k);
     }
     const visited = new Set();
     for (const s of n.segments) if (local.has(key(s.from))) {
@@ -40,7 +42,10 @@ export function extractChains(w, released = new Set()) {
         if (visited.has(current)) fail('local-chain-cycle', 'Chain repeats an edge', n.id);
         visited.add(current); edges.push(current); path.push(current.to);
         if (local.has(key(current.to))) break;
-        current = outs.get(key(current.to))?.[0];
+        const following = outs.get(key(current.to)) ?? [];
+        current = released.has(`${n.transport}:${key(current.to)}`)
+          ? following.find(s => direction(s.from, s.to) === direction(current.from, current.to))
+          : following[0];
       }
       if (!local.has(key(path.at(-1)))) fail('local-open-chain', 'Chain has no fixed endpoint', n.id);
       chains.push({ id: chains.length, network: ni, transport: n.transport, item: n.item, cells: path, rate: s.rate,
@@ -175,7 +180,7 @@ export function reembed(detail, catalogs, options = {}) {
       do { id = JSON.stringify(['local-crossing', job.transport, ordinal++]); } while (w.logistics_components.some(c => c.id === id) || detail.witness.logistics_components.some(c => c.id === id));
       const component = { id, component: site.component, kind: 'bridge', transport: site.transport, rotation: site.rotation, position: { ...site.position } };
       w.logistics_components.push(component); installedCrossings.push({ ...site, id, routed_chain: job.id });
-      for (const ni of [site.carrier_network, job.network]) w.transport_networks[ni].component_ids.push(id);
+      for (const ni of new Set([site.carrier_network, job.network])) w.transport_networks[ni].component_ids.push(id);
     }
     paths.set(job.id, result.cells); for (const p of result.cells) occupied[job.transport].add(key(p));
   }

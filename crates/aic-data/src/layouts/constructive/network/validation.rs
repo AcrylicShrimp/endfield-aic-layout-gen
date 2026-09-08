@@ -1,5 +1,6 @@
 //! Independent validation of the committed grid witness, without route-search state.
 use super::*;
+use crate::layouts::constructive::network::channels::{Vertex, bridge_cells};
 mod reachability;
 
 #[cfg(test)]
@@ -136,10 +137,9 @@ pub(in crate::layouts::constructive) fn validate(
         if cells.is_empty() || cells.len() != n.cells.len() {
             return Err(fail(n.id.clone(), "empty or duplicate network cells"));
         }
-        let mut flow = BTreeMap::<
-            (i64, i64),
-            (Rate, Rate, Vec<CardinalDirection>, Vec<CardinalDirection>),
-        >::new();
+        let bridges = bridge_cells(node, n.transport);
+        let mut flow =
+            BTreeMap::<Vertex, (Rate, Rate, Vec<CardinalDirection>, Vec<CardinalDirection>)>::new();
         for p in &cells {
             let crossing = node.logistics_components.iter().any(|c| {
                 c.transport == n.transport
@@ -149,7 +149,12 @@ pub(in crate::layouts::constructive) fn validate(
             if occupied.contains(p) || (!physical.insert((n.transport, *p)) && !crossing) {
                 return Err(fail(n.id.clone(), "transport collision"));
             }
-            flow.insert(*p, (Rate::zero(), Rate::zero(), Vec::new(), Vec::new()));
+            if !bridges.contains(p) {
+                flow.insert(
+                    Vertex::ordinary(*p),
+                    (Rate::zero(), Rate::zero(), Vec::new(), Vec::new()),
+                );
+            }
         }
         drop(cells_span);
         let segments_span = profile_span(ProfileOp::ValidationSegments);
@@ -169,12 +174,16 @@ pub(in crate::layouts::constructive) fn validate(
             let Some(out) = direction(&s.from, &s.to) else {
                 return Err(fail(n.id.clone(), "non-adjacent segment"));
             };
-            let f = flow.get_mut(&xy(&s.from)).unwrap();
+            let f = flow
+                .entry(Vertex::segment(&s.from, &s.to, &bridges))
+                .or_insert_with(|| (Rate::zero(), Rate::zero(), Vec::new(), Vec::new()));
             f.1 =
                 f.1.checked_add(s.rate)
                     .map_err(|_| fail(n.id.clone(), "flow arithmetic overflow"))?;
             f.3.push(out);
-            let f = flow.get_mut(&xy(&s.to)).unwrap();
+            let f = flow
+                .entry(Vertex::segment(&s.to, &s.from, &bridges))
+                .or_insert_with(|| (Rate::zero(), Rate::zero(), Vec::new(), Vec::new()));
             f.0 =
                 f.0.checked_add(s.rate)
                     .map_err(|_| fail(n.id.clone(), "flow arithmetic overflow"))?;
@@ -182,7 +191,13 @@ pub(in crate::layouts::constructive) fn validate(
         }
         drop(segments_span);
         let terminals_span = profile_span(ProfileOp::ValidationTerminals);
+        if flow.keys().map(|v| v.position).collect::<BTreeSet<_>>() != cells {
+            return Err(fail(n.id.clone(), "bridge cell has no channel geometry"));
+        }
         for t in &n.terminals {
+            if bridges.contains(&xy(&t.position)) {
+                return Err(fail(t.id.clone(), "bridge channel cannot host a terminal"));
+            }
             if let TransportNetworkEndpoint::External {
                 node: external_node,
                 side,
@@ -237,7 +252,7 @@ pub(in crate::layouts::constructive) fn validate(
                         "invalid external terminal identity, used-boundary position or capacity",
                     ));
                 }
-                let Some(f) = flow.get_mut(&xy(&t.position)) else {
+                let Some(f) = flow.get_mut(&Vertex::ordinary(xy(&t.position))) else {
                     return Err(fail(t.id.clone(), "external terminal missing from network"));
                 };
                 if t.direction == FacilityPortDirection::Output {
@@ -275,7 +290,7 @@ pub(in crate::layouts::constructive) fn validate(
                     "terminal direction, geometry, capacity, or port reuse mismatch",
                 ));
             }
-            let Some(f) = flow.get_mut(&xy(&t.position)) else {
+            let Some(f) = flow.get_mut(&Vertex::ordinary(xy(&t.position))) else {
                 return Err(fail(t.id.clone(), "terminal missing from network"));
             };
             let d = direction(&p.connection, &p.position).unwrap();
@@ -293,11 +308,12 @@ pub(in crate::layouts::constructive) fn validate(
         }
         drop(terminals_span);
         let topology_span = profile_span(ProfileOp::ValidationTopology);
-        for (p, (incoming, outgoing, inputs, outputs)) in &flow {
+        for (vertex, (incoming, outgoing, inputs, outputs)) in &flow {
+            let p = &vertex.position;
             if incoming != outgoing || incoming.is_zero() || *incoming > cap {
                 return Err(fail(
                     n.id.clone(),
-                    "cell flow conservation or capacity failure",
+                    "channel flow conservation or capacity failure",
                 ));
             }
             let unique = inputs
@@ -382,7 +398,7 @@ pub(in crate::layouts::constructive) fn validate(
         // a supply and able to reach a demand. This constructor emits no circulation.
         drop(topology_span);
         let reach_span = profile_span(ProfileOp::ValidationReachability);
-        let mut reachability = reachability::Reachability::new(&cells, &n.segments);
+        let mut reachability = reachability::Reachability::new(&cells, &n.segments, &bridges);
         for reverse in [false, true] {
             let roots = n
                 .terminals

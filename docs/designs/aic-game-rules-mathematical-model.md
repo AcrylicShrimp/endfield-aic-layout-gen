@@ -495,6 +495,13 @@ Equivalent reverse travel is represented by choosing the opposite directed arcs.
 is bounded by the external bridge capacity. The horizontal and vertical item IDs may differ. A
 bridge cell cannot also host a facility terminal or branch component.
 
+**Constructive implementation (2026-09-09).** The production channel cutover now
+allows one commodity network to own both axes. Its path and witness-coverage graphs
+identify installed bridge vertices by coordinate and axis, enforce capacity per
+axis, and forbid cross-axis turns or inferred connectivity. This realizes the
+existing rule; it does not resolve the external elevation/rotation ambiguities
+below. See [the channel contract](2026-09-09.16-same-item-bridge-channels.md).
+
 **Confirmed current semantics.** A same-layer perpendicular crossing requires a selected bridge;
 the two axes do not merge. Belt and pipe each have their own bridge capability and may independently
 occupy the same map coordinate because layers are separate. Evidence: E6

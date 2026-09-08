@@ -79,7 +79,8 @@ export function witnessScore(w) {
   for (const n of w.transport_networks) {
     const ins = new Map(), outs = new Map();
     for (const s of n.segments) for (const [map, p] of [[ins, s.to], [outs, s.from]]) { const list = map.get(key(p)) ?? []; list.push(s); map.set(key(p), list); }
-    for (const p of n.cells) for (const a of ins.get(key(p)) ?? []) for (const b of outs.get(key(p)) ?? [])
+    const bridges = new Set(w.logistics_components.filter(c => c.transport === n.transport && c.kind === 'bridge').map(c => key(c.position)));
+    for (const p of n.cells.filter(p => !bridges.has(key(p)))) for (const a of ins.get(key(p)) ?? []) for (const b of outs.get(key(p)) ?? [])
       if ((p.x - a.from.x) * (b.to.x - p.x) + (p.y - a.from.y) * (b.to.y - p.y) === 0) turns++;
   }
   return { width, height, area: width * height, physical_tiles: tiles, turns, tuple: [width * height, tiles, turns] };

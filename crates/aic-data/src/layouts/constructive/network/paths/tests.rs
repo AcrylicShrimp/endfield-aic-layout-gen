@@ -112,7 +112,7 @@ fn compare_all(segments: &[TransportNetworkSegment], absent: &[[i64; 2]], name: 
         .flat_map(|s| [xy(&s.from), xy(&s.to)])
         .chain(absent.iter().map(|p| (p[0], p[1])))
         .collect::<BTreeSet<_>>();
-    let mut paths = DirectedPaths::new(segments);
+    let mut paths = DirectedPaths::new(segments, &BTreeSet::new());
     // Repeat in reverse order to exercise scratch reuse after both success and failure.
     for reverse in [false, true] {
         let mut points = points.iter().copied().collect::<Vec<_>>();
@@ -189,9 +189,10 @@ fn indexed_work_scales_with_reachable_edges_not_vertices_times_all_edges() {
         let start = position([0, 0]);
         let end = position([length as i64, 0]);
         let (expected, visited, examined) = reference(&segments, &start, &end);
-        let (actual, profile) =
-            collect_constructive_profile(|| DirectedPaths::new(&segments).path(&start, &end))
-                .unwrap();
+        let (actual, profile) = collect_constructive_profile(|| {
+            DirectedPaths::new(&segments, &BTreeSet::new()).path(&start, &end)
+        })
+        .unwrap();
         assert_eq!(actual, expected);
         assert_eq!(examined, (length * length) as u64);
         let query = &profile.operations[&ProfileOp::SharedPath];
@@ -223,7 +224,7 @@ fn profile_path_scaling() {
             } {
                 let started = Instant::now();
                 if indexed {
-                    let mut paths = DirectedPaths::new(&segments);
+                    let mut paths = DirectedPaths::new(&segments, &BTreeSet::new());
                     for _ in 0..count {
                         std::hint::black_box(paths.path(&start, &end));
                     }

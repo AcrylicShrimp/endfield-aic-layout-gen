@@ -8,11 +8,12 @@ const rate = { numerator: 1, denominator: 3 };
 const carrier = { id: 3, network: 0, transport: 'belt', item: 'carrier', rate, cells: Array.from({ length: 5 }, (_, y) => ({ x: 2, y })) };
 const job = { transport: 'belt', item: 'routed', rate };
 
-test('crossing sites use catalog axes and capacity and reject bends, endpoints, same item and anchors', () => {
+test('crossing sites use catalog axes and capacity and reject bends, endpoints, self-carriers and anchors', () => {
   const before = structuredClone(carrier), options = crossingOptions([carrier], job, catalogs, new Set(['2,1']));
   assert.equal(options.size, 4); assert.ok(options.has('2,2:0')); assert.ok(options.has('2,2:2')); assert.ok(!options.has('2,2:1'));
   assert.equal(crossingOptions([carrier, carrier], job, catalogs, new Set()).size, 0);
-  assert.equal(crossingOptions([carrier], { ...job, item: carrier.item }, catalogs, new Set()).size, 0);
+  assert.equal(crossingOptions([carrier], { ...job, item: carrier.item }, catalogs, new Set()).size, 6);
+  assert.equal(crossingOptions([carrier], { ...job, id: carrier.id }, catalogs, new Set()).size, 0);
   assert.equal(crossingOptions([carrier], { ...job, transport: 'pipe' }, catalogs, new Set()).size, 0);
   const bent = { ...carrier, cells: [{ x: 1, y: 1 }, { x: 2, y: 1 }, { x: 2, y: 2 }] };
   assert.equal(crossingOptions([bent], job, catalogs, new Set()).size, 0);

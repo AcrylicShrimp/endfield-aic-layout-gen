@@ -190,7 +190,7 @@ fn search(
         }
         let shared = matches!(source, Attachment::ExistingNetwork { .. })
             || matches!(target, Attachment::ExistingNetwork { .. });
-        let choices = crossings::options(node, transport, &edge.item, rate, components);
+        let choices = crossings::options(node, transport, rate, components);
         let axes = choices.iter().map(|(p, (axis, _))| (*p, *axis)).collect();
         let mut variants = std::collections::VecDeque::from([BTreeSet::<(i64, i64)>::new()]);
         let mut seen = BTreeSet::from([BTreeSet::<(i64, i64)>::new()]);

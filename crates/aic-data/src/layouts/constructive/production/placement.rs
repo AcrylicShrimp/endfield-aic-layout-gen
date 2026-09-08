@@ -77,7 +77,7 @@ fn score(node: &ConstructiveNode) -> Option<[u64; 3]> {
         .collect::<BTreeSet<_>>()
         .len();
     let turns = node.transport_networks.iter().try_fold(0u64, |sum, n| {
-        sum.checked_add(u64::try_from(network::turns(n)).ok()?)
+        sum.checked_add(u64::try_from(network::turns(n, &node.logistics_components)).ok()?)
     })?;
     Some([area, cells.try_into().ok()?, turns])
 }

@@ -131,6 +131,13 @@ pub(super) fn measure(
                 .push(direction);
         }
         for p in &n.cells {
+            if input.logistics_components.iter().any(|c| {
+                c.transport == n.transport
+                    && c.kind == crate::logistics::LogisticsComponentKind::Bridge
+                    && c.position == *p
+            }) {
+                continue;
+            }
             for a in incoming.get(&xy(p)).into_iter().flatten() {
                 for b in outgoing.get(&xy(p)).into_iter().flatten() {
                     turns += u64::from(a.0 * b.0 + a.1 * b.1 == 0);

@@ -3,7 +3,7 @@
 Input: a complete validated detail, runtime catalogs, a local move/chain request, and
 `maxNewCrossings` (default zero, explicit research limit 0..8). Preserve recipe rates,
 facility/terminal identity and existing component topology. A separate improvement family
-may add one-cell bridge modules at legal crossings of distinct commodities on one layer.
+may add one-cell bridge modules at legal crossings of compatible transport channels on one layer.
 Port identities stay fixed unless the assignment option below is enabled. No claim is
 made that the chosen bridges are the fewest required crossings.
 
@@ -22,8 +22,8 @@ retained/already rebuilt chains. A site has exactly one straight constant-rate c
 no terminal, no existing junction, no facility body, and no reserved attachment arm.
 Choose an allowed runtime bridge rotation supporting both independent straight axes and
 both exact rates. The incoming chain must traverse its perpendicular axis without turning
-inside the component. Existing bridge cells cannot gain a third channel. Same-item
-crossing is excluded from this bounded family, not declared illegal in general.
+inside the component. Existing bridge cells cannot gain a third channel. Same-item crossings use the same
+independent-axis rules; a route cannot use its own chain as a carrier.
 
 A* may enter a precomputed bridge module through its declared incoming arm; the bridge
 state forces the next step straight out of the opposite arm. Adjacent bridges need no
@@ -32,7 +32,7 @@ budget prefix cannot hide an admissible longer prefix. Manhattan remains a lower
 Returned paths include all actual unit cells; repeated cells are rejected. Geometry must
 remain within the current local extent.
 
-Install only chosen modules, attach their IDs to both commodity networks, and preserve
+Install only chosen modules, attach their IDs once to each owning commodity network, and preserve
 the carrier geometry. Recompute candidate sites after each restored chain. If any remaining
 connection fails, discard the whole private move. No component is installed in the incumbent.
 The entire candidate must independently validate and improve used area/cells/turns before
@@ -43,3 +43,8 @@ route work and the configured/consumed bridge budget. Keep a zero-new-bridge con
 Verify catalog arms, rotations, transport and capacity, blocked anchors, unit paths, resource
 budgets, input immutability and whole-factory acceptance. Inspect actual bridge and full-layout
 renders, including rejected trials when no complete candidate is found. No Rust cutover.
+
+The same-item channel cutover is specified in
+[design 16](../../designs/2026-09-09.16-same-item-bridge-channels.md). A network may
+own both bridge axes. Released drafts preserve straight channel identity when
+extracting chains, and physical scores count no cross-axis turn at a bridge.

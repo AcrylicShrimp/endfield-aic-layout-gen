@@ -269,7 +269,7 @@ fn screen_commodity(
     workspace.reset();
     let cap = transports.capacity(transport);
     let rate = Rate::from_quantity_per_duration_ms(cap.quantity, cap.duration_ms).unwrap();
-    let crossings = network::crossings::options(node, transport, item, rate, components);
+    let crossings = network::crossings::options(node, transport, rate, components);
     for ((x, y), (horizontal, _)) in crossings {
         if let Some(index) = workspace.index(x, y) {
             workspace.cells[index] |= if horizontal { HORIZONTAL } else { VERTICAL };

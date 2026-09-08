@@ -1,4 +1,4 @@
-import { key, distance, directions } from './path.mjs';
+import { key, distance, directions, direction } from './path.mjs';
 import { bodyCells } from './movement.mjs';
 import { planFacilityRotations } from './facility-rotation.mjs';
 const fail = (message, entity = null) => { throw Object.assign(new Error(message), { code: 'local-component-pose', stage: 'component-pose', severity: 'info', entity }); };
@@ -21,15 +21,22 @@ function projectBridgeAnchors(w, catalogs, ids) {
   for (const id of ids) {
     const c = w.logistics_components.find(c => c.id === id), def = catalogs.components.components.find(d => d.id === c?.component);
     if (!c || c.kind !== 'bridge' || def?.kind !== 'bridge') rejectBridge('Only existing catalog bridges may be released');
-    const owners = w.transport_networks.filter(n => n.component_ids.includes(id));
-    if (owners.length !== 2) rejectBridge('This release family requires two bridge owners');
+    const owners = w.transport_networks.filter(n => n.component_ids.includes(id)), axes = new Set();
     for (const n of owners) {
       const ins = n.segments.filter(s => key(s.to) === key(c.position)), outs = n.segments.filter(s => key(s.from) === key(c.position));
-      if (n.terminals.some(t => key(t.position) === key(c.position)) || ins.length !== 1 || outs.length !== 1 ||
-        ins[0].from.x + outs[0].to.x !== 2 * c.position.x || ins[0].from.y + outs[0].to.y !== 2 * c.position.y ||
-        BigInt(ins[0].rate.numerator) * BigInt(outs[0].rate.denominator) !== BigInt(outs[0].rate.numerator) * BigInt(ins[0].rate.denominator))
-        rejectBridge('A released bridge must have terminal-free straight equal-rate owner paths');
+      if (n.transport !== c.transport || n.terminals.some(t => key(t.position) === key(c.position)) ||
+        !ins.length || ins.length !== outs.length) rejectBridge('A bridge requires terminal-free independent channels');
+      for (const incoming of ins) {
+        const d = direction(incoming.from, incoming.to), axis = d % 2;
+        const straight = outs.filter(s => direction(s.from, s.to) === d);
+        if (d < 0 || axes.has(axis) || straight.length !== 1 ||
+          BigInt(incoming.rate.numerator) * BigInt(straight[0].rate.denominator) !== BigInt(straight[0].rate.numerator) * BigInt(incoming.rate.denominator) ||
+          BigInt(incoming.rate.numerator) * BigInt(def.capacity.duration_ms) > BigInt(def.capacity.quantity) * 1000n * BigInt(incoming.rate.denominator))
+          rejectBridge('A bridge requires two straight equal-rate channels within per-axis capacity');
+        axes.add(axis);
+      }
     }
+    if (axes.size !== 2) rejectBridge('A bridge requires exactly two perpendicular channels');
     released.add(`${c.transport}:${key(c.position)}`);
   }
   return { released, witness: { ...w, logistics_components: w.logistics_components.filter(c => !ids.includes(c.id)),

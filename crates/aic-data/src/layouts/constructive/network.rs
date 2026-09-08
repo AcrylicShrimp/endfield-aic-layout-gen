@@ -1,5 +1,6 @@
 //! Commodity-network attachment and independent constructive witness validation.
 use super::{ProfileOp, profile_span};
+mod channels;
 pub(super) mod crossings;
 mod external;
 mod first;
@@ -162,6 +163,36 @@ fn arms(
     (inputs, outputs, load)
 }
 
+fn path_component_residual(
+    network: &TransportNetwork,
+    placed: &PlacedLogisticsComponent,
+    definition: &crate::logistics::LogisticsComponentDefinition,
+    path: &[usize],
+) -> Option<Rate> {
+    let capacity = component_capacity(definition)?;
+    if placed.kind != LogisticsComponentKind::Bridge {
+        return capacity.checked_sub(arms(network, &placed.position).2).ok();
+    }
+    let axes = path
+        .iter()
+        .filter_map(|&i| {
+            let segment = &network.segments[i];
+            (segment.from == placed.position || segment.to == placed.position)
+                .then(|| channels::Axis::between(&segment.from, &segment.to))
+        })
+        .collect::<BTreeSet<_>>();
+    let mut residual = capacity;
+    for axis in axes {
+        let load = network
+            .segments
+            .iter()
+            .filter(|s| s.to == placed.position && channels::Axis::between(&s.from, &s.to) == axis)
+            .try_fold(Rate::zero(), |sum, s| sum.checked_add(s.rate).ok())?;
+        residual = residual.min(capacity.checked_sub(load).ok()?);
+    }
+    Some(residual)
+}
+
 struct Occupancy {
     facilities: HashSet<(i64, i64)>,
     layers: BTreeMap<TransportKind, HashSet<(i64, i64)>>,
@@ -234,6 +265,7 @@ fn attachments(
         .iter()
         .filter(|n| n.item == b.item && n.transport == b.transport)
     {
+        let bridges = channels::bridge_cells(node, n.transport);
         let mut paths = None;
         for terminal in n
             .terminals
@@ -264,10 +296,13 @@ fn attachments(
             else {
                 continue;
             };
-            let paths = paths.get_or_insert_with(|| paths::DirectedPaths::new(&n.segments));
+            let paths =
+                paths.get_or_insert_with(|| paths::DirectedPaths::new(&n.segments, &bridges));
             for anchor in &n.cells {
                 stats.attachment_anchors_considered += 1;
-                if n.terminals.iter().any(|t| t.position == *anchor) {
+                if bridges.contains(&xy(anchor))
+                    || n.terminals.iter().any(|t| t.position == *anchor)
+                {
                     continue;
                 }
                 let path = if b.direction == FacilityPortDirection::Output {
@@ -288,8 +323,8 @@ fn attachments(
                             .map(|s| r.min(s))
                     });
                 }
-                // Every component along the shared path must have aggregate capacity, including
-                // unrelated flow on its other arms.
+                // Branch components carry aggregate flow. Each traversed bridge axis has
+                // its own residual, even when both axes belong to this commodity network.
                 for placed in node.logistics_components.iter().filter(|c| {
                     c.transport == b.transport
                         && path.iter().any(|i| {
@@ -298,11 +333,7 @@ fn attachments(
                 }) {
                     residual = residual.and_then(|r| {
                         let def = components.component(&placed.component)?;
-                        let (_, _, l) = arms(n, &placed.position);
-                        component_capacity(def)?
-                            .checked_sub(l)
-                            .ok()
-                            .map(|s| r.min(s))
+                        path_component_residual(n, placed, def, &path).map(|s| r.min(s))
                     });
                 }
                 let Some(residual) = residual.filter(|r| !r.is_zero()) else {
@@ -721,9 +752,16 @@ fn connect_lane(
     }
 }
 
-pub(super) fn turns(n: &TransportNetwork) -> usize {
+pub(super) fn turns(n: &TransportNetwork, components: &[PlacedLogisticsComponent]) -> usize {
     n.cells
         .iter()
+        .filter(|p| {
+            !components.iter().any(|c| {
+                c.transport == n.transport
+                    && c.kind == LogisticsComponentKind::Bridge
+                    && c.position == **p
+            })
+        })
         .map(|p| {
             let (i, o, _) = arms(n, p);
             i.iter()

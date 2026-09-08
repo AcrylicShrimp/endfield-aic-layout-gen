@@ -26,7 +26,8 @@ export function measure(w, catalogs) {
       }else{v=outward[t.endpoint.side].map(x=>source?-x:x);}
       put(source?ins:outs,t.position,v);
     }
-    for(const p of n.cells)for(const a of ins.get(xy(p))??[])for(const b of outs.get(xy(p))??[])
+    const bridges=new Set(w.logistics_components.filter(c=>c.transport===n.transport&&c.kind==='bridge').map(c=>xy(c.position)));
+    for(const p of n.cells.filter(p=>!bridges.has(xy(p))))for(const a of ins.get(xy(p))??[])for(const b of outs.get(xy(p))??[])
       if(a[0]*b[0]+a[1]*b[1]===0)turns++;
   }
   return {definition:'used-area-layer-tiles-all-terminal-arms-v1',score:[d.area,d.transport_layer_cells,turns],

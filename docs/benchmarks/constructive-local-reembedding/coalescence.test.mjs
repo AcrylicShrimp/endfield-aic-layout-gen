@@ -139,3 +139,24 @@ test('a shared pose budget samples later terminal relationships before deepening
   assert.deepEqual(detail, before);
   assert.deepEqual(r, coalescenceCandidates(detail, graph, catalogs, { poseBudget: 2 }));
 });
+
+test('one commodity owns both bridge channels without false turns or merged release paths', () => {
+  const detail = bridge(), [horizontal, vertical] = detail.witness.transport_networks;
+  const secondRate = { numerator: 2, denominator: 5 };
+  vertical.segments.forEach(s => { s.rate = secondRate; });
+  vertical.terminals.forEach(t => { t.rate = secondRate; });
+  detail.witness.transport_networks = [{ ...horizontal,
+    cells: [...new Map([...horizontal.cells, ...vertical.cells].map(p => [`${p.x},${p.y}`, p])).values()],
+    segments: [...horizontal.segments, ...vertical.segments], terminals: [...horizontal.terminals, ...vertical.terminals] }];
+  const before = structuredClone(detail), draft = releaseBridgeDraft(detail.witness, catalogs, ['bridge']);
+  const rebuilt = extractChains(draft.witness, draft.released);
+  assert.equal(rebuilt.chains.length, 2); assert.equal(rebuilt.anchors.belt.has('3,3'), false);
+  assert.deepEqual(rebuilt.chains.map(c => [c.cells[0], c.cells.at(-1), c.rate]), [
+    [{ x: 0, y: 3 }, { x: 6, y: 3 }, rate], [{ x: 3, y: 0 }, { x: 3, y: 6 }, secondRate] ]);
+  const result = reembed(detail, catalogs, { releaseBridges: ['bridge'], endpointPolicy: 'terminal-flexible', maxNewCrossings: 1 });
+  assert.equal(result.status, 'candidate'); assert.equal(result.score.turns, 0);
+  assert.equal(result.detail.witness.logistics_components.length, 1);
+  assert.deepEqual(result.detail.witness.transport_networks[0].component_ids, [result.detail.witness.logistics_components[0].id]);
+  assert.deepEqual(result.detail.witness.transport_networks[0].terminals, detail.witness.transport_networks[0].terminals);
+  assert.deepEqual(detail, before);
+});

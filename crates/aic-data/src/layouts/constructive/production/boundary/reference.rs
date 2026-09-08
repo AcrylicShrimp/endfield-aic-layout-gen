@@ -47,7 +47,7 @@ pub(in crate::layouts::constructive::production) fn blocked_boundaries(
         );
         let cap = transports.capacity(transport);
         let rate = Rate::from_quantity_per_duration_ms(cap.quantity, cap.duration_ms).unwrap();
-        let crossings = network::crossings::options(node, transport, &item, rate, components);
+        let crossings = network::crossings::options(node, transport, rate, components);
         let mut seen = HashSet::from([(-1, -1)]);
         let mut queue = VecDeque::from([(-1, -1)]);
         while let Some((x, y)) = queue.pop_front() {

@@ -1,10 +1,9 @@
-//! Catalog-backed, independent-axis crossings between distinct commodities.
+//! Catalog-backed, independent-axis crossings with independent commodity channels.
 use super::*;
 
 pub(in crate::layouts::constructive) fn options(
     node: &ConstructiveNode,
     transport: TransportKind,
-    item: &str,
     rate: Rate,
     components: &ValidatedLogisticsComponentCatalog,
 ) -> BTreeMap<(i64, i64), (bool, PlacedLogisticsComponent)> {
@@ -24,7 +23,7 @@ pub(in crate::layouts::constructive) fn options(
     for n in node
         .transport_networks
         .iter()
-        .filter(|n| n.transport == transport && n.item != item)
+        .filter(|n| n.transport == transport)
     {
         for p in &n.cells {
             if n.terminals.iter().any(|t| t.position == *p)

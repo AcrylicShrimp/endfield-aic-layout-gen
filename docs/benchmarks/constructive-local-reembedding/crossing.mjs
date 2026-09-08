@@ -15,7 +15,7 @@ export function crossingOptions(carriers, job, catalogs, excluded) {
   for (const [k, xs] of visits) {
     if (xs.length !== 1 || excluded.has(k)) continue;
     const { c, i, p } = xs[0];
-    if (c.item === job.item || i === 0 || i === c.cells.length - 1) continue;
+    if (c.id === job.id || i === 0 || i === c.cells.length - 1) continue;
     const d = direction(c.cells[i - 1], p);
     if (d < 0 || direction(p, c.cells[i + 1]) !== d) continue;
     for (const next of [(d + 1) % 4, (d + 3) % 4]) {

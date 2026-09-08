@@ -4,7 +4,7 @@ use super::*;
 pub(super) struct Reachability<'a> {
     // No constructor index or cached validity is accepted. Rebuild for each immutable witness.
     _segments: &'a [TransportNetworkSegment],
-    vertices: BTreeMap<(i64, i64), usize>,
+    vertices: BTreeMap<Vertex, usize>,
     outgoing: Vec<Vec<usize>>,
     incoming: Vec<Vec<usize>>,
     seen: Vec<bool>,
@@ -15,31 +15,44 @@ impl<'a> Reachability<'a> {
     pub(super) fn new(
         cells: &BTreeSet<(i64, i64)>,
         segments: &'a [TransportNetworkSegment],
+        bridges: &BTreeSet<(i64, i64)>,
     ) -> Self {
         let span = profile_span(ProfileOp::ValidationIndexBuild);
-        let vertices = cells
+        let positions = cells
             .iter()
+            .filter(|p| !bridges.contains(p))
+            .map(|&p| Vertex::ordinary(p))
+            .chain(segments.iter().flat_map(|s| {
+                [
+                    Vertex::segment(&s.from, &s.to, bridges),
+                    Vertex::segment(&s.to, &s.from, bridges),
+                ]
+            }))
+            .collect::<BTreeSet<_>>();
+        let vertices = positions
+            .into_iter()
             .enumerate()
-            .map(|(i, &p)| (p, i))
+            .map(|(i, p)| (p, i))
             .collect::<BTreeMap<_, _>>();
-        let mut outgoing = vec![Vec::new(); cells.len()];
-        let mut incoming = vec![Vec::new(); cells.len()];
+        let count = vertices.len();
+        let mut outgoing = vec![Vec::new(); count];
+        let mut incoming = vec![Vec::new(); count];
         // Segment membership, adjacency, rates and duplicates were checked before this stage.
         for segment in segments {
-            let from = vertices[&xy(&segment.from)];
-            let to = vertices[&xy(&segment.to)];
+            let from = vertices[&Vertex::segment(&segment.from, &segment.to, bridges)];
+            let to = vertices[&Vertex::segment(&segment.to, &segment.from, bridges)];
             outgoing[from].push(to);
             incoming[to].push(from);
         }
-        span.add_work("vertices-indexed", cells.len() as u64);
+        span.add_work("vertices-indexed", count as u64);
         span.add_work("segments-indexed", segments.len() as u64);
         Self {
             _segments: segments,
             vertices,
             outgoing,
             incoming,
-            seen: vec![false; cells.len()],
-            queue: Vec::with_capacity(cells.len()),
+            seen: vec![false; count],
+            queue: Vec::with_capacity(count),
         }
     }
 
@@ -52,7 +65,9 @@ impl<'a> Reachability<'a> {
         self.seen.fill(false);
         self.queue.clear();
         for p in roots {
-            let root = self.vertices[&p];
+            let Some(&root) = self.vertices.get(&Vertex::ordinary(p)) else {
+                return (false, 0, 0);
+            };
             if !self.seen[root] {
                 self.seen[root] = true;
                 self.queue.push(root);

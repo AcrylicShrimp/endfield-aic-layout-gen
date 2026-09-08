@@ -9,7 +9,7 @@ use crate::recipes::{
     FacilityInstanceWiringProjection, FacilityInstanceWiringReport,
 };
 
-// Every validator assertion in this module also checks the unchanged diagnostic oracle.
+// Every validator assertion also checks the independent segment-scan coverage oracle.
 fn validate(
     node: &ConstructiveNode,
     facilities: &ValidatedFacilityCatalog,
@@ -347,8 +347,7 @@ fn overloaded_shared_trunk_cannot_use_the_only_port() {
     );
 }
 
-#[test]
-fn dedicated_router_installs_and_validates_independent_bridge_axes() {
+fn crossing_fixture(same_item: bool, rate: Rate, second_rate: Rate) -> ConstructiveNode {
     use super::super::composition::{merge_nodes, rotate_node, translate_node};
     let (f, _, t, c) = catalogs();
     let items = ValidatedItemCatalog::try_from_catalog(ItemCatalog {
@@ -362,10 +361,6 @@ fn dedicated_router_installs_and_validates_independent_bridge_axes() {
             .collect(),
     })
     .unwrap();
-    let rate = Rate {
-        numerator: 1,
-        denominator: 5,
-    };
     let w = FacilityInstanceWiringReport {
         schema_version: 1,
         success: true,
@@ -381,19 +376,22 @@ fn dedicated_router_installs_and_validates_independent_bridge_axes() {
                 unused_capacity: Rate::zero(),
             })
             .collect(),
-        edges: [("a", "b", "ore"), ("c", "d", "other")]
-            .into_iter()
-            .enumerate()
-            .map(|(i, (source, target, item))| FacilityInstanceWiringEdge {
-                id: format!("edge-{i}"),
-                source: source.into(),
-                target: target.into(),
-                item: item.into(),
-                rate,
-                kind: "recipe-flow".into(),
-                projection: FacilityInstanceWiringProjection::Original,
-            })
-            .collect(),
+        edges: [
+            ("a", "b", "ore"),
+            ("c", "d", if same_item { "ore" } else { "other" }),
+        ]
+        .into_iter()
+        .enumerate()
+        .map(|(i, (source, target, item))| FacilityInstanceWiringEdge {
+            id: format!("edge-{i}"),
+            source: source.into(),
+            target: target.into(),
+            item: item.into(),
+            rate: if i == 0 { rate } else { second_rate },
+            kind: "recipe-flow".into(),
+            projection: FacilityInstanceWiringProjection::Original,
+        })
+        .collect(),
         diagnostics: vec![],
     };
     let nodes = [
@@ -423,6 +421,18 @@ fn dedicated_router_installs_and_validates_independent_bridge_axes() {
         })
         .expect("perpendicular lines must cross with a real bridge");
     }
+    n
+}
+
+#[test]
+fn dedicated_router_installs_and_validates_independent_bridge_axes() {
+    use super::super::composition::{rotate_node, translate_node};
+    let (f, _, t, c) = catalogs();
+    let rate = Rate {
+        numerator: 1,
+        denominator: 5,
+    };
+    let n = crossing_fixture(false, rate, rate);
     assert_eq!(n.logistics_components.len(), 1);
     assert_eq!(
         n.logistics_components[0].kind,
@@ -455,6 +465,95 @@ fn dedicated_router_installs_and_validates_independent_bridge_axes() {
         denominator: 1,
     };
     assert!(validate(&bad, &f, &t, &c).is_err());
+}
+
+#[test]
+fn same_item_bridge_has_independent_rates_paths_and_capacity() {
+    let (f, _, t, c) = catalogs();
+    let horizontal = Rate {
+        numerator: 2,
+        denominator: 5,
+    };
+    let vertical = Rate {
+        numerator: 1,
+        denominator: 3,
+    };
+    let node = crossing_fixture(true, horizontal, vertical);
+    assert_eq!(node.transport_networks.len(), 1);
+    assert_eq!(node.logistics_components.len(), 1);
+    assert_eq!(
+        turns(&node.transport_networks[0], &node.logistics_components),
+        0
+    );
+    validate(&node, &f, &t, &c).unwrap();
+    let n = &node.transport_networks[0];
+    let bridge = &node.logistics_components[0];
+    let bridges = channels::bridge_cells(&node, n.transport);
+    let mut paths = paths::DirectedPaths::new(&n.segments, &bridges);
+    let port = |name| {
+        &n.terminals
+            .iter()
+            .find(|t| t.node == name)
+            .unwrap()
+            .position
+    };
+    assert!(paths.path(port("a"), port("b")).is_some());
+    assert!(paths.path(port("c"), port("d")).is_some());
+    assert!(paths.path(port("a"), port("d")).is_none());
+    assert!(paths.path(port("c"), port("b")).is_none());
+    let path = paths.path(port("a"), port("b")).unwrap();
+    let definition = c.component(&bridge.component).unwrap();
+    assert_eq!(
+        path_component_residual(n, bridge, definition, &path),
+        Some(
+            component_capacity(definition)
+                .unwrap()
+                .checked_sub(horizontal)
+                .unwrap()
+        )
+    );
+    // Both input/output totals match at the coordinate, but the axes exchange flow.
+    let mut mixed = node.clone();
+    let n = &mut mixed.transport_networks[0];
+    for segment in &mut n.segments {
+        if segment.from.y == bridge.position.y && segment.to.x <= bridge.position.x {
+            segment.rate = vertical;
+        } else if segment.from.x == bridge.position.x && segment.to.y <= bridge.position.y {
+            segment.rate = horizontal;
+        }
+    }
+    for terminal in &mut n.terminals {
+        if terminal.node == "a" {
+            terminal.rate = vertical;
+        }
+        if terminal.node == "c" {
+            terminal.rate = horizontal;
+        }
+    }
+    assert_eq!(
+        validate(&mixed, &f, &t, &c).unwrap_err().message,
+        "channel flow conservation or capacity failure"
+    );
+    let mut bad = node.clone();
+    bad.transport_networks[0].terminals[0].position = bridge.position.clone();
+    assert_eq!(
+        validate(&bad, &f, &t, &c).unwrap_err().message,
+        "bridge channel cannot host a terminal"
+    );
+    // A component's tighter capacity applies to each axis independently of line capacity.
+    let mut definitions = c.catalog().clone();
+    let definition = definitions
+        .components
+        .iter_mut()
+        .find(|d| d.id == bridge.component)
+        .unwrap();
+    definition.capacity.quantity = 1;
+    definition.capacity.duration_ms = 3000;
+    let smaller = ValidatedLogisticsComponentCatalog::try_from_catalog(definitions).unwrap();
+    assert_eq!(
+        validate(&node, &f, &t, &smaller).unwrap_err().message,
+        "component identity, rotation, or capacity mismatch"
+    );
 }
 
 #[test]

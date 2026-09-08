@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "purpose": "Compact provenance for the bridge-channel cutover; raw construction and timeout outputs remain ignored",
+  "previous_source_revision": "58c197a",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-cutover/study.json",
+      "bytes": 1760,
+      "sha256": "22709c72e071f0fda65e4a544a65fcade084bf7778c631dd4f1dff12732e4777"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-cutover/audit.json",
+      "bytes": 8449,
+      "sha256": "0f2eb22114812d7ddbdc7258f8d3f213228e987b982c7ff29c5e5743c0eed74d"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-cutover/cleanup.json",
+      "bytes": 2674,
+      "sha256": "cd98f167eb78f92d19e545f9a442344cbeda6fe7695f9c7576670fab29e75816"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-cutover/baseline-retention.json",
+      "bytes": 764,
+      "sha256": "6a5afdb5aa3470666fdfdeb42e55ce9705c2ff945c1520848cc2afdc14f568bf"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-admission/report.json",
+      "bytes": 13833,
+      "sha256": "7d8ad68cf5c27796dc416c0a0060688a5361d62efa8941d8cbde589edaa84e7d"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-admission/roots.json",
+      "bytes": 2082734,
+      "sha256": "4e7c64878be07b07a7cdc3f967071828567383ab301ca185a12ba19feaf6eb4f"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-admission/provenance.json",
+      "bytes": 6987,
+      "sha256": "5d1773e1dabde47be08b15f3323148ef1009a514a78bc8cef146234119309eda"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-medical-85/protocol.json",
+      "bytes": 38676,
+      "sha256": "1c84942c39f07128c6d8856ad9943c5420e210c07e8ae2927520f11a7c1f0544"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-medical-85/report.json",
+      "bytes": 121,
+      "sha256": "276f6279a2e145990819c2f709fb4c47fe949e3d1a72e1c02c73cdca9390ff01"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-medical-85-prefix/protocol.json",
+      "bytes": 3243,
+      "sha256": "3d1fa92222e44b390c6ce5222cee4204bb3f4bc37eb83a737fcf88ea44ba7494"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-medical-85-prefix/report.json",
+      "bytes": 496,
+      "sha256": "26f3caf9f791479e8e17f00bb97f610054086375f2e43b9b50088ecb0a87b296"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-medical-85-prefix/construction.json",
+      "bytes": 3678638,
+      "sha256": "376dedbd7ae6f582507f07af44e2f377bee07a579f8c49254143c6163955e2aa"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-medical-85-prefix/audit.json",
+      "bytes": 3135,
+      "sha256": "b5dd919a88311d7500dfb9c9580fcec3d3a4610593f9f6e3a01127df03f9aa50"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/inputs.json",
+      "bytes": 3711,
+      "sha256": "5fd2ade699fec6628c2fb9ffcbee60ed7266ac92aa4baeb32e68b0e783cee8d9"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-admission/enriched-consumables-medical-fresh-rate-2/construction-process.json",
+      "bytes": 1497,
+      "sha256": "d8abfafa65047c2c00fdd5b92924fd944ed9372e9a6b16e15882b5b9d3a05f5c"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-admission/enriched-consumables-medical-fresh-rate-2/construction.json",
+      "bytes": 428218589,
+      "sha256": "7d7803f07209d2a4be6bfd4c410cbf1ef6f04bfa16c77c54c040577bb65cc536"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-admission/enriched-consumables-medical-fresh-rate-2/root.json",
+      "bytes": 1885591,
+      "sha256": "3419d77c5cee0f985ffbfa1c1c5b7b78590f4384f253a274664f9cdb2ec76d77"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-admission/enriched-consumables-food-fresh-rate-1/construction-process.json",
+      "bytes": 1484,
+      "sha256": "212c3ae7233f95d75431f87e74da4b584cf4dc57e57d2c36f1e6b427bf5f958d"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-admission/enriched-consumables-food-fresh-rate-0/construction-process.json",
+      "bytes": 1487,
+      "sha256": "28b9077918075a81da6d62e8027da41875b36e52a1421f46f816d40b8acce3dc"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-admission/enriched-consumables-food-fresh-rate-0/construction.json",
+      "bytes": 4849505,
+      "sha256": "f7a8540540a504f4eeaa0d2d4fbfa834336442f9d1ec772e67f1a20bcfc168e6"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-admission/enriched-consumables-medical-fresh-rate-1/construction-process.json",
+      "bytes": 1501,
+      "sha256": "fbcfaa4a4f03cfef10809f833e61d3d049dc901f6420def3f782e28e28327ab4"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-admission/enriched-consumables-medical-fresh-rate-0/construction-process.json",
+      "bytes": 1496,
+      "sha256": "f15c0f6cafdc9a3a6eee7505f2c436694e9f6e491c31f9608234ba29399a4b4f"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-admission/enriched-consumables-medical-fresh-rate-0/construction.json",
+      "bytes": 9578572,
+      "sha256": "e7d0b4f5787a739c40f9ad8ac7489f56f80cce40fe7f007c06a80a0debe2644b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-admission/enriched-consumables-medical-fresh-rate-0/root.json",
+      "bytes": 196621,
+      "sha256": "da9c9f512bb9aff0f70b0fa92b0aff203ebd4f58aa338393f75edfe01d59b0f7"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-admission/enriched-consumables-food-fresh-rate-2/construction-process.json",
+      "bytes": 1491,
+      "sha256": "a21287837c5f6bbeed894bd9d8a48469686f51f675eb04c922766709b109e6b8"
+    },
+    {
+      "path": "target/same-item-bridge-build/release/aic-cli",
+      "bytes": 10725376,
+      "sha256": "2856a36e67a5c4a1dd8fb3b3fdd8fb4fe8a8af795e40c151d6b267a10fe3cfca"
+    },
+    {
+      "path": "target/same-item-bridge-build/release/aic-witness-probe",
+      "bytes": 2231200,
+      "sha256": "40e117fdee45a802f9ce874bac6f70d9ebd55a1d16c37bcfe68b98e7d0c57e2f"
+    },
+    {
+      "path": "target/same-item-bridge-build/release/libaic_pilot_native.dylib",
+      "bytes": 3127040,
+      "sha256": "3b0c80bba6ed020cc581d29ec915f977da461576b0c7dcdb80ada3fdedb39f37"
+    }
+  ]
+}

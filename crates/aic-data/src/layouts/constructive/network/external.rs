@@ -111,7 +111,7 @@ fn search(
                 }
             }
         }
-        let choices = crossings::options(node, transport, &edge.item, rate, components);
+        let choices = crossings::options(node, transport, rate, components);
         let axes = choices.iter().map(|(p, (a, _))| (*p, *a)).collect();
         for (external, side) in endpoints {
             if blocked.contains(&xy(&external)) {

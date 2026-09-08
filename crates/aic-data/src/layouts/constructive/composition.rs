@@ -977,7 +977,11 @@ fn composition_score(
         used_bounding_box_area: usize::try_from(node.bounds.width * node.bounds.height)
             .unwrap_or(usize::MAX),
         transport_tiles,
-        route_turns: node.transport_networks.iter().map(network::turns).sum(),
+        route_turns: node
+            .transport_networks
+            .iter()
+            .map(|n| network::turns(n, &node.logistics_components))
+            .sum(),
     }
 }
 

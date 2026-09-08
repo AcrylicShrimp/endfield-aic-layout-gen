@@ -1,30 +1,37 @@
 //! Ordered adjacency over an immutable segment slice, independent of grid extent and capacity.
+use super::channels::Vertex;
 use super::{ProfileOp, TransportNetworkSegment, WorldGridPosition, profile_span, xy};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) struct DirectedPaths<'a> {
     // Keep the topology borrowed for the entire index lifetime.
     _segments: &'a [TransportNetworkSegment],
-    vertices: BTreeMap<(i64, i64), usize>,
+    vertices: BTreeMap<Vertex, usize>,
+    bridges: BTreeSet<(i64, i64)>,
     outgoing: Vec<Vec<(usize, usize)>>,
     previous: Vec<Option<(usize, usize)>>,
     queue: Vec<usize>,
 }
 
 impl<'a> DirectedPaths<'a> {
-    pub(super) fn new(segments: &'a [TransportNetworkSegment]) -> Self {
+    pub(super) fn new(
+        segments: &'a [TransportNetworkSegment],
+        bridges: &BTreeSet<(i64, i64)>,
+    ) -> Self {
         let span = profile_span(ProfileOp::PathIndexBuild);
         let mut vertices = BTreeMap::new();
         for segment in segments {
-            for position in [&segment.from, &segment.to] {
+            for (position, other) in [(&segment.from, &segment.to), (&segment.to, &segment.from)] {
                 let next = vertices.len();
-                vertices.entry(xy(position)).or_insert(next);
+                vertices
+                    .entry(Vertex::segment(position, other, bridges))
+                    .or_insert(next);
             }
         }
         let mut outgoing = vec![Vec::new(); vertices.len()];
         for (edge, segment) in segments.iter().enumerate() {
-            let from = vertices[&xy(&segment.from)];
-            let to = vertices[&xy(&segment.to)];
+            let from = vertices[&Vertex::segment(&segment.from, &segment.to, bridges)];
+            let to = vertices[&Vertex::segment(&segment.to, &segment.from, bridges)];
             // Preserve the original segment iteration order at every source vertex.
             outgoing[from].push((edge, to));
         }
@@ -35,6 +42,7 @@ impl<'a> DirectedPaths<'a> {
             previous: vec![None; vertices.len()],
             queue: Vec::with_capacity(vertices.len()),
             vertices,
+            bridges: bridges.clone(),
             outgoing,
         }
     }
@@ -60,12 +68,16 @@ impl<'a> DirectedPaths<'a> {
         visited: &mut u64,
         examined: &mut u64,
     ) -> Option<Vec<usize>> {
+        // A bridge axis is never an attachment endpoint; no implicit axis selection.
+        if self.bridges.contains(&xy(start)) || self.bridges.contains(&xy(end)) {
+            return None;
+        }
         if start == end {
             *visited = 1;
             return Some(Vec::new());
         }
-        let start = *self.vertices.get(&xy(start))?;
-        let end = *self.vertices.get(&xy(end))?;
+        let start = *self.vertices.get(&Vertex::ordinary(xy(start)))?;
+        let end = *self.vertices.get(&Vertex::ordinary(xy(end)))?;
         self.previous.fill(None);
         self.queue.clear();
         self.previous[start] = Some((start, usize::MAX));
