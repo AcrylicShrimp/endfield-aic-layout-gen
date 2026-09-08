@@ -250,11 +250,13 @@ def run(root, source, protocol_path, library, output):
             replay(catalogs[summary['case']], training, record['prefix'], record['trace'], record['layout'])
             training_replays += 1
             setup_commands += len(record['prefix'])
-        assessment_replays = 0
+        assessment_replays, assessment_setup_commands = 0, 0
         for assessment in result['assessments']:
             gate = read(output/assessment['file'])
             for row in gate['rows']:
-                actual = replay_assessment(catalogs[row['case']], config, collector.starts[row['case']][row['level']], row, 16)
+                prefix = collector.starts[row['case']][row['level']]
+                assessment_setup_commands += len(prefix)
+                actual = replay_assessment(catalogs[row['case']], config, prefix, row, 16)
                 if not equal(actual, row):
                     raise ValueError('checkpoint_replay.independent: assessment replay differs')
                 assessment_replays += 1
@@ -264,7 +266,8 @@ def run(root, source, protocol_path, library, output):
             raise ValueError('checkpoint_replay.final: original checkpoint changed')
         result.update(status='complete', total_seconds=time.perf_counter()-started,
             validation={'training_episodes': training_replays, 'assessment_episodes': assessment_replays,
-                        'training_commands': 32768, 'assessment_commands': 147456, 'training_setup_commands': setup_commands},
+                        'training_commands': 32768, 'assessment_commands': 147456, 'training_setup_commands': setup_commands,
+                        'assessment_setup_commands': assessment_setup_commands},
             collected_sha256=digest(output/'collected.jsonl'), endpoint_sha256=digest(output/'endpoint.pt'))
     except BaseException as error:
         result.update(status='interrupted', diagnostic={'code': 'checkpoint_replay.interrupted', 'severity': 'error',
