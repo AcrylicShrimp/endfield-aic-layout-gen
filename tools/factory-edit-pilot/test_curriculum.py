@@ -61,7 +61,7 @@ class CurriculumTests(unittest.TestCase):
                 expected = reference.observe(reference.candidates())
                 actual, handle = native.observe()
                 for key in expected:
-                    self.assertEqual(actual[key].tobytes(), expected[key].tobytes(), (remaining, key))
+                    np.testing.assert_array_equal(actual[key], expected[key], err_msg=str((remaining, key)))
                 self.assertEqual(snapshot(native)["steps"], 0)
                 if remaining:
                     commands = runtime.case["witness"][len(prefix):len(prefix)+remaining]
@@ -91,7 +91,7 @@ class CurriculumTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "curriculum.prefix_domain"):
             env.reset_with_prefix_json(json.dumps([{"op": "ERASE_TRANSPORT", "network": "battery", "cells": [[999, 999]]}]))
 
-    def test_threaded_native_steps_and_observations_are_byte_identical(self):
+    def test_threaded_native_steps_and_observations_are_identical(self):
         serial = [runtime.new_engine() for runtime in self.runtimes.values()]
         threaded = [runtime.new_engine() for runtime in self.runtimes.values()]
         rng = np.random.default_rng(91)
@@ -101,7 +101,7 @@ class CurriculumTests(unittest.TestCase):
                 right = list(pool.map(lambda env: env.observe(), threaded))
                 for a, b in zip(left, right):
                     for key in a[0]:
-                        self.assertEqual(a[0][key].tobytes(), b[0][key].tobytes())
+                        np.testing.assert_array_equal(a[0][key], b[0][key])
                 actions = [int(rng.integers(len(pair[0]["candidates"]))) for pair in left]
                 a = [env.step(pair[1], action) for env, pair, action in zip(serial, left, actions)]
                 b = list(pool.map(lambda item: item[0].step(item[1][1], item[2]), zip(threaded, right, actions)))

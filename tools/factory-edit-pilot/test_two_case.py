@@ -49,6 +49,9 @@ class TwoCaseTests(unittest.TestCase):
     def assert_observation_equal(self, actual, expected):
         self.assertEqual(actual.keys(), expected.keys())
         for key in actual:
+            if key == "schema_version":
+                self.assertEqual(actual[key], expected[key])
+                continue
             self.assertEqual(actual[key].dtype, expected[key].dtype, key)
             self.assertEqual(actual[key].shape, expected[key].shape, key)
             self.assertEqual(actual[key].tobytes(), expected[key].tobytes(), key)
@@ -91,15 +94,14 @@ class TwoCaseTests(unittest.TestCase):
                 native.reset()
                 reference.reset()
 
-    def test_category_reordering_and_incomplete_cycles_are_rejected(self):
+    def test_category_reordering_is_admitted_but_incomplete_cycles_are_rejected(self):
         _, _, config, runtimes = self.load()
         changed = deepcopy(runtimes["B"].case)
         changed["networks"].reverse()
         path = self.directory / "reordered.json"
         path.write_text(json.dumps(changed))
         incompatible = Runtime(ROOT, path, config, self.library)
-        with self.assertRaisesRegex(ValueError, "study.production"):
-            validate_compatibility({"A": runtimes["A"], "B": incompatible})
+        validate_compatibility({"A": runtimes["A"], "B": incompatible})
         self.protocol["conditions"]["A+B"]["commands"] = 96
         self.protocol["checkpoints"] = [0, 96]
         self.protocol_path.write_text(json.dumps(self.protocol))

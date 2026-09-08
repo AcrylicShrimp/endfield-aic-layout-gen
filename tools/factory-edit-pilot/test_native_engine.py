@@ -58,6 +58,9 @@ class NativeEngineTests(unittest.TestCase):
     def compare_observation(self, actual, expected):
         self.assertEqual(set(actual), set(expected))
         for key in expected:
+            if key == "schema_version":
+                self.assertEqual(actual[key], expected[key])
+                continue
             self.assertEqual(actual[key].dtype, expected[key].dtype, key)
             self.assertEqual(actual[key].shape, expected[key].shape, key)
             self.assertEqual(actual[key].tobytes(), expected[key].tobytes(), key)
@@ -66,12 +69,13 @@ class NativeEngineTests(unittest.TestCase):
         actual, handle = self.engine.observe()
         expected = self.reference.observe(self.reference.candidates())
         self.compare_observation(actual, expected)
-        saved = {key: value.copy() for key, value in actual.items()}
+        saved = deepcopy(actual)
         for command in self.catalog.case["witness"]:
             self.execute(command)
         for key in saved:
             np.testing.assert_array_equal(actual[key], saved[key])
-            actual[key].fill(123)
+            if key != "schema_version":
+                actual[key].fill(123)
         self.domain()
         with self.assertRaisesRegex(ValueError, "engine.stale_handle"):
             self.engine.observe_candidates(handle)

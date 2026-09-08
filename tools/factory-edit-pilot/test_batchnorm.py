@@ -61,6 +61,7 @@ class BatchNormTests(unittest.TestCase):
             torch.testing.assert_close(value, model.state_dict()[name], rtol=0, atol=0)
         second = deepcopy(self.observation)
         second["raster"] = np.pad(second["raster"], ((0, 0), (0, 3), (0, 5)))
+        second["entity_maps"] = np.pad(second["entity_maps"], ((0, 0), (0, 3), (0, 5)), constant_values=-1)
         model.calibrate_normalization([self.observation, second], 2)
         before = {name: value.clone() for name, value in model.named_buffers()}
         model.train()
@@ -84,6 +85,7 @@ class BatchNormTests(unittest.TestCase):
         self.assertGreater(model.parameter_count, Policy(self.observation).parameter_count)
         second = deepcopy(self.observation)
         second["raster"] = np.pad(second["raster"], ((0, 0), (0, 3), (0, 5)))
+        second["entity_maps"] = np.pad(second["entity_maps"], ((0, 0), (0, 3), (0, 5)), constant_values=-1)
         model.calibrate_normalization([self.observation], 1)
         before = {key: value.clone() for key, value in model.named_buffers()}
         logits, values = model(batch([self.observation]))

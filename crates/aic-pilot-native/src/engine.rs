@@ -466,12 +466,7 @@ impl Engine {
             "terminal_ids":self.catalog.terminals.iter().map(|t| &t.id).collect::<Vec<_>>(),
             "facility_types":self.catalog.types,"recipes":self.catalog.recipes,
             "operations":self.operation_names(),
-            "observation_dimensions":{
-                "raster_channels":self.observation_tables.per_state*2+3,
-                "object_features":self.observation_tables.object_template.shape()[1],
-                "candidate_features":self.observation_tables.feature_numeric+8,
-                "stats":8,
-            },
+            "observation_dimensions":crate::observation::dimensions(),
         })
     }
 }

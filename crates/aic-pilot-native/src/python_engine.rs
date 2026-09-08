@@ -61,7 +61,14 @@ fn outcome<'py>(py: Python<'py>, value: Outcome) -> PyResult<Bound<'py, PyDict>>
 fn observation<'py>(py: Python<'py>, value: Observation) -> PyResult<Bound<'py, PyDict>> {
     let result = PyDict::new(py);
     result.set_item("raster", value.raster.into_pyarray(py))?;
-    result.set_item("objects", value.objects.into_pyarray(py))?;
+    result.set_item("schema_version", crate::observation::SCHEMA_VERSION)?;
+    result.set_item("entity_maps", value.entity_maps.into_pyarray(py))?;
+    result.set_item("entities", value.entities.into_pyarray(py))?;
+    result.set_item("edges", value.edges.into_pyarray(py))?;
+    result.set_item("edge_types", value.edge_types.into_pyarray(py))?;
+    result.set_item("operands", value.operands.into_pyarray(py))?;
+    result.set_item("operand_entities", value.operand_entities.into_pyarray(py))?;
+    result.set_item("operand_mask", value.operand_mask.into_pyarray(py))?;
     result.set_item("stats", value.stats.into_pyarray(py))?;
     result.set_item("candidates", value.candidates.into_pyarray(py))?;
     result.set_item("points", value.points.into_pyarray(py))?;
