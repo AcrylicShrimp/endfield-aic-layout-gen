@@ -11,17 +11,28 @@ from reference.acceptance import Catalog, check
 from reference.environment import Environment, serialize
 
 
-def audit(root, case, output, source_commit):
-    catalog = Catalog(root, case)
-    metadata = json.loads((output/"metadata.json").read_text())
-    config = metadata["config"]
+def verify_source_hashes(root, source_commit, recorded, external_inputs=()):
+    explicit = {Path(path).resolve() for path in external_inputs}
     mismatches = []
-    for path, expected in metadata["provenance"]["files_sha256"].items():
-        original = subprocess.run(["git", "show", f"{source_commit}:{path}"], cwd=root, capture_output=True, check=True).stdout
-        if hashlib.sha256(original).hexdigest() != expected:
+    for path, expected in recorded.items():
+        original = subprocess.run(["git", "show", f"{source_commit}:{path}"], cwd=root, capture_output=True)
+        if original.returncode == 0:
+            payload = original.stdout
+        elif (root / path).resolve() in explicit:
+            payload = (root / path).read_bytes()
+        else:
+            raise ValueError(f"audit.source_missing: {source_commit}:{path}: no source or explicit external input")
+        if hashlib.sha256(payload).hexdigest() != expected:
             mismatches.append(path)
     if mismatches:
         raise ValueError(f"Recorded inputs/source differ from {source_commit}: {mismatches}")
+
+
+def audit(root, case, output, source_commit, external_inputs=()):
+    catalog = Catalog(root, case)
+    metadata = json.loads((output/"metadata.json").read_text())
+    config = metadata["config"]
+    verify_source_hashes(root, source_commit, metadata["provenance"]["files_sha256"], external_inputs)
     for path, expected in metadata["provenance"].get("external_files_sha256", {}).items():
         if hashlib.sha256(Path(path).read_bytes()).hexdigest() != expected:
             raise ValueError(f"Recorded external input changed: {path}")
