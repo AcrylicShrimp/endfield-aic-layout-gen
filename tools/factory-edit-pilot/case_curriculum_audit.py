@@ -6,6 +6,7 @@ from copy import deepcopy
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 
 import numpy as np
 import torch
@@ -17,6 +18,22 @@ from evidence import write
 from native_training_comparison import policy_hash, rows
 from reference.acceptance import Catalog, check
 from reference.environment import Environment
+
+
+def verify_case_provenance(root, output, source_commit, metadata, cases, config, training):
+    resolved = subprocess.run(["git", "rev-parse", "--verify", "--end-of-options",
+                               f"{source_commit}^{{commit}}"], cwd=root, capture_output=True, text=True)
+    if resolved.returncode:
+        raise ValueError(f"case_curriculum_audit.source: {root}: unknown commit {source_commit!r}")
+    source_commit = resolved.stdout.strip()
+    for key in cases:
+        directory = output / key
+        saved = json.loads((directory / "metadata.json").read_text())
+        if (saved["provenance"] != metadata["provenance"][key] or saved["config"] != config
+                or saved["training_config"] != training or not saved["provenance"]["git_worktree_clean"]
+                or saved["provenance"]["git_head"] != source_commit):
+            raise ValueError(f"case_curriculum_audit.provenance: {directory}: inconsistent or uncommitted source")
+    return source_commit
 
 
 def audit_study(root, protocol_path, output, source_commit):
@@ -31,6 +48,8 @@ def audit_study(root, protocol_path, output, source_commit):
             or metadata["protocol"] != protocol or config != expected or metadata["training_config"] != training
             or metadata["seed"] not in protocol["training_seeds"]):
         raise ValueError(f"case_curriculum_audit.protocol: {output}: incomplete run or configuration mismatch")
+    source_commit = verify_case_provenance(root, output, source_commit, metadata,
+                                          protocol["cases"], config, training)
     torch.set_num_threads(config["threads"])
     starts = json.loads((output / "starts.json").read_text())
     catalogs = {key: Catalog(root, root / path) for key, path in protocol["cases"].items()}
@@ -170,11 +189,6 @@ def audit_study(root, protocol_path, output, source_commit):
               "stage_commands": dict(stages), "setup_commands": setup, "checkpoints_sha256": hashes, "cases": {}}
     for key, path in protocol["cases"].items():
         directory = output / key
-        case_metadata = json.loads((directory / "metadata.json").read_text())
-        if (case_metadata["provenance"] != metadata["provenance"][key] or case_metadata["config"] != config or case_metadata["training_config"] != training
-                or not case_metadata["provenance"]["git_worktree_clean"]
-                or case_metadata["provenance"]["git_head"] != source_commit):
-            raise ValueError(f"case_curriculum_audit.provenance: {directory}: inconsistent or uncommitted source")
         checked = audit(root, root / path, directory, source_commit, external_inputs=[protocol_path, root / path])
         result["cases"][key] = checked
         initial = checked["layouts"]["initial.json"]
