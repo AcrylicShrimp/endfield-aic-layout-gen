@@ -1,0 +1,2 @@
+# Unified diff blank context lines contain a required leading space.
+constructor-*-diagnostic.patch whitespace=-blank-at-eol

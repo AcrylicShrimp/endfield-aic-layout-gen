@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "purpose": "Compact reproduction provenance; raw routing traces and partial states remain ignored local evidence",
+  "base_commit": "30a74c9",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-attachment-baseline/protocol.json",
+      "bytes": 11500,
+      "sha256": "47b918fa67768f9f43ceedc2cb9024abb59bacf4abdc890506046e1b85cd8002"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-attachment-baseline/report.json",
+      "bytes": 842,
+      "sha256": "ddb5d056c1dd269169ac0379b3cc5e82e8b4711d16aad7d27c2247239eb5f1ff"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-attachment-baseline/construction.json",
+      "bytes": 3466831,
+      "sha256": "69f4c05bcbd952c7f2606dea82a00039e41caac442ee1bc93181282a9d7f05cb"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-attachment-baseline/snapshot.json",
+      "bytes": 223576,
+      "sha256": "c47bfb2444ab8c1d9c40191eecdac822954cd1eaab2aa09d199433ee1ece14a0"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-attachment-baseline/trials.jsonl",
+      "bytes": 8173118,
+      "sha256": "a95efd16ed67e5b06eb94f96f682f6753adf7ecb08be00103dff5b638f5aff5e"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-same-item-crossing/protocol.json",
+      "bytes": 2959,
+      "sha256": "5256dd5a20f7fbe6f5c9a4258cbd6b63e71bb2e686dbcd81751a1fcdabbfb19b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-same-item-crossing/report.json",
+      "bytes": 580,
+      "sha256": "776c2c4944e0dd7575346bea5b1f330733813214f8f3c296f8f0d782d0071c09"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-same-item-crossing/construction.json",
+      "bytes": 4210097,
+      "sha256": "a693d82897ae516c16bfcce4afa09a6fa2f01347817384b249068e0c56e8ad2d"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-same-item-crossing/snapshot.json",
+      "bytes": 279864,
+      "sha256": "440d7a55db5c46a0568de65091f35d0153b8dfd1d7d38b444cb429c04f70bd86"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-same-item-crossing/trials.jsonl",
+      "bytes": 8123924,
+      "sha256": "2471ef35a6547eef931226050384db3bbcbf3685907a2f0b393d7d36e633c9c1"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-selected-edge-crossing/protocol.json",
+      "bytes": 2979,
+      "sha256": "54ee109b07136fb76c3fe37faece8eb80d41287460a89d11375601fcca3be3bc"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-selected-edge-crossing/report.json",
+      "bytes": 579,
+      "sha256": "7df6a9354c9ab10d4826fae5ed12a4dc71d5415d1a0fb190c08e4521d56935d2"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-selected-edge-crossing/construction.json",
+      "bytes": 3467081,
+      "sha256": "2b4b259a72a40f2f9a76aaf8642f9648728b94a6c27a3c136483521a117170ac"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-selected-edge-crossing/snapshot.json",
+      "bytes": 224422,
+      "sha256": "ff93188dc2e4cb516ecee634b804dfca09322fa4b193043d75d064b0626ec4cd"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-selected-edge-crossing/trials.jsonl",
+      "bytes": 8134337,
+      "sha256": "7ae5f739d2d68a909e541e7b803723a6ed247deab578bbea776302edb5201d04"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-attachment-baseline/paths.json",
+      "bytes": 6099,
+      "sha256": "a24fb3af779bb65bfc7ab638caa1284aa4de72ff4384c6731324983b83c71876"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-selected-edge-crossing/comparison.json",
+      "bytes": 6596,
+      "sha256": "8457874a111f3acef09087858d9386e81ba9563054687f595602d9afb97de60e"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/constructor-selected-edge-crossing/cleanup.json",
+      "bytes": 782,
+      "sha256": "fd0703271ec57b7e7793b27fd3773e6bd802fb1d1a7e98bee66cf60e2177c7ec"
+    },
+    {
+      "path": "target/constructor-attachment-build/release/aic-cli",
+      "bytes": 10764304,
+      "sha256": "1d996c0424acbd4f489cbf80aedfa35859b7f1079e1417d505030e83eb1e4410"
+    },
+    {
+      "path": "target/constructor-same-item-build/release/aic-cli",
+      "bytes": 10754640,
+      "sha256": "a4c30fa0478d4b1ed3fe9446ed1bda3ba933735adb3686e373ab7e2a743d661a"
+    },
+    {
+      "path": "target/constructor-selected-edge-build/release/aic-cli",
+      "bytes": 10720912,
+      "sha256": "991bb6c83c22e4f2f1d63c2be8971cff28099f8f66c88b3e35ce47e0e2b38f66"
+    },
+    {
+      "path": "tools/factory-edit-pilot/constructor-same-item-crossing-diagnostic.patch",
+      "bytes": 7402,
+      "sha256": "efad73f508b6bd68ce22abb8bbda738f7ae3379bf18d519dad0fcfd0727dd23c"
+    },
+    {
+      "path": "tools/factory-edit-pilot/constructor_attachment_paths.py",
+      "bytes": 5325,
+      "sha256": "0ba59c0e8405fc25f13e4227ac10c3ea325b59f292f6bdf5e6976ee13730fb5f"
+    },
+    {
+      "path": "tools/factory-edit-pilot/constructor_attachment_trace.py",
+      "bytes": 4932,
+      "sha256": "8d2fc4106aa7bea6dcbc3f8927d992f0678b67361be13b159344c547b647bd5f"
+    },
+    {
+      "path": "tools/factory-edit-pilot/constructor-selected-edge-crossing-diagnostic.patch",
+      "bytes": 9256,
+      "sha256": "76625998ec67debc4d3f21e768d0347480254cb0a47d98971f8d3335dd74a152"
+    },
+    {
+      "path": "tools/factory-edit-pilot/constructor-attachment-diagnostic.patch",
+      "bytes": 6283,
+      "sha256": "e945120887c591d49f4962fb3d9f223c81d845549626f153042e4eab1fed71e3"
+    },
+    {
+      "path": "tools/factory-edit-pilot/constructor_same_item_trace.py",
+      "bytes": 3500,
+      "sha256": "967dc9ba852ab676b2e5b7a7f0af0e7c032b68796a5b6d0315a37910da98b1ee"
+    },
+    {
+      "path": "tools/factory-edit-pilot/constructor_attachment_comparison.py",
+      "bytes": 3807,
+      "sha256": "a09f4b6293cc12b5680aa92f13a490ad55058f115750ac9c068a690de2b4eaea"
+    },
+    {
+      "path": "tools/factory-edit-pilot/test_constructor_attachment.py",
+      "bytes": 2873,
+      "sha256": "582096df32ca685858044db9861b93d8c1bb9422869cde2a05b47a9ecb1bb18e"
+    }
+  ]
+}

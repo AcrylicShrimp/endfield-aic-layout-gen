@@ -1,0 +1,230 @@
+diff --git a/crates/aic-data/src/layouts/constructive/network.rs b/crates/aic-data/src/layouts/constructive/network.rs
+index 90f84ce..efd3117 100644
+--- a/crates/aic-data/src/layouts/constructive/network.rs
++++ b/crates/aic-data/src/layouts/constructive/network.rs
+@@ -1,6 +1,7 @@
+ //! Commodity-network attachment and independent constructive witness validation.
+ use super::{ProfileOp, profile_span};
+ pub(super) mod crossings;
++mod diagnostic;
+ mod external;
+ mod first;
+ mod paths;
+diff --git a/crates/aic-data/src/layouts/constructive/network/crossings.rs b/crates/aic-data/src/layouts/constructive/network/crossings.rs
+index 0f872cb..6041d26 100644
+--- a/crates/aic-data/src/layouts/constructive/network/crossings.rs
++++ b/crates/aic-data/src/layouts/constructive/network/crossings.rs
+@@ -7,6 +7,27 @@ pub(in crate::layouts::constructive) fn options(
+     item: &str,
+     rate: Rate,
+     components: &ValidatedLogisticsComponentCatalog,
++) -> BTreeMap<(i64, i64), (bool, PlacedLogisticsComponent)> {
++    options_impl(node, transport, item, rate, components, false)
++}
++
++pub(super) fn including_same_item(
++    node: &ConstructiveNode,
++    transport: TransportKind,
++    item: &str,
++    rate: Rate,
++    components: &ValidatedLogisticsComponentCatalog,
++) -> BTreeMap<(i64, i64), (bool, PlacedLogisticsComponent)> {
++    options_impl(node, transport, item, rate, components, true)
++}
++
++fn options_impl(
++    node: &ConstructiveNode,
++    transport: TransportKind,
++    item: &str,
++    rate: Rate,
++    components: &ValidatedLogisticsComponentCatalog,
++    allow_same_item: bool,
+ ) -> BTreeMap<(i64, i64), (bool, PlacedLogisticsComponent)> {
+     let _span = profile_span(ProfileOp::CrossingOptions);
+     let Some(def) = components.catalog().components.iter().find(|d| {
+@@ -24,7 +45,7 @@ pub(in crate::layouts::constructive) fn options(
+     for n in node
+         .transport_networks
+         .iter()
+-        .filter(|n| n.transport == transport && n.item != item)
++        .filter(|n| n.transport == transport && (allow_same_item || n.item != item))
+     {
+         for p in &n.cells {
+             if n.terminals.iter().any(|t| t.position == *p)
+diff --git a/crates/aic-data/src/layouts/constructive/network/diagnostic.rs b/crates/aic-data/src/layouts/constructive/network/diagnostic.rs
+new file mode 100644
+index 0000000..b37cc71
+--- /dev/null
++++ b/crates/aic-data/src/layouts/constructive/network/diagnostic.rs
+@@ -0,0 +1,114 @@
++//! Isolated research-build tracing; no effect on candidate ordering or acceptance.
++use super::*;
++use std::io::Write;
++use std::sync::{Mutex, OnceLock};
++
++#[derive(serde::Deserialize)]
++struct Config {
++    edge: String,
++    output: std::path::PathBuf,
++    snapshot: std::path::PathBuf,
++    max_rows: usize,
++}
++
++struct Sink {
++    config: Config,
++    file: std::fs::File,
++    rows: usize,
++}
++
++static SINK: OnceLock<Option<Mutex<Sink>>> = OnceLock::new();
++
++pub(super) fn record(
++    node: &ConstructiveNode,
++    edge: &FacilityInstanceWiringEdge,
++    source: &Attachment,
++    target: &Attachment,
++    transport: TransportKind,
++    occupancy: &Occupancy,
++    mask: &HashSet<(i64, i64)>,
++    axes: &BTreeMap<(i64, i64), bool>,
++    dimensions: (i64, i64),
++    lane: usize,
++    path: Option<&[WorldGridPosition]>,
++) {
++    let Some(sink) = SINK.get_or_init(|| {
++        let file = std::env::var_os("AIC_ATTACHMENT_DIAGNOSTIC")?;
++        let config: Config = serde_json::from_slice(&std::fs::read(file).unwrap()).unwrap();
++        assert!(config.max_rows > 0 && config.max_rows <= 4096);
++        let file = std::fs::OpenOptions::new()
++            .create_new(true)
++            .write(true)
++            .open(&config.output)
++            .unwrap();
++        Some(Mutex::new(Sink {
++            config,
++            file,
++            rows: 0,
++        }))
++    }) else {
++        return;
++    };
++    let mut sink = sink.lock().unwrap();
++    if edge.id != sink.config.edge {
++        return;
++    }
++    assert!(
++        sink.rows < sink.config.max_rows,
++        "Attachment trace limit exceeded"
++    );
++    let inspect = |a: &Attachment| {
++        let p = endpoint(a);
++        let cell = xy(p);
++        let body = occupancy.facilities.contains(&cell);
++        let layer = occupancy.layers[&transport].contains(&cell);
++        serde_json::json!({"attachment": a, "endpoint": p, "facility_blocked": body,
++            "layer_blocked": layer, "masked": mask.contains(&cell),
++            "reservation_only": mask.contains(&cell) && !body && !layer,
++            "crossing": axes.contains_key(&cell),
++            "inside": p.x >= 0 && p.y >= 0 && p.x < dimensions.0 && p.y < dimensions.1})
++    };
++    let row = serde_json::json!({"schema_version":1,"ordinal":sink.rows,"edge":edge.id,"lane":lane,
++        "source":inspect(source),"target":inspect(target),"path_found":path.is_some(),
++        "path_cells":path.map(<[WorldGridPosition]>::len),"members":node.member_instances.len(),
++        "width":dimensions.0,"height":dimensions.1});
++    if sink.rows == 0 {
++        let mut blocked = mask.iter().copied().collect::<Vec<_>>();
++        blocked.sort();
++        let mut facilities = occupancy.facilities.iter().copied().collect::<Vec<_>>();
++        facilities.sort();
++        let mut layer = occupancy.layers[&transport]
++            .iter()
++            .copied()
++            .collect::<Vec<_>>();
++        layer.sort();
++        let crossings = axes
++            .iter()
++            .map(|(&(x, y), &horizontal)| serde_json::json!({"x":x,"y":y,"horizontal":horizontal}))
++            .collect::<Vec<_>>();
++        let snapshot = serde_json::json!({"trial":row,"node":node,"edge":edge,"blocked":blocked,
++            "facility_cells":facilities,"layer_cells":layer,"crossings":crossings,"path":path});
++        let mut file = std::fs::OpenOptions::new()
++            .create_new(true)
++            .write(true)
++            .open(&sink.config.snapshot)
++            .unwrap();
++        serde_json::to_writer(&mut file, &snapshot).unwrap();
++    }
++    serde_json::to_writer(&mut sink.file, &row).unwrap();
++    sink.file.write_all(b"\n").unwrap();
++    sink.rows += 1;
++}
++
++// Only the configured requirement receives the candidate-generation intervention.
++pub(super) fn selected_edge(edge: &str) -> bool {
++    static SELECTED: OnceLock<Option<String>> = OnceLock::new();
++    SELECTED
++        .get_or_init(|| {
++            let file = std::env::var_os("AIC_ATTACHMENT_DIAGNOSTIC")?;
++            let config: Config = serde_json::from_slice(&std::fs::read(file).unwrap()).unwrap();
++            Some(config.edge)
++        })
++        .as_deref()
++        == Some(edge)
++}
+diff --git a/crates/aic-data/src/layouts/constructive/network/first.rs b/crates/aic-data/src/layouts/constructive/network/first.rs
+index b839bd6..bb5cfec 100644
+--- a/crates/aic-data/src/layouts/constructive/network/first.rs
++++ b/crates/aic-data/src/layouts/constructive/network/first.rs
+@@ -190,7 +190,11 @@ fn search(
+         }
+         let shared = matches!(source, Attachment::ExistingNetwork { .. })
+             || matches!(target, Attachment::ExistingNetwork { .. });
+-        let choices = crossings::options(node, transport, &edge.item, rate, components);
++        let choices = if diagnostic::selected_edge(&edge.id) {
++            crossings::including_same_item(node, transport, &edge.item, rate, components)
++        } else {
++            crossings::options(node, transport, &edge.item, rate, components)
++        };
+         let axes = choices.iter().map(|(p, (axis, _))| (*p, *axis)).collect();
+         let mut variants = std::collections::VecDeque::from([BTreeSet::<(i64, i64)>::new()]);
+         let mut seen = BTreeSet::from([BTreeSet::<(i64, i64)>::new()]);
+@@ -231,9 +235,21 @@ fn search(
+             });
+             let mut mask = blocked.clone();
+             mask.extend(&avoided);
+-            let Some(path) =
+-                workspace.route_crossings(&mask, &axes, endpoint(source), endpoint(target))
+-            else {
++            let path = workspace.route_crossings(&mask, &axes, endpoint(source), endpoint(target));
++            super::diagnostic::record(
++                node,
++                edge,
++                source,
++                target,
++                transport,
++                &occupancy,
++                &mask,
++                &axes,
++                workspace.diagnostic_dimensions(),
++                lane,
++                path.as_deref(),
++            );
++            let Some(path) = path else {
+                 stats.astar_failures += 1;
+                 if shared {
+                     stats.branch_route_failures += 1;
+diff --git a/crates/aic-data/src/layouts/constructive/routing.rs b/crates/aic-data/src/layouts/constructive/routing.rs
+index 3c238dd..f702220 100644
+--- a/crates/aic-data/src/layouts/constructive/routing.rs
++++ b/crates/aic-data/src/layouts/constructive/routing.rs
+@@ -118,6 +118,10 @@ pub(super) struct RouteWorkspace {
+ }
+ 
+ impl RouteWorkspace {
++    pub(super) fn diagnostic_dimensions(&self) -> (i64, i64) {
++        (self.width, self.height)
++    }
++
+     pub(super) fn new(width: i64, height: i64) -> Self {
+         let cells = usize::try_from(width.max(0))
+             .unwrap_or(0)
