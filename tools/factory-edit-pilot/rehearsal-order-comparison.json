@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "purpose": "rehearsal_order_comparison",
+  "reference_comparison_sha256": "0d7b94a049fac6871b1a7e6463f0a4408619827776ba2464630c7db501a5ee50",
+  "anchor_commands": 1179648,
+  "study_protocol": "tools/factory-edit-pilot/entity-learning-width1-study.json",
+  "condition": "entity-mastery-rehearsal",
+  "learning_rate_multiplier": 0.1,
+  "updates": 32,
+  "assessment_updates": [8, 16, 24, 32],
+  "continuation_seeds": [1100000, 1110000, 1120000],
+  "run_order": [
+    {"seed": 1100000, "ordering": "synchronized"},
+    {"seed": 1100000, "ordering": "staggered"},
+    {"seed": 1110000, "ordering": "staggered"},
+    {"seed": 1110000, "ordering": "synchronized"},
+    {"seed": 1120000, "ordering": "synchronized"},
+    {"seed": 1120000, "ordering": "staggered"}
+  ],
+  "assessment_seed_start": 1130000,
+  "sampling_seed_start": 1140000,
+  "episodes": 64,
+  "horizon": 128,
+  "batch_size": 16,
+  "required_root_successes": 52,
+  "maximum_seconds": 1200,
+  "device": "cuda"
+}

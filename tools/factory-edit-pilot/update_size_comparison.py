@@ -105,7 +105,21 @@ def assess(actor, runtimes, catalogs, config, protocol, controller, starts, outp
             'episodes': len(gate['rows']), 'file': path.name, 'sha256': digest(path)}
 
 
-def branch(root, saved, anchor, job, spec, config, training, protocol, groups, catalogs, output):
+def rehearsal_levels(keys, levels, reasons, orders, update):
+    if orders is None:
+        return levels
+    return [orders[key][update-1] if reason == 'rehearsal' else level
+            for key, level, reason in zip(keys, levels, reasons)]
+
+
+def validate_rehearsal_orders(orders, controller):
+    if orders is not None and (set(orders) != set(controller.state) or any(
+            len(orders[key]) != 32 or any(type(level) is not int or not 1 <= level < state['level']
+                                        for level in orders[key]) for key, state in controller.state.items())):
+        raise ValueError('update_size.rehearsal_orders: require 32 earlier levels for every frozen case')
+
+
+def branch(root, saved, anchor, job, spec, config, training, protocol, groups, catalogs, output, rehearsal_orders=None):
     output.mkdir()
     seed, multiplier = job['seed'], job['multiplier']
     torch.manual_seed(seed)
@@ -136,6 +150,7 @@ def branch(root, saved, anchor, job, spec, config, training, protocol, groups, c
             'pending_transition': None if complete else collector.pending}, path)
 
     try:
+        validate_rehearsal_orders(rehearsal_orders, controller)
         if result['initial_policy_sha256'] != policy_hash(saved['policy']):
             raise ValueError('update_size.anchor: initial policy changed')
         for update_index in range(1, 33):
@@ -144,6 +159,7 @@ def branch(root, saved, anchor, job, spec, config, training, protocol, groups, c
             for _ in range(4):
                 collector.partial, collector.pending, collector.completed_steps = None, None, 0
                 levels, reasons = controller.schedule(collector.keys, episodes_count, protocol['rehearsal_every'])
+                levels = rehearsal_levels(collector.keys, levels, reasons, rehearsal_orders, update_index)
                 part, collected = collector.collect(model, levels)
                 for key in FIELDS:
                     rollout[key].extend(part[key])
@@ -185,11 +201,15 @@ def branch(root, saved, anchor, job, spec, config, training, protocol, groups, c
             setup += len(record['prefix'])
         if replayed != 2048 or commands != spec['anchor_commands']+32768:
             raise ValueError('update_size.accounting: incomplete branch')
+        root_episodes = sum(len(cell['episodes']) for cell in result['roots'])
+        root_commands = sum(row['counts']['commands'] for cell in result['roots'] for row in cell['episodes'])
+        if root_episodes != len(groups[0])*spec['episodes'] or root_commands != root_episodes*spec['horizon']:
+            raise ValueError('update_size.accounting: root episode or command count differs')
         result.update(status='complete', total_seconds=time.perf_counter()-started, final_policy_sha256=before,
             validation={'training_episodes': replayed, 'training_commands': 32768, 'training_setup_commands': setup,
                         'assessment_episodes': sum(r['episodes'] for r in result['assessments']),
                         'assessment_setup_commands': sum(r['setup_commands'] for r in result['assessments']),
-                        'root_episodes': 256, 'root_commands': 32768},
+                        'root_episodes': root_episodes, 'root_commands': root_commands},
             collected_sha256=digest(output/'collected.jsonl'))
     except BaseException as error:
         result.update(status='interrupted', diagnostic={'code': 'update_size.interrupted', 'severity': 'error',
