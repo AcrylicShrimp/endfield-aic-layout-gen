@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "purpose": "update_size_comparison",
+  "study_protocol": "tools/factory-edit-pilot/entity-learning-width1-study.json",
+  "training_seed": 43,
+  "training_source_commit": "13af265c3f982d9a50f09ed2ed2d8426290ecb16",
+  "anchor_commands": 1179648,
+  "condition": "entity-mastery-rehearsal",
+  "updates": 32,
+  "assessment_updates": [8, 16, 24, 32],
+  "continuation_seeds": [1030000, 1040000, 1050000],
+  "run_order": [
+    {"seed": 1030000, "multiplier": 1},
+    {"seed": 1030000, "multiplier": 0.1},
+    {"seed": 1040000, "multiplier": 0.1},
+    {"seed": 1040000, "multiplier": 1},
+    {"seed": 1050000, "multiplier": 1},
+    {"seed": 1050000, "multiplier": 0.1}
+  ],
+  "assessment_seed_start": 1060000,
+  "sampling_seed_start": 1070000,
+  "horizon": 128,
+  "episodes": 16,
+  "batch_size": 16,
+  "device": "cuda",
+  "expected_native_source_changes": ["crates/aic-pilot-native/src/engine.rs"]
+}
