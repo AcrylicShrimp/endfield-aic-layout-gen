@@ -64,7 +64,11 @@ def evaluate(model, runtime, config, output, commands, training_seconds):
                 raise RuntimeError(f"Evaluation export failed independent acceptance: {accepted}")
             episode_stats = json.loads(env.episode_json())
             row = {"commands": commands, "rollout_seed": seed, "return": total,
-                   "score": accepted["score"], "counts": episode_stats["counts"]}
+                   "score": accepted["score"], "counts": episode_stats["counts"],
+                   "translated_facilities": [f["id"] for f in runtime.case["facilities"]
+                                             if selected_layout["placements"][f["id"]][:2] != f["pose"][:2]],
+                   "rotated_facilities": [f["id"] for f in runtime.case["facilities"]
+                                          if selected_layout["placements"][f["id"]][2] != f["pose"][2]]}
             append(output/"evaluations.jsonl", row)
             rows.append(row)
             layouts.append(selected_layout)

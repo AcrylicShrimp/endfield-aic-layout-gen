@@ -163,9 +163,12 @@ def run(root, protocol_path, library, output):
                 for key, summary in summaries.items():
                     episodes = rows(bank_directory / key / "evaluations.jsonl")
                     successes = sum(row["return"] > 0 for row in episodes)
+                    translated_successes = sum(row["return"] > 0 and bool(row.get("translated_facilities")) for row in episodes)
+                    qualified = translated_successes if protocol.get("require_translation", False) else successes
                     validation = verify_case(root, metadata["protocol"]["cases"][key], config, bank_directory / key, count)
                     record["banks"].append({"seed_start": bank, "case": key, "successes": successes,
-                                            "passed": successes >= protocol["required_successes"],
+                                            "translated_successes": translated_successes,
+                                            "passed": qualified >= protocol["required_successes"],
                                             "summary": summary, "validation": validation})
             if policy_hash(actor.state_dict()) != before:
                 raise ValueError(f"selection.validation: {source}: evaluation mutated policy state")

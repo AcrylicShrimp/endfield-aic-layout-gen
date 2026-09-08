@@ -79,7 +79,7 @@ def compare(protocol_path, paths, output):
     output.mkdir(parents=True)
     result = {"schema_version": 1, "protocol": protocol, "summaries": summaries, "contrasts": contrasts, "costs": costs,
               "replication_unit": "Independent trained policy; fixed evaluation seeds vary sampling within a policy",
-              "scope": "Original roots of two training cases; no unseen-case or optimality claim",
+              "scope": "Original roots of the declared training cases; no unseen-case or optimality claim",
               "artifacts_sha256": {run["directory"]: run["hashes"] for run in runs.values()}}
     if "stage_acceptance" in protocol:
         criterion = protocol["stage_acceptance"]

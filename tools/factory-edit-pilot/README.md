@@ -303,3 +303,11 @@ criterion. Keep the audited source checkpoints available at the protocol's sourc
 ```sh
 tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/mastery_policy_selection.py --protocol tools/factory-edit-pilot/mastery-selection-study.json --native-library target/release/libaic_pilot_native.so --output artifacts/factory-edit-pilot/fresh-mastery-selection
 ```
+
+The [relocation milestone](../../docs/designs/2026-09-08.11-learned-facility-relocation.md)
+uses the selected `case-relocation.json` runtime fixture. Its fixed-pose area bound
+prevents improvement by simply trimming boundary tails. Train its full nine-level
+curriculum with `case_curriculum_matrix.py --protocol tools/factory-edit-pilot/relocation-curriculum-study.json`
+and the usual native-library/output flags. Milestone acceptance uses a retained
+root-mastered policy and requires final accepted x/y translation; the matrix's final
+checkpoint score gate is a separate stability diagnostic.
