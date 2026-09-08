@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "purpose": "training_only_clock_intervention",
+  "geometry_protocol": "tools/factory-edit-pilot/entity-learning-matrix.json",
+  "training_source_commit": "13af265",
+  "widths": [1, 2],
+  "training_seed": 17,
+  "checkpoint_commands": 3145728,
+  "device": "cpu",
+  "threads": 1,
+  "horizon": 128,
+  "conditions": ["native16", "native128", "clamped16_in128"],
+  "episodes": 32,
+  "sampling_seed_start": 1024000,
+  "batch_size": 16
+}
