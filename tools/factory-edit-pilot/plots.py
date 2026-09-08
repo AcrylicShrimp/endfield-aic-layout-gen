@@ -24,7 +24,6 @@ def render(output, runtime, parent=None):
     evaluations = read_rows(output/"evaluations.jsonl")
     summaries = read_rows(output/"evaluation-summary.jsonl")
     config = metadata["config"]
-    inspector = runtime.new_engine()
     curve_name = "learning-curves"
     if parent is not None:
         parent = Path(parent)
@@ -86,9 +85,24 @@ def render(output, runtime, parent=None):
                ("training-best.json", "Best discovered during training"),
                ("witness.json", "Scripted environment witness (not learned)")]
     layouts = [(json.loads((output/name).read_text()), title) for name, title in choices if (output/name).exists()]
+    geometry = render_layouts(output, runtime, layouts)
+    return {"curves": str(output/f"{curve_name}.png"), **geometry}
+
+
+def render_layouts(output, runtime, layouts, caption=None):
+    """Draw validated recorded layouts at one common scale, without training-log scaffolding."""
+    from reference.acceptance import Catalog, check
+
+    output = Path(output)
+    if not layouts:
+        raise ValueError('plots.layouts: at least one recorded layout is required')
+    inspector = runtime.new_engine()
+    catalog = Catalog(runtime.root, runtime.path)
     inspections = [json.loads(inspector.inspect_layout_json(json.dumps(layout))) for layout, _ in layouts]
-    for (_, title), inspection in zip(layouts, inspections):
-        if not inspection["acceptance"]["valid"]:
+    for (layout, title), inspection in zip(layouts, inspections):
+        accepted = check(catalog, layout)
+        if (not inspection["acceptance"]["valid"] or not accepted['valid']
+                or accepted['score'] != inspection['acceptance']['score']):
             raise ValueError(f"Refusing a complete-factory visualization: {title}: {inspection['acceptance']}")
     layout_bounds = [inspection["acceptance"]["bounds"] for inspection in inspections]
     common = (min(b[0] for b in layout_bounds), min(b[1] for b in layout_bounds),
@@ -123,11 +137,11 @@ def render(output, runtime, parent=None):
         ax.set_yticks(range(common[1], common[3]+1, 2))
         ax.grid(alpha=.12)
     labels = ", ".join(f"{f['id']}: {f['recipe']}" for f in runtime.case["facilities"])
-    fig.suptitle("Complete validated factories | all original production obligations preserved\n"+labels, fontsize=10)
+    fig.suptitle((caption or "Complete validated factories | all original production obligations preserved")+"\n"+labels, fontsize=10)
     fig.savefig(output/"factory-comparison.png", dpi=160)
     fig.savefig(output/"factory-comparison.svg")
     plt.close(fig)
-    return {"curves": str(output/f"{curve_name}.png"), "layouts": str(output/"factory-comparison.png")}
+    return {"layouts": str(output/"factory-comparison.png"), "layouts_svg": str(output/"factory-comparison.svg")}
 
 
 if __name__ == "__main__":
