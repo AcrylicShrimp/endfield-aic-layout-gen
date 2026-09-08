@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "runs": [
+    {
+      "width": 1,
+      "status": "complete",
+      "source_commit": "314c66386f1313af8153f7205c1d60723a87196b",
+      "commands": 16384,
+      "training_seconds": 9.406182529986836,
+      "seconds": {
+        "evaluation": 27.183148743017227,
+        "assessment": 6.300500452998676,
+        "collection": 3.754773069071234,
+        "update": 5.5102672510256525,
+        "actor_snapshot": 0.007686280019697733
+      },
+      "cuda_peak_allocated_bytes": 375439360,
+      "cuda_peak_reserved_bytes": 488636416,
+      "matrix_wall_seconds": 56.99380680799368,
+      "original_matrix_wall_seconds": 173.69706803000008,
+      "matrix_speedup": 3.047648117543153,
+      "audit_status": "passed",
+      "metadata_sha256": "6e6d7caa28be3d0ad5e8aed7ebc91203d4c80dbf41b5d1dda1f248ea9d48a22f",
+      "audit_sha256": "77ee8d9cd30d05aee3832356fb2b3b196bfbaa50899de1c61220dcf1ee3f13b7"
+    },
+    {
+      "width": 2,
+      "status": "complete",
+      "source_commit": "314c66386f1313af8153f7205c1d60723a87196b",
+      "commands": 16384,
+      "training_seconds": 9.57034251501318,
+      "seconds": {
+        "evaluation": 28.00143348000711,
+        "assessment": 6.2878352549887495,
+        "collection": 3.7205667240341427,
+        "update": 5.709557572990889,
+        "actor_snapshot": 0.007540819016867317
+      },
+      "cuda_peak_allocated_bytes": 487689728,
+      "cuda_peak_reserved_bytes": 876609536,
+      "matrix_wall_seconds": 58.27222178099328,
+      "original_matrix_wall_seconds": 229.07607952100807,
+      "matrix_speedup": 3.9311368696727143,
+      "audit_status": "passed",
+      "metadata_sha256": "d7bd7a0c2fe2af897faf056b587dbaf04de4164b8fa8eae9c669da4c135497df",
+      "audit_sha256": "71d6c882306c928ded1b83f9cef7a239b32129bfaaa42fbea5738aa12f035dbb"
+    }
+  ]
+}
