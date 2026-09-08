@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "purpose": "training_only_snapshot_cost",
+  "geometry_protocol": "tools/factory-edit-pilot/entity-learning-matrix.json",
+  "environment_config": "tools/factory-edit-pilot/run-entity-width1.json",
+  "branches": 64,
+  "depth": 8,
+  "seed": 990000,
+  "max_seconds_per_case": 30,
+  "max_snapshot_bytes": 1048576
+}
