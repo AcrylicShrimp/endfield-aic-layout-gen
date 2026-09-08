@@ -1,6 +1,6 @@
 // Finite, unranked facility-pose domains. No routing or complete candidate validation here.
 import {extractChains,extentOf} from '../../docs/benchmarks/constructive-local-reembedding/model.mjs';
-import {movementPlan,bodyCells} from '../../docs/benchmarks/constructive-local-reembedding/movement.mjs';
+import {movementPlan,movementIndex,bodyCells} from '../../docs/benchmarks/constructive-local-reembedding/movement.mjs';
 import {detachablePairs,joinableChains} from '../../docs/benchmarks/constructive-local-reembedding/terminal-identity.mjs';
 import {rigidBlockPose} from '../../docs/benchmarks/constructive-local-reembedding/block-rotation.mjs';
 import {planFacilityRotations} from '../../docs/benchmarks/constructive-local-reembedding/facility-rotation.mjs';
@@ -112,9 +112,9 @@ function prefix(bounds,points){
     return data[(y+h)*stride+x+w]-data[y*stride+x+w]-data[(y+h)*stride+x]+data[y*stride+x];};
 }
 
-export function preflightGroup(w,group,chains,anchors,bounds,joinable=joinableChains(w,chains)){
+export function preflightGroup(w,group,chains,anchors,bounds,joinable=joinableChains(w,chains),index=movementIndex(w,chains)){
   const ids=group.members.map(i=>w.placements[i].instance),selected=new Set(ids);
-  const plan=movementPlan(w,chains,anchors,[{instances:ids,dx:0,dy:0}],{junctionPolicy:'internal',joinable});
+  const plan=movementPlan(w,chains,anchors,[{instances:ids,dx:0,dy:0}],{junctionPolicy:'internal',joinable,index});
   const bodies=w.placements.filter(p=>selected.has(p.instance)),stationary=w.placements.filter(p=>!selected.has(p.instance)).flatMap(bodyCells);
   const fixed={belt:new Set(),pipe:new Set()},moving={belt:new Map(),pipe:new Map()};
   const add=(tr,p)=>moving[tr].set(key(p),p);
@@ -148,12 +148,12 @@ export function translationActions(w,{mode='groups',scans_per_group=256,candidat
      !Number.isSafeInteger(candidates_per_group)||candidates_per_group<8||candidates_per_group>256)fail('factory.vocabulary-options','Invalid relocation mode or scan/candidate bounds');
   const began=performance.now(),bounds=extentOf(w),area=(bounds.maxX-bounds.minX+1)*(bounds.maxY-bounds.minY+1);
   if(!Number.isSafeInteger(area)||area>200000)fail('factory.vocabulary-area-budget','Current observation/enumeration area exceeds the explicit 200000-cell guard');
-  const {chains,anchors}=extractChains(w),joinable=joinableChains(w,chains),generated=mode==='local'?{groups:w.placements.map((_,i)=>({members:[i],source:'singleton'})),omitted:[]}:poseGroups(w,mode==='groups');
+  const {chains,anchors}=extractChains(w),index=movementIndex(w,chains),joinable=index.joinable,generated=mode==='local'?{groups:w.placements.map((_,i)=>({members:[i],source:'singleton'})),omitted:[]}:poseGroups(w,mode==='groups');
   const groups=generated.groups.slice(0,512),actions=[],rejected={},diagnostics=[...generated.omitted];let examined=0,capped=0,joinExamined=0;
   const reject=code=>{rejected[code]=(rejected[code]??0)+1;};
   for(const group of groups){
     let preflight;
-    if(mode!=='local')try{preflight=preflightGroup(w,group,chains,anchors,bounds,joinable);}catch(e){
+    if(mode!=='local')try{preflight=preflightGroup(w,group,chains,anchors,bounds,joinable,index);}catch(e){
       if(!e.code)throw e;diagnostics.push({...group,code:e.code});continue;
     }
     let retained=0;const seen=new Set();
@@ -222,7 +222,7 @@ export function poseActions(w,catalogs,options={}){
     !Number.isSafeInteger(compound_preflights)||compound_preflights<1||compound_preflights>4096)
     fail('factory.vocabulary-options','Invalid pose domain or compound scan/candidate/preflight bounds');
   const began=performance.now(),translation=translationActions(w,options),actions=[...translation.actions],bounds=extentOf(w),
-    {chains,anchors}=extractChains(w),joinable=joinableChains(w,chains),rejected={},streams=[];
+    {chains,anchors}=extractChains(w),index=movementIndex(w,chains),joinable=index.joinable,rejected={},streams=[];
   const report={pose_domain,single_rotations_examined:0,single_rotations:0,compound_groups:0,compound_groups_omitted:0,
     compound_examined:0,compound_preflights:0,compound_actions:0,compound_streams:0,compound_streams_capped:0,
     compound_preflight_limit:compound_preflights,compound_scans,compound_candidates,static_rejected:rejected};
@@ -230,7 +230,7 @@ export function poseActions(w,catalogs,options={}){
   const inside=p=>p.x>=bounds.minX&&p.x<=bounds.maxX&&p.y>=bounds.minY&&p.y<=bounds.maxY;
   const preflight=poses=>{
     try{
-      const o=poseOptions(w,catalogs,poses),plan=movementPlan(w,chains,anchors,o.moves,{facilityChanges:o.facilityChanges,joinable});
+      const o=poseOptions(w,catalogs,poses),plan=movementPlan(w,chains,anchors,o.moves,{facilityChanges:o.facilityChanges,joinable,index});
       if(w.transport_networks.some(n=>n.terminals.some(t=>!inside(plan.shiftTerminal(t))))||
         w.logistics_components.some(c=>!inside(plan.shiftAnchor(c.transport,c.position)))||
         [...plan.fixedChains.values()].some(path=>path.some(p=>!inside(p)))){reject('factory.pose-carried-bounds');return false;}

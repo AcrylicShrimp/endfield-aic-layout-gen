@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { movementPlan } from './movement.mjs';
+import { movementPlan, movementIndex } from './movement.mjs';
 import { extractChains } from './model.mjs';
 import { closeTerminalGroups, compoundCandidates } from './compound.mjs';
 const rate = { numerator: 1, denominator: 1 };
@@ -48,6 +48,34 @@ test('isolated shared zero-length owners may separate without losing endpoint id
   assert.equal(split.changed.size, 1);
   const r = movementPlan(w, chains, anchors, [{ instances: ['a'], dx: 0, dy: 1 }, { instances: ['b'], dx: 0, dy: 1 }]);
   assert.deepEqual(r.shiftAnchor('belt', p(3)), p(3, 3));
+});
+
+test('shared movement indexes isolate failed candidates and mutable plan results', () => {
+  const w = fixture(), before = structuredClone(w), { chains, anchors } = extractChains(w), index = movementIndex(w, chains);
+  const together = [{ instances: ['a', 'b'], dx: 0, dy: 3 }];
+  const first = movementPlan(w, chains, anchors, together, { index });
+  assert.equal(first.fixedChains.size, 1); assert.equal(first.changed.size, 0);
+  assert.throws(() => movementPlan(w, chains, anchors, [{ instances: ['a'], dx: 6, dy: 0 }], { index }), { code: 'local-body-collision' });
+  const swap = movementPlan(w, chains, anchors, [{ instances: ['a'], dx: 6, dy: 0 }, { instances: ['b'], dx: -6, dy: 0 }], { index });
+  assert.deepEqual([...swap.changed], [0]); assert.equal(swap.fixedChains.size, 0);
+  first.fixedChains.clear(); first.changed.add(999); first.body.clear(); first.moved.clear();
+  const again = movementPlan(w, chains, anchors, together, { index });
+  assert.deepEqual([...again.fixedChains.values()], [chains[0].cells.map(q => ({ x: q.x, y: q.y + 3 }))]);
+  assert.equal(again.changed.size, 0); assert.equal(again.body.size, 2); assert.equal(again.moved.size, 2);
+  assert.deepEqual(w, before);
+  assert.throws(() => movementPlan(structuredClone(w), chains, anchors, together, { index }), { code: 'local-movement-index' });
+  assert.throws(() => movementPlan(w, [...chains], anchors, together, { index }), { code: 'local-movement-index' });
+});
+
+test('indexed body intersections find both transport layers in original chain order', () => {
+  const w = fixture(); w.placements.push({ ...facility('free', 5), y: 5 });
+  const pipe = structuredClone(w.transport_networks[0]); pipe.id = 'pipe'; pipe.transport = 'pipe';
+  for (const t of pipe.terminals) { t.id += '-pipe'; t.endpoint = { kind: 'external', node: t.id }; }
+  w.transport_networks.unshift(pipe);
+  const { chains, anchors } = extractChains(w), index = movementIndex(w, chains);
+  const plan = movementPlan(w, chains, anchors, [{ instances: ['free'], dx: 0, dy: -3 }], { index });
+  assert.deepEqual([...plan.changed], chains.map(c => c.id)); assert.equal(plan.fixedChains.size, 0);
+  assert.deepEqual(chains.map(c => c.transport), ['pipe', 'belt']);
 });
 
 test('candidate groups close shared terminals transitively and exclude fixed external ownership', () => {

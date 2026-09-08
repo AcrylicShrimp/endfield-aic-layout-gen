@@ -19,22 +19,31 @@ def run(args):
     p=json.loads((args.parent/'protocol.json').read_text()); r=json.loads((args.parent/'report.json').read_text())
     if r['status']!='complete' or r['protocol_sha256']!=sha(args.parent/'protocol.json'):
         raise ValueError('cold-transfer.parent-incomplete')
-    for file,digest in p['sources'].items():
-        if sha(file)!=digest:raise ValueError(f'cold-transfer.parent-input: {file}')
     current_sources=source_manifest()
     changes={file:dict(before=digest,after=current_sources.get(file)) for file,digest in p['source_sha256'].items()
              if current_sources.get(file)!=digest}
     cutover=json.loads(args.runtime_cutover.read_text()) if args.runtime_cutover else None
     if cutover is not None:
-        allowed={'tools/factory-edit-pilot/full_factory_poses.mjs','tools/factory-edit-pilot/full_factory_cold_transfer.py'}
+        allowed={'tools/factory-edit-pilot/full_factory_poses.mjs','tools/factory-edit-pilot/full_factory_cold_transfer.py',
+                 'docs/benchmarks/constructive-local-reembedding/movement.mjs'}
         if (cutover.get('schema_version')!=1 or cutover.get('source_changes')!=changes or set(changes)!=allowed
             or cutover.get('parent_protocol_sha256')!=sha(args.parent/'protocol.json')):
             raise ValueError('cold-transfer.runtime-cutover-mismatch')
     for file,digest in p['source_sha256'].items():
         if sha(ROOT/file)!=digest and cutover is None:raise ValueError(f'cold-transfer.parent-source: {file}')
+    sources=dict(p['sources'])
+    for file,digest in sources.items():
+        actual=sha(file)
+        if actual==digest:continue
+        source=Path(file).resolve().relative_to(ROOT).as_posix() if Path(file).resolve().is_relative_to(ROOT) else None
+        if cutover is None or changes.get(source)!=dict(before=digest,after=actual):
+            raise ValueError(f'cold-transfer.parent-input: {file}')
+        # Some constructor provenance also names transitive runtime source files.
+        # Their only permitted change is the same explicit source delta above.
+        sources[file]=actual
     cases=[c for c in p['cases'] if 65<=c['instances']<=128]
     if len(cases)!=1:raise ValueError('cold-transfer.expected-one-large-original')
-    sources=dict(p['sources']); sources.update({str((args.parent/f).resolve()):sha(args.parent/f) for f in ['protocol.json','report.json']})
+    sources.update({str((args.parent/f).resolve()):sha(args.parent/f) for f in ['protocol.json','report.json']})
     sources[str(args.native_library.resolve())]=sha(args.native_library)
     if args.runtime_cutover:sources[str(args.runtime_cutover.resolve())]=sha(args.runtime_cutover)
     args.output.mkdir()
@@ -79,5 +88,5 @@ def run(args):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     for name in ('parent','native-library','output'):parser.add_argument('--'+name,required=True,type=Path)
-    parser.add_argument('--runtime-cutover',type=Path,help='Exact declared pose-graph/runner source delta against the parent protocol')
+    parser.add_argument('--runtime-cutover',type=Path,help='Exact declared movement-index, pose-helper and runner source delta against the parent protocol')
     run(parser.parse_args())

@@ -1,0 +1,332 @@
+{
+  "schema_version": 1,
+  "baseline_revision": "09449be",
+  "scope": "Exact ordered-domain differential and serial fresh-process timing; raw output remains ignored",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/config.json",
+      "sha256": "403d61a0cac45aad43f6fd6cd03393e539a3513649f766369b645ac035228e9b",
+      "bytes": 4747
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/runtime-cutover.json",
+      "sha256": "72b8e9e4d9b4ba2c84917d6554b5b1fc7b23e839e9bcdd6b42481c602aa1e274",
+      "bytes": 857
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/cleanup.json",
+      "sha256": "f7bfea9c318bab7e175f74b096e09e1945e33535180d3b6301b44937d4893d7a",
+      "bytes": 2494
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/report.json",
+      "sha256": "f1219ed19c9d3e0c8b659a1eeeb72eb6d12a2ffadb6f156bbf433e1d70708d9a",
+      "bytes": 13801
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/report.json",
+      "sha256": "1658f9e5f5548509997785a489ba47e9a171c1b6a4858a69b1484224f41e67f4",
+      "bytes": 13912
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/profiles/before.cpuprofile",
+      "sha256": "7cf0499f083d0568f9d2a53e616c13d5c7bca4b4b738054c24e939d1be994d6a",
+      "bytes": 43519
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/profiles/after.cpuprofile",
+      "sha256": "3a4abb5129599edeffd3fed7fa04d34ab7d472f96c98af43dc1a17aacee7a5ad",
+      "bytes": 42152
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/profile-before/report.json",
+      "sha256": "56332dd2efd3a2a4a04677c5391c80ae38481ae163f0959f034632cd04fd8e66",
+      "bytes": 7013
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/profile-after/report.json",
+      "sha256": "08583896b13bf56afbc624b171dcd496853e224a5ff2452f05f385ed8bcaf6e2",
+      "bytes": 7132
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/profile-before/cpu-summary.json",
+      "sha256": "90ae1c57afdc4effc77d690f5c4195b33aa876c71b457d1259a3dafa458423e7",
+      "bytes": 3142
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/profile-after/cpu-summary.json",
+      "sha256": "f602a10338c90d94a60b44b39772583398b4d0bae58e234d821e4339ccea5986",
+      "bytes": 3160
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/timing-before-0/report.json",
+      "sha256": "14d2c0d18db4e82491dccf944b5064980ea59a6d3d103b9f994ba82bc468cba0",
+      "bytes": 7013
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/timing-before-1/report.json",
+      "sha256": "113dd07f0f0b9547ecb48714ea8657fc810f4d8f028afeca8edf496d0622ad00",
+      "bytes": 7019
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/timing-before-2/report.json",
+      "sha256": "bbc65834f3c0739ae68ac53c0d7cb3822e9394b82010595d658b42ecd7523bbf",
+      "bytes": 7019
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/timing-after-0/report.json",
+      "sha256": "72aaa3ad678ba2bd82b65ebd7f86a367d6759eb6b3477a9c129695d424a997b7",
+      "bytes": 7125
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/timing-after-1/report.json",
+      "sha256": "dfbf828e17f2c545a00209ec293912a105c107ec98a9f32ad260cf206a738a43",
+      "bytes": 7132
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/timing-after-2/report.json",
+      "sha256": "0f785fde18fe309ced1b6b04cbd31765d938b62ee5d16c89b19a386e03b07a73",
+      "bytes": 7125
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/closure-original.json.gz",
+      "sha256": "e8fdcb3cd374dba0a69ba6c086fad5ba36e1e22a3f373ea9c1ee2409bb114280",
+      "bytes": 67909
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/copper-liquid-liquid-rate-0.json.gz",
+      "sha256": "561ef290b1fb30bf4ed130cfe1d34e64a868891626b8bf6689d4db9c7118dc2c",
+      "bytes": 4608
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/copper-liquid-liquid-rate-1.json.gz",
+      "sha256": "0e07a019389c9d6480a13fa3251013f357d6c3a2dd02707955f977c9e4c4cbed",
+      "bytes": 4605
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/enriched-consumables-food-rate-0.json.gz",
+      "sha256": "3eb6b264294d0b3b6f1ef6482998f1260a25b60c215b5683dc94191b32b9ef8b",
+      "bytes": 24107
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/enriched-consumables-food-rate-1.json.gz",
+      "sha256": "07ba3b78be6bee12aff5c8fd04bfcbe85af42460c100488faa21532520e24347",
+      "bytes": 27174
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/enriched-consumables-food-rate-2.json.gz",
+      "sha256": "e4b8de8dee2f2b0f0705b44a51906bda223a989f963fe8f1809d18eeff37c2ff",
+      "bytes": 81554
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/enriched-consumables-medical-fresh-rate-0.json.gz",
+      "sha256": "9221f3a3bb62ad88ce9093411d88b77e106ae644cc43a6bf08e85ecc09be648f",
+      "bytes": 41362
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/enriched-consumables-medical-fresh-rate-2.json.gz",
+      "sha256": "9428b26ea390a5940f3e9f1afbf828a63a6ed78b7c088fd9605783076e61bc84",
+      "bytes": 235359
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/enriched-consumables-medical-rate-0.json.gz",
+      "sha256": "3d8aa39a933f81542b51ac4dfeda78d7f389e880d241d265efc13e716d938a91",
+      "bytes": 24416
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/enriched-consumables-medical-rate-1.json.gz",
+      "sha256": "8777b3aa604ed0e9f1078001227fbf2302fdf74b34a62fef9bba1dca8b91e13c",
+      "bytes": 27017
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/enriched-consumables-medical-rate-2.json.gz",
+      "sha256": "fe8b5d8a4cc637ee44856046ece5d0ba0a686bb77ce406c83825fbcf00b3616c",
+      "bytes": 76247
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/heavy-incumbent-374.json.gz",
+      "sha256": "29b9b4bc51b0c6a220387d79abeb2c8f51cc4cfd95a6afded414f2d1453b6a01",
+      "bytes": 32396
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/medical-116-four-contractions.json.gz",
+      "sha256": "6f46b63703f26bbd74acd1b0a195338c321ef52a4deee3f58e9b8c08ca6c6786",
+      "bytes": 235908
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/watered-grass-grass-rate-0.json.gz",
+      "sha256": "68f724689d054cc247552fea06f7cdf045c24aa2931b30bd4f86f9bf5126dd87",
+      "bytes": 2604
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/baseline/watered-grass-grass-rate-1.json.gz",
+      "sha256": "daf38428da517428f77893c52370469b7dfb14964ce9088f773b79bfb646b60c",
+      "bytes": 2888
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/closure-original.json.gz",
+      "sha256": "cb36bc1f35c0f53e49fa89cd85291880d8e68274869b4ae5bb50e0097e8b020c",
+      "bytes": 67910
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/copper-liquid-liquid-rate-0.json.gz",
+      "sha256": "7edaa864735721b8166d9d278736f25a028c15dc90a7f651e4d17839f175d122",
+      "bytes": 4608
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/copper-liquid-liquid-rate-1.json.gz",
+      "sha256": "c3f9a984e17d645bf5974bb5a7874e2bde709eb1144accfa8354944c7d891d6f",
+      "bytes": 4605
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/enriched-consumables-food-rate-0.json.gz",
+      "sha256": "1f86106224098225e29f36576a35684b55a6e37eed0bedc7e8508261e5712f40",
+      "bytes": 24107
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/enriched-consumables-food-rate-1.json.gz",
+      "sha256": "4388f8b4b9bcb4bf79471660a37222c1c92bfcf3bb1951725fd5d6384e792b86",
+      "bytes": 27170
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/enriched-consumables-food-rate-2.json.gz",
+      "sha256": "5ebf8975eba737be1434f3f8d17744fa6a8f416ff79c27ad7dc5752b6e753f37",
+      "bytes": 81545
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/enriched-consumables-medical-fresh-rate-0.json.gz",
+      "sha256": "b2f767ff49af7d7b3386e67dd0e2f4281ae678f0b683c122f1d910d620f93860",
+      "bytes": 41362
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/enriched-consumables-medical-fresh-rate-2.json.gz",
+      "sha256": "5aa9e0a1a75832042312c1c1a025a4b3aa2b416d7e58a0a4dc5b51c486da25cc",
+      "bytes": 235365
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/enriched-consumables-medical-rate-0.json.gz",
+      "sha256": "1629c629a4306632d238fb427d57643297aefbbd8454c2e0fc07695b992ea4b6",
+      "bytes": 24405
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/enriched-consumables-medical-rate-1.json.gz",
+      "sha256": "8e01c925bb45ef46a4a021bae19bd931d09af40767e524e512daf36c2542eaed",
+      "bytes": 27019
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/enriched-consumables-medical-rate-2.json.gz",
+      "sha256": "148c0ef011617ebd39ac7e3d177845947d79d07b1f79a85dd24b7ca4a065c7c0",
+      "bytes": 76248
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/heavy-incumbent-374.json.gz",
+      "sha256": "ed3f959674fb7d449ebefa501beb3fc1cfa920f786a0763cf2ca9ed006428c15",
+      "bytes": 32392
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/medical-116-four-contractions.json.gz",
+      "sha256": "e21280c09cfc7120a932d899d3fa55deaf71704cdd52743837ee0572b81fba9e",
+      "bytes": 235910
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/watered-grass-grass-rate-0.json.gz",
+      "sha256": "95eb5e37c95d3a561f6b35509999f82f8560b89b295ab0fd4d40659e6bcbdb85",
+      "bytes": 2600
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost/indexed/watered-grass-grass-rate-1.json.gz",
+      "sha256": "3f1b355eca1247d1863943303dbd68ce5f3718258e054833df43d1055045c2c3",
+      "bytes": 2886
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost-cold-transfer/protocol.json",
+      "sha256": "1ad50d22121d8116f29a65c931c49bdb980d0656624108c94d99120ef2ec15ec",
+      "bytes": 22524
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost-cold-transfer/report.json",
+      "sha256": "12bc891b705bfc28bd9a67faca08cdbdc3e6e0e0b5d7af11143b8a5abbec85af",
+      "bytes": 4341
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost-cold-transfer/audit.json",
+      "sha256": "571dc4a0456dfb8e208fddf5081824ec4b5399f2f33b716eb349297bd240fd8b",
+      "bytes": 1225
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost-cold-transfer/parent/best.json.gz",
+      "sha256": "29afb63fc21aaecdc710d241380314f23a027e4a4e09638da56cf7b80277ca89",
+      "bytes": 142632
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost-cold-transfer/parent/episode.json.gz",
+      "sha256": "9fce57e8181b541346e9753669d3c4098288c8d2e4d5e12c055caec9d23b60ff",
+      "bytes": 2878
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost-cold-transfer/learned/best.json.gz",
+      "sha256": "f13a6aed81aec4ea1ed15d404c9179a59219aa8901fd5e39971d3e7079ad052b",
+      "bytes": 143115
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost-cold-transfer/learned/episode.json.gz",
+      "sha256": "5de582b5e355555b3d47410c9a39089b8c1d7b2e3b95734133e88ebc1fb678f5",
+      "bytes": 2881
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost-cold-transfer/geometry/best.json.gz",
+      "sha256": "fa8618133515be2fc9ded389d10406aac6df00a4fbd15aab62056957bbf59771",
+      "bytes": 142440
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/factory-description-cost-cold-transfer/geometry/episode.json.gz",
+      "sha256": "6fe73357d21c9086abbaf751850a7898dba9555f9b888b73944ec3e38ba63760",
+      "bytes": 2912
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/best-mass-final.pt",
+      "sha256": "5ad5fab1753d7852f71a2257f10c921adc11c6794cebb51304f2252c0acd9969",
+      "bytes": 515605
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/learned.pt",
+      "sha256": "fa1f2bec129fde1e7343bfe0da3b12f994d4132eb017b34bd88da523662a0995",
+      "bytes": 514077
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/enriched-consumables-medical-fresh-rate-2/initial.json",
+      "sha256": "3761e3e1831b0357e38cfbc8de1b5f42f8c089af76dabfcaaabe75a563b7ca42",
+      "bytes": 1706294
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/enriched-consumables-medical-fresh-rate-2/original-request.json",
+      "sha256": "c0e103c275ff84d3a9826c61a5665ff7a312e869418811a4ed7e0b10b8b43417",
+      "bytes": 179150
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/enriched-consumables-medical-fresh-rate-2/request.json",
+      "sha256": "35860538c4a0e8160b39c9c4c33a3b9cf20dd430855144a94c5f0bbb0d1e664a",
+      "bytes": 135142
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_description_probe.mjs",
+      "sha256": "a5507b664b920cc83df547903d4759f5b73fbbfafca4eaa0397112f398ea04f9",
+      "bytes": 2267
+    },
+    {
+      "path": "docs/benchmarks/constructive-local-reembedding/movement.mjs",
+      "sha256": "6f934f93f32798f9b5a7573c3e82483aefca19a0892355f5e8edab3a69f0fd48",
+      "bytes": 11183
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_poses.mjs",
+      "sha256": "df8f04993e19afd2f90d886bc4ea7d7cabbeb2f426578eeef55c5de0b22e0f11",
+      "bytes": 20778
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_cold_transfer.py",
+      "sha256": "4d9e8cb6e4a1216356b91d9a1c73370e00eec5f209554a85dcb6d193259b99a0",
+      "bytes": 6528
+    }
+  ]
+}
