@@ -1,0 +1,119 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "1cab494",
+  "scope": "Compact retained-evidence identities; raw runs and checkpoints intentionally remain ignored",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-v2-complete/protocol.json",
+      "sha256": "8586a8a4ede27c7f556f1fb0313a76d49600d8b23f4c0884052c625f089ec967"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-v2-complete/relocation.json",
+      "sha256": "78ae74410b090801007b789c90c84882c19091f19284547c009a4d5e6f2cda17"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-summary.json",
+      "sha256": "ee2c2e6a1cb86fa46a94deb78f49aa9c4599ea4a237839d5f9d4a788d865bdd2"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-audit.json",
+      "sha256": "95f8146219d50408be37ae81b8429af7851b4c9a211f696226c8e7e31c90dd23"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-replay.json",
+      "sha256": "581e32f6624bd3c350a92c2409a1885758182e83c40c189ea79d534948d82586"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-details.json",
+      "sha256": "5be59099b0ebe566ae3891a0e5939f17e239ec5e6764a8bd2f6c8023ac305931"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-policy-drift.json",
+      "sha256": "65a91e40588b3d763dc62feb780668eea7a01d858ce37401ae7f7c7300ffcf86"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-v2-complete/local-untrained.pt",
+      "sha256": "14d911fd10b37a244d97c6f17ee180799a9aab8b7aa4888383367724109fbc5d"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-v2-complete/local-final.pt",
+      "sha256": "5828f666fc8b16c16173576dcf64743da2ebecdc123500dc03d2f42becd2a134"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-v2-complete/filtered-local-untrained.pt",
+      "sha256": "481d4f384fc15a7cfb03721e7cff389fec64bc598534ccd790b49a5c79b3e4c3"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-v2-complete/filtered-local-final.pt",
+      "sha256": "18e8086b0ff07f2cfd4b3c51b9d4dbfe3557869694f8f51a6104816b3073da14"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-v2-complete/distant-untrained.pt",
+      "sha256": "180cf0fd903bb571dd91ecca00139af66e6023943aaa5a4bb8c5a309c31cfd3a"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-v2-complete/distant-final.pt",
+      "sha256": "5aebe4af4dadbb86c79089968fa7863a73df409292010f225815daea5175ca49"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-v2-complete/groups-untrained.pt",
+      "sha256": "53db0f634dc74145e364f186bebf947b106246c6312d35075be89397faa0c7b9"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-v2-complete/groups-final.pt",
+      "sha256": "f7227dd6e0b09e9974bb95a89277a1e170ccd98446de5e9900b1ac706a20ab85"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-heavy-best/witness.json",
+      "sha256": "d400df3033ce6eed67718a8446541067f0cfa5f16910248ec8a2052a62c9c572"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-heavy-best/report.json",
+      "sha256": "7038372b07b1c98560948bbd6f04b81aa466ae4401c9f313f70f068f909b3dd1"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-heavy-best/view-inputs.json",
+      "sha256": "ee7e236543d7276bbb6bd26feb570dd3870534d3a2460ae600bcfeb0a2112047"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-heavy-view/comparison.png",
+      "sha256": "0e17948311e91d1c3c8e42ba0002a60b2a0b7220bfc9e731ead95a10d2bcaf3d"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-heavy-view/comparison.svg",
+      "sha256": "1f698cf298283621361712fe3040347355c0ded83bc9e8887bf46f9807d2bd8c"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-heavy-view/view.json",
+      "sha256": "04be763f857817a380b55c223595859a2eda2d1410e732ceb57b8b5fc88f1974"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-hole-probe/protocol.json",
+      "sha256": "8721ee3fda6874d24bf919560e033eb84116c27f0fa8a041dada49015da36706"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-hole-probe/report.json",
+      "sha256": "66ceea51a9cbe4caa8bf90d6e313ec66ab86b16a15c7f9af2213a6f2ff80aef9"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-hole-probe/audit.json",
+      "sha256": "405f70aac55e34d8dec8682b497751b604fb8e82a8c77f68eef927456e51757d"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-v2/protocol.json",
+      "sha256": "1808091d6a53ff7eec6507b4d807db91262e7576483629eb7d1e3949afc5de53"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-v2/partial.json",
+      "sha256": "1f44c61c61bb839231f5c17bea6927a127e6b65619e5172e4eb24ca525a6d086"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-v2/pre-diagnostic-source/full_factory_relocation.mjs",
+      "sha256": "ea4c60ca4ecad019ba7082e8acd7c82679f236b24475a29e13df7391f8d6ff21"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-relocation-v2/pre-diagnostic-source/full_factory_executor.mjs",
+      "sha256": "61b49fb354ccea3b6be2f04c281d48f4b4cdba898fbdc3f39e8394ed7a977634"
+    }
+  ]
+}
