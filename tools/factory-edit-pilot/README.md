@@ -231,3 +231,22 @@ The [curriculum failure analysis](../../docs/reports/2026-09-08.14-curriculum-fa
 measures frozen success-action probabilities, reconstructs first-rollout GAE gradients,
 and checks immediate recoverability after initial sampled edits. Reproduce it with
 `curriculum_diagnosis.py`; it reads checkpoints and performs no optimizer updates.
+
+## Short episodes and mastery-gated advancement
+
+The [mastery contract](../../docs/designs/2026-09-08.07-mastery-curriculum.md) crosses
+8/128-edit training episodes with fixed/performance-based advancement. Every condition
+uses 1,024 PPO samples per update; original-root evaluation remains 128 edits. Gates
+use separate 8-edit, 64-seed assessments, requiring both cases to pass 52/64 twice.
+Assessment seeds are development feedback, not independent outcome evaluation.
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/mastery_matrix.py --protocol tools/factory-edit-pilot/mastery-study.json --native-library target/release/libaic_pilot_native.so --output artifacts/factory-edit-pilot/fresh-mastery-learning
+```
+
+`mastery_study.py` executes one condition/seed. `mastery_audit.py` checks sample/reset
+exposure, advancement and checkpoints, and independently reproduces every native
+assessment using the Python reference environment. `mastery_compare.py` requires all
+matched runs before comparing root outcomes, learning time and stage progress.
+Checkpoint files exist at every assessment, including assessments without root evaluation.
+No critic initialization, reward, candidate mask or supervised loss is changed.

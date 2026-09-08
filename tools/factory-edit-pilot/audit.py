@@ -50,10 +50,13 @@ def audit(root, case, output, source_commit):
     if (output/"training-best-trace.json").exists():
         traces.append(output/"training-best-trace.json")
     for path in traces:
-        env = Environment(catalog, config)
+        replay_config = config
+        if path.name == "training-best-trace.json" and metadata.get("experiment_family") == "mastery_curriculum":
+            replay_config = metadata["training_config"]
+        env = Environment(catalog, replay_config)
         start_path = output / "training-best-start.json"
         if path.name == "training-best-trace.json" and start_path.exists():
-            if metadata.get("experiment_family") != "curriculum_parallel":
+            if metadata.get("experiment_family") not in ("curriculum_parallel", "mastery_curriculum"):
                 raise ValueError(f"Unexpected curriculum start evidence: {start_path}")
             prefix = json.loads(start_path.read_text())["prefix"]
             for command in prefix:

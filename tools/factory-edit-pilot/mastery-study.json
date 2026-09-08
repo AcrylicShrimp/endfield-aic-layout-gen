@@ -1,0 +1,19 @@
+{
+  "schema_version": 2,
+  "id": "battery-short-mastery-curriculum",
+  "base_config": "tools/factory-edit-pilot/run-server-cuda.json",
+  "cases": {"A": "tools/factory-edit-pilot/case.json", "B": "tools/factory-edit-pilot/case-spread.json"},
+  "training_seeds": [17, 29, 43],
+  "commands": 65536,
+  "streams": 8,
+  "rollout_commands": 1024,
+  "checkpoints": [0, 8192, 16384, 24576, 32768, 49152, 65536],
+  "assessment": {"interval": 8192, "horizon": 8, "episodes": 64, "seed_start": 200000, "required_successes": 52, "consecutive_passes": 2},
+  "fixed_curriculum": [{"until": 8192, "remaining": 1}, {"until": 16384, "remaining": 2}, {"until": 24576, "remaining": 3}],
+  "conditions": {
+    "long-fixed": {"horizon": 128, "advancement": "fixed"},
+    "short-fixed": {"horizon": 8, "advancement": "fixed"},
+    "long-mastery": {"horizon": 128, "advancement": "mastery"},
+    "short-mastery": {"horizon": 8, "advancement": "mastery"}
+  }
+}
