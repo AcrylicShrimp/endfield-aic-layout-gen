@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "id": "geometry-restart-diagnosis",
+  "purpose": "Development diagnosis on already opened geometries; no held-out success claim",
+  "policy": "artifacts/factory-edit-pilot/geometry-pilot-evaluation/selected-policy.pt",
+  "policy_sha256": "d3c0a82a310ae770d815411b437e218317348e9f9d28050bbc036e18e0163fa4",
+  "cases": {
+    "train-gap4-turn0": {
+      "path": "artifacts/factory-edit-pilot/generated-geometry/train-gap4-turn0.json",
+      "sha256": "1cc8009956abd673858ade0ec2f40e5fd419c99bac07a685127d89bee523b392"
+    },
+    "development-gap2-turn0": {
+      "path": "artifacts/factory-edit-pilot/generated-geometry/development-gap2-turn0.json",
+      "sha256": "77f91ebd66bfff73e94952a4a0e376aab7cd2365900a0a3f7c972ea3a9e128ae"
+    },
+    "heldout-gap8-turn0": {
+      "path": "artifacts/factory-edit-pilot/generated-geometry/heldout-gap8-turn0.json",
+      "sha256": "4576454e829c4b4c8ded814bd56f852cbd74cb4b536038f573093765c5498c12"
+    },
+    "heldout-gap8-turn1": {
+      "path": "artifacts/factory-edit-pilot/generated-geometry/heldout-gap8-turn1.json",
+      "sha256": "811c3553f779dc7799108a208b705d5d996f84519cb476a1a6c4547c12ca54c3"
+    }
+  },
+  "total_commands": 128,
+  "attempt_horizons": [
+    128,
+    32,
+    16
+  ],
+  "episodes": 32,
+  "required_successes": 26,
+  "seed_banks": [
+    700000,
+    710000
+  ]
+}
