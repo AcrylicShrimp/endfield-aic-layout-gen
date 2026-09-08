@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "training_source_commit": "3445ec844f90ee4cf702261b5b48c86c55734f3b",
+  "analysis_base_commit": "5e61fb4a382246a2b8260f2de2700224e3acd553",
+  "helper_sha256": "3975b9723008e079b6cb47e13c3ee01cbffeb1785bdf16e5aed9580f6b4c1047",
+  "raw_diagnosis_path": "artifacts/factory-edit-pilot/curriculum-failure-diagnosis/diagnosis.json",
+  "raw_diagnosis_sha256": "2d82167c6426d9a7bedde1d297b68239082a3d4d3e18e8abd77a6ec1abc6eea5",
+  "training_manifest_sha256": "9d10b10447ad08329750cb30aa650d9b34e92348788fa5ccba837315c265b8f0",
+  "policy_state_probes": 576,
+  "first_cpu_rollout_reconstructions": 6,
+  "next_action_domain_audits": 24,
+  "immediate_first_successes": 1,
+  "lost_one_step_success_after_first_action": 22,
+  "one_step_success_still_available_after_first_action": 1,
+  "selected_probabilities": [
+    {
+      "condition": "curriculum-serial",
+      "seed": 17,
+      "case": "A",
+      "probability_at_0_8192_65536": [
+        0.02702886424958706,
+        0.0201125331223011,
+        0.05193822458386421
+      ]
+    },
+    {
+      "condition": "curriculum-serial",
+      "seed": 17,
+      "case": "B",
+      "probability_at_0_8192_65536": [
+        0.011495345272123814,
+        0.019647276028990746,
+        0.020187562331557274
+      ]
+    },
+    {
+      "condition": "curriculum-serial",
+      "seed": 29,
+      "case": "A",
+      "probability_at_0_8192_65536": [
+        0.027031751349568367,
+        0.01344813872128725,
+        6.948936061235145e-05
+      ]
+    },
+    {
+      "condition": "curriculum-serial",
+      "seed": 29,
+      "case": "B",
+      "probability_at_0_8192_65536": [
+        0.011492446064949036,
+        0.026504628360271454,
+        0.009253154508769512
+      ]
+    },
+    {
+      "condition": "curriculum-serial",
+      "seed": 43,
+      "case": "A",
+      "probability_at_0_8192_65536": [
+        0.027036573737859726,
+        0.0387057401239872,
+        0.015303603373467922
+      ]
+    },
+    {
+      "condition": "curriculum-serial",
+      "seed": 43,
+      "case": "B",
+      "probability_at_0_8192_65536": [
+        0.01149306446313858,
+        0.011508314870297909,
+        0.0027045737951993942
+      ]
+    },
+    {
+      "condition": "curriculum-parallel",
+      "seed": 17,
+      "case": "A",
+      "probability_at_0_8192_65536": [
+        0.02702886424958706,
+        0.024986807256937027,
+        0.05738021060824394
+      ]
+    },
+    {
+      "condition": "curriculum-parallel",
+      "seed": 17,
+      "case": "B",
+      "probability_at_0_8192_65536": [
+        0.011495345272123814,
+        0.009551740251481533,
+        0.004523387178778648
+      ]
+    },
+    {
+      "condition": "curriculum-parallel",
+      "seed": 29,
+      "case": "A",
+      "probability_at_0_8192_65536": [
+        0.027031751349568367,
+        0.06397563219070435,
+        0.014422977343201637
+      ]
+    },
+    {
+      "condition": "curriculum-parallel",
+      "seed": 29,
+      "case": "B",
+      "probability_at_0_8192_65536": [
+        0.011492446064949036,
+        0.011189477518200874,
+        5.228176087257452e-05
+      ]
+    },
+    {
+      "condition": "curriculum-parallel",
+      "seed": 43,
+      "case": "A",
+      "probability_at_0_8192_65536": [
+        0.027036573737859726,
+        0.029570259153842926,
+        0.00965759065002203
+      ]
+    },
+    {
+      "condition": "curriculum-parallel",
+      "seed": 43,
+      "case": "B",
+      "probability_at_0_8192_65536": [
+        0.01149306446313858,
+        0.014425748959183693,
+        0.000789074576459825
+      ]
+    }
+  ]
+}

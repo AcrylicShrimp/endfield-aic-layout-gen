@@ -226,3 +226,8 @@ The completed [curriculum/concurrent results](../../docs/reports/2026-09-08.13-c
 report all 12 runs, separate throughput from root learning outcomes, and link compact
 provenance. `curriculum_evaluation_replay.py` reproduces every positive original-root
 evaluation in a completed run and independently replays its native transitions.
+
+The [curriculum failure analysis](../../docs/reports/2026-09-08.14-curriculum-failure-analysis.md)
+measures frozen success-action probabilities, reconstructs first-rollout GAE gradients,
+and checks immediate recoverability after initial sampled edits. Reproduce it with
+`curriculum_diagnosis.py`; it reads checkpoints and performs no optimizer updates.
