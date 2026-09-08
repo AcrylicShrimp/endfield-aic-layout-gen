@@ -250,3 +250,8 @@ assessment using the Python reference environment. `mastery_compare.py` requires
 matched runs before comparing root outcomes, learning time and stage progress.
 Checkpoint files exist at every assessment, including assessments without root evaluation.
 No critic initialization, reward, candidate mask or supervised loss is changed.
+
+The [completed short/mastery results](../../docs/reports/2026-09-08.15-mastery-curriculum-results.md)
+include twelve audited runs, stage transitions and root improvement in two short-mastery
+training seeds. `curriculum_evaluation_replay.py` also accepts this experiment family;
+all 70 positive root evaluation episodes were reproduced independently.

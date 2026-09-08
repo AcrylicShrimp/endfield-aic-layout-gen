@@ -20,7 +20,7 @@ def replay(root, run_path, library, output):
     if output.exists():
         raise ValueError(f"evaluation_replay.output_exists: {output}")
     metadata = json.loads((run_path / "metadata.json").read_text())
-    if metadata["status"] != "complete" or metadata["experiment_family"] != "curriculum_parallel":
+    if metadata["status"] != "complete" or metadata["experiment_family"] not in ("curriculum_parallel", "mastery_curriculum"):
         raise ValueError(f"evaluation_replay.incomplete: {run_path}")
     config = metadata["config"]
     torch.set_num_threads(config["threads"])
