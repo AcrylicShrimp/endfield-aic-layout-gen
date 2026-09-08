@@ -62,6 +62,24 @@ impl Config {
                 None,
             ));
         }
+        for (name, lengths) in [
+            ("move_lengths", &self.move_lengths),
+            ("segment_lengths", &self.segment_lengths),
+        ] {
+            if lengths
+                .iter()
+                .collect::<std::collections::BTreeSet<_>>()
+                .len()
+                != lengths.len()
+            {
+                return Err(Diagnostic::new(
+                    "input.config.duplicate_length",
+                    "admission",
+                    format!("{name} must contain distinct action lengths"),
+                    None,
+                ));
+            }
+        }
         Ok(())
     }
 }

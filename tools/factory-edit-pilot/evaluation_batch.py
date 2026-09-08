@@ -33,8 +33,10 @@ def episodes(actor, runtime, count, horizon, seed_start, size, prefix=None):
             data = {key: value.to(device) for key, value in batch([row[0] for row in observed]).items()}
             logits, _ = actor(data)
             log_probs = logits.log_softmax(-1).cpu()
-            for index, (env, (_, handle), generator) in enumerate(zip(envs, observed, generators)):
-                action = torch.multinomial(log_probs[index].exp(), 1, generator=generator).item()
+            for index, (env, (observation, handle), generator) in enumerate(zip(envs, observed, generators)):
+                # Zero-probability padding still consumes RNG draws in multinomial.
+                probabilities = log_probs[index, :len(observation['candidates'])].exp()
+                action = torch.multinomial(probabilities, 1, generator=generator).item()
                 reward, _, _ = env.step(handle, action)
                 totals[index] += reward
         for seed, env, total in zip(seeds, envs, totals):

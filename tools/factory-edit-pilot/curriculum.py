@@ -58,7 +58,7 @@ def act_batch(model, observations, generators):
     logits, values = model(inputs)
     log_probs = logits.log_softmax(-1).cpu()
     values = values.cpu().tolist()
-    selected = [torch.multinomial(log_probs[i].exp(), 1, generator=generator).item()
+    selected = [torch.multinomial(log_probs[i, :len(observations[i]['candidates'])].exp(), 1, generator=generator).item()
                 for i, generator in enumerate(generators)]
     return [(action, log_probs[i, action].item(), values[i]) for i, action in enumerate(selected)]
 

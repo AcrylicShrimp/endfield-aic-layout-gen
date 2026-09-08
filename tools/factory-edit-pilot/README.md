@@ -317,3 +317,20 @@ uses `mastery_policy_selection.py --protocol tools/factory-edit-pilot/relocation
 with the usual native-library/output flags. It confirms each first root-passing policy
 on an independent development bank before opening outcome banks. Failed confirmation
 opens no outcome bank and never selects a later checkpoint.
+
+## Sampling and action-length admission correction
+
+Batched samplers now draw only from each observation's actual candidate count.
+Previously zero-probability padding consumed generator draws: a fixed episode seed
+could produce different traces when companion candidate counts or wave width
+changed. This correction changes seeded trajectories relative to historical
+source revisions. Retained historical experiments remain evidence for their frozen
+sampling procedure; reproduce them with their recorded source and native hashes.
+A seed alone does not establish cross-version or cross-hardware trace identity.
+No compatibility sampler is retained. Independent generators now ignore companion
+padding; floating-point differences between devices remain a separate limitation.
+
+Native and reference admission reject duplicate `move_lengths` or `segment_lengths`
+with `input.config.duplicate_length`, naming the affected key. Remove duplicates
+from external configuration before rerunning. Existing tracked configurations
+already contain distinct lengths. See the [four-perspective audit](../../docs/reports/2026-09-08.44-training-implementation-audit.md).

@@ -65,6 +65,17 @@ class NativeEngineTests(unittest.TestCase):
             self.assertEqual(actual[key].shape, expected[key].shape, key)
             self.assertEqual(actual[key].tobytes(), expected[key].tobytes(), key)
 
+    def test_duplicate_action_lengths_rejected_at_admission(self):
+        for key in ("move_lengths", "segment_lengths"):
+            config = deepcopy(self.config)
+            config[key] = [1, 1, 2]
+            with self.subTest(key=key):
+                with self.assertRaisesRegex(ValueError, f"input.config.duplicate_length.*{key}"):
+                    self.module.Engine.open(str(ROOT), str(DIRECTORY / "case.json"),
+                                            json.dumps({k: config[k] for k in CONFIG_KEYS}))
+                with self.assertRaisesRegex(ValueError, f"input.config.duplicate_length.*{key}"):
+                    Environment(self.catalog, config)
+
     def test_observe_bundle_owns_arrays_and_rejects_stale_handles(self):
         actual, handle = self.engine.observe()
         expected = self.reference.observe(self.reference.candidates())

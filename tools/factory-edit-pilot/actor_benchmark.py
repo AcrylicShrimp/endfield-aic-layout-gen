@@ -38,7 +38,7 @@ def measure(model, observations, batch_size, device, inference):
             seconds["forward_and_transfer"] += time.perf_counter()-begin
             begin = time.perf_counter()
             for i, observation in enumerate(group):
-                selected = torch.multinomial(log_probs[i].exp(), 1, generator=generator).item()
+                selected = torch.multinomial(log_probs[i, :len(observation['candidates'])].exp(), 1, generator=generator).item()
                 values.append((selected, log_probs[i, selected].item(), value[i].item()))
             seconds["sampling"] += time.perf_counter()-begin
     return {"seconds": time.perf_counter()-started, "parts": seconds,

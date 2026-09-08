@@ -10,7 +10,7 @@ import torch
 
 from case_curriculum import assess_cases
 from case_curriculum_audit import replay_assessment
-from curriculum import prefixes
+from curriculum import act_batch, prefixes
 from evaluation_batch import batch_size, episodes
 from native import Runtime, layout, trace
 from native_training_comparison import policy_hash
@@ -52,6 +52,31 @@ class BatchedEvaluationTests(unittest.TestCase):
             self.assertAlmostEqual(total, (env.initial_score[0]-accepted['score'][0])/env.initial_score[0])
         self.assertEqual(policy_hash(self.actor.state_dict()), before)
         torch.testing.assert_close(torch.get_rng_state(), rng)
+
+    def test_seeded_traces_match_across_wave_widths(self):
+        torch.manual_seed(97)
+        actor = Policy(self.runtime.new_engine().observe()[0], normalization='batch')
+        expected = [trace(env) for _, env, _ in episodes(actor, self.runtime, 5, 16, 810000, 1)]
+        for size in (2, 3, 5):
+            actual = [trace(env) for _, env, _ in episodes(actor, self.runtime, 5, 16, 810000, size)]
+            self.assertEqual(actual, expected)
+
+    def test_collection_sampling_ignores_companion_candidate_padding(self):
+        observation = self.runtime.new_engine().observe()[0]
+        companion = deepcopy(observation)
+        # The companion increases padded candidate capacity without changing this row.
+        for key in ('candidates', 'operands', 'operand_entities', 'operand_mask', 'points'):
+            companion[key] = companion[key].repeat(3, axis=0)
+        alone = torch.Generator().manual_seed(0)
+        together = torch.Generator().manual_seed(0)
+        other = torch.Generator().manual_seed(1)
+        for _ in range(16):
+            a = act_batch(self.actor, [observation], [alone])[0]
+            b = act_batch(self.actor, [observation, companion], [together, other])[0]
+            self.assertEqual(a[0], b[0])
+            self.assertAlmostEqual(a[1], b[1], places=5)
+            self.assertAlmostEqual(a[2], b[2], places=5)
+            self.assertTrue(torch.equal(alone.get_state(), together.get_state()))
 
     def test_assessment_commands_replay_without_resampling_and_reject_tampering(self):
         protocol = {'assessment': {'episodes': 5, 'horizon': 16, 'seed_start': 930000}}

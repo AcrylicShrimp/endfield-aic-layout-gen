@@ -72,6 +72,9 @@ def clone(state):
 
 class Environment:
     def __init__(self, catalog, config):
+        for key in ("move_lengths", "segment_lengths"):
+            if len(set(config[key])) != len(config[key]):
+                raise Mechanical(f"input.config.duplicate_length: {key} must contain distinct action lengths")
         self.catalog, self.config = catalog, config
         self.fids, self.nids, self.tids = list(catalog.facilities), list(catalog.networks), catalog.terminal_ids
         self.canonical_command_key = lru_cache(maxsize=4096)(self.canonical_command_key)

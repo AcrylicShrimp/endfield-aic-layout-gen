@@ -36,7 +36,8 @@ def collect(model, catalog, config, size, device, inference):
                 data = {key: value.to(device) for key, value in data.items()}
                 logits, values = model(data)
                 log_probs, values = logits.log_softmax(-1).cpu(), values.cpu()
-                selected = [torch.multinomial(row.exp(), 1, generator=generator).item() for row in log_probs]
+                selected = [torch.multinomial(row[:len(observations[i]['candidates'])].exp(), 1,
+                            generator=generator).item() for i, row in enumerate(log_probs)]
                 rows = [(action, log_probs[i, action].item(), values[i].item()) for i, action in enumerate(selected)]
                 inference_seconds += time.perf_counter()-begin
                 for i, (env, candidate, (action, log_prob, value)) in enumerate(zip(envs, candidates, rows)):
