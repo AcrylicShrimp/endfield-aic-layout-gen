@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "training_source": "3bf5f8d",
+  "audit_and_selection_source": "6b00430",
+  "status": "passed",
+  "files_sha256": {
+    "artifacts/factory-edit-pilot/capacity-final-selection/selection.json": "ff8f4e2866544953f7bf5df495116fcc4946a263adfe6ad4538e314d994bf63d",
+    "tools/factory-edit-pilot/capacity-final-selection.json": "20a8b0d66bcb18f3ba718c7d8e0e8ae4984a410079abab22a7a564b25f101b9a",
+    "tools/factory-edit-pilot/capacity-replication-study.json": "bf8b5ba4dba3e8cf7069d4f88b0fe1cc3846048ea4b0e0e219d4d8578266af17",
+    "artifacts/factory-edit-pilot/capacity-final-sources-manifest.json": "1c949348da228fae594856a185c284ec79ba1fbd89504d3e8fe580b046cfbc95",
+    "artifacts/factory-edit-pilot/capacity-replication/relocation-mastery-rehearsal-seed17/metadata.json": "2785e04316f8a713fe36393066f6e52cb1da827d1e56d258fa20041fdee84954",
+    "artifacts/factory-edit-pilot/capacity-replication/relocation-mastery-rehearsal-seed17/study-audit.json": "c78c55bc631b4d93b11724cb23cfb5b6dbcdf634a87bb96c9295f562d640fd78",
+    "artifacts/factory-edit-pilot/capacity-replication/relocation-mastery-rehearsal-seed17/checkpoint-229376.pt": "0c174b95c7b2f5eae630214f27b1ec6fa0cb59302b33e7a45a68e265f42cc8e2",
+    "artifacts/factory-edit-pilot/capacity-final-selection/seed17/selected-policy.pt": "922d7ee6e118c18a25b1806cab437cfcaf3b315d3de43cd10887f0366639af8d",
+    "artifacts/factory-edit-pilot/capacity-replication/relocation-mastery-rehearsal-seed29/metadata.json": "8f3d76f3d65cc478f8c027fd28387d148b36453f0694c1f14578adf3b31904f1",
+    "artifacts/factory-edit-pilot/capacity-replication/relocation-mastery-rehearsal-seed29/study-audit.json": "6c2cee243acc59c5989edc78db4e149346995faac748295cabfdf288c660ad76",
+    "artifacts/factory-edit-pilot/capacity-replication/relocation-mastery-rehearsal-seed29/checkpoint-253952.pt": "87190e1f114e3f80bd608e004b056827a6244531606bbd8f9bacaa832b6a29af",
+    "artifacts/factory-edit-pilot/capacity-final-selection/seed29/selected-policy.pt": "78d4a370d9e26ff41ec426a5dde1ca800b7e67ca6411c573cbd5ca0e5b27916e",
+    "artifacts/factory-edit-pilot/capacity-pilot/width1/relocation-mastery-rehearsal-seed43/metadata.json": "9f677cb8596f360e217d0d1ae702eac2ea580b083c88702343dfe8e924c27094",
+    "artifacts/factory-edit-pilot/capacity-pilot/width1/relocation-mastery-rehearsal-seed43/study-audit.json": "6983da5e60ebed5ba45c2b8fefe78b367a622b8dca48cffce1dbb7263c42340a",
+    "artifacts/factory-edit-pilot/capacity-pilot/width1/relocation-mastery-rehearsal-seed43/checkpoint-311296.pt": "e0333d9ec64629081e5562877c5c382eb9cc3412f2be3cbfcf5a1a69ef7109ae",
+    "artifacts/factory-edit-pilot/capacity-final-selection/seed43/selected-policy.pt": "c4e719306abbc1bff1b1b61a36227aecc9c07a2af53afd6d59e6902ab4647252"
+  }
+}
