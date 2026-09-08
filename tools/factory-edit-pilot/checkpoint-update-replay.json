@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "purpose": "checkpoint_update_replay",
+  "training_source_commit": "13af265c3f982d9a50f09ed2ed2d8426290ecb16",
+  "study_protocol": "tools/factory-edit-pilot/entity-learning-width1-study.json",
+  "condition": "entity-mastery-rehearsal",
+  "seed": 43,
+  "start_commands": 1179648,
+  "end_commands": 1212416,
+  "updates": 32,
+  "assessment_stride": 4,
+  "device": "cuda",
+  "historical_sources": [
+    "policy.py", "curriculum.py", "case_curriculum.py", "evaluation_batch.py",
+    "case_curriculum_study.py", "native.py", "run.py"
+  ]
+}
