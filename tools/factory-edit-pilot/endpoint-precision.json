@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "purpose": "frozen_endpoint_precision",
+  "comparison_sha256": "0d7b94a049fac6871b1a7e6463f0a4408619827776ba2464630c7db501a5ee50",
+  "continuation_seed": 1030000,
+  "multipliers": [1, 0.1],
+  "update": 32,
+  "study_protocol": "tools/factory-edit-pilot/entity-learning-width1-study.json",
+  "sampling_seed_start": 1080000,
+  "episodes": 256,
+  "horizon": 128,
+  "batch_size": 16,
+  "bootstrap_seed": 1090000,
+  "bootstrap_resamples": 10000,
+  "device": "cuda"
+}
