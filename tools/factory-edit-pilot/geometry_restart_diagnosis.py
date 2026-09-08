@@ -1,7 +1,6 @@
 """Compare fixed-command restart schedules on already opened development geometry."""
 
 import argparse
-from collections import Counter
 import json
 from pathlib import Path
 import time
@@ -9,8 +8,10 @@ import time
 import torch
 
 from evidence import append, provenance, write
+from evaluation_batch import batch_size
+from restart_evaluation_batch import restarted
 from mastery_policy_selection import digest, read, verify_case
-from native import Runtime, check, layout, trace
+from native import Runtime
 from native_training_comparison import policy_hash
 from policy import Policy
 from reference.acceptance import Catalog, check as reference_check
@@ -36,35 +37,16 @@ def evaluate_cell(root, runtime, actor, config, spec, horizon, bank, directory):
     engine = runtime.new_engine()
     records, layouts, traces = [], [], []
     started = time.perf_counter()
-    for episode in range(spec['episodes']):
-        generator = torch.Generator(device='cpu').manual_seed(bank+episode)
-        best, best_trace, best_score, attempts = None, None, None, []
-        total_counts = Counter()
-        for attempt in range(spec['total_commands']//horizon):
-            engine.reset()
-            first_gain = None
-            for step in range(horizon):
-                observation, handle = engine.observe()
-                action, _, _ = actor.act(observation, generator)
-                reward, _, _ = engine.step(handle, action)
-                if reward > 0 and first_gain is None:
-                    first_gain = step+1
-            candidate = layout(engine, 'best')
-            accepted = check(engine, candidate)
-            counts = json.loads(engine.episode_json())['counts']
-            if not accepted['valid'] or counts['commands'] != horizon:
-                raise ValueError(f'restart.attempt: {directory}: invalid incumbent or command accounting')
-            total_counts.update(counts)
-            attempts.append({'attempt': attempt, 'score': accepted['score'],
-                             'first_improvement_step': first_gain, 'counts': counts})
-            if best_score is None or accepted['score'] < best_score:
-                best, best_trace, best_score = candidate, trace(engine), accepted['score']
+    for episode, result in enumerate(restarted(actor, runtime, spec['episodes'], horizon,
+                                                spec['total_commands'], bank, batch_size(config))):
+        best, best_trace, best_score = result['best'], result['best_trace'], result['best_score']
+        attempts, total_counts = result['attempts'], result['counts']
         accepted = reference_check(catalog, best)
         if not accepted['valid'] or accepted['score'] != best_score or total_counts['commands'] != spec['total_commands']:
             raise ValueError(f'restart.validation: {directory}: independent validity/score or total budget differs')
         translated = [f['id'] for f in runtime.case['facilities']
                       if best['placements'][f['id']][:2] != f['pose'][:2]]
-        row = {'rollout_seed': bank+episode, 'score': best_score,
+        row = {'rollout_seed': result['seed'], 'score': best_score,
                'return': (engine.initial_score[0]-best_score[0])/engine.initial_score[0],
                'translated_facilities': translated, 'counts': dict(total_counts), 'attempts': attempts,
                'resets_after_initial': len(attempts)-1}
@@ -93,7 +75,8 @@ def evaluate_cell(root, runtime, actor, config, spec, horizon, bank, directory):
             'median_score': records[median]['score'], 'best_score': records[ordered[0]]['score'],
             'charged_commands': spec['episodes']*spec['total_commands'],
             'resets_after_initial': sum(r['resets_after_initial'] for r in records),
-            'seconds': time.perf_counter()-started, 'validation': validation, 'best_validation': best_validation}
+            'seconds': time.perf_counter()-started, 'validation': validation, 'best_validation': best_validation,
+            'evaluation_batch_size': batch_size(config), 'actor_device': str(next(actor.parameters()).device)}
 
 
 def run(root, protocol_path, library, output):
