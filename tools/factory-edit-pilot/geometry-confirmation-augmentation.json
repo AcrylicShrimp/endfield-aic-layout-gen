@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "base_case": "tools/factory-edit-pilot/case-relocation.json",
+  "config": "tools/factory-edit-pilot/run-capacity-width1.json",
+  "splits": {
+    "train": {
+      "gap_extensions": [
+        0,
+        4
+      ],
+      "quarter_turns": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    "development": {
+      "gap_extensions": [
+        2,
+        6,
+        8
+      ],
+      "quarter_turns": [
+        0,
+        1,
+        2,
+        3
+      ]
+    },
+    "heldout": {
+      "gap_extensions": [
+        10,
+        12
+      ],
+      "quarter_turns": [
+        0,
+        1,
+        2,
+        3
+      ]
+    }
+  }
+}

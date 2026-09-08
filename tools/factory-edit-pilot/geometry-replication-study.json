@@ -1,0 +1,50 @@
+{
+  "schema_version": 3,
+  "id": "generated-geometry-replication",
+  "base_config": "tools/factory-edit-pilot/run-capacity-width1.json",
+  "cases": {
+    "g0r0": "artifacts/factory-edit-pilot/generated-geometry/train-gap0-turn0.json",
+    "g0r1": "artifacts/factory-edit-pilot/generated-geometry/train-gap0-turn1.json",
+    "g0r2": "artifacts/factory-edit-pilot/generated-geometry/train-gap0-turn2.json",
+    "g0r3": "artifacts/factory-edit-pilot/generated-geometry/train-gap0-turn3.json",
+    "g4r0": "artifacts/factory-edit-pilot/generated-geometry/train-gap4-turn0.json",
+    "g4r1": "artifacts/factory-edit-pilot/generated-geometry/train-gap4-turn1.json",
+    "g4r2": "artifacts/factory-edit-pilot/generated-geometry/train-gap4-turn2.json",
+    "g4r3": "artifacts/factory-edit-pilot/generated-geometry/train-gap4-turn3.json"
+  },
+  "training_seeds": [
+    29,
+    43
+  ],
+  "commands": 1572864,
+  "streams": 8,
+  "rollout_commands": 1024,
+  "checkpoints": [
+    0,
+    393216,
+    786432,
+    1179648,
+    1572864
+  ],
+  "assessment": {
+    "interval": 16384,
+    "horizon": 16,
+    "episodes": 64,
+    "seed_start": 200000,
+    "required_successes": 52,
+    "consecutive_passes": 2
+  },
+  "conditions": {
+    "geometry-mastery-rehearsal": {
+      "horizon": 16,
+      "advancement": "case_mastery"
+    }
+  },
+  "rehearsal_every": 4,
+  "stage_acceptance": {
+    "root_successes": 26,
+    "evaluation_episodes": 32,
+    "consecutive_final_checkpoints": 2,
+    "all_training_seeds": true
+  }
+}
