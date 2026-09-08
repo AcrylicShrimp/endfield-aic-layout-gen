@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "battery-relocation-capacity-width2-confirmation",
+  "source_commit": "3bf5f8d",
+  "source_run_root": "artifacts/factory-edit-pilot/capacity-pilot/width2",
+  "condition": "relocation-mastery-rehearsal",
+  "training_seeds": [
+    43
+  ],
+  "selection": "first_joint_root_mastery",
+  "horizon": 128,
+  "seed_banks": [
+    400000,
+    410000
+  ],
+  "evaluation_episodes": 32,
+  "required_successes": 26,
+  "require_translation": true,
+  "confirmation": {
+    "horizon": 16,
+    "seed_start": 430000,
+    "episodes": 64,
+    "required_successes": 52
+  },
+  "evaluation_mode": "confirmation_only"
+}
