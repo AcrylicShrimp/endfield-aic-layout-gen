@@ -63,7 +63,7 @@ def audit_study(root, protocol_path, output, source_commit):
             raise ValueError(f"mastery_audit.level: {output}: {count}: wrong assessed stage")
         saved = torch.load(output / f"checkpoint-{count}.pt", map_location="cpu", weights_only=False)
         example_env = Environment(next(iter(catalogs.values())), config)
-        actor = Policy(example_env.observe(example_env.candidates()))
+        actor = Policy(example_env.observe(example_env.candidates()), normalization=config.get("normalization", "none"))
         actor.load_state_dict(saved["evaluation_policy"])
         actor.eval()
         expected_rows, successes = [], {}
@@ -124,6 +124,14 @@ def audit_study(root, protocol_path, output, source_commit):
         setup += size
     updates = rows(output / "updates.jsonl")
     steps = config["epochs"] * ((config["rollout_commands"]-1)//config["minibatch"]+1)
+    normalization = config.get("normalization", "none")
+    calibration_batches = (config["rollout_commands"]-1)//config["minibatch"]+1
+    if normalization == "batch":
+        for row in updates:
+            calibration = row.get("normalization_calibration", {})
+            if (calibration.get("kind") != "batch" or calibration.get("observations") != config["rollout_commands"]
+                    or calibration.get("batches") != calibration_batches or calibration.get("seconds", -1) < 0):
+                raise ValueError(f"mastery_audit.normalization: {output}: inconsistent calibration exposure")
     if ([u["commands"] for u in updates] != list(range(config["rollout_commands"], config["commands"]+1, config["rollout_commands"]))
             or any(u["optimizer_steps"] != steps or u["remaining"] != levels[(u["commands"]-1)//gate_spec["interval"]] for u in updates)
             or metadata["optimizer_steps"] != len(updates)*steps or metadata["completed_commands"] != config["commands"]
@@ -135,6 +143,10 @@ def audit_study(root, protocol_path, output, source_commit):
     for count in sorted(set(config["checkpoints"]) | {g["commands"] for g in gates}):
         path = output / f"checkpoint-{count}.pt"
         saved = torch.load(path, map_location="cpu", weights_only=False)
+        if normalization == "batch":
+            expected_batches = count//config["rollout_commands"] * calibration_batches
+            if any(saved["policy"][f"normalizations.{i}.num_batches_tracked"].item() != expected_batches for i in range(3)):
+                raise ValueError(f"mastery_audit.normalization: {path}: inconsistent saved running statistics")
         m = saved["metadata"]
         expected_controller = controllers[max(n for n in controllers if n <= count)]
         if (saved["kind"] != "complete_rollout" or m["completed_commands"] != count

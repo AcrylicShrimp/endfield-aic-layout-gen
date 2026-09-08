@@ -255,3 +255,17 @@ The [completed short/mastery results](../../docs/reports/2026-09-08.15-mastery-c
 include twelve audited runs, stage transitions and root improvement in two short-mastery
 training seeds. `curriculum_evaluation_replay.py` also accepts this experiment family;
 all 70 positive root evaluation episodes were reproduced independently.
+
+## Spatial BatchNorm experiment
+
+`run-server-cuda-batchnorm.json` selects `normalization: "batch"`; the existing
+no-normalization configurations remain controls. The three-seed
+`mastery-batchnorm-study.json` repeats the short-mastery condition with affine BN
+behind each convolution. Padding is excluded from statistics. Running statistics
+stay fixed through collection and PPO, then receive one training-only calibration
+pass per update; calibration counts/time and buffers are retained. See the
+[contract](../../docs/designs/2026-09-08.08-batch-normalized-policy.md).
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/mastery_matrix.py --protocol tools/factory-edit-pilot/mastery-batchnorm-study.json --native-library target/release/libaic_pilot_native.so --output artifacts/factory-edit-pilot/fresh-batchnorm-learning
+```

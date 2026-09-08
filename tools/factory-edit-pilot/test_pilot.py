@@ -200,7 +200,7 @@ class PilotTests(unittest.TestCase):
             if done:
                 env.reset()
         result = update(model, optimizer, rollout, config, np.random.default_rng(7))
-        self.assertTrue(all(np.isfinite(v) for k, v in result.items() if k not in ("seconds", "preparation")))
+        self.assertTrue(all(np.isfinite(v) for k, v in result.items() if k not in ("seconds", "preparation", "normalization_calibration")))
         self.assertTrue(all(np.isfinite(v) and v >= 0 for v in result["seconds"].values()))
         self.assertGreater(result["gradient_norm"], 0)
         self.assertTrue(any(not torch.equal(v, before[k]) for k, v in model.state_dict().items()))
@@ -246,7 +246,7 @@ class PilotTests(unittest.TestCase):
             if done:
                 env.reset()
         metrics = update(learner, optimizer, rollout, config, np.random.default_rng(7))
-        self.assertTrue(all(np.isfinite(v) for k, v in metrics.items() if k not in ("seconds", "preparation")))
+        self.assertTrue(all(np.isfinite(v) for k, v in metrics.items() if k not in ("seconds", "preparation", "normalization_calibration")))
         self.assertGreater(metrics["gradient_norm"], 0)
         self.assertTrue(all(torch.equal(value, before[key]) for key, value in actor.state_dict().items()))
         refresh_actor(learner, actor)

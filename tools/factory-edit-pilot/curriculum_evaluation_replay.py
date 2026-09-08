@@ -35,7 +35,7 @@ def replay(root, run_path, library, output):
             checkpoint_path = run_path / f"checkpoint-{count}.pt"
             saved = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
             env = runtime.new_engine()
-            model = Policy(env.observe()[0])
+            model = Policy(env.observe()[0], normalization=config.get("normalization", "none"))
             model.load_state_dict(saved["evaluation_policy"])
             model.eval()
             generator = torch.Generator(device="cpu").manual_seed(seed)

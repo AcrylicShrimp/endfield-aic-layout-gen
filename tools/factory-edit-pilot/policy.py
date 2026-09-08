@@ -6,6 +6,26 @@ from torch import nn
 import time
 
 
+class MaskedBatchNorm2d(nn.BatchNorm2d):
+    """Calibrate on real cells; all policy/gradient forwards use frozen statistics."""
+
+    def forward(self, data, valid, calibrate=False):
+        if calibrate:
+            count = valid.sum()
+            mean = (data * valid).sum(dim=(0, 2, 3)) / count
+            variance = ((data - mean[None, :, None, None]).square() * valid).sum(dim=(0, 2, 3)) / count
+            if count <= 1 or not torch.isfinite(mean).all() or not torch.isfinite(variance).all():
+                raise RuntimeError("normalization.nonfinite: calibration requires at least two finite valid cells")
+            with torch.no_grad():
+                self.running_mean.lerp_(mean, self.momentum)
+                self.running_var.lerp_(variance * count / (count - 1), self.momentum)
+                self.num_batches_tracked.add_(1)
+            result = (data - mean[None, :, None, None]) * torch.rsqrt(variance[None, :, None, None] + self.eps)
+            return result * self.weight[None, :, None, None] + self.bias[None, :, None, None]
+        return nn.functional.batch_norm(data, self.running_mean, self.running_var,
+                                        self.weight, self.bias, training=False, eps=self.eps)
+
+
 def batch(observations):
     count = len(observations)
     channels = observations[0]["raster"].shape[0]
@@ -37,8 +57,11 @@ def single(observation):
 
 
 class Policy(nn.Module):
-    def __init__(self, example):
+    def __init__(self, example, normalization="none"):
         super().__init__()
+        if normalization not in ("none", "batch"):
+            raise ValueError(f"policy.normalization: unknown normalization {normalization!r}")
+        self.normalization = normalization
         self.dimensions = {"raster_channels": example["raster"].shape[0],
                            "object_rows": example["objects"].shape[0],
                            "object_features": example["objects"].shape[1],
@@ -56,14 +79,19 @@ class Policy(nn.Module):
         self.value = nn.Sequential(nn.Linear(64, 64), nn.ReLU(), nn.Linear(64, 1))
         nn.init.orthogonal_(self.scorer[-1].weight, gain=0.01)
         nn.init.zeros_(self.scorer[-1].bias)
+        self.normalizations = nn.ModuleList([MaskedBatchNorm2d(n) for n in (16, 32, 32)]
+                                            if normalization == "batch" else [])
 
-    def forward(self, data):
+    def forward(self, data, calibrate=False):
         raster = data["raster"]
         valid = raster[:, -1:]
         spatial = raster
-        for layer in self.convolutions:
+        for index, layer in enumerate(self.convolutions):
             # Mask each layer so minibatch padding cannot change an example's logits.
-            spatial = torch.relu(layer(spatial))*valid
+            spatial = layer(spatial)
+            if self.normalization == "batch":
+                spatial = self.normalizations[index](spatial, valid, calibrate=calibrate)
+            spatial = torch.relu(spatial)*valid
         pooled = spatial.sum(dim=(2, 3))/valid.sum(dim=(2, 3)).clamp_min(1)
         objects = self.objects(data["objects"]).flatten(1)
         context = self.fusion(torch.cat([pooled, objects, data["stats"]], dim=-1))
@@ -80,6 +108,18 @@ class Policy(nn.Module):
                               *selected, data["candidates"]], dim=-1)
         logits = self.scorer(features).squeeze(-1).masked_fill(~data["mask"], -1e9)
         return logits, self.value(context).squeeze(-1)
+
+    @torch.no_grad()
+    def calibrate_normalization(self, observations, minibatch):
+        if self.normalization == "none":
+            return {"kind": "none", "observations": 0, "batches": 0}
+        device = next(self.parameters()).device
+        batches = 0
+        for start in range(0, len(observations), minibatch):
+            data = {key: value.to(device) for key, value in batch(observations[start:start+minibatch]).items()}
+            self(data, calibrate=True)
+            batches += 1
+        return {"kind": "batch", "observations": len(observations), "batches": batches}
 
     @torch.no_grad()
     def act(self, observation, generator=None, forward=None):
@@ -204,7 +244,11 @@ def update(model, optimizer, rollout, config, rng):
             for key in totals:
                 totals[key] += values[key]
             batches += 1
+    started = time.perf_counter()
+    calibration = model.calibrate_normalization(rollout["observations"], config["minibatch"])
+    calibration["seconds"] = completed_time()-started
     return {**{key: value/batches for key, value in totals.items()}, "optimizer_steps": batches,
+            "normalization_calibration": calibration,
             "seconds": seconds,
             "preparation": {"mode": "rollout_device" if prepared is not None and prepared.tensors is not None else "minibatch",
                             "maximum_bytes": preparation_budget,

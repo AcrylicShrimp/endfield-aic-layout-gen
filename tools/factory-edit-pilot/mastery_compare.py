@@ -53,6 +53,8 @@ def compare(protocol_path, paths, output):
     pairs = [("long-fixed", "short-fixed"), ("long-mastery", "short-mastery"),
              ("long-fixed", "long-mastery"), ("short-fixed", "short-mastery")]
     for before, after in pairs:
+        if before not in protocol["conditions"] or after not in protocol["conditions"]:
+            continue
         for case in protocol["cases"]:
             values = []
             for seed in protocol["training_seeds"]:
