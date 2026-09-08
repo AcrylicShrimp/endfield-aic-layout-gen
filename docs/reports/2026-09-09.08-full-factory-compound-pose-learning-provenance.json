@@ -1,0 +1,242 @@
+{
+  "schema_version": 1,
+  "implementation_commits": [
+    "c63b14f",
+    "80d169e"
+  ],
+  "observation_schema": "full-factory-spatial-relational-v3",
+  "scope": "Compact retained-local evidence identities; full per-episode hashes are in the independent audit. Generated inputs, traces, checkpoints, figures and source snapshots remain ignored local artifacts, not backups.",
+  "results": {
+    "status": "complete-screen-not-production-ready",
+    "evaluation_cells": 364,
+    "episodes": 2272,
+    "selected": 14256,
+    "replayed_edits": 6544,
+    "reconstructed_choices": 6480,
+    "overall_incumbent": [
+      2132,
+      374,
+      148
+    ],
+    "empty_fraction": 0.3053470919324578,
+    "incumbent_provenance": "generator"
+  },
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-historical-block-requests.json",
+      "sha256": "946caaef939b8e649dbb4c027cab7726df11e9309e9dfdb4fd786c06b2fc9bd2"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-historical-block-probe/protocol.json",
+      "sha256": "7779d1b05694a9eacb54836a46fb00d510e9c28b1c3747ac58b13f9ac7735b87"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-historical-block-probe/probe.json",
+      "sha256": "d5eb81807cf0a5bdd9f0f9d4f3a2bdf1626ae2ef20edc62d828cd9dcccce8128"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-historical-input/witness.json",
+      "sha256": "15c3ec1375d97532ac7ddcf2bc57fb28164561a83458c267082960c7df1e6530"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-original-admission/protocol.json",
+      "sha256": "6c44be5fd7932a63fcb637a273889841743ffdeb187df6c722796b4ba207c82c"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-original-admission/admission.json",
+      "sha256": "50655299bd252a6390fadc13204a29ea6d7d298021f363f121f0063763c6c758"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-historical-admission/protocol.json",
+      "sha256": "ff750878858f11444af899ebb2c35ef0a2dea9565d5425715b8d48194ac30400"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-historical-admission/admission.json",
+      "sha256": "b372bb5e54d60b70b479253a28f2d979ac1f3935978f19658bc4dc8a2c391a05"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-incumbent-admission/protocol.json",
+      "sha256": "b0ec618e32f1b929db4cfd54e5e0230be8f5ef6fb131b6e09f6a697fb0c2a9ed"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-incumbent-admission/admission.json",
+      "sha256": "6bad89b486f9d29dea5848ee00650c41456372f3ac25085d4bf4205f8ba654ac"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-curriculum/protocol.json",
+      "sha256": "0bdd05d3f165d0eda3eef591d1b66914929208dab0080b46e3da774532f2eab8"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-curriculum/curriculum.json",
+      "sha256": "5a7edbcaf5612350c3a12d1f7befa78f8ebe0336d0b1576aafe9ac70805c5087"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-curriculum-verified/protocol.json",
+      "sha256": "2ae9e6d2e6a9d1e83289349e9754041ce507d73780d8c5b2bcedc1324823918a"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-curriculum-verified/curriculum.json",
+      "sha256": "a7a67f88f58905d82586ebf938390eb9a7e963e27bb9e54d1f505e6b7c27b64a"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-curriculum-cached/protocol.json",
+      "sha256": "8b89a2f0ba28f6a11f0294b35d600b8c106423f30044afd78b678e627d3f9b15"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-curriculum-cached/curriculum.json",
+      "sha256": "96814a018dc8c72f7e3a4fede92acb87f66856cb644b6f8687cb66dd7da07ce7"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-curriculum-audit.json",
+      "sha256": "e41678e0c2ae4c9f57ec475eae650d288866f4073c20808c9ed57616aa2973a2"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-curriculum-cached-audit.json",
+      "sha256": "415abb6e4512175fb1eabf18903ee2a6077ff845afbfd64753aa5a81dd1f8c37"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-cache-cell/report.json",
+      "sha256": "3d2ab8da892fbb043479b027c90f77ea3e3a94a425fc5c9a72f541fb43356f78"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning/protocol.json",
+      "sha256": "17095cf82159fb117f368018290aaa3c445673d6d733c610dc841ef52d1639b7"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning/partial.json",
+      "sha256": "fdebf38dfc613d2af25624ca0657a762c425a4479a524a65dbde90b92f7a7572"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning/untrained-d2.pt",
+      "sha256": "39f10421f49c7756dad1c3268f2ee994f2e38fcc9129af2a9f7cee728ac8b86f"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-deadline-retention-probe/protocol.json",
+      "sha256": "21655763a783f2be8d744f5a2d1ac66860042b5a73d50bf1cbc191d7b6216250"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-deadline-retention-probe/partial.json",
+      "sha256": "930a436860f0ceae38b5a3fcb69612ea4b890b182e0fd16fe44b6b5dc22bdbd0"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-inward-probe/probe.json",
+      "sha256": "77449a3ad69eca018bff452456d77296d1a48c813c7d70c28385622aecfc3cf4"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-generator-best/witness.json",
+      "sha256": "594e1ef3157783d191074815c7dbbe788dd26b7d49165d5b4e71a485c6c8728b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-generator-best/report.json",
+      "sha256": "48fe26dd1175cab55fbbad74cc2cae0f771f11318a9b9686bc9473ad2cefb6b6"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-generator-best/view-inputs.json",
+      "sha256": "ef7771e9a937225ea8630ca370ab30048d2697282278014a1151335ee1e96a95"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-generator-view/view.json",
+      "sha256": "38654da5234a5a6b1253087964206ba92b3316da8ecb9a0f81b0c9cbbd8ad431"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-generator-view/comparison.png",
+      "sha256": "ed5eeb5152b41c9f0b00d4a8c57f0044ce9f6eee2c01f0023d3d29ba67c0354f"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-generator-view/comparison.svg",
+      "sha256": "8da69850828a74a048d483dbde106080de9b850ae32fbf1e5df16eed149bc118"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/protocol.json",
+      "sha256": "f4ec28435b3c7e83f27352d268014e4a558dd9ed071a5d5a9d9cb1ac0743272f"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/screen.json",
+      "sha256": "aa32358baa893c4f6b4c77b592354b9354e4d315b2d80e786cdbcfc9d7ff7f45"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/retention.json",
+      "sha256": "69521c07d92cea8479aa6e660eb1211be15e07bb19fd19936c37bb34d480ec7a"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/untrained-d0.pt",
+      "sha256": "032ee9dc7a09fe7a228a3bdf1419efceb766b0275dff78521f61242b519e2478"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/untrained-d2.pt",
+      "sha256": "999e984975400de66fd7d6b95fd343025c1c627e1100a791736c52dd28f73565"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/root-pg-final.pt",
+      "sha256": "57dc368d8498f15a660f40a83ee20ba5bea63680cb0c38113a42b0c88fec9fea"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/mixed-pg-final.pt",
+      "sha256": "5bc2bddd472aee9c3a5c09f0be80d9a28ee5437f866ce588f8b8c9643f54c1ba"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/inverse-d0-final.pt",
+      "sha256": "42d6a039b0a623ef7e1ed73ffa172d5aa7339a0cf61a4164ecc848134fcdf72b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/inverse-d2-final.pt",
+      "sha256": "81215fe0c37cda580f6e1c90517e4863ae94575089d4f6ca3fe9ebb379662fe6"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached-summary.json",
+      "sha256": "d97fe0600d64ea472eaa00b934780c62783bf96364bdfe8ba9e3cb0ffacafe25"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached-audit.json",
+      "sha256": "71c906a2319ca1b5e7eb218366cc9a780ef0bd6a844d7ec49b4483b51fa83d6a"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached-replay.json",
+      "sha256": "35ce3c4f479372c9b4bad951ff1988c1572e7580c0a63565387ba07ecd3f1989"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached-accounting.json",
+      "sha256": "4f102ffc90e268c58dbf1b1cd9e5bde42d78f91fa21c364e223fd665eec1de3a"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/inverse-d0-final--closure-additional--1290000--0/best.json.gz",
+      "sha256": "41588717549bdce638c22e97c3129108e93ce2136699f236546c60d5094cd7ea"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/inverse-d0-final--closure-additional--1290000--0/episode.json.gz",
+      "sha256": "376fca6ffa3fe60c1c1f9fd2dea1d17e9de8933e1757138a80d32b9f76a97284"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/untrained-d0--closure-incumbent--1280000--1/best.json.gz",
+      "sha256": "d2dc1708d10093fb8528f4c5e8f4bf85911566b07839928a41cd3b521df39759"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/untrained-d0--closure-incumbent--1280000--1/episode.json.gz",
+      "sha256": "3943b1935b3eb43f7ffc3e89f178d08bf225135721bb005904fc0bdebcdbb641"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/inverse-d0-final--closure-original--1290000--3/best.json.gz",
+      "sha256": "9d556d44dc2548ff71074abffb973fe77f0f75642b20d0d186d092d8f6be5e53"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/inverse-d0-final--closure-original--1290000--3/episode.json.gz",
+      "sha256": "bf18bfa60717d03486d4da6082b0fe7c7e1736a7d76e56ceed9aaa95be70d592"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/untrained-d0--closure-refined--1290000--0/best.json.gz",
+      "sha256": "bdf7dce1d5faed6bf7b2e0d0cb2ebd7eb61cb38fdf4184e7e7ba7d5f86da4f9b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/untrained-d0--closure-refined--1290000--0/episode.json.gz",
+      "sha256": "4699d98538242d1828e4e3f70dd51087cad19dfe9c14f358264b5bc352a91825"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/inverse-d0-final--closure-strong--1290000--1/best.json.gz",
+      "sha256": "fcab2491e333f6793f81bc233359c07760492d588d03709ee5ddeb54d50c8ab5"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-pose-learning-cached/inverse-d0-final--closure-strong--1290000--1/episode.json.gz",
+      "sha256": "08086bf734a1350811887dff0a62e175db32834f098a1d162c6f05b16c390059"
+    }
+  ]
+}
