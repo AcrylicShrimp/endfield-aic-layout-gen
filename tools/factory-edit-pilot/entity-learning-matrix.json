@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "id": "entity-capacity-learning-curves",
+  "geometry_directory": "artifacts/factory-edit-pilot/generated-chains",
+  "manifest_cases_sha256": "6f2dfe01a24060ba6525c074eedbf7125aa90eb2a4a5a27a861602542b6eb841",
+  "studies": {
+    "1": "tools/factory-edit-pilot/entity-learning-width1-study.json",
+    "2": "tools/factory-edit-pilot/entity-learning-width2-study.json"
+  },
+  "condition": "entity-mastery-rehearsal",
+  "run_order": [
+    {
+      "width": 1,
+      "seed": 17
+    },
+    {
+      "width": 2,
+      "seed": 17
+    },
+    {
+      "width": 2,
+      "seed": 29
+    },
+    {
+      "width": 1,
+      "seed": 29
+    },
+    {
+      "width": 1,
+      "seed": 43
+    },
+    {
+      "width": 2,
+      "seed": 43
+    }
+  ],
+  "retention": {
+    "selection": "lowest_root_median_area_ratio",
+    "required_successes": 26,
+    "episodes": 32,
+    "tie_breakers": [
+      "mean_median_tiles",
+      "mean_median_turns",
+      "earlier_commands"
+    ]
+  },
+  "confirmation": {
+    "total_commands": 128,
+    "attempt_horizon": 32,
+    "development": {
+      "episodes": 64,
+      "required_successes": 52,
+      "seed_banks": [
+        940000
+      ]
+    },
+    "heldout": {
+      "episodes": 32,
+      "required_successes": 26,
+      "seed_banks": [
+        950000,
+        960000
+      ]
+    }
+  },
+  "width_selection": [
+    "all_development_cells_pass",
+    "mean_median_area_ratio",
+    "mean_median_tiles",
+    "mean_median_turns",
+    "fewer_parameters"
+  ]
+}

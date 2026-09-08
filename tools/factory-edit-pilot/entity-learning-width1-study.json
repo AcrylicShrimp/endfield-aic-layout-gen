@@ -1,0 +1,63 @@
+{
+  "schema_version": 3,
+  "id": "entity-learning-width1",
+  "base_config": "tools/factory-edit-pilot/run-entity-batched-width1.json",
+  "cases": {
+    "train-glass-two-gap0-turn0": "artifacts/factory-edit-pilot/generated-chains/train-glass-two-gap0-turn0.json",
+    "train-glass-two-gap0-turn1": "artifacts/factory-edit-pilot/generated-chains/train-glass-two-gap0-turn1.json",
+    "train-glass-two-gap0-turn2": "artifacts/factory-edit-pilot/generated-chains/train-glass-two-gap0-turn2.json",
+    "train-glass-two-gap0-turn3": "artifacts/factory-edit-pilot/generated-chains/train-glass-two-gap0-turn3.json",
+    "train-glass-two-gap4-turn0": "artifacts/factory-edit-pilot/generated-chains/train-glass-two-gap4-turn0.json",
+    "train-glass-two-gap4-turn1": "artifacts/factory-edit-pilot/generated-chains/train-glass-two-gap4-turn1.json",
+    "train-glass-two-gap4-turn2": "artifacts/factory-edit-pilot/generated-chains/train-glass-two-gap4-turn2.json",
+    "train-glass-two-gap4-turn3": "artifacts/factory-edit-pilot/generated-chains/train-glass-two-gap4-turn3.json",
+    "train-battery-four-gap0-turn0": "artifacts/factory-edit-pilot/generated-chains/train-battery-four-gap0-turn0.json",
+    "train-battery-four-gap0-turn1": "artifacts/factory-edit-pilot/generated-chains/train-battery-four-gap0-turn1.json",
+    "train-battery-four-gap0-turn2": "artifacts/factory-edit-pilot/generated-chains/train-battery-four-gap0-turn2.json",
+    "train-battery-four-gap0-turn3": "artifacts/factory-edit-pilot/generated-chains/train-battery-four-gap0-turn3.json",
+    "train-battery-four-gap4-turn0": "artifacts/factory-edit-pilot/generated-chains/train-battery-four-gap4-turn0.json",
+    "train-battery-four-gap4-turn1": "artifacts/factory-edit-pilot/generated-chains/train-battery-four-gap4-turn1.json",
+    "train-battery-four-gap4-turn2": "artifacts/factory-edit-pilot/generated-chains/train-battery-four-gap4-turn2.json",
+    "train-battery-four-gap4-turn3": "artifacts/factory-edit-pilot/generated-chains/train-battery-four-gap4-turn3.json"
+  },
+  "training_seeds": [
+    17,
+    29,
+    43
+  ],
+  "commands": 3145728,
+  "streams": 16,
+  "rollout_commands": 1024,
+  "checkpoints": [
+    0,
+    393216,
+    786432,
+    1179648,
+    1572864,
+    1966080,
+    2359296,
+    2752512,
+    3145728
+  ],
+  "assessment": {
+    "interval": 32768,
+    "horizon": 16,
+    "episodes": 64,
+    "seed_start": 200000,
+    "required_successes": 52,
+    "consecutive_passes": 2
+  },
+  "conditions": {
+    "entity-mastery-rehearsal": {
+      "horizon": 16,
+      "advancement": "case_mastery"
+    }
+  },
+  "rehearsal_every": 4,
+  "stage_acceptance": {
+    "root_successes": 26,
+    "evaluation_episodes": 32,
+    "consecutive_final_checkpoints": 2,
+    "all_training_seeds": true
+  }
+}
