@@ -57,10 +57,13 @@ def single(observation):
 
 
 class Policy(nn.Module):
-    def __init__(self, example, normalization="none"):
+    def __init__(self, example, normalization="none", width_multiplier=1):
         super().__init__()
         if normalization not in ("none", "batch"):
             raise ValueError(f"policy.normalization: unknown normalization {normalization!r}")
+        if type(width_multiplier) is not int or width_multiplier not in (1, 2):
+            raise ValueError("policy.width: width_multiplier must be 1 or 2")
+        self.width_multiplier = width_multiplier
         self.normalization = normalization
         self.dimensions = {"raster_channels": example["raster"].shape[0],
                            "object_rows": example["objects"].shape[0],
@@ -68,18 +71,20 @@ class Policy(nn.Module):
                            "candidate_features": example["candidates"].shape[1],
                            "stats": len(example["stats"])}
         d = self.dimensions
-        self.convolutions = nn.ModuleList([nn.Conv2d(d["raster_channels"], 16, 3, padding=1),
-                                          nn.Conv2d(16, 32, 3, padding=1),
-                                          nn.Conv2d(32, 32, 3, padding=1)])
-        self.objects = nn.Sequential(nn.Linear(d["object_features"], 32), nn.ReLU(), nn.Linear(32, 32), nn.ReLU())
-        self.fusion = nn.Sequential(nn.Linear(32+d["object_rows"]*32+d["stats"], 64), nn.ReLU(),
-                                    nn.Linear(64, 64), nn.ReLU())
-        self.scorer = nn.Sequential(nn.Linear(64+64+d["candidate_features"], 64), nn.ReLU(),
-                                   nn.Linear(64, 64), nn.ReLU(), nn.Linear(64, 1))
-        self.value = nn.Sequential(nn.Linear(64, 64), nn.ReLU(), nn.Linear(64, 1))
+        small, spatial, hidden = 16*width_multiplier, 32*width_multiplier, 64*width_multiplier
+        self.convolutions = nn.ModuleList([nn.Conv2d(d["raster_channels"], small, 3, padding=1),
+                                          nn.Conv2d(small, spatial, 3, padding=1),
+                                          nn.Conv2d(spatial, spatial, 3, padding=1)])
+        self.objects = nn.Sequential(nn.Linear(d["object_features"], spatial), nn.ReLU(),
+                                     nn.Linear(spatial, spatial), nn.ReLU())
+        self.fusion = nn.Sequential(nn.Linear(spatial+d["object_rows"]*spatial+d["stats"], hidden), nn.ReLU(),
+                                    nn.Linear(hidden, hidden), nn.ReLU())
+        self.scorer = nn.Sequential(nn.Linear(hidden+2*spatial+d["candidate_features"], hidden), nn.ReLU(),
+                                   nn.Linear(hidden, hidden), nn.ReLU(), nn.Linear(hidden, 1))
+        self.value = nn.Sequential(nn.Linear(hidden, hidden), nn.ReLU(), nn.Linear(hidden, 1))
         nn.init.orthogonal_(self.scorer[-1].weight, gain=0.01)
         nn.init.zeros_(self.scorer[-1].bias)
-        self.normalizations = nn.ModuleList([MaskedBatchNorm2d(n) for n in (16, 32, 32)]
+        self.normalizations = nn.ModuleList([MaskedBatchNorm2d(n) for n in (small, spatial, spatial)]
                                             if normalization == "batch" else [])
 
     def forward(self, data, calibrate=False):

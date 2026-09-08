@@ -82,7 +82,8 @@ def train(root, protocol_path, condition, seed, library, output):
         write(output / key / "training-best.json", layout(runtime.new_engine(), "root"))
         write(output / key / "training-best-trace.json", [])
     example, _ = next(iter(runtimes.values())).new_engine().observe()
-    model = Policy(example, normalization=config.get("normalization", "none"))
+    model = Policy(example, normalization=config.get("normalization", "none"),
+                       width_multiplier=config.get("width_multiplier", 1))
     initial_hash = policy_hash(model.state_dict())
     evaluation_actor = deepcopy(model)
     model.to(config["device"])

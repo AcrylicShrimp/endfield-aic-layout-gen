@@ -118,14 +118,15 @@ def run(root, protocol_path, library, output):
             or abs(protocol["seed_banks"][0]-protocol["seed_banks"][1]) < protocol["evaluation_episodes"]):
         raise ValueError(f"selection.protocol: {protocol_path}: invalid selection or evaluation contract")
     confirmation = protocol.get("confirmation")
-    if protocol["selection"] == "first_root_pass_then_frozen_confirmation":
+    mode = protocol.get("evaluation_mode", "outcomes")
+    if mode not in ("outcomes", "confirmation_only") or (mode == "confirmation_only" and not confirmation):
+        raise ValueError(f"selection.protocol: {protocol_path}: invalid evaluation mode")
+    if confirmation is not None or protocol["selection"] == "first_root_pass_then_frozen_confirmation":
         if (not confirmation or confirmation["horizon"] <= 0 or confirmation["episodes"] < 2
                 or not 1 <= confirmation["required_successes"] <= confirmation["episodes"]
                 or any(set(range(confirmation["seed_start"], confirmation["seed_start"]+confirmation["episodes"]))
                        & set(range(bank, bank+protocol["evaluation_episodes"])) for bank in protocol["seed_banks"])):
             raise ValueError(f"selection.protocol: {protocol_path}: invalid or overlapping confirmation bank")
-    elif confirmation is not None:
-        raise ValueError(f"selection.protocol: {protocol_path}: confirmation requires its declared selection strategy")
     if output.exists():
         raise ValueError(f"selection.protocol: {output}: output must be fresh")
     output.mkdir(parents=True)
@@ -170,7 +171,8 @@ def run(root, protocol_path, library, output):
                 if current["native"]["build"]["files_sha256"] != original["native"]["build"]["files_sha256"]:
                     raise ValueError(f"selection.source: {source}: changed native environment")
             example, _ = next(iter(runtimes.values())).new_engine().observe()
-            actor = Policy(example, normalization=config.get("normalization", "none"))
+            actor = Policy(example, normalization=config.get("normalization", "none"),
+                       width_multiplier=config.get("width_multiplier", 1))
             actor.load_state_dict(saved["evaluation_policy"])
             before = policy_hash(actor.state_dict())
             directory = output / f'seed{metadata["seed"]}'
@@ -221,6 +223,10 @@ def run(root, protocol_path, library, output):
                               "stage": stage, "message": "Frozen development confirmation failed; outcomes remain unopened"})
                 write(output / "selection.json", result)
                 return result
+        if mode == "confirmation_only":
+            result.update(status="confirmed", total_seconds=time.perf_counter()-start)
+            write(output / "selection.json", result)
+            return result
         stage = "evaluation"
         evaluation_started = time.perf_counter()
         for source, metadata, count, saved, config, runtimes, actor, directory, record, before in prepared:

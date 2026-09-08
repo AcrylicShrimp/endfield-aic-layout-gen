@@ -132,7 +132,8 @@ def train(root, protocol_path, condition, seed, native_library, output):
         write(output / key / "training-best.json", layout(environments[key], "root"))
         write(output / key / "training-best-trace.json", [])
     example, _ = environments[protocol["initialization_case"]].observe()
-    model = Policy(example, normalization=config.get("normalization", "none"))
+    model = Policy(example, normalization=config.get("normalization", "none"),
+                       width_multiplier=config.get("width_multiplier", 1))
     initial_policy_hash = policy_hash(model.state_dict())
     actor = deepcopy(model) if config["device"] == "cuda" else model
     model.to(config["device"])

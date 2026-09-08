@@ -63,7 +63,8 @@ def audit_study(root, protocol_path, output, source_commit):
             raise ValueError(f"mastery_audit.level: {output}: {count}: wrong assessed stage")
         saved = torch.load(output / f"checkpoint-{count}.pt", map_location="cpu", weights_only=False)
         example_env = Environment(next(iter(catalogs.values())), config)
-        actor = Policy(example_env.observe(example_env.candidates()), normalization=config.get("normalization", "none"))
+        actor = Policy(example_env.observe(example_env.candidates()), normalization=config.get("normalization", "none"),
+                       width_multiplier=config.get("width_multiplier", 1))
         actor.load_state_dict(saved["evaluation_policy"])
         actor.eval()
         expected_rows, successes = [], {}

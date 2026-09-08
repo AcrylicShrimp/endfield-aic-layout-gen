@@ -79,6 +79,25 @@ class BatchNormTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "policy.normalization"):
             Policy(self.observation, normalization="invalid")
 
+    def test_width_two_gradients_padding_and_frozen_statistics(self):
+        model = Policy(self.observation, normalization="batch", width_multiplier=2)
+        self.assertGreater(model.parameter_count, Policy(self.observation).parameter_count)
+        second = deepcopy(self.observation)
+        second["raster"] = np.pad(second["raster"], ((0, 0), (0, 3), (0, 5)))
+        model.calibrate_normalization([self.observation], 1)
+        before = {key: value.clone() for key, value in model.named_buffers()}
+        logits, values = model(batch([self.observation]))
+        padded_logits, padded_values = model(batch([self.observation, second]))
+        torch.testing.assert_close(logits[0], padded_logits[0], atol=1e-6, rtol=1e-5)
+        torch.testing.assert_close(values[0], padded_values[0], atol=1e-6, rtol=1e-5)
+        (logits.square().mean()+values.square().mean()).backward()
+        self.assertTrue(all(p.grad is not None and torch.isfinite(p.grad).all() for p in model.parameters()))
+        for key, value in model.named_buffers():
+            torch.testing.assert_close(value, before[key], rtol=0, atol=0)
+        for width in (0, 3, True, 1.5):
+            with self.assertRaisesRegex(ValueError, "policy.width"):
+                Policy(self.observation, width_multiplier=width)
+
     def test_ppo_freezes_statistics_until_one_calibration_pass(self):
         model = Policy(self.observation, normalization="batch")
         rollout = {key: [] for key in ("observations", "actions", "log_probs", "values", "rewards", "dones")}

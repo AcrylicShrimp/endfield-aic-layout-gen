@@ -127,7 +127,8 @@ def train(runtime, config, config_path, output, resume_path=None):
     verification = verify_environment(runtime, config, output)
     env = runtime.new_engine()
     example, _ = env.observe()
-    model = Policy(example, normalization=config.get("normalization", "none"))
+    model = Policy(example, normalization=config.get("normalization", "none"),
+                       width_multiplier=config.get("width_multiplier", 1))
     actor = deepcopy(model) if config["device"] == "cuda" else model
     model.to(config["device"])
     optimizer = torch.optim.Adam(model.parameters(), lr=config["learning_rate"])
