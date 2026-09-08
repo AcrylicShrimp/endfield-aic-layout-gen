@@ -1,12 +1,12 @@
-"""Schema-two full-factory spatial / sparse relational policy; no legacy weights."""
+"""Schema-three full-factory spatial / sparse relational policy; no legacy weights."""
 import math
 
 import numpy as np
 import torch
 from torch import nn
 
-SCHEMA = 'full-factory-spatial-relational-v2'
-KINDS = ('relocate', 'rotate', 'port', 'reroute', 'component', 'release_bridge', 'insert', 'contract', 'restore_best')
+SCHEMA = 'full-factory-spatial-relational-v3'
+KINDS = ('pose', 'port', 'reroute', 'component', 'release_bridge', 'insert', 'contract', 'restore_best')
 NODE_WIDTH, EDGE_WIDTH, ACTION_WIDTH, RASTER_WIDTH, CONTEXT_WIDTH = 32, 16, 32, 28, 8
 
 
@@ -17,8 +17,8 @@ def rate_features(rate):
 
 def observe(w, description, state, remaining):
     """IDs address relationships only. Rates retain value and numerator/denominator signals."""
-    if description.get('schema_version') != 2:
-        raise ValueError('factory.description-schema: expected schema 2')
+    if description.get('schema_version') != 3:
+        raise ValueError('factory.description-schema: expected schema 3')
     box = state['current_metrics']
     # Accepted states are canonically translated, including external terminals.
     width, height = box['width'], box['height']
@@ -127,7 +127,7 @@ def observe(w, description, state, remaining):
                 edge(refs['network'][ai], refs['network'][bi], 10)
                 edge(refs['network'][bi], refs['network'][ai], 10)
     actions, operands, locations = [], [], []
-    member_nodes, member_actions, member_xy = [], [], []
+    member_nodes, member_actions, member_xy, member_pose = [], [], [], []
     for ai, a in enumerate(description['actions']):
         f = np.zeros(ACTION_WIDTH, np.float32)
         f[KINDS.index(a['kind'])] = 1
@@ -151,18 +151,25 @@ def observe(w, description, state, remaining):
             op, secondary = (refs['cell'][c['network'], p['x'], p['y']] for p in (c['cells'][0], c['cells'][-1]))
             f[20:23] = rate_features(c['rate'])
             f[23] = math.log1p(len(c['cells']))
-        if a['kind'] == 'relocate':
-            members = a['members']
+        if a['kind'] == 'pose':
+            poses = a['poses']
+            members = [q['member'] for q in poses]
             if not members or len(members) > 16 or len(set(members)) != len(members) or any(type(i) is not int or i < 0 or i >= len(w['placements']) for i in members):
-                raise ValueError('factory.relocation-members')
+                raise ValueError('factory.pose-members')
             f[24:30] = [math.log1p(len(members)), a['width']/width, a['height']/height,
                         a['body_area']/(width*height), a['source_x']/sx, a['source_y']/sy]
-            for index in members:
-                p = w['placements'][index]
+            for q in poses:
+                p = w['placements'][q['member']]
+                if any(type(q[k]) is not int for k in ('x','y','rotation')) or q['rotation'] not in (0,90,180,270):
+                    raise ValueError('factory.pose-geometry')
+                angle, delta = math.radians(q['rotation']), math.radians(q['rotation']-p['rotation'])
+                swap = abs(q['rotation']-p['rotation']) % 180 != 0
+                pw, ph = (p['height'],p['width']) if swap else (p['width'],p['height'])
                 member_nodes.append(refs['facility'][p['instance']])
                 member_actions.append(ai)
-                member_xy.append([min(width-1, max(0, p['x']+(p['width']-1)//2+a['dx'])),
-                                  min(height-1, max(0, p['y']+(p['height']-1)//2+a['dy']))])
+                member_xy.append([min(width-1, max(0, q['x']+(pw-1)//2)), min(height-1, max(0, q['y']+(ph-1)//2))])
+                member_pose.append([q['x']/sx, q['y']/sy, (q['x']-p['x'])/sx, (q['y']-p['y'])/sy,
+                                    pw/width, ph/height, math.sin(angle), math.cos(angle), math.sin(delta), math.cos(delta)])
         actions.append(f)
         operands.append([op+1, secondary+1])  # 0 is the explicit absent operand.
         locations.append([min(width-1, max(0, a['x'])), min(height-1, max(0, a['y']))])
@@ -175,6 +182,7 @@ def observe(w, description, state, remaining):
                 actions=np.asarray(actions), operands=np.asarray(operands), action_xy=np.asarray(locations),
                 member_nodes=np.asarray(member_nodes, dtype=np.int64), member_actions=np.asarray(member_actions, dtype=np.int64),
                 member_xy=np.asarray(member_xy, dtype=np.int64).reshape(-1, 2),
+                member_pose=np.asarray(member_pose, dtype=np.float32).reshape(-1, 10),
                 context=np.asarray(context, dtype=np.float32))
 
 
@@ -189,6 +197,7 @@ class FullFactoryPolicy(nn.Module):
         self.messages = nn.ModuleList(nn.Linear(width, width) for _ in range(depth))
         self.updates = nn.ModuleList(nn.Linear(2*width, width) for _ in range(depth))
         self.norms = nn.ModuleList(nn.LayerNorm(width) for _ in range(depth))
+        self.member = nn.Sequential(nn.Linear(2*width+10, 2*width), nn.SiLU())
         self.score = nn.Sequential(nn.Linear(ACTION_WIDTH+7*width+CONTEXT_WIDTH, width), nn.SiLU(), nn.Linear(width, 1))
 
     def forward(self, obs):
@@ -212,6 +221,6 @@ class FullFactoryPolicy(nn.Module):
         member_actions = tensor('member_actions', torch.long)
         member_nodes, member_xy = tensor('member_nodes', torch.long), tensor('member_xy', torch.long)
         counts = torch.zeros(len(operands), 1, device=device).index_add_(0, member_actions, torch.ones(len(member_actions), 1, device=device)).clamp_min(1)
-        source = torch.zeros(len(operands), self.width, device=device).index_add_(0, member_actions, h[member_nodes])/counts
-        destination = torch.zeros_like(source).index_add_(0, member_actions, raster[:, member_xy[:, 1], member_xy[:, 0]].T)/counts
-        return self.score(torch.cat((tensor('actions'), operands_h, raster[:, axy[:, 1], axy[:, 0]].T, source, destination, global_h), dim=1)).squeeze(1)
+        members = self.member(torch.cat((h[member_nodes], raster[:, member_xy[:, 1], member_xy[:, 0]].T, tensor('member_pose')), dim=1))
+        pooled = torch.zeros(len(operands), 2*self.width, device=device).index_add_(0, member_actions, members)/counts
+        return self.score(torch.cat((tensor('actions'), operands_h, raster[:, axy[:, 1], axy[:, 0]].T, pooled, global_h), dim=1)).squeeze(1)

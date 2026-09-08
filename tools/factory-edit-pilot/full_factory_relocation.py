@@ -16,7 +16,7 @@ from full_factory_screen import TRAIN_ROOTS,advantages,sha,save_gzip,write
 from full_factory_selection import physical_key,action_key,SelectionMemory,distribution,geometry_choice
 
 MODES=('local','filtered-local','distant','groups')
-ARMS=[dict(id=mode,balanced=False,memory=False,horizon=8,relocation=dict(mode=mode)) for mode in MODES]
+ARMS=[dict(id=mode,balanced=False,memory=False,horizon=8,vocabulary=dict(mode=mode)) for mode in MODES]
 CONTROLS=[dict(a,id=a['id']+'-uniform') for a in ARMS]
 BANKS=(1230000,1240000)
 

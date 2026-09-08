@@ -45,7 +45,7 @@ def run(args):
             model=models.get(row['arm']) if row['phase']=='evaluation' else models[row['arm']+'-untrained'] if row['group']==0 else None
             verify_sampling=row['phase']=='evaluation' or row['group']==0
             for t in recorded['trace']:
-                desc=env.describe(config.get('relocation'));keys=[action_key(a,desc,env.state['current'],best) for a in desc['actions']]
+                desc=env.describe(config.get('vocabulary'));keys=[action_key(a,desc,env.state['current'],best) for a in desc['actions']]
                 allowed,exhausted=memory.mask(current,keys,desc['actions'],config['memory'])
                 index=desc['actions'].index(t['action'])
                 assert allowed[index],(row['directory'],'selected masked action')

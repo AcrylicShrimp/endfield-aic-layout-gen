@@ -30,13 +30,13 @@ class FactoryRuntime:
 
     def rpc(self, op, witness, **kwargs):
         self.serial += 1
-        self.worker.stdin.write(json.dumps(dict(schema_version=2, id=self.serial, op=op, witness=witness, **kwargs)) + '\n')
+        self.worker.stdin.write(json.dumps(dict(schema_version=3, id=self.serial, op=op, witness=witness, **kwargs)) + '\n')
         self.worker.stdin.flush()
         line = self.worker.stdout.readline()
         if not line:
             raise RuntimeError('factory.executor-exited: no response from Node')
         result = json.loads(line)
-        if result.get('status') == 'error' or result.get('id') != self.serial or result.get('schema_version') != 2:
+        if result.get('status') == 'error' or result.get('id') != self.serial or result.get('schema_version') != 3:
             raise RuntimeError(f'factory.executor-protocol: {result}')
         return result
 

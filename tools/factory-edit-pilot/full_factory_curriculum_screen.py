@@ -16,13 +16,14 @@ from full_factory_screen import advantages,sha,save_gzip,write
 
 ARMS=[dict(id='root-pg',depth=0,method='root_pg'),dict(id='mixed-pg',depth=0,method='mixed_pg'),
       dict(id='inverse-d0',depth=0,method='imitation'),dict(id='inverse-d2',depth=2,method='imitation')]
-CONFIG=dict(horizon=8,balanced=False,memory=False,relocation=dict(mode='groups'))
-BANKS=(1250000,1260000)
+CONFIG=dict(horizon=8,balanced=False,memory=False,vocabulary=dict(mode='groups'))
+BANKS=(1280000,1290000)
 
 
 def run(args):
     began=time.perf_counter();torch.set_num_threads(1);torch.use_deterministic_algorithms(True)
     data=json.loads((args.curriculum/'curriculum.json').read_text());admission=json.loads((args.curriculum/'protocol.json').read_text())
+    if admission.get('observation_schema')!=SCHEMA:raise ValueError(f'factory.curriculum-schema: {args.curriculum} requires {SCHEMA}')
     if data['status']!='complete':raise ValueError('factory.curriculum-not-admitted')
     if sha(args.curriculum/'protocol.json')!=data['protocol_sha256']:raise ValueError('factory.curriculum-protocol-hash')
     for pair in data['pairs']:
@@ -30,7 +31,7 @@ def run(args):
     cases=list(admission['cases'])
     if args.additional_heavy:
         original=next(c for c in cases if c['id']=='closure-original')
-        cases.append(dict(original,id='closure-generator',initial=str(args.additional_heavy.resolve()),initial_sha256=sha(args.additional_heavy)))
+        cases.append(dict(original,id='closure-additional',initial=str(args.additional_heavy.resolve()),initial_sha256=sha(args.additional_heavy)))
     for case in cases:
         if sha(case['initial'])!=case['initial_sha256']:raise ValueError(f'factory.root-input-hash: {case["initial"]}')
     for file,expected in admission['source_sha256'].items():
@@ -39,11 +40,11 @@ def run(args):
     training=[p for p in data['pairs'] if p['split']=='training'];validation=[p for p in data['pairs'] if p['split']=='validation']
     lessons={c['id']:[p for p in training if p['root']==c['id']] for c in roots}
     args.output.mkdir()
-    protocol=dict(schema_version=1,experiment='full-factory-inverse-curriculum-v1',observation_schema=SCHEMA,arms=ARMS,
+    protocol=dict(schema_version=1,experiment='full-factory-compound-pose-curriculum-v2',observation_schema=SCHEMA,arms=ARMS,
                   config=CONFIG,banks=BANKS,cases=cases,training_roots=admission['training_roots'],training_pairs=[p['id'] for p in training],validation_pairs=[p['id'] for p in validation],
                   training_actions=args.training_actions,imitation_updates=args.imitation_updates,route_work=args.route_work,
                   cell_seconds=args.episode_seconds,screen_seconds=args.screen_seconds,seed=17,learning_rate=.0003,entropy=.01,gradient_clip=.5,
-                  source_sha256=source_manifest(),native_sha256=sha(args.native_library),curriculum_path=str(args.curriculum.resolve()),
+                  inverse_sampling_seed=1300000,training_sampling_seed=1850000,source_sha256=source_manifest(),native_sha256=sha(args.native_library),curriculum_path=str(args.curriculum.resolve()),
                   curriculum_sha256=sha(args.curriculum/'curriculum.json'),curriculum_protocol_sha256=sha(args.curriculum/'protocol.json'),
                   catalogs=admission['catalogs'],catalog_sha256=admission['catalog_sha256'])
     write(args.output/'protocol.json',protocol);runtime=FactoryRuntime(args.native_library,admission['catalogs']);rows=[];cells=[];groups=[];inverse_rows=[]
@@ -80,7 +81,7 @@ def run(args):
                 with torch.no_grad():
                     logits=policy(observe(env.state['current'],desc,env.state,1)) if policy is not None else torch.zeros(len(desc['actions']))
                     dist=torch.distributions.Categorical(logits=logits)
-                    chosen=(int(logits.argmax()) if selection=='greedy' else int(torch.multinomial(dist.probs,1,generator=torch.Generator().manual_seed(1270000+index))))
+                    chosen=(int(logits.argmax()) if selection=='greedy' else int(torch.multinomial(dist.probs,1,generator=torch.Generator().manual_seed(1300000+index))))
                 row=env.step(desc['actions'][chosen]);directory=f'{label}-inverse-{index}-{selection}'
                 result=env.summary();result.update(arm=label,phase='inverse',selection=selection,pair=pair['id'],teacher_chosen=desc['actions'][chosen]==pair['inverse'])
                 destination=args.output/directory;destination.mkdir();save_gzip(destination/'episode.json.gz',result);save_gzip(destination/'best.json.gz',env.state['best'])
@@ -119,7 +120,7 @@ def run(args):
                         if group%2:case=lessons[case['id']][(group//(2*len(roots)))%len(lessons[case['id']])]['case']
                     else:case=roots[group%len(roots)]
                     for attempt in range(4):
-                        guard();summary,best,logps,ents=episode(runtime,case,policy,CONFIG,1800000+group*4+attempt,args,training=True)
+                        guard();summary,best,logps,ents=episode(runtime,case,policy,CONFIG,1850000+group*4+attempt,args,training=True)
                         if summary['selected']!=8:raise TimeoutError('factory.training-episode-budget')
                         summary.update(arm=label,phase='training',group=group,attempt=attempt);retain(summary,best,f'{label}-train-{group}-{attempt}')
                         scores.append(tuple(summary['best_metrics']['score']));terms.append(torch.stack(logps).mean());entropies.extend(ents)
@@ -145,8 +146,8 @@ if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     for name in ('curriculum','native-library','output'):p.add_argument('--'+name,type=Path,required=True)
     p.add_argument('--additional-heavy',type=Path)
-    p.add_argument('--training-actions',type=int,default=4096);p.add_argument('--imitation-updates',type=int,default=1024)
-    p.add_argument('--route-work',type=int,default=5000);p.add_argument('--episode-seconds',type=float,default=30);p.add_argument('--screen-seconds',type=float,default=1800)
+    p.add_argument('--training-actions',type=int,default=1024);p.add_argument('--imitation-updates',type=int,default=512)
+    p.add_argument('--route-work',type=int,default=5000);p.add_argument('--episode-seconds',type=float,default=30);p.add_argument('--screen-seconds',type=float,default=2400)
     args=p.parse_args()
     if args.training_actions<32 or args.training_actions%32 or min(args.imitation_updates,args.route_work,args.episode_seconds,args.screen_seconds)<=0:p.error('Positive bounds and PG action count divisible by 32 required')
     run(args)

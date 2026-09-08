@@ -56,7 +56,7 @@ def run(args):
             with torch.no_grad():
                 logits=model(observe(env.state['current'],desc,env.state,1))if model else torch.zeros(len(desc['actions']))
                 dist=torch.distributions.Categorical(logits=logits)
-                index=int(logits.argmax())if row['selection']=='greedy'else int(torch.multinomial(dist.probs,1,generator=torch.Generator().manual_seed(1270000+p['validation_pairs'].index(row['pair']))))
+                index=int(logits.argmax())if row['selection']=='greedy'else int(torch.multinomial(dist.probs,1,generator=torch.Generator().manual_seed(p['inverse_sampling_seed']+p['validation_pairs'].index(row['pair']))))
             t=record['trace'][0];assert desc['actions'][index]==t['action'];result=env.step(desc['actions'][index])
             for key in ('status','executor_status','route_expansions','current_score','best_score','diagnostics'):assert result[key]==t[key],(row['directory'],key)
             assert env.state['best']==unpack(args.screen/row['directory']/'best.json.gz');count+=1;sampling+=1

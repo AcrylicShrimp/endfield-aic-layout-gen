@@ -26,14 +26,18 @@ def source_manifest():
 
 def inverse_action(action,before,after,description):
     kind=action['kind']
-    if kind=='relocate':
-        members={before['placements'][i]['instance'] for i in action['members']}
-        return next((a for a in description['actions'] if a['kind']==kind and
-                     {after['placements'][i]['instance'] for i in a['members']}==members and
-                     a['dx']==-action['dx'] and a['dy']==-action['dy']),None)
-    if kind=='rotate':
-        old=next(p['rotation'] for p in before['placements'] if p['instance']==action['instance'])
-        return next((a for a in description['actions'] if a['kind']==kind and a['instance']==action['instance'] and a['rotation']==old),None)
+    if kind=='pose':
+        # Native acceptance may canonically translate the whole witness. The actual
+        # selected pose minus its requested pose identifies that frame shift even
+        # when a small factory has no unselected facility.
+        ids={before['placements'][q['member']]['instance'] for q in action['poses']}
+        previous={p['instance']:p for p in before['placements']}
+        requested=action['poses'][0];id=before['placements'][requested['member']]['instance']
+        actual=next(p for p in after['placements'] if p['instance']==id)
+        dx,dy=(actual[k]-requested[k] for k in ('x','y'))
+        target={id:(previous[id]['x']+dx,previous[id]['y']+dy,previous[id]['rotation']) for id in ids}
+        return next((a for a in description['actions'] if a['kind']=='pose' and
+                     {after['placements'][q['member']]['instance']:(q['x'],q['y'],q['rotation']) for q in a['poses']}==target),None)
     if kind=='port':
         old=next(t['endpoint']['port'] for n in before['transport_networks'] for t in n['terminals'] if t['id']==action['terminal'])
         return next((a for a in description['actions'] if a['kind']==kind and a['terminal']==action['terminal'] and a['port']==old),None)
@@ -43,6 +47,12 @@ def inverse_action(action,before,after,description):
     if kind=='insert':
         return next((a for a in description['actions'] if a['kind']=='contract' and a['axis']==action['axis'] and a['position']==action['position']),None)
     return None
+
+
+def action_family(action,witness):
+    if action['kind']!='pose':return action['kind']
+    rotated=any(q['rotation']!=witness['placements'][q['member']]['rotation'] for q in action['poses'])
+    return ('single_rotation' if len(action['poses'])==1 else 'compound_pose') if rotated else ('single_translation' if len(action['poses'])==1 else 'group_translation')
 
 
 def run(args):
@@ -56,10 +66,10 @@ def run(args):
                   dict(original,id='closure-incumbent',initial=str(args.incumbent.resolve()),initial_sha256=sha(args.incumbent))])
     roots=[next(c for c in cases if c['id']==name) for name in (*TRAIN_ROOTS,'closure-incumbent')]
     args.output.mkdir();scratch=args.output/'candidate.json';pairs=[];traces=[];summaries=[];seen=set()
-    protocol=dict(schema_version=1,observation_schema=SCHEMA,executor_revision='isolated-terminal-rejoin-v1',
+    protocol=dict(schema_version=1,observation_schema=SCHEMA,executor_revision='compound-facility-poses-v3',
                   inputs_sha256=sha(args.inputs),native_sha256=sha(args.native_library),source_sha256=source_manifest(),
                   cases=cases,training_roots=[c['id'] for c in roots],pairs_per_root=args.pairs,forward_limit=args.forward_limit,
-                  validation_pairs=8,seed=90117,seconds=args.seconds,route_work=5000,catalogs=inputs['catalogs'],
+                  validation_pairs=8,compound_pairs_per_root=4,seed=90117,seconds=args.seconds,route_work=5000,catalogs=inputs['catalogs'],
                   catalog_sha256={k:sha(v) for k,v in json.loads(Path(inputs['catalogs']).read_text()).items()})
     write(args.output/'protocol.json',protocol);runtime=FactoryRuntime(args.native_library,inputs['catalogs'])
     def episode(case):
@@ -69,7 +79,8 @@ def run(args):
     try:
         for ri,case in enumerate(roots):
             root=episode(case);desc=root.describe();rng=random.Random(90117+ri)
-            lists=[[a for a in desc['actions'] if a['kind']==kind] for kind in ('relocate','rotate','port','component','insert')]
+            lists=[[a for a in desc['actions'] if action_family(a,root.state['current'])==kind] for kind in
+                   ('single_translation','group_translation','single_rotation','compound_pose','port','component','insert')]
             for choices in lists:rng.shuffle(choices)
             actions=[choices[i] for i in range(max(map(len,lists))) for choices in lists if i<len(choices)][:args.forward_limit]
             local=[];counts=Counter();best=root.state['best_metrics']['score'];discovery=None
@@ -81,6 +92,8 @@ def run(args):
                     best=score;discovery=args.output/f'root-{ri}-discovery.json';write(discovery,env.state['current'])
                 if forward['unchanged'] or score<=root.state['initial_metrics']['score']:
                     counts['not_worse_changed']+=1;continue
+                if len(local)>=args.pairs and action_family(action,env.state['initial'])!='compound_pose':
+                    counts['supplement_noncompound']+=1;continue
                 state_key=physical_key(env.state['current'])
                 if state_key in seen:counts['duplicate']+=1;continue
                 write(scratch,env.state['current']);draft_case=dict(case,initial=str(scratch.resolve()))
@@ -93,13 +106,15 @@ def run(args):
                     best=reverse.state['current_metrics']['score'];discovery=args.output/f'root-{ri}-discovery.json';write(discovery,reverse.state['current'])
                 name=f'root-{ri}-pair-{len(local)}';path=args.output/(name+'.json');write(path,env.state['current']);seen.add(state_key)
                 pair=dict(id=name,root=case['id'],case=dict(case,id=name,initial=str(path.resolve()),initial_sha256=sha(path)),
-                          forward=action,inverse=inverse,physical_key=state_key,root_metrics=root.state['initial_metrics'],
+                          forward=action,inverse=inverse,family=action_family(inverse,reverse.state['initial']),physical_key=state_key,root_metrics=root.state['initial_metrics'],
                           initial_metrics=reverse.state['initial_metrics'],inverse_metrics=reverse.state['best_metrics'],
                           restores_root=reverse.state['best_metrics']['score']<=root.state['initial_metrics']['score'])
                 pairs.append(pair);local.append(pair);counts['admitted']+=1
-                if len(local)>=args.pairs:break
-            for i,pair in enumerate(local):pair['split']='validation' if i>=len(local)-8 else 'training'
-            summary=dict(root=case['id'],counts=dict(counts),initial=root.state['initial_metrics'],best=best,
+                if len(local)>=args.pairs and sum(p['family']=='compound_pose' for p in local)>=4:break
+            families={name:[p for p in reversed(local) if p['family']==name] for name in sorted({p['family'] for p in local})}
+            validation=[pool[i]['id'] for i in range(max((len(pool) for pool in families.values()),default=0)) for pool in families.values() if i<len(pool)][:8]
+            for pair in local:pair['split']='validation' if pair['id'] in validation else 'training'
+            summary=dict(root=case['id'],counts=dict(counts),initial=root.state['initial_metrics'],best=best,families=dict(Counter(p['family'] for p in local)),
                          discovery=str(discovery.resolve()) if discovery else None)
             summaries.append(summary);print(json.dumps(summary),flush=True)
         report=dict(schema_version=1,status='complete' if all(s['counts'].get('admitted',0)>=16 for s in summaries) else 'admission_shortfall',

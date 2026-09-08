@@ -22,8 +22,8 @@ def physical_key(witness):
 
 def action_key(action,description,witness,best_key):
     value=dict(action)
-    if value['kind']=='relocate':
-        value['members']=sorted(witness['placements'][i]['instance'] for i in value['members'])
+    if value['kind']=='pose':
+        value['poses']=sorted((dict(q,member=witness['placements'][q['member']]['instance']) for q in value['poses']),key=lambda q:q['member'])
     elif value['kind']=='reroute':
         chain=description['chains'][value.pop('chain')]
         value['network']=witness['transport_networks'][chain['network']]['id']
@@ -74,10 +74,15 @@ def geometry_choice(witness,actions,allowed):
              for axis,extent in [('x','width'),('y','height')]]
     scores=[]
     for i,a in enumerate(actions):
-        if allowed[i] and a['kind']=='relocate':
-            gain=sum(abs(p[axis]+p[extent]/2-c)-abs(p[axis]+p[extent]/2+a[delta]-c)
-                     for index in a['members'] for p in [witness['placements'][index]]
-                     for axis,extent,delta,c in [('x','width','dx',centers[0]),('y','height','dy',centers[1])])/len(a['members'])
+        if allowed[i] and a['kind']=='pose':
+            gain=0
+            for q in a['poses']:
+                p=witness['placements'][q['member']]
+                swap=abs(q['rotation']-p['rotation'])%180!=0
+                pw,ph=(p['height'],p['width']) if swap else (p['width'],p['height'])
+                gain+=sum(abs(p[axis]+p[extent]/2-c)-abs(q[axis]+size/2-c)
+                          for axis,extent,size,c in [('x','width',pw,centers[0]),('y','height',ph,centers[1])])
+            gain/=len(a['poses'])
             scores.append((gain,-i,i))
     if scores:return max(scores)[2]
     # Exhaustion is explicit; no uncharged candidate search or implicit stopping.

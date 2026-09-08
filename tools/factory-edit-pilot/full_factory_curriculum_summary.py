@@ -7,6 +7,8 @@ from statistics import mean
 
 
 def run(args):
+    protocol=json.loads((args.screen/'protocol.json').read_text())
+    pairs={p['id']:p for p in json.loads((Path(protocol['curriculum_path'])/'curriculum.json').read_text())['pairs']}
     r=json.loads((args.screen/'screen.json').read_text());lookup={(c['arm'],c['case'],c['bank']):c for c in r['cells']};rows={row['directory']:row for row in r['rows']}
     def paired(cells,other):
         return dict(Counter('win' if c['best_metrics']['score']<lookup[other,c['case'],c['bank']]['best_metrics']['score'] else
@@ -25,6 +27,7 @@ def run(args):
             v=[x for x in r['inverse'] if x['arm']==arm and x['selection']==selection]
             result['inverse'][selection]=dict(tasks=len(v),improved=sum(x['status']=='improved' for x in v),teacher_chosen=sum(x['teacher_chosen']for x in v),
                                               mean_area_reduction=mean(1-x['best_metrics']['score'][0]/x['initial_metrics']['score'][0]for x in v),
+                                              families={family:dict(Counter(x['status'] for x in v if pairs[x['pair']]['family']==family)) for family in sorted({pairs[x['pair']]['family'] for x in v})},
                                               roots={root:dict(Counter(x['status']for x in v if x['root']==root))for root in sorted({x['root']for x in v})})
         arms[arm]=result
     result=dict(status=r['status'],seconds=r['seconds'],arms=arms,

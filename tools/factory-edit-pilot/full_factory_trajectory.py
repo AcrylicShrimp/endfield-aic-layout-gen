@@ -40,18 +40,20 @@ def shortlist(w, desc, weight):
         # Three-cell neighborhood around the initial band includes approach ports.
         expanded = dict(p, x=p['x']-3, y=p['y']-3, width=p['width']+6, height=p['height']+6)
         if any(weight(xy) for xy in cells(expanded)):near.add(p['instance'])
-    pools = {kind: [] for kind in ('relocate', 'rotate', 'port', 'other')}
+    pools = {kind: [] for kind in ('pose_gain', 'pose_near', 'port', 'other')}
     for ordinal, action in enumerate(desc['actions']):
         kind = action['kind'];gain = 0
-        if kind == 'relocate':
-            for i in action['members']:
-                p = placements[i]
-                gain += sum(weight(xy)-weight((xy[0]+action['dx'], xy[1]+action['dy'])) for xy in cells(p))
-            if gain <= 0:continue
-            pool = kind
-        elif kind in ('rotate', 'port'):
+        if kind == 'pose':
+            for q in action['poses']:
+                p=placements[q['member']];swap=abs(q['rotation']-p['rotation'])%180!=0
+                final=dict(p,x=q['x'],y=q['y'],width=p['height'] if swap else p['width'],height=p['width'] if swap else p['height'])
+                gain+=sum(map(weight,cells(p)))-sum(map(weight,cells(final)))
+            if gain>0:pool='pose_gain'
+            elif any(placements[q['member']]['instance'] in near for q in action['poses']):pool='pose_near'
+            else:continue
+        elif kind == 'port':
             if action['instance'] not in near:continue
-            pool = kind
+            pool=kind
         elif kind in ('component', 'release_bridge', 'reroute'):
             if kind == 'reroute':points = desc['chains'][action['chain']]['cells']
             elif kind == 'component':points = [next(c['position'] for c in w['logistics_components'] if c['id']==action['component'])]
@@ -62,7 +64,7 @@ def shortlist(w, desc, weight):
         else:continue
         pools[pool].append((-gain, ordinal, action))
     selected = []
-    for kind, limit in (('relocate',24),('rotate',8),('port',8),('other',8)):
+    for kind, limit in (('pose_gain',24),('pose_near',8),('port',8),('other',8)):
         selected.extend(sorted(pools[kind],key=lambda v:v[:2])[:limit])
     return [a for _,_,a in selected], {kind: len(values) for kind,values in pools.items()}
 

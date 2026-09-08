@@ -14,12 +14,21 @@ import torch
 from full_factory_environment import ROOT, FactoryRuntime, FactoryEpisode
 from full_factory_policy import observe, FullFactoryPolicy
 from full_factory_screen import advantages
+from full_factory_curriculum import inverse_action
 
 
 class RankTests(unittest.TestCase):
     def test_exact_lexicographic_terminal_rank(self):
         self.assertEqual(advantages([(9,1000,1000),(10,1,1),(10,1,1),(11,0,0)]), [1,0,0,-1])
         self.assertEqual(advantages([(10,1,1)]*4), [0]*4)
+
+    def test_inverse_pose_uses_the_new_frame_when_every_facility_was_selected(self):
+        before=dict(placements=[dict(instance='a',x=10,y=10,rotation=0),dict(instance='b',x=10,y=15,rotation=180)])
+        action=dict(kind='pose',poses=[dict(member=0,x=20,y=20,rotation=90),dict(member=1,x=25,y=20,rotation=270)])
+        # The native output is translated by (-3,-5) and its placement array reordered.
+        after=dict(placements=[dict(instance='b',x=22,y=15,rotation=270),dict(instance='a',x=17,y=15,rotation=90)])
+        target=dict(kind='pose',poses=[dict(member=0,x=7,y=10,rotation=180),dict(member=1,x=7,y=5,rotation=0)])
+        self.assertIs(inverse_action(action,before,after,dict(actions=[dict(kind='restore_best'),target])),target)
 
 
 class FactoryPolicyTests(unittest.TestCase):
@@ -140,25 +149,27 @@ class FactoryPolicyTests(unittest.TestCase):
 
 
     def test_group_reachability_and_required_closure(self):
-        subprocess.run(['node',str(Path(__file__).with_name('test_full_factory_relocation.mjs'))],check=True,capture_output=True)
+        subprocess.run(['node',str(Path(__file__).with_name('test_full_factory_poses.mjs'))],check=True,capture_output=True)
 
     def test_old_executor_description_and_member_contracts_rejected(self):
         e=self.episode()
-        self.runtime.worker.stdin.write(json.dumps(dict(schema_version=1,op='describe',witness=e.state['current']))+'\n')
+        self.runtime.worker.stdin.write(json.dumps(dict(schema_version=2,op='describe',witness=e.state['current']))+'\n')
         self.runtime.worker.stdin.flush()
         self.assertEqual(json.loads(self.runtime.worker.stdout.readline())['code'],'factory.executor-schema')
         d=e.describe()
         with self.assertRaisesRegex(ValueError,'description-schema'):
-            observe(e.state['current'],dict(d,schema_version=1),e.state,1)
+            observe(e.state['current'],dict(d,schema_version=2),e.state,1)
         for action in [dict(kind='move',instance=e.state['current']['placements'][0]['instance'],dx=1,dy=0),
-                       dict(kind='relocate',members=[0,0],dx=1,dy=0),dict(kind='relocate',members=[-1],dx=1,dy=0)]:
+                       dict(kind='relocate',members=[0],dx=1,dy=0),dict(kind='rotate',instance='old',rotation=90),
+                       dict(kind='pose',poses=[dict(member=-1,x=0,y=0,rotation=0)]),
+                       dict(kind='pose',poses=[dict(member=0,x=0,y=0,rotation=0)]*2)]:
             self.assertEqual(e.step(action)['status'],'executor_rejected')
 
     def test_all_group_members_and_destinations_receive_gradients(self):
         e=self.episode();d=e.describe()
         ps=e.state['current']['placements']
         x,y=min(p['x'] for p in ps[:2]),min(p['y'] for p in ps[:2])
-        a=dict(kind='relocate',members=[0,1],dx=1,dy=0,x=x+1,y=y,source_x=x,source_y=y,
+        a=dict(kind='pose',poses=[dict(member=i,x=p['x']+1,y=p['y'],rotation=(p['rotation']+180)%360) for i,p in enumerate(ps[:2])],x=x+1,y=y,source_x=x,source_y=y,
                width=max(p['x']+p['width'] for p in ps[:2])-x,height=max(p['y']+p['height'] for p in ps[:2])-y,
                body_area=sum(p['width']*p['height'] for p in ps[:2]))
         obs=observe(e.state['current'],dict(d,actions=[a]),e.state,1)
@@ -170,6 +181,7 @@ class FactoryPolicyTests(unittest.TestCase):
             model.score[0].weight.zero_();model.score[0].weight[:,start:start+2*model.width]=.1
             model.score[0].bias.fill_(.1);model.score[2].weight.fill_(.1)
         obs['nodes']=torch.tensor(obs['nodes'],requires_grad=True)
+        obs['member_pose']=torch.tensor(obs['member_pose'],requires_grad=True)
         raster=[]
         def capture(module,inputs,output):
             output.retain_grad();raster.append(output)
@@ -177,8 +189,54 @@ class FactoryPolicyTests(unittest.TestCase):
         model(obs).sum().backward();handle.remove()
         for index in obs['member_nodes']:
             self.assertGreater(float(obs['nodes'].grad[index].abs().sum()),0)
+        for row in obs['member_pose'].grad:
+            self.assertTrue(bool((row.abs()>0).all()))
         for x,y in obs['member_xy']:
             self.assertGreater(float(raster[0].grad[0,:,y,x].abs().sum()),0)
+
+    def test_member_encoding_preserves_orientation_and_source_destination_pairing(self):
+        e=self.episode();d=e.describe();ps=e.state['current']['placements']
+        poses=[dict(member=i,x=p['x'],y=p['y'],rotation=(p['rotation']+180)%360) for i,p in enumerate(ps[:2])]
+        x,y=min(p['x'] for p in ps[:2]),min(p['y'] for p in ps[:2])
+        action=dict(kind='pose',poses=poses,x=x,y=y,source_x=x,source_y=y,
+                    width=max(p['x']+p['width'] for p in ps[:2])-x,height=max(p['y']+p['height'] for p in ps[:2])-y,
+                    body_area=sum(p['width']*p['height'] for p in ps[:2]))
+        obs=observe(e.state['current'],dict(d,actions=[action]),e.state,1)
+        torch.manual_seed(67);model=FullFactoryPolicy(0)
+        # Isolate pooled members; whole-scene means and action envelopes stay fixed.
+        with torch.no_grad():
+            model.score[0].weight[:,:32+3*model.width]=0
+            model.score[0].weight[:,32+5*model.width:]=0
+        base=model(obs)
+        reversed_obs=deepcopy(obs)
+        for field in ('member_nodes','member_actions','member_xy','member_pose'):
+            reversed_obs[field]=reversed_obs[field][::-1].copy()
+        torch.testing.assert_close(model(reversed_obs),base)
+        swapped=deepcopy(obs);swapped['member_nodes']=swapped['member_nodes'][::-1].copy()
+        self.assertGreater(float((model(swapped)-base).abs().detach()),1e-7)
+        changed=deepcopy(obs);changed['member_pose'][0,6:10]*=-1
+        self.assertGreater(float((model(changed)-base).abs().detach()),1e-7)
+
+    def test_compound_rotation_is_offered_and_validates_a_complete_original_factory(self):
+        source=ROOT/'artifacts/factory-edit-pilot/full-factory-inputs-verified/inputs.json'
+        if not source.exists():self.skipTest('Optional retained original evidence absent')
+        case=next(r for r in json.loads(source.read_text())['rows'] if r['id']=='closure-original')
+        e=FactoryEpisode(self.runtime,case);before=deepcopy(e.state['current']);description=e.describe()
+        compounds=[a for a in description['actions'] if a['kind']=='pose' and len(a['poses'])>1 and
+                   any(q['rotation']!=before['placements'][q['member']]['rotation'] for q in a['poses'])]
+        self.assertTrue(compounds)
+        # Retained original-factory witness: this pair can exchange orientation and
+        # relative positions while all other requirements remain in force.
+        action=next(a for a in compounds if [q['member'] for q in a['poses']]==[35,41] and
+                    all(q['rotation']==0 for q in a['poses']) and a['x']==a['source_x'] and a['y']==a['source_y'])
+        row=e.step(action)
+        self.assertTrue(row['acceptance']['candidate_validated'])
+        self.assertFalse(row['unchanged'])
+        for q in action['poses']:
+            actual=e.state['current']['placements'][q['member']]
+            self.assertEqual((actual['x'],actual['y'],actual['rotation']),(q['x'],q['y'],q['rotation']))
+        self.assertLessEqual(row['route_expansions'],5000)
+
 
     def test_original_heavy_distant_and_connected_group_native_acceptance(self):
         source=ROOT/'artifacts/factory-edit-pilot/full-factory-inputs-verified/inputs.json'
@@ -186,7 +244,8 @@ class FactoryPolicyTests(unittest.TestCase):
         case=next(r for r in json.loads(source.read_text())['rows'] if r['id']=='closure-original')
         for members,dx,dy in [([0,2],1,0),([0],-3,0)]:
             e=FactoryEpisode(self.runtime,case)
-            a=next(a for a in e.describe()['actions'] if a['kind']=='relocate' and a['members']==members and a['dx']==dx and a['dy']==dy)
+            a=next(a for a in e.describe()['actions'] if a['kind']=='pose' and
+                   a['poses']==[dict(member=i,x=e.state['current']['placements'][i]['x']+dx,y=e.state['current']['placements'][i]['y']+dy,rotation=e.state['current']['placements'][i]['rotation']) for i in members])
             before=deepcopy(e.state['current'])
             result=e.step(a)
             self.assertTrue(result['acceptance']['candidate_validated'])
@@ -207,7 +266,8 @@ class FactoryPolicyTests(unittest.TestCase):
             forward=next(t['action'] for t in records if t['candidate_index']==index)
             e=FactoryEpisode(self.runtime,dict(case,initial=str(source/f'candidate-{index}.json')))
             actions=e.describe()['actions']
-            inverse=next(a for a in actions if a['kind']=='relocate' and a['members']==forward['members'] and a['dx']==-forward['dx'] and a['dy']==-forward['dy'])
+            target=[dict(member=i,x=e.state['current']['placements'][i]['x']-forward['dx'],y=e.state['current']['placements'][i]['y']-forward['dy'],rotation=e.state['current']['placements'][i]['rotation']) for i in forward['members']]
+            inverse=next(a for a in actions if a['kind']=='pose' and a['poses']==target)
             result=e.step(inverse)
             self.assertEqual(result['status'],'improved')
             self.assertTrue(result['acceptance']['candidate_validated'])
