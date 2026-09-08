@@ -311,3 +311,9 @@ curriculum with `case_curriculum_matrix.py --protocol tools/factory-edit-pilot/r
 and the usual native-library/output flags. Milestone acceptance uses a retained
 root-mastered policy and requires final accepted x/y translation; the matrix's final
 checkpoint score gate is a separate stability diagnostic.
+
+The [frozen confirmation follow-up](../../docs/designs/2026-09-08.12-frozen-root-confirmation.md)
+uses `mastery_policy_selection.py --protocol tools/factory-edit-pilot/relocation-confirmation-study.json`
+with the usual native-library/output flags. It confirms each first root-passing policy
+on an independent development bank before opening outcome banks. Failed confirmation
+opens no outcome bank and never selects a later checkpoint.

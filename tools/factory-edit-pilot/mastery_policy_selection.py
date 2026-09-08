@@ -36,6 +36,14 @@ def first_mastered(gates, roots, required):
     return None
 
 
+def first_root_pass(gates, roots, required):
+    for gate in gates:
+        if all(gate["level"][key] == level and gate["successes"][key] >= required
+               for key, level in roots.items()):
+            return gate["commands"]
+    return None
+
+
 def select_source(source, protocol):
     metadata = read(source / "metadata.json")
     audit = read(source / "study-audit.json")
@@ -50,8 +58,14 @@ def select_source(source, protocol):
             or set(roots) != set(metadata["protocol"]["cases"])
             or any(starts[key][str(level)] or level != max(map(int, starts[key])) for key, level in roots.items())):
         raise ValueError(f"selection.source: {source}: incomplete, unaudited or mismatched source")
-    count = first_mastered(rows(source / "assessments.jsonl"), roots,
-                           metadata["protocol"]["assessment"]["consecutive_passes"])
+    gates = rows(source / "assessments.jsonl")
+    gate_spec = metadata["protocol"]["assessment"]
+    if protocol["selection"] == "first_root_pass_then_frozen_confirmation":
+        count = first_root_pass(gates, roots, gate_spec["required_successes"])
+        required_streak = 1
+    else:
+        required_streak = gate_spec["consecutive_passes"]
+        count = first_mastered(gates, roots, required_streak)
     if count is None:
         return metadata, None, None
     checkpoint = source / f"checkpoint-{count}.pt"
@@ -61,9 +75,9 @@ def select_source(source, protocol):
     if (saved["metadata"]["completed_commands"] != count
             or saved["metadata"]["seed"] != metadata["seed"]
             or not all(saved["metadata"]["controller"][key]["level"] == level
-                       and saved["metadata"]["controller"][key]["streak"] >= metadata["protocol"]["assessment"]["consecutive_passes"]
+                       and saved["metadata"]["controller"][key]["streak"] >= required_streak
                        for key, level in roots.items())):
-        raise ValueError(f"selection.source: {checkpoint}: selected checkpoint is not jointly mastered")
+        raise ValueError(f"selection.source: {checkpoint}: selected checkpoint does not satisfy its root-selection rule")
     return metadata, count, saved
 
 
@@ -72,7 +86,12 @@ def verify_case(root, case, config, directory, count):
     episodes = rows(directory / "evaluations.jsonl")
     ordered = sorted(episodes, key=lambda row: row["score"])
     for label, episode in (("best", ordered[0]), ("median", ordered[len(ordered)//2])):
-        accepted = check(catalog, read(directory / f"evaluation-{label}.json"))
+        accepted_layout = read(directory / f"evaluation-{label}.json")
+        accepted = check(catalog, accepted_layout)
+        translated = [f["id"] for f in catalog.case["facilities"]
+                      if accepted_layout["placements"][f["id"]][:2] != f["pose"][:2]]
+        if episode.get("translated_facilities", translated) != translated:
+            raise ValueError(f"selection.validation: {directory}: {label} translation accounting differs")
         if not accepted["valid"] or accepted["score"] != episode["score"]:
             raise ValueError(f"selection.validation: {directory}: invalid {label} layout")
     env = Environment(catalog, config)
@@ -91,13 +110,22 @@ def verify_case(root, case, config, directory, count):
 
 def run(root, protocol_path, library, output):
     protocol = read(protocol_path)
-    if (protocol.get("schema_version") != 1 or protocol.get("selection") != "first_joint_root_mastery"
+    if (protocol.get("schema_version") != 1 or protocol.get("selection") not in ("first_joint_root_mastery", "first_root_pass_then_frozen_confirmation")
             or len(set(protocol["training_seeds"])) != len(protocol["training_seeds"])
             or not protocol["training_seeds"] or protocol["evaluation_episodes"] < 2
             or not 1 <= protocol["required_successes"] <= protocol["evaluation_episodes"]
             or protocol["horizon"] <= 0 or len(protocol["seed_banks"]) != 2
             or abs(protocol["seed_banks"][0]-protocol["seed_banks"][1]) < protocol["evaluation_episodes"]):
         raise ValueError(f"selection.protocol: {protocol_path}: invalid selection or evaluation contract")
+    confirmation = protocol.get("confirmation")
+    if protocol["selection"] == "first_root_pass_then_frozen_confirmation":
+        if (not confirmation or confirmation["horizon"] <= 0 or confirmation["episodes"] < 2
+                or not 1 <= confirmation["required_successes"] <= confirmation["episodes"]
+                or any(set(range(confirmation["seed_start"], confirmation["seed_start"]+confirmation["episodes"]))
+                       & set(range(bank, bank+protocol["evaluation_episodes"])) for bank in protocol["seed_banks"])):
+            raise ValueError(f"selection.protocol: {protocol_path}: invalid or overlapping confirmation bank")
+    elif confirmation is not None:
+        raise ValueError(f"selection.protocol: {protocol_path}: confirmation requires its declared selection strategy")
     if output.exists():
         raise ValueError(f"selection.protocol: {output}: output must be fresh")
     output.mkdir(parents=True)
@@ -116,12 +144,13 @@ def run(root, protocol_path, library, output):
                 raise ValueError(f"selection.source: {source}: wrong seed directory")
             if count is None:
                 result.update(status="not_met", diagnostic={"code": "selection.no_mastered_policy", "severity": "info",
-                              "stage": stage, "source": str(source), "message": "No jointly mastered checkpoint exists"})
+                              "stage": stage, "source": str(source), "message": "No checkpoint satisfies the declared root-selection rule"})
                 write(output / "selection.json", result)
                 return result
             selected.append((source, metadata, count, saved))
         result["selection_seconds"] = time.perf_counter()-start
-        stage = "evaluation"
+        stage = "model_preparation"
+        prepared = []
         for source, metadata, count, saved in selected:
             config = {**metadata["config"], "device": "cpu", "horizon": protocol["horizon"],
                       "evaluation_seeds": protocol["evaluation_episodes"]}
@@ -153,6 +182,48 @@ def run(root, protocol_path, library, output):
             torch.save({"schema_version": 1, "kind": "inference_policy", "policy": actor.state_dict(),
                         "config": config, "dimensions": actor.dimensions, "source": dict(record)}, directory / "selected-policy.pt")
             record["export_sha256"] = digest(directory / "selected-policy.pt")
+            source_banks = [(metadata["config"]["evaluation_seed_start"], metadata["config"]["evaluation_seeds"]),
+                            (metadata["protocol"]["assessment"]["seed_start"], metadata["protocol"]["assessment"]["episodes"])]
+            fresh_banks = [(bank, protocol["evaluation_episodes"]) for bank in protocol["seed_banks"]]
+            if confirmation:
+                fresh_banks.append((confirmation["seed_start"], confirmation["episodes"]))
+            if any(max(a, b) < min(a+n, b+m) for a, n in fresh_banks for b, m in source_banks):
+                raise ValueError(f"selection.protocol: {protocol_path}: seed bank overlaps source evaluation/development")
+            prepared.append((source, metadata, count, saved, config, runtimes, actor, directory, record, before))
+            result["policies"].append(record)
+        if confirmation:
+            stage = "confirmation"
+            confirmation_started = time.perf_counter()
+            for source, metadata, count, saved, config, runtimes, actor, directory, record, before in prepared:
+                confirm_config = {**config, "horizon": confirmation["horizon"],
+                                  "evaluation_seeds": confirmation["episodes"], "evaluation_seed_start": confirmation["seed_start"]}
+                confirm_runtimes = {key: Runtime(root, root / path, confirm_config, library)
+                                    for key, path in metadata["protocol"]["cases"].items()}
+                destination = directory / "confirmation"
+                for key in confirm_runtimes:
+                    (destination / key).mkdir(parents=True)
+                summaries = evaluate_cases(actor, confirm_runtimes, confirm_config, destination, count,
+                                           saved["metadata"]["case_commands"], saved["metadata"]["training_seconds"])
+                record["confirmation"] = []
+                for key, summary in summaries.items():
+                    episodes = rows(destination / key / "evaluations.jsonl")
+                    qualified = sum(row["return"] > 0 and (not protocol.get("require_translation", False)
+                                    or bool(row.get("translated_facilities"))) for row in episodes)
+                    validation = verify_case(root, metadata["protocol"]["cases"][key], confirm_config, destination / key, count)
+                    record["confirmation"].append({"case": key, "qualified_successes": qualified,
+                                                   "passed": qualified >= confirmation["required_successes"],
+                                                   "summary": summary, "validation": validation})
+                if policy_hash(actor.state_dict()) != before:
+                    raise ValueError(f"selection.validation: {source}: confirmation mutated policy state")
+            result["confirmation_seconds"] = time.perf_counter()-confirmation_started
+            if not all(cell["passed"] for record in result["policies"] for cell in record["confirmation"]):
+                result.update(status="not_met", diagnostic={"code": "selection.confirmation_failed", "severity": "info",
+                              "stage": stage, "message": "Frozen development confirmation failed; outcomes remain unopened"})
+                write(output / "selection.json", result)
+                return result
+        stage = "evaluation"
+        evaluation_started = time.perf_counter()
+        for source, metadata, count, saved, config, runtimes, actor, directory, record, before in prepared:
             for bank in protocol["seed_banks"]:
                 config["evaluation_seed_start"] = bank
                 bank_directory = directory / f"bank{bank}"
@@ -172,10 +243,10 @@ def run(root, protocol_path, library, output):
                                             "summary": summary, "validation": validation})
             if policy_hash(actor.state_dict()) != before:
                 raise ValueError(f"selection.validation: {source}: evaluation mutated policy state")
-            result["policies"].append(record)
             write(output / "selection.json", result)
         result["status"] = "passed" if all(cell["passed"] for p in result["policies"] for cell in p["banks"]) else "not_met"
-        result["evaluation_seconds"] = time.perf_counter()-start-result["selection_seconds"]
+        result["evaluation_seconds"] = time.perf_counter()-evaluation_started
+        result["total_seconds"] = time.perf_counter()-start
     except BaseException as error:
         result.update(status="interrupted", diagnostic={"code": "selection.interrupted", "severity": "error",
                       "stage": stage, "source": str(source), "message": str(error)})

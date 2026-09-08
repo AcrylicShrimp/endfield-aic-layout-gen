@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "id": "battery-frozen-root-relocation-confirmation",
+  "source_commit": "b0e9ff0",
+  "source_run_root": "artifacts/factory-edit-pilot/relocation-curriculum-learning",
+  "condition": "relocation-mastery-rehearsal",
+  "training_seeds": [
+    17,
+    29,
+    43
+  ],
+  "selection": "first_root_pass_then_frozen_confirmation",
+  "horizon": 128,
+  "seed_banks": [
+    400000,
+    410000
+  ],
+  "evaluation_episodes": 32,
+  "required_successes": 26,
+  "require_translation": true,
+  "confirmation": {
+    "horizon": 16,
+    "seed_start": 420000,
+    "episodes": 64,
+    "required_successes": 52
+  }
+}
