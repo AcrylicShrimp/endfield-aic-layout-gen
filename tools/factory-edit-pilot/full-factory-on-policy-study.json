@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "seed": 17,
+  "initializations": ["random", "imitation-warm"],
+  "groups": 64,
+  "group_episodes": 4,
+  "horizon": 32,
+  "episode_seconds": 120,
+  "route_work": 5000,
+  "arm_seconds": 5400,
+  "evaluation_seconds": 7200,
+  "observation_array_bytes": 536870912,
+  "episode_state_bytes": 536870912,
+  "learning_rate": 0.0003,
+  "entropy_coefficient": 0.001,
+  "gradient_clip": 0.5,
+  "temperature": 1,
+  "balanced": true,
+  "memory": true,
+  "training_seed_base": 2100000,
+  "evaluation_banks": [2200000]
+}
