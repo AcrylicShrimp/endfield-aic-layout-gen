@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "runtime_revision": "25b57db",
+  "scope": "Changed curriculum exposure and admitted original-large contractions; two adaptations and all original graph evidence remain ignored",
+  "episode_artifacts": {
+    "count": 112,
+    "hash_manifest": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/audit.json",
+    "coverage": "Each row records episode and best witness hashes; directories are in report.json"
+  },
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/admission.json",
+      "sha256": "9334342c9015075406289033ad8da58f6fa77edee76beec2582f6754fb25140f",
+      "bytes": 804
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/audit.json",
+      "sha256": "403fb4d165260cbf618fb04048d989b5a3252c43da9cf1093bf23e5f4ecae4c2",
+      "bytes": 50209
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/cleanup.json",
+      "sha256": "05c16175fb4286a8da5a5e7d34997e1119ac87537355cc6aaade1c5430666901",
+      "bytes": 329
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/comparison.json",
+      "sha256": "ff70064c22548b9610cb8ec55b0cb406a964980de7071856fdfc34baa56855f6",
+      "bytes": 14993
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/label-scores.json",
+      "sha256": "2a753c2158c1e376209f790ea8c6c051e32349b08d0613e4c226110603681e94",
+      "bytes": 16157
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/learned-17.pt",
+      "sha256": "dc01e6e1b189a8881c99e3364323f7a288f6f3ea43e25517a34749bdba4a6783",
+      "bytes": 515010
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/learned-29.pt",
+      "sha256": "400951f92cf7611dc4d5d7bbbe27f29333abafb2b68a636238d79da0fc0df3fd",
+      "bytes": 515010
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/lessons-audit.json",
+      "sha256": "4910e019cbf9bef8f762145063639d94cd7c0a2b81a50ea2305281ad552080dd",
+      "bytes": 777
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/lessons.json",
+      "sha256": "c089e24428cd4d36123270e303f259a3ccf8ddfce25d909405fd07e9467c8ee7",
+      "bytes": 58156
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/original-contractions.json.gz",
+      "sha256": "5b9fb1451b9d7aa7b54e2548068e7f744be1f455c246a1053b4f20a52fde171f",
+      "bytes": 10289
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/protocol.json",
+      "sha256": "8f3b6e661c1126be4e18d4f7321d6137c7be531121dcd84aad36f3a5aed725bd",
+      "bytes": 184357
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/rehearsal-contrasts.json.gz",
+      "sha256": "e05778bb3e2cfc22e121a81eacb8905dc8d9e564f7efddb275be39311f30085c",
+      "bytes": 36670
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/report.json",
+      "sha256": "df4cf7e011cb2d38902f8a4bce1e27af8c8f8c21fb66c9627cdfda09c3e1f882",
+      "bytes": 159693
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/summary.json",
+      "sha256": "57afd18be9a435edd3e4d3a8654e735fe847367844942fe1faa673aa8397d4e3",
+      "bytes": 53244
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/updates.json",
+      "sha256": "cb092c4bed977d344c51e8ebfed4819ece6ff1073f471809f23f17c41202d8cb",
+      "bytes": 206665
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/view-original-learned-17/comparison.png",
+      "sha256": "6f0a299cc59ec04baa436dcd02dc3f44aca8b66c5fc5a5213e32f4415944af18",
+      "bytes": 522500
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/view-original-learned-17/comparison.svg",
+      "sha256": "32f6b562ee0f6aa8436bc6eb17d672a2d2234dce9590827c447199bd367df54d",
+      "bytes": 9954102
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/view-original-learned-17/view.json",
+      "sha256": "0747203a67e23ffa9589e59221ea5b74446396cb362c7aee44a7ad49d0180f8d",
+      "bytes": 1265
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/view-prepared-learned-17/comparison.png",
+      "sha256": "c487541ba4d5075f781709dac8ceee4c90e0bb153cdb046ee44df1e73717b8fc",
+      "bytes": 611536
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/view-prepared-learned-17/comparison.svg",
+      "sha256": "6de3bbaf7c765cca838a6d83eb5b05dca442d13b23c3639b23fefc7ca318a0ac",
+      "bytes": 8995659
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-exposure-learning/view-prepared-learned-17/view.json",
+      "sha256": "37088562359540e9a7d6ed99df3a529ab4b9b146b65f560399524e00db56f513",
+      "bytes": 1308
+    },
+    {
+      "path": "docs/designs/2026-09-09.24-large-factory-curriculum-exposure.md",
+      "sha256": "ca620fe9f01422828da66feb9cc22095fc9fe414ed9a0aa1cdbe81e7ba0699ef",
+      "bytes": 3331
+    },
+    {
+      "path": "docs/reports/2026-09-09.23-large-factory-learning-provenance.json",
+      "sha256": "2948bfbf020cd2bc4044662a3855caf2109e87a62e4955d1c7fbed3e998b53cb",
+      "bytes": 6268
+    },
+    {
+      "path": "tools/factory-edit-pilot/full-factory-large-exposure-study.json",
+      "sha256": "e930041490997fe7a7c967453bdfef60157fd68fb2c928ed7d8ec859310ecaf0",
+      "bytes": 423
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_large_exposure.py",
+      "sha256": "2f246af17b60bf40f06748502bace064ead6cd3553cdc28c396899300c743098",
+      "bytes": 7855
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_large_exposure_audit.mjs",
+      "sha256": "135159b713b7adf6845eb0347d19f36e382a754721638f52d3ae74c226da7185",
+      "bytes": 8465
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_large_exposure_compare.mjs",
+      "sha256": "b3db1a88bfbd2f2cf84ef2a2924729c23395359c1b8bd2bb200e8572df2be54c",
+      "bytes": 3269
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_large_learning.py",
+      "sha256": "864823fbb641e5ac5cb29bdd825067c670a993f5b061d98ad294b74654838b3f",
+      "bytes": 22348
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_large_learning_audit.mjs",
+      "sha256": "4ff6a3a39f6c66b97e7412673350ea32065204e5d51ef6b00ddc89d55e8f0d74",
+      "bytes": 15951
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_large_learning_summary.mjs",
+      "sha256": "70760fc51e1d9e547ca42b84ae13800fa166807fb6371d8d47c8294d7cfa104d",
+      "bytes": 5034
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_view.py",
+      "sha256": "30f3d777089268cbbeb5e53626f0b4d445f5894fd4f72337c4057e34b34227e9",
+      "bytes": 4833
+    },
+    {
+      "path": "tools/factory-edit-pilot/test_full_factory_large_exposure.py",
+      "sha256": "fb01c51aab1f774d256f1b163a24dbd55b1b43974a8a6e88955f0f7eadf314f6",
+      "bytes": 2064
+    }
+  ]
+}

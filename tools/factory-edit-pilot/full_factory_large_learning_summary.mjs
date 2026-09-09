@@ -30,7 +30,7 @@ function main(o){
   }
   const labels=read(path.join(o.screen,'label-scores.json')),labelSummary=[];
   for(const method of p.methods.filter(m=>m!=='geometry')){
-    const rows=labels.filter(row=>row.method===method&&row.root!==p.large);
+    const rows=labels.filter(row=>row.method===method&&row.root!==p.large&&row.root!==p.original_large);
     labelSummary.push({method,group:'rehearsal',lessons:rows.length,top1:rows.filter(row=>row.top1).length,mean_mass:mean(rows.map(row=>row.target_mass))});
   }
   const continuationReport=read(path.join(p.continuations,'report.json')),teacher=unpack(path.join(p.continuations,'trajectories.json.gz')).find(t=>t.id===continuationReport.targets[0]);
@@ -47,7 +47,7 @@ function main(o){
       first_large_pose_updates:rows.filter(row=>row.lesson===`${p.large}--lesson-0`).length});
   }
   write(o.output,{schema_version:1,status:'complete',report_sha256:hash(path.join(o.screen,'report.json')),audit_sha256:hash(path.join(o.screen,'audit.json')),
-    measurements,comparisons,label_summary:labelSummary,large_labels:labels.filter(row=>row.root===p.large),learning,large_episodes:largeEpisodes,
+    measurements,comparisons,label_summary:labelSummary,large_labels:labels.filter(row=>row.root===p.large),original_large_labels:labels.filter(row=>row.root===p.original_large),learning,large_episodes:largeEpisodes,
     scope:'Opened-development comparison with two adaptation schedules from one fixed pretrained checkpoint; equal cold-runtime episode budgets'});
   console.log(JSON.stringify({status:'complete',measurements,learning,label_summary:labelSummary,large_scores:largeEpisodes.map(row=>({method:row.method,case:row.case,bank:row.bank,score:row.best_metrics.score,teacher_prefix:row.teacher_prefix}))}));
 }
