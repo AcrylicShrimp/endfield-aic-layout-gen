@@ -4,8 +4,9 @@
 
 Active user-requested goal. Confirmation, profiling, initial optimization and
 the device/AMP setup decision are complete. Production harness and monitoring
-requirements and implementation are next, followed by independent readiness
-reviews/tests and the renewed shallow input comparison.
+requirements, implementation, independent reviews, fault tests and representative
+execution checks are complete. Freeze and execute the renewed shallow input
+comparison next.
 
 ## Context
 
@@ -65,3 +66,12 @@ outside tracked source directories.
   pass. Geometry, full-current and best-layout/history device matrices select
   CUDA FP32 / 64; AMP resident computation is consistently slower. The execution
   setup is finalized, so production requirements can now be developed.
+
+- Implemented the durable CLI harness and W&B monitoring, including explicit
+  terminal export. Three independent reviews and follow-up checks confirmed
+  fixes to state races, directory durability, result boundaries, process ownership,
+  monitoring health, shared evaluation cohorts and external preflight.
+- Readiness passed on macOS/Linux (23 harness tests and seven PPO tests), a
+  two-contract GPU stop/resume run and a 24-worker rich-input H32 run. Native
+  validity, nonempty exact CUDA continuation and actual W&B scalars passed.
+  Retained evidence and frozen runtimes with local/server SHA-256 verification.

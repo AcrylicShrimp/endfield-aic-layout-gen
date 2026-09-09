@@ -1,7 +1,10 @@
 """One PPO update with frozen recorded behavior and bounded batched execution."""
 from contextlib import nullcontext
 import gzip
+import hashlib
+import io
 import math
+from pathlib import Path
 import time
 
 import torch
@@ -24,7 +27,7 @@ def calculate_gae(rewards, values, lam):
 
 
 def collect_steps(actor, critic, results, config):
-    """Load trusted collector output and calculate credit without replay validation."""
+    """Check the file/envelope boundary once, then calculate credit without replay."""
     accepted = [r for r in results if r['status'] == 'complete']
     require(len(accepted) >= 2, 'at least two admitted episodes')
     actor_hash, critic_hash = parameter_hash(actor), parameter_hash(critic)
@@ -32,10 +35,15 @@ def collect_steps(actor, critic, results, config):
             'single behavior checkpoint per batch')
     steps, advantages, targets, returns = [], [], [], []
     for result in accepted:
-        with gzip.open(result['experience'], 'rb') as stream:
+        packed = Path(result['experience']).read_bytes()
+        require(hashlib.sha256(packed).hexdigest() == result['experience_sha256'], 'experience file identity')
+        with gzip.GzipFile(fileobj=io.BytesIO(packed), mode='rb') as stream:
             payload = torch.load(stream, map_location='cpu', weights_only=False)
         require(payload['schema'] == SCHEMA, 'supported experience schema')
+        require(all(payload[key] == result[key] for key in ('policy_sha256', 'critic_sha256', 'input_sha256')) and
+                payload['input_contract'] == result['candidate'], 'experience behavior/task/input-contract envelope')
         trajectory = payload['steps']
+        require(len(trajectory) == result['row']['selected'], 'complete experience envelope length')
         rewards = [step['reward'] for step in trajectory]
         values = [step['old_value'] for step in trajectory]
         advantage, target = calculate_gae(rewards, values, config['gae_lambda'])

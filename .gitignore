@@ -4,3 +4,7 @@
 **/*.rs.bk
 .DS_Store
 __pycache__/
+# Local service credentials.
+.env
+.env.*
+!.env.example

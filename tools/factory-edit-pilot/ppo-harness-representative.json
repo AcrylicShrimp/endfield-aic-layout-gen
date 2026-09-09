@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "purpose": "readiness",
+  "generation_config": "tools/factory-edit-pilot/random-factory-server-pilot.json",
+  "candidates": [
+    "current-best-layout-history"
+  ],
+  "seeds": [
+    17
+  ],
+  "order_seed": 20260910,
+  "training": {
+    "batches": 2,
+    "attempts": 32,
+    "horizon": 32,
+    "generation_seed_base": 111000000,
+    "action_seed_base": 121000000
+  },
+  "evaluation": {
+    "at": [
+      0,
+      2
+    ],
+    "attempts": 16,
+    "generation_seed_base": 131000000,
+    "action_seed_base": 141000000
+  },
+  "execution": {
+    "workers": 24,
+    "device": "cuda",
+    "microbatch": 64
+  },
+  "limits": {
+    "startup_seconds": 120,
+    "task_seconds": 360,
+    "batch_seconds": 900,
+    "progress_seconds": 400,
+    "run_seconds": 1800,
+    "rss_bytes": 42949672960,
+    "disk_reserve_bytes": 4294967296,
+    "cleanup_seconds": 20
+  },
+  "ppo": {
+    "gamma": 1,
+    "gae_lambda": 0.95,
+    "clip_epsilon": 0.2,
+    "epochs": 4,
+    "minibatch_size": 64,
+    "target_kl": 0.02,
+    "learning_rate": 0.0003,
+    "entropy_coefficient": 0.001,
+    "gradient_clip": 0.5
+  },
+  "tracking": {
+    "backend": "wandb",
+    "mode": "online",
+    "entity": "",
+    "project": ""
+  },
+  "retention": {
+    "training_batches": [
+      1,
+      2
+    ]
+  }
+}

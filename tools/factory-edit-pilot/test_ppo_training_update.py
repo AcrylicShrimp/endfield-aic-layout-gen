@@ -1,5 +1,7 @@
 """Bounded regression and checkpoint checks, outside the normal training loop."""
 from pathlib import Path
+from copy import deepcopy
+import gzip
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -30,10 +32,10 @@ def experience(root, actor, critic, config, corrupt=False):
         if corrupt and i == 1:
             trajectory[0]['old_value'] = float('nan')
         payload = dict(schema=SCHEMA, policy_sha256=parameter_hash(actor), critic_sha256=parameter_hash(critic),
-                       input_sha256=str(i), steps=trajectory)
+                       input_sha256=str(i), input_contract='action-only', steps=trajectory)
         path = root / f'experience-{i}.pt.gz'
         save_experience(path, payload)
-        results.append(dict(status='complete', policy_sha256=payload['policy_sha256'], critic_sha256=payload['critic_sha256'],
+        results.append(dict(status='complete', candidate='action-only', policy_sha256=payload['policy_sha256'], critic_sha256=payload['critic_sha256'],
                             input_sha256=str(i), experience=str(path), experience_sha256=sha(path),
                             row=dict(selected=len(trajectory), initial_metrics=dict(score=[100, 0, 0]),
                                      best_metrics=dict(score=[90, 0, 0]))))
@@ -103,6 +105,27 @@ class UpdateTests(unittest.TestCase):
             for key in ('policy_after_sha256', 'critic_after_sha256', 'actor_optimizer_sha256',
                         'critic_optimizer_sha256', 'shuffle_rng_sha256', 'credit', 'epochs'):
                 self.assertEqual(actual[key], expected[key], key)
+
+    def test_experience_envelope_length_and_fresh_bytes_are_checked(self):
+        actor, critic, *_ = self.learners()
+        with tempfile.TemporaryDirectory() as temporary:
+            original_results = experience(Path(temporary), actor, critic, self.config)
+            path = Path(original_results[0]['experience'])
+            with gzip.open(path, 'rb') as stream:
+                original = torch.load(stream, weights_only=False)
+            for field in ('policy_sha256', 'critic_sha256', 'input_sha256', 'input_contract', 'steps', 'compressed_bytes'):
+                payload, results = deepcopy(original), deepcopy(original_results)
+                if field == 'steps':
+                    payload[field] = payload[field][:-1]
+                elif field == 'compressed_bytes':
+                    payload['steps'][0]['reward'] = 99.
+                else:
+                    payload[field] = 'wrong'
+                save_experience(path, payload)
+                if field != 'compressed_bytes':
+                    results[0]['experience_sha256'] = sha(path)
+                with self.subTest(field=field), self.assertRaises(ValueError):
+                    collect_steps(actor, critic, results, self.config)
 
     def test_credit_loading_does_not_recompute_models_or_observation_hashes(self):
         actor, critic, *_ = self.learners()

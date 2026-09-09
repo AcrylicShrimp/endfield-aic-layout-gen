@@ -76,7 +76,7 @@ def run(args):
                 payload.update(policy_sha256=row['policy_sha256'], input_sha256=input_sha256)
                 experience = directory / 'experience.pt.gz'
                 save_experience(experience, payload)
-                result = dict(original, row=row, identity=task['identity'], input_sha256=input_sha256, policy_sha256=task['policy_sha256'], critic_sha256=task['critic_sha256'],
+                result = dict(original, row=row, candidate=args.candidate, identity=task['identity'], input_sha256=input_sha256, policy_sha256=task['policy_sha256'], critic_sha256=task['critic_sha256'],
                               experience=str(experience), experience_sha256=sha(experience),
                               result_path=str(directory / 'result.json'))
                 result.pop('result_sha256', None)

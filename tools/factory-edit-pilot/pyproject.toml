@@ -3,7 +3,7 @@ name = "aic-factory-edit-pilot"
 version = "0.1.0"
 description = "Isolated fixed-factory editing experiment with CPU or CUDA learning"
 requires-python = ">=3.12"
-dependencies = ["torch>=2,<3", "numpy>=2,<3", "matplotlib>=3,<4"]
+dependencies = ["torch>=2,<3", "numpy>=2,<3", "matplotlib>=3,<4", "wandb>=0.29,<0.30"]
 
 [tool.uv]
 package = false
