@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "runtime_revision": "25b57db",
+  "scope": "Current-runtime readmission and two schedule-seed adaptations; all original graph evidence remains ignored",
+  "episode_artifacts": {
+    "count": 112,
+    "hash_manifest": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/audit.json",
+    "coverage": "Each row records episode and best witness hashes; directories are in report.json"
+  },
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/admission.json",
+      "sha256": "85449d891421ad961b6fd149e374fa9af5d6dfc06ad5a5d59829c243903fe7cc",
+      "bytes": 445
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/audit.json",
+      "sha256": "e5484b869dd77308fc7c5b9b30247fbaed17b045fa076751df7e357319bb1481",
+      "bytes": 52151
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/cleanup.json",
+      "sha256": "5b01b823e94ce71e2f7b464cf507e33146de0a187258a5114655f83038601687",
+      "bytes": 331
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/label-scores.json",
+      "sha256": "614a7bb3fbeaea2ba06e84d428da95d4fdb1d39bfd385114436ff1948ac728b8",
+      "bytes": 14217
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/large-lesson-1.json",
+      "sha256": "159526272d73a70c4aaeed47515ebc0aa9752113ca2d71396064026ca45775e0",
+      "bytes": 3938232
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/large-lesson-2.json",
+      "sha256": "329182e36c2af615f50d02fa6cfddb271ef872ef3ba288e80fd26690c9bef137",
+      "bytes": 3930550
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/large-lesson-3.json",
+      "sha256": "a1a2bda3ce9e4644b991ada1b49abc55bc2bce45b945b41d6ec901d0f98d7f99",
+      "bytes": 3925431
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/learned-17.pt",
+      "sha256": "1b67ac258c5bfc87dcb866aed2761f9cfaac8b2c80abe8136effa1f1608ac49a",
+      "bytes": 515010
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/learned-29.pt",
+      "sha256": "64d2b9510baefae8c24f8e191a2a3022e61a50cbf3afee780b0a016fab2e78f6",
+      "bytes": 515010
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/lessons-audit.json",
+      "sha256": "e6d2c5c8abc5e56b5e9be50d48e302cf6d990d1ae98160f3005cc9415b198b75",
+      "bytes": 401
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/lessons.json",
+      "sha256": "a091b2a7d951d989904d7c70033517da31d8ab3284061890e8c116e2b54e5425",
+      "bytes": 53804
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/protocol.json",
+      "sha256": "6eff88842d15141af3b014ad56b8fca49449e6615246fceb0857afa30da8de63",
+      "bytes": 161523
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/rehearsal-contrasts.json.gz",
+      "sha256": "e05778bb3e2cfc22e121a81eacb8905dc8d9e564f7efddb275be39311f30085c",
+      "bytes": 36670
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/report.json",
+      "sha256": "238ed29587dadd28c01eaddf0b4155f589ebba67ce99aa1ad54053131a762c7d",
+      "bytes": 160126
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/summary.json",
+      "sha256": "965fe4b8a07bff34df2a544e6fc85736d52b0f2d3b8ed6536e093f04f841b119",
+      "bytes": 53281
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/updates.json",
+      "sha256": "94400ef4f47ee641898d97b1800f34d1542ccd54cfe200cdc35d7207d8cc636c",
+      "bytes": 188206
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/view-original-learned-29/comparison.png",
+      "sha256": "ac4c22e7429cb5c025bdbc23d4f7879a4d5137fb01ccde183bdb2a4c1940d60c",
+      "bytes": 520117
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/view-original-learned-29/comparison.svg",
+      "sha256": "d9d6c89515d93e72184c8713292c316ae5e360fbd24b254d079bd38022da98ab",
+      "bytes": 9986714
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-trajectory-learning/view-original-learned-29/view.json",
+      "sha256": "d7ffb3878e5d089fb8b82abb77ce8e2dec51c65b3d6fec138f5976b5c87524e9",
+      "bytes": 1257
+    },
+    {
+      "path": "docs/designs/2026-09-09.23-large-factory-trajectory-learning.md",
+      "sha256": "bf72fb4584f077aabc55b270b586f2923664e863f3dba6d19ff9217466341665",
+      "bytes": 4337
+    },
+    {
+      "path": "docs/reports/2026-09-09.13-full-score-action-learning-provenance.json",
+      "sha256": "d19fd346ccfaf2d688f6740602aad0528326a212c8bc1d316a3846bc51be0132",
+      "bytes": 5262
+    },
+    {
+      "path": "docs/reports/2026-09-09.22-large-factory-contraction-provenance.json",
+      "sha256": "2897b8b8ad9cb6a75baa137ecc9d1203c9ae98e68c37821cfc632dd5415df7eb",
+      "bytes": 5954
+    },
+    {
+      "path": "tools/factory-edit-pilot/full-factory-large-learning-study.json",
+      "sha256": "741313bbdfd6ab245d5c4e3d33d048f338e120c9dea676fc32e4ecfcd84ced47",
+      "bytes": 299
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_large_learning.py",
+      "sha256": "864823fbb641e5ac5cb29bdd825067c670a993f5b061d98ad294b74654838b3f",
+      "bytes": 22348
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_large_learning_audit.mjs",
+      "sha256": "4ff6a3a39f6c66b97e7412673350ea32065204e5d51ef6b00ddc89d55e8f0d74",
+      "bytes": 15951
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_large_learning_summary.mjs",
+      "sha256": "f3e9853fd2fd869fec9d200a737e89c62493878fb1df3c45cc18a7d24f95a7cb",
+      "bytes": 4935
+    },
+    {
+      "path": "tools/factory-edit-pilot/test_full_factory_large_learning.py",
+      "sha256": "f345bb8c4ad91b027582f57d383d6ec6b5409c9f72c153ee9ad890e7686b7258",
+      "bytes": 1252
+    }
+  ]
+}
