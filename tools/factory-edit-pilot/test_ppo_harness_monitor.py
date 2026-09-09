@@ -3,7 +3,7 @@ from copy import deepcopy
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 
 from ppo_harness_comparison import comparisons, tracking_jobs
 from ppo_harness_protocol import validate_spec
@@ -106,6 +106,68 @@ class ComparisonTests(unittest.TestCase):
             with patch.object(tracker, 'start', side_effect=RuntimeError('restart-required')):
                 with self.assertRaisesRegex(RuntimeError, 'restart-required'):
                     tracker.update(tracking_jobs(value, protocol)[:1])
+
+    def online_tracker(self, root):
+        from test_ppo_harness_state import config
+        cfg = config()
+        cfg['tracking'] = dict(backend='wandb', mode='online', entity='team', project='project')
+        protocol = dict(config=cfg, spec=dict(policy=dict(width=32, depth=2)))
+        return Tracker(root, protocol, 'hash', 'session')
+
+    def test_remote_history_bounds_a_stale_sdk_resume_cursor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tracker = self.online_tracker(Path(directory))
+            active = Mock(step=0, url='https://example.invalid/run', summary={})
+            with patch('wandb.init', return_value=active), patch('wandb.Api') as api:
+                api.return_value.run.return_value.lastHistoryStep = 3
+                tracker.update([dict(id='job', candidate='action-only', seed=17, status='running', records=[None]*4)])
+                self.assertEqual(tracker.next_step, 4)
+                active.log.assert_not_called()
+                self.assertEqual(tracker.value['jobs']['job']['exported_records'], 4)
+                tracker.finish(complete=False)
+
+    def test_remote_history_ahead_of_durable_records_is_rejected(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tracker = self.online_tracker(Path(directory))
+            active = Mock(step=0, url='https://example.invalid/run', summary={})
+            with patch('wandb.init', return_value=active), patch('wandb.Api') as api:
+                api.return_value.run.return_value.lastHistoryStep = 4
+                with self.assertRaisesRegex(HarnessError, 'tracking-ahead'):
+                    tracker.update([dict(id='job', candidate='action-only', seed=17, status='running', records=[None]*4)])
+                active.log.assert_not_called()
+                tracker.finish(complete=False)
+
+    def test_completed_online_cache_rejects_remote_ahead_including_empty_local_state(self):
+        for count in (0, 4):
+            with self.subTest(records=count), tempfile.TemporaryDirectory() as directory:
+                tracker = self.online_tracker(Path(directory))
+                tracker.value['jobs']['job'] = dict(complete=True, remote_confirmed_step=4, exported_records=5)
+                with patch.object(tracker, 'start') as start:
+                    with self.assertRaisesRegex(HarnessError, 'tracking-ahead'):
+                        tracker.update([dict(id='job', status='complete', records=[None]*count)])
+                    start.assert_not_called()
+
+    def test_completed_online_cache_skips_only_matching_record_count(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tracker = self.online_tracker(Path(directory))
+            tracker.value['jobs']['job'] = dict(complete=True, remote_confirmed_step=3, exported_records=4)
+            with patch.object(tracker, 'start', side_effect=RuntimeError('restart-required')) as start:
+                tracker.update([dict(id='job', status='complete', records=[None]*4)])
+                start.assert_not_called()
+                with self.assertRaisesRegex(RuntimeError, 'restart-required'):
+                    tracker.update([dict(id='job', status='complete', records=[None]*5)])
+
+    def test_failed_remote_cursor_lookup_closes_the_opened_sdk_run(self):
+        with tempfile.TemporaryDirectory() as directory:
+            tracker = self.online_tracker(Path(directory))
+            active = Mock(step=0, url='https://example.invalid/run', summary={})
+            with patch('wandb.init', return_value=active), patch('wandb.Api') as api:
+                api.return_value.run.side_effect = RuntimeError('service unavailable')
+                with self.assertRaisesRegex(RuntimeError, 'service unavailable'):
+                    tracker.start(dict(id='job', candidate='action-only', seed=17, status='running'))
+            self.assertIsNone(tracker.active)
+            self.assertIsNone(tracker.active_job)
+            active.finish.assert_called_once_with(exit_code=1)
 
     def test_real_sdk_commits_latest_point_and_specific_axes(self):
         import wandb

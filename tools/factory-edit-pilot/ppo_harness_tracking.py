@@ -76,7 +76,21 @@ class Tracker:
                         policy=self.protocol['spec']['policy'], ppo=self.protocol['config']['ppo'],
                         training=self.protocol['config']['training'], evaluation=self.protocol['config']['evaluation'],
                         execution=self.protocol['config']['execution']))
-        self.active_job, self.next_step = job['id'], self.active.step if online else 0
+        try:
+            if online:
+                # A resumed SDK service can initially report step zero. Use
+                # acknowledged remote history as a lower bound for its cursor.
+                remote = wandb.Api(timeout=10).run(f"{self.config['entity']}/{self.config['project']}/{identifier}")
+                self.next_step = max(self.active.step, remote.lastHistoryStep + 1)
+            else:
+                self.next_step = 0
+        except Exception:
+            try:
+                self.active.finish(exit_code=1)
+            finally:
+                self.active = None
+            raise
+        self.active_job = job['id']
         for key in ('train/actions', 'train/batches', 'time/elapsed_seconds'):
             self.active.define_metric(key)
         for prefix in ('training', 'ppo', 'timing', 'throughput', 'evaluation', 'comparison'):
@@ -114,13 +128,17 @@ class Tracker:
             self.publish()
             return
         for job in jobs:
+            previous = self.value['jobs'].get(job['id'], {})
+            if self.config['mode'] == 'online' and previous.get('complete'):
+                confirmed = previous.get('remote_confirmed_step', -1)
+                require(confirmed < len(job['records']), 'tracking-ahead',
+                        'remote history is ahead of durable training state', 'tracking', job['id'])
+                if confirmed == len(job['records']) - 1:
+                    continue
             if not job['records']:
                 continue
-            previous = self.value['jobs'].get(job['id'], {})
             # Online completion is recorded only after remote history confirms
             # the final ordinal. Offline restarts rebuild one canonical export.
-            if self.config['mode'] == 'online' and previous.get('complete') and previous.get('remote_confirmed_step', -1) >= len(job['records']) - 1:
-                continue
             if self.config['mode'] == 'offline' and previous.get('complete') and previous.get('export_session') == self.session and previous.get('exported_records', 0) >= len(job['records']):
                 continue
             if self.active is None or self.active_job != job['id']:
