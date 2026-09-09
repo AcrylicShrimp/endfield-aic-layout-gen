@@ -12,8 +12,10 @@ admission retained six attempts and accepted two. Initial/terminal/geometry
 evaluation completed 175 episodes under the report-32 termination amendment;
 independent replay passes all 5600 actions and the final summary passes. Both arms
 have 12 wins, 12 ties and 11 losses against initialization, with lower mean area
-reduction. Sustained learned rearrangement remains unproven; design 33's bounded
-parallel collector and subsequent experience-budget study are next. Completed
+reduction. Sustained learned rearrangement remains unproven. Report 34 identifies
+uneven reward coverage and large warm-policy changes even on zero-reward-gradient
+updates. Diagnose update stability before launching the parallel throughput matrix
+or a larger experience-budget study. Completed
 earlier training remains supervised imitation. Architecture and long-teacher
 experiments remain paused.
 
@@ -100,3 +102,10 @@ supervised checkpoints, but name each learning method accurately.
   Heavy remains 30.582% empty and Medical extremes remain over 83% empty. Preserve
   snapshots required by the terminal-result loader. Monitoring is committed as
   `20f7672`. No fundamental RL impossibility or production readiness is established.
+- 2026-09-09: The user asks why training appears ineffective. Pause the unstarted
+  throughput matrix and inspect all 117 policy versions on ten unchanged inputs.
+  Report 34 records 21/26 flat warm prepared groups, the pose-probability reversal
+  and a 0.134 first-step TV change from entropy alone with empty Adam state. Verify
+  saved-moment step arithmetic and retain the final diagnostic/plot. All 80 Python
+  and 538 Rust tests pass, with two existing Rust ignores. Isolate entropy/momentum
+  and actual policy movement before changing the training contract.
