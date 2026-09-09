@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "native_library": "target/release/libaic_pilot_native.so",
+  "cli": "target/release/aic-cli",
+  "validator": "target/release/aic-witness-probe",
+  "catalogs": {
+    "recipes": "data/game/normalized/recipes.json",
+    "facilities": "data/game/normalized/facilities.json",
+    "items": "data/game/normalized/items.json",
+    "transports": "data/game/normalized/transports.json",
+    "components": "data/game/normalized/logistics-components.json"
+  },
+  "products": [
+    {"id": "medical", "source": "docs/benchmarks/constructive-recipe-breadth/requests/medical-3.json", "duration_ms": [20000, 100000]},
+    {"id": "food", "source": "docs/benchmarks/constructive-recipe-breadth/requests/food-3.json", "duration_ms": [20000, 100000]},
+    {"id": "copper-liquid", "source": "tools/factory-edit-pilot/family-copper-liquid.json", "duration_ms": [2000, 20000]},
+    {"id": "watered-grass", "source": "tools/factory-edit-pilot/family-watered-grass.json", "duration_ms": [2000, 20000]}
+  ],
+  "generation": {
+    "flow_elapsed_ms": 10000,
+    "validator_ms": 5000,
+    "max_facilities": 64,
+    "duration_step_ms": 1000,
+    "construction": {"elapsed_ms": 30000, "max_steps": 256, "max_placement_attempts": 256, "max_route_searches": 4096, "analysis_workers": 1},
+    "setup_steps": [2, 6],
+    "setup_seconds": 120,
+    "setup_options": {"pose_domain": "basic", "mode": "local"},
+    "setup_kinds": ["pose", "contract", "insert", "port", "reroute", "component", "release_bridge"]
+  },
+  "policy": {"candidate": "action-only", "depth": 2, "width": 32, "seed": 17},
+  "selection": {"horizon": 8, "episode_seconds": 120, "route_work": 5000, "memory": true, "balanced": true, "temperature": 1},
+  "scaling": {"workers": [1, 2, 4, 8, 16, 24, 32], "repetitions": 2, "attempts": 32, "generation_seed_base": 5100000, "action_seed_base": 6100000, "order_seed": 7100000},
+  "learning": {"groups": 32, "batch_attempts": 32, "horizon": 32, "seeds": [17, 29], "evaluate_at": [0, 16, 32], "evaluation_attempts": 16, "generation_seed_base": 8100000, "action_seed_base": 9100000, "evaluation_seed_base": 10100000, "learning_rate": 0.0003, "entropy_coefficient": 0.001, "gradient_clip": 0.5},
+  "limits": {"startup_seconds": 180, "task_seconds": 360, "batch_seconds": 1800, "study_seconds": 7200, "rss_limit_bytes": 42949672960}
+}
