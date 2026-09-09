@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "seed": 1400000,
+  "study_seconds": 900,
+  "action_seconds": 30,
+  "route_work": 5000,
+  "quotas": {
+    "local_single": 48,
+    "distant_single": 48,
+    "group_translation": 48,
+    "single_rotation": 24,
+    "compound_rotation": 24
+  }
+}

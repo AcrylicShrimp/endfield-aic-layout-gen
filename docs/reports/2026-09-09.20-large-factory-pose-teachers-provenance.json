@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "runtime_revision": "25b57db",
+  "scope": "All pose outcomes and selected full-factory witnesses, separate contraction controls and inspected views; generated outputs remain ignored",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/protocol.json",
+      "sha256": "fb777bff56ea2f3fde9250f98bc495e54e28e358a3c2914a83e4f53f60e588cb",
+      "bytes": 250324
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/report.json",
+      "sha256": "769e7fd6c6ee8903360f2521851b153fac5dea169b20b32eaf3cd3ea8eb9396a",
+      "bytes": 7800
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/outcomes.json.gz",
+      "sha256": "aeff76b3f07b4abd548c1ed16ac36c603acea0f5b82a3809bf140cb2609082bf",
+      "bytes": 44788
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/audit.json",
+      "sha256": "d1756acb4dec6ed43ce9d08a2dd4112d69b267f1fd8f4ec9639461638932bcf0",
+      "bytes": 570
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/summary.json",
+      "sha256": "efe53e7991b8c3eea549cf352ffcc56273655258a00932df40e0132cfc0b15f5",
+      "bytes": 1954
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/cleanup.json",
+      "sha256": "f7d07cf92ea8a5c82a385e32039ce4cb1cfd8993a9a3792d4060a6e534f0addb",
+      "bytes": 375
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/view-inputs.json",
+      "sha256": "684f758ffb49695ffaf818da82d25194e29a18a7184303247695325e84069942",
+      "bytes": 2799
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/eight-contractions.json",
+      "sha256": "b7e529ee6a7aaa3de2a327039fce54fb51a7f886ab1700c0ab7e840ee5c8b048",
+      "bytes": 4321094
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/original/best.json.gz",
+      "sha256": "4ef311ca292bb1b1dced484eb7bba615582d355acf4abab1675351a605d22821",
+      "bytes": 143083
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/original/local_single-candidate.json.gz",
+      "sha256": "fac56cd0668679fe951cc881202e09140890e5f278198475fb1a6c2f638063a2",
+      "bytes": 142637
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/original/distant_single-candidate.json.gz",
+      "sha256": "a8d031e3f5a13dd55934ece4e1dccbc479194a3fcf38652f3fc82805066c06b5",
+      "bytes": 143103
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/original/group_translation-candidate.json.gz",
+      "sha256": "08d0a082851a004bd3faf5321b76d8af805aece6d8237e7c42be3f3463fe4f5e",
+      "bytes": 142648
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/original/single_rotation-candidate.json.gz",
+      "sha256": "bc804b930919522b5c602e921fd0bc56a84440b7049190cb934fe44775c9aa89",
+      "bytes": 143080
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/original/compound_rotation-candidate.json.gz",
+      "sha256": "3047273252d7bd9bd63c4db881bdd543abb7a5b6de0ae1cdab171dfde31d2403",
+      "bytes": 142691
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/original-view/comparison.png",
+      "sha256": "727cd39429e73234584e1c2f14d7272c54b218f89a07e66dff2012963facf948",
+      "bytes": 521343
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/original-view/comparison.svg",
+      "sha256": "02c290f4af29b623851860e9d2f976db10921a33b9b61198e84fd5ed460441ba",
+      "bytes": 10017725
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/original-view/view.json",
+      "sha256": "792386db0b9ecd0f70d72852ea286d4cbb9878a9fc27bcca0cb758727c0317bc",
+      "bytes": 1219
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/eight-contractions/best.json.gz",
+      "sha256": "edd98727cf1ea9477afe6c214bb447ffb718861d567fd149334644098ed7a149",
+      "bytes": 142271
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/eight-contractions/local_single-candidate.json.gz",
+      "sha256": "53eed1648812a9f1fbbe0e4fc1d5f2423cb2d73277ec8b41047fcdf4254dfd55",
+      "bytes": 141767
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/eight-contractions/distant_single-candidate.json.gz",
+      "sha256": "8bf237580941a1ca64614e926ac796e0c3225b1c989901da4f8357522c61d7e9",
+      "bytes": 142291
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/eight-contractions/group_translation-candidate.json.gz",
+      "sha256": "00a6f056c0559cdc77cea1b862e016979bb754ebdea8c441ba75097ff220d4f2",
+      "bytes": 141718
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/eight-contractions/single_rotation-candidate.json.gz",
+      "sha256": "bc5ca7b1c93498ee46ed9deef61ce2ed37bfc87eb542d70e37692be328c555e1",
+      "bytes": 142287
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/eight-contractions/compound_rotation-candidate.json.gz",
+      "sha256": "76190ced6ffe34ba89bafe794d2abc3dac278041b63e3e9ebe84392fa1319950",
+      "bytes": 141974
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/eight-contractions-view/comparison.png",
+      "sha256": "31b9e13223f64040d19abe31f21f4f9a413b147242c5973a96bbc045b6acbb19",
+      "bytes": 513767
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/eight-contractions-view/comparison.svg",
+      "sha256": "9da5a822c26f001daefd20961b534991b5235330663ebed9bc75e3d6e0fa8ab1",
+      "bytes": 9955716
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-pose-teachers/eight-contractions-view/view.json",
+      "sha256": "420a48aad60d898a4144405c95006c9ead2f2b00ce7b882fbbda3e6d8d9d010a",
+      "bytes": 1234
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/enriched-consumables-medical-fresh-rate-2/initial.json",
+      "sha256": "3761e3e1831b0357e38cfbc8de1b5f42f8c089af76dabfcaaabe75a563b7ca42",
+      "bytes": 1706294
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/enriched-consumables-medical-fresh-rate-2/request.json",
+      "sha256": "35860538c4a0e8160b39c9c4c33a3b9cf20dd430855144a94c5f0bbb0d1e664a",
+      "bytes": 135142
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/enriched-consumables-medical-fresh-rate-2/original-request.json",
+      "sha256": "c0e103c275ff84d3a9826c61a5665ff7a312e869418811a4ed7e0b10b8b43417",
+      "bytes": 179150
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-best-learning/best-mass-final.pt",
+      "sha256": "5ad5fab1753d7852f71a2257f10c921adc11c6794cebb51304f2252c0acd9969",
+      "bytes": 515605
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-learning-context/learned.pt",
+      "sha256": "fa1f2bec129fde1e7343bfe0da3b12f994d4132eb017b34bd88da523662a0995",
+      "bytes": 514077
+    },
+    {
+      "path": "tools/factory-edit-pilot/full-factory-large-pose-study.json",
+      "sha256": "6d378cc6a9b2ebd5bb177ca538182548c7e41e444a057a7403782d5cff995266",
+      "bytes": 268
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_pose_teachers.py",
+      "sha256": "f6a4af7549ae2c72abc97acfe2f15c52c590af035df9032cdf08c5157460587d",
+      "bytes": 10726
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_pose_teachers_audit.mjs",
+      "sha256": "2fef1a293ad8094153f26d21f54dc5eae9a9245e83fe815fb4c31d4a2ffb80c3",
+      "bytes": 7967
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_pose_teachers_summary.mjs",
+      "sha256": "ca172384f0ad0f30d5633268aabcd8bbad5e0246205f9a3bf7608eb0f67f3412",
+      "bytes": 3361
+    }
+  ]
+}
