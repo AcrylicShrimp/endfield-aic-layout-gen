@@ -1,0 +1,207 @@
+{
+  "schema_version": 1,
+  "runtime_revision": "25b57db",
+  "scope": "Charged contraction preparation, complete full-score contrasts and selected original-graph evidence; raw artifacts remain ignored",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-strip-preparation/protocol.json",
+      "sha256": "4bb37f5e59e8fe4a7919e376bcfb7f2ad3fec5c584e3e1a35749798ca1f48a32",
+      "bytes": 22815
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-strip-preparation/report.json",
+      "sha256": "81f520e8fd70490701e317e1ecce0074e400830494302e87f28771ff45c7dd4a",
+      "bytes": 2294
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-strip-preparation/audit.json",
+      "sha256": "309a2cdec095debf4d22aedc71d2e2b205f2f0e796d10cde9dbbaf2f38e4207d",
+      "bytes": 14240
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-strip-preparation/preparation.json.gz",
+      "sha256": "6e92d880848c920b715733c8d9126f6dca402b86e0dbb0af1e08bbc9d2c2c36a",
+      "bytes": 16826
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-strip-preparation/best.json",
+      "sha256": "86ef370995ff2b132a3f6b9b6083e46048daba33d32104eae47264048a427fe0",
+      "bytes": 3938558
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-strip-preparation/inputs.json",
+      "sha256": "fb612df7971d71d0fe5f98a8abb15a1fa1188afb2c0bb91ab6374aab0956ae41",
+      "bytes": 1485
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-strip-preparation/view-inputs.json",
+      "sha256": "8942942fa8834477babef9c14e9c33c09fe70f9ece937596ca6f6aa24e13b50f",
+      "bytes": 1481
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-strip-preparation/best-view.json.gz",
+      "sha256": "2bae784a437314d462945d3070f1499090de10674853d3ef40de57b9ddd927d8",
+      "bytes": 144464
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-strip-preparation/view/comparison.png",
+      "sha256": "d8ce4e7b768c20898509677296514c06970a01f828acf88eec4109cfeee8eae3",
+      "bytes": 546793
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-strip-preparation/view/comparison.svg",
+      "sha256": "8627113e9dbfb5fa2ebde4d14e03c0834d8e1495d73dd332b9c9ee9f5c7b0729",
+      "bytes": 9517371
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-strip-preparation/view/view.json",
+      "sha256": "3b08bb8f1f40fe2537f1546b882cf3de37f22f147d18b3ce36704504779bc5c2",
+      "bytes": 1200
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/protocol.json",
+      "sha256": "6943360da5bdcf6691d665995a4fc1f0cfb4da3abd4a85c308e72b4d86dfbb4e",
+      "bytes": 143317
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/report.json",
+      "sha256": "2ec998b1a55ed25009b9e3d12917801fea9a386360e22b99a63d0ed2e728865f",
+      "bytes": 3827
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/audit.json",
+      "sha256": "c9adc3f386e42d2d86dc7cd01762f4bd85aa0b642cdaa3fd4c161c372f9de296",
+      "bytes": 39618
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/outcomes.json.gz",
+      "sha256": "1b0f03bd2a706f0937cffb76489e0b1157e7a7a204259ece1e7b3c2f7c6168df",
+      "bytes": 32673
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/best.json.gz",
+      "sha256": "d39417d4634beabd4b33f8f20fe0e65b5d6d59cf15f6efdc49aa83f15af30590",
+      "bytes": 132397
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/local_single-candidate.json.gz",
+      "sha256": "930f8812b20f44a1f18c047b9274b6309eb7fd28f66880d0f26cef1db0cf04c7",
+      "bytes": 132023
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/distant_single-candidate.json.gz",
+      "sha256": "9f1f696623b30e6cfabf5e294f8e5f0a34f3d3714a0ba66143dc43390f6e502e",
+      "bytes": 132271
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/group_translation-candidate.json.gz",
+      "sha256": "c431deba945d19813a1b373726a95d1c32e9f86eeb1526edd40ddf34b523b83a",
+      "bytes": 132052
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/single_rotation-candidate.json.gz",
+      "sha256": "c34889a2e92e8b04f1a767e886849cba3b9187dc53b5acabdedec6d11cd69671",
+      "bytes": 132418
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/reroute-candidate.json.gz",
+      "sha256": "c390d36ad83961a1e12f4b061091df160614ff82a0961f788546bce3aefb9bd9",
+      "bytes": 132484
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/port-candidate.json.gz",
+      "sha256": "eadc94d5eefdbf5190b6a74c319e2796f14ad561fb72c4ce13d3ed9d563f5528",
+      "bytes": 132500
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/component-candidate.json.gz",
+      "sha256": "c55d10bcd3d8a3bba2f8fdcd2766c4f0f908a4baebd19f9162993cd5263cf706",
+      "bytes": 132245
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/release_bridge-candidate.json.gz",
+      "sha256": "02aaa541ed862982277f286c627adeb62e0d7f8752ca20874027672340ecd2e1",
+      "bytes": 132137
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/insert-candidate.json.gz",
+      "sha256": "3bb9150d0a98a7d94b82738377c38b458c6b6f6983b0e2f22b6dc419a9c0034a",
+      "bytes": 132684
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/restore_best-candidate.json.gz",
+      "sha256": "f20f1a6815b3d8c104537cdc08f7efb0487e3f0c6ec2fd0b8e3293f3de9ed2a3",
+      "bytes": 132546
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/best-view/comparison.png",
+      "sha256": "ebb17d11890449a32c6796f0dbb0bc476459a38233ae8d7b4627da07f63990fd",
+      "bytes": 609472
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/best-view/comparison.svg",
+      "sha256": "123c0e1402f69c486515ebb314364c036f68ccb2aa7d0337e28eaef8524a0280",
+      "bytes": 9017275
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/best-view/view.json",
+      "sha256": "2d08a8122209cc95710ad2354615e7434ae856002ed427b2b60ecd69ea0f5c29",
+      "bytes": 1217
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/translation-view/comparison.png",
+      "sha256": "4e0f4239577ba01a1f2bcbdaaafde70e1d96036dd9538babfe3896cf689afa97",
+      "bytes": 607413
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/translation-view/comparison.svg",
+      "sha256": "bf71db453a2207d3eeecac0afe738bb24cf6c9b57a2a431cbbc2f3ff686368e9",
+      "bytes": 9017972
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/translation-view/view.json",
+      "sha256": "6367fefe7ea0119e868d357705ff11ffde81e11097802736e60398db88b89334",
+      "bytes": 1231
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_strip_preparation.py",
+      "sha256": "3de149f2011ca70e60f618377002fc86fdcf6458ae72fec4df3ce8ecb57aa09a",
+      "bytes": 4716
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_strip_preparation_audit.mjs",
+      "sha256": "c558ef4654dac97e8d5786b02017ad587d79030a82fd51de1ee99883ce0ec3be",
+      "bytes": 4196
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_dense_contrasts.py",
+      "sha256": "7cf21665a650202eeb6db6157bab9efa1d1c56b78b06aabb3519241928b84262",
+      "bytes": 8387
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_dense_contrasts_audit.mjs",
+      "sha256": "2513ad351d0351e463def5dddd227d46166f3ff29617a811ce28cf8bafab1994",
+      "bytes": 7938
+    },
+    {
+      "path": "tools/factory-edit-pilot/full-factory-dense-contrast-study.json",
+      "sha256": "ebca86313f1f72bc70b7d7d3b139ad7bfb0d73bc661dd8b6355e6827ec9b05fc",
+      "bytes": 419
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/enriched-consumables-medical-fresh-rate-2/initial.json",
+      "sha256": "3761e3e1831b0357e38cfbc8de1b5f42f8c089af76dabfcaaabe75a563b7ca42",
+      "bytes": 1706294
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/enriched-consumables-medical-fresh-rate-2/request.json",
+      "sha256": "35860538c4a0e8160b39c9c4c33a3b9cf20dd430855144a94c5f0bbb0d1e664a",
+      "bytes": 135142
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/enriched-consumables-medical-fresh-rate-2/original-request.json",
+      "sha256": "c0e103c275ff84d3a9826c61a5665ff7a312e869418811a4ed7e0b10b8b43417",
+      "bytes": 179150
+    }
+  ]
+}

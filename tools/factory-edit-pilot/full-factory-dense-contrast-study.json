@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "seed": 1410000,
+  "study_seconds": 900,
+  "action_seconds": 30,
+  "route_work": 5000,
+  "pose_quotas": {
+    "local_single": 48,
+    "distant_single": 48,
+    "group_translation": 48,
+    "single_rotation": 24,
+    "compound_rotation": 24
+  },
+  "other_quotas": {
+    "reroute": 16,
+    "port": 16,
+    "component": 16,
+    "release_bridge": 16,
+    "insert": 8,
+    "restore_best": 1
+  }
+}
