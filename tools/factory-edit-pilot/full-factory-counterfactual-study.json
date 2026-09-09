@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "initialization": "imitation-warm",
+  "groups": [0, 38],
+  "wall_seconds": 900,
+  "branches": [
+    {"name": "baseline", "entropy_scale": 1, "reset_adam": false, "lr_scale": 1, "skip": false},
+    {"name": "zero-current-gradient", "entropy_scale": 0, "reset_adam": false, "lr_scale": 1, "skip": false},
+    {"name": "reset-adam", "entropy_scale": 1, "reset_adam": true, "lr_scale": 1, "skip": false},
+    {"name": "reset-adam-zero-gradient", "entropy_scale": 0, "reset_adam": true, "lr_scale": 1, "skip": false},
+    {"name": "entropy-tenth", "entropy_scale": 0.1, "reset_adam": false, "lr_scale": 1, "skip": false},
+    {"name": "entropy-hundredth", "entropy_scale": 0.01, "reset_adam": false, "lr_scale": 1, "skip": false},
+    {"name": "lr-tenth", "entropy_scale": 1, "reset_adam": false, "lr_scale": 0.1, "skip": false},
+    {"name": "lr-hundredth", "entropy_scale": 1, "reset_adam": false, "lr_scale": 0.01, "skip": false},
+    {"name": "skip", "entropy_scale": 1, "reset_adam": false, "lr_scale": 1, "skip": true}
+  ]
+}

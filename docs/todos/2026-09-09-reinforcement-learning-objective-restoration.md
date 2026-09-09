@@ -14,8 +14,10 @@ independent replay passes all 5600 actions and the final summary passes. Both ar
 have 12 wins, 12 ties and 11 losses against initialization, with lower mean area
 reduction. Sustained learned rearrangement remains unproven. Report 34 identifies
 uneven reward coverage and large warm-policy changes even on zero-reward-gradient
-updates. Diagnose update stability before launching the parallel throughput matrix
-or a larger experience-budget study. Completed
+updates. Report 35 reproduces the two selected updates exactly and isolates
+entropy scaling, inherited Adam state and learning-rate effects. Register fresh
+on-policy controls for learning rate and skipped flat-return updates; measure
+parallel collection throughput to size that comparison. Completed
 earlier training remains supervised imitation. Architecture and long-teacher
 experiments remain paused.
 
@@ -109,3 +111,10 @@ supervised checkpoints, but name each learning method accurately.
   saved-moment step arithmetic and retain the final diagnostic/plot. All 80 Python
   and 538 Rust tests pass, with two existing Rust ignores. Isolate entropy/momentum
   and actual policy movement before changing the training contract.
+- 2026-09-09: Complete design/report 35's 18 single-update controls. Both baseline
+  policy/Adam states reproduce exactly from 256 retained actions. At group 38,
+  zero current gradient still moves 21.776% TV through inherited Adam; resetting
+  state with entropy increases movement to 51.232%. One-tenth learning rate reduces
+  first/later TV to 1.383%/2.768%; entropy scaling alone does not. Select independent
+  learning-rate and skip-flat controls for the next fresh on-policy study. These
+  local mechanical effects do not yet prove improved factory outcomes.
