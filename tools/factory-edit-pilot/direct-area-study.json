@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "distribution": "tools/factory-edit-pilot/random-factory-server-pilot.json",
+  "reward_schema": "direct-best-area-reward-to-go-v1",
+  "workers": 24,
+  "evaluate_at": [0, 8, 16, 24, 32],
+  "study_seconds": 7200,
+  "disk_reserve_bytes": 17179869184,
+  "refresh_seconds": 60
+}

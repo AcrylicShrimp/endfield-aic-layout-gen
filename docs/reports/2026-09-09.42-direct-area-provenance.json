@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "purpose": "Compact provenance for the completed direct-area comparison; regenerable outputs stay ignored.",
+  "server_root": "/home/ashrimp/Srv/aic-direct-area-20260909",
+  "source_base_commit": "08d0bfa",
+  "protocol_sha256": "d187361f0a2244840c96034b2f3d060f5ec52105c61c6d9673cc564784a6dee7",
+  "run_report_sha256": "4a8825bca85173491ea284e832e8ab2d70d20bc8c03a114f5dcd5f3363a228f1",
+  "audit_source_sha256": "51b67264270a6a86ee76ae9cb19ccbc925a278cc546257fda86dd6f29773d1d4",
+  "audit_report_sha256": "1b6bda3f255d57d33a3f661fc45f26bfeec591870e93115c66530247d13744ae",
+  "retained_archive": {
+    "local_path": "artifacts/factory-edit-pilot/direct-area-retained.tar.gz",
+    "bytes": 308423225,
+    "sha256": "6ac1a64ff0bd81fe4e6407165bbdfa63643a1fcc52e3f7955f52cc6acd70c9c1",
+    "contents": "Complete full/reduced runs, checkpoints, actual inputs/experience and protocol-bound source snapshots; excludes unrelated paused rank continuation."
+  }
+}

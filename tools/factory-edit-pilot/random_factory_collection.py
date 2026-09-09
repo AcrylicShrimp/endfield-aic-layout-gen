@@ -163,7 +163,7 @@ def worker(args):
 
 
 class Pool:
-    def __init__(self, protocol_path, workers, directory):
+    def __init__(self, protocol_path, workers, directory, worker_script=None):
         self.protocol_path = Path(protocol_path).resolve()
         self.protocol = read(self.protocol_path)
         self.limits = self.protocol['spec']['limits']
@@ -181,7 +181,7 @@ class Pool:
             for index in range(workers):
                 log = open(self.directory / f'worker-{index}.log', 'w')
                 self.logs.append(log)
-                child = subprocess.Popen([sys.executable, str(Path(__file__).resolve()), 'worker',
+                child = subprocess.Popen([sys.executable, str(Path(worker_script or __file__).resolve()), 'worker',
                     '--protocol', str(self.protocol_path)], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                     stderr=log, text=True, bufsize=1, start_new_session=True, env=environment)
                 self.children.append(child)

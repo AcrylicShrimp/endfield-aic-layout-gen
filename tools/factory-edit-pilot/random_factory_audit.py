@@ -29,7 +29,7 @@ def optimizer_hash(optimizer):
     return digest(dict(groups=state['param_groups'], tensors=tensor_hash(tensors)))
 
 
-def verify_result(runtime, result, scratch):
+def verify_native_result(runtime, result, scratch):
     path = Path(result['result_path'])
     require(sha(path) == result['result_sha256'], str(path))
     task_path = path.with_name('task.json')
@@ -64,7 +64,12 @@ def verify_result(runtime, result, scratch):
     write(scratch / 'best.json', best)
     accepted = FactoryEpisode(runtime, dict(case, initial=str(scratch / 'best.json')), 1, 120, 5000)
     require(accepted.state['initial_metrics'] == row['best_metrics'], 'native best validity and score')
-    if task['training']:
+
+
+def verify_result(runtime, result, scratch):
+    verify_native_result(runtime, result, scratch)
+    task = read(Path(result['result_path']).with_name('task.json'))
+    if task['training'] and result['status'] == 'complete':
         require(sha(result['gradients']) == result['gradients_sha256'], 'gradient file')
         payload = torch.load(result['gradients'], map_location='cpu', weights_only=False)
         require(payload['policy_sha256'] == result['policy_sha256'] and payload['input_sha256'] == result['input_sha256'], 'gradient payload')
