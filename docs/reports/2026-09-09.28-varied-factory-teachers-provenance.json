@@ -1,0 +1,652 @@
+{
+  "schema_version": 1,
+  "runtime_revision": "25b57db",
+  "scope": "Six training attempts, five whole factories; 312 preparation and 1389 collection transitions independently replayed; no training; future evaluation unopened",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-preparation/audit.json",
+      "sha256": "c4cc25da7cc76fca70103c3bed80bfbadee0601e17ad8522dc2eab9128be18bd",
+      "bytes": 1453
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-preparation/enriched-consumables-food-varied-training-rate-0/best.json",
+      "sha256": "4ecd64ecdf5519e2fa6ab4451ac0ce4bf62c7b045fbe6fa69c46582d167d1033",
+      "bytes": 269679
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-preparation/enriched-consumables-food-varied-training-rate-0/preparation.json.gz",
+      "sha256": "e0a67681df63447512e5075758017360ebd85deb6d06fa7387a38c93a27c6699",
+      "bytes": 5693
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-preparation/enriched-consumables-food-varied-training-rate-1/best.json",
+      "sha256": "9124a64d1c86b309f4dbf25a87d31266e2e178e0611d88ae6969e5c45b6b05b4",
+      "bytes": 877524
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-preparation/enriched-consumables-food-varied-training-rate-1/preparation.json.gz",
+      "sha256": "2517bf9e7e28223cdc2a556ab9b0b1b783391bdf177ac6ad00056f754b04ffb8",
+      "bytes": 9069
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-preparation/enriched-consumables-food-varied-training-rate-2/best.json",
+      "sha256": "376c266b8ea8318233809bf816ade7aa8614c3a23b0a2ebe734c19cbf275e0be",
+      "bytes": 3679518
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-preparation/enriched-consumables-food-varied-training-rate-2/preparation.json.gz",
+      "sha256": "5010d98aab0964688cdff1c5329abf65217352583c3f2864bf470ab60369e81a",
+      "bytes": 12704
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-preparation/enriched-consumables-medical-varied-training-rate-0/best.json",
+      "sha256": "43b2d419789a1734b1e33404a1bc03f3c6319a78127566c57988ffa4044b99a7",
+      "bytes": 265958
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-preparation/enriched-consumables-medical-varied-training-rate-0/preparation.json.gz",
+      "sha256": "fbe7e6176e8556af9bd6504c13b1e156f4cf2b1b9e067cbe5309393646bb9640",
+      "bytes": 8457
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-preparation/enriched-consumables-medical-varied-training-rate-1/best.json",
+      "sha256": "8bf1c68ea029fc6af36f013b477a0b2dcf29178e09ad0a2732d2c368f0ff4e29",
+      "bytes": 682567
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-preparation/enriched-consumables-medical-varied-training-rate-1/preparation.json.gz",
+      "sha256": "6fe6f7e880715f6a0748d3d71f27f8838bcf5c58066f46d100d52dd6fb63196e",
+      "bytes": 13115
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-preparation/protocol.json",
+      "sha256": "56c55a6e46fd068be4af1edbb534480da7f666bfb276f6fb20fc36f2dd7b7c5c",
+      "bytes": 28328
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-preparation/report.json",
+      "sha256": "b2309db5491b0f7c674ee32569d93f12c84cdd2e8fc85198f35dfbbae9199619",
+      "bytes": 13862
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/audit.json",
+      "sha256": "56d69449660fb1c6b846157657f2e0d3f41612659cbb905f56afa7576e911ca4",
+      "bytes": 233128
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/cleanup.json",
+      "sha256": "7f29a676238efcea963b8d54fe7c26b7da2619f6d595086131c39c1f71b5f28c",
+      "bytes": 9153
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/enriched-consumables-food-varied-training-rate-0/best.json.gz",
+      "sha256": "08fd97b27a30c747b8fbdf3fe6a4b485f900475934d61c21e17f58fd3dfae5c7",
+      "bytes": 9995
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/enriched-consumables-food-varied-training-rate-0/selection.json",
+      "sha256": "871d0a1e52fd86982633a2ee2cfb343bcca4185977e9786f90e4af8949295989",
+      "bytes": 115495
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/enriched-consumables-food-varied-training-rate-0/trajectories.json.gz",
+      "sha256": "b695c2322edae499a79b58f34d971551866200000f1d97bf72d30b4178d5ed3e",
+      "bytes": 39764
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/enriched-consumables-food-varied-training-rate-1/best.json.gz",
+      "sha256": "b890dd6b16206c71c5d4e45664d40097804c24588427938748de3f5454ed0db2",
+      "bytes": 31504
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/enriched-consumables-food-varied-training-rate-1/selection.json",
+      "sha256": "a41577ad877d29d514657072fa322380cdff8052dfc119a073f654fec7580287",
+      "bytes": 115979
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/enriched-consumables-food-varied-training-rate-1/trajectories.json.gz",
+      "sha256": "67dfefe7346a5e7637bf4364940fbde109377ba2cd42fb367020cf18f7696eb8",
+      "bytes": 40148
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/enriched-consumables-food-varied-training-rate-2/best.json.gz",
+      "sha256": "5e13e61fe6de0c48ccc064059f33cd5403580d845b31c72bc205a1904dd66ef7",
+      "bytes": 124998
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/enriched-consumables-food-varied-training-rate-2/selection.json",
+      "sha256": "e6114bc0786b780cf0f82795085b8a4a2426e5c7a32042accb221801aee09989",
+      "bytes": 116002
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/enriched-consumables-food-varied-training-rate-2/trajectories.json.gz",
+      "sha256": "24eacb79a0c9f748b950f19c8a60d7ebc92c1c930d37417da8d1509872e3f8b7",
+      "bytes": 36633
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/enriched-consumables-medical-varied-training-rate-0/best.json.gz",
+      "sha256": "ccbcd5fd0733fd49717a73ec20dd05667e564596951394839ee6d5ece614a509",
+      "bytes": 9888
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/enriched-consumables-medical-varied-training-rate-0/selection.json",
+      "sha256": "4e5fa569ed43b84c635f774012625469222e0bb0509e46e6315d98d682513f5c",
+      "bytes": 114894
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/enriched-consumables-medical-varied-training-rate-0/trajectories.json.gz",
+      "sha256": "713f3c99457c8048462f939abdc1edf61b47fb85c8b28b9b58c5d41f90515e6b",
+      "bytes": 42337
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/enriched-consumables-medical-varied-training-rate-1/best.json.gz",
+      "sha256": "faab7dba8a821140cbadb57fb4764b41039accf0e4917a6a0788cde1c0497532",
+      "bytes": 24422
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/enriched-consumables-medical-varied-training-rate-1/selection.json",
+      "sha256": "58ab6cb54c7e957d99fae2760647c9562ca0db47106243a7da793ac7eb14e0f8",
+      "bytes": 116001
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/enriched-consumables-medical-varied-training-rate-1/trajectories.json.gz",
+      "sha256": "383aad7ca264fbf34c2e36812500a39536c9d7999d0aa7d3d609cc687a153a63",
+      "bytes": 41269
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/protocol.json",
+      "sha256": "802063b6cb9af656196398873b66c9a8249128efa6d836f90c1e07e33c60e8f0",
+      "bytes": 30239
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/report.json",
+      "sha256": "7acce61595ef663e651f50ef21519e8191f9800bc8601a6185cef143365dceed",
+      "bytes": 11466
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/view-food-105/comparison.png",
+      "sha256": "406bc8c579ab507a5996494f295cd3c7a795675472605959df96f0a90f0b3d55",
+      "bytes": 636439
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/view-food-105/comparison.svg",
+      "sha256": "3fc7b9d82dc320776dc1198d26872e874f05dd5bdbbd6a5f1c89f539797916d3",
+      "bytes": 8431045
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/view-food-105/view.json",
+      "sha256": "3e2d9957ff12e7bd4e32940a95da0e4a9ce81bf1d369d57481d5b3dda5ba0ba6",
+      "bytes": 1248
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/view-food-23/comparison.png",
+      "sha256": "1450c2e5baf2b5420ff12df252bc5fe4bb0b439a1e88afb1efaa50160c83e863",
+      "bytes": 192563
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/view-food-23/comparison.svg",
+      "sha256": "77c67e62033df3cf40c356b9617497f08e4a63fb2392f58a26e24baa77d881ae",
+      "bytes": 575062
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/view-food-23/view.json",
+      "sha256": "6858b3f6c6c57a166cfbc6dac25e38923d4cbe73a6c13cd3ed2d188735bf3189",
+      "bytes": 1222
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-teachers/view-inputs.json",
+      "sha256": "c8733fadef78473f9d7739a44695be0051c0bb158a5c91ad7546e5290d7c1e63",
+      "bytes": 6740
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-0/attempt.json",
+      "sha256": "a7582b7d6655102fb3637fba473ed22cbf01c4737ad583c70e5f32df9a26d874",
+      "bytes": 1370
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-0/construction-process.json",
+      "sha256": "b88cec40d9930ca5d0c881e452c8e45a628d309a29632a2ceee851ab51863094",
+      "bytes": 1554
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-0/construction-process.stdout",
+      "sha256": "d69507aafb3090ab383980dfc632920b0913b0ebcfae0d2fdd50f0f44e734f8f",
+      "bytes": 500
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-0/construction.json",
+      "sha256": "a04ed2bc189c97d540fec4607a32ddc2dab6afbd384704d241c0a5321ffc1752",
+      "bytes": 8441496
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-0/flow-process.json",
+      "sha256": "148c6d294f3c305266e04224a6f4c29f662568c00e2e516e62b490df5bfff7b7",
+      "bytes": 507
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-0/original-request.json",
+      "sha256": "a7f6fbc821eef31f017e1066547a718026922927242b61b8e1bc30d095ca8976",
+      "bytes": 30860
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-0/root.json",
+      "sha256": "c9c6f5f7a28fb4c3d4a3aa14a2738e8ae0b79034048fccf436da6d1f6e58ee84",
+      "bytes": 170494
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-0/source-plan.json",
+      "sha256": "0a56ea39f7d869d2702828d12be47503596fd65eb66dfc85d11ac633fa9d63f7",
+      "bytes": 612
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-0/validation.json",
+      "sha256": "4cbeed90d17139b4025eed417995ec515f43cabc6036f55014230a98b3be3228",
+      "bytes": 22325
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-0/wiring.json",
+      "sha256": "61552f9f8074584f55d25dcadcf847a29503aa9191aba8eab9ac801cbe73528c",
+      "bytes": 35723
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-1/attempt.json",
+      "sha256": "f480ae60e61f16311ac1b8fa2bbf828efeab5b9e74e2a1d8f49cbcc99650e891",
+      "bytes": 1379
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-1/construction-process.json",
+      "sha256": "d595f6d6359fca9acd2e40ecb7e00b097a93d4f1991ad3b8e8f1c14fcc935643",
+      "bytes": 1553
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-1/construction-process.stdout",
+      "sha256": "59f84399427f0c3897ab51982f7e55d5922be81aca235e38693dfb618737523f",
+      "bytes": 500
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-1/construction.json",
+      "sha256": "0e93557ae6d71a60d47fbbe398fcbeb1d979cd9e6f710eed99d37c1215a6a40a",
+      "bytes": 44938081
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-1/flow-process.json",
+      "sha256": "d8161fc599a373b83c499da85dc780f296d860d96ba9f8639e41344f262e5825",
+      "bytes": 507
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-1/original-request.json",
+      "sha256": "f155c630294a5769365bb24b391a41a3b6b12181871b707873dd21c0d7697016",
+      "bytes": 71449
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-1/root.json",
+      "sha256": "20021f517408e860e36091c9fbfecc197a14c30dd98ce87afa7af5a257ba985e",
+      "bytes": 488850
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-1/source-plan.json",
+      "sha256": "61a4ebb8bee472ecdb9eebb1e76ba529b713a092c8b68bd52508406594f667c0",
+      "bytes": 612
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-1/validation.json",
+      "sha256": "c2390e10fd689384b5fbb032a7a0b1bd5c6f128395e69e750f2980a3e03f3acf",
+      "bytes": 46836
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-1/wiring.json",
+      "sha256": "c37821e67d812c6e7d1025469f49cf8ce119d18db7d51487fa33f851fd7bbd4b",
+      "bytes": 80955
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-2/attempt.json",
+      "sha256": "c2f1ec65ea75e21a4354dedb4c4941853cddd42cb10af3044be18b357398e7c8",
+      "bytes": 1378
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-2/construction-process.json",
+      "sha256": "8fd25742c40c25604af4218cf42511886a1b15b8d54f66263c9827b4c93733b2",
+      "bytes": 1545
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-2/construction-process.stdout",
+      "sha256": "5415ed8afb0ff22ccde91dc8edaac9b484d454d98109ed649dbbb52db1458059",
+      "bytes": 500
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-2/construction.json",
+      "sha256": "f88471ad38844317a4eb541342bca88d891a122c3257e88b2f61be9851ab2630",
+      "bytes": 362657814
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-2/flow-process.json",
+      "sha256": "194ef302149b1778f04f9283189d3d871b3b031dc4e2f225832f480ca96d23f0",
+      "bytes": 507
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-2/original-request.json",
+      "sha256": "c07951d2a47886503973c4593d12b7065f9fb57b8d5ad380ea40046828e06773",
+      "bytes": 163874
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-2/root.json",
+      "sha256": "e9f6672c46a0559c6a8def2ecbf2860b9c5f105ff540746503fd2769699a69c9",
+      "bytes": 1737379
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-2/source-plan.json",
+      "sha256": "9fa1bbc8acb613decf265603d8351b0920c32744297105cf6c4812c762cfd658",
+      "bytes": 611
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-2/validation.json",
+      "sha256": "cb8eea59ac834a8d909e067dc2b4748b9f55b933132a1b987440f4a013c40f2a",
+      "bytes": 101488
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-food-varied-training-rate-2/wiring.json",
+      "sha256": "e2faf4c6a7cf66cffef1856e6ee4d663f7e55c44d15543b432a315f595b2d7fc",
+      "bytes": 183864
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-0/attempt.json",
+      "sha256": "3e830d7986ac057ff28fa41b33dba308e87bec981bd378cef431d1acd968801d",
+      "bytes": 1381
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-0/construction-process.json",
+      "sha256": "0b8969f35bec3cb97d6d88fb6b6f30021dc640e02d7de79236dad59954054d6d",
+      "bytes": 1562
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-0/construction-process.stdout",
+      "sha256": "792427bbf03c8b0a1fd562d12b85d7b7d15a8279fad74ba5e0403f105b4e657c",
+      "bytes": 506
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-0/construction.json",
+      "sha256": "8f863ff904e501f9ed56a19f4b0338e9c93c6c000913713bb264c4fd3e7d2130",
+      "bytes": 8297893
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-0/flow-process.json",
+      "sha256": "4fecf11b049cceaf2c1cd9e87753900ff949683e7dc606c202cc2932080d0f33",
+      "bytes": 510
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-0/original-request.json",
+      "sha256": "e86e73b9a302d813293a5978ad0f659271e52a3310bbe12e2b8cdc0eb4fb8b2d",
+      "bytes": 31032
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-0/root.json",
+      "sha256": "2976803d1ee95136248cf318b29966b1a10215aeffc48afc2957cad26e9f8ec6",
+      "bytes": 174118
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-0/source-plan.json",
+      "sha256": "e0037526995ef96177f3ea31cd528b30b29c72913debc81148114fc7a9bb6362",
+      "bytes": 618
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-0/validation.json",
+      "sha256": "25b5986a2400b684461a601b37d7056af991ee0453eee428d6f574d18636f61b",
+      "bytes": 22411
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-0/wiring.json",
+      "sha256": "e34ed0a73f9a8ca5f356fb13f0049e1893ecc2cb92c76550633facf05a0861bf",
+      "bytes": 35899
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-1/attempt.json",
+      "sha256": "2f50a0dca5f8b7bb673460069887550519d3dd36642133f5db19eacc79940d81",
+      "bytes": 1384
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-1/construction-process.json",
+      "sha256": "6c39f188a2c306b4d358e8f7e14474bb2e37c9313a94e8a26d876fbfcd8970e2",
+      "bytes": 1555
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-1/construction-process.stdout",
+      "sha256": "46850f3e13c3f54affe8a0eaee96988c3568b505e47d1c93372157f6eea3d3f5",
+      "bytes": 506
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-1/construction.json",
+      "sha256": "58035d1b4501859996a81d496ba75a09f8930596fde4a26be4cb9a49e5d20a34",
+      "bytes": 39525152
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-1/flow-process.json",
+      "sha256": "880ce7fc47d752bb1c6cd42c274b19cb3d0cf66f893041817d6cc9c0e5d78230",
+      "bytes": 510
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-1/original-request.json",
+      "sha256": "2475a0e7471f35a8a95889294aaf97a128841b36af306439f66b69076076619a",
+      "bytes": 71835
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-1/root.json",
+      "sha256": "918d474fb2641d65083ca27b7a24dc6d95b905ad6aaae09f210215444917f20e",
+      "bytes": 431065
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-1/source-plan.json",
+      "sha256": "62aedee043f07a270ad8975f630b78df84985ed73533e077b3678d58615b53c9",
+      "bytes": 618
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-1/validation.json",
+      "sha256": "cffffcfaa67123b0fd26e126efd28a12f8b68a747b646096061c186cb15d3410",
+      "bytes": 47038
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-1/wiring.json",
+      "sha256": "f1137a2fb3703827e9e8af08f21522e0273a2761f3e13434e8f2f0765ac1534c",
+      "bytes": 81345
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-2/attempt.json",
+      "sha256": "3c65ab4d1368a4b15fc7ae76a3ce9db58e80508bd63113f166a0875f228fec98",
+      "bytes": 1009
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-2/construction-process.json",
+      "sha256": "47f0fd9669a31eaa34b2f14ba595fcfcf2c4903b8b41ce9226a321615c6cd6ff",
+      "bytes": 1561
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-2/construction-process.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-2/flow-process.json",
+      "sha256": "4d28cb89c47ea3f53b1342e7a060aa19844bcc3549ea61cca93141b695c69fec",
+      "bytes": 511
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-2/original-request.json",
+      "sha256": "5a062f805f6c42db31ff02f1588c506a75a7d9e48fe41cc51a5404551fe306fd",
+      "bytes": 164778
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-2/source-plan.json",
+      "sha256": "868efc61238bd1110cdd544bb46d534a4360a83ed4bb68ec159327d049143789",
+      "bytes": 617
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/enriched-consumables-medical-varied-training-rate-2/wiring.json",
+      "sha256": "eaae0bc0a9f1f99514c4230e0aeedd4efcc813d1ecee949094599db7b6629b22",
+      "bytes": 184772
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/provenance.json",
+      "sha256": "5e6598159177619dccbc551c4bcb9335812199936ecdf1b59e0b0f01cbc3e61e",
+      "bytes": 6991
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/report.json",
+      "sha256": "052ec3d6eaf56527bf15df2ffb9d9bf267e4a54c2b674eec6eb3cde314fab7a5",
+      "bytes": 15048
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-admission/roots.json",
+      "sha256": "83a14c228a45643885463470d6ca5460fd80f3b6bc1709b9b926cec3a72dd0fa",
+      "bytes": 3002428
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/catalogs.json",
+      "sha256": "47a4b51d75501d35b73e576aa879fa36f229a2727dcaf642fa9ccecb5fe5c84e",
+      "bytes": 481
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-food-varied-training-rate-0/initial.json",
+      "sha256": "76ce998606a9c5e45dc8fe88c15d650947a1996315abe3702b159c6f0dd7f975",
+      "bytes": 139480
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-food-varied-training-rate-0/original-request.json",
+      "sha256": "a7f6fbc821eef31f017e1066547a718026922927242b61b8e1bc30d095ca8976",
+      "bytes": 30860
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-food-varied-training-rate-0/reference.json",
+      "sha256": "9fe5fab2aaad8961b98238b8520cb31bfc38bffa317c0ec2476e18e5d5b8bd3e",
+      "bytes": 22315
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-food-varied-training-rate-0/request.json",
+      "sha256": "fb89e604cabb907aa754c5cf10bb9ce8f1723fcf88a46598d86cdf7a5529acf9",
+      "bytes": 26836
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-food-varied-training-rate-1/initial.json",
+      "sha256": "0318d20a9087ab33ee2fef39675af8c9dcb8149489fd0a9aa14ccf7ad112fe14",
+      "bytes": 417247
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-food-varied-training-rate-1/original-request.json",
+      "sha256": "f155c630294a5769365bb24b391a41a3b6b12181871b707873dd21c0d7697016",
+      "bytes": 71449
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-food-varied-training-rate-1/reference.json",
+      "sha256": "62692120afb2e52b04d1f5a0a5dd3f45b8ed999c484c49cf5a81e17888bb25b1",
+      "bytes": 46846
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-food-varied-training-rate-1/request.json",
+      "sha256": "2a3d12d2885ab30ed3c1d7d520ca6fd490cf4d76605fdf4a7887387f2cffb4ac",
+      "bytes": 56492
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-food-varied-training-rate-2/initial.json",
+      "sha256": "77cfcb465ae0bbc42e6142db7fe89f11a06ad6d7832c507d192141be17993a0f",
+      "bytes": 1573351
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-food-varied-training-rate-2/original-request.json",
+      "sha256": "c07951d2a47886503973c4593d12b7065f9fb57b8d5ad380ea40046828e06773",
+      "bytes": 163874
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-food-varied-training-rate-2/reference.json",
+      "sha256": "1766d5829ad2dc9b874bfe51515941057097bb41326742f271c458b92f84f9a9",
+      "bytes": 101479
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-food-varied-training-rate-2/request.json",
+      "sha256": "35c718f651250b477b2aeb0401df19fa96358c8c00c1974a6c8a560bb001c86a",
+      "bytes": 121365
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-medical-varied-training-rate-0/initial.json",
+      "sha256": "52e193d65897e0305883c2886257457265e3cd0f6bbfc1b3f1a390960413f17f",
+      "bytes": 142929
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-medical-varied-training-rate-0/original-request.json",
+      "sha256": "e86e73b9a302d813293a5978ad0f659271e52a3310bbe12e2b8cdc0eb4fb8b2d",
+      "bytes": 31032
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-medical-varied-training-rate-0/reference.json",
+      "sha256": "8b5d5d097345ff67f4876e40a401b924fdadc4764425b694cfd16b2e3c0d1798",
+      "bytes": 22421
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-medical-varied-training-rate-0/request.json",
+      "sha256": "57b0ff634db36231bb2ad565047ce5ffaff7633120a97a927b883ca8d01d74cf",
+      "bytes": 26982
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-medical-varied-training-rate-1/initial.json",
+      "sha256": "62d53bcfb0f93e80a5e1033dd5433121c891c515a821271d285590c0e73d160b",
+      "bytes": 359073
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-medical-varied-training-rate-1/original-request.json",
+      "sha256": "2475a0e7471f35a8a95889294aaf97a128841b36af306439f66b69076076619a",
+      "bytes": 71835
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-medical-varied-training-rate-1/reference.json",
+      "sha256": "754622d5225865e9cdb87f36bb6f252ec632b9c1ebd2bfa2cd579e3daac4ec16",
+      "bytes": 47037
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/enriched-consumables-medical-varied-training-rate-1/request.json",
+      "sha256": "a6baaeeb895e4c490a4e96d4e1e2a388906abb7a5498a5437f3db8a90d3949b6",
+      "bytes": 56794
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-varied-training-inputs/inputs.json",
+      "sha256": "5eb7a2f8da35713d15ef325db95ae6b0cf6ff5ae454426c52eb97d8cf7cd8d12",
+      "bytes": 6956
+    },
+    {
+      "path": "docs/designs/2026-09-09.28-varied-factory-trajectory-teachers.md",
+      "sha256": "9a0932f2b1a9b35d9bbd2317c594571774934874fd06e367e988ef340a3f0809",
+      "bytes": 5113
+    },
+    {
+      "path": "docs/reports/2026-09-09.27-bottled-factory-transfer-provenance.json",
+      "sha256": "0f16fa9d4dc2755cd8938e4089966b9479674f529edc407e82033f894685bb8c",
+      "bytes": 24620
+    },
+    {
+      "path": "docs/reports/2026-09-09.28-varied-factory-trajectory-teachers.md",
+      "sha256": "04756547148063443c765baf0093fe9bab099317c66ef5964982350be4dccce7",
+      "bytes": 9331
+    },
+    {
+      "path": "tools/factory-edit-pilot/full-factory-varied-future-evaluation-admission.json",
+      "sha256": "d32cf97ad6a081b2962c6b0bef19d4a2812df0b50e5cd9d63b6307d22f709a10",
+      "bytes": 1453
+    },
+    {
+      "path": "tools/factory-edit-pilot/full-factory-varied-teacher-study.json",
+      "sha256": "8c8a91ecfdd145af8f4427f362125145f734eca38aacf10c20bf9f6c7875922e",
+      "bytes": 494
+    },
+    {
+      "path": "tools/factory-edit-pilot/full-factory-varied-training-admission.json",
+      "sha256": "c6e966d79e7d510a730d6059ba439c5c7d28693c5d96a456ae93eaf6fdf70831",
+      "bytes": 1430
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_varied_teachers.py",
+      "sha256": "6a44216a54da4cef6e1bcc064ebfc40c999918e51681aee15aeea483f7d22d84",
+      "bytes": 16270
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_varied_teachers_audit.mjs",
+      "sha256": "85720c9dbc0532909a5c06c32c05e79fe5cf98b6bd582ed5f3668e97f77b15b9",
+      "bytes": 14576
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "seed": 1800000,
+  "preparation_horizon": 256,
+  "preparation_seconds": 300,
+  "preparation_study_seconds": 1800,
+  "horizon": 8,
+  "episode_seconds": 30,
+  "route_work": 5000,
+  "study_seconds": 3600,
+  "pose_quotas": {
+    "local_single": 48,
+    "distant_single": 48,
+    "group_translation": 48,
+    "single_rotation": 24,
+    "compound_rotation": 24
+  },
+  "other_quotas": {
+    "reroute": 16,
+    "port": 16,
+    "component": 16,
+    "release_bridge": 16
+  }
+}

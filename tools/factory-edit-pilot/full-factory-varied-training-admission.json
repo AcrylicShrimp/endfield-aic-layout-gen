@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "cli": "../../target/same-item-bridge-build/release/aic-cli",
+  "validator": "../../target/same-item-bridge-build/release/aic-witness-probe",
+  "catalogs": {
+    "recipes": "../../data/game/normalized/recipes.json",
+    "facilities": "../../data/game/normalized/facilities.json",
+    "items": "../../data/game/normalized/items.json",
+    "transports": "../../data/game/normalized/transports.json",
+    "components": "../../data/game/normalized/logistics-components.json"
+  },
+  "flow_elapsed_ms": 10000,
+  "validator_ms": 5000,
+  "max_facilities": 128,
+  "construction": {
+    "elapsed_ms": 60000,
+    "max_steps": 256,
+    "max_placement_attempts": 256,
+    "max_route_searches": 4096,
+    "analysis_workers": 1
+  },
+  "families": [
+    {
+      "id": "enriched-consumables",
+      "split": "train",
+      "sources": [
+        {
+          "id": "medical-varied-training",
+          "path": "../../docs/benchmarks/constructive-recipe-breadth/requests/medical-3.json"
+        },
+        {
+          "id": "food-varied-training",
+          "path": "../../docs/benchmarks/constructive-recipe-breadth/requests/food-3.json"
+        }
+      ],
+      "rates": [
+        {
+          "quantity": 1,
+          "duration_ms": 28000
+        },
+        {
+          "quantity": 1,
+          "duration_ms": 11000
+        },
+        {
+          "quantity": 1,
+          "duration_ms": 4500
+        }
+      ]
+    }
+  ]
+}
