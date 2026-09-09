@@ -69,7 +69,14 @@ def run(args):
     prerequisite = read(args.native_check)
     require(prerequisite['status'] == 'complete' and prerequisite['native_checkpoint_continuation_exact'],
             'completed optimized native continuation check')
-    workload = reference_workload(args.screen)
+    if args.workload:
+        workload = torch.load(args.workload, map_location='cpu', weights_only=False)
+        require(workload['identity']['input_contract'] == prerequisite['input_contract'], 'native workload input contract')
+        require(Path(workload['identity']['native_report']).resolve() == args.native_check.resolve(), 'native workload report identity')
+        workload['identity']['workload_sha256'] = sha(args.workload)
+    else:
+        require(args.screen is not None, 'screen or explicit retained workload')
+        workload = reference_workload(args.screen)
     config = workload['config']
     cuda = torch.cuda.is_available()
     if cuda:
@@ -90,7 +97,7 @@ def run(args):
     args.output.mkdir(parents=True)
     report = dict(schema='ppo-optimized-device-probe-v1', phase=args.phase, status='running', workload=workload['identity'],
                   sources={name: sha(Path(__file__).with_name(name)) for name in
-                           ['probe_ppo_devices.py', 'ppo_training_batch.py', 'ppo_training_update.py', 'probe_ppo_precision.py']},
+                           ['probe_ppo_devices.py', 'ppo_training_batch.py', 'ppo_training_world.py', 'ppo_training_update.py', 'probe_ppo_precision.py']},
                   native_check=dict(path=str(args.native_check), sha256=sha(args.native_check)),
                   device_report=dict(path=str(args.device_report), sha256=sha(args.device_report)) if args.device_report else None,
                   torch_version=torch.__version__, cuda_version=torch.version.cuda, cuda_available=cuda,
@@ -195,7 +202,8 @@ def run(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--phase', choices=['device', 'precision'], required=True)
-    parser.add_argument('--screen', type=Path, required=True)
+    parser.add_argument('--screen', type=Path)
+    parser.add_argument('--workload', type=Path)
     parser.add_argument('--native-check', type=Path, required=True)
     parser.add_argument('--device-report', type=Path)
     parser.add_argument('--output', type=Path, required=True)

@@ -45,7 +45,7 @@ def run(args):
     report = dict(schema='ppo-optimization-benchmark-v1', status='running', workload=workload['identity'],
                   sources={name: sha(Path(__file__).with_name(name)) for name in
                            ['benchmark_ppo_optimization.py', 'ppo_training_batch.py', 'ppo_training_update.py',
-                            'ppo_training_rollout.py', 'ppo_training_observation.py']},
+                            'ppo_training_rollout.py', 'ppo_training_observation.py', 'ppo_training_world.py']},
                   torch_version=torch.__version__, threads=torch.get_num_threads(), device='cpu',
                   scope='Same retained 64 selections and nonempty Adam checkpoint, reset before each measured update; separate native episode replay.',
                   cells=[])
@@ -117,8 +117,7 @@ def run(args):
                 started = time.perf_counter()
                 arguments = [runtime, dict(config=dict(spec['selection'], horizon=task['horizon'])),
                              sample['generation']['case'], actor, critic]
-                if name == 'reference':
-                    arguments.append('action-only')
+                arguments.append('action-only')
                 row, payload = collector(*arguments, task['action_seed'], output, True, guard)
                 payload.update(policy_sha256=row['policy_sha256'], input_sha256=sample['input_sha256'])
                 save_experience(output / 'experience.pt.gz', payload)

@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "server_root": "/home/ashrimp/Srv/aic-ppo-area-20260909",
+  "reports": {
+    "ppo-native-inputs/current-best-3/report.json": "f714437c630ce4ca26cc44bda96be1d0b2328182fea503744b3ac14ae5326495",
+    "ppo-native-inputs/geometry-current/report.json": "5a43e481c476f89a7e1fc6d8208922933f96c66157d96f9d83b116f9da6dcd79",
+    "ppo-native-inputs/history-no-restore/report.json": "3c51787d26769ccfea98e4e8bb3a6c5969b195b8be945d58180f73b9953b2c9e",
+    "ppo-native-inputs/current-history-16-outcomes/report.json": "b6d56c1bc66deff0877927cb7c28e78e56b015a7a72cd9a6a3234dcf231553de",
+    "ppo-native-inputs/current-history-16/report.json": "97ac58149f32db0b09ffe5698a3ce2ac649b163a5985fc84fce98883d785b999",
+    "ppo-native-inputs/full-current/report.json": "834c3c49596149c753c0fc5bef080c60dce530b9d2c2accc3339d7609a8d73b5",
+    "ppo-native-inputs/current-no-restore/report.json": "5109422c7e74ee895cc70550f9206060219e43440dc0f900932f35e98b836e05",
+    "ppo-native-inputs/current-best-layout/report.json": "68d90f11775da5e5fb2ce87d43bb25496256f27cbd65422607f43e96cea63048",
+    "ppo-native-inputs/current-history-4/report.json": "b4ee3fc6821aadd1a62fa82d135168a7a99d3e39a9a56d34c585a334403e8514",
+    "ppo-native-inputs/action-only/report.json": "7e6f5c41b26a099b96ea81a3b97476c6c45a7d396964ae135327a8c9463c2aed",
+    "ppo-native-inputs/current-best-2/report.json": "22f063a8111d00bab460bf8287d78eaf31de7df8143d061c77a6390f653f93c5",
+    "ppo-rich-native-check/report.json": "21bb3e4633947fea8e4b8e29d987684a9703b2c424ff9e1745dfca31953272c2",
+    "ppo-rich-device/report.json": "42cdaf22bc57ccea1b0d2c3903b423dab069307cfe9a93ec7ec1077a9091a51f",
+    "ppo-rich-precision/report.json": "4e84c50aa63357b2456ab54298dd4b5c5493b0b43fdeb61094a4adbe43dfa704",
+    "ppo-geometry-current-device/report.json": "06f927cee9e866b7c2b312f8d6882862e161ee82891e7ec7483f77d0d8cf2e9e",
+    "ppo-geometry-current-precision/report.json": "a54f2d54b7bb2665749e24a6eadd3da4d9ded1531fdabd23856f32c68278498e",
+    "ppo-full-current-device/report.json": "85f854a7201509aab04af9a4d21659caa0d4406997c3c382a615c9984096d1ea",
+    "ppo-full-current-precision/report.json": "7c18bf6f73450ef3c2183339749153d52db287593247e83045dd53367605d151"
+  },
+  "behavior_check_sha256": "51d8ec0ea5a61da1ec8251e48e96cc093b782b1b0fa9ac30fd05151480cabe9a",
+  "sources": {
+    "probe_ppo_devices.py": "94d152f88ee09f491f6d60520a5c435e31714fc6ca4cb8ac0640f9e7485d6fd5",
+    "ppo_training_rollout.py": "c18a7fc54f0340e4eb194e710198d37e65e92e126865b83456fb60c9ea074bcd",
+    "check_ppo_training_execution.py": "a120b6c8466991c98fad1c3d064caa9184b6b22346b08d297d64a9828ffcc731",
+    "ppo_training_batch.py": "604d772a3a5300a796cbdb520e44d4cca49798206c800cbb5158545ef4aa4495",
+    "ppo_training_observation.py": "19559aff4307b2084962525a54ab5d577a7ac6a8b9012c4a768b0c3108ef4f49",
+    "check_ppo_input_workloads.py": "2b19b06773ea0c8be6bc411e5957130cf6f8f30ea3521fe3cfc7f758d5718d2f",
+    "probe_ppo_precision.py": "1af9e5630ad9c5e73404fe5e094646c663ebc6a3a66d521b0703daa8b815a7d8",
+    "ppo_training_world.py": "3166ad96603caef0a59dc344e20af59040cba8bbfaad65b564b2d1eac6ca2add",
+    "benchmark_ppo_optimization.py": "9e313df231d4e7c2c0410ce06e2196e5a2912502263ac8ca5192756597729c5c",
+    "ppo_training_update.py": "b5faaff63dd845abe173a9a9233956c1cdf3e394f60330f55e7c3b597f84795a",
+    "test_ppo_input_batches.py": "c54649fac26c437e51970ee677e62af04541cd2ceb8e87a33ca82cad5ea39c75"
+  },
+  "retained_archive": {
+    "local_path": "artifacts/factory-edit-pilot/ppo-input-execution-retained.tar.zst",
+    "bytes": 115152610,
+    "sha256": "1b0c827ba242d3f1014b507637681b420aca56a214d02e33e81ca499380d17bf"
+  }
+}

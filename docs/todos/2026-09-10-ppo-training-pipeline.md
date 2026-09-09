@@ -2,8 +2,10 @@
 
 ## Status
 
-Active user-requested goal. The current learning confirmation ends after
-seed 17's 32 batches and seed 29's batch-16 evaluation.
+Active user-requested goal. Confirmation, profiling, initial optimization and
+the device/AMP setup decision are complete. Production harness and monitoring
+requirements and implementation are next, followed by independent readiness
+reviews/tests and the renewed shallow input comparison.
 
 ## Context
 
@@ -57,3 +59,9 @@ outside tracked source directories.
   the device/AMP and production-readiness stages. Extend and verify batched
   actor execution beyond action-only before the comparison. Select the exact
   short budget and freeze the comparison protocol before execution.
+
+- Extended the batched actor to all twelve input contracts. All reference
+  observation/gradient checks and twelve native two-batch continuation checks
+  pass. Geometry, full-current and best-layout/history device matrices select
+  CUDA FP32 / 64; AMP resident computation is consistently slower. The execution
+  setup is finalized, so production requirements can now be developed.

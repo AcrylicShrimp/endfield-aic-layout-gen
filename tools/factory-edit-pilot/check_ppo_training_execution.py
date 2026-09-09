@@ -9,6 +9,7 @@ from benchmark_ppo_optimization import fresh
 from direct_area_study import checked
 from finish_ppo_confirmation import load_confirmation
 from full_factory_environment import FactoryRuntime
+from full_factory_input_contracts import CONTRACTS
 from full_factory_on_policy import parameter_hash
 from full_factory_screen import sha
 from ppo_area_audit import native_batch
@@ -16,7 +17,7 @@ from ppo_area_study import learners
 from ppo_area_update import save_experience
 from ppo_training_batch import EXECUTION_SCHEMA, require
 from ppo_training_rollout import rollout
-from ppo_training_update import update
+from ppo_training_update import update, collect_steps
 from random_factory_collection import check_sources
 from random_factory_generation import read, write
 from random_factory_pilot import configure_torch
@@ -43,10 +44,10 @@ def run(args):
     model_set = (actor, critic, aopt, copt, rng)
     samples = [r for r in group['results'] if r['status'] == 'complete'][:2]
     args.output.mkdir(parents=True)
-    report = dict(schema='ppo-native-execution-check-v1', status='running', initial_checkpoint=initial,
+    report = dict(schema='ppo-native-execution-check-v1', status='running', input_contract=args.candidate, initial_checkpoint=initial,
                   sources={name: sha(Path(__file__).with_name(name)) for name in
                            ['check_ppo_training_execution.py', 'ppo_training_update.py', 'ppo_training_batch.py',
-                            'ppo_training_rollout.py', 'ppo_training_observation.py']}, batches=[],
+                            'ppo_training_rollout.py', 'ppo_training_observation.py', 'ppo_training_world.py']}, batches=[],
                   scope='Two native episodes per batch, two on-policy batches, saved nonempty Adam/shuffle state, one bounded continuation comparison outside training.')
     runtime = FactoryRuntime(protocol['spec']['native_library'], protocol['catalog_file'])
     try:
@@ -70,7 +71,7 @@ def run(args):
                 write(directory / 'generated/generation.json', original['generation'])
                 input_sha256 = sha(directory / 'task.json')
                 row, payload = rollout(runtime, dict(config=dict(config, horizon=task['horizon'])),
-                                       original['generation']['case'], actor, critic, task['action_seed'],
+                                       original['generation']['case'], actor, critic, args.candidate, task['action_seed'],
                                        directory / 'rollout', True, guard)
                 payload.update(policy_sha256=row['policy_sha256'], input_sha256=input_sha256)
                 experience = directory / 'experience.pt.gz'
@@ -91,6 +92,14 @@ def run(args):
                     model.load_state_dict(state[key])
                 resumed[4].set_state(state['shuffle_rng'])
                 require(resumed[2].state and resumed[3].state, 'resume nonempty Adam')
+                steps, advantages, targets, _ = collect_steps(actor, critic, results, config)
+                require(len(steps) == config['minibatch_size'], 'one complete representative minibatch')
+                torch.save(dict(spec=protocol['spec'], config=config, checkpoint=state, steps=steps,
+                                advantages=advantages, targets=targets,
+                                identity=dict(input_contract=args.candidate, native_report=str(args.output / 'report.json'),
+                                              checkpoint_sha256=sha(args.output / 'checkpoint.pt'),
+                                              experiences=[r['experience_sha256'] for r in results])),
+                           args.output / 'workload.pt')
             started = time.monotonic()
             metrics = update(*model_set, results, config, microbatch=8, guard=guard)
             seconds = time.monotonic() - started
@@ -119,6 +128,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--screen', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--candidate', choices=CONTRACTS, required=True)
     args = parser.parse_args()
     existed = args.output.exists()
     try:
