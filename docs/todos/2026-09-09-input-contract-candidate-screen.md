@@ -56,3 +56,7 @@ executed or included as a completed work unit.
   and initial layouts for every training episode, with parallel collection on
   the existing experimental server. Do not resume this fixed-reset comparison
   or the cancelled long continuation automatically.
+
+- The separately frozen fresh-generation PPO replacement completed all 24 jobs.
+  See the [new comparison report](../reports/2026-09-10.06-shallow-ppo-input-comparison.md).
+  This does not change the cancelled status or incomplete audit of this older run.

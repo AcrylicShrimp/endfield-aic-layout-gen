@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "protocol_sha256": "14ccc5326c4a95da3b7f91922cd484159f31c28ca135e5c4b2a783d51d6579f2",
+  "source_commits": [
+    "5c530e4",
+    "52417ae",
+    "fa8c832"
+  ],
+  "cursor_fix_commit": "3d1c47ea48056677e7d1440476182c267a26cca8",
+  "archives": [
+    {
+      "path": "artifacts/factory-edit-pilot/ppo-input-contract-screen-retained.tar.zst",
+      "bytes": 2731841419,
+      "sha256": "d4318fedb3ce90d072661aecef273cd9ea69bcc7b57978ed7c2815f800d4683f",
+      "verified_copies": [
+        "local workstation",
+        "experiment server"
+      ]
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/ppo-wandb-cursor-final-retained.tar.zst",
+      "bytes": 7450,
+      "sha256": "0025fec9fa6cec576911e648aec353bb18793dffe7846a0d61a02a2a636e4ea4",
+      "verified_copies": [
+        "local workstation",
+        "experiment server"
+      ]
+    }
+  ],
+  "frozen_runtime_files": 275,
+  "retained_credential_scan": {
+    "files": 127499,
+    "matches": 0
+  },
+  "execution": {
+    "status": "complete",
+    "elapsed_seconds": 6924.238043977006,
+    "sessions": 1,
+    "jobs": 24,
+    "batches": 96,
+    "training_actions": 96000,
+    "evaluation_actions": 36864,
+    "attempts": 4224,
+    "admitted": 4152,
+    "generation_rejected": 72,
+    "peak_rss_bytes": 42676416512,
+    "max_processes": 90,
+    "max_gpu_used_mib": 3932.0,
+    "training_collection_seconds": 2551.1903124291275,
+    "training_update_seconds": 1746.986731845158,
+    "optimizer_steps": 6048,
+    "kl_stopped_batches": 0,
+    "remaining_owned_pids": []
+  },
+  "record_check": {
+    "status": "complete",
+    "source_sha256": "1afdf9f07418e3a5a9dbf7d1f1a44d035264e22ede6429133e6085f7f1fc8701",
+    "checked_checkpoint_files": 120,
+    "shared_cohorts_verified": true,
+    "cloud_history_records": 240,
+    "cloud_scalars": 6072
+  },
+  "cursor_probe": {
+    "status": "complete",
+    "source_sha256": "a4b180bfea5de6eed5d9ab9837a9207f324cc37c83553d5ef4c3e7600d9c5a39",
+    "sdk_step": 0,
+    "acknowledged_last_step": 7,
+    "export_cursor": 8,
+    "expected_records": 8,
+    "history_unchanged": true,
+    "log_calls": 0
+  },
+  "final_cursor_sources": {
+    "ppo_harness_tracking.py": "6f39e1f1c7a12676dbcef5175fa701ec01a524eaa1e7225f98841ae373e98cde",
+    "test_ppo_harness_monitor.py": "57c4a4a5299ad9e172c9ca166d9e16399caa9732c04cf6a946db537f26664091"
+  },
+  "verification": {
+    "local_harness_tests": 28,
+    "local_and_server_monitor_tests": 11,
+    "independent_focused_regression_tests": 5,
+    "rust_tests_passed": 538,
+    "rust_tests_ignored": 2
+  },
+  "jobs": [
+    {
+      "job": "current-best-layout--seed-17",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/ac0afe6e1042a7d807c63667"
+    },
+    {
+      "job": "current-history-16-outcomes--seed-17",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/93fa9c399c2a0bd79767f7db"
+    },
+    {
+      "job": "full-current--seed-17",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/0d34e7d6dc7c3670b989313a"
+    },
+    {
+      "job": "current-history-4--seed-29",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/566d84897d51d5ab3dc0954b"
+    },
+    {
+      "job": "current-best-2--seed-17",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/edeecb42b0f24b1098bcb614"
+    },
+    {
+      "job": "history-no-restore--seed-29",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/4c4845ff7ac4c5f8eb5b7320"
+    },
+    {
+      "job": "current-history-16--seed-29",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/cc464f02eff533c4e15f7605"
+    },
+    {
+      "job": "action-only--seed-29",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/f93416e0acd21646ec4e9a61"
+    },
+    {
+      "job": "current-no-restore--seed-17",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/f2b923471ce792612effc2da"
+    },
+    {
+      "job": "current-best-layout--seed-29",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/1886aec7dad64a457e3aad41"
+    },
+    {
+      "job": "current-history-4--seed-17",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/c7ed53005a8188e60c2bd9c5"
+    },
+    {
+      "job": "current-best-2--seed-29",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/1cdba7d5d0659d16b4db9974"
+    },
+    {
+      "job": "current-best-layout-history--seed-17",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/fb5769a0b009fb837f0120c5"
+    },
+    {
+      "job": "current-best-3--seed-17",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/357633267022633b7a00d389"
+    },
+    {
+      "job": "current-best-3--seed-29",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/6511513695e664612bd3b323"
+    },
+    {
+      "job": "current-no-restore--seed-29",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/30060b74c7fbc96da7edc7d8"
+    },
+    {
+      "job": "action-only--seed-17",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/1f518531cb8f83b582499446"
+    },
+    {
+      "job": "history-no-restore--seed-17",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/e27a82c6b21effa3a1e7c77c"
+    },
+    {
+      "job": "current-best-layout-history--seed-29",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/fbc36534557963fe3aae1d22"
+    },
+    {
+      "job": "current-history-16-outcomes--seed-29",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/5f445c632cf368659c475190"
+    },
+    {
+      "job": "full-current--seed-29",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/ae3a8f407a26cba2b4f5afaf"
+    },
+    {
+      "job": "geometry-current--seed-17",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/4886dc5ba410fd5ffc954af0"
+    },
+    {
+      "job": "current-history-16--seed-17",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/efd697dd90140179b172a830"
+    },
+    {
+      "job": "geometry-current--seed-29",
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/1d9971090c7093744d7fbd18"
+    }
+  ],
+  "local_summary": {
+    "path": "artifacts/factory-edit-pilot/ppo-input-contract-screen/summary.json",
+    "sha256": "43efddf235bed8ce805e640d5ab339324fc40f1d02505dc29ce32d83aa220c76"
+  },
+  "local_plots": [
+    "artifacts/factory-edit-pilot/ppo-input-contract-screen/paired-view/input-contract-outcomes.png",
+    "artifacts/factory-edit-pilot/ppo-input-contract-screen/view/outcomes.png"
+  ]
+}

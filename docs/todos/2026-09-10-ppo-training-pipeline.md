@@ -2,11 +2,11 @@
 
 ## Status
 
-Active user-requested goal. Confirmation, profiling, initial optimization and
-the device/AMP setup decision are complete. Production harness and monitoring
-requirements, implementation, independent reviews, fault tests and representative
-execution checks are complete. Freeze and execute the renewed shallow input
-comparison next.
+Complete. Confirmation, profiling, measured bottleneck optimization, the
+device/AMP decision, rich-input execution, reviewed production harness and
+monitoring, readiness checks, and the renewed shallow comparison are complete.
+All 24 candidate/seed jobs finished; findings and retained evidence are recorded
+in the [comparison report](../reports/2026-09-10.06-shallow-ppo-input-comparison.md).
 
 ## Context
 
@@ -80,3 +80,13 @@ outside tracked source directories.
   of 32 fresh attempts at H32, evaluation at 0/2/4 on 16 held-out draws. This
   keeps the old shallow comparison's maximum 4,096 training selections per
   candidate/seed. Execution uses the reviewed harness with primary W&B tracking.
+
+- Completed all 24 jobs and 96 batches: 96,000 training actions and 36,864
+  evaluation actions. All 120 checkpoint hashes and 6,072 W&B scalars passed
+  the terminal record check. Best observed mean: current-history-16 at 26.37%
+  area reduction (+7.48 points), narrowly ahead of current-best-3 at 26.18%.
+- Corrected the W&B stale resume cursor with acknowledged remote history;
+  regression tests and an actual no-resubmission SDK probe pass. Preserved
+  the original experiment runtime separately and retained the final archive
+  with matching workstation/server hashes. The shallow comparison is complete;
+  the cancelled long run and fixed-reset screen remain stopped.
