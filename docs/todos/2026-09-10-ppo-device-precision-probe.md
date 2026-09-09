@@ -2,9 +2,9 @@
 
 ## Status
 
-Confirmation, CPU profile and initial optimization are complete. The reference
-minibatch and optimized execution checks pass. Next compare CPU/GPU, then AMP
-on the optimized pipeline. No GPU timing has run yet.
+Completed the action-only optimized CPU/GPU and subsequent AMP comparisons.
+CUDA FP32 with microbatch 64 is the provisional choice. Richer actor inputs
+remain to be checked for the newly requested input-contract comparison.
 
 ## Context
 
@@ -40,3 +40,11 @@ phase times do not provide a CPU-versus-GPU comparison.
 - Removed the unused sequential device/AMP runner; preserve its reference
   minibatch utilities. Device measurements must call the optimized batched
   execution and include preparation/transfer as well as resident compute.
+
+- The follow-up experiment is now a shallow PPO input-contract comparison,
+  replacing the 12-hour long run. Account for richer actor observations when
+  applying device/precision choices to that comparison.
+
+- CUDA FP32 combined minibatch latency was 0.0846 seconds versus CPU 0.3988
+  seconds. In the subsequent precision phase, FP32/BF16/FP16 measured
+  0.0685/0.0721/0.0806 seconds; all numeric screens passed, with no AMP speedup.

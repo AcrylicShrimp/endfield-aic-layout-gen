@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "server_root": "/home/ashrimp/Srv/aic-ppo-area-20260909",
+  "reports": {
+    "ppo-device-comparison": "f878a7eb553aadcf00025143e336add877401483493214aaaf196ed977768fe0",
+    "ppo-amp-comparison": "d39e75ee4f85ea7ba14722e50eeb7935991d7e6fca2e26e9c42381446e13e289"
+  },
+  "retained_archive": {
+    "local_path": "artifacts/factory-edit-pilot/ppo-device-retained.tar.zst",
+    "bytes": 1815289,
+    "sha256": "f647ebf8ba1ae8985659cb9f1f82a59f2b186f1f34dd8b06e99853cf7690eb40"
+  }
+}

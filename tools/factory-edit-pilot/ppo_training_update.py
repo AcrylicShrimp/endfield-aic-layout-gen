@@ -1,4 +1,5 @@
 """One PPO update with frozen recorded behavior and bounded batched execution."""
+from contextlib import nullcontext
 import gzip
 import math
 import time
@@ -57,7 +58,7 @@ def statistics(actor, critic, steps, advantages, targets, config, microbatch, de
         for offset in range(0, len(steps), microbatch):
             guard()
             sample = steps[offset:offset + microbatch]
-            batch = prepare(sample, config, actor.width, device)
+            batch = move_prepared(prepare(sample, config, actor.width, 'cpu'), device)
             logp, _, _ = distribution(actor, batch, config)
             # Preserve the original diagnostic's float64 subtraction of recorded Python floats.
             log_ratios.extend(float(p) - s['old_log_probability'] for p, s in zip(logp.cpu(), sample))
@@ -75,38 +76,81 @@ def statistics(actor, critic, steps, advantages, targets, config, microbatch, de
         explained_variance=float(1 - (value - targets).var(unbiased=False) / variance) if variance > 1e-12 else None)
 
 
+def move_prepared(value, device):
+    if isinstance(value, torch.Tensor):
+        return value.to(device)
+    if isinstance(value, dict):
+        return {key: move_prepared(item, device) for key, item in value.items()}
+    if isinstance(value, list):
+        return [move_prepared(item, device) for item in value]
+    return value
+
+
+def prepare_minibatch(steps, advantages, targets, config, width, microbatch, device):
+    # Candidate filtering and shape construction happen on CPU, avoiding dynamic
+    # GPU indexing synchronization before transferring complete prepared tensors.
+    chunks = []
+    for offset in range(0, len(steps), microbatch):
+        stop = min(len(steps), offset + microbatch)
+        batch = prepare(steps[offset:stop], config, width, 'cpu')
+        chunks.append(dict(batch=move_prepared(batch, device), advantages=advantages[offset:stop].to(device),
+                           targets=targets[offset:stop].to(device)))
+    return chunks
+
+
+def train_prepared(actor, critic, actor_optimizer, critic_optimizer, chunks, config,
+                   precision=None, scaler=None, guard=lambda: None):
+    actor_optimizer.zero_grad(set_to_none=True)
+    critic_optimizer.zero_grad(set_to_none=True)
+    count = sum(chunk['batch']['size'] for chunk in chunks)
+    loss_sum = entropy_sum = 0.
+    device = next(actor.parameters()).device
+    for chunk in chunks:
+        guard()
+        context = torch.autocast(device.type, dtype=precision) if precision is not None else nullcontext()
+        with context:
+            logp, entropy, _ = distribution(actor, chunk['batch'], config)
+            values = critic_values(critic, chunk['batch'])
+        surrogate, _ = clipped_surrogate(logp, chunk['batch']['old_logp'], chunk['advantages'], config['clip_epsilon'])
+        actor_loss = -surrogate - config['entropy_coefficient'] * entropy
+        value_loss = .5 * (values - chunk['targets']).square()
+        loss = (actor_loss.sum() + value_loss.sum()) / count
+        if scaler is None:
+            loss.backward()
+        else:
+            scaler.scale(loss).backward()
+        loss_sum += float(actor_loss.detach().sum())
+        entropy_sum += float(entropy.detach().sum())
+    if scaler is not None:
+        scaler.unscale_(actor_optimizer)
+        scaler.unscale_(critic_optimizer)
+    a_norm = torch.nn.utils.clip_grad_norm_(actor.parameters(), config['gradient_clip'])
+    c_norm = torch.nn.utils.clip_grad_norm_(critic.parameters(), config['gradient_clip'])
+    require(torch.isfinite(a_norm) & torch.isfinite(c_norm), 'finite actor/critic gradients')
+    if scaler is None:
+        actor_optimizer.step()
+        critic_optimizer.step()
+    else:
+        scaler.step(actor_optimizer)
+        scaler.step(critic_optimizer)
+        scaler.update()
+    return dict(actor_loss_sum=loss_sum, entropy_sum=entropy_sum, actor_gradient_norm=float(a_norm),
+                critic_gradient_norm=float(c_norm), optimizer_steps=1)
+
+
 def train_minibatch(actor, critic, actor_optimizer, critic_optimizer, steps, advantages, targets,
                     config, microbatch, device, guard=lambda: None):
     require(len(steps) > 0 and 0 < microbatch <= config['minibatch_size'], 'microbatch within minibatch')
-    actor_optimizer.zero_grad(set_to_none=True)
-    critic_optimizer.zero_grad(set_to_none=True)
-    loss_sum = entropy_sum = 0.
-    preparation_seconds = computation_seconds = 0.
-    for offset in range(0, len(steps), microbatch):
-        guard()
-        stop = min(len(steps), offset + microbatch)
-        began = time.perf_counter()
-        batch = prepare(steps[offset:stop], config, actor.width, device)
-        advantage = advantages[offset:stop].to(device)
-        target = targets[offset:stop].to(device)
-        preparation_seconds += time.perf_counter() - began
-        began = time.perf_counter()
-        logp, entropy, _ = distribution(actor, batch, config)
-        surrogate, _ = clipped_surrogate(logp, batch['old_logp'], advantage, config['clip_epsilon'])
-        actor_loss = -surrogate - config['entropy_coefficient'] * entropy
-        value_loss = .5 * (critic_values(critic, batch) - target).square()
-        ((actor_loss.sum() + value_loss.sum()) / len(steps)).backward()
-        loss_sum += float(actor_loss.detach().sum())
-        entropy_sum += float(entropy.detach().sum())
-        computation_seconds += time.perf_counter() - began
-    a_norm = torch.nn.utils.clip_grad_norm_(actor.parameters(), config['gradient_clip'])
-    c_norm = torch.nn.utils.clip_grad_norm_(critic.parameters(), config['gradient_clip'])
-    require(torch.isfinite(a_norm) and torch.isfinite(c_norm), 'finite actor/critic gradients')
-    actor_optimizer.step()
-    critic_optimizer.step()
-    return dict(actor_loss_sum=loss_sum, entropy_sum=entropy_sum, actor_gradient_norm=float(a_norm),
-                critic_gradient_norm=float(c_norm), preparation_seconds=preparation_seconds,
-                computation_seconds=computation_seconds, optimizer_steps=1)
+    began = time.perf_counter()
+    chunks = prepare_minibatch(steps, advantages, targets, config, actor.width, microbatch, device)
+    if torch.device(device).type == 'cuda':
+        torch.cuda.synchronize(device)
+    preparation_seconds = time.perf_counter() - began
+    began = time.perf_counter()
+    result = train_prepared(actor, critic, actor_optimizer, critic_optimizer, chunks, config, guard=guard)
+    if torch.device(device).type == 'cuda':
+        torch.cuda.synchronize(device)
+    return dict(**result, preparation_seconds=preparation_seconds, computation_seconds=time.perf_counter() - began)
 
 
 def update(actor, critic, actor_optimizer, critic_optimizer, shuffle_rng, results, config,

@@ -1,4 +1,4 @@
-# PPO training pipeline and long-run readiness
+# PPO training pipeline and renewed input-contract comparison
 
 ## Status
 
@@ -25,7 +25,9 @@ are deliberately deferred to that point.
    and acceptance criteria, then implement them.
 7. Obtain independent reviews, verify actionable findings, fix confirmed issues,
    and complete thorough tests and a representative actual execution check.
-8. Start long training only after the production readiness stage passes.
+8. After readiness passes, repeat the previous input-contract model screen
+   with PPO, a critic and GAE under a common shallow training/evaluation budget.
+   This replaces the previously planned 12-hour long training run.
 
 Preserve native factory validity, actual behavior probabilities, PPO/GAE
 semantics, finite updates and meaningful held-out evaluation throughout. Keep
@@ -49,3 +51,9 @@ outside tracked source directories.
 - At the user's request, normal training also drops repeated observation hashes
   and input/mask/reward validation; retain the already-computed finite gradient
   norm guard before optimizer steps. Standalone development checks stay separate.
+
+- The user replaced the 12-hour long run with a renewed shallow comparison of
+  the previous input-contract model variants now that PPO learns. Preserve
+  the device/AMP and production-readiness stages. Extend and verify batched
+  actor execution beyond action-only before the comparison. Select the exact
+  short budget and freeze the comparison protocol before execution.
