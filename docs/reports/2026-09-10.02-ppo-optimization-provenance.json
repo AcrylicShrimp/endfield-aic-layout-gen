@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "purpose": "Retained CPU profiling, optimization and bounded native continuation evidence.",
+  "server_root": "/home/ashrimp/Srv/aic-ppo-area-20260909",
+  "reports": {
+    "ppo-pipeline-profile": {
+      "path": "/home/ashrimp/Srv/aic-ppo-area-20260909/artifacts/factory-edit-pilot/ppo-pipeline-profile/report.json",
+      "sha256": "9f940634c6247260d11fbbd83f3375ae4a33518cac5ab7a97a92921a4bbdf6b9"
+    },
+    "ppo-optimization-cpu-final": {
+      "path": "/home/ashrimp/Srv/aic-ppo-area-20260909/artifacts/factory-edit-pilot/ppo-optimization-cpu-final/report.json",
+      "sha256": "75220d4ef64004e83abd8246c5a639045e0fe2b58873eb298a96c3581a58047b"
+    },
+    "ppo-native-optimized-check-v3": {
+      "path": "/home/ashrimp/Srv/aic-ppo-area-20260909/artifacts/factory-edit-pilot/ppo-native-optimized-check-v3/report.json",
+      "sha256": "e409d2fd043a2fbff32cf96032c33d324fadc321125ccc27a7ccef924902fc24"
+    }
+  },
+  "retained_archive": {
+    "local_path": "artifacts/factory-edit-pilot/ppo-optimization-retained.tar.zst",
+    "bytes": 29442130,
+    "sha256": "d67c87188f284741819c84f17d6f624aceb5098e4bad65fe3ee3649bd97a97d9"
+  }
+}
