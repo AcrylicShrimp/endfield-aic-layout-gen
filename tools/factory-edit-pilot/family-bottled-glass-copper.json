@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "target": {
+    "item": "item-fbottle-glass-copper",
+    "quantity": 1,
+    "duration_ms": 10000
+  },
+  "source_selections": [
+    {
+      "path": "/target/recipe:filling-bottled-glass-copper/input:item-liquid-copper",
+      "source": {
+        "kind": "recipe",
+        "recipe": "liquid-transmuter-1-liquid-liquid-copper-1"
+      }
+    },
+    {
+      "path": "/target/recipe:filling-bottled-glass-copper/input:item-liquid-copper/recipe:liquid-transmuter-1-liquid-liquid-copper-1/input:item-gas-copper",
+      "source": {
+        "kind": "recipe",
+        "recipe": "liquid-transmuter-2-gas-gas-copper-1"
+      }
+    },
+    {
+      "path": "/target/recipe:filling-bottled-glass-copper/input:item-liquid-copper/recipe:liquid-transmuter-1-liquid-liquid-copper-1/input:item-gas-copper/recipe:liquid-transmuter-2-gas-gas-copper-1/input:item-copper-nugget",
+      "source": {
+        "kind": "recipe",
+        "recipe": "furnance-copper-nugget-1"
+      }
+    },
+    {
+      "path": "/target/recipe:filling-bottled-glass-copper/input:item-liquid-copper/recipe:liquid-transmuter-1-liquid-liquid-copper-1/input:item-gas-copper/recipe:liquid-transmuter-2-gas-gas-copper-1/input:item-copper-nugget/recipe:furnance-copper-nugget-1/input:item-liquid-water",
+      "source": {
+        "kind": "external-input"
+      }
+    }
+  ]
+}

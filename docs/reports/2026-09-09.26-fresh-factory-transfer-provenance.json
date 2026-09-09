@@ -1,0 +1,667 @@
+{
+  "schema_version": 1,
+  "runtime_revision": "25b57db",
+  "scope": "Twelve declared admissions, five complete fresh originals, frozen-policy transfer with all rejected attempts preserved",
+  "episode_artifacts": {
+    "count": 60,
+    "hash_manifest": "artifacts/factory-edit-pilot/full-factory-fresh-transfer/audit.json",
+    "coverage": "Every episode and best file hash; report.json identifies directories"
+  },
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer/audit.json",
+      "sha256": "05f6f2f8793cc7d2cb4590d41bcfdfa88ca5670db0c86464c5e89ca519b583ce",
+      "bytes": 28487
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer/cleanup.json",
+      "sha256": "0de16689ed4596f84eb8e095b0f19de3f2320a6300d4b4ae5eff4f193f76193b",
+      "bytes": 13573
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer/protocol.json",
+      "sha256": "6e90650e8c88e121bb4f2a354d0ea6342fe78858fe25734bf17c2e0c7e0a106b",
+      "bytes": 57600
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer/report.json",
+      "sha256": "3879818e6275e80f2725c491bdadd1a0093dc14e27860784162eb97b1de74445",
+      "bytes": 94533
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer/summary.json",
+      "sha256": "6761175b77d637c55e81aca70576734913ce17194c8848d73c5cdc24146fd448",
+      "bytes": 20049
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer/view-food-23/comparison.png",
+      "sha256": "c4f15af762d5681820c063c90c75026298b0ccc6f3894ef06ec0a0ddc8f8b209",
+      "bytes": 200123
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer/view-food-23/comparison.svg",
+      "sha256": "ef1929488bf8a87c1d51b76a3ab8f8cc2712a378c5853534f78511ed8717d420",
+      "bytes": 661924
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer/view-food-23/view.json",
+      "sha256": "b388030b4a57a9285936db5b9511afdcbf9d84e9b04fb9f711e05513c56a09dd",
+      "bytes": 1197
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer/view-inputs.json",
+      "sha256": "2ee7b65a3bb2663513e1b35dcfd4b0b0ebeecabc9e6348f698b54cb3665d681c",
+      "bytes": 5700
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer/view-medical-93/comparison.png",
+      "sha256": "86e15cbd42f034517fa1d7702e7c61986180f7d309a2a148204a753ebbc2c40c",
+      "bytes": 468112
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer/view-medical-93/comparison.svg",
+      "sha256": "038249a814350fb41bdfd1becbcefd977f9f9d6f384b12476ce3d47fd74a42e1",
+      "bytes": 4948046
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer/view-medical-93/view.json",
+      "sha256": "907611acd35acef40c321d142b10d18704132f3230dc7700595bc383e8fbba27",
+      "bytes": 1194
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-copper-throughput-diagnosis.json",
+      "sha256": "2a94b71a39c1a1be6cacb427e8ccd651fa3ae5b1ef4abd60b2f5576c766f3224",
+      "bytes": 589
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-copper-rate-0/attempt.json",
+      "sha256": "f8add95ad659d9ee5b9d2b2f405a1dae07b7c618c02c14b62ee03b245adfff6b",
+      "bytes": 708
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-copper-rate-0/flow-process.json",
+      "sha256": "a15dda49e3bed774ae3b1ad5749e996d62e442d31c5e45dce5b56ca4f19d0931",
+      "bytes": 486
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-copper-rate-0/source-plan.json",
+      "sha256": "7cd34765db5ed7b34cdc90850009dc1b61a3946c64aa8de02a55904df129d1bf",
+      "bytes": 1106
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-copper-rate-0/wiring.json",
+      "sha256": "36d9c5d6efe32ca4312d25170ae458386f3aee104e7ea0bf6b63853b3424d8ed",
+      "bytes": 293
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-copper-rate-1/attempt.json",
+      "sha256": "19b7692c8be366916c03707b6e21995e896ee05d7a340aab1f418373bd4c9e15",
+      "bytes": 707
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-copper-rate-1/flow-process.json",
+      "sha256": "983d5b5cf55b3f0b38c08f96850cd194e321fee601a9ccd848de7e8738b541dd",
+      "bytes": 486
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-copper-rate-1/source-plan.json",
+      "sha256": "6770cd59a9c29deb54851aa65c2806e7ce5ef4d0cb2f1db5af4572cd23b11fd1",
+      "bytes": 1105
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-copper-rate-1/wiring.json",
+      "sha256": "36d9c5d6efe32ca4312d25170ae458386f3aee104e7ea0bf6b63853b3424d8ed",
+      "bytes": 293
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-copper-rate-2/attempt.json",
+      "sha256": "197d0ea25c72eb8fe7e6fabbe1a7d386faecc89afdd2d156dd6d48d677d57dfa",
+      "bytes": 706
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-copper-rate-2/flow-process.json",
+      "sha256": "6a0dc35a6cece5ccacf5cc54839068577836acc2654af880995778476d4ca547",
+      "bytes": 486
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-copper-rate-2/source-plan.json",
+      "sha256": "23c0ace9746b909f9ec4d3e1dfcb5e6e7247bb5c88be6dbc03bec898bc9d5559",
+      "bytes": 1104
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-copper-rate-2/wiring.json",
+      "sha256": "36d9c5d6efe32ca4312d25170ae458386f3aee104e7ea0bf6b63853b3424d8ed",
+      "bytes": 293
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-water-rate-0/attempt.json",
+      "sha256": "223ef99c2ad2322d869eb5d99a2e37db52c0398e7c615c0ad52e356a04bb2355",
+      "bytes": 704
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-water-rate-0/flow-process.json",
+      "sha256": "c777050e17441dfd951b7b7323752b5cee0c37146bbdfee79f90d96aa456a6a9",
+      "bytes": 484
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-water-rate-0/source-plan.json",
+      "sha256": "18dae36a43b50b0dc5c45c575fc512cf37955454846297ec065fb104aeddefdb",
+      "bytes": 234
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-water-rate-0/wiring.json",
+      "sha256": "36d9c5d6efe32ca4312d25170ae458386f3aee104e7ea0bf6b63853b3424d8ed",
+      "bytes": 293
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-water-rate-1/attempt.json",
+      "sha256": "211c1824319184987eb309515dc2d20695572779a07a0ea7f0c5c6065c8afb0a",
+      "bytes": 703
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-water-rate-1/flow-process.json",
+      "sha256": "0243e040a8c9c0aabea5c439742cede8e2267a4174a5520d5de91454c77834fd",
+      "bytes": 484
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-water-rate-1/source-plan.json",
+      "sha256": "e82cd8f2fa492384eb8761a8e5fbac98543c144d03cc0a57232025ebbd0e522a",
+      "bytes": 233
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-water-rate-1/wiring.json",
+      "sha256": "36d9c5d6efe32ca4312d25170ae458386f3aee104e7ea0bf6b63853b3424d8ed",
+      "bytes": 293
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-water-rate-2/attempt.json",
+      "sha256": "5025e56da47af6d1821d23e3a012c2ce5378002f554f2c274fbef45a9aeebf33",
+      "bytes": 703
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-water-rate-2/flow-process.json",
+      "sha256": "2c11f213d267ffd2f074e3c3dc67f02faf2d1f49cb6dd81499061233bfbf0d9e",
+      "bytes": 485
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-water-rate-2/source-plan.json",
+      "sha256": "2f34a235222a9f719297df0ed0ecbeceb85db6e644506055fc44baf893e13dae",
+      "bytes": 232
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-glass-water-rate-2/wiring.json",
+      "sha256": "36d9c5d6efe32ca4312d25170ae458386f3aee104e7ea0bf6b63853b3424d8ed",
+      "bytes": 293
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/bottled-water-throughput-diagnosis.json",
+      "sha256": "3ab68acd1c571495eebf208709fe6d70b8dabf8146df07fdcce03db9ca8a5b00",
+      "bytes": 587
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-0/attempt.json",
+      "sha256": "7617a3598a13047c56a8c097ca6211365cfaed7fb8d02654db3db3eda401f46b",
+      "bytes": 1352
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-0/construction-process.json",
+      "sha256": "72edf70f0026bd7afe56c768c98532fb5c291ee0486864810c2e80f32c44e0f0",
+      "bytes": 1528
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-0/construction-process.stdout",
+      "sha256": "d1335e20ac567f96a37e0110f2888b7390d229a5931206b1f4fd850b52ebb10e",
+      "bytes": 484
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-0/construction.json",
+      "sha256": "879803ec0796b69305f7323d0b820f288d2e9e75deabb4c851c15e996e6bcbde",
+      "bytes": 8456935
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-0/flow-process.json",
+      "sha256": "7c38a66eea80d7567c0dfccaf4649d6c06755fdf33caebe9c1b125f8d3d9aff3",
+      "bytes": 500
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-0/original-request.json",
+      "sha256": "ed6b042762cf71ba65f7f3161ae0c01072d5c224416c2a8286f522aee42dd141",
+      "bytes": 30820
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-0/root.json",
+      "sha256": "06af71b96fd874b346d1c3f01679b0d8eadec5cd603eca79672be248936ab553",
+      "bytes": 170338
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-0/source-plan.json",
+      "sha256": "25111b79992015be3d9e2507987299b7b971f685eeb0204ad53eac6706f8d1f9",
+      "bytes": 612
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-0/validation.json",
+      "sha256": "bc7242a7d9f3d0e4bc8a154ad54c133d85a55ccb6b67ade36e905597122b5c15",
+      "bytes": 22201
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-0/wiring.json",
+      "sha256": "00a67f186e340d83123e70c6e35adeea91926d14948dbdfbefa5879964f7a3c5",
+      "bytes": 35613
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-1/attempt.json",
+      "sha256": "2d9dfc59c2ac9148a20248af112334175858523edee95fb65241f782bbb565c9",
+      "bytes": 1363
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-1/construction-process.json",
+      "sha256": "99f4f1fac438c2fb8ab5246846ecb68eb584dd911d826c00cc50fcc905e6764c",
+      "bytes": 1530
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-1/construction-process.stdout",
+      "sha256": "491216ad8906c17f008c97bd5b8d39a69aafc892fe868a666454a672cb25c160",
+      "bytes": 484
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-1/construction.json",
+      "sha256": "7e65af01af89bfc372ac70eebada474f9b9f326fd42df30ee22f095f1fe730f9",
+      "bytes": 44531894
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-1/flow-process.json",
+      "sha256": "959281438ff482f07ccabf65242c17aa497cb362a1f21618a01caf3c3485a232",
+      "bytes": 499
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-1/original-request.json",
+      "sha256": "2a42f6daa83c9bd1068aca35156f44d8ae4c2a2c471de3b367656cc4f5b09aeb",
+      "bytes": 70394
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-1/root.json",
+      "sha256": "2d71abcc7bcad2d6a98cff6edefe37c60ffdaedd8e795dd04d5ffcd7a03ce29b",
+      "bytes": 459476
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-1/source-plan.json",
+      "sha256": "29498219158f06be8b62141f3ed51daa84389a749f018734701e120786a6fd39",
+      "bytes": 612
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-1/validation.json",
+      "sha256": "c753e8ced3d27fc390274195fa01ecde2aad5f6bfeccc6f75f93254f117c2828",
+      "bytes": 44797
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-1/wiring.json",
+      "sha256": "92b9a7d643b7215496942a7a221e35e6d50168febcb0699547989b43359d2c17",
+      "bytes": 79440
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-2/attempt.json",
+      "sha256": "1cffa7b63f5e54b04453dd9ec2964d605e10c31458298efbf9be232ce46b90bb",
+      "bytes": 983
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-2/construction-process.json",
+      "sha256": "246be3b319ad2b9b1fc876ee2470eedc589d1d4123e23db70245d08b842a9a9c",
+      "bytes": 1528
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-2/construction-process.stdout",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-2/flow-process.json",
+      "sha256": "c7ea3870a6190d94937ad9e49a19ac6a12e09f71dde88854b055ca9ed076b1a9",
+      "bytes": 499
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-2/original-request.json",
+      "sha256": "baa55e4392e9bddfe9b80d431107cdc81df2126949b8bf1f763330d6f1c10fcf",
+      "bytes": 137390
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-2/source-plan.json",
+      "sha256": "197f5bdae104bbeb5788f88bbe121a209768b34062387ca0d86b3d9ac7ff35c5",
+      "bytes": 611
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-food-transfer-rate-2/wiring.json",
+      "sha256": "3044865045da0d83770ab1fbc1e6c3fe9a2ec7a8899a9046252a29439b50f7c5",
+      "bytes": 154796
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-0/attempt.json",
+      "sha256": "89ffde438ba40ace61c895557bb10c95c8799ef7cbbab996c7c2dd3c49ddbaa1",
+      "bytes": 1364
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-0/construction-process.json",
+      "sha256": "94a709238c94b524e0183c4dca648a50cd06fe52ec9caf2d8656d9b58e580fa0",
+      "bytes": 1538
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-0/construction-process.stdout",
+      "sha256": "aeef4cd46fa49b1da7d00ae358763dd89b855fa3250e258f21f08adc6fc88f51",
+      "bytes": 490
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-0/construction.json",
+      "sha256": "7d43cdf35946fa52cd185fdba34f3e2fc5d4608fa8c56e61985808cf207f7550",
+      "bytes": 8267610
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-0/flow-process.json",
+      "sha256": "99b6b89deffec141acfa78ef97568938e6cd91f636b8bb219d177a48f6ecb0dd",
+      "bytes": 502
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-0/original-request.json",
+      "sha256": "5ab31cbe1cb56d8c75a3e1296c85a12270180d23800090883fd30c4adaff9535",
+      "bytes": 30992
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-0/root.json",
+      "sha256": "a1eda3008688e01968653092a8dc7fa035e2c2c8a78889a13491734247e30ec3",
+      "bytes": 172998
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-0/source-plan.json",
+      "sha256": "14981844ac4c51a18b6000511d91b9c77f30abeee88963138696b150ea4f0eb2",
+      "bytes": 618
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-0/validation.json",
+      "sha256": "52fc89818e0581ff4ecc898d0db8b4b64a0ee7660a226207bca58bb131a7e0a4",
+      "bytes": 22297
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-0/wiring.json",
+      "sha256": "ca437974e6dc3da3ff54dd6d43fac48d3d4232bd8031fd38428340bb52be4298",
+      "bytes": 35789
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-1/attempt.json",
+      "sha256": "74b3d8ed4b540b50d869fc54f2f73c3b98d6370238328d02cc50399523a185fd",
+      "bytes": 1368
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-1/construction-process.json",
+      "sha256": "58f488d5c2ea08c90a8c9c98520f5b745ffe32452681714f2cccbbe5342bc6d8",
+      "bytes": 1532
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-1/construction-process.stdout",
+      "sha256": "1cae2a8d586d8a71bbfed461c581eea3ba3e0fca1f5335aaca67872112ec915d",
+      "bytes": 490
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-1/construction.json",
+      "sha256": "15a6f3144fe31c80fad2ecc668e0a6529691091ef734a89648629ed45945102d",
+      "bytes": 60377962
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-1/flow-process.json",
+      "sha256": "28096f9755d0f054656994e23268b30c9b06a3ad4cb07e8c0c572ba735f9f742",
+      "bytes": 502
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-1/original-request.json",
+      "sha256": "2e3dda2974d7bc3c426ee0624546e3b94638bdb37d2350a06de06f58d75d9716",
+      "bytes": 70776
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-1/root.json",
+      "sha256": "f1607499d1b375385ab122e7807e54e97cf530e8a5dc0444c3552f64f1d3f9f1",
+      "bytes": 621828
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-1/source-plan.json",
+      "sha256": "1f56ddfc843601df9a7bfdab37a47b86bec99f43203bcaf7f3e498ca802f0932",
+      "bytes": 618
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-1/validation.json",
+      "sha256": "8a31d48acef58741a0491a9f20425ad07269a392602523bb9e672f4821b30a6a",
+      "bytes": 44991
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-1/wiring.json",
+      "sha256": "a591f3ea3454a02af7241d529aef15d8096aca940aaefbd8b31e2d9b886cf83d",
+      "bytes": 79826
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-2/attempt.json",
+      "sha256": "8088fde594ea42793dd28f4c5efbd41673d12322f113f0e8a23245aa8eaa2134",
+      "bytes": 1377
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-2/construction-process.json",
+      "sha256": "2b34e9f9576b09e54aa274b59ec24d07b9f2771d56f9590a90f1ae2477b01ecf",
+      "bytes": 1533
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-2/construction-process.stdout",
+      "sha256": "914a8b8f19af0c947d5c98d06067f3912342af52b9e710646b62dfe40bde7a23",
+      "bytes": 490
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-2/construction.json",
+      "sha256": "bd8f2d5a10e001cb7ae5323153924e33d5bc16e8baf1371201dba32a281e3a6f",
+      "bytes": 201042604
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-2/flow-process.json",
+      "sha256": "4f91615b8109cd4e4f24dd615207301ff90a836ce0786a0ebeba48f93a18b2aa",
+      "bytes": 502
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-2/original-request.json",
+      "sha256": "4896d1b9629a72170aee2a1fe3c86903c77df0e82d21ce5a046c3c16c35f0ebc",
+      "bytes": 138140
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-2/root.json",
+      "sha256": "12d2991e8366b1e15b02d8b87da9cef0e1b1a4ac43996eb4a7d2f8812c04d18a",
+      "bytes": 1062445
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-2/source-plan.json",
+      "sha256": "04c4c2c1646993cf0d4b3a3833c5c9c715d52ce75c33fb94f7e3b07cbd6b05bd",
+      "bytes": 617
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-2/validation.json",
+      "sha256": "f9b0832a95d2f413217f57c8d2e5019e49fde0061fa94110ac9a5a5045ce6a49",
+      "bytes": 90126
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/enriched-consumables-medical-transfer-rate-2/wiring.json",
+      "sha256": "deb330ccd20096c201156338360579736eec916b7d0b44dd5b8f4d7c5d68a929",
+      "bytes": 155550
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/provenance.json",
+      "sha256": "fdf170cdef6d0185b90c745ae049f558f6ad14899b6b85d3bb95353e87903014",
+      "bytes": 7369
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/report.json",
+      "sha256": "537364fe4aa4a9674be8f2f1f57faec32c536da06d93ac439555093982e597c0",
+      "bytes": 19563
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-admission/roots.json",
+      "sha256": "d0e8d1bffaa1cf3614336759a5e5ba0becb0c83535f9c67aed1275e81efc6e16",
+      "bytes": 2487607
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/catalogs.json",
+      "sha256": "47a4b51d75501d35b73e576aa879fa36f229a2727dcaf642fa9ccecb5fe5c84e",
+      "bytes": 481
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-food-transfer-rate-0/initial.json",
+      "sha256": "79fa2566950c7998b4a20656473223a26950e431ffb0d06da6e1cc345a7294c1",
+      "bytes": 139365
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-food-transfer-rate-0/original-request.json",
+      "sha256": "ed6b042762cf71ba65f7f3161ae0c01072d5c224416c2a8286f522aee42dd141",
+      "bytes": 30820
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-food-transfer-rate-0/reference.json",
+      "sha256": "cb33c59ae4dd844ba7fc60f05b57f91ef4d707361c1df0bfd196982ddc8d1649",
+      "bytes": 22201
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-food-transfer-rate-0/request.json",
+      "sha256": "5df303d810c3ed0f75323714d90e04cae40b18b1f7a8e3717cd945defeaf6cfc",
+      "bytes": 26755
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-food-transfer-rate-1/initial.json",
+      "sha256": "690dbfe26b855bffa77997ff3e2586bccaba146156afd9eeb6dae65902a61aa3",
+      "bytes": 388929
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-food-transfer-rate-1/original-request.json",
+      "sha256": "2a42f6daa83c9bd1068aca35156f44d8ae4c2a2c471de3b367656cc4f5b09aeb",
+      "bytes": 70394
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-food-transfer-rate-1/reference.json",
+      "sha256": "261f3567f778851c331207837245033e291dc3ea6c19fc985e2d7fc0c82c5253",
+      "bytes": 44797
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-food-transfer-rate-1/request.json",
+      "sha256": "5cf67b5bda34962eded68bf1dd53e9c9bd2d54129f6301858d5c4073eb63b5b1",
+      "bytes": 53921
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-medical-transfer-rate-0/initial.json",
+      "sha256": "6dbbc431febf14f9c0ef791ef09c6bfa00b3ce4281eb90c79535b5667ca28dcb",
+      "bytes": 141850
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-medical-transfer-rate-0/original-request.json",
+      "sha256": "5ab31cbe1cb56d8c75a3e1296c85a12270180d23800090883fd30c4adaff9535",
+      "bytes": 30992
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-medical-transfer-rate-0/reference.json",
+      "sha256": "43d4cc50859f32b5ab7eed969def2edc0b332fa22a44c5e76965570f4e96fa32",
+      "bytes": 22297
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-medical-transfer-rate-0/request.json",
+      "sha256": "b303617c56e7c21041beef81bd4e96068406230cf671b65ee2a97c95d360ce6a",
+      "bytes": 26901
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-medical-transfer-rate-1/initial.json",
+      "sha256": "1a2c6d40cd685303609d8db67c67a956b6d5ed244cdff5c89978227def760bd8",
+      "bytes": 550896
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-medical-transfer-rate-1/original-request.json",
+      "sha256": "2e3dda2974d7bc3c426ee0624546e3b94638bdb37d2350a06de06f58d75d9716",
+      "bytes": 70776
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-medical-transfer-rate-1/reference.json",
+      "sha256": "b935beaaf992916e3c3f68f9d4d751b990424cbb987fb7ab30c0f5d5ea32ba15",
+      "bytes": 44991
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-medical-transfer-rate-1/request.json",
+      "sha256": "b402a884078a58f1217335c10b611952a96e23f56ffd6f7c6aa38f23ff1f3037",
+      "bytes": 54211
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-medical-transfer-rate-2/initial.json",
+      "sha256": "39cf12cb535bd3c675e826197fc0dd7dc397a9664bf6fdc1b54f5768ffa4325c",
+      "bytes": 924149
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-medical-transfer-rate-2/original-request.json",
+      "sha256": "4896d1b9629a72170aee2a1fe3c86903c77df0e82d21ce5a046c3c16c35f0ebc",
+      "bytes": 138140
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-medical-transfer-rate-2/reference.json",
+      "sha256": "b94ba9508c5339702fd03ca03a712f85195d428c104860872956886b648c20b8",
+      "bytes": 90126
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/enriched-consumables-medical-transfer-rate-2/request.json",
+      "sha256": "b8a34227d30dd11f7be724b9f550898ea40e4b8112b3951a9b8d186977492175",
+      "bytes": 108578
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-fresh-transfer-inputs/inputs.json",
+      "sha256": "eacec9f95a10e665b053bd3d2656782e548e7417946e76580c3928f60ef3a645",
+      "bytes": 6809
+    },
+    {
+      "path": "docs/designs/2026-09-09.26-fresh-factory-policy-transfer.md",
+      "sha256": "64d12be4bdc56b57868d18cb16cfc7ab5bc25618c8994bda3768471ce044e5e5",
+      "bytes": 4320
+    },
+    {
+      "path": "docs/reports/2026-09-09.25-full-trajectory-retention-provenance.json",
+      "sha256": "3a311cf9f14be7db3bb32b462727dc4066c528d15bd362b4b207addae32c3127",
+      "bytes": 17399
+    },
+    {
+      "path": "docs/reports/2026-09-09.26-fresh-factory-policy-transfer.md",
+      "sha256": "2f81a6b5c8302dcdb8e3e5d4ba06de695ab5138f1dc0ccd23fcd038fde7c3af6",
+      "bytes": 9877
+    },
+    {
+      "path": "tools/factory-edit-pilot/family-bottled-glass-copper.json",
+      "sha256": "78048b5a503541691b87f230a32421049beb07598eea5c2761f0e740d7188a54",
+      "bytes": 1345
+    },
+    {
+      "path": "tools/factory-edit-pilot/family-bottled-glass-water.json",
+      "sha256": "4ea711404ad16d79728ecca6236a9591d4d60183885d4cceff85b2973ea1a6f0",
+      "bytes": 314
+    },
+    {
+      "path": "tools/factory-edit-pilot/full-factory-fresh-transfer-admission.json",
+      "sha256": "7385c810f8b1050ae78fc9ca157ed5182679e4060c6d46f3891f5c74d17d1a46",
+      "bytes": 1971
+    },
+    {
+      "path": "tools/factory-edit-pilot/full-factory-fresh-transfer-study.json",
+      "sha256": "a91d2a724e837e28c82090705ecda2103bb87fee1f97885118bcf8a5ded50b9a",
+      "bytes": 169
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_fresh_transfer.py",
+      "sha256": "8b41a77bdf6da579a73dc3e29178e40b5f6f12c0770c6c933f5f4ef7a9506903",
+      "bytes": 11263
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_fresh_transfer_audit.mjs",
+      "sha256": "0a817e28481051f0fe8259ea5865ffcbc602ae0bc4b8df5222a5e13438d7efcc",
+      "bytes": 9908
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_fresh_transfer_summary.mjs",
+      "sha256": "e7d3bf7b1d4cba0fe0df285d3e30726c865f007157957087e3973db318ee14ad",
+      "bytes": 3584
+    },
+    {
+      "path": "tools/factory-edit-pilot/test_full_factory_fresh_transfer.py",
+      "sha256": "ccb5a1079a313bf538fc82ab7d6e48cfe145d36b2da2aad7c357a721a59e44fd",
+      "bytes": 904
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "banks": [1700000, 1710000],
+  "horizon": 8,
+  "episode_seconds": 30,
+  "route_work": 5000,
+  "temperature": 0.05,
+  "screen_seconds": 3600
+}
