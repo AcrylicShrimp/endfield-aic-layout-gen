@@ -1,0 +1,137 @@
+{
+  "schema_version": 1,
+  "runtime_revision": "25b57db",
+  "scope": "All 119 bounded continuations and 128 audited original-graph actions; complete traces and selected witnesses remain ignored; no training performed",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-contraction-continuations/audit.json",
+      "sha256": "113dd4d15a6a1d30f95fb1f021f0594ef44cfbca8613f61b853b707cb6cf4163",
+      "bytes": 17154
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-contraction-continuations/best.json.gz",
+      "sha256": "79733ff88c571a7db61193ef818598ab1490c0cacde4ce3f4a7b02bea027f40a",
+      "bytes": 131404
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-contraction-continuations/component-best.json.gz",
+      "sha256": "eeecdf4bfcd2a05a95f4b3261bf4f7e8c4e8085fe7abb5d29503d8dd7b565490",
+      "bytes": 132240
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-contraction-continuations/port-best.json.gz",
+      "sha256": "5eff48985c0a1379d30945761fd6635de1ce63f37d4c1b72539833f1c57d5447",
+      "bytes": 132495
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-contraction-continuations/pose-best.json.gz",
+      "sha256": "de69d7deea3205e88d513334784c0c2724f886922501b5b57e720a56f352a032",
+      "bytes": 131409
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-contraction-continuations/protocol.json",
+      "sha256": "af736cdbeb14e04670a79c1bb2354b0e34d01f67c9e0370ff49bf36c51a5c162",
+      "bytes": 26752
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-contraction-continuations/release_bridge-best.json.gz",
+      "sha256": "1390a71fed4d1786811512800038f8ffc2c7db3f0c10b3f55f005fb383582cf7",
+      "bytes": 132132
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-contraction-continuations/report.json",
+      "sha256": "bb43310c17655234d9f946de83c515376995cf6f36010afc050b48aec7d4d2ab",
+      "bytes": 2596
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-contraction-continuations/reroute-best.json.gz",
+      "sha256": "6441709c813ce3ea4953c63cbfabe0e5880f5e6fcc4c152130145f08c847344d",
+      "bytes": 132479
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-contraction-continuations/trajectories.json.gz",
+      "sha256": "8c4c5be3d37e3206b1f455451274a2c0309c80b4405690fe8d32bf277c3d72e1",
+      "bytes": 22838
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-contraction-continuations/view/comparison.png",
+      "sha256": "7ceea28edaa5930ef3662cf0abac50e4a30b775652b8aeedddf1e022591e44f8",
+      "bytes": 611064
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-contraction-continuations/view/comparison.svg",
+      "sha256": "6ac618e074f786652a17d4176ad4c83bc15180bdfce6442651198e3c186c0103",
+      "bytes": 8994650
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-contraction-continuations/view/view.json",
+      "sha256": "64ad3d83100184556fb4fa97ba458afaa79b7dc80ffe2db4a3f056692fbcdafc",
+      "bytes": 1217
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/audit.json",
+      "sha256": "c9adc3f386e42d2d86dc7cd01762f4bd85aa0b642cdaa3fd4c161c372f9de296",
+      "bytes": 39618
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/outcomes.json.gz",
+      "sha256": "1b0f03bd2a706f0937cffb76489e0b1157e7a7a204259ece1e7b3c2f7c6168df",
+      "bytes": 32673
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/protocol.json",
+      "sha256": "6943360da5bdcf6691d665995a4fc1f0cfb4da3abd4a85c308e72b4d86dfbb4e",
+      "bytes": 143317
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-dense-contrasts/report.json",
+      "sha256": "2ec998b1a55ed25009b9e3d12917801fea9a386360e22b99a63d0ed2e728865f",
+      "bytes": 3827
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-large-strip-preparation/best.json",
+      "sha256": "86ef370995ff2b132a3f6b9b6083e46048daba33d32104eae47264048a427fe0",
+      "bytes": 3938558
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/enriched-consumables-medical-fresh-rate-2/original-request.json",
+      "sha256": "c0e103c275ff84d3a9826c61a5665ff7a312e869418811a4ed7e0b10b8b43417",
+      "bytes": 179150
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/same-item-bridge-inputs/enriched-consumables-medical-fresh-rate-2/request.json",
+      "sha256": "35860538c4a0e8160b39c9c4c33a3b9cf20dd430855144a94c5f0bbb0d1e664a",
+      "bytes": 135142
+    },
+    {
+      "path": "docs/designs/2026-09-09.22-large-factory-contraction-continuations.md",
+      "sha256": "d3373baba06fa0071cf95881389fe07a0304a7639f65aab7fac97b32c661b92e",
+      "bytes": 2350
+    },
+    {
+      "path": "docs/reports/2026-09-09.21-contraction-exhausted-large-provenance.json",
+      "sha256": "1d10cd77ff0bc2010735b65bc4ba838141c3a47457e6987a2aaaf8ac861bfe35",
+      "bytes": 9045
+    },
+    {
+      "path": "tools/factory-edit-pilot/full-factory-large-continuation-study.json",
+      "sha256": "04847b1f5ee12aecd5a3416a263e660fe132a3c9029ab06db52f5f6f9d67afb9",
+      "bytes": 113
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_contraction_continuations.py",
+      "sha256": "e7b6cdee3837fd464d725eb905836d81acc1d45e8f85e844f36e28323c18c6bf",
+      "bytes": 7641
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_contraction_continuations_audit.mjs",
+      "sha256": "df2ed0df563b1b601af8fdb803c25ae87fbb404b40e3ee15259e27c23c4778c5",
+      "bytes": 8034
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_view.py",
+      "sha256": "30f3d777089268cbbeb5e53626f0b4d445f5894fd4f72337c4057e34b34227e9",
+      "bytes": 4833
+    }
+  ]
+}

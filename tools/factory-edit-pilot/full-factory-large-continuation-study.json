@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "study_seconds": 900,
+  "episode_seconds": 30,
+  "horizon": 5,
+  "route_work": 5000
+}
