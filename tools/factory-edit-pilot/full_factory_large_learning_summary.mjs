@@ -31,7 +31,9 @@ function main(o){
   const labels=read(path.join(o.screen,'label-scores.json')),labelSummary=[];
   for(const method of p.methods.filter(m=>m!=='geometry')){
     const rows=labels.filter(row=>row.method===method&&row.root!==p.large&&row.root!==p.original_large);
-    labelSummary.push({method,group:'rehearsal',lessons:rows.length,top1:rows.filter(row=>row.top1).length,mean_mass:mean(rows.map(row=>row.target_mass))});
+    labelSummary.push({method,group:'rehearsal',lessons:rows.length,top1:rows.filter(row=>row.top1).length,mean_mass:mean(rows.map(row=>row.target_mass)),
+      initial_lessons:rows.filter(row=>row.ordinal===0).length,initial_top1:rows.filter(row=>row.ordinal===0&&row.top1).length,
+      followup_lessons:rows.filter(row=>row.ordinal>0).length,followup_top1:rows.filter(row=>row.ordinal>0&&row.top1).length});
   }
   const continuationReport=read(path.join(p.continuations,'report.json')),teacher=unpack(path.join(p.continuations,'trajectories.json.gz')).find(t=>t.id===continuationReport.targets[0]);
   const largeEpisodes=r.rows.filter(row=>[p.large,p.original_large].includes(row.case)).map(row=>{

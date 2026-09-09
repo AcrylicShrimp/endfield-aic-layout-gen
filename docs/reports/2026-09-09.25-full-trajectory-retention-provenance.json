@@ -1,0 +1,377 @@
+{
+  "schema_version": 1,
+  "runtime_revision": "25b57db",
+  "scope": "Complete smaller training trajectories, two adaptations and all original graph evidence retained outside Git; no production runtime change",
+  "episode_artifacts": {
+    "count": 112,
+    "hash_manifest": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/audit.json",
+    "coverage": "Every row identifies episode and best witness hashes; report.json contains directories"
+  },
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/admission.json",
+      "sha256": "dd1fe1f2dffaec17e16e0c06f7be8d5eccbbd2937b004280570e15c462627f9a",
+      "bytes": 684
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/audit.json",
+      "sha256": "5a5cee8d26bf1d662bf24cb0f07b69059b5c264408a780623ae6465c93a27987",
+      "bytes": 47649
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/cleanup.json",
+      "sha256": "a9a1f46a4c1bbf97152f66d9628195d48d03cf636e24f8c6f003be411a7411c8",
+      "bytes": 372
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/comparison.json",
+      "sha256": "778451840730fce948a354dc9275afb24a0c812820d5c1fb0444c095fc576182",
+      "bytes": 15297
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-0--state-1.json",
+      "sha256": "61c0813fe781594271e910c1e0df19c295a14c805abe211968c663672e4ae027",
+      "bytes": 161435
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-0--state-2.json",
+      "sha256": "a4646fb6cd1d7f36409a54d6be861989fbaebf2bc0d6483020b5ade7962fa420",
+      "bytes": 160805
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-0--state-3.json",
+      "sha256": "31ffeea29e5730f8cac6cb698c3fa10771d049e77e58be5f662e1ba77a32daf0",
+      "bytes": 160175
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-0--state-4.json",
+      "sha256": "f1105e94ced91686f743fe16c70fa86e90cc879ddf4bc64d018cfb972764ec72",
+      "bytes": 159545
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-0--state-5.json",
+      "sha256": "51448a6212fc20980b89265433539a2c976e1c9aec8c4a3a5c8a346b59bddafc",
+      "bytes": 158915
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-0--state-6.json",
+      "sha256": "c5fee05d3c80db51509d0ed219fe06270a961314cf07b8607cc3e50782fa0af8",
+      "bytes": 158285
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-0--state-7.json",
+      "sha256": "61f58a628cb9f83dfe22abba14d62b8dbae94cfca7724a6af341966a7dfb40fe",
+      "bytes": 157655
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-1--state-1.json",
+      "sha256": "ffee7f8983a99ff14df41de4b7352d4cf1924b0d517033a33c4b3585ef94464d",
+      "bytes": 196020
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-1--state-2.json",
+      "sha256": "c3ac073552d2e26977032102a33fa2b90d20acf7d7de88a898040ac29fb14f46",
+      "bytes": 195078
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-1--state-3.json",
+      "sha256": "43f39d6e58d7acc0e53644d416a9fbf731a0e00d8ebc46657eadbd4ee02c82a1",
+      "bytes": 194135
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-1--state-4.json",
+      "sha256": "503bd1f6d732b05cd59f866470f74b69ce1d34060fd0b53ac1d9fcb30ead186b",
+      "bytes": 193192
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-1--state-5.json",
+      "sha256": "30edb664b32ee3a7fbc916a12c2cee01bc0b6cb55efb8ff6810a26bc58081e3a",
+      "bytes": 192250
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-1--state-6.json",
+      "sha256": "59534599fe934d631895eae7d1f81c14ead07438b34ec068f7bbef8b2456bf62",
+      "bytes": 191308
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-1--state-7.json",
+      "sha256": "3f615bcec4ef78ca190dc4f23cc368138d30c4466124a22a25c2ce417c31d39b",
+      "bytes": 190365
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-2--state-1.json",
+      "sha256": "9e6d51c7c05bebb51c1790f48b7f2ae162773d6a3f360130d53dfc3fcf35bee1",
+      "bytes": 1101031
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-2--state-2.json",
+      "sha256": "f02c8c2d453beec304f25968897a829e2cdc70ed587aab52bc1a8b3fa0a0c857",
+      "bytes": 1099990
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-2--state-3.json",
+      "sha256": "63c03bdee8cfd36cf788a220cff0ce40f19cc73582ee5b473c2d3349615eb12d",
+      "bytes": 1098990
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-2--state-4.json",
+      "sha256": "179aeacea66b129f0bffd03be313da1f5e3dbeec64bac8c886c7abc619be69a6",
+      "bytes": 1097905
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-2--state-5.json",
+      "sha256": "d99682c73241885b191a543d52e887f8ee00898bf1ebaa4bab24fafb6e6a3837",
+      "bytes": 1096923
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-2--state-6.json",
+      "sha256": "88efa0c92020a783bc8afc3c7a145bcfe4cd485cb76b6ee7f3034db5e05bd319",
+      "bytes": 1095945
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-food-rate-2--state-7.json",
+      "sha256": "0bf5aa0c2c19b3ceee7919fedfa58e5a085797c246bda4ba82cfeb11d7fb9057",
+      "bytes": 1094949
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-0--state-1.json",
+      "sha256": "a1f0a09a3558fc4c1f8ec4885cb7ff5ded36c55083d342957e5b1e1007c9c104",
+      "bytes": 187822
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-0--state-2.json",
+      "sha256": "53b4e2ae05cad518931a22fcd5b526911cec19426616a10795635ae99f751e02",
+      "bytes": 187499
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-0--state-3.json",
+      "sha256": "b0c6cf5b346453927a90ba9efd6a68c5221ad00c745edb71b51dd515a411702e",
+      "bytes": 187176
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-0--state-4.json",
+      "sha256": "a7f1cc84d1dc9b6c93205d1f27b137df446dfcb94b0cf802c5a2264ce605fa65",
+      "bytes": 186853
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-0--state-5.json",
+      "sha256": "ecb290a612a89ad36cc6a69ae3901afbc3d0a87a9048a8fc78be79fb06c140eb",
+      "bytes": 186530
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-0--state-6.json",
+      "sha256": "9b9299304c4019e91a2d4bf92bfb53f81c5604741b5cf5a865fbc3050c7fb42d",
+      "bytes": 186144
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-0--state-7.json",
+      "sha256": "555a4482c7874f9d1495b4e0904fac92c645e2fd2e7a238ecb5dee5ea8271e14",
+      "bytes": 185774
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-1--state-1.json",
+      "sha256": "8c6190fb197570756d6a0c99201a027acdfa461889e9561cd37c01fe349bfc23",
+      "bytes": 228889
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-1--state-2.json",
+      "sha256": "440453a10e70fc02a5e7f6a54ffe76de53ce3bbcba405a396109d381917ceb82",
+      "bytes": 228261
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-1--state-3.json",
+      "sha256": "6e92c84154cd469272369562d6680ead0b9bef07516e4d9b7b4724c8f126dea6",
+      "bytes": 227633
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-1--state-4.json",
+      "sha256": "a72178f319aa118c2ada86ba56b183213ff543a748a63ea109f2b0c17921bcb5",
+      "bytes": 227005
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-1--state-5.json",
+      "sha256": "43541e6ae6b98e1697c9178ed817243d3fc93f21963bcc96e16ba31bcbf0088b",
+      "bytes": 226377
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-1--state-6.json",
+      "sha256": "1b524815209530c43574da1d2f31779e2339ce70d3e9f0afb35b248e4e131876",
+      "bytes": 225749
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-1--state-7.json",
+      "sha256": "3ece689586de81c889711d343a14774e5b6eb6c34416169d22da43f7dc75d66c",
+      "bytes": 225121
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-2--state-1.json",
+      "sha256": "e9b2ab0a53aacd2c00f7395c8d0c701f1a02b709db62f2fefb524c71756c5855",
+      "bytes": 884381
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-2--state-2.json",
+      "sha256": "2be08ccb12fe84c935b4302b00d85d2ca58626455be148c232954fb2eaa2215a",
+      "bytes": 882793
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-2--state-3.json",
+      "sha256": "a8dfdff264279de65f78ab7e8287627c6dce7ecfebe2da85f7d499e41263fd66",
+      "bytes": 881205
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-2--state-4.json",
+      "sha256": "6e469ba752c87be7696b825df5ce58920250f22a6500de23ee39a6e3ef5f6b15",
+      "bytes": 879602
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-2--state-5.json",
+      "sha256": "01a0539e1994b8ed1cc1d82483b2604eacccac538f47a3bb252def2b5e23dd73",
+      "bytes": 877625
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-2--state-6.json",
+      "sha256": "643bc60f4f2c9119489803c790f75d8948a098820e29d5c7e77dbdbec39ffc29",
+      "bytes": 876006
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/enriched-consumables-medical-rate-2--state-7.json",
+      "sha256": "aeb33d31e6c6fab8dfaa35fb9bf370b3e3aac34200c5f330b26399fddf0a5568",
+      "bytes": 874034
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/label-scores.json",
+      "sha256": "b533522307857b07e8f2cebea24ac663e53ce10cb289f5ddf28d6474256ee09c",
+      "bytes": 62491
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/learned-17.pt",
+      "sha256": "2b142f0b0c32bdf538de1ae4c4d73d0dc375bef6ef294b9deec07e412ae02fd1",
+      "bytes": 515010
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/learned-29.pt",
+      "sha256": "2ecd5fb362dd04c66880e7532c86a441536030a8a5c216bd83694e0880b149fc",
+      "bytes": 515010
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/lessons-audit.json",
+      "sha256": "ca21ba1064d5dbc559f6923761d039b89cbee8112cfd455993089eda39d76617",
+      "bytes": 1743
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/lessons.json",
+      "sha256": "f0da4cc9dd825525874907f77ab06cdb88614edb761ada7162303eda473325ec",
+      "bytes": 241070
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/protocol.json",
+      "sha256": "3db348ce93826f283d3012d460e5a4e878279fdbdf953e78c4086e82ecadb807",
+      "bytes": 303124
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/rehearsal-contrasts.json.gz",
+      "sha256": "e05778bb3e2cfc22e121a81eacb8905dc8d9e564f7efddb275be39311f30085c",
+      "bytes": 36670
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/report.json",
+      "sha256": "0335f801e7b1fa8a506777da85c4b275fa077d365f914112e93c4cfa12672f92",
+      "bytes": 159424
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/summary.json",
+      "sha256": "56d7e1d9747265619fbde24beeedcaf9eadf3e72d189f427a65974e5268b2c27",
+      "bytes": 53732
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/teacher-traces.json.gz",
+      "sha256": "75febb74b43f9997cd5dbecf15f80f8535b33401681c1b27df34ee44d79cdb5a",
+      "bytes": 7505
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/updates.json",
+      "sha256": "35b3fd9cf63eb238632c93ffb4bc19efb54f965fdd85784dbad3e422494d5c72",
+      "bytes": 388068
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/view-food-17/comparison.png",
+      "sha256": "287955498dfa6505b0e152acda6605a9fac29296c885da80f77fd0e478b2119e",
+      "bytes": 150709
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/view-food-17/comparison.svg",
+      "sha256": "bf7b50f78a53c2010c39374454a68ccc58774d9553c5ab599adf71d0043d1964",
+      "bytes": 358407
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/view-food-17/view.json",
+      "sha256": "6e87a610abc1643678bc46fe6155dad8cbc0ab65bd0ee30aae62e8790c42ce1f",
+      "bytes": 1174
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/view-inputs.json",
+      "sha256": "c7e3fcc63819855fdeac1a566f333c03a21375f3990d50238add117e3752dd53",
+      "bytes": 2393
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/view-medical-17/comparison.png",
+      "sha256": "43731e726a757ba048f6d8d6e495a36ff080e749abfb42a639f8f84cc89d19d8",
+      "bytes": 165356
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/view-medical-17/comparison.svg",
+      "sha256": "bc90ae257de9f17cfc8a3715b802309366d9adf5896764409a9c2d9c5e76e855",
+      "bytes": 396996
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-trajectory-retention/view-medical-17/view.json",
+      "sha256": "0dcc26fced15353aefb69dfc8222ae8ca4d738c3d6bb36fd82c53dbae8a1aa7f",
+      "bytes": 1188
+    },
+    {
+      "path": "docs/designs/2026-09-09.25-full-trajectory-retention.md",
+      "sha256": "6a9011288e5eb22bed4ce282348448b7f664adf4fc5570f8a3514c44a187ac28",
+      "bytes": 4171
+    },
+    {
+      "path": "docs/reports/2026-09-09.24-large-factory-exposure-provenance.json",
+      "sha256": "626f4588a24901c61a3e46d5af922f9b5143b72e257f4d89a1db72b99d8ab83d",
+      "bytes": 7312
+    },
+    {
+      "path": "docs/reports/2026-09-09.25-full-trajectory-retention.md",
+      "sha256": "b670710a43103711c0bdd7b5e1d0097162dddb35d0e3b29884f6e38bd944cdee",
+      "bytes": 12021
+    },
+    {
+      "path": "tools/factory-edit-pilot/full-factory-retention-study.json",
+      "sha256": "d168a899ca8bfcfccc03ff8aedb4dda5ebd96d21129781ca576e10e4c76a4b3d",
+      "bytes": 454
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_large_exposure_compare.mjs",
+      "sha256": "7ba2e4ce85f5316e42be7a415fcdc42752980d89a2a90dda634373f16de406e1",
+      "bytes": 3551
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_large_learning_summary.mjs",
+      "sha256": "618b2faef270a40b64b10a5b24b09b04f4c1c3894e530f3f6f794f366acc222b",
+      "bytes": 5288
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_retention.py",
+      "sha256": "853e54b1b30e9847d9ffda901aa82a8d68af5740eab25ec73711b6f0f33dd538",
+      "bytes": 12303
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_retention_audit.mjs",
+      "sha256": "46d4abe57fecfd95d39c620ef998730ef2bf2321bb63f13c7ed7a526637f5085",
+      "bytes": 10728
+    },
+    {
+      "path": "tools/factory-edit-pilot/test_full_factory_retention.py",
+      "sha256": "d0b6a879fc5d55d66dbc0566f81e08a505d80b515b7e9ab81ffd371f9b9b3a7e",
+      "bytes": 2314
+    }
+  ]
+}
