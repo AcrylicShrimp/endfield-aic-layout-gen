@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "scope": "Read-only objective and sufficient input-equality obstruction audit; no new training",
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-learnability-audit/protocol.json",
+      "sha256": "b314c9a9c95489c534a40b7bf8f54e2d32d3d31e324b7e8e6271a9ebc718fce0",
+      "bytes": 41408
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-learnability-audit/report.json",
+      "sha256": "c982d089b542a8a2d3e3e5058ec2d6dc8ba3bbc7f6534d96eec3a0938b67dff3",
+      "bytes": 22053
+    },
+    {
+      "path": "docs/reports/2026-09-09.25-full-trajectory-retention-provenance.json",
+      "sha256": "3a311cf9f14be7db3bb32b462727dc4066c528d15bd362b4b207addae32c3127",
+      "bytes": 17399
+    },
+    {
+      "path": "docs/reports/2026-09-09.28-varied-factory-teachers-provenance.json",
+      "sha256": "853946a0d1b63ba814a379f5541b06fde5199a7e423f2ea8caad4b415b31a36d",
+      "bytes": 33196
+    },
+    {
+      "path": "docs/reports/2026-09-09.29-learning-objective-and-assumptions-audit.md",
+      "sha256": "3517d1d82bb40f6088601ab5fdfbf1c7d75e30f0a2c8f69a12908f22de147d7c",
+      "bytes": 9286
+    },
+    {
+      "path": "docs/todos/2026-09-09-reinforcement-learning-objective-restoration.md",
+      "sha256": "20890b6ef89200e5460ca9845f87ecf538cc20cd4fdd2ca26a4658f88a638bfd",
+      "bytes": 3021
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_best_learning.py",
+      "sha256": "0b73302164e08c0a10e804059f402ea5054a72a1d1b9bb1c5f5a6620b89a69b6",
+      "bytes": 11622
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_large_learning.py",
+      "sha256": "864823fbb641e5ac5cb29bdd825067c670a993f5b061d98ad294b74654838b3f",
+      "bytes": 22348
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_learnability_audit.py",
+      "sha256": "7c1ac2d5884e2fac2a89771abacded640bed42667671882addb33991ab503556",
+      "bytes": 6703
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_policy.py",
+      "sha256": "97dda91aecafc7e8310781c142d256a0f82fbc2a35d46a6362a0375cac67baa2",
+      "bytes": 12879
+    },
+    {
+      "path": "tools/factory-edit-pilot/full_factory_screen.py",
+      "sha256": "b5754a588bb30ae1bba953756b06799932d6846aac5cc093f53c4ee83fa48d2b",
+      "bytes": 12490
+    },
+    {
+      "path": "tools/factory-edit-pilot/test_full_factory_learnability_audit.py",
+      "sha256": "9b26089aea5ed4f77e632419b74a98b4d77c56d7c06c6b7985d29a77e3e90240",
+      "bytes": 1998
+    }
+  ]
+}
