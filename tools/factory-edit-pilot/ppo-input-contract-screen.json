@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "purpose": "input-screen",
+  "generation_config": "tools/factory-edit-pilot/random-factory-server-pilot.json",
+  "candidates": [
+    "action-only",
+    "geometry-current",
+    "full-current",
+    "current-history-4",
+    "current-history-16",
+    "current-history-16-outcomes",
+    "current-best-2",
+    "current-best-3",
+    "current-best-layout",
+    "current-best-layout-history",
+    "current-no-restore",
+    "history-no-restore"
+  ],
+  "seeds": [
+    17,
+    29
+  ],
+  "order_seed": 20260910,
+  "training": {
+    "batches": 4,
+    "attempts": 32,
+    "horizon": 32,
+    "generation_seed_base": 171000000,
+    "action_seed_base": 181000000
+  },
+  "evaluation": {
+    "at": [
+      0,
+      2,
+      4
+    ],
+    "attempts": 16,
+    "generation_seed_base": 191000000,
+    "action_seed_base": 201000000
+  },
+  "execution": {
+    "workers": 24,
+    "device": "cuda",
+    "microbatch": 64
+  },
+  "limits": {
+    "startup_seconds": 120,
+    "task_seconds": 360,
+    "batch_seconds": 900,
+    "progress_seconds": 400,
+    "run_seconds": 10800,
+    "rss_bytes": 51539607552,
+    "disk_reserve_bytes": 8589934592,
+    "cleanup_seconds": 20
+  },
+  "ppo": {
+    "gamma": 1,
+    "gae_lambda": 0.95,
+    "clip_epsilon": 0.2,
+    "epochs": 4,
+    "minibatch_size": 64,
+    "target_kl": 0.02,
+    "learning_rate": 0.0003,
+    "entropy_coefficient": 0.001,
+    "gradient_clip": 0.5
+  },
+  "tracking": {
+    "backend": "wandb",
+    "mode": "online",
+    "entity": "",
+    "project": ""
+  },
+  "retention": {
+    "training_batches": [
+      1,
+      4
+    ]
+  }
+}

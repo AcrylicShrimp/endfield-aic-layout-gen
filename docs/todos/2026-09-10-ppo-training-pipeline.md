@@ -75,3 +75,8 @@ outside tracked source directories.
   two-contract GPU stop/resume run and a 24-worker rich-input H32 run. Native
   validity, nonempty exact CUDA continuation and actual W&B scalars passed.
   Retained evidence and frozen runtimes with local/server SHA-256 verification.
+
+- Froze the renewed shallow protocol: 12 contracts × two seeds, four batches
+  of 32 fresh attempts at H32, evaluation at 0/2/4 on 16 held-out draws. This
+  keeps the old shallow comparison's maximum 4,096 training selections per
+  candidate/seed. Execution uses the reviewed harness with primary W&B tracking.
