@@ -1,0 +1,507 @@
+{
+  "schema_version": 1,
+  "runtime_revision": "25b57db",
+  "scope": "Six separately declared resolved bottled requests; four full factories including internal pipes; no training or replacement of prior failed admission",
+  "episode_artifacts": {
+    "count": 48,
+    "hash_manifest": "artifacts/factory-edit-pilot/full-factory-bottled-transfer/audit.json",
+    "coverage": "Every episode and best witness hash; directories identified in report.json"
+  },
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer/audit.json",
+      "sha256": "6ce30640737aee8740568d977c14acf228c3759ea161a2dd7c999c7890ee4c14",
+      "bytes": 20388
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer/cleanup.json",
+      "sha256": "cee4f8a733c7b86fa0a348b6194d3b06656c9a3659916d2835d7ce856823605e",
+      "bytes": 8449
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer/protocol.json",
+      "sha256": "081bf833188d663b68b4071157ef323a21448cc8a82610c908ca272b601149c0",
+      "bytes": 54786
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer/report.json",
+      "sha256": "2c6a03d7e8ff6ecf890d3083bb7c4db582a0c64a63692e587343c8c9ae665a8c",
+      "bytes": 72636
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer/summary.json",
+      "sha256": "556a37037f00e24672c817f406a90fbb7c8d437245a79b3eb719fe5a9a6e0c4f",
+      "bytes": 14127
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer/view-copper-7/comparison.png",
+      "sha256": "8e3b7f8d26606a94760338f0ca55cb6eefc0a8fb2e94bd81e8f21da11ed0dd0d",
+      "bytes": 114954
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer/view-copper-7/comparison.svg",
+      "sha256": "28b9c36c197cdfc1388e9bcd37ac836fdd3c3c8400d559179aad4b2f53c076f1",
+      "bytes": 186482
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer/view-copper-7/view.json",
+      "sha256": "573ff595bd0f559a5c9e011b8b29bab5319065e030a9454687f1ef7eabff9fc6",
+      "bytes": 1171
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer/view-inputs.json",
+      "sha256": "373b516b21f2f0e4f0138c1bfe0e77d0fcb757e0c5cab9ee0e38341c634b9a57",
+      "bytes": 6033
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer/view-water-4/comparison.png",
+      "sha256": "3cbfd040587fc680e602d0028007e68c5d3267d132438fcd4bd4e8480a97f629",
+      "bytes": 105390
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer/view-water-4/comparison.svg",
+      "sha256": "e289fc35d9b010eadc79c378752cea478ab977ad7eccd87359132f5a4464cb77",
+      "bytes": 115862
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer/view-water-4/view.json",
+      "sha256": "0706860e731c0e571e067283cd3e574397bcc6e93ddd5373e261b8f81b512268",
+      "bytes": 1163
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-0/attempt.json",
+      "sha256": "1059b1ed78fad65de3be6462817d3eb576056b21a09a0552b27b4994141f4589",
+      "bytes": 1316
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-0/construction-process.json",
+      "sha256": "3572d223161301076134e0c830b81a63ce5289f67315d9cf8a079c3cd581779c",
+      "bytes": 1513
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-0/construction-process.stdout",
+      "sha256": "75a40b6da15fc5bd4978deb2ec4de4e3d82f7287bbde8523c15fa3477501a063",
+      "bytes": 474
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-0/construction.json",
+      "sha256": "75024bb3c38f3d382ed00d4095714022352abc691a1ca975f92d421fc4e3a8ba",
+      "bytes": 964564
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-0/flow-process.json",
+      "sha256": "5ed1e79f17d4d7685d7236d5b3832af5178692f92a946f48ceee7b6a2eca61b3",
+      "bytes": 494
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-0/original-request.json",
+      "sha256": "e7b22b774388c22fdd871ba2f52df757671e087d575001d4791ec1bc26a2c695",
+      "bytes": 7051
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-0/root.json",
+      "sha256": "2e7809d4e63ba0f2883655b84e4e488159c5e46fc648f52c4be22fe0ac7b5920",
+      "bytes": 35978
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-0/source-plan.json",
+      "sha256": "932c655fd891f2aaf352f6c499cdb39f0581648660012ccee397854ec7bc14b4",
+      "bytes": 1439
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-0/validation.json",
+      "sha256": "bf2f8444c58440c067b5bfd4ef404453fc9adddef7f8137e70b79afbc2c048ad",
+      "bytes": 5640
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-0/wiring.json",
+      "sha256": "09b9faa5f01cd86f4c7dbfd6025cad34e8c5f913f736ba30ac5898a854969d9f",
+      "bytes": 9618
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-1/attempt.json",
+      "sha256": "e9834140903a1c1984a95d646b741b7864137902daac1ff737634078098682ae",
+      "bytes": 1308
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-1/construction-process.json",
+      "sha256": "b6818326f70c4b87714b346bfff62775ebeca1bf98a2bba68579a121b3a30749",
+      "bytes": 1505
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-1/construction-process.stdout",
+      "sha256": "2ba325e45cd1171471ce5e7ad9f8b9e30351191201d05fa3aa94f0b23480ce61",
+      "bytes": 474
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-1/construction.json",
+      "sha256": "4fb151c6fa0549db844e57565f6e2ed1aeecf7163c1b0cfc4aac39c905e421c4",
+      "bytes": 1379177
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-1/flow-process.json",
+      "sha256": "a95315e56d34034fd441fd053dba203e0fc43c37e7ff46a20aadebd08f166b30",
+      "bytes": 495
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-1/original-request.json",
+      "sha256": "cc6ec60d21d629f4eae6691a924984796e7c3b665ffe1fff6b068a6b25b8b5a1",
+      "bytes": 8360
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-1/root.json",
+      "sha256": "ea77a0dfd0662877d981552d11a692b81932c7d40e502f0fd0a71e0288f1c105",
+      "bytes": 43245
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-1/source-plan.json",
+      "sha256": "9353da00264045e390aea9eca3f7ecb9410a594b8e9de7d1acc9781897432a65",
+      "bytes": 1438
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-1/validation.json",
+      "sha256": "fe4ec7dceff97f7f2d6c0fa31a9537f4ced691b94ae5ba5b45d5727aba12e3c5",
+      "bytes": 6340
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-1/wiring.json",
+      "sha256": "5f6945624d36548e38e64ea019705b7e4cf5e214bd6ff9d95dc5a4120aa98f78",
+      "bytes": 11098
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-2/attempt.json",
+      "sha256": "aaf14e3ac494fddd15539776f4e1718ce8ce1515d6afefb3d7abf1c02029cdda",
+      "bytes": 1129
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-2/construction-process.json",
+      "sha256": "56cf3841daa42b73f79d38fe0b7ea7ecf26d1c47617878c1362f93e3a68a31ba",
+      "bytes": 1515
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-2/construction-process.stdout",
+      "sha256": "a7e3a84938e953cbc402b09174e7e9d2e23424838b0d398ab0d6d25cc08f4068",
+      "bytes": 483
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-2/construction.html",
+      "sha256": "3830e99b52bb140a26b21420fc6d1aa97009ad169451c36b13d182d7a1435dac",
+      "bytes": 591589
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-2/construction.json",
+      "sha256": "115822a61b82b50d071f890a0c1b0fc34c606c3afa29f19ef58544193fa075d2",
+      "bytes": 1480490
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-2/flow-process.json",
+      "sha256": "8060b686c9f256ab58548e371be87608f836aab3f76a96696b5799f56d3f5e8b",
+      "bytes": 495
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-2/original-request.json",
+      "sha256": "06abecc18065729de966c1e8df6b79d9ca433d30005af35ba5f4cc2738a243cd",
+      "bytes": 31207
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-2/source-plan.json",
+      "sha256": "b7098f616715968695fb231effdc4e3974da70a69ef6da498381f62f1c33cfaf",
+      "bytes": 1437
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-copper-shaped-rate-2/wiring.json",
+      "sha256": "b4cd4166303831e0dfd589511774db4a0328c3ef1a625a54460c318225d126da",
+      "bytes": 37005
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-0/attempt.json",
+      "sha256": "680c9cc8373d99c9a94b6078bf7ed6e44f49c4f32285fb8ca4f08468ba9cebfb",
+      "bytes": 1307
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-0/construction-process.json",
+      "sha256": "c96992c3c5c410108f9ee3d5b1b19b99e8acb87d00c169d972176ab8c588dd4e",
+      "bytes": 1511
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-0/construction-process.stdout",
+      "sha256": "7c88f380a8384fb72fb8e476a3adb38ee4e732f77f9afeedcc6e73af44a2782a",
+      "bytes": 472
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-0/construction.json",
+      "sha256": "bf64d853a4fa2bb8725adf5805c6501c7b2cc5aa8892efe50ab95d7dfbfed0f9",
+      "bytes": 242491
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-0/flow-process.json",
+      "sha256": "18076d3123099ea30cb52a31ceb5592320fd7d6127c8fef187c8ebca21375c6d",
+      "bytes": 493
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-0/original-request.json",
+      "sha256": "d13fcf1f0987683a4b6385da345d3bfec4646dcb7839c3c5e4de93360bf58a86",
+      "bytes": 2759
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-0/root.json",
+      "sha256": "74bc3c3c7f0fd6de31dfeac62cb0829f7d142991aa8c7cdef4c56561cf6c9ba7",
+      "bytes": 14411
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-0/source-plan.json",
+      "sha256": "ff2ea1581d10cefeda6a39c846fbc32a22b0fafdd75feb109331c5167a5dc2ec",
+      "bytes": 565
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-0/validation.json",
+      "sha256": "ef0ff9abc263ba955170cc93e00bb718ce17fab2959c67840a9a445b936ba66d",
+      "bytes": 2439
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-0/wiring.json",
+      "sha256": "e7db912bf4f4fc70f02c443b2ccf3269bbfc1f5f2285ef6bdf885058d2b79840",
+      "bytes": 3938
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-1/attempt.json",
+      "sha256": "f44736ab36c4f7fa7b74d1ff1cd20042b6caa311a36fe765a023ff053a361250",
+      "bytes": 1309
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-1/construction-process.json",
+      "sha256": "4721af3354d826dab36457688cc1787947e3319683d8888f45f689f8801144ba",
+      "bytes": 1511
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-1/construction-process.stdout",
+      "sha256": "ab73e71450a600490d9b9249c5baf867f107d4e8888361117c07d68e315a4722",
+      "bytes": 472
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-1/construction.json",
+      "sha256": "34ee78c01a15c152abca95821c2d9adae3a4ef2977ebd122d32e6223c5f98305",
+      "bytes": 442898
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-1/flow-process.json",
+      "sha256": "c1b0dfc2089c4cd6ca5aeda3d5f90427287a3b1d5a2042cac3a0cd3bc00114aa",
+      "bytes": 494
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-1/original-request.json",
+      "sha256": "223714a3ea5f701f30470b4df7d00ef41076c8e64433d38fdde40e9407d57488",
+      "bytes": 4068
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-1/root.json",
+      "sha256": "7a0e25fd5e494ab54b63ca978950570cda59012fd804c38284d58bb73416c487",
+      "bytes": 20739
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-1/source-plan.json",
+      "sha256": "7f35219c00f4cfefd72ccb3ade923b4dea754c5a1f72dca84c5f613fa2671e1c",
+      "bytes": 564
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-1/validation.json",
+      "sha256": "6377655bac360a1c37f0f83f8e0ec54e514ca593274eed917df225f9e0c0eb20",
+      "bytes": 3142
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-1/wiring.json",
+      "sha256": "08b758b76497122660cbace43b51d972a26e9fb32d91a2bf153d98a9df6029fd",
+      "bytes": 5425
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-2/attempt.json",
+      "sha256": "91abffbb34d69ba7e500e9509cb7da42383f38ca22a35ba6d37307f01496842a",
+      "bytes": 1122
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-2/construction-process.json",
+      "sha256": "63717d97fe158e008f3c369715c3e4629420a68dd077f89af588c1a9a1c7738d",
+      "bytes": 1511
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-2/construction-process.stdout",
+      "sha256": "dd1141562e1adace6348ad7d717d0974824c7e0c24a7b2f86c4abd87af767cfc",
+      "bytes": 481
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-2/construction.html",
+      "sha256": "e5097c06b344e0ed7cb41de719bb8692f9683f6d414468e5688f08f76a3d935d",
+      "bytes": 55863
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-2/construction.json",
+      "sha256": "41ddb5e6e3304230c05dea3c6a4f10260a2ae400bc39db663367f47685f4f344",
+      "bytes": 139018
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-2/flow-process.json",
+      "sha256": "eda843e023db0d69ac93c270024110959f9ba880d168e9c88d75becd6a15442e",
+      "bytes": 493
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-2/original-request.json",
+      "sha256": "cf1c3635aacb3bb7478bc6fa71fc8f5bcd6787b1fff71b545d9cc37c8ca67b1f",
+      "bytes": 16065
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-2/source-plan.json",
+      "sha256": "1597c2da9c639f34e132acac1c7136a941125f613cef6f756162179b89057c4c",
+      "bytes": 563
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/bottled-glass-water-shaped-rate-2/wiring.json",
+      "sha256": "c6390deecc4d076be4a6535291bea3d871b2015fb4d7fe5cc15a6ec58073428f",
+      "bytes": 19582
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/copper-preflight.json",
+      "sha256": "537b83ca0d044eb51a356774ea9b8bc9968e6f03b7f545781519f12b399dfba1",
+      "bytes": 17039
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/provenance.json",
+      "sha256": "1e658868adb0bb2754ddeb9e45245c9da133fbed659aaa04a80336a7829c06dd",
+      "bytes": 6988
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/report.json",
+      "sha256": "ee5a1373c84492ee5ba33cdd7d69b8264d6347570772892f8ac6353325b1899d",
+      "bytes": 14632
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/roots.json",
+      "sha256": "ea514700fe8b7bd1966c0fb0c3d5f33b347adf0695674992396601901d12c9f9",
+      "bytes": 114895
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-admission/water-preflight.json",
+      "sha256": "11e75baca909f4cc32fb7daf3c988e58e75a54362239326f642327541cbe022c",
+      "bytes": 7342
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-copper-shaped-rate-0/initial.json",
+      "sha256": "f05342dc4f76ee9334e3b8fb3705baaa10c9c0f71ac40a52a6efc431e0f3a487",
+      "bytes": 28788
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-copper-shaped-rate-0/original-request.json",
+      "sha256": "e7b22b774388c22fdd871ba2f52df757671e087d575001d4791ec1bc26a2c695",
+      "bytes": 7051
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-copper-shaped-rate-0/reference.json",
+      "sha256": "fbc901f79f37bab1c4427b7f8607f6c5bf27eb45d78495fee83832bb5de655eb",
+      "bytes": 5640
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-copper-shaped-rate-0/request.json",
+      "sha256": "c3126495cfafa31f3b3936afc4db39a8f769226f5271cbe76594a86571ee6507",
+      "bytes": 7425
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-copper-shaped-rate-1/initial.json",
+      "sha256": "2cfad1889368b195676641df675c027dab254831248292fead83f6e8e1c2e5e9",
+      "bytes": 34746
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-copper-shaped-rate-1/original-request.json",
+      "sha256": "cc6ec60d21d629f4eae6691a924984796e7c3b665ffe1fff6b068a6b25b8b5a1",
+      "bytes": 8360
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-copper-shaped-rate-1/reference.json",
+      "sha256": "16778588b02f3736ec6653cd05c9139c40cdd81b3241c7a1af83a7dd27c1908e",
+      "bytes": 6351
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-copper-shaped-rate-1/request.json",
+      "sha256": "c3e362a0d8855b2334f6e3922689a090bbc2fa544594cf6812deb8198ea062bb",
+      "bytes": 8244
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-water-shaped-rate-0/initial.json",
+      "sha256": "fbb3840504877c93a168073de9a8071e89b52eed5ba4ac7759f4acc361f0d78f",
+      "bytes": 11514
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-water-shaped-rate-0/original-request.json",
+      "sha256": "d13fcf1f0987683a4b6385da345d3bfec4646dcb7839c3c5e4de93360bf58a86",
+      "bytes": 2759
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-water-shaped-rate-0/reference.json",
+      "sha256": "d6f97adc376eca988c437fbc8ccd06a016fc19640563f47667d2f790a17d0bcc",
+      "bytes": 2428
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-water-shaped-rate-0/request.json",
+      "sha256": "b0671cafa835b6eab45acecfb9021f06b917af23261c56f2a1dcf33e47e9f3ad",
+      "bytes": 2936
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-water-shaped-rate-1/initial.json",
+      "sha256": "784d41a979be800b05cf00a3e16753600168778f4a25022f85b26a10b4e5b2a1",
+      "bytes": 16533
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-water-shaped-rate-1/original-request.json",
+      "sha256": "223714a3ea5f701f30470b4df7d00ef41076c8e64433d38fdde40e9407d57488",
+      "bytes": 4068
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-water-shaped-rate-1/reference.json",
+      "sha256": "6d445488476d0ff72b40653112c57309dc79143dad0273c62408b84ecb09e892",
+      "bytes": 3153
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/bottled-glass-water-shaped-rate-1/request.json",
+      "sha256": "62082367a6d1a1846d3d23f1a883f6411b0545c4416e397ddb2f9e89edea4bfa",
+      "bytes": 3764
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/catalogs.json",
+      "sha256": "47a4b51d75501d35b73e576aa879fa36f229a2727dcaf642fa9ccecb5fe5c84e",
+      "bytes": 481
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/full-factory-bottled-transfer-inputs/inputs.json",
+      "sha256": "050edd9b1b7c87d01e4bb3f8f877a38d6777d9a5757ab3ae4c22480827b98707",
+      "bytes": 5691
+    },
+    {
+      "path": "docs/designs/2026-09-09.27-bottled-factory-policy-transfer.md",
+      "sha256": "275aa9bef826e497ed11f6566744c5010de48bd45bdb0dd8f660fbf7d5d69403",
+      "bytes": 3319
+    },
+    {
+      "path": "docs/reports/2026-09-09.26-fresh-factory-transfer-provenance.json",
+      "sha256": "826d9027a27923c82e5c3d7e3bfebc743789206617b833ba02d1019a63fd0089",
+      "bytes": 32698
+    },
+    {
+      "path": "docs/reports/2026-09-09.27-bottled-factory-policy-transfer.md",
+      "sha256": "8ce975c804b6cf129633c2471a7b61d30c92e9a17000970888f5bcf2354b54dd",
+      "bytes": 9491
+    },
+    {
+      "path": "tools/factory-edit-pilot/family-bottled-glass-copper-shaped.json",
+      "sha256": "50332c141d42c61713c0a657ab378b6d7b99e1d8f3ffe17d74c105f1c1ef5172",
+      "bytes": 1784
+    },
+    {
+      "path": "tools/factory-edit-pilot/family-bottled-glass-water-shaped.json",
+      "sha256": "8ef409165c53692925cfce4160b8cee64156c2bef9ef8f2f0bd6e81275eb2855",
+      "bytes": 751
+    },
+    {
+      "path": "tools/factory-edit-pilot/full-factory-bottled-transfer-admission.json",
+      "sha256": "2eda84d71fcd2ec5bee501388853f07fc3e3ded504132f9e230b39e6e2d5c1c4",
+      "bytes": 1343
+    }
+  ]
+}

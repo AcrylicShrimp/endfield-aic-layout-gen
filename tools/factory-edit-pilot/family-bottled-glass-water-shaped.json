@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "target": {
+    "item": "item-fbottle-glass-water",
+    "quantity": 1,
+    "duration_ms": 10000
+  },
+  "source_selections": [
+    {
+      "path": "/target/recipe:filling-bottled-glass-water/input:item-liquid-water",
+      "source": {
+        "kind": "external-input"
+      }
+    },
+    {
+      "path": "/target/recipe:filling-bottled-glass-water/input:item-glass-bottle",
+      "source": {
+        "kind": "recipe",
+        "recipe": "shaper-glass-bottle-1"
+      }
+    },
+    {
+      "path": "/target/recipe:filling-bottled-glass-water/input:item-glass-bottle/recipe:shaper-glass-bottle-1/input:item-quartz-glass",
+      "source": {
+        "kind": "recipe",
+        "recipe": "furnance-quartz-glass-1"
+      }
+    }
+  ]
+}
