@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "workers": 24,
+  "study_seconds": 14400,
+  "disk_reserve_bytes": 17179869184,
+  "ppo": {
+    "clip_epsilon": 0.2,
+    "gae_lambda": 0.95,
+    "gamma": 1.0,
+    "epochs": 4,
+    "minibatch_size": 64,
+    "target_kl": 0.02,
+    "learning_rate": 0.0003,
+    "entropy_coefficient": 0.001,
+    "gradient_clip": 0.5
+  }
+}

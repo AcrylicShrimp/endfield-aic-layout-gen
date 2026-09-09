@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "purpose": "Compact provenance for the user-shortened PPO confirmation; regenerable output remains ignored.",
+  "server_root": "/home/ashrimp/Srv/aic-ppo-area-20260909",
+  "source_base_commit": "08d0bfa",
+  "seed_batch_limits": {
+    "17": 32,
+    "29": 16
+  },
+  "files": {
+    "protocol.json": {
+      "sha256": "19bed52bc9d9406b82e53d93ebcdf014413e9e2ad435e35bfea90311823df76a",
+      "bytes": 94670
+    },
+    "progress.json": {
+      "sha256": "bb07daa590a3aaafe4388757e5d35015af790d970d4d11a879bf6936cf8f6d0c",
+      "bytes": 60213
+    },
+    "user-budget-amendment.json": {
+      "sha256": "248a795d9ec38a990a4b3f65bde29c1732544d8e34a9b77854a2376596ab9769",
+      "bytes": 643
+    },
+    "user-budget-stop.json": {
+      "sha256": "ef9369ebfbcb68dc662e45b7776dcf6ee00503a0e4f416dd6249163b3e964313",
+      "bytes": 801
+    },
+    "confirmation.json": {
+      "sha256": "664143f2c9efc9bf1965d08458b5042b5255fc75be11c8a0db5aad8262ae13c8",
+      "bytes": 349656
+    },
+    "descriptive-supplement.json": {
+      "sha256": "1d8efecf9ddcdffd8a20db40513ca85c3a9e83fe1f3d61b2eedb2d076ea47bcb",
+      "bytes": 45928
+    }
+  },
+  "retained_archive": {
+    "local_path": "artifacts/factory-edit-pilot/ppo-area-retained.tar.zst",
+    "bytes": 3737496713,
+    "sha256": "0c10aa361140f7e2900947783aad60e12ebd905e7a7feb58712b9c1bfac89bed",
+    "contents": "Full user-shortened confirmation, reduced study and audit, checkpoints, actual inputs/experience, uncommitted interruption output, frozen protocol-bound source snapshots and finalization sources."
+  }
+}
