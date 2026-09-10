@@ -441,14 +441,26 @@ See the [capacity contract](../../docs/designs/2026-09-11-ppo-shared-capacity.md
 The supplied cell enables critic history and stops both learners at policy KL
 stopping. Its other settings match the previous 32-batch, two-seed screen.
 Both critic factor booleans remain configurable; sharing must be enabled.
-Prepare this individual cell through the harness, not the fixed eight-cell
-matrix runner. Use fresh weights because width-32 checkpoints cannot load into
+Prepare this individual cell through the harness, or use the explicit
+`--shared-capacity` matrix mode for all four history/tail combinations.
+Use fresh weights because width-32 checkpoints cannot load into
 width 40. This configuration has been verified but has no measured training
 quality result yet.
 
 ```sh
 python tools/factory-edit-pilot/ppo_harness.py --env-file /path/to/tracking.env prepare --config tools/factory-edit-pilot/ppo-shared-capacity-screen.json --output artifacts/factory-edit-pilot/shared-capacity-screen
 python tools/factory-edit-pilot/ppo_harness.py --env-file /path/to/tracking.env run --run artifacts/factory-edit-pilot/shared-capacity-screen
+```
+
+The [capacity experiment contract](../../docs/designs/2026-09-11-ppo-shared-capacity-experiment.md)
+registers the full comparison against the earlier width-32 controls. Run bounded
+native/CUDA readiness before the main four-cell matrix:
+
+```sh
+python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env prepare --config tools/factory-edit-pilot/ppo-shared-capacity-screen.json --output artifacts/factory-edit-pilot/shared-capacity-readiness --shared-capacity --readiness
+python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env run --matrix artifacts/factory-edit-pilot/shared-capacity-readiness/matrix.json
+python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env prepare --config tools/factory-edit-pilot/ppo-shared-capacity-screen.json --output artifacts/factory-edit-pilot/shared-capacity-matrix --shared-capacity
+python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env run --matrix artifacts/factory-edit-pilot/shared-capacity-matrix/matrix.json
 ```
 Lower later absolute gain can reflect improvements moving earlier; compare it
 with final factory quality rather than treating it as a separate objective.

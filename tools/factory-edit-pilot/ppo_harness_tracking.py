@@ -102,6 +102,8 @@ class Tracker:
         identifier = run_id(self.protocol_hash, job['id'])
         model = self.protocol['spec'].get('model')
         model_label = '' if model is None else f"cnn-{model['cnn_layers']}-d{','.join(map(str, model['cnn_dilations']))}--"
+        if model is not None and model['schema'] == 'ppo-shared-capacity-v1':
+            model_label = f"width-{model['width']}--" + model_label
         if model is not None and 'actor_critic' in model:
             from ppo_actor_critic import label
             model_label = label(model['actor_critic']) + '--' + model_label

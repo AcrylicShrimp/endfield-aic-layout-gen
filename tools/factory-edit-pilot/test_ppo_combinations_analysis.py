@@ -7,6 +7,7 @@ import unittest
 
 from compare_ppo_combinations import effects, schedule_prefixes
 from ppo_actor_critic import FIELDS, treatment, label
+from ppo_harness_state import HarnessError
 from run_ppo_combinations import configurations
 
 
@@ -44,6 +45,25 @@ class AnalysisTests(unittest.TestCase):
         self.assertAlmostEqual(main['mean']['area_reduction_pp'], 18.25)
         self.assertAlmostEqual(result[FIELDS[:2]]['mean']['area_reduction_pp'], 15.5)
         self.assertAlmostEqual(result[FIELDS]['mean']['area_reduction_pp'], 17.)
+
+    def test_shared_capacity_has_all_four_cells_with_the_original_workload(self):
+        base = json.loads(Path(__file__).with_name('ppo-shared-capacity-screen.json').read_text())
+        cells = configurations(base, False, shared_capacity=True)
+        self.assertEqual(len(cells), 4)
+        expected = deepcopy(base)
+        expected['model'].pop('actor_critic')
+        self.assertEqual({(c['factors']['critic_history'], c['factors']['critic_after_kl']) for c in cells},
+                         set(product((False, True), repeat=2)))
+        for cell in cells:
+            self.assertTrue(cell['factors']['shared_backbone'])
+            cell['config']['model'].pop('actor_critic')
+            self.assertEqual(cell['config'], expected)
+        readiness = configurations(base, True, shared_capacity=True)
+        self.assertEqual(len(readiness), 2)
+        self.assertTrue(all(c['factors']['critic_after_kl'] for c in readiness))
+        old = json.loads(Path(__file__).with_name('ppo-actor-critic-screen.json').read_text())
+        with self.assertRaisesRegex(HarnessError, 'matrix-model'):
+            configurations(old, False, shared_capacity=True)
 
     def test_schedule_divergence_requires_the_first_critic_tail(self):
         hashes = ('policy_before_sha256', 'critic_before_sha256', 'policy_after_sha256',

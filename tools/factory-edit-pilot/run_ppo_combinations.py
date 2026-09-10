@@ -1,4 +1,4 @@
-"""Prepare and execute the registered eight-cell actor/critic screen sequentially."""
+"""Prepare and execute registered actor/critic or shared-capacity screens sequentially."""
 import argparse
 from copy import deepcopy
 from itertools import product
@@ -14,11 +14,16 @@ from ppo_harness_protocol import prepare, validate
 from ppo_harness_state import read, write, sha, require, diagnostic
 
 SCHEMA = 'ppo-actor-critic-matrix-v1'
+CAPACITY_SCHEMA = 'ppo-shared-capacity-matrix-v1'
 
 
-def configurations(base, readiness):
+def configurations(base, readiness, shared_capacity=False):
+    if shared_capacity:
+        from ppo_spatial_model import SHARED_CAPACITY_SCHEMA
+        require(base.get('model', {}).get('schema') == SHARED_CAPACITY_SCHEMA,
+                'matrix-model', 'shared capacity requires its explicit width-40 model', 'prepare')
     cells = []
-    for shared, history, tail in product((False, True), repeat=3):
+    for shared, history, tail in product((True,) if shared_capacity else (False, True), (False, True), (False, True)):
         if readiness and not tail:
             continue
         config = deepcopy(base)
@@ -39,11 +44,11 @@ def configurations(base, readiness):
     return cells
 
 
-def prepare_matrix(config_path, output, readiness):
+def prepare_matrix(config_path, output, readiness, shared_capacity=False):
     require(not output.exists(), 'matrix-output', 'matrix requires a fresh output directory', 'prepare', output)
-    cells = configurations(read(config_path), readiness)
+    cells = configurations(read(config_path), readiness, shared_capacity)
     output.mkdir(parents=True)
-    matrix = dict(schema=SCHEMA, status='preparing', readiness=readiness,
+    matrix = dict(schema=CAPACITY_SCHEMA if shared_capacity else SCHEMA, status='preparing', readiness=readiness,
                   source_config=dict(path=str(config_path), sha256=sha(config_path)), cells=[])
     write(output/'matrix.json', matrix)
     for cell in cells:
@@ -62,7 +67,7 @@ def prepare_matrix(config_path, output, readiness):
 
 def run_matrix(path, env_file):
     matrix = read(path)
-    require(matrix['schema'] == SCHEMA and matrix['status'] in ('prepared', 'running'),
+    require(matrix['schema'] in (SCHEMA, CAPACITY_SCHEMA) and matrix['status'] in ('prepared', 'running'),
             'matrix-state', 'expected prepared/running combination matrix', 'run', path)
     matrix.update(status='running', started_epoch=matrix.get('started_epoch', time.time()))
     write(path, matrix)
@@ -108,11 +113,13 @@ if __name__ == '__main__':
     prepare_parser.add_argument('--config', type=Path, required=True)
     prepare_parser.add_argument('--output', type=Path, required=True)
     prepare_parser.add_argument('--readiness', action='store_true')
+    prepare_parser.add_argument('--shared-capacity', action='store_true',
+                                help='Run the four width-40 shared history/schedule combinations')
     run_parser = commands.add_parser('run')
     run_parser.add_argument('--matrix', type=Path, required=True)
     args = parser.parse_args()
     load_environment(args.env_file)
     if args.command == 'prepare':
-        prepare_matrix(args.config.resolve(), args.output.resolve(), args.readiness)
+        prepare_matrix(args.config.resolve(), args.output.resolve(), args.readiness, args.shared_capacity)
     else:
         run_matrix(args.matrix.resolve(), args.env_file.resolve())
