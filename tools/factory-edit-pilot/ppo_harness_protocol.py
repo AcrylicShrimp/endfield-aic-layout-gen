@@ -30,7 +30,11 @@ def positive(value, maximum, name):
 
 
 def validate(config):
-    fields(config, 'schema_version purpose generation_config candidates seeds order_seed training evaluation execution limits ppo tracking retention', 'config')
+    fields(config, 'schema_version purpose generation_config candidates seeds order_seed training evaluation execution limits ppo tracking retention'
+           + (' input_manifest' if 'input_manifest' in config else ''), 'config')
+    if 'input_manifest' in config:
+        require(isinstance(config['input_manifest'], str) and config['input_manifest'], 'config-input-manifest',
+                'input_manifest must be an explicit path to frozen initial factories', 'prepare')
     require(config['schema_version'] == 1, 'config-schema', 'supported schema_version is 1', 'prepare')
     require(config['purpose'] in ('readiness', 'input-screen'), 'config-purpose', 'readiness or input-screen purpose required')
     require(isinstance(config['generation_config'], str) and config['generation_config'], 'config-generation', 'generation_config path required')
@@ -190,6 +194,10 @@ def prepare(config_path, root):
     jobs = [dict(candidate=c, seed=s, id=f'{c}--seed-{s}') for c in config['candidates'] for s in config['seeds']]
     random.Random(config['order_seed']).shuffle(jobs)
     paths = sources() | {config_path, generation_config}
+    if 'input_manifest' in config:
+        from ppo_frozen_starts import load
+        spec['frozen_starts'], frozen_files = load(ROOT / config['input_manifest'], config)
+        paths.update(frozen_files)
     paths.update(Path(__file__).with_name(name) for name in ('pyproject.toml', 'uv.lock'))
     paths.update(Path(spec[k]) for k in ('native_library', 'cli', 'validator'))
     paths.update(map(Path, spec['catalogs'].values()))

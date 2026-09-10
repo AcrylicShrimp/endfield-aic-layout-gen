@@ -70,6 +70,9 @@ def draw(spec, seed):
 
 
 def generate(runtime, spec, seed, directory, guard):
+    if 'frozen_starts' in spec:
+        from ppo_frozen_starts import materialize
+        return materialize(runtime, spec, seed, directory, guard)
     started = time.monotonic()
     directory = Path(directory)
     directory.mkdir()
