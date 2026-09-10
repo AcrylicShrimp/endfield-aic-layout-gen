@@ -16,6 +16,7 @@ fn episode(w: Witness, catalogs: std::sync::Arc<FactoryEditCatalogs>) -> engine:
             route_work: 5000,
             memory: true,
             vocabulary: poses::VocabularyOptions::default(),
+            repair: routing::Limits::default(),
         },
     )
     .unwrap()
@@ -175,7 +176,13 @@ fn a_distant_component_move_and_rotation_can_validate_as_one_edit() {
         if dx.abs() + dy.abs() <= 2 || *rotation == old.rotation {
             continue;
         }
-        if let Ok(execution) = candidates::execute(&before, &catalogs, action, 5000) {
+        if let Ok(execution) = candidates::execute(
+            &before,
+            &catalogs,
+            action,
+            5000,
+            &routing::Limits::default(),
+        ) {
             if let Some(witness) = execution.witness {
                 let accepted = e.session.propose(&witness);
                 if matches!(

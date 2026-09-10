@@ -127,6 +127,8 @@ pub struct PathResult {
     pub steps: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub turns: Option<i64>,
+    #[serde(skip)]
+    pub blocked_frontier: Vec<Point>,
 }
 impl PathResult {
     pub fn stopped(status: &'static str, expanded: usize) -> Self {
@@ -137,6 +139,7 @@ impl PathResult {
             crossings: None,
             steps: None,
             turns: None,
+            blocked_frontier: vec![],
         }
     }
     fn found(
@@ -153,6 +156,7 @@ impl PathResult {
             crossings: Some(crossings),
             steps: Some(steps),
             turns: Some(turns),
+            blocked_frontier: vec![],
         }
     }
 }
@@ -239,13 +243,20 @@ pub fn shortest_path(
     // Match the oracle's map from state ID to its latest predecessor object.
     let mut parents = IndexMap::<i64, usize>::new();
     let mut expanded = 0;
+    // Bound diagnostic collection independently of the path-state allocation.
+    let mut frontier = IndexSet::new();
+    let stopped = |status, expanded, frontier: IndexSet<Point>| {
+        let mut result = PathResult::stopped(status, expanded);
+        result.blocked_frontier = frontier.into_iter().collect();
+        result
+    };
     while let Some(Reverse((_, _, _, pi))) = heap.pop() {
         let p = states[pi].clone();
         if best.get(&p.id) != Some(&p.g) {
             continue;
         }
         if expanded == work_budget {
-            return Ok(PathResult::stopped("work-budget", expanded));
+            return Ok(stopped("work-budget", expanded, frontier));
         }
         expanded += 1;
         if p.point == end && (last.is_none() || last == Some(p.direction)) {
@@ -263,7 +274,7 @@ pub fn shortest_path(
             cells.reverse();
             crossings.reverse();
             if cells.iter().collect::<IndexSet<_>>().len() != cells.len() {
-                return Ok(PathResult::stopped("repeated-cell", expanded));
+                return Ok(stopped("repeated-cell", expanded, frontier));
             }
             return Ok(PathResult::found(
                 cells,
@@ -286,9 +297,15 @@ pub fn shortest_path(
             let q = p.point.offset(d);
             let via = if blocked.contains(&q) {
                 let Some(site) = crossings.get(&(q, d)) else {
+                    if frontier.len() < 2048 {
+                        frontier.insert(q);
+                    }
                     continue;
                 };
                 if p.used >= crossing_limit {
+                    if frontier.len() < 2048 {
+                        frontier.insert(q);
+                    }
                     continue;
                 }
                 if site.position != q || site.direction != d {
@@ -328,5 +345,5 @@ pub fn shortest_path(
             heap.push(Reverse((g + q.distance(end) * weight, g, qid, qi)));
         }
     }
-    Ok(PathResult::stopped("no-path", expanded))
+    Ok(stopped("no-path", expanded, frontier))
 }

@@ -11,7 +11,10 @@ use super::movement::{self, MovementIndex};
 use super::path::{self, PathOptions};
 use super::types::*;
 
-#[derive(Default, Debug, Deserialize)]
+mod region;
+pub use region::{CONTRACT, Limits, Report, reembed};
+
+#[derive(Clone, Default, Debug, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Edit {
     #[serde(default)]
@@ -28,7 +31,7 @@ pub struct Edit {
     pub port_assignments: Vec<PortAssignment>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Clone, Debug, Serialize)]
 pub struct RouteReport {
     pub id: usize,
     pub item: String,
@@ -51,6 +54,8 @@ pub struct Execution {
     pub diagnostics: Vec<Diagnostic>,
     pub routes: Vec<RouteReport>,
     pub route_expansions: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub region: Option<Report>,
 }
 struct Job {
     chain: Chain,
@@ -58,20 +63,22 @@ struct Job {
     end: Point,
 }
 
-pub fn reembed(
+fn attempt(
     witness: &Witness,
     catalogs: &FactoryEditCatalogs,
     edit: &Edit,
     work_budget: usize,
+    limits: &Limits,
+    priority: Option<usize>,
+    report: &mut region::Attempt,
 ) -> Result<Execution> {
-    const CROSSING_LIMIT: usize = 2;
     let (original, released) = changes::release_bridges(witness, catalogs, &edit.release_bridges)?;
     let decomposition = chains::extract(&original, &released)?;
     let chains = &decomposition.chains;
     let bounds = extent(&original)?;
     let flexible = chains::flexible_terminals(&original, chains);
     let mut changed: IndexSet<_> = edit.chain_ids.iter().copied().collect();
-    let reroute: IndexSet<_> = chains
+    let mut reroute: IndexSet<_> = chains
         .iter()
         .filter(|c| c.cells.iter().any(|&p| released.contains(&c.tag(p))))
         .map(|c| c.id)
@@ -84,6 +91,7 @@ pub fn reembed(
             serde_json::Value::Null,
         ));
     }
+    reroute.extend(edit.chain_ids.iter().copied());
     let component_changes = changes::component_poses(&original, catalogs, &edit.component_poses)?;
     let facility_changes =
         changes::facility_rotations(&original, catalogs, &edit.moves, &edit.facility_rotations)?;
@@ -299,8 +307,30 @@ pub fn reembed(
             }
         })
         .collect();
-    // The executor supplies a total pipe-first/id priority; distance never breaks it.
-    jobs.sort_by_key(|j| (1 - layer(j.chain.transport), j.chain.id));
+    // Longer obligations get first access to shared corridors; pipes always lead.
+    jobs.sort_by_key(|j| {
+        (
+            1 - layer(j.chain.transport),
+            usize::from(priority != Some(j.chain.id)),
+            std::cmp::Reverse(j.start.distance(j.end)),
+            j.chain.id,
+        )
+    });
+    report.chains = changed.iter().copied().collect();
+    report.chains.sort_unstable();
+    report.carried_chains = paths.keys().copied().collect();
+    report.carried_chains.sort_unstable();
+    report.fixed_contacts = region::contacts(&jobs, edit);
+    report.route_order = jobs.iter().map(|j| j.chain.id).collect();
+    if changed.len() > limits.chains {
+        let mut d = Diagnostic::new(
+            "region-chain-limit",
+            "Initial or expanded repair set exceeds the configured chain limit",
+            serde_json::json!({"chains": changed.len(), "limit": limits.chains}),
+        );
+        d.stage = "local-region-repair";
+        return Err(d);
+    }
     let body: IndexSet<_> = w.placements.iter().flat_map(body_cells).collect();
     let mut occupied: [IndexSet<Point>; 2] = Default::default();
     for c in chains {
@@ -335,9 +365,7 @@ pub fn reembed(
                 .insert(j.chain.id);
         }
     }
-    let mut reports = Vec::new();
     let mut expansions = 0;
-    let mut installed = 0;
     for job in &jobs {
         let c = &job.chain;
         let tr = layer(c.transport);
@@ -376,7 +404,7 @@ pub fn reembed(
                 .filter(|j| layer(j.chain.transport) == tr)
                 .flat_map(|j| [j.start, j.end]),
         );
-        let carriers: Vec<_> = if installed < CROSSING_LIMIT {
+        let carriers: Vec<_> = if limits.crossings_per_route > 0 {
             chains
                 .iter()
                 .filter(|c| !changed.contains(&c.id) || paths.contains_key(&c.id))
@@ -406,13 +434,14 @@ pub fn reembed(
                     last: c.last,
                     work_budget: remaining,
                     crossings: &sites,
-                    crossing_limit: CROSSING_LIMIT - installed,
+                    crossing_limit: limits.crossings_per_route,
                     allow_zero_length: c.zero_length,
                 },
             )?
         };
         expansions += result.expanded;
-        reports.push(RouteReport {
+        report.route_expansions = expansions;
+        report.routes.push(RouteReport {
             id: c.id,
             item: c.item.clone(),
             first: c.first,
@@ -426,6 +455,10 @@ pub fn reembed(
             crossings: result.crossings.clone().unwrap_or_default(),
         });
         if result.status != "found" {
+            report.blockers =
+                region::blockers(chains, &changed, &paths, job, &result.blocked_frontier);
+            report.port_options =
+                region::ports(&w, catalogs, edit, &eligible, job, &report.locked_ports)?;
             let mut diagnostic = Diagnostic::new(
                 format!("local-{}", result.status),
                 "Affected chain could not be restored within this candidate neighborhood",
@@ -436,8 +469,9 @@ pub fn reembed(
                 status: "rejected",
                 witness: None,
                 diagnostics: vec![diagnostic],
-                routes: reports,
+                routes: vec![],
                 route_expansions: expansions,
+                region: None,
             });
         }
         for site in result.crossings.unwrap_or_default() {
@@ -464,7 +498,6 @@ pub fn reembed(
                 rotation: site.rotation,
                 position: site.position.into(),
             });
-            installed += 1;
             for ni in IndexSet::from([site.carrier_network, c.network]) {
                 w.transport_networks[ni].component_ids.push(id.clone());
             }
@@ -489,8 +522,9 @@ pub fn reembed(
             status: "unchanged",
             witness: None,
             diagnostics: vec![],
-            routes: reports,
+            routes: vec![],
             route_expansions: expansions,
+            region: None,
         });
     }
     for (ni, n) in w.transport_networks.iter_mut().enumerate() {
@@ -539,7 +573,8 @@ pub fn reembed(
         status: "candidate",
         witness: Some(w),
         diagnostics: vec![],
-        routes: reports,
+        routes: vec![],
         route_expansions: expansions,
+        region: None,
     })
 }

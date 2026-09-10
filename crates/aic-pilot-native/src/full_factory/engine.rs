@@ -34,6 +34,8 @@ pub struct Config {
     pub memory: bool,
     #[serde(default)]
     pub vocabulary: VocabularyOptions,
+    #[serde(default)]
+    pub repair: super::routing::Limits,
 }
 impl Config {
     fn validate(&self) -> Result<Contract> {
@@ -44,6 +46,7 @@ impl Config {
             ));
         }
         self.vocabulary.validate()?;
+        self.repair.validate()?;
         Contract::named(&self.input_contract)
     }
 }
@@ -349,6 +352,7 @@ impl Episode {
                 diagnostics: vec![],
                 routes: vec![],
                 route_expansions: 0,
+                region: None,
             })
         } else {
             candidates::execute(
@@ -356,6 +360,7 @@ impl Episode {
                 &self.catalogs,
                 &action,
                 self.config.route_work,
+                &self.config.repair,
             )
         };
         let executor_seconds = execute_started.elapsed().as_secs_f64();
@@ -366,6 +371,7 @@ impl Episode {
             diagnostics: vec![d],
             routes: vec![],
             route_expansions: 0,
+            region: None,
         });
         self.performance
             .count("route_expansions", execution.route_expansions);
@@ -375,6 +381,9 @@ impl Episode {
         }
         let mut row = json!({"selected": self.selected, "action": action, "executor_status": execution.status,
             "route_expansions": execution.route_expansions, "executor_seconds": executor_seconds, "diagnostics": execution.diagnostics});
+        if let Some(region) = execution.region {
+            row["region"] = serde_json::to_value(region).unwrap();
+        }
         let status;
         if self.elapsed() >= Duration::from_millis(self.config.elapsed_ms) {
             status = "late";

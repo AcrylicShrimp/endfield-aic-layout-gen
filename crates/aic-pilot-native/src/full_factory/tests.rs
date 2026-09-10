@@ -16,6 +16,7 @@ use super::{candidates, poses};
 use super::{catalog, chains, path, routing};
 
 mod granularity;
+mod region;
 
 fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -140,6 +141,7 @@ fn retained_episode_rejects_invalid_handles_without_charging() {
         route_work: 5000,
         memory: true,
         vocabulary: poses::VocabularyOptions::default(),
+        repair: routing::Limits::default(),
     };
     let mut e = engine::Episode::new(
         fixture_request(&w),
@@ -313,6 +315,7 @@ fn geometry_matches_reference_crossing_fixture() {
             &catalogs,
             &serde_json::from_value(edit.clone()).unwrap(),
             5000,
+            &routing::Limits::default(),
         );
         let actual = match result {
             Ok(r) => {

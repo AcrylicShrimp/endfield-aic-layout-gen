@@ -20,11 +20,13 @@ class FactoryRuntime:
         self.metadata = json.loads(self.native.metadata_json())
         self.kinds = self.metadata['kinds']
 
-    def open_episode(self, case, horizon, elapsed, work, candidate='current-history-16', memory=True, vocabulary=None):
+    def open_episode(self, case, horizon, elapsed, work, candidate='current-history-16', memory=True, vocabulary=None, repair=None):
         config = dict(input_contract=candidate, horizon=horizon, elapsed_ms=round(elapsed * 1000),
                       route_work=work, memory=memory)
         if vocabulary is not None:
             config['vocabulary'] = vocabulary
+        if repair is not None:
+            config['repair'] = repair
         return self.native.open_episode(case['request'], case['initial'], json.dumps(config))
 
     def close(self):

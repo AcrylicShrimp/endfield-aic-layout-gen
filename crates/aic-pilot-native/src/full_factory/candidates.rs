@@ -213,6 +213,7 @@ pub fn execute(
     catalogs: &FactoryEditCatalogs,
     action: &Action,
     work: usize,
+    limits: &routing::Limits,
 ) -> Result<Execution> {
     if !(1..=200000).contains(&work) {
         return Err(Diagnostic::new(
@@ -258,6 +259,7 @@ pub fn execute(
                 diagnostics: vec![],
                 routes: vec![],
                 route_expansions: 0,
+                region: None,
             });
         }
         Action::RestoreBest { .. } => {
@@ -268,5 +270,5 @@ pub fn execute(
             ));
         }
     }
-    routing::reembed(w, catalogs, &edit, work)
+    routing::reembed(w, catalogs, &edit, work, limits)
 }

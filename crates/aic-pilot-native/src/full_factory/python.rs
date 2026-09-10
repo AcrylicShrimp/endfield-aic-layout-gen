@@ -135,7 +135,8 @@ impl PythonRuntime {
         // Locations are diagnostic; byte identities identify the executed runtime.
         let identities: Vec<_> = files.iter().map(|f| f["sha256"].clone()).collect();
         let provenance = identity::digest(&json!({"catalogs": identities, "build": build}));
-        let metadata = json!({"schema_version": 1, "backend": "retained-full-factory-native", 
+        let metadata = json!({"schema_version": 2, "backend": "retained-full-factory-native",
+            "repair_contract": super::routing::CONTRACT, "repair_limits": super::routing::Limits::default(),
             "observation_schema": obs::SCHEMA, "kinds": obs::KINDS, "catalog_provenance": files, "native_build": build, "provenance": provenance,
             "catalog_seconds": began.elapsed().as_secs_f64()});
         Ok(Self {
