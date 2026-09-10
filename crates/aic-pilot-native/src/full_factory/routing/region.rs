@@ -9,12 +9,13 @@ use serde_json::json;
 use super::{Edit, Execution, Job, RouteReport, attempt};
 use crate::full_factory::{catalog, chains::Chain, changes::PortAssignment, types::*};
 
-pub const CONTRACT: &str = "factory-route-region-v1";
+pub const CONTRACT: &str = "factory-route-region-v2";
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct Limits {
     pub attempts: usize,
+    pub attempt_work: usize,
     pub chains: usize,
     pub extra_chains: usize,
     pub port_trials: usize,
@@ -24,6 +25,7 @@ impl Default for Limits {
     fn default() -> Self {
         Self {
             attempts: 4,
+            attempt_work: 25000,
             chains: 64,
             extra_chains: 8,
             port_trials: 4,
@@ -33,7 +35,8 @@ impl Default for Limits {
 }
 impl Limits {
     pub fn validate(&self) -> Result<()> {
-        if !(1..=8).contains(&self.attempts)
+        if !(1..=1_000_000).contains(&self.attempt_work)
+            || !(1..=8).contains(&self.attempts)
             || !(1..=128).contains(&self.chains)
             || self.extra_chains > 32
             || self.port_trials > 16
@@ -68,6 +71,7 @@ pub struct Blocker {
 #[derive(Debug, Default, Serialize)]
 pub struct Attempt {
     pub index: usize,
+    pub work_budget: usize,
     pub chains: Vec<usize>,
     pub carried_chains: Vec<usize>,
     pub extra_chains: Vec<usize>,
@@ -259,7 +263,7 @@ pub fn reembed(
 ) -> Result<Execution> {
     limits.validate()?;
     let mut report = Report {
-        schema_version: 1,
+        schema_version: 2,
         contract: CONTRACT,
         limits: limits.clone(),
         work_budget,
@@ -289,6 +293,7 @@ pub fn reembed(
         }
         let mut row = Attempt {
             index,
+            work_budget: remaining.min(limits.attempt_work),
             extra_chains: extras.iter().copied().collect(),
             prioritized_chain: priority,
             port_assignments: trial.port_assignments.clone(),
@@ -300,7 +305,13 @@ pub fn reembed(
             ..Default::default()
         };
         let execution = attempt(
-            witness, catalogs, &trial, remaining, limits, priority, &mut row,
+            witness,
+            catalogs,
+            &trial,
+            remaining.min(limits.attempt_work),
+            limits,
+            priority,
+            &mut row,
         );
         last = execution.unwrap_or_else(|d| Execution {
             status: "rejected",

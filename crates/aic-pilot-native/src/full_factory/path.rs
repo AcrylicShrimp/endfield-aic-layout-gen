@@ -13,6 +13,10 @@ use super::catalog::cardinal_index;
 use super::chains::Chain;
 use super::types::*;
 
+mod reachability;
+#[cfg(test)]
+mod tests;
+
 #[derive(Clone, Debug, Serialize)]
 pub struct Crossing {
     pub position: Point,
@@ -119,6 +123,8 @@ pub struct PathOptions<'a> {
 pub struct PathResult {
     pub status: &'static str,
     pub expanded: usize,
+    pub preflight_expanded: usize,
+    pub preflight_status: &'static str,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub cells: Option<Vec<Point>>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -135,6 +141,8 @@ impl PathResult {
         Self {
             status,
             expanded,
+            preflight_expanded: 0,
+            preflight_status: "skipped",
             cells: None,
             crossings: None,
             steps: None,
@@ -152,6 +160,8 @@ impl PathResult {
         Self {
             status: "found",
             expanded,
+            preflight_expanded: 0,
+            preflight_status: "skipped",
             cells: Some(cells),
             crossings: Some(crossings),
             steps: Some(steps),
@@ -218,6 +228,30 @@ pub fn shortest_path(
             PathResult::stopped("same-endpoint", 0)
         });
     }
+    // Bound necessary reachability work independently, and charge it to the
+    // same transaction allowance. Small calls retain most of their A* budget.
+    let probe = reachability::probe(
+        start,
+        end,
+        blocked,
+        bounds,
+        &PathOptions {
+            first,
+            last,
+            work_budget,
+            crossings,
+            crossing_limit,
+            allow_zero_length,
+        },
+        256.min(work_budget / 4),
+    );
+    if probe.status == "unreachable" {
+        let mut result = PathResult::stopped("no-path", probe.expanded);
+        result.preflight_expanded = probe.expanded;
+        result.preflight_status = probe.status;
+        result.blocked_frontier = probe.frontier;
+        return Ok(result);
+    }
     let weight = width * height * 4 * (crossing_limit as i64 + 1) + 1;
     let id = |p: Point, d: usize, used: usize| {
         (((p.y - bounds.min_y) * width + p.x - bounds.min_x) * 5 + d as i64)
@@ -242,12 +276,14 @@ pub fn shortest_path(
     let mut best = IndexMap::from([(initial, 0)]);
     // Match the oracle's map from state ID to its latest predecessor object.
     let mut parents = IndexMap::<i64, usize>::new();
-    let mut expanded = 0;
+    let mut expanded = probe.expanded;
     // Bound diagnostic collection independently of the path-state allocation.
     let mut frontier = IndexSet::new();
     let stopped = |status, expanded, frontier: IndexSet<Point>| {
         let mut result = PathResult::stopped(status, expanded);
         result.blocked_frontier = frontier.into_iter().collect();
+        result.preflight_expanded = probe.expanded;
+        result.preflight_status = probe.status;
         result
     };
     while let Some(Reverse((_, _, _, pi))) = heap.pop() {
@@ -276,13 +312,11 @@ pub fn shortest_path(
             if cells.iter().collect::<IndexSet<_>>().len() != cells.len() {
                 return Ok(stopped("repeated-cell", expanded, frontier));
             }
-            return Ok(PathResult::found(
-                cells,
-                crossings,
-                p.g / weight,
-                p.g % weight,
-                expanded,
-            ));
+            let mut result =
+                PathResult::found(cells, crossings, p.g / weight, p.g % weight, expanded);
+            result.preflight_expanded = probe.expanded;
+            result.preflight_status = probe.status;
+            return Ok(result);
         }
         for d in 0..4 {
             if p.via.is_some() && d != p.direction {

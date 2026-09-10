@@ -39,6 +39,8 @@ pub struct RouteReport {
     pub last: Option<usize>,
     pub status: &'static str,
     pub expanded: usize,
+    pub preflight_expanded: usize,
+    pub preflight_status: &'static str,
     pub old_steps: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub steps: Option<i64>,
@@ -448,6 +450,8 @@ fn attempt(
             last: c.last,
             status: result.status,
             expanded: result.expanded,
+            preflight_expanded: result.preflight_expanded,
+            preflight_status: result.preflight_status,
             old_steps: c.cells.len() - 1,
             steps: result.steps,
             turns: result.turns,

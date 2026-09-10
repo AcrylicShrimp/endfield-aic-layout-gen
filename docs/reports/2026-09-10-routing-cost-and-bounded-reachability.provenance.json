@@ -1,0 +1,185 @@
+{
+  "schema": "routing-cost-provenance-v1",
+  "baseline_commit": "b99b86a",
+  "reference_native_sha256": "044ae6c2e0c1b9f35b1aff26497fbc123eb36cd5687a3ccb3e98346312d495fd",
+  "improved_native_sha256": "e1062bcd2709588693266fac037f47cebaca8b366c76072dc907889b0dc4f2b9",
+  "files": [
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/factory-edit-pilot/routing-census-batch-444/cost-reference/report.json",
+      "sha256": "caf00716a8269e73b378a87f70ad49b9c4b264134fe7ae48e2ca726844f4c84c",
+      "bytes": 63200
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-cost-preflight-64/report.json",
+      "sha256": "6300e2c4284fb09f37949fc227bfe2a1747395831f3c12f60d8d67882ad8a638",
+      "bytes": 63221
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-cost-preflight-reserved/report.json",
+      "sha256": "82df2b40f21018fb2e37157410189334e5052e76c0e0667c767c09151c66d730",
+      "bytes": 55364
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-cost-cap-25000-preflight-256/report.json",
+      "sha256": "11cca6023cff206eeb1e8b436741d45fb358b888c671f623e6c8af39f8b029ea",
+      "bytes": 55321
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-cost-final/report.json",
+      "sha256": "2b4fc0973b3eed3803b196239c4e69fdcd9c1592975c455bed273cfc64b22531",
+      "bytes": 63220
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/motivating-final/work-50000-valid.json",
+      "sha256": "a827038028cbaf1f92248fd7fc0f0a8ffd0627bcbc36589138b6f2671e53cf1d",
+      "bytes": 117620
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/motivating-final/work-50000.json",
+      "sha256": "3f41c24dcaaf580dd698cd1c51d4cce46883b0e9cd2bd529c69ef92f24b12209",
+      "bytes": 12647
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/motivating-final/work-5000-valid.json",
+      "sha256": "a827038028cbaf1f92248fd7fc0f0a8ffd0627bcbc36589138b6f2671e53cf1d",
+      "bytes": 117620
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/motivating-final/work-5000.json",
+      "sha256": "c07e06039aab80705de12f965313ee070ae8ff52a70762330ea638e422107a30",
+      "bytes": 12651
+    }
+  ],
+  "reference_summary": [
+    {
+      "work": 5000,
+      "valid": 0,
+      "area_improvements": 0,
+      "total_expansions": 85000,
+      "executor_seconds": {
+        "sum_of_case_medians": 0.036049549,
+        "per_action_median": 0.002008114,
+        "p95": 0.002886867
+      },
+      "full_probe_seconds": {
+        "sum_of_case_medians": 0.6134637850045692,
+        "per_action_median": 0.03395465400535613,
+        "p95": 0.047239131992682815
+      }
+    },
+    {
+      "work": 10000,
+      "valid": 4,
+      "area_improvements": 1,
+      "total_expansions": 153954,
+      "executor_seconds": {
+        "sum_of_case_medians": 0.054384845,
+        "per_action_median": 0.003177101,
+        "p95": 0.003849999
+      },
+      "full_probe_seconds": {
+        "sum_of_case_medians": 0.6435286529595032,
+        "per_action_median": 0.03593454300425947,
+        "p95": 0.05183936102548614
+      }
+    },
+    {
+      "work": 25000,
+      "valid": 7,
+      "area_improvements": 2,
+      "total_expansions": 297830,
+      "executor_seconds": {
+        "sum_of_case_medians": 0.096515451,
+        "per_action_median": 0.006026973,
+        "p95": 0.008214836
+      },
+      "full_probe_seconds": {
+        "sum_of_case_medians": 0.695233312988421,
+        "per_action_median": 0.03923159200348891,
+        "p95": 0.05097891698824242
+      }
+    },
+    {
+      "work": 50000,
+      "valid": 9,
+      "area_improvements": 2,
+      "total_expansions": 377655,
+      "executor_seconds": {
+        "sum_of_case_medians": 0.119444325,
+        "per_action_median": 0.007799528,
+        "p95": 0.013505879
+      },
+      "full_probe_seconds": {
+        "sum_of_case_medians": 0.7234684280701913,
+        "per_action_median": 0.041229650989407673,
+        "p95": 0.050642872985918075
+      }
+    }
+  ],
+  "improved_summary": [
+    {
+      "work": 5000,
+      "valid": 0,
+      "area_improvements": 0,
+      "total_expansions": 75109,
+      "executor_seconds": {
+        "sum_of_case_medians": 0.034072617,
+        "per_action_median": 0.001902451,
+        "p95": 0.002613993
+      },
+      "full_probe_seconds": {
+        "sum_of_case_medians": 0.5793208879767917,
+        "per_action_median": 0.03266502599581145,
+        "p95": 0.045370845997240394
+      }
+    },
+    {
+      "work": 10000,
+      "valid": 4,
+      "area_improvements": 1,
+      "total_expansions": 140993,
+      "executor_seconds": {
+        "sum_of_case_medians": 0.050868522,
+        "per_action_median": 0.002984028,
+        "p95": 0.0038469
+      },
+      "full_probe_seconds": {
+        "sum_of_case_medians": 0.6053810309967957,
+        "per_action_median": 0.03389269800391048,
+        "p95": 0.04817716000252403
+      }
+    },
+    {
+      "work": 25000,
+      "valid": 7,
+      "area_improvements": 2,
+      "total_expansions": 249621,
+      "executor_seconds": {
+        "sum_of_case_medians": 0.081043507,
+        "per_action_median": 0.004166961,
+        "p95": 0.007768994
+      },
+      "full_probe_seconds": {
+        "sum_of_case_medians": 0.643580969015602,
+        "per_action_median": 0.03684109798632562,
+        "p95": 0.048493056994630024
+      }
+    },
+    {
+      "work": 50000,
+      "valid": 9,
+      "area_improvements": 2,
+      "total_expansions": 310011,
+      "executor_seconds": {
+        "sum_of_case_medians": 0.09637851,
+        "per_action_median": 0.004152221,
+        "p95": 0.01162557
+      },
+      "full_probe_seconds": {
+        "sum_of_case_medians": 0.6638210259552579,
+        "per_action_median": 0.037133832986000925,
+        "p95": 0.04814906598767266
+      }
+    }
+  ]
+}

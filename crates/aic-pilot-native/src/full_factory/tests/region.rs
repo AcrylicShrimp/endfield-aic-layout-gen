@@ -39,6 +39,8 @@ fn verify_accounting(execution: &routing::Execution, budget: usize) {
             .sum::<usize>()
     );
     for a in &report.attempts {
+        assert!(a.route_expansions <= a.work_budget && a.work_budget <= report.limits.attempt_work);
+        assert!(a.routes.iter().all(|r| r.preflight_expanded <= r.expanded));
         assert!(a.extra_chains.len() <= report.limits.extra_chains);
         assert_eq!(
             a.route_expansions,
@@ -243,4 +245,20 @@ fn retained_region_transactions_validate() {
         serde_json::to_vec_pretty(&results).unwrap(),
     )
     .unwrap();
+}
+
+#[test]
+fn attempt_cap_leaves_transaction_work_for_an_existing_retry() {
+    let (w, catalogs, _) = fixture();
+    let limits = routing::Limits {
+        attempt_work: 1,
+        ..Default::default()
+    };
+    let execution = candidates::execute(&w, &catalogs, &shifted_first(&w), 50000, &limits).unwrap();
+    verify_accounting(&execution, 50000);
+    let report = execution.region.as_ref().unwrap();
+    assert!(report.attempts.len() >= 2);
+    assert!(report.attempts.iter().all(|a| a.work_budget == 1));
+    assert!(execution.route_expansions <= limits.attempts);
+    assert_ne!(report.termination, "work-exhausted");
 }
