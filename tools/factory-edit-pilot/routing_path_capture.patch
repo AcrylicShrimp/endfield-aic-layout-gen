@@ -1,0 +1,20 @@
+--- a/crates/aic-pilot-native/src/full_factory/path.rs
++++ b/crates/aic-pilot-native/src/full_factory/path.rs
+@@ -185,6 +185,17 @@
+         crossing_limit,
+         allow_zero_length,
+     } = options;
++    if let Ok(directory) = std::env::var("AIC_ROUTING_TRACE_DIR") {
++        use std::sync::atomic::{AtomicUsize, Ordering};
++        static NEXT: AtomicUsize = AtomicUsize::new(0);
++        let ordinal = NEXT.fetch_add(1, Ordering::Relaxed);
++        let payload = serde_json::json!({"start": start, "end": end, "blocked": blocked.iter().collect::<Vec<_>>(),
++            "bounds": bounds, "first": first, "last": last, "work_budget": work_budget,
++            "crossings": crossings.values().collect::<Vec<_>>(), "crossing_limit": crossing_limit,
++            "allow_zero_length": allow_zero_length});
++        std::fs::write(std::path::Path::new(&directory).join(format!("path-{ordinal:05}.json")),
++            serde_json::to_vec(&payload).unwrap()).unwrap();
++    }
+     let width = bounds.width();
+     let height = bounds.height();
+     let area = i128::from(width) * i128::from(height);

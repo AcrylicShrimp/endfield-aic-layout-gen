@@ -1,0 +1,1042 @@
+{
+  "schema": "routing-search-efficiency-provenance-v1",
+  "source_commit": "b99b86a",
+  "live_runtime_changed": false,
+  "completed_new_batches": 444,
+  "latest_evaluation": {
+    "path": "current-history-16--seed-17/evaluation-0440/record-b4ad328c94b84eee830e049f536f4efc.json",
+    "sha256": "61fbc8c80808c7c50a6e96cccc59b178c4e09e00b71daf42b2482fe189974fc4",
+    "phase": {
+      "kind": "evaluation",
+      "batch": 440
+    }
+  },
+  "server_files": [
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/factory-edit-pilot/cnn2-twelve-hour/protocol.json",
+      "bytes": 1365373,
+      "sha256": "292bd6dce26bfa79f4e31dbef18e45d99fb1e154e8c204489450fb93af3d1265"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/target/release/libaic_pilot_native.so",
+      "bytes": 5603376,
+      "sha256": "044ae6c2e0c1b9f35b1aff26497fbc123eb36cd5687a3ccb3e98346312d495fd"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/target/release/libaic_pilot_native.so",
+      "bytes": 5629296,
+      "sha256": "2b16d86bedd5052167ae298d1f1e2cc8016faf5ae96328eb70079d8ae364abe3"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/factory-edit-pilot/routing-census-batch-444/snapshot.json",
+      "bytes": 137921,
+      "sha256": "2944d4b177ce5504af5decaba422a17a9ee883e1386b5d4e5eb06db58a8f4a06"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/factory-edit-pilot/routing-census-batch-444/census.json",
+      "bytes": 10706,
+      "sha256": "0875f300f91840054c20f07d59baa82265e971874cdd6cbc97b32d7d6f8ce8c6"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/factory-edit-pilot/routing-census-batch-444/sample.json",
+      "bytes": 129223,
+      "sha256": "4b753bda700892e37d548894ae1b06d47f6582f594c834e258d0b7ba1d5c30ce"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/factory-edit-pilot/routing-census-batch-444/work-matrix/report.json",
+      "bytes": 1549545,
+      "sha256": "d9cd60f8fcfd13d853c43ef4dfc7928aee8799dea0434c8dbaea0879042e2464"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/factory-edit-pilot/routing-census-batch-444/census-verified/census.json",
+      "bytes": 10706,
+      "sha256": "7344850209b6c46bb764ac999f877d036b02c0ea2ec15f1d7f158042a0ee7992"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/factory-edit-pilot/routing-census-batch-444/matrix-verified/report.json",
+      "bytes": 1549481,
+      "sha256": "917a7d80e1ba5955906f8c07c4246e5caf9f20c956656eab21f76f2fd14f99b7"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace/work-10000/path-00003.json",
+      "bytes": 111311,
+      "sha256": "4922e793ab6c781555277775657c3c83eb7c6169a6c3306cd7043bc6f6bcc764"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace/work-10000/path-00004.json",
+      "bytes": 118318,
+      "sha256": "532ce1b7ce8fcb76df8d0efe6a20cd7e10975f628f65811afa5618450320b8b4"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace/work-10000/path-00005.json",
+      "bytes": 123059,
+      "sha256": "1ffb0a6e0711ce9c9637763ad3fd58863bd6e7d8c8cb1b9415ef0cdc7942109a"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace/work-10000/path-00006.json",
+      "bytes": 111310,
+      "sha256": "d5e08fc39297643e1cf1eb4083c89d7af249e14a9793459606eaa1e80975d7dc"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace/work-10000/path-00007.json",
+      "bytes": 116663,
+      "sha256": "41bdc8ca28b1a3215042551d5b49ab2918775001198b02784820495eeb559cac"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace/work-10000/path-00008.json",
+      "bytes": 125414,
+      "sha256": "98c53f91a27cdad80c8e4158c09681dc3f1484731d61ee159770edb893d90825"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace/work-10000/path-00009.json",
+      "bytes": 129520,
+      "sha256": "c4aa53b9cc4f6eaaec1e6d81adab748a598b981d037ab83588c7a20b008e83c7"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace/work-5000/path-00000.json",
+      "bytes": 111310,
+      "sha256": "08786ec593204115e5da3d87acf292adfe4acb08c7632d65f3dd2103034effbf"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace/work-5000/path-00001.json",
+      "bytes": 118318,
+      "sha256": "83bac8b28734f738bb741a0c62f8d024a4bdc733f08f6540abc44b84eae9ff3d"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace/work-5000/path-00002.json",
+      "bytes": 123059,
+      "sha256": "be16d7cf891b9f534561ee478e5ee6479374e8fc570eb9465e2757cebde87ac1"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace-verified/work-10000/path-00003.json",
+      "bytes": 111311,
+      "sha256": "4922e793ab6c781555277775657c3c83eb7c6169a6c3306cd7043bc6f6bcc764"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace-verified/work-10000/path-00004.json",
+      "bytes": 118318,
+      "sha256": "532ce1b7ce8fcb76df8d0efe6a20cd7e10975f628f65811afa5618450320b8b4"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace-verified/work-10000/path-00005.json",
+      "bytes": 123059,
+      "sha256": "1ffb0a6e0711ce9c9637763ad3fd58863bd6e7d8c8cb1b9415ef0cdc7942109a"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace-verified/work-10000/path-00006.json",
+      "bytes": 111310,
+      "sha256": "d5e08fc39297643e1cf1eb4083c89d7af249e14a9793459606eaa1e80975d7dc"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace-verified/work-10000/path-00007.json",
+      "bytes": 116663,
+      "sha256": "41bdc8ca28b1a3215042551d5b49ab2918775001198b02784820495eeb559cac"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace-verified/work-10000/path-00008.json",
+      "bytes": 125414,
+      "sha256": "98c53f91a27cdad80c8e4158c09681dc3f1484731d61ee159770edb893d90825"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace-verified/work-10000/path-00009.json",
+      "bytes": 129520,
+      "sha256": "c4aa53b9cc4f6eaaec1e6d81adab748a598b981d037ab83588c7a20b008e83c7"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace-verified/work-5000/path-00000.json",
+      "bytes": 111310,
+      "sha256": "08786ec593204115e5da3d87acf292adfe4acb08c7632d65f3dd2103034effbf"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace-verified/work-5000/path-00001.json",
+      "bytes": 118318,
+      "sha256": "83bac8b28734f738bb741a0c62f8d024a4bdc733f08f6540abc44b84eae9ff3d"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/route-trace-verified/work-5000/path-00002.json",
+      "bytes": 123059,
+      "sha256": "be16d7cf891b9f534561ee478e5ee6479374e8fc570eb9465e2757cebde87ac1"
+    }
+  ],
+  "local_analysis_files": [
+    {
+      "path": "artifacts/factory-edit-pilot/routing-census-batch-444/path-analysis.jsonl",
+      "bytes": 56738,
+      "sha256": "a888bf83879578f840171adbdaf5a5e7239e49c4bd0336d87fcf732c72206dd0"
+    },
+    {
+      "path": "tools/factory-edit-pilot/routing_path_capture.patch",
+      "bytes": 1098,
+      "sha256": "4c3509c01a3c76ddeff7153bd8e8dc12ea8d06d4e163c09e1c5979109ad179fb"
+    }
+  ],
+  "matrix_selection": [
+    {
+      "episode_index": 0,
+      "action_number": 5,
+      "before_sha256": "aa7eb088755da99d1ff8b1acbd0e9c3a272d33147775781d696ef1b9b95a8efb",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            1927,
+            345,
+            92
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": false,
+          "expansions": 10000,
+          "score": [
+            1927,
+            345,
+            92
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": false,
+          "expansions": 25000,
+          "score": [
+            1927,
+            345,
+            92
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 50000,
+          "validated": true,
+          "expansions": 37431,
+          "score": [
+            1927,
+            455,
+            104
+          ],
+          "improves_previous_best_area": false
+        }
+      ]
+    },
+    {
+      "episode_index": 2,
+      "action_number": 6,
+      "before_sha256": "fea55aea6ad8600039e1e43075ca4dfa63badb44463be07b2d4f9f61d91218ab",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            1710,
+            406,
+            88
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": false,
+          "expansions": 10000,
+          "score": [
+            1710,
+            406,
+            88
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": false,
+          "expansions": 25000,
+          "score": [
+            1710,
+            406,
+            88
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 50000,
+          "validated": true,
+          "expansions": 26402,
+          "score": [
+            1710,
+            571,
+            102
+          ],
+          "improves_previous_best_area": false
+        }
+      ]
+    },
+    {
+      "episode_index": 7,
+      "action_number": 6,
+      "before_sha256": "c3466f980debc913d69569c69ad091926e6eac429ba6a4956934808aa5891f9e",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            3480,
+            658,
+            123
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": false,
+          "expansions": 10000,
+          "score": [
+            3480,
+            658,
+            123
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": true,
+          "expansions": 19423,
+          "score": [
+            3480,
+            823,
+            131
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 50000,
+          "validated": true,
+          "expansions": 19423,
+          "score": [
+            3480,
+            823,
+            131
+          ],
+          "improves_previous_best_area": false
+        }
+      ]
+    },
+    {
+      "episode_index": 8,
+      "action_number": 5,
+      "before_sha256": "4939d897db02c7be3659ab4fc99d3fcc8338cd93652289e9a755b9e3aed3cb11",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            1763,
+            423,
+            86
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": false,
+          "expansions": 10000,
+          "score": [
+            1763,
+            423,
+            86
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": true,
+          "expansions": 13388,
+          "score": [
+            1763,
+            608,
+            106
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 50000,
+          "validated": true,
+          "expansions": 13388,
+          "score": [
+            1763,
+            608,
+            106
+          ],
+          "improves_previous_best_area": false
+        }
+      ]
+    },
+    {
+      "episode_index": 9,
+      "action_number": 6,
+      "before_sha256": "7d10999e85b7831595023bc4c603d9ab40244946e7d55d938eebe9507c2c2c37",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            1596,
+            450,
+            98
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": false,
+          "expansions": 10000,
+          "score": [
+            1596,
+            450,
+            98
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": false,
+          "expansions": 25000,
+          "score": [
+            1596,
+            450,
+            98
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 50000,
+          "validated": false,
+          "expansions": 27529,
+          "score": [
+            1596,
+            450,
+            98
+          ],
+          "improves_previous_best_area": false
+        }
+      ]
+    },
+    {
+      "episode_index": 10,
+      "action_number": 10,
+      "before_sha256": "dbb464b9c3825f4bd12693e7f3034c9882d96818db6f6f569fbbde27273f51d7",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            1596,
+            510,
+            99
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": true,
+          "expansions": 5614,
+          "score": [
+            1444,
+            590,
+            119
+          ],
+          "improves_previous_best_area": true
+        },
+        {
+          "work": 25000,
+          "validated": true,
+          "expansions": 5614,
+          "score": [
+            1444,
+            590,
+            119
+          ],
+          "improves_previous_best_area": true
+        },
+        {
+          "work": 50000,
+          "validated": true,
+          "expansions": 5614,
+          "score": [
+            1444,
+            590,
+            119
+          ],
+          "improves_previous_best_area": true
+        }
+      ]
+    },
+    {
+      "episode_index": 13,
+      "action_number": 5,
+      "before_sha256": "c5e527454bc6059e85613cb6e1397c055ddf3bb0d366c3b0e0777cd6a5b852fe",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            1591,
+            424,
+            94
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": true,
+          "expansions": 8321,
+          "score": [
+            1591,
+            575,
+            110
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": true,
+          "expansions": 8321,
+          "score": [
+            1591,
+            575,
+            110
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 50000,
+          "validated": true,
+          "expansions": 8321,
+          "score": [
+            1591,
+            575,
+            110
+          ],
+          "improves_previous_best_area": false
+        }
+      ]
+    },
+    {
+      "episode_index": 14,
+      "action_number": 9,
+      "before_sha256": "8521f415290c202734ffd841752e11ffd8e982452339219380d0cc8e982ffb47",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            1440,
+            552,
+            114
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": false,
+          "expansions": 10000,
+          "score": [
+            1440,
+            552,
+            114
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": false,
+          "expansions": 25000,
+          "score": [
+            1440,
+            552,
+            114
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 50000,
+          "validated": false,
+          "expansions": 38463,
+          "score": [
+            1440,
+            552,
+            114
+          ],
+          "improves_previous_best_area": false
+        }
+      ]
+    },
+    {
+      "episode_index": 19,
+      "action_number": 14,
+      "before_sha256": "8c58e2600d263445425603269d87fdad3bb33f311ae57ab37f6b103057023791",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            1505,
+            437,
+            74
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": false,
+          "expansions": 10000,
+          "score": [
+            1505,
+            437,
+            74
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": false,
+          "expansions": 25000,
+          "score": [
+            1505,
+            437,
+            74
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 50000,
+          "validated": false,
+          "expansions": 50000,
+          "score": [
+            1505,
+            437,
+            74
+          ],
+          "improves_previous_best_area": false
+        }
+      ]
+    },
+    {
+      "episode_index": 20,
+      "action_number": 6,
+      "before_sha256": "6e1823f580c4b86e0294d36203c0ac94665f05d2ef3100eb549574a1210eb83c",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            1677,
+            295,
+            80
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": true,
+          "expansions": 8433,
+          "score": [
+            1677,
+            459,
+            94
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": true,
+          "expansions": 8433,
+          "score": [
+            1677,
+            459,
+            94
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 50000,
+          "validated": true,
+          "expansions": 8433,
+          "score": [
+            1677,
+            459,
+            94
+          ],
+          "improves_previous_best_area": false
+        }
+      ]
+    },
+    {
+      "episode_index": 21,
+      "action_number": 6,
+      "before_sha256": "e8d1fd5ebad662c3eb943fc862f1c1afd81d2d77743a6648afa6a9f063a0700c",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            1974,
+            348,
+            90
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": false,
+          "expansions": 10000,
+          "score": [
+            1974,
+            348,
+            90
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": true,
+          "expansions": 11038,
+          "score": [
+            1428,
+            451,
+            102
+          ],
+          "improves_previous_best_area": true
+        },
+        {
+          "work": 50000,
+          "validated": true,
+          "expansions": 11038,
+          "score": [
+            1428,
+            451,
+            102
+          ],
+          "improves_previous_best_area": true
+        }
+      ]
+    },
+    {
+      "episode_index": 22,
+      "action_number": 4,
+      "before_sha256": "06047ea7d7abe153aa0bee7902d6627ff89f0be29286bfea0f5f3b8c89a396e7",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            1804,
+            360,
+            86
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": false,
+          "expansions": 10000,
+          "score": [
+            1804,
+            360,
+            86
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": false,
+          "expansions": 25000,
+          "score": [
+            1804,
+            360,
+            86
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 50000,
+          "validated": false,
+          "expansions": 50000,
+          "score": [
+            1804,
+            360,
+            86
+          ],
+          "improves_previous_best_area": false
+        }
+      ]
+    },
+    {
+      "episode_index": 24,
+      "action_number": 16,
+      "before_sha256": "881d61340089de0f88b7d0cc3dafd330de60d5c81950fd6cf3e16349b96835af",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            1444,
+            526,
+            98
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": false,
+          "expansions": 10000,
+          "score": [
+            1444,
+            526,
+            98
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": false,
+          "expansions": 21784,
+          "score": [
+            1444,
+            526,
+            98
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 50000,
+          "validated": false,
+          "expansions": 21784,
+          "score": [
+            1444,
+            526,
+            98
+          ],
+          "improves_previous_best_area": false
+        }
+      ]
+    },
+    {
+      "episode_index": 27,
+      "action_number": 11,
+      "before_sha256": "e5a5100f8f7c51e7bd0d89c6c18f27df95058bfdd14571a0c354575922e36cc7",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            3102,
+            640,
+            104
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": true,
+          "expansions": 6216,
+          "score": [
+            3102,
+            809,
+            118
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": true,
+          "expansions": 6216,
+          "score": [
+            3102,
+            809,
+            118
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 50000,
+          "validated": true,
+          "expansions": 6216,
+          "score": [
+            3102,
+            809,
+            118
+          ],
+          "improves_previous_best_area": false
+        }
+      ]
+    },
+    {
+      "episode_index": 28,
+      "action_number": 22,
+      "before_sha256": "221a9139ce9f42406fe32d6485232c4487c978070861129237975dbbdf45de6a",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            1368,
+            549,
+            112
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": false,
+          "expansions": 10000,
+          "score": [
+            1368,
+            549,
+            112
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": false,
+          "expansions": 23566,
+          "score": [
+            1368,
+            549,
+            112
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 50000,
+          "validated": false,
+          "expansions": 23566,
+          "score": [
+            1368,
+            549,
+            112
+          ],
+          "improves_previous_best_area": false
+        }
+      ]
+    },
+    {
+      "episode_index": 29,
+      "action_number": 12,
+      "before_sha256": "4b7c073c0ec71d19485a009737c0c88a078e8a3cf7aa695b10f14e3a3c4b1ce9",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            1400,
+            413,
+            78
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": false,
+          "expansions": 10000,
+          "score": [
+            1400,
+            413,
+            78
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": false,
+          "expansions": 24677,
+          "score": [
+            1400,
+            413,
+            78
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 50000,
+          "validated": false,
+          "expansions": 24677,
+          "score": [
+            1400,
+            413,
+            78
+          ],
+          "improves_previous_best_area": false
+        }
+      ]
+    },
+    {
+      "episode_index": 30,
+      "action_number": 9,
+      "before_sha256": "8dfdd5996500c1bf149ae88c86b8787478e083f8a8977d54a239bad3c4fa2e6b",
+      "trials": [
+        {
+          "work": 5000,
+          "validated": false,
+          "expansions": 5000,
+          "score": [
+            1677,
+            298,
+            80
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 10000,
+          "validated": false,
+          "expansions": 5370,
+          "score": [
+            1677,
+            298,
+            80
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 25000,
+          "validated": false,
+          "expansions": 5370,
+          "score": [
+            1677,
+            298,
+            80
+          ],
+          "improves_previous_best_area": false
+        },
+        {
+          "work": 50000,
+          "validated": false,
+          "expansions": 5370,
+          "score": [
+            1677,
+            298,
+            80
+          ],
+          "improves_previous_best_area": false
+        }
+      ]
+    }
+  ]
+}
