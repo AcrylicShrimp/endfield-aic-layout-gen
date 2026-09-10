@@ -1,0 +1,84 @@
+{
+  "schema": "ppo-batched-indexing-provenance-v1",
+  "baseline_commit": "d22474b",
+  "runtime": "/home/ashrimp/Srv/aic-ppo-batched-indexing-20260911",
+  "baseline_runtime": "/home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2",
+  "frozen_sources_verified": true,
+  "files": [
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-batched-indexing-20260911/artifacts/factory-edit-pilot/grouped-indexing-verify/report.json",
+      "sha256": "3e1e733ac326fe9246c80478e004cd92c6d1f9df524f6151d7c8cdf54927d34a",
+      "bytes": 4749
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-batched-indexing-20260911/artifacts/factory-edit-pilot/grouped-indexing-verify/source-snapshot.tar.gz",
+      "sha256": "cdb91216a7249d3bbbbf35490e1f2452d275fbc981bdd58234b88b912561a58e",
+      "bytes": 14178
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-batched-indexing-20260911/artifacts/factory-edit-pilot/grouped-indexing-update/report.json",
+      "sha256": "b686651cf89642ccd2488840e7c356d8db8c9b8601956e39a616407c9b040c58",
+      "bytes": 5718
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-batched-indexing-20260911/artifacts/factory-edit-pilot/padded-indexing-verify/report.json",
+      "sha256": "8e92e033813b52e3b748ff18adab60eb08e25187dbd85716a3113acdf9f4ced0",
+      "bytes": 5258
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-batched-indexing-20260911/artifacts/factory-edit-pilot/padded-indexing-verify/source-snapshot.tar.gz",
+      "sha256": "b4382406ff0be74dd7e85d694882b07c9ca71dea63de221daec2ec3dd35d021a",
+      "bytes": 14751
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-batched-indexing-20260911/artifacts/factory-edit-pilot/padded-indexing-update/report.json",
+      "sha256": "40baba5dbd0c7a97b58f73651d1f8e4a877c658129af0c3ce780287c09533613",
+      "bytes": 7995
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-batched-indexing-20260911/artifacts/factory-edit-pilot/padded-indexing-state-diagnosis/report.json",
+      "sha256": "59d8b6dd88fa0610e06ca95bdd268ab01a88c2922ba7be296f7857d3f14045c0",
+      "bytes": 18051
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-batched-indexing-20260911/artifacts/factory-edit-pilot/padded-indexing-update-measured/report.json",
+      "sha256": "997978af0c93972e8944f8b5f0022af6ba2a654828194187b94c4c65045453a5",
+      "bytes": 19496
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-batched-indexing-20260911/artifacts/factory-edit-pilot/padded-indexing-kernels/report.json",
+      "sha256": "2edf928b66deb813b0c4d2ac4f2d551b6886427d4865586ecaa0d534f0dd498c",
+      "bytes": 18914
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-batched-indexing-20260911/artifacts/factory-edit-pilot/padded-indexing-readiness/protocol.json",
+      "sha256": "5702a8e37c04ced15960f5659f8f2e9ba582ac1afbc1c41a10d57d58ee972762",
+      "bytes": 1665261
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-batched-indexing-20260911/artifacts/factory-edit-pilot/padded-indexing-native-audit/report.json",
+      "sha256": "ae6c53fe43b6ac1f44105bf5fc8cdf0cc2672ea71505b667c208c01db936b46a",
+      "bytes": 947
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-batched-indexing-20260911/artifacts/factory-edit-pilot/padded-indexing-native-comparison.json",
+      "sha256": "b2fe1cc6334501a9800893c30105385101b5be60be37f36e103ab3c0795d4f17",
+      "bytes": 22451
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-batched-indexing-20260911/artifacts/factory-edit-pilot/padded-indexing-runtime-source.tar.gz",
+      "sha256": "918cf8cc6e0e87f47bb21394efcebaf73590fa3c2c986858d6d72cf2ed0c9292",
+      "bytes": 582586
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-batched-indexing-20260911/artifacts/factory-edit-pilot/padded-indexing-ppo-tests.log",
+      "sha256": "46033c2377db29584dc9a5ea080770879755f9937d54486990f9c2cf7ed3c2cb",
+      "bytes": 178
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2/artifacts/factory-edit-pilot/data-supply-readiness-16/protocol.json",
+      "sha256": "1f15cd7029c6b992586cdb067e75d522a65bdbe4a0a93b671872eb9af89a8906",
+      "bytes": 1664524
+    }
+  ]
+}

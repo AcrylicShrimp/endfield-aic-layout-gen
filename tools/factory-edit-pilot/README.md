@@ -350,6 +350,15 @@ shuffle order, FP32 arithmetic and stopping rules are unchanged. See the
 [data-supply contract](../../docs/designs/2026-09-10-ppo-data-supply.md) and
 [verified measurements](../../docs/reports/2026-09-11-ppo-data-supply.md).
 
+Learner execution v3 additionally batches variable-size CNN inputs by padding
+to each minibatch's maximum extent. An explicit validity mask excludes padding
+from normalization, every spatial layer and pooling. CPU-prepared addresses
+combine node/action/member gathers across factories. Model channels and PPO
+settings are unchanged, but floating-point reduction order changes: old and new
+Adam continuations are not bit-exact. Use `benchmark_ppo_indexing.py` with an
+explicit frozen baseline to measure forward/gradient differences and full-update
+roundoff. See the [padding measurements and limitations](../../docs/reports/2026-09-11-ppo-batched-indexing.md).
+
 ```sh
 tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/ppo_harness.py prepare --config tools/factory-edit-pilot/ppo-data-supply-readiness.json --output artifacts/factory-edit-pilot/data-supply-readiness
 tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/ppo_harness.py run --run artifacts/factory-edit-pilot/data-supply-readiness --duration-seconds 900

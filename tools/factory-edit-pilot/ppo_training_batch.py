@@ -8,7 +8,7 @@ import torch
 from full_factory_input_contracts import HISTORY_WIDTH
 from ppo_training_world import prepare_worlds, encode_worlds
 
-EXECUTION_SCHEMA = 'ppo-batched-input-contracts-v2'
+EXECUTION_SCHEMA = 'ppo-batched-input-contracts-v3'
 
 
 def require(condition, message):
@@ -39,7 +39,8 @@ def compile_steps(steps, config):
 def prepare_actor(observations, counts, width, device):
     def tensor(value, dtype=torch.float32):
         return torch.as_tensor(np.asarray(value), dtype=dtype, device=device)
-    worlds, current_indices, best_indices, references = [], [], [], []
+    worlds, current_indices, best_indices = [], [], []
+    samples = dict(actions=[], members=[])
     for obs in observations:
         current = len(worlds) if obs['current'] is not None else -1
         if current >= 0:
@@ -51,9 +52,9 @@ def prepare_actor(observations, counts, width, device):
                 worlds.append(obs['best'])
         current_indices.append(current + 1)
         best_indices.append(best + 1)
-        references.append(dict(current=current, actions=tensor(obs['action_xy'], torch.long),
-                               members=tensor(obs['member_xy'], torch.long)))
-    world_batch = prepare_worlds(worlds, device) if worlds else None
+        samples['actions'].append((current, obs['action_xy']))
+        samples['members'].append((current, obs['member_xy']))
+    world_batch = prepare_worlds(worlds, device, samples) if worlds else None
     operands, member_nodes = [], []
     for obs, current in zip(observations, current_indices):
         offset = world_batch['node_offsets'][current - 1] if current else 0
@@ -69,7 +70,7 @@ def prepare_actor(observations, counts, width, device):
     for i, obs in enumerate(observations):
         history[i, :lengths[i]] = obs['history']
     return dict(worlds=world_batch, current_indices=tensor(current_indices, torch.long),
-                best_indices=tensor(best_indices, torch.long), references=references,
+                best_indices=tensor(best_indices, torch.long),
                 operands=tensor(np.concatenate(operands), torch.long), member_nodes=tensor(np.concatenate(member_nodes), torch.long),
                 member_pose=tensor(np.concatenate([obs['member_pose'] for obs in observations])),
                 member_actions=member_indices, member_counts=member_counts,
@@ -127,16 +128,11 @@ def actor_logits(actor, batch):
         operands, local, member_context = obs['zero_operands'], obs['zero_local'], obs['zero_members']
         current, best = obs['zero_global'], obs['zero_global']
     else:
-        h, rasters, global_features = encode_worlds(actor.world, obs['worlds'])
+        h, spatial, global_features = encode_worlds(actor.world, obs['worlds'])
         padded_nodes = torch.cat((h.new_zeros(1, width), h))
         operands = padded_nodes[obs['operands']].flatten(1)
-        action_samples, member_samples = [], []
-        for reference in obs['references']:
-            index, xy, mxy = reference['current'], reference['actions'], reference['members']
-            action_samples.append(rasters[index][:, xy[:, 1], xy[:, 0]].T if index >= 0 else h.new_zeros(len(xy), width))
-            member_samples.append(rasters[index][:, mxy[:, 1], mxy[:, 0]].T if index >= 0 else h.new_zeros(len(mxy), width))
-        local = torch.cat(action_samples)
-        member_context = torch.cat((padded_nodes[obs['member_nodes']], torch.cat(member_samples)), 1)
+        local = spatial['actions']
+        member_context = torch.cat((padded_nodes[obs['member_nodes']], spatial['members']), 1)
         padded_global = torch.cat((global_features.new_zeros(1, 2 * width), global_features))
         current, best = padded_global[obs['current_indices']], padded_global[obs['best_indices']]
     members = actor.member(torch.cat((member_context, obs['member_pose']), 1)).float()
