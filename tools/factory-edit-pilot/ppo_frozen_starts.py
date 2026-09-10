@@ -12,10 +12,17 @@ def load(path, config, scope='all'):
     value = read(path)
     require(value.get('schema') == 'ppo-frozen-starts-v1' and isinstance(value.get('entries'), dict),
             'frozen-start-schema', 'expected ppo-frozen-starts-v1 entries', 'prepare', path)
-    require(scope in ('all', 'evaluation'), 'frozen-start-scope', 'expected all or evaluation scope', 'prepare', path)
+    require(scope in ('all', 'evaluation', 'prefix-and-evaluation'), 'frozen-start-scope', 'expected all, evaluation or prefix-and-evaluation scope', 'prepare', path)
     schedules = [(config['evaluation'], config['evaluation']['attempts'])]
-    if scope == 'all':
-        schedules.append((config['training'], config['training']['batches'] * config['training']['attempts']))
+    training_batches = config['training']['batches'] if scope == 'all' else 0
+    if scope == 'prefix-and-evaluation':
+        training_batches = config.get('input_manifest_training_batches')
+        require(type(training_batches) is int and 1 <= training_batches <= config['training']['batches'],
+                'frozen-start-prefix', 'explicit training prefix must be within the schedule', 'prepare', path)
+    training_seeds = [config['training']['generation_seed_base'] + seed * 100000 + i
+                      for seed in config['seeds'] for i in range(training_batches * config['training']['attempts'])]
+    if training_batches:
+        schedules.append((config['training'], training_batches * config['training']['attempts']))
     evaluation_seeds = [config['evaluation']['generation_seed_base'] + seed * 100000 + i
                         for seed in config['seeds'] for i in range(config['evaluation']['attempts'])]
     needed = {schedule['generation_seed_base'] + seed * 100000 + i
@@ -43,12 +50,13 @@ def load(path, config, scope='all'):
             files.add(source)
         entries[str(seed)] = entry
     return dict(manifest=str(path), manifest_sha256=sha(path), entries=entries,
-                scope=scope, evaluation_seeds=evaluation_seeds), files
+                scope=scope, evaluation_seeds=evaluation_seeds, training_seeds=training_seeds), files
 
 
 def applies(frozen, seed):
     # Route by the declared schedule, never by whether an entry happens to exist.
-    return frozen.get('scope', 'all') == 'all' or seed in frozen['evaluation_seeds']
+    return (frozen.get('scope', 'all') == 'all' or seed in frozen['evaluation_seeds']
+            or seed in frozen.get('training_seeds', []))
 
 
 def materialize(runtime, spec, seed, directory, guard):

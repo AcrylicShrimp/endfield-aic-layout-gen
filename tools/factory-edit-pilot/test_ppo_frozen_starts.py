@@ -95,5 +95,26 @@ class FrozenStartsTests(unittest.TestCase):
                 load(manifest, config, 'evaluation')
 
 
+    def test_explicit_training_prefix_preserves_controlled_inputs_then_uses_fresh_seeds(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            config, manifest, spec, _ = self.fixture(root)
+            config['training']['batches'] = 100
+            config['input_manifest_training_batches'] = 1
+            frozen, _ = load(manifest, config, 'prefix-and-evaluation')
+            self.assertEqual(set(frozen['entries']), {'10', '20'})
+            self.assertTrue(applies(frozen, 10))
+            self.assertTrue(applies(frozen, 20))
+            self.assertFalse(applies(frozen, 11))
+            del frozen['entries']['10']
+            self.assertTrue(applies(frozen, 10))
+            spec['frozen_starts'] = frozen
+            with self.assertRaisesRegex(HarnessError, 'frozen-start-missing'):
+                materialize(Mock(), spec, 10, root / 'missing', lambda: None)
+            config['input_manifest_training_batches'] = 2
+            with self.assertRaisesRegex(HarnessError, 'frozen-start-missing'):
+                load(manifest, config, 'prefix-and-evaluation')
+
+
 if __name__ == '__main__':
     unittest.main()

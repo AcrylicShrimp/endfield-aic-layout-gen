@@ -118,7 +118,7 @@ def run(root, session):
                         require(summary['accepted'] >= 2, 'insufficient-episodes', 'fewer than two complete training episodes', 'learner', location)
                         progress(stage='learner', completed=summary['accepted'], total=summary['attempted'])
                         began_update = time.monotonic()
-                        selection = dict(protocol['spec']['selection'], **config['ppo'])
+                        selection = dict(protocol['spec']['selection'], **config['ppo'], reward=config['reward'])
                         metrics = update(*model_set, results, selection, config['execution']['microbatch'],
                                          guard=lambda: progress(stage='learner'))
                         record['update_seconds'] = time.monotonic() - began_update

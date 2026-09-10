@@ -33,11 +33,20 @@ def validate(config):
     fields(config, 'schema_version purpose generation_config candidates seeds order_seed training evaluation execution limits ppo tracking retention'
            + (' input_manifest' if 'input_manifest' in config else '')
            + (' input_manifest_scope' if 'input_manifest_scope' in config else '')
+           + (' input_manifest_training_batches' if 'input_manifest_training_batches' in config else '')
+           + (' reward' if 'reward' in config else '')
            + (' continuation_run' if 'continuation_run' in config else '')
            + (' model' if 'model' in config else ''), 'config')
+    if 'reward' in config:
+        from ppo_reward import validate as validate_reward
+        validate_reward(config['reward'])
     if 'input_manifest_scope' in config:
-        require('input_manifest' in config and config['input_manifest_scope'] in ('all', 'evaluation'),
-                'config-input-scope', 'input_manifest_scope requires a manifest and all or evaluation scope', 'prepare')
+        require('input_manifest' in config and config['input_manifest_scope'] in ('all', 'evaluation', 'prefix-and-evaluation'),
+                'config-input-scope', 'input_manifest_scope requires a manifest and a registered scope', 'prepare')
+    if 'input_manifest_training_batches' in config or config.get('input_manifest_scope') == 'prefix-and-evaluation':
+        require(config.get('input_manifest_scope') == 'prefix-and-evaluation', 'config-input-prefix',
+                'training prefix requires prefix-and-evaluation scope', 'prepare')
+        integer(config.get('input_manifest_training_batches'), 1, config['training']['batches'], 'input_manifest_training_batches')
     if 'continuation_run' in config:
         require(isinstance(config['continuation_run'], str) and bool(config['continuation_run']),
                 'config-continuation', 'continuation_run must name an immutable parent run', 'prepare')
@@ -190,6 +199,8 @@ def prepare(config_path, root):
     config_path, root = Path(config_path).resolve(), Path(root).resolve()
     config = read(config_path)
     validate(config)
+    from ppo_reward import DEFAULT
+    config.setdefault('reward', dict(DEFAULT))
     if config['tracking']['backend'] == 'wandb':
         destination = tracking_destination(required=config['tracking']['mode'] == 'online')
         for key, value in destination.items():

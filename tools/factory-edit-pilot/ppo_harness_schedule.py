@@ -53,7 +53,25 @@ def phase_tasks(root, protocol, protocol_hash, job, phase):
 def quality(results):
     complete = [r for r in results if r['status'] == 'complete']
     reductions = [100 * (1 - r['row']['best_metrics']['score'][0] / r['row']['initial_metrics']['score'][0]) for r in complete]
-    return dict(attempted=len(results), accepted=len(complete), generation_rejected=len(results) - len(complete),
+    covered = [r['row'] for r in complete if 'routing_budget_failed_actions' in r['row']]
+    detailed_actions = sum(r['selected'] for r in covered)
+    failed = sum(sum(n for s, n in r['row']['statuses'].items() if s in ('executor_rejected', 'rejected', 'late'))
+                 for r in complete if 'statuses' in r['row'])
+    budget_failed = sum(r['routing_budget_failed_actions'] for r in covered)
+    failure_codes = Counter()
+    for r in covered:
+        failure_codes.update(r['routing_failure_codes'])
+    return dict(routing_detailed_actions=detailed_actions, failed_actions=failed,
+                routing_budget_failed_actions=budget_failed, routing_failure_codes=dict(failure_codes),
+                routing_budget_failure_fraction=budget_failed / detailed_actions if detailed_actions else None,
+                total_route_expansions=sum(r['row'].get('route_expansions', 0) for r in complete),
+                total_executor_seconds=sum(r['executor_seconds'] for r in covered),
+                total_preflight_expansions=sum(r['route_preflight_expansions'] for r in covered),
+                first_attempt_budget_failures=sum(r['routing_first_attempt_budget_failures'] for r in covered),
+                mean_reward=sum(r['reward_sum'] for r in covered) / len(covered) if covered else None,
+                mean_area_reward=sum(r['area_reward_sum'] for r in covered) / len(covered) if covered else None,
+                mean_failure_cost=sum(r['failure_cost_sum'] for r in covered) / len(covered) if covered else None,
+                attempted=len(results), accepted=len(complete), generation_rejected=len(results) - len(complete),
                 selected=sum(r['row']['selected'] for r in complete),
                 mean_area_reduction_percent=sum(reductions) / len(reductions) if reductions else None,
                 min_area_reduction_percent=min(reductions) if reductions else None,

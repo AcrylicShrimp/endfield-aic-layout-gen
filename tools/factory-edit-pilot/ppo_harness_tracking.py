@@ -42,6 +42,16 @@ def metrics(record):
         value.update({f'timing/{key}': number for key, number in ppo['timing'].items()})
         value.update({'timing/update_seconds': record['update_seconds'],
                       'timing/checkpoint_seconds': record['checkpoint_seconds']})
+    prefix = 'training' if record['phase']['kind'] == 'training' else 'evaluation'
+    for name in ('routing_detailed_actions', 'failed_actions', 'routing_budget_failed_actions',
+                 'routing_budget_failure_fraction', 'total_route_expansions', 'total_executor_seconds',
+                 'total_preflight_expansions', 'first_attempt_budget_failures',
+                 'mean_reward', 'mean_area_reward', 'mean_failure_cost'):
+        if quality.get(name) is not None:
+            value[f'{prefix}/{name}'] = quality[name]
+    if quality.get('selected') and 'failed_actions' in quality:
+        value[f'{prefix}/failure_fraction'] = quality['failed_actions'] / quality['selected']
+    value.update({f'{prefix}/failure_code/{code}': count for code, count in quality.get('routing_failure_codes', {}).items()})
     value.update({'timing/phase_seconds': record['phase_seconds'], 'timing/collection_seconds': record['collection']['seconds'],
                   'throughput/selections_per_second': record['selected_per_second'],
                   'timing/summed_generation_seconds': quality['total_generation_seconds'],
@@ -79,6 +89,8 @@ class Tracker:
                 x_disable_stats=True, x_disable_machine_info=True, init_timeout=20, finish_timeout=10),
             config=dict(protocol_sha256=self.protocol_hash, candidate=job['candidate'], seed=job['seed'],
                         policy=self.protocol['spec']['policy'], model=model, continuation=self.protocol.get('continuation'),
+                        reward=self.protocol['config'].get('reward'),
+                        selection=self.protocol['spec'].get('selection'),
                         ppo=self.protocol['config']['ppo'],
                         training=self.protocol['config']['training'], evaluation=self.protocol['config']['evaluation'],
                         execution=self.protocol['config']['execution']))

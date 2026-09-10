@@ -14,6 +14,7 @@ from full_factory_screen import sha
 from ppo_area_model import SCHEMA, actor_distribution, models
 from ppo_area_update import save_experience, update as reference_update
 from ppo_training_update import update, collect_steps
+from ppo_reward import SCHEMA as REWARD_SCHEMA, DEFAULT, totals
 from test_ppo_training_batch import observations
 
 
@@ -22,6 +23,8 @@ def experience(root, actor, critic, config, corrupt=False):
     for i, trajectory in enumerate([observations()[:2], observations()[2:]]):
         for index, step in enumerate(trajectory):
             step['reward'] = .1 if index == len(trajectory) - 1 else 0.
+            step.update(status='improved' if step['reward'] else 'accepted_equal',
+                        area_reward=step['reward'], failure_cost=0.0)
             with torch.no_grad():
                 dist = actor_distribution(actor, step, config)
                 step.update(old_log_probability=float(dist.log_prob(torch.tensor(step['index']))),
@@ -31,13 +34,13 @@ def experience(root, actor, critic, config, corrupt=False):
                             critic_observation_sha256=observation_hash(step['critic_observation']))
         if corrupt and i == 1:
             trajectory[0]['old_value'] = float('nan')
-        payload = dict(schema=SCHEMA, policy_sha256=parameter_hash(actor), critic_sha256=parameter_hash(critic),
+        payload = dict(schema=SCHEMA, reward_schema=REWARD_SCHEMA, reward_config=dict(DEFAULT), policy_sha256=parameter_hash(actor), critic_sha256=parameter_hash(critic),
                        input_sha256=str(i), input_contract='action-only', steps=trajectory)
         path = root / f'experience-{i}.pt.gz'
         save_experience(path, payload)
         results.append(dict(status='complete', candidate='action-only', policy_sha256=payload['policy_sha256'], critic_sha256=payload['critic_sha256'],
                             input_sha256=str(i), experience=str(path), experience_sha256=sha(path),
-                            row=dict(selected=len(trajectory), initial_metrics=dict(score=[100, 0, 0]),
+                            row=dict(selected=len(trajectory), **totals(trajectory, DEFAULT), initial_metrics=dict(score=[100, 0, 0]),
                                      best_metrics=dict(score=[90, 0, 0]))))
     return results
 

@@ -70,7 +70,7 @@ def work(root):
             if case is None:
                 result['status'] = 'generation-rejected'
             else:
-                selection = dict(spec['selection'], horizon=task['horizon'])
+                selection = dict(spec['selection'], horizon=task['horizon'], reward=config['reward'])
                 row, payload = rollout(runtime, dict(config=selection), case, actor, critic, task['candidate'],
                                        task['action_seed'], active.parent / 'episode', task['training'], guard)
                 result.update(status='complete', row=row)

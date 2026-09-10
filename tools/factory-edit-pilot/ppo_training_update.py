@@ -14,6 +14,7 @@ from ppo_area_model import SCHEMA, clipped_surrogate
 from ppo_area_update import sha_bytes
 from ppo_training_batch import EXECUTION_SCHEMA, prepare, distribution, critic_values, require
 from random_factory_audit import optimizer_hash
+from ppo_reward import SCHEMA as REWARD_SCHEMA, DEFAULT, validate_episode
 
 
 def calculate_gae(rewards, values, lam):
@@ -42,8 +43,11 @@ def collect_steps(actor, critic, results, config):
         require(payload['schema'] == SCHEMA, 'supported experience schema')
         require(all(payload[key] == result[key] for key in ('policy_sha256', 'critic_sha256', 'input_sha256')) and
                 payload['input_contract'] == result['candidate'], 'experience behavior/task/input-contract envelope')
+        require(payload.get('reward_schema') == REWARD_SCHEMA and
+                payload.get('reward_config') == config.get('reward', DEFAULT), 'experience reward contract')
         trajectory = payload['steps']
         require(len(trajectory) == result['row']['selected'], 'complete experience envelope length')
+        validate_episode(trajectory, result['row'], config.get('reward', DEFAULT))
         rewards = [step['reward'] for step in trajectory]
         values = [step['old_value'] for step in trajectory]
         advantage, target = calculate_gae(rewards, values, config['gae_lambda'])

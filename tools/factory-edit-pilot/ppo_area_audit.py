@@ -7,6 +7,7 @@ import torch
 
 from direct_area_audit import physics_signature
 from direct_area_reward import reward_sequence
+from ppo_reward import SCHEMA as SHAPED_REWARD_SCHEMA, validate_episode
 from full_factory_environment import digest
 from full_factory_input_contracts import observation_hash
 from full_factory_large_learning import unpack
@@ -27,6 +28,11 @@ def verify_result(runtime, result, scratch):
     trace = summary['trace']
     initial = result['row']['initial_metrics']['score'][0]
     rewards = reward_sequence(initial, [initial] + [step['best_score'][0] for step in trace])
+    if summary.get('reward_schema') == SHAPED_REWARD_SCHEMA:
+        validate_episode(trace, summary, summary['reward_config'])
+        validate_episode(trace, result['row'], summary['reward_config'])
+        require(all(step['area_reward'] == area for step, area in zip(trace, rewards)), 'native area component')
+        rewards = [step['reward'] for step in trace]
     task = read(Path(result['result_path']).with_name('task.json'))
     require(task['critic_sha256'] == result['critic_sha256'], 'task critic identity')
     remaining = math.fsum(rewards)

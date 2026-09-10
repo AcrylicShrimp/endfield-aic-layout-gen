@@ -60,7 +60,7 @@ def check(root, output, cloud):
             require(saved['actor_optimizer']['state'] and saved['critic_optimizer']['state'], 'empty-adam', 'nonempty optimizer checkpoint required')
             sample = next(r for r in record['results'] if r['status'] == 'complete')
             experience = load_experience(sample)
-            config = dict(protocol['spec']['selection'], **protocol['config']['ppo'])
+            config = dict(protocol['spec']['selection'], **protocol['config']['ppo'], reward=protocol['config']['reward'])
             from ppo_training_update import move_prepared
             batch = move_prepared(prepare(experience['steps'], config, model_set[0].width, 'cpu'), next(model_set[0].parameters()).device)
             with torch.no_grad():
