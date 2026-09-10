@@ -1,3 +1,5 @@
+mod components;
+
 use aic_data::layouts::{FactoryEditCatalogs, TransportNetworkEndpoint};
 use aic_data::logistics::{LogisticsComponentKind, TransportKind};
 use indexmap::{IndexMap, IndexSet};
@@ -50,12 +52,13 @@ pub enum Action {
     Insert {
         axis: Axis,
         position: i64,
+        count: i64,
         x: i64,
         y: i64,
     },
     Contract {
         axis: Axis,
-        position: i64,
+        count: i64,
         x: i64,
         y: i64,
     },
@@ -104,7 +107,7 @@ pub fn describe(
     let ports = catalog::project(w, catalogs)?;
     let decomposition = chains::extract(w, &IndexSet::new())?;
     let movement = MovementIndex::new(w, &decomposition.chains);
-    let (poses, report) = poses::actions(w, catalogs, opts, &decomposition, &movement)?;
+    let (poses, mut report) = poses::actions(w, catalogs, opts, &decomposition, &movement)?;
     let mut actions: Vec<_> = poses.into_iter().map(Action::Pose).collect();
     let used: IndexSet<_> = w
         .transport_networks
@@ -149,18 +152,10 @@ pub fn describe(
             transport: c.transport,
         });
     }
+    let (component_actions, component_report) = components::actions(w, catalogs)?;
+    actions.extend(component_actions);
+    report["components"] = component_report;
     for c in &w.logistics_components {
-        for (dx, dy) in poses::LOCAL_STEPS {
-            actions.push(Action::Component {
-                component: c.id.clone(),
-                x: c.position.x + dx,
-                y: c.position.y + dy,
-                dx,
-                dy,
-                rotation: c.rotation,
-                transport: c.transport,
-            });
-        }
         if c.kind == LogisticsComponentKind::Bridge {
             actions.push(Action::ReleaseBridge {
                 component: c.id.clone(),
@@ -172,33 +167,38 @@ pub fn describe(
     }
     for axis in [Axis::X, Axis::Y] {
         let strips = strips::candidates(w, axis)?;
-        for position in strips.insert {
+        for position in strips::insertion_cuts(&strips.insert) {
             let (x, y) = if axis == Axis::X {
                 (position, 0)
             } else {
                 (0, position)
             };
-            actions.push(Action::Insert {
-                axis,
-                position,
-                x,
-                y,
-            });
+            for count in strips::insertion_counts(w, axis) {
+                actions.push(Action::Insert {
+                    axis,
+                    position,
+                    count,
+                    x,
+                    y,
+                });
+            }
         }
-        for position in strips.remove {
-            let (x, y) = if axis == Axis::X {
-                (position, 0)
-            } else {
-                (0, position)
-            };
+        if !strips.remove.is_empty() {
             actions.push(Action::Contract {
                 axis,
-                position,
-                x,
-                y,
+                count: strips.remove.len() as i64,
+                x: 0,
+                y: 0,
             });
         }
     }
+    report["strips"] = serde_json::json!({
+        "contraction": "all-removable-on-axis",
+        "contract_actions": actions.iter().filter(|a| matches!(a, Action::Contract { .. })).count(),
+        "insert_actions": actions.iter().filter(|a| matches!(a, Action::Insert { .. })).count(),
+        "insert_cuts_per_axis_limit": 32,
+        "insert_counts_per_cut": 2,
+    });
     actions.push(Action::RestoreBest { x: 0, y: 0 });
     Ok(Domain {
         ports,
@@ -246,9 +246,12 @@ pub fn execute(
             rotation: *rotation,
         }),
         Action::ReleaseBridge { component, .. } => edit.release_bridges.push(component.clone()),
-        Action::Insert { axis, position, .. } | Action::Contract { axis, position, .. } => {
-            let witness =
-                strips::edit(w, *axis, *position, matches!(action, Action::Insert { .. }))?;
+        Action::Insert { axis, count, .. } | Action::Contract { axis, count, .. } => {
+            let position = match action {
+                Action::Insert { position, .. } => Some(*position),
+                _ => None,
+            };
+            let witness = strips::edit(w, *axis, position, *count)?;
             return Ok(Execution {
                 status: "candidate",
                 witness: Some(witness),

@@ -5,7 +5,7 @@ from torch import nn
 from full_factory_input_contracts import InputContractPolicy, WorldEncoder, ACTION_WIDTH, CONTEXT_WIDTH
 from full_factory_selection import distribution
 
-SCHEMA = 'ppo-critic-gae-direct-area-v1'
+SCHEMA = 'ppo-critic-gae-direct-area-v2'
 
 
 def require(condition, message):

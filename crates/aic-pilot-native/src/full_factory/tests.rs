@@ -15,6 +15,8 @@ use super::types::*;
 use super::{candidates, poses};
 use super::{catalog, chains, path, routing};
 
+mod granularity;
+
 fn root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
@@ -209,127 +211,6 @@ fn route_charges_expansions_and_retains_direction_constraints() {
 }
 
 #[test]
-#[ignore = "explicit migration oracle requires Python/NumPy/Torch and Node"]
-fn observations_match_python_bytes() {
-    use super::observation as o;
-    let (mut w, catalogs, paths) = fixture();
-    let bounds = extent(&w).unwrap();
-    // The observation boundary receives canonically translated accepted states.
-    for p in &mut w.placements {
-        p.x -= bounds.min_x;
-        p.y -= bounds.min_y;
-    }
-    for n in &mut w.transport_networks {
-        for p in &mut n.cells {
-            p.x -= bounds.min_x;
-            p.y -= bounds.min_y;
-        }
-        for s in &mut n.segments {
-            for p in [&mut s.from, &mut s.to] {
-                p.x -= bounds.min_x;
-                p.y -= bounds.min_y;
-            }
-        }
-        for t in &mut n.terminals {
-            t.position.x -= bounds.min_x;
-            t.position.y -= bounds.min_y;
-        }
-    }
-    for c in &mut w.logistics_components {
-        c.position.x -= bounds.min_x;
-        c.position.y -= bounds.min_y;
-    }
-    let mut cases = Vec::new();
-    for mode in ["local", "groups"] {
-        let options = json!({"mode": mode});
-        let description = oracle(
-            json!({"operation": "vocabulary", "catalogs": paths, "witness": w, "options": options}),
-        );
-        let domain =
-            candidates::describe(&w, &catalogs, &serde_json::from_value(options).unwrap()).unwrap();
-        let world = o::world(&w, &domain.ports).unwrap();
-        let actions = o::candidates(&w, &domain, &world);
-        let tokens: Vec<_> = (0..actions.actions.len())
-            .map(|i| actions.token(i).to_vec())
-            .collect();
-        let records: Vec<_> = (0..20)
-            .map(|i| o::History {
-                action: actions.token(i),
-                outcome: std::array::from_fn(|j| (i * j) as f32 / 71.),
-            })
-            .collect();
-        let mut contexts = serde_json::Map::new();
-        let mut histories = serde_json::Map::new();
-        for name in [
-            "action-only",
-            "geometry-current",
-            "full-current",
-            "current-history-4",
-            "current-history-16",
-            "current-history-16-outcomes",
-            "current-best-2",
-            "current-best-3",
-            "current-best-layout",
-            "current-best-layout-history",
-            "current-no-restore",
-            "history-no-restore",
-        ] {
-            let c = o::Contract::named(name).unwrap();
-            contexts.insert(
-                name.into(),
-                json!(o::context(
-                    world.world.width,
-                    world.world.height,
-                    w.placements.len(),
-                    0.625,
-                    [119, 113, 7],
-                    [103, 99, 4],
-                    [101, 97, 3],
-                    c
-                )),
-            );
-            histories.insert(
-                name.into(),
-                json!(
-                    o::history(&records, c)
-                        .iter()
-                        .map(|v| v.to_vec())
-                        .collect::<Vec<_>>()
-                ),
-            );
-        }
-        cases.push(json!({"state": {"current": w, "initial_metrics": {"score": [119,113,7]}, "current_metrics": {"width": world.world.width, "height": world.world.height, "score": [103,99,4]}, "best_metrics": {"score": [101,97,3]}}, "description": description,
-            "world": world.world, "candidates": actions, "tokens": tokens, "contexts": contexts, "histories": histories,
-            "records": records.iter().map(|r| json!({"action": r.action.to_vec(), "outcome": r.outcome})).collect::<Vec<_>>(), "geometry": world.world.geometry()}));
-    }
-    let python = std::env::var("AIC_ORACLE_PYTHON").unwrap_or_else(|_| {
-        root()
-            .join("tools/factory-edit-pilot/.venv/bin/python")
-            .to_string_lossy()
-            .into_owned()
-    });
-    let mut child = Command::new(python)
-        .arg(root().join("tools/factory-edit-pilot/native_observation_oracle.py"))
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .unwrap();
-    child
-        .stdin
-        .take()
-        .unwrap()
-        .write_all(&serde_json::to_vec(&json!({"cases": cases})).unwrap())
-        .unwrap();
-    let result = child.wait_with_output().unwrap();
-    assert!(
-        result.status.success(),
-        "{}",
-        String::from_utf8_lossy(&result.stderr)
-    );
-}
-
-#[test]
 #[ignore = "explicit migration oracle requires Node; no production Node dependency"]
 fn astar_matches_reference_matrix() {
     let bounds = Bounds {
@@ -440,49 +321,5 @@ fn geometry_matches_reference_crossing_fixture() {
             Err(e) => json!({"status": "error", "code": e.code, "message": e.message}),
         };
         assert_eq!(actual, expected["results"][i], "geometry edit {i}: {edit}");
-    }
-}
-
-#[test]
-#[ignore = "explicit migration oracle requires Node; no production Node dependency"]
-fn full_vocabulary_and_every_edit_match_reference() {
-    let (w, catalogs, paths) = fixture();
-    for mode in ["local", "filtered-local", "distant", "groups"] {
-        let opts = poses::VocabularyOptions {
-            mode: mode.into(),
-            ..Default::default()
-        };
-        let d = candidates::describe(&w, &catalogs, &opts).unwrap();
-        let expected = oracle(
-            json!({"operation": "vocabulary", "catalogs": paths, "witness": w, "options": opts, "execute": true, "work": 5000}),
-        );
-        let actions = serde_json::to_value(&d.actions).unwrap();
-        assert_eq!(
-            actions.as_array().unwrap().len(),
-            expected["actions"].as_array().unwrap().len(),
-            "{mode} candidate count"
-        );
-        for (i, a) in actions.as_array().unwrap().iter().enumerate() {
-            assert_eq!(a, &expected["actions"][i], "{mode} action {i}");
-        }
-        assert_eq!(d.report, expected["poses"], "{mode} enumeration accounting");
-        for (i, a) in d.actions.iter().enumerate() {
-            if matches!(a, candidates::Action::RestoreBest { .. }) {
-                continue;
-            }
-            let actual = match candidates::execute(&w, &catalogs, a, 5000) {
-                Ok(r) => {
-                    json!({"status": r.status, "witness": r.witness, "route_expansions": r.route_expansions, "codes": r.diagnostics.iter().map(|d| &d.code).collect::<Vec<_>>()})
-                }
-                Err(e) => {
-                    json!({"status": "executor_rejected", "witness": null, "route_expansions": 0, "codes": [e.code]})
-                }
-            };
-            assert_eq!(
-                actual, expected["outcomes"][i],
-                "{mode} execution {i}: {}",
-                actions[i]
-            );
-        }
     }
 }

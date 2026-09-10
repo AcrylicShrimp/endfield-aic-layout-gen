@@ -9,7 +9,7 @@ from full_factory_environment import digest
 from full_factory_policy import observe, ACTION_WIDTH, NODE_WIDTH, EDGE_WIDTH, RASTER_WIDTH
 from full_factory_selection import SelectionMemory, action_key, physical_key
 
-SCHEMA = 'factory-input-contract-screen-v1'
+SCHEMA = 'factory-input-contract-screen-v2'
 HISTORY_WIDTH = 53
 CONTEXT_WIDTH = 9
 STATUSES = ('improved', 'accepted_exploration', 'accepted_equal', 'rejected', 'executor_rejected', 'late')

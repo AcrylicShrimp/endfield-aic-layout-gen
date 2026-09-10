@@ -12,7 +12,7 @@ use super::catalog::Port;
 use super::strips::Axis;
 use super::types::*;
 
-pub const SCHEMA: &str = "factory-input-contract-screen-v1";
+pub const SCHEMA: &str = "factory-input-contract-screen-v2";
 pub const KINDS: [&str; 8] = [
     "pose",
     "port",
@@ -420,10 +420,15 @@ pub fn candidates(w: &Witness, domain: &Domain, world: &WorldInput) -> Candidate
                 op = refs.components[component] as i64;
                 f[15 + layer(*transport)] = 1.;
             }
-            Action::Insert { axis, position, .. } | Action::Contract { axis, position, .. } => {
+            Action::Insert { axis, count, .. } | Action::Contract { axis, count, .. } => {
                 let y = matches!(axis, Axis::Y);
+                let span = if y { sy } else { sx };
                 f[17 + usize::from(y)] = 1.;
-                f[19] = ratio(*position, if y { sy } else { sx });
+                f[30] = ratio(*count, span);
+                match a {
+                    Action::Insert { position, .. } => f[19] = ratio(*position, span),
+                    _ => f[31] = 1.,
+                }
             }
             Action::RestoreBest { .. } => {}
         }

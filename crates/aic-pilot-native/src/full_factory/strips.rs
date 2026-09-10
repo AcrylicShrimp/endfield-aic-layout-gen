@@ -103,7 +103,9 @@ pub fn candidates(w: &Witness, axis: Axis) -> Result<Strips> {
             .collect(),
     })
 }
-pub fn edit(w: &Witness, axis: Axis, position: i64, insert: bool) -> Result<Witness> {
+/// One transaction: insert a corridor or compact all removable strips on an axis.
+/// `position` is absent for axis-wide contraction.
+pub fn edit(w: &Witness, axis: Axis, position: Option<i64>, count: i64) -> Result<Witness> {
     let error = |message| {
         let mut e = Diagnostic::new("factory.edit-parameters", message, serde_json::Value::Null);
         e.stage = "factory-edit";
@@ -111,22 +113,24 @@ pub fn edit(w: &Witness, axis: Axis, position: i64, insert: bool) -> Result<Witn
         e
     };
     let choices = candidates(w, axis)?;
-    if !(if insert {
-        &choices.insert
-    } else {
-        &choices.remove
-    })
-    .contains(&position)
+    let insert = position.is_some();
+    if count <= 0
+        || match position {
+            Some(p) => !choices.insert.contains(&p) || !insertion_counts(w, axis).contains(&count),
+            None => count != choices.remove.len() as i64,
+        }
     {
         return Err(error(
-            "Strip bisects a protected event or lies outside the explicit vocabulary",
+            "Strip count or cut does not match the current compact vocabulary",
         ));
     }
+    let removed = |p: Point| !insert && choices.remove.binary_search(&axis.coordinate(p)).is_ok();
     let shift = |p: Point| {
-        let delta = if insert {
-            i64::from(axis.coordinate(p) >= position)
+        let coordinate = axis.coordinate(p);
+        let delta = if let Some(position) = position {
+            if coordinate >= position { count } else { 0 }
         } else {
-            -i64::from(axis.coordinate(p) > position)
+            -(choices.remove.partition_point(|&q| q < coordinate) as i64)
         };
         match axis {
             Axis::X => p.shifted(delta, 0),
@@ -147,7 +151,7 @@ pub fn edit(w: &Witness, axis: Axis, position: i64, insert: bool) -> Result<Witn
             .cells
             .iter()
             .map(Point::from)
-            .filter(|&p| insert || axis.coordinate(p) != position)
+            .filter(|&p| !removed(p))
             .map(shift)
             .collect();
         let mut segments = Vec::new();
@@ -157,12 +161,12 @@ pub fn edit(w: &Witness, axis: Axis, position: i64, insert: bool) -> Result<Witn
             .map(|s| (Point::from(&s.from), s))
             .collect();
         for s in &n.segments {
-            if !insert && axis.coordinate(Point::from(&s.from)) == position {
+            if removed(Point::from(&s.from)) {
                 continue;
             }
             let from = shift(Point::from(&s.from));
             let mut end = Point::from(&s.to);
-            if !insert && axis.coordinate(end) == position {
+            while removed(end) {
                 let next = out
                     .get(&end)
                     .ok_or_else(|| error("Missing straight continuation"))?;
@@ -172,30 +176,27 @@ pub fn edit(w: &Witness, axis: Axis, position: i64, insert: bool) -> Result<Witn
                 end = Point::from(&next.to);
             }
             let to = shift(end);
-            if insert && from.distance(to) == 2 {
-                let middle = Point {
-                    x: (from.x + to.x) / 2,
-                    y: (from.y + to.y) / 2,
-                };
-                cells.push(middle);
+            let distance = from.distance(to);
+            if distance == 0 || (from.x != to.x && from.y != to.y) {
+                return Err(error("Strip edit produced a noncardinal segment"));
+            }
+            let dx = (to.x - from.x).signum();
+            let dy = (to.y - from.y).signum();
+            let mut previous = from;
+            for step in 1..=distance {
+                let next = from.shifted(dx * step, dy * step);
+                if step < distance {
+                    cells.push(next);
+                }
                 segments.push(TransportNetworkSegment {
-                    from: from.into(),
-                    to: middle.into(),
+                    from: previous.into(),
+                    to: next.into(),
                     rate: s.rate,
                 });
-                segments.push(TransportNetworkSegment {
-                    from: middle.into(),
-                    to: to.into(),
-                    rate: s.rate,
-                });
-            } else {
-                segments.push(TransportNetworkSegment {
-                    from: from.into(),
-                    to: to.into(),
-                    rate: s.rate,
-                });
+                previous = next;
             }
         }
+
         if cells.iter().collect::<IndexSet<_>>().len() != cells.len() {
             return Err(error(
                 "Strip insertion produced duplicate same-network cells",
@@ -208,4 +209,23 @@ pub fn edit(w: &Witness, axis: Axis, position: i64, insert: bool) -> Result<Witn
         }
     }
     Ok(result)
+}
+
+/// Two geometry-derived corridor scales; no game data is embedded here.
+pub fn insertion_counts(w: &Witness, axis: Axis) -> [i64; 2] {
+    [
+        1,
+        w.placements.iter().map(|p| axis.size(p)).max().unwrap_or(1) + 2,
+    ]
+}
+
+pub fn insertion_cuts(choices: &[i64]) -> Vec<i64> {
+    const LIMIT: usize = 32;
+    if choices.len() <= LIMIT {
+        choices.to_vec()
+    } else {
+        (0..LIMIT)
+            .map(|i| choices[i * (choices.len() - 1) / (LIMIT - 1)])
+            .collect()
+    }
 }
