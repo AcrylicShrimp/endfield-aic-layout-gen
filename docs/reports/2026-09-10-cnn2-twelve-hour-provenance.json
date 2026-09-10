@@ -1,0 +1,95 @@
+{
+  "schema": "ppo-twelve-hour-launch-provenance-v1",
+  "status": "running",
+  "observed_utc": "2026-09-10T08:06:33.896343+00:00",
+  "host": "ashrimp-arch",
+  "runtime": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910",
+  "run": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/factory-edit-pilot/cnn2-twelve-hour",
+  "source_commit": "1fcebac03afcfae50c4ea26dc48e6c54576a201b",
+  "runtime_source_files_verified": 458,
+  "service": "aic-ppo-cnn2-12h-20260910-session4.service",
+  "linger": true,
+  "restart": "no",
+  "protocol_sha256": "292bd6dce26bfa79f4e31dbef18e45d99fb1e154e8c204489450fb93af3d1265",
+  "parent": {
+    "schema": "ppo-checkpoint-continuation-v1",
+    "root": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/ppo-spatial-cnn2",
+    "protocol_sha256": "c88d196552277157643e635ab3461a7f484c1fa946ffb64fc7115240a754de38",
+    "state_sha256": "65089baafcff981c87cee2a2f1e66240476ce9b0aeca37e188eaa9185e734bb5",
+    "job": "current-history-16--seed-17",
+    "checkpoint": {
+      "path": "current-history-16--seed-17/training-0032/checkpoint-d3a54379efa345babdcb121c6e801250.pt",
+      "sha256": "9958e107b1f1e99259577325ef616d71c09fad99fc014b177b6e9db2fb5f3f87",
+      "policy_sha256": "879e008b5827afc35ec5493f825daede23d18bad76a3f6c3aa954c4f5abbddcb",
+      "critic_sha256": "546bac7a86d4045a420a95ad3dd920088dcb9d55ca0a7ec3042828d6a2a11b37"
+    },
+    "batch": 32,
+    "total_batches": 32,
+    "total_training_actions": 32256
+  },
+  "session": "b4ad328c94b84eee830e049f536f4efc",
+  "session_started_epoch": 1789027556.0925727,
+  "prior_supervised_seconds": 204.17583836000995,
+  "duration_seconds": 43200,
+  "expected_stop_epoch": 1789070551.9167342,
+  "completed_new_batches": 11,
+  "completed_cumulative_batches": 43,
+  "selected_new_training_actions": 11104,
+  "checkpoint": {
+    "path": "current-history-16--seed-17/training-0011/checkpoint-b4ad328c94b84eee830e049f536f4efc.pt",
+    "sha256": "d84b15213da52c1857f959a9b487a8357912977959f19505b03a2900e9125912",
+    "policy_sha256": "5ecb25108d06eda0c61d3ed0b7ead0f44c5bf805ebdfe7eac10abfa500f36ded",
+    "critic_sha256": "71864a7d98be03e47b90c65141272761b6def1dfd5f449e77ed4d980ae6910b2"
+  },
+  "initial_evaluation_area_reduction_percent": 56.61992942656936,
+  "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/d5669013d9f238418ebea67f",
+  "wandb_state": "running",
+  "remote_history_rows": 13,
+  "remote_confirmed_step": 12,
+  "readiness": {
+    "schema": "ppo-harness-native-readiness-v1",
+    "status": "complete",
+    "source_sha256": "2e9a1620e61c072adae335a72881db5dc5185ac332a26a985bc6bad9c3ace790",
+    "protocol_sha256": "dcf69925235c266a6bbeb109866b3da101c21394112737703a97c577c45fcfbc",
+    "jobs": [
+      {
+        "job": "current-history-16--seed-17",
+        "native_results": 80,
+        "behavior_probabilities_and_values_match": true,
+        "one_nonempty_checkpoint_continuation_exact": true
+      }
+    ],
+    "max_seconds": 180,
+    "seconds": 10.881350423005642
+  },
+  "parent_transfer": {
+    "schema": "ppo-parent-transfer-audit-v1",
+    "checks": {
+      "policy": true,
+      "critic": true,
+      "policy_sha256": true,
+      "critic_sha256": true,
+      "actor_optimizer": true,
+      "critic_optimizer": true,
+      "shuffle_rng": true,
+      "rng": true,
+      "cuda_rng": true
+    },
+    "parent_batch": 32,
+    "initial_mean_area_reduction_percent": 56.61992942656936,
+    "parent_checkpoint_sha256": "9958e107b1f1e99259577325ef616d71c09fad99fc014b177b6e9db2fb5f3f87",
+    "paired_evaluation_rows_equal": 32,
+    "fresh_training_attempts_verified": 16
+  },
+  "duration_probe": {
+    "schema": "ppo-duration-probe-audit-v1",
+    "remote_state": "finished",
+    "termination_reason": "duration-reached",
+    "training_complete": false,
+    "child_exit_codes": [
+      0,
+      0
+    ],
+    "duration_seconds": 20
+  }
+}

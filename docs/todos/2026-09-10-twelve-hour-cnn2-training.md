@@ -1,6 +1,6 @@
 # Twelve-hour two-layer PPO continuation
 
-Status: preparing the launch.
+Status: launch complete; twelve-hour training remains in progress.
 
 ## Contract
 
@@ -41,10 +41,10 @@ and observed committed training progress.
 
 - [x] Implement and test explicit parent checkpoint import and evaluation-only inputs.
 - [x] Verify parent weights/optimizers/RNG and initial evaluation continuity.
-- [ ] Verify short CUDA training, checkpoint continuation and normal timed exit.
-- [ ] Commit source/configuration and create a frozen server runtime.
-- [ ] Launch a server-owned twelve-hour session; verify live learning and W&B.
-- [ ] Record start/end times, parent identity, run/service paths and recovery commands.
+- [x] Verify short CUDA training, checkpoint continuation and normal timed exit.
+- [x] Commit source/configuration and create a frozen server runtime.
+- [x] Launch a server-owned twelve-hour session; verify live learning and W&B.
+- [x] Record start/end times, parent identity, run/service paths and recovery commands.
 
 ## Activity
 
@@ -56,3 +56,13 @@ and observed committed training progress.
   80 results and exactly replayed the second optimizer update from its checkpoint.
   The historical Python observation oracle is outside the runtime import graph;
   continuation guards compare active model/execution sources and native binaries.
+- 2026-09-10: All 56 PPO tests and Rust workspace check/tests passed. Committed
+  source/configuration as `1fcebac`; all 458 pilot runtime files match that commit.
+  The online duration probe passed with normal stop and finished W&B status.
+- 2026-09-10: Launched a detached user service. Enabled lingering after SSH logout
+  stopped the first session; repaired its incomplete W&B metadata with no history
+  overwrite, then resumed the same immutable run. Observed 11 new batches and
+  confirmed remote records. Active service is `aic-ppo-cnn2-12h-20260910-session4`;
+  expected cumulative-duration stop is September 11 around 05:02:32 KST.
+  See `docs/reports/2026-09-10-cnn2-twelve-hour-launch.md` and its provenance.
+  Training completion and final quality analysis are not claimed by this launch.
