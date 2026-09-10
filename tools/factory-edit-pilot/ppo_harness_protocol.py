@@ -43,7 +43,7 @@ def validate(config):
     integer(config['order_seed'], 0, 2**32 - 1, 'order_seed')
     train, evaluation, execution, limits, ppo = (config[k] for k in ('training', 'evaluation', 'execution', 'limits', 'ppo'))
     fields(train, 'batches attempts horizon generation_seed_base action_seed_base', 'training')
-    integer(train['batches'], 1, 256, 'training.batches')
+    integer(train['batches'], 1, 4096, 'training.batches')
     integer(train['attempts'], 2, 256, 'training.attempts')
     integer(train['horizon'], 1, 256, 'training.horizon')
     fields(config['retention'], 'training_batches', 'retention')
