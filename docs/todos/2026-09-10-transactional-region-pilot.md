@@ -2,8 +2,9 @@
 
 ## Status
 
-In progress. User authorized executor-selected transaction boundaries and a
-32-batch fresh training comparison with the retained compact one-hour baseline.
+Complete. Implemented executor-selected transaction boundaries and completed the
+authorized 32-batch fresh training comparison with the compact one-hour baseline.
+Findings: `docs/reports/2026-09-10-transactional-region-pilot.md`.
 
 ## Completion criteria
 
@@ -33,3 +34,13 @@ In progress. User authorized executor-selected transaction boundaries and a
   normal stops. Real resource/progress failures retain error termination.
 - Implementation is ready for the server readiness check and the authorized
   32-batch comparison; training findings remain pending.
+- Completed CUDA readiness and an online normal-duration probe. Exact initial
+  weights and nonempty Adam continuation match; normal stop is W&B `finished`.
+- Completed exactly 32 fresh batches and verified 1,056 matched initial-source
+  identities. Final paired reduction is 57.99% versus 53.46% (20 wins, five ties,
+  seven losses); the combined executor treatment warrants further bounded study.
+- Verified all 160 evaluation results, 33 checkpoints and 1,435 online scalars.
+  Preserved source runtime, frozen starts, checkpoints and retained trajectories.
+- Added the requested direct action contribution and cumulative future-credit
+  plots, including per-action averages and action-position centering. Documented
+  indirect-credit and treatment-attribution limits; no additional training ran.

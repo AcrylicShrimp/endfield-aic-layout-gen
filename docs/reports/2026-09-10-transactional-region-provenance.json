@@ -1,0 +1,131 @@
+{
+  "schema": "ppo-region-pilot-provenance-v1",
+  "runtime_commit": "0fd7b70",
+  "baseline_runtime_commit": "43c5d73",
+  "runtime_root": "/home/ashrimp/Srv/aic-ppo-region-20260910",
+  "baseline_run": "/home/ashrimp/Srv/aic-ppo-compact-20260910-r2/artifacts/factory-edit-pilot/ppo-one-hour-trial",
+  "baseline_protocol": {
+    "path": "/home/ashrimp/Srv/aic-ppo-compact-20260910-r2/artifacts/factory-edit-pilot/ppo-one-hour-trial/protocol.json",
+    "sha256": "9d1c642898a05fe9fd5085dc2f47d66bf7c065a4bc2dff90ed4731df91e3082a"
+  },
+  "runtime_environment": {
+    "python": "3.12.13",
+    "platform": "Linux",
+    "packages": {
+      "torch": "2.14.0",
+      "numpy": "2.5.3",
+      "wandb": "0.29.0"
+    },
+    "cuda": "13.0"
+  },
+  "training_batches": 32,
+  "training_actions": 32256,
+  "final_checkpoint": {
+    "path": "current-history-16--seed-17/training-0032/checkpoint-66df0939bf3e4297a1cab11aeeeb9d7e.pt",
+    "sha256": "f83ca91af13d269862e52589746c419e2aa78c9ed475070b51834303fe3129bc",
+    "policy_sha256": "987e569f538debd8670b425c9165f537619b29d02b45b9ad97d68986f1fbfc08",
+    "critic_sha256": "47c876c3394fc9f3f0760d04f7400b29f3c875a79c920cb8a4cea02946d22cba"
+  },
+  "artifacts": [
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/ppo-region-32-batch/protocol.json",
+      "sha256": "75f260f8991714d46cb1c303902e67b48919b79261f470516d762d90adc4c348"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/ppo-region-32-batch/state.json",
+      "sha256": "83168b63e6b607316b1e96aceb09cc3379ecf1a3ec5ba6428067f8817c9d0f77"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/ppo-region-32-batch/supervisor.json",
+      "sha256": "fe597e107db5867d3c524e8d1a14db88aa8c83671bb909b17e5bd80b3ca2e571"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/ppo-region-32-batch/tracking.json",
+      "sha256": "d275c91379f7a5d4ee23e6bb6d9dba94a5a30f6a0dcb870ad8a8192b1418f159"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/target/release/libaic_pilot_native.so",
+      "sha256": "044ae6c2e0c1b9f35b1aff26497fbc123eb36cd5687a3ccb3e98346312d495fd"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/region-starts/manifest.json",
+      "sha256": "c0c9c7adfabfaaf0cf222d400c822cd40d448bdefb2b359ab89acf7b30ac6b32"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/region-comparison/comparison.json",
+      "sha256": "60b9006fcf5c16f03d9a567392813c8fc7c3d2cb7be22653e05d9509476ab128"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/region-final-audit/report.json",
+      "sha256": "257923c23e826e5383b53a20fc448ff39b9e16ec44f9b7b43e80f3cb7fbb8763"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/region-readiness-audit/report.json",
+      "sha256": "4aed95fe5f1d63eda36aca71dda68acbf857f7d35162f0a52dff6d1a70f07dc2"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/region-duration-evidence.json",
+      "sha256": "169641e7b010162eaa974acaf1707579b64a95c4da5ac35140e2e0ebc938c716"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/historical-wandb-correction.json",
+      "sha256": "76039f7317d35eac0c24beeb891e2147872007cc73e548caa1c7ab3970a22eb2"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/region-comparison/view/action-contributions.png",
+      "sha256": "05b978063b5ae42f7ee25b651dd84e00843553682c25347801f2481fd34a6d07"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/region-comparison/view/action-contributions.svg",
+      "sha256": "e51ed9703ced361edecddb373f213c2a721759a08a901aa365265b1f9b1bbbc0"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/region-comparison/view/future-action-credit.png",
+      "sha256": "69cd3daf24993812a15cf1c3745b2720ec93f171aa6fe3cd03863d717e19fda9"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/region-comparison/view/future-action-credit.svg",
+      "sha256": "4fe0cc4e80b71d05f52a4df6fbe22411e490dee426fb06222d2e5a957c9a4731"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/region-comparison/view/region-pilot.png",
+      "sha256": "35e2c1d82a9e2afe200da3841476f7778e1651c907799ed8a8a052f7d4118003"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/factory-edit-pilot/region-comparison/view/region-pilot.svg",
+      "sha256": "e2f0ea69a4cf4bec5ab987ac796f65b58960e2b58ae2362b964f5e1f06be1ba6"
+    }
+  ],
+  "analysis_sources": [
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/tools/factory-edit-pilot/compare_region_pilot.py",
+      "sha256": "9c14016a8222cca9ae4c4f7f326f8aabc2048da9931e72671a20d5b520b56ede"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/tools/factory-edit-pilot/plot_region_pilot.py",
+      "sha256": "536c5976cc579eed4fa9852f3264de33d972b31c356c93106fe435cf99581fcf"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-region-20260910/tools/factory-edit-pilot/audit_region_pilot.py",
+      "sha256": "291c6a5f53d7345193a7f8631b8e4f1700f8560bef1c7c17851b8c1f27d8e3cf"
+    }
+  ],
+  "local_regressions": [
+    {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/transaction-region-pilot/regression-inputs/before.json",
+      "sha256": "4ae00fb698fdfc816474a0e36b629c17f0bad262a49817d056bd7eeaa96875c3"
+    },
+    {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/transaction-region-pilot/regression-inputs/request.json",
+      "sha256": "340d861cb2e9dcfc793806a63e13cdd8db0bf6ae7b79fa6643bbc9f8d5276da2"
+    },
+    {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/transaction-region-pilot/regression-inputs/suite.json",
+      "sha256": "ba4c1e77d3c0be9c8fc4783b44cb6308ba7439ca238be858fa08423350ecfa57"
+    },
+    {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/transaction-region-pilot/regression-inputs/verification.json",
+      "sha256": "1492c46d292ca54f6861673dac719faffc148fdade8ce38e13d791f52e5245c2"
+    }
+  ]
+}

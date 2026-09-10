@@ -17,5 +17,12 @@ and cleanup failures remain errors.
 Tests cover positive finite duration validation, actual supervised child shutdown,
 terminal state visibility to the observer, retained checkpoint data, normal stop
 intent at the coordinator, cumulative duration, genuine watchdog failures, and
-W&B exit-code separation. The server CLI and online completion checks are recorded
-with the transactional region pilot findings after execution.
+W&B exit-code separation. A real 20-second online server session returned zero,
+retained its committed initial checkpoint and ended both supervised children with
+zero. W&B reported `finished`, `training_complete=false`, and
+`termination_reason=duration-reached` (run `84318c817e8a6d4dedc09b04`).
+
+The previous one-hour run (`66a3fbde18eaf4949e488b51`) was re-exported with the fixed
+observer. W&B now reports `finished` with all 244 original records acknowledged.
+Its frozen runtime, training state and checkpoints were preserved. See
+`2026-09-10-transactional-region-pilot.md` for the associated training comparison.
