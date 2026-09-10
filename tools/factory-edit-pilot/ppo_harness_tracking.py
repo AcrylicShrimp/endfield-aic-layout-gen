@@ -43,6 +43,17 @@ def metrics(record):
         value.update({'timing/update_seconds': record['update_seconds'],
                       'timing/checkpoint_seconds': record['checkpoint_seconds']})
     prefix = 'training' if record['phase']['kind'] == 'training' else 'evaluation'
+    for name in ('area_improvement_fraction', 'accepted_physical_unchanged_fraction', 'physical_unchanged_fraction',
+                 'mean_first_eight_area_reduction_percent', 'mean_later_area_reduction_percent'):
+        if name in quality:
+            value[f'{prefix}/{name}'] = quality[name]
+    value.update({f'{prefix}/area_contribution/{kind}': amount
+                  for kind, amount in quality.get('mean_area_contribution_by_kind', {}).items()})
+    for depth, group in quality.get('start_depths', {}).items():
+        value.update({f'{prefix}/start_depth_{depth}/{name}': amount for name, amount in group.items()
+                      if type(amount) in (int, float)})
+    for code, count in quality.get('start_fallback_counts', {}).items():
+        value[f'{prefix}/start_fallback/{code}'] = count
     for name in ('routing_detailed_actions', 'failed_actions', 'routing_budget_failed_actions',
                  'routing_budget_failure_fraction', 'total_route_expansions', 'total_executor_seconds',
                  'total_preflight_expansions', 'first_attempt_budget_failures',
@@ -90,6 +101,7 @@ class Tracker:
             config=dict(protocol_sha256=self.protocol_hash, candidate=job['candidate'], seed=job['seed'],
                         policy=self.protocol['spec']['policy'], model=model, continuation=self.protocol.get('continuation'),
                         reward=self.protocol['config'].get('reward'),
+                        start_curriculum=self.protocol['config'].get('start_curriculum'),
                         selection=self.protocol['spec'].get('selection'),
                         ppo=self.protocol['config']['ppo'],
                         training=self.protocol['config']['training'], evaluation=self.protocol['config']['evaluation'],

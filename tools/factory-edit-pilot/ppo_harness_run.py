@@ -15,6 +15,7 @@ from ppo_harness_schedule import phase_tasks, quality, evaluation_pairs, cleanup
 from ppo_harness_state import (SCHEMA, require, read, write, sha, diagnostic, load_state, check_sources,
                                save_checkpoint, restore_checkpoint, manifest, checked_path, commit_phase, mkdir)
 from ppo_training_update import update
+from ppo_start_curriculum import save_next_plan
 
 
 class Progress:
@@ -131,6 +132,10 @@ def run(root, session):
                         version = save_checkpoint(root, location / f'checkpoint-{session}.pt', model_set,
                                                   protocol_hash, job['id'], phase['batch'])
                         record['checkpoint_seconds'] = time.monotonic() - began_checkpoint
+                        if 'start_curriculum' in config:
+                            progress(stage='curriculum')
+                            record['next_training_starts'] = save_next_plan(
+                                root, location / f'starts-{session}', config, job['id'], phase['batch'], results)
                     else:
                         require(summary['accepted'] > 0, 'empty-evaluation', 'no complete held-out evaluations', 'evaluation', location)
                         version = job['checkpoint']

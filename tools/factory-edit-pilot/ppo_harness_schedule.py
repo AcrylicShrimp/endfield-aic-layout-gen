@@ -5,6 +5,8 @@ import shutil
 
 from ppo_harness_pool import accept_result
 from ppo_harness_state import SCHEMA, require, read, write, owned, sync_directory, mkdir
+from ppo_start_curriculum import phase_plan
+from ppo_episode_metrics import progress_metrics, curriculum_metrics
 
 
 def phase_tasks(root, protocol, protocol_hash, job, phase):
@@ -12,6 +14,7 @@ def phase_tasks(root, protocol, protocol_hash, job, phase):
     training = phase['kind'] == 'training'
     schedule = config['training' if training else 'evaluation']
     version = job['checkpoint']
+    starts = phase_plan(root, protocol, job, phase)
     phase_directory = root / job['id'] / f"{phase['kind']}-{phase['batch']:04d}"
     mkdir(phase_directory)
     tasks, cached, attempts = [], {}, []
@@ -26,6 +29,8 @@ def phase_tasks(root, protocol, protocol_hash, job, phase):
                        horizon=config['training']['horizon'], training=training, policy=version['path'],
                        policy_file_sha256=version['sha256'], policy_sha256=version['policy_sha256'],
                        critic_sha256=version['critic_sha256'])
+        if starts is not None:
+            logical['initial_start'] = starts['slots'][index]
         episode = phase_directory / f'episode-{index:04d}'
         mkdir(episode)
         logical_path = episode / 'logical-task.json'
@@ -61,7 +66,8 @@ def quality(results):
     failure_codes = Counter()
     for r in covered:
         failure_codes.update(r['routing_failure_codes'])
-    return dict(routing_detailed_actions=detailed_actions, failed_actions=failed,
+    return dict(**progress_metrics([r['row'] for r in complete]), **curriculum_metrics(results),
+                routing_detailed_actions=detailed_actions, failed_actions=failed,
                 routing_budget_failed_actions=budget_failed, routing_failure_codes=dict(failure_codes),
                 routing_budget_failure_fraction=budget_failed / detailed_actions if detailed_actions else None,
                 total_route_expansions=sum(r['row'].get('route_expansions', 0) for r in complete),

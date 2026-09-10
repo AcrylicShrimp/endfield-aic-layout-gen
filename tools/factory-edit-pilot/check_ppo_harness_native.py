@@ -52,13 +52,15 @@ def check(root, output, cloud):
                     guard()
                     verify_result(runtime, result, output)
                     total += 1
-            # Exactly one retained second-batch continuation per readiness job;
+            # Reconstruct one update, including twice-optimized starts when enabled;
             # this standalone check is never part of the normal learner.
-            record = next(r for r in records if r['phase'] == dict(kind='training', batch=2))
+            continuation_batch = 3 if 'start_curriculum' in protocol['config'] else 2
+            record = next(r for r in records if r['phase'] == dict(kind='training', batch=continuation_batch))
             model_set = learners(protocol, job['seed'])
-            saved = restore_checkpoint(root, record['behavior_checkpoint'], model_set, state['protocol_sha256'], job['id'], 1)
+            saved = restore_checkpoint(root, record['behavior_checkpoint'], model_set, state['protocol_sha256'], job['id'], continuation_batch - 1)
             require(saved['actor_optimizer']['state'] and saved['critic_optimizer']['state'], 'empty-adam', 'nonempty optimizer checkpoint required')
-            sample = next(r for r in record['results'] if r['status'] == 'complete')
+            sample = next(r for r in record['results'] if r['status'] == 'complete' and
+                          (continuation_batch == 2 or r['generation']['start_curriculum']['depth'] == 2))
             experience = load_experience(sample)
             config = dict(protocol['spec']['selection'], **protocol['config']['ppo'], reward=protocol['config']['reward'])
             from ppo_training_update import move_prepared
@@ -71,7 +73,10 @@ def check(root, output, cloud):
                         'critic_optimizer_sha256', 'shuffle_rng_sha256', 'epochs'):
                 require(actual[key] == record['ppo'][key], 'continuation-mismatch', f'exact saved continuation differs: {key}', entity=job['id'])
             detail = dict(job=job['id'], native_results=total, behavior_probabilities_and_values_match=True,
-                          one_nonempty_checkpoint_continuation_exact=True)
+                          one_nonempty_checkpoint_continuation_exact=True, reconstructed_batch=continuation_batch)
+            if 'start_curriculum' in protocol['config']:
+                from audit_ppo_start_curriculum import check_records
+                detail['curriculum'] = check_records(root, protocol, records)
             if cloud:
                 import wandb
                 tracking = read(root / 'tracking.json')['jobs'][job['id']]

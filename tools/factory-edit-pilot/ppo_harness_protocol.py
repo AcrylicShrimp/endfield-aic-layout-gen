@@ -35,11 +35,17 @@ def validate(config):
            + (' input_manifest_scope' if 'input_manifest_scope' in config else '')
            + (' input_manifest_training_batches' if 'input_manifest_training_batches' in config else '')
            + (' reward' if 'reward' in config else '')
+           + (' start_curriculum' if 'start_curriculum' in config else '')
            + (' continuation_run' if 'continuation_run' in config else '')
            + (' model' if 'model' in config else ''), 'config')
     if 'reward' in config:
         from ppo_reward import validate as validate_reward
         validate_reward(config['reward'])
+    if 'start_curriculum' in config:
+        from ppo_start_curriculum import validate as validate_curriculum
+        validate_curriculum(config['start_curriculum'])
+        require('continuation_run' not in config, 'curriculum-continuation',
+                'prepare curriculum runs from fresh models; resume an existing run through its own state', 'prepare')
     if 'input_manifest_scope' in config:
         require('input_manifest' in config and config['input_manifest_scope'] in ('all', 'evaluation', 'prefix-and-evaluation'),
                 'config-input-scope', 'input_manifest_scope requires a manifest and a registered scope', 'prepare')

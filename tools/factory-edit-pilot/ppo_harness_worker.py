@@ -16,6 +16,7 @@ from ppo_area_update import save_experience
 from ppo_harness_state import SCHEMA, require, diagnostic, read, write, sha, owned, check_sources, sync_file, sync_ancestors
 from ppo_training_rollout import rollout
 from random_factory_generation import generate
+from ppo_start_curriculum import materialize, annotate_fresh
 
 
 def work(root):
@@ -62,7 +63,13 @@ def work(root):
                 require(parameter_hash(actor) == task['policy_sha256'] and parameter_hash(critic) == task['critic_sha256'],
                         'worker-weights', 'actor/critic checkpoint identity differs', 'collection', checkpoint)
                 loaded = task['policy_file_sha256']
-            case, generation = generate(runtime, spec, task['generation_seed'], active.parent / 'generated', guard)
+            if task.get('initial_start', {}).get('depth', 0):
+                case, generation = materialize(root, runtime, spec, task, active.parent / 'generated', guard)
+            else:
+                case, generation = generate(runtime, spec, task['generation_seed'], active.parent / 'generated', guard)
+                if 'initial_start' in task:
+                    annotate_fresh(generation, task)
+                    write(active.parent / 'generated/generation.json', generation)
             result = dict(schema=SCHEMA, input_sha256=sha(active), identity=task['identity'], candidate=task['candidate'],
                           protocol_sha256=protocol_hash, generation=generation, policy_sha256=task['policy_sha256'],
                           critic_sha256=task['critic_sha256'], pid=os.getpid())

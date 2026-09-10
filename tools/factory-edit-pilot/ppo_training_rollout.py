@@ -13,6 +13,7 @@ from ppo_area_model import SCHEMA as PPO_SCHEMA
 from ppo_area_update import save_experience
 from full_factory_screen import save_gzip, write
 from full_factory_selection import distribution_kinds
+from ppo_episode_metrics import episode_metrics
 
 
 def rollout(runtime, protocol, case, model, critic, candidate, seed, directory, training, guard):
@@ -65,7 +66,8 @@ def rollout(runtime, protocol, case, model, critic, candidate, seed, directory, 
             step['reward_to_go'] = total
         summary = dict(env.summary(), case=case['id'], trace=trace)
         accounting = totals(trace, reward_config)
-        summary.update(**accounting, gamma=1.0)
+        progress = episode_metrics(trace)
+        summary.update(**accounting, **progress, gamma=1.0)
         payload = dict(schema=PPO_SCHEMA, reward_schema=SCHEMA, reward_config=dict(reward_config),
                        input_contract=candidate, steps=experience, critic_sha256=critic_hash) if training else None
         summary.update(schema_version=1, candidate=candidate, training=training, sample_seed=seed, policy_sha256=before_hash,
@@ -78,7 +80,8 @@ def rollout(runtime, protocol, case, model, critic, candidate, seed, directory, 
         row = dict(case=case['id'], instances=case['instances'], candidate=candidate, sample_seed=seed,
             selected=env.selected, directory=str(directory.resolve()), training=training,
             initial_metrics=summary['initial_metrics'], best_metrics=summary['best_metrics'],
-            **accounting,
+            best_sha256=summary['best_sha256'],
+            **accounting, **progress,
             kinds=dict(Counter(t['action']['kind'] for t in trace)), statuses=dict(Counter(t['status'] for t in trace)),
             improvements=dict(Counter(t['action']['kind'] for t in trace if t['status'] == 'improved')),
             route_expansions=sum(t['route_expansions'] for t in trace),

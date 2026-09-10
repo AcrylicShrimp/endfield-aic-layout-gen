@@ -1,0 +1,52 @@
+{
+  "schema": "ppo-start-curriculum-readiness-provenance-v1",
+  "source_base_commit": "8bb0788",
+  "runtime_root": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910",
+  "run": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910/artifacts/factory-edit-pilot/cnn2-curriculum-readiness",
+  "protocol_sha256": "90a076e839a70b6951fc7210810d2f64881d7746f6089962a59af7808a96029d",
+  "configuration": {
+    "path": "tools/factory-edit-pilot/ppo-cnn2-curriculum-readiness.json",
+    "sha256": "6f3210976a220a27b25a230b50e67562379468c5a3517bf02a08ff0e1a068063"
+  },
+  "native_audit": {
+    "path": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910/artifacts/factory-edit-pilot/curriculum-readiness-audit/report.json",
+    "sha256": "76de05cc28d989fc147197721004ffaf30a897c7068ee4bbaccd0cad12a1d755"
+  },
+  "initialization": {
+    "path": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910/artifacts/factory-edit-pilot/curriculum-launch-evidence/readiness-initialization.json",
+    "sha256": "42a087f843d40989e420cb74d5bb1b9c5f04f32154044cb47350289feca5ef38"
+  },
+  "measurements": {
+    "path": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910/artifacts/factory-edit-pilot/curriculum-launch-evidence/readiness-measurements.json",
+    "sha256": "21255e096d335a6762a45f8e65a5fae19c83242afcab4ed4077327c45aa1170d"
+  },
+  "attempted_native_results": 320,
+  "complete_native_episodes": 314,
+  "admitted_training_actions": 8000,
+  "curriculum": {
+    "training_batches": 4,
+    "depth_counts": {
+      "0": 224,
+      "1": 19,
+      "2": 13
+    },
+    "inherited_inputs": 32,
+    "consecutive_ancestry": true,
+    "current_batch_policy": true,
+    "deterministic_start_plans": true,
+    "evaluation_not_inherited": true
+  },
+  "reconstructed_ppo_batch": 3,
+  "initial_actor_sha256": "3469f39eb14c6cc3f6e5dbfdba607bd50e228d5e65f4b174ada017969ca15bdd",
+  "initial_critic_sha256": "4720ed9a6b50d94983168ddc31f75557aef8461fde702813f915d98efb66112c",
+  "max_rss_bytes": 16397836288,
+  "wall_seconds": 230.12216213200008,
+  "verification": {
+    "ppo_tests": 67,
+    "cargo_check_workspace": true,
+    "cargo_test_workspace": true,
+    "current_policy_and_critic_verified": true,
+    "all_inherited_native_admissions_passed": true,
+    "exact_nonempty_ppo_update_reconstructed": true
+  }
+}
