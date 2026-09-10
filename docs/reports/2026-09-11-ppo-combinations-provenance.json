@@ -1,0 +1,131 @@
+{
+  "schema": "ppo-combinations-final-provenance-v1",
+  "implementation_commit": "0d72382",
+  "prior_stop_commit": "1531c92",
+  "matrix": {
+    "path": "/home/ashrimp/Srv/aic-ppo-combinations-screen-20260911/artifacts/factory-edit-pilot/matrix/matrix.json",
+    "sha256": "b1b8948b292555e05755ffaf7224339b653d28e5877daf8af93d0192e54ad00f",
+    "bytes": 6727
+  },
+  "matrix_seconds": 10461.253348112106,
+  "comparison": {
+    "path": "/home/ashrimp/Srv/aic-ppo-combinations-analysis-20260911/artifacts/factory-edit-pilot/comparison/report.json",
+    "sha256": "a7cec8476b0e4e10abfc06980ca44111fb0ac6f94e0fe8cf8dc7a971951191a6",
+    "bytes": 1613918
+  },
+  "comparison_inputs": {
+    "path": "/home/ashrimp/Srv/aic-ppo-combinations-analysis-20260911/artifacts/factory-edit-pilot/comparison/inputs.json",
+    "sha256": "25c5b4848d4d6a699ef2a62b0c2b40e56657f643208146999ab74b286640cefe",
+    "bytes": 21448859
+  },
+  "verified_file_identities": 80594,
+  "matched_input_identities": 4416,
+  "native_final_layouts_verified": 496,
+  "training_actions": 1025024,
+  "mature_probe": {
+    "path": "/home/ashrimp/Srv/aic-ppo-combinations-analysis-20260911/artifacts/factory-edit-pilot/mature-critic/report.json",
+    "sha256": "e385a116cfe430d3d90e316dfda5e49e5ec067bce4b9136179519739aab0d9c9",
+    "bytes": 369540
+  },
+  "mature_probe_inputs": {
+    "path": "/home/ashrimp/Srv/aic-ppo-combinations-analysis-20260911/artifacts/factory-edit-pilot/mature-critic/inputs.json",
+    "sha256": "fb196247efb1aa51fa6b8f31059d5b4ff699d4b9b59dd144df5b8ab8aca0444d",
+    "bytes": 185188
+  },
+  "mature_probe_seconds": 77.5524277529912,
+  "mature_native_episodes": 96,
+  "tracking_audit": {
+    "path": "/home/ashrimp/Srv/aic-ppo-combinations-analysis-20260911/artifacts/factory-edit-pilot/wandb-check.json",
+    "sha256": "a0bf7a18ce25bdbb2a8614d94bcae78b138618d659f2faba4b7d8198480bfe17",
+    "bytes": 7878
+  },
+  "tracking_records": 672,
+  "tracking_scalars": 65047,
+  "analysis_sources": {
+    "path": "/home/ashrimp/Srv/aic-ppo-combinations-analysis-20260911/artifacts/factory-edit-pilot/analysis-sources.json",
+    "sha256": "9f81d423c2363c538f0ae1ff12bdf2fada291898c94964a17a65babf5c357285",
+    "bytes": 662
+  },
+  "cells": [
+    {
+      "name": "shared-nohistory-stop",
+      "config_sha256": "e41273bc8584eedb8a03ed111f8f8a800bb9f36e21ec10e33dacfe6ff3158ccf",
+      "protocol_sha256": "97b6a85b0d7b155119e100963f1a103db83bea548b3659c74c54d78f53f735cd",
+      "state_sha256": "acafd1d00046ffda458029398e39e216a8b46d68ed85b40c0bdb6bfd3def373c",
+      "exit_code": 0
+    },
+    {
+      "name": "shared-history-tail",
+      "config_sha256": "7d3e3463c9b672693ff253e49dbdbf2b20323bdc02615c77236093e2a4121fb8",
+      "protocol_sha256": "6b5259b7169acc375ecfe9ac9b6aaabd0b133ed0586db162619126bc84f665d2",
+      "state_sha256": "49d9df5cb689b2f7558754b60475d0ce1778e51a38da758b1388dbe5936d69ea",
+      "exit_code": 0
+    },
+    {
+      "name": "separate-history-stop",
+      "config_sha256": "336c28183dec45278b11715e2a3ae500671fe447b02df1156512a5716bab43d1",
+      "protocol_sha256": "5d71b7f3a3b2111fbd3e04075a5d6ea2f39941e6adc22580d70a220ac2bc836a",
+      "state_sha256": "380a6538a080ca13b9294233fc83f71f68f2be47d36f783653fc2bb01e96ca47",
+      "exit_code": 0
+    },
+    {
+      "name": "separate-nohistory-tail",
+      "config_sha256": "e2a08350cd74c228308eb16bc0f094efed766490be1bf17c1591fb9b1aef84ba",
+      "protocol_sha256": "a247fe763cd1c147b7242970a4454cd6bdb55e8ff0a4de38bfc8c5ab8489aa06",
+      "state_sha256": "e810ca113746609edc7f2893e1580332b8b1d9e2ef9a4fd81b976d552cb38c33",
+      "exit_code": 0
+    },
+    {
+      "name": "shared-history-stop",
+      "config_sha256": "9b5e22c38005e8558d84e65b1e2614383de82a707901f854c1af1396ea088dba",
+      "protocol_sha256": "c6cd142f77e181b80211703b66747988a0520f7063d168aa5ec316a7fdaeb95c",
+      "state_sha256": "79a614c5c88a8f44aebe81d92967542b36d6394d2a92528844b567be5143c6fc",
+      "exit_code": 0
+    },
+    {
+      "name": "separate-history-tail",
+      "config_sha256": "75d1be61092c7b5d6340a514361c40cfd8f956d6b6bd77fc95de634a90b9cafe",
+      "protocol_sha256": "9d42cd4674fe9d3b7766a856d0eccfbf85cb805ab49fcfa008b04e9aea23cc9e",
+      "state_sha256": "a3b2d7ab70ef96fc9c830b7815070b532404ecf6578d8e1ae9597a9ecebea910",
+      "exit_code": 0
+    },
+    {
+      "name": "separate-nohistory-stop",
+      "config_sha256": "1df6f1c23a2e8531d0869ae7723aa13cd8d1cc7ed5a4ac8b7c89621f23cfe3d8",
+      "protocol_sha256": "093091b8d1bde64f2bc4b07c99902f2814a116346a0508593959eef4a522aa1c",
+      "state_sha256": "cbe5b7fa7561e3eb69b4162e0a23d53961e725a0fee60f67f865f7e557ce60d2",
+      "exit_code": 0
+    },
+    {
+      "name": "shared-nohistory-tail",
+      "config_sha256": "97b88aefb3c315145bcf27b8e511fb315f4edd0bddbc90f380b6c362810f6c95",
+      "protocol_sha256": "d3c9260da5dd60f8cbafadd27ccb62907a44d839901f5dc29792397c6b093653",
+      "state_sha256": "44f699688685696793cc038d641d32d78e4adcc82db4ccc336c13f57fb974bcb",
+      "exit_code": 0
+    }
+  ],
+  "analysis_source_files_sha256": {
+    "compare_ppo_combinations.py": "36f430a63dcc66f00c9d5099a6902f7fd286451a409087da0e5534c5d927511e",
+    "probe_ppo_critic_tail.py": "a31bfab949234fdfc66c67b4f28ec332e198e3a71c1475d28f0342d709be0f50",
+    "plot_ppo_combinations.py": "4a2101bd46808e3a8ff2c2f0ccb9da417885448eb7cce4b67a7a9a95d72a8727",
+    "check_ppo_combinations_tracking.py": "6570e7a0ddcc8e3769c927e5e3797b83cdded40b3291057fb3d1d57a28c55b8b",
+    "test_ppo_combinations_analysis.py": "842c2632e87d9845fa0d0edbfe90ecfce523fd592d36384320a881037edb7f43"
+  },
+  "figures": [
+    {
+      "path": "artifacts/factory-edit-pilot/ppo-combinations-20260911/plots/effects.png",
+      "sha256": "b5beba36d27a3cfb33eb8ffad151185c32e8bea770bc1ed58c39a4223841a812",
+      "bytes": 95410
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/ppo-combinations-20260911/plots/mature-critic.png",
+      "sha256": "e627df9e72ede129dc3e30d6d907707fc6b5a4455d735a96a31429c3ea72c85d",
+      "bytes": 238893
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/ppo-combinations-20260911/plots/overview.png",
+      "sha256": "42f48df532ec885877dd1707914b7f042721f72737ed21138d867764bd03f677",
+      "bytes": 424197
+    }
+  ]
+}

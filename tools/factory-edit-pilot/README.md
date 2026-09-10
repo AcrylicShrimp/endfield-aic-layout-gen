@@ -405,3 +405,29 @@ Cells run sequentially through the supervised public PPO CLI. The screen retains
 all checkpoints, selected training traces and every evaluation trace. Use
 `compare_ppo_combinations.py --matrix MATRIX --output FRESH_OUTPUT --validate-final-layouts`
 to check hashes, matching inputs, predictive diagnostics and paired factor effects.
+Render its report with `plot_ppo_combinations.py --report REPORT --output FRESH_OUTPUT`.
+The figures show both seeds and their range; those ranges are not confidence
+intervals. Critic errors are measured on each policy's own trajectories, so
+changed state visitation and return variance can affect comparisons.
+
+`probe_ppo_critic_tail.py --run STOPPED_RUN --output FRESH_OUTPUT` checks the
+original independent critic at retained batches 128, 192 and 256. It first
+reproduces each recorded update exactly, then finishes the remaining critic
+epochs while freezing the actor and its optimizer. Both critics predict on
+identical, newly collected held-out trajectories. This separates the immediate
+predictive effect of extra fitting from subsequent policy improvement. It
+requires the original CUDA environment and retained training experiences; run
+it after the matrix to avoid interfering with measured training time. Default
+limits are 32 held-out attempts per snapshot, eight workers and 900 seconds.
+Pass its completed report to the plot command with `--critic-probe REPORT` to
+show mean predictions, realized returns and predictive MAE by action position.
+
+For an online matrix, run `check_ppo_combinations_tracking.py --matrix MATRIX
+--output FRESH_REPORT_JSON --env-file /path/to/tracking.env` after completion.
+It verifies all sixteen remote runs, every exported scalar and final history
+ordinals, including the five comparison rows added after each seed finishes.
+
+The [completed factorial and mature-critic findings](../../docs/reports/2026-09-11-ppo-actor-critic-combinations.md)
+include all eight combinations, both seeds, conditional effects and limitations.
+Lower later absolute gain can reflect improvements moving earlier; compare it
+with final factory quality rather than treating it as a separate objective.

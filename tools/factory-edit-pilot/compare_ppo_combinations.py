@@ -11,6 +11,7 @@ import statistics
 
 from ppo_actor_critic import FIELDS, treatment, label
 from ppo_critic_metrics import episode as value_moments, aggregate as value_metrics
+from ppo_episode_metrics import episode_metrics, progress_metrics
 
 
 def check(condition, message):
@@ -31,6 +32,15 @@ def read(path, manifest, expected=None):
     return json.loads(gzip.decompress(raw) if path.suffix == '.gz' else raw)
 
 
+def verify_file(path, manifest, expected):
+    path = Path(path).resolve()
+    key = str(path)
+    if key not in manifest:
+        with path.open('rb') as stream:
+            manifest[key] = hashlib.file_digest(stream, 'sha256').hexdigest()
+    check(manifest[key] == expected, f'hash differs: {path}')
+
+
 def close(actual, expected, name):
     if isinstance(expected, dict):
         check(set(actual) == set(expected), f'field mismatch: {name}')
@@ -48,6 +58,9 @@ def audit_record(record, retained, manifest):
     rows = []
     for result in record['results']:
         read(result['result_path'], manifest, result['result_sha256'])
+        task = read(Path(result['result_path']).with_name('task.json'), manifest, result['input_sha256'])
+        check(task['identity'] == result['identity'] and task['policy_sha256'] == result['policy_sha256']
+              and task['critic_sha256'] == result['critic_sha256'], 'result task identity')
         if result['status'] != 'complete':
             continue
         row = result['row']
@@ -59,11 +72,18 @@ def audit_record(record, retained, manifest):
                 field = {'area_reward_sum': 'area_reward', 'failure_cost_sum': 'failure_cost', 'reward_sum': 'reward'}[key]
                 close(sum(s[field] for s in trace), row[key], key)
             close(value_moments(trace), row['critic_prediction'], 'predictive moments')
+            for key, value in episode_metrics(trace).items():
+                close(value, row[key], key)
+            if record['phase']['kind'] == 'training':
+                verify_file(result['experience'], manifest, result['experience_sha256'])
         rows.append(row)
     recomputed = value_metrics(rows)['critic_prediction']
     close(recomputed, record['quality']['critic_prediction'], 'predictive aggregate')
     close(100*statistics.mean(r['area_reward_sum'] for r in rows),
           record['quality']['mean_area_reduction_percent'], 'area reduction')
+    for key, value in progress_metrics(rows).items():
+        close(value, record['quality'][key], key)
+    check(sum(r['failed_actions'] for r in rows) == record['quality']['failed_actions'], 'failed action accounting')
     if record['phase']['kind'] == 'training':
         ppo = record['ppo']
         expected_steps = math.ceil(ppo['selected']/record['_minibatch_size'])
@@ -128,20 +148,50 @@ def effects(cells):
     return result
 
 
+def schedule_prefixes(updates):
+    """Only the first critic tail can separate otherwise identical schedules."""
+    result = []
+    for shared, history in product((False, True), repeat=2):
+        controls, tails = updates[(shared, history, False)], updates[(shared, history, True)]
+        check(set(controls) == set(tails), 'schedule-pair seeds differ')
+        for seed, left in controls.items():
+            right = tails[seed]
+            check(len(left) == len(right), 'schedule-pair update counts differ')
+            first_tail = None
+            for number, (a, b) in enumerate(zip(left, right), 1):
+                for key in ('policy_before_sha256', 'critic_before_sha256', 'policy_after_sha256',
+                            'actor_optimizer_sha256', 'shuffle_rng_sha256', 'selected', 'kl_stopped', 'epochs'):
+                    check(a[key] == b[key], f'joint prefix differs: shared={shared}, history={history}, seed={seed}, batch={number}, {key}')
+                if a['kl_stopped']:
+                    first_tail = number
+                    break
+                for key in ('critic_after_sha256', 'critic_optimizer_sha256'):
+                    check(a[key] == b[key], f'critic differs before first tail: seed={seed}, batch={number}, {key}')
+            result.append(dict(shared_backbone=shared, critic_history=history, seed=seed,
+                               exact_joint_prefix_batches=first_tail or len(left), first_tail_batch=first_tail))
+    return result
+
+
 def compare(matrix_path, output, native):
     check(not output.exists(), f'fresh output required: {output}')
     manifest = {}
     matrix = read(matrix_path, manifest)
     check(matrix['schema'] == 'ppo-actor-critic-matrix-v1' and matrix['status'] == 'complete'
           and not matrix['readiness'] and len(matrix['cells']) == 8, 'completed eight-cell screen required')
+    read(matrix['source_config']['path'], manifest, matrix['source_config']['sha256'])
     cells, controls, geometries, initial_actors, initial_critics = [], None, {}, {}, {}
+    updates = {}
     native_runtime = None
     output.mkdir(parents=True)
     verified_layouts = 0
     for cell in matrix['cells']:
         root = Path(cell['root'])
+        read(root.with_suffix('.json'), manifest, cell['config_sha256'])
         protocol = read(root/'protocol.json', manifest, cell['protocol_sha256'])
+        for path, expected in protocol['sources'].items():
+            verify_file(path, manifest, expected)
         state = read(root/'state.json', manifest, cell['state_sha256'])
+        check(state['protocol_sha256'] == cell['protocol_sha256'], 'state protocol identity')
         check(state['status'] == 'complete' and len(state['jobs']) == 2, 'both seeds must finish')
         config = deepcopy(protocol['config'])
         factors = config['model'].pop('actor_critic')
@@ -153,6 +203,8 @@ def compare(matrix_path, output, native):
             from native_factory_runtime import FactoryRuntime
             native_runtime = FactoryRuntime(protocol['spec']['native_library'], protocol['catalog_file'])
         item = dict(name=cell['name'], factors=factors, root=str(root), jobs={})
+        update_key = tuple(factors[k] for k in FIELDS)
+        updates[update_key] = {}
         for job in state['jobs']:
             check(job['completed_batches'] == config['training']['batches'], 'incomplete training prefix')
             seed = str(job['seed'])
@@ -178,6 +230,8 @@ def compare(matrix_path, output, native):
                 else:
                     evaluations.append(evaluation(record))
                     if phase['batch'] == 0:
+                        checkpoint = record['checkpoint']
+                        verify_file(root/checkpoint['path'], manifest, checkpoint['sha256'])
                         actors = {r['policy_sha256'] for r in record['results']}
                         critics = {r['critic_sha256'] for r in record['results']}
                         check(len(actors) == len(critics) == 1, 'one initial parameter set required')
@@ -201,6 +255,7 @@ def compare(matrix_path, output, native):
             item['jobs'][seed] = dict(summary=summary, evaluations=evaluations,
                 training=[dict(batch=r['phase']['batch'], actor_epochs=r['ppo']['actor_epochs'], critic_epochs=r['ppo']['critic_epochs'],
                     first_epoch_kl=r['ppo']['epochs'][0]['approximate_kl'], value_predictions=r['quality']['critic_prediction']) for r in train])
+            updates[update_key][seed] = [r['ppo'] for r in train]
         cells.append(item)
         print(dict(audited=cell['name'], jobs={s:j['summary'] for s,j in item['jobs'].items()}), flush=True)
     if native_runtime is not None:
@@ -208,6 +263,7 @@ def compare(matrix_path, output, native):
     (output/'best.json').unlink(missing_ok=True)
     check(len({tuple(c['factors'][k] for k in FIELDS) for c in cells}) == 8, 'complete unique factorial required')
     report = dict(schema='ppo-actor-critic-comparison-v1', cells=cells, effects=effects(cells),
+                  schedule_prefixes=schedule_prefixes(updates),
                   source_sha256=sha(Path(__file__).read_bytes()),
                   matched_input_identities=len(geometries), native_final_layouts_verified=verified_layouts,
                   initial_actor_hashes={k:next(iter(v)) for k,v in initial_actors.items()},
@@ -216,6 +272,8 @@ def compare(matrix_path, output, native):
                     'Reused held-out evaluation factories; no untouched final confirmation test.',
                     'Shared-model critic tails update the private head; independent tails update the whole critic.',
                     'Fresh starts isolate input distribution; earlier inherited-start curriculum is not tested.',
+                    'Value errors follow each policy trajectory; changed visitation and return variance can also change MAE.',
+                    'Later absolute gains can shrink when gains move earlier; they are not a standalone measure of late-action quality.',
                     'Predictive errors use stochastic realized returns, not known conditional expectations.'])
     inputs = (json.dumps(manifest, indent=2)+'\n').encode()
     report['input_manifest_sha256'] = sha(inputs)

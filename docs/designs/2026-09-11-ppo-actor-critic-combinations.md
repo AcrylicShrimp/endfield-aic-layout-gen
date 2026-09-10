@@ -102,6 +102,8 @@ outputs belong in ignored artifacts; retain compact human findings and hashes.
 - Run relevant Python tests, workspace checks/tests and artifact-policy checks.
 - Freeze source, configuration, binaries and input seeds before the matrix;
   audit committed evidence, report every cell and both initialization seeds.
+- Check each matched stop/tail pair has identical joint updates through its
+  first critic-only tail, including actor weights, Adam and shuffle state.
 - Compare paired effects by seed and factor interactions. Do not infer a general
   winner from two seeds or substitute training value loss for factory improvement.
 
@@ -109,3 +111,27 @@ Failures use the existing structured harness diagnostic schema (code, severity,
 stage, entity, message). Model and tail invariant failures use `ppo-combinations.*`;
 batched-observation checks retain `ppo-training.contract`.
 Partial or failed cells remain visible and are never reported as completed runs.
+
+## Additional mature-critic diagnostic
+
+Registered while the factorial matrix is running, before this additional probe:
+reconstruct retained batches 128, 192 and 256 of the stopped padded run. Require
+exact agreement with its recorded actor, critic, optimizer and shuffle hashes
+before using a replay. Keep its original independent critic and actor inputs.
+From each completed policy update, finish any remaining critic epochs using the
+same frozen GAE targets while preserving the actor and actor Adam exactly.
+
+For each snapshot, collect 32 fresh held-out factory attempts under that fixed
+post-update actor, with generation seeds 411000000..411000031 and action seeds
+421000000..421000031. Predict values before and after the extra fit on the same
+recorded observations and compare both to identical realized remaining rewards.
+Report aggregate errors and the mean prediction/return curve by action position.
+The held-out observations and rewards never train either critic. Verify native
+initial/best validity and match the CPU behavior values against padded predictions.
+
+This directly tests predictive error at the mature checkpoints that motivated the
+question. The three snapshots share one training lineage and are not independent
+seeds. The probe does not measure downstream actor improvement; the factorial
+screen measures online learning. Run this bounded probe after the matrix so its
+GPU work does not interfere with measured training time. Preserve the original
+run, use a fresh diagnostic output directory and a 900-second wall-clock ceiling.
