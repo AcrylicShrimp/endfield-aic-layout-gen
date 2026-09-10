@@ -1,6 +1,6 @@
 # Actor spatial receptive-field screen
 
-Status: in progress.
+Status: complete.
 
 ## Context and contract
 
@@ -49,3 +49,15 @@ changing the action or executor contract.
 - 2026-09-10: Approved experiment; implemented shared spatial forward and explicit
   model specifications. All 53 PPO Python tests and workspace check/tests passed
   (548 Rust tests, five ignored). Server profiling and CUDA readiness are next.
+
+- 2026-09-10: All four CUDA readiness runs passed native validation and exact
+  checkpoint continuation. Profiled median/p95/largest retained input states.
+- 2026-09-10: Completed all four fresh 32-batch schedules: 129,024 training
+  actions, matching 1,056 source factories. Audited 132 checkpoints and 640
+  evaluation results; all four W&B runs finished normally.
+- 2026-09-10: Compared paired quality, planned architecture contrasts, action
+  contribution/future credit, footprint and factory-size outcomes, timing,
+  memory and KL stops. Two layers lead this budget at 56.62%; wider four layers
+  beat ordinary four layers by 1.05 pp, while eight layers finish at 54.04%.
+  Findings: `docs/reports/2026-09-10-spatial-reach-screen.md`. No automatic
+  longer training or architecture promotion.

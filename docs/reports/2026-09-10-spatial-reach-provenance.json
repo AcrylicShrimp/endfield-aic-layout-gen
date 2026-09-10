@@ -1,0 +1,267 @@
+{
+  "schema_version": 1,
+  "purpose": "Compact provenance for four controlled 32-batch spatial actor runs",
+  "runtime": "/home/ashrimp/Srv/aic-ppo-spatial-20260910",
+  "implementation_commits": [
+    "951760e",
+    "5d55963"
+  ],
+  "analysis_commit": "5a5d495",
+  "input_manifest": {
+    "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/region-starts/manifest.json",
+    "sha256": "c0c9c7adfabfaaf0cf222d400c822cd40d448bdefb2b359ab89acf7b30ac6b32"
+  },
+  "profile": {
+    "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-profile.json",
+    "sha256": "91db24ed212de31c0074e9aa60dad7bd7b8c942a207be38571db976f3f7cd6a9"
+  },
+  "binaries": {
+    "aic-cli": {
+      "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/target/release/aic-cli",
+      "sha256": "ebb6287b50da41f7ace83fb0acff8a8d7c6ab256b1bf844774ad054efd9926c2"
+    },
+    "aic-witness-probe": {
+      "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/target/release/aic-witness-probe",
+      "sha256": "5eb7bdcea94346ec6eed263f7dbb49f73e525a7e30f57d2ded08ce66cda9ecad"
+    },
+    "libaic_pilot_native.so": {
+      "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/target/release/libaic_pilot_native.so",
+      "sha256": "044ae6c2e0c1b9f35b1aff26497fbc123eb36cd5687a3ccb3e98346312d495fd"
+    }
+  },
+  "runs": {
+    "cnn2": {
+      "protocol": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/ppo-spatial-cnn2/protocol.json",
+        "sha256": "c88d196552277157643e635ab3461a7f484c1fa946ffb64fc7115240a754de38"
+      },
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/ppo-spatial-cnn2/state.json",
+        "sha256": "65089baafcff981c87cee2a2f1e66240476ce9b0aeca37e188eaa9185e734bb5"
+      },
+      "initial_checkpoint": {
+        "path": "current-history-16--seed-17/initial-d3a54379efa345babdcb121c6e801250.pt",
+        "sha256": "ad97e094f97f2480c76bc22086be24a25434e2a0d017de0e7506d53049bde814",
+        "policy_sha256": "3469f39eb14c6cc3f6e5dbfdba607bd50e228d5e65f4b174ada017969ca15bdd",
+        "critic_sha256": "4720ed9a6b50d94983168ddc31f75557aef8461fde702813f915d98efb66112c"
+      },
+      "final_checkpoint": {
+        "path": "current-history-16--seed-17/training-0032/checkpoint-d3a54379efa345babdcb121c6e801250.pt",
+        "sha256": "9958e107b1f1e99259577325ef616d71c09fad99fc014b177b6e9db2fb5f3f87",
+        "policy_sha256": "879e008b5827afc35ec5493f825daede23d18bad76a3f6c3aa954c4f5abbddcb",
+        "critic_sha256": "546bac7a86d4045a420a95ad3dd920088dcb9d55ca0a7ec3042828d6a2a11b37"
+      },
+      "completed_batches": 32,
+      "selected_training_actions": 32256,
+      "elapsed_seconds": 690.4911726159917,
+      "actor_parameters": 50977,
+      "critic_parameters": 32961,
+      "final_audit": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-cnn2-final-audit/report.json",
+        "sha256": "5060d10cdfa9e951e4d5b47ae053d601bd73a4822f44e56245ee7149e212e315"
+      },
+      "readiness_audit": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-readiness-cnn2-audit/report.json",
+        "sha256": "5e56fe536e396f3d231ec6c5b60d4469e1016ef497c51e9f5a522f51779eddb9"
+      },
+      "wandb": [
+        {
+          "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/ade998526af39635dbabdb3f",
+          "state": "finished",
+          "records": 42,
+          "scalars": 1435,
+          "summary": {
+            "source_status": "complete",
+            "training_complete": true,
+            "termination_reason": "schedule-complete"
+          }
+        }
+      ]
+    },
+    "cnn4": {
+      "protocol": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/ppo-spatial-cnn4/protocol.json",
+        "sha256": "ed04feae219972894ad94991e4596238a89a982b8550e1740a9ad6e6660f26fc"
+      },
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/ppo-spatial-cnn4/state.json",
+        "sha256": "b0a4735c89ef4992b71c93d09c96c76a76eded63ddc53b4cc5b88a6daf39c2c1"
+      },
+      "initial_checkpoint": {
+        "path": "current-history-16--seed-17/initial-70782763ba2a4e7786e22f2318b07af8.pt",
+        "sha256": "796d7811ba2a70e38a79360524acea9d10ed0ccf2e78f98edf221fa9ccf78da6",
+        "policy_sha256": "dfdb64fefb5743726872033f4cef1458c08172c126876ffea62f55cf8fa3e700",
+        "critic_sha256": "4720ed9a6b50d94983168ddc31f75557aef8461fde702813f915d98efb66112c"
+      },
+      "final_checkpoint": {
+        "path": "current-history-16--seed-17/training-0032/checkpoint-70782763ba2a4e7786e22f2318b07af8.pt",
+        "sha256": "d501ed377f5022f6631d9dc14cd11451bb25a1cb310a82fb0dbf0396b7ef4d2c",
+        "policy_sha256": "1be2f558ade26f7a255cce56d7a55a476f0dbbc5f8eaf72fd7efafaf2b0e3949",
+        "critic_sha256": "a2b2eb5160a582ad28733395a364579cb8d8911b078ca8b5adcd1d98260ab8d2"
+      },
+      "completed_batches": 32,
+      "selected_training_actions": 32256,
+      "elapsed_seconds": 680.743987919006,
+      "actor_parameters": 69473,
+      "critic_parameters": 32961,
+      "final_audit": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-cnn4-final-audit/report.json",
+        "sha256": "d8166e63da69a7623029528f332fb2d0b2bd1ae97c0ff58f60c1da6de8f56c93"
+      },
+      "readiness_audit": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-readiness-cnn4-audit/report.json",
+        "sha256": "6807ec705ccdfb4b79a725aa1fd4d6c88323b604ce843c37ffc7027e6f0590d2"
+      },
+      "wandb": [
+        {
+          "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/f950209ac13364e3aab1f63f",
+          "state": "finished",
+          "records": 42,
+          "scalars": 1435,
+          "summary": {
+            "source_status": "complete",
+            "training_complete": true,
+            "termination_reason": "schedule-complete"
+          }
+        }
+      ]
+    },
+    "cnn4-dilated": {
+      "protocol": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/ppo-spatial-cnn4-dilated/protocol.json",
+        "sha256": "47f8f922b921fef0ab0ecccdc903a8ae4b256e5a58e747132d57718f80b77cf8"
+      },
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/ppo-spatial-cnn4-dilated/state.json",
+        "sha256": "6b85d9a597a3d574bc12ba07ade7d1ddce8f140f698890841f9d488cee1a3f52"
+      },
+      "initial_checkpoint": {
+        "path": "current-history-16--seed-17/initial-620925529ee84ccc9f0776f336289615.pt",
+        "sha256": "2433350fdb0b0cbf5172d0c64d5b4c7ef9b6575339d8acfa9c7e3ef9d35ed91b",
+        "policy_sha256": "dfdb64fefb5743726872033f4cef1458c08172c126876ffea62f55cf8fa3e700",
+        "critic_sha256": "4720ed9a6b50d94983168ddc31f75557aef8461fde702813f915d98efb66112c"
+      },
+      "final_checkpoint": {
+        "path": "current-history-16--seed-17/training-0032/checkpoint-620925529ee84ccc9f0776f336289615.pt",
+        "sha256": "71fb19ca8594899c28219fa0311419ee4e52c1ae2c8950a7032c8b14ec7674e9",
+        "policy_sha256": "b5b55600d5fc6ee9c537de224725674f17836ff633bd09e647a680a2b410ad4a",
+        "critic_sha256": "fb2df923e0c648a3c9121c0e6c010b4a5b4f05096a08983880547a79fde1ddc0"
+      },
+      "completed_batches": 32,
+      "selected_training_actions": 32256,
+      "elapsed_seconds": 672.6250545989897,
+      "actor_parameters": 69473,
+      "critic_parameters": 32961,
+      "final_audit": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-cnn4-dilated-final-audit/report.json",
+        "sha256": "b46e4db9fe15b723549d1c0d0b588224519a322d972d589b7e2acbdf524cc579"
+      },
+      "readiness_audit": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-readiness-cnn4-dilated-audit/report.json",
+        "sha256": "3ad7ebe567637c6cd7e3921d08059e0f6d86bf3659d957d57df13495c2401d9e"
+      },
+      "wandb": [
+        {
+          "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/995431e980028c202f781f87",
+          "state": "finished",
+          "records": 42,
+          "scalars": 1435,
+          "summary": {
+            "source_status": "complete",
+            "training_complete": true,
+            "termination_reason": "schedule-complete"
+          }
+        }
+      ]
+    },
+    "cnn8": {
+      "protocol": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/ppo-spatial-cnn8/protocol.json",
+        "sha256": "ece87969d38d947f97dba8a6a96ee893bb8f54a958f83cc5e4df9f94561b6ea5"
+      },
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/ppo-spatial-cnn8/state.json",
+        "sha256": "71db0b06861b5adbfa35c864f66240d4267d254a92198d5004e251a66cc6d6de"
+      },
+      "initial_checkpoint": {
+        "path": "current-history-16--seed-17/initial-5f69fcd40d3c4d74a08d47baedf8cd65.pt",
+        "sha256": "f916fb156a9f8b170e64c0db9e5a1230acef08bda1d9d54fbc9e174040466b3f",
+        "policy_sha256": "385021511d932c689ae1f0cedc705991b3e6fb725821ed811496cabbe2ea581c",
+        "critic_sha256": "4720ed9a6b50d94983168ddc31f75557aef8461fde702813f915d98efb66112c"
+      },
+      "final_checkpoint": {
+        "path": "current-history-16--seed-17/training-0032/checkpoint-5f69fcd40d3c4d74a08d47baedf8cd65.pt",
+        "sha256": "f3c1c9e8a9b1fdd9d6d267b76f3d8e5d1bd7e7a284a1bdd77b10fdb956447a7a",
+        "policy_sha256": "d493ccda3d4844e6380a8c797dc7b24a7b31486273f97841f6822025a0c7454c",
+        "critic_sha256": "3ca8cc861081d64b4d8a80edcd908d7cba4c7e9a642807df8c8e387595f4350e"
+      },
+      "completed_batches": 32,
+      "selected_training_actions": 32256,
+      "elapsed_seconds": 606.1615268389869,
+      "actor_parameters": 106465,
+      "critic_parameters": 32961,
+      "final_audit": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-cnn8-final-audit/report.json",
+        "sha256": "6dba8f54b52b72f3bef7d51116f1d352050487b6d2e12ca772468b63cd1e00d5"
+      },
+      "readiness_audit": {
+        "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-readiness-cnn8-audit/report.json",
+        "sha256": "d840f83cb41bc511a3fe187154f9feacd048fdd23dbdef10dd21ec8aca958a70"
+      },
+      "wandb": [
+        {
+          "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/2ffe373877f0485d19cae72f",
+          "state": "finished",
+          "records": 42,
+          "scalars": 1435,
+          "summary": {
+            "source_status": "complete",
+            "training_complete": true,
+            "termination_reason": "schedule-complete"
+          }
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "tools/factory-edit-pilot/full_factory_input_contracts.py": "55520fd61ea661cb08b7c58de129905e56316587927c805b55f4a9f99c6f9a05",
+    "tools/factory-edit-pilot/ppo_area_model.py": "73407cd50811b7c6bb0a10849677a6eea6b92bb705af01dfd6ef1451eb52f3f6",
+    "tools/factory-edit-pilot/ppo_spatial_model.py": "2e461ed31024a6b760944009cc8b4b84b8c704cef7d1334a8f99df507efb367c",
+    "tools/factory-edit-pilot/ppo_training_world.py": "ee6df804506708ad9e2f472b571516001314ddce2285fce301d97a2766f36f8c",
+    "tools/factory-edit-pilot/ppo_harness_protocol.py": "27e95044f7f0e6a00d5275b539c743375bd51c1c8c1cb086f2c4f0489bed9257",
+    "tools/factory-edit-pilot/ppo_harness_tracking.py": "0b59c69f97a3c5957ee9414a408de36fb94473f5bf01e09919e920ab1b365e00",
+    "tools/factory-edit-pilot/profile_ppo_spatial.py": "51127964ec99ba3f17f9c6fa8c57089b8636abc47f87d187bb1a722f3a6411a8",
+    "tools/factory-edit-pilot/compare_ppo_spatial.py": "cd00858cb7835d34c17cf027312d797725e13469ccb132933f76699d0f627139",
+    "tools/factory-edit-pilot/plot_ppo_spatial.py": "22cf764a42febe20899b644103c1a7428483cb5d97381886c42447f49488810d"
+  },
+  "comparison_artifacts": [
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-comparison/comparison.json",
+      "sha256": "7ea8f458dd876b58970008d94f2087b5e8f7e0791ba95c4712cd7a62b9499e99"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-comparison/view/spatial-action-outcomes.png",
+      "sha256": "1ab952fe17367620bedc6197ba8adbb7f75ed07e638cd7141603cca1b2b9a536"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-comparison/view/spatial-action-outcomes.svg",
+      "sha256": "2634118843bbea14fe183edf14be82c5b2035a86cd37635fc92ed79f8a13dbf0"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-comparison/view/spatial-cost.png",
+      "sha256": "620c38d0af16b7646ef676bfe1eb30e76ba79b3d722a599996da256bce4087ad"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-comparison/view/spatial-cost.svg",
+      "sha256": "cac00a06584d9264ac378b96bf026cb728fe341801cd06965af8b875ca89cf5c"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-comparison/view/spatial-learning.png",
+      "sha256": "4c392aaae57ec5014fb8ff77f6bf72bdc6f5c52117b4be671b2c24706320af3f"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/spatial-comparison/view/spatial-learning.svg",
+      "sha256": "dbe0e2dd965efee6f05aea90965252e1441c40f52223f3ddcd83e5fc409d8e27"
+    }
+  ]
+}
