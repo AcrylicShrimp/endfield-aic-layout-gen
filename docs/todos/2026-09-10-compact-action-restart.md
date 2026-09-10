@@ -2,8 +2,9 @@
 
 ## Status
 
-Implementation and GPU readiness complete. A fresh one-hour session is running
-from 2026-09-10 12:42:28 to 13:42:28 KST, followed by bounded shutdown/export.
+Implementation and GPU readiness complete. The fresh one-hour session ended
+at its 2026-09-10 13:42:28 KST deadline; bounded shutdown and export completed.
+Results are preserved for joint review. No automatic continuation.
 See the [action contract](../designs/2026-09-10.13-compact-factory-actions.md).
 
 ## Context and completion criteria
@@ -86,3 +87,25 @@ new isolated one-hour session. No automatic twelve-hour continuation.
   the new action vocabulary, so matching generation seeds need not produce the
   previous run's starting geometry. The stopped trial's runtime/checkpoints are
   preserved. Learning-quality conclusions await joint review after this hour.
+- Timed session completed with 216 committed batches and 216,768 admitted
+  training actions. Timeout exit 124 is the expected one-hour stop; terminal
+  export exits successfully. The final checkpoint is
+  `current-history-16--seed-17/training-0216/checkpoint-81ce25ed04d94dbaab03d3c1f5ef94bd.pt`,
+  SHA-256 `704a554e294ad40e5c01a278614c04a4877217e943dbc94bcf348b8507ba70f0`.
+  Its actual hash matches; the terminal summary verifies all durable records.
+- For the user-requested visual, replay evaluation 208, factory index 0 from
+  the actual policy trace. All 32 action keys, statuses, current/best identities,
+  scores and area rewards match; the final best witness matches exactly.
+  This 18-facility food case changes from 66x51 to 38x41. Its learned trace
+  includes a two-facility rotation, exploration moves followed by compression,
+  restoration and rejected moves. Local evidence is retained under
+  `artifacts/factory-edit-pilot/compact-policy-visual`.
+
+## Next experiment consideration
+
+The user proposed considering a penalty for failed actions. This is a review
+item, not an approved reward change or another training launch. Define the
+failure classes and coefficient before a controlled comparison; distinguish
+executor/validation failures from valid exploratory moves that do not immediately
+improve area. Compare completion, final area, rejected-action rate and exploration
+behavior against this unchanged direct-area baseline.
