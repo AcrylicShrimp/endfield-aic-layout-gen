@@ -1,0 +1,157 @@
+{
+  "schema": "fresh-padded-ppo-launch-v1",
+  "implementation_commit": "d20b416",
+  "runtime": "/home/ashrimp/Srv/aic-ppo-padded-curriculum-12h-20260911",
+  "run": "/home/ashrimp/Srv/aic-ppo-padded-curriculum-12h-20260911/artifacts/factory-edit-pilot/padded-curriculum-twelve-hour",
+  "protocol_sha256": "fb6061b7513d3d558eb6beb21b0ab1a1346978d8c42d24023e820cb2b31b7531",
+  "session": "b3d780305fbf4ef49f695da0b4f23ca9",
+  "unit": "aic-ppo-padded-curriculum-12h-20260911.service",
+  "started_at": "2026-09-11T01:10:31.670384+09:00",
+  "expected_duration_end": "2026-09-11T13:10:31.670384+09:00",
+  "duration_seconds": 43200,
+  "fresh_initialization_checks": {
+    "policy": true,
+    "critic": true,
+    "adam_empty": true,
+    "shuffle_rng": true,
+    "cpu_rng": true,
+    "cuda_rng": true,
+    "batch_zero": true
+  },
+  "initial_checkpoint": {
+    "path": "/home/ashrimp/Srv/aic-ppo-padded-curriculum-12h-20260911/artifacts/factory-edit-pilot/padded-curriculum-twelve-hour/current-history-16--seed-17/initial-b3d780305fbf4ef49f695da0b4f23ca9.pt",
+    "sha256": "0c8d2d710a1a054528a5ab77b5d8bcf160e616f637268bce40f19430f1697bbc",
+    "policy_sha256": "3469f39eb14c6cc3f6e5dbfdba607bd50e228d5e65f4b174ada017969ca15bdd",
+    "critic_sha256": "4720ed9a6b50d94983168ddc31f75557aef8461fde702813f915d98efb66112c"
+  },
+  "predecessor_checkpoint_imported": false,
+  "initial_curriculum_bank_imported": false,
+  "config_sha256": "2c0dae7acf7aa0355fcc547f0817a2535910357b4a4cc70cd18d86e023270750",
+  "native_sha256": "a4213d028666f2255b6cb3d0c9ea43fdcaf656fbee4bb9007d74bca3993815d4",
+  "source_archive_sha256": "4183f3933e7068ebffa19dbb4f1d79dc0622711c31f55f393d8645965b624c5d",
+  "launch_snapshot": {
+    "schema": "padded-ppo-live-launch-check-v1",
+    "checked_epoch": 1789056785.5442922,
+    "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/86bdb8ba1b448abf0f4fc4cc",
+    "remote_state": "running",
+    "verified_through_batch": 4,
+    "verified_training_actions": 8000,
+    "current_completed_batches": 6,
+    "remote_config_verified": true,
+    "remote_metric_checks": [
+      {
+        "phase": {
+          "kind": "evaluation",
+          "batch": 0
+        },
+        "metric_count": 49
+      },
+      {
+        "phase": {
+          "kind": "training",
+          "batch": 1
+        },
+        "metric_count": 104
+      },
+      {
+        "phase": {
+          "kind": "training",
+          "batch": 2
+        },
+        "metric_count": 114
+      },
+      {
+        "phase": {
+          "kind": "training",
+          "batch": 3
+        },
+        "metric_count": 124
+      },
+      {
+        "phase": {
+          "kind": "training",
+          "batch": 4
+        },
+        "metric_count": 125
+      },
+      {
+        "phase": {
+          "kind": "evaluation",
+          "batch": 4
+        },
+        "metric_count": 49
+      }
+    ],
+    "lineage": {
+      "training_batches": 4,
+      "depth_counts": {
+        "0": 224,
+        "1": 19,
+        "2": 13
+      },
+      "inherited_inputs": 32,
+      "consecutive_ancestry": true,
+      "current_batch_policy": true,
+      "deterministic_start_plans": true,
+      "evaluation_not_inherited": true
+    },
+    "evaluations": [
+      {
+        "batch": 0,
+        "mean_area_reduction_percent": 47.11639552754962
+      },
+      {
+        "batch": 4,
+        "mean_area_reduction_percent": 50.915275123080825
+      }
+    ],
+    "checkpoint": {
+      "path": "current-history-16--seed-17/training-0004/checkpoint-b3d780305fbf4ef49f695da0b4f23ca9.pt",
+      "sha256": "86f52dc17f36a0f4ba01f8afb5ade657fbca14c63c0b5c9492e51667240ab143",
+      "policy_sha256": "ce3e3baec7255512ea507cbdd7ce1a7a411dbdda6efa977a4498f2d535a88fa7",
+      "critic_sha256": "4131c5e34ef7272e2cc8d0b26701032d31581c6e68aadbf12538541dcb92df31"
+    },
+    "training_record_hashes": [
+      {
+        "phase": {
+          "kind": "training",
+          "batch": 1
+        },
+        "sha256": "7001cca9adeb70816fd4a3abfb8b0067512f1332f315957bd42707add6d748a1"
+      },
+      {
+        "phase": {
+          "kind": "training",
+          "batch": 2
+        },
+        "sha256": "a658c948a0850680adfea0cc8228d7f3bc4e4098ca1e1d8261f7ef921153c3df"
+      },
+      {
+        "phase": {
+          "kind": "training",
+          "batch": 3
+        },
+        "sha256": "3b78e191ec767c409ab378384d2edbfb8948e6a386df855d8c49110f9d9bd12b"
+      },
+      {
+        "phase": {
+          "kind": "training",
+          "batch": 4
+        },
+        "sha256": "8617e86e96056b9fc11279942d54e8b75401f9c7f0ff0acd6d30a1a5f45167e2"
+      }
+    ]
+  },
+  "service_restart": "no",
+  "user_lingering": true,
+  "evidence": [
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-padded-curriculum-12h-20260911/artifacts/factory-edit-pilot/padded-launch-evidence/launch.json",
+      "sha256": "ad8221ea8921f58f1a36bfddd1952da03dfb712e2bc56aa535bb5c1ce463eacc"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-padded-curriculum-12h-20260911/artifacts/factory-edit-pilot/padded-launch-evidence/live-check.json",
+      "sha256": "5e8f319465cfe6faadebe5f2c5e014d4b180f0ee4091e18841b8d8dc546b5dd0"
+    }
+  ]
+}
