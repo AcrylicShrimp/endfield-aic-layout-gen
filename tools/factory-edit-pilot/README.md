@@ -429,5 +429,26 @@ ordinals, including the five comparison rows added after each seed finishes.
 
 The [completed factorial and mature-critic findings](../../docs/reports/2026-09-11-ppo-actor-critic-combinations.md)
 include all eight combinations, both seeds, conditional effects and limitations.
+
+### Shared model with approximately matched total capacity
+
+`ppo-shared-capacity-screen.json` uses the explicit `ppo-shared-capacity-v1`
+model: shared CNN/graph/history encoders and coupled heads at width 40. It has
+86,282 unique parameters, versus 93,090 for the separate width-32 pair and
+58,530 for the shared width-32 pair. Depth and normalization remain unchanged.
+See the [capacity contract](../../docs/designs/2026-09-11-ppo-shared-capacity.md).
+
+The supplied cell enables critic history and stops both learners at policy KL
+stopping. Its other settings match the previous 32-batch, two-seed screen.
+Both critic factor booleans remain configurable; sharing must be enabled.
+Prepare this individual cell through the harness, not the fixed eight-cell
+matrix runner. Use fresh weights because width-32 checkpoints cannot load into
+width 40. This configuration has been verified but has no measured training
+quality result yet.
+
+```sh
+python tools/factory-edit-pilot/ppo_harness.py --env-file /path/to/tracking.env prepare --config tools/factory-edit-pilot/ppo-shared-capacity-screen.json --output artifacts/factory-edit-pilot/shared-capacity-screen
+python tools/factory-edit-pilot/ppo_harness.py --env-file /path/to/tracking.env run --run artifacts/factory-edit-pilot/shared-capacity-screen
+```
 Lower later absolute gain can reflect improvements moving earlier; compare it
 with final factory quality rather than treating it as a separate objective.

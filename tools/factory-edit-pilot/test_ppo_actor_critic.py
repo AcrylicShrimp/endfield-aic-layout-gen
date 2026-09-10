@@ -18,7 +18,7 @@ from ppo_area_model import models, SCHEMA, actor_distribution
 from ppo_critic_metrics import episode, aggregate
 from ppo_harness_state import save_checkpoint, restore_checkpoint
 from ppo_reward import SCHEMA as REWARD_SCHEMA, DEFAULT, totals
-from ppo_spatial_model import specification, validate_model
+from ppo_spatial_model import specification, shared_capacity_specification, validate_model
 from ppo_training_batch import prepare, predictions, distribution, critic_values
 from ppo_training_update import update
 from test_ppo_training_batch import observations
@@ -35,8 +35,10 @@ def inputs(config):
     return steps
 
 
-def learners(config, device='cpu'):
-    actor, critic = models(dict(model=dict(specification('cnn2'), actor_critic=config)), 17)
+def learners(config, device='cpu', width=32):
+    model = (dict(specification('cnn2'), actor_critic=config) if width == 32 else
+             shared_capacity_specification(config['critic_history'], config['critic_after_kl']))
+    actor, critic = models(dict(model=model), 17)
     torch.manual_seed(43)
     torch.nn.init.normal_(critic.head[-1].weight, std=.1)
     actor.to(device)
@@ -69,6 +71,11 @@ def experiences(actor, critic, config):
                             input_sha256=str(i), row=dict(selected=len(trajectory), **totals(trajectory, DEFAULT),
                                 initial_metrics=dict(score=[100, 0, 0]), best_metrics=dict(score=[90, 0, 0]))))
     return results, payloads
+
+
+def model_cases():
+    return [(32, shared, history) for shared, history in product((False, True), repeat=2)] + [
+        (40, True, history) for history in (False, True)]
 
 
 class CombinationTests(unittest.TestCase):
@@ -107,12 +114,12 @@ class CombinationTests(unittest.TestCase):
             validate_model(dict(specification('cnn4'), actor_critic=treatment(False, False, False)))
 
     def test_shared_scalar_and_padded_predictions_and_gradients(self):
-        for shared, history in product((False, True), repeat=2):
+        for width, shared, history in model_cases():
             config = treatment(shared, history, False)
-            actor, critic, *_ = learners(config, self.device)
+            actor, critic, *_ = learners(config, self.device, width)
             ref_actor, ref_critic = deepcopy((actor, critic))
             steps = inputs(config)
-            batch = prepare(steps, dict(self.config, actor_critic=config), 32, self.device)
+            batch = prepare(steps, dict(self.config, actor_critic=config), width, self.device)
             logp, entropy, _, values = predictions(actor, critic, batch, self.config)
             expected_logp, expected_values = [], []
             for step in steps:
@@ -136,14 +143,43 @@ class CombinationTests(unittest.TestCase):
                         torch.testing.assert_close(p.grad, q.grad, rtol=3e-4, atol=2e-5, msg=name)
             self.assertTrue(torch.isfinite(entropy).all())
 
+    def test_shared_capacity_contract_and_parameter_budget(self):
+        reference = models(dict(model=dict(specification('cnn2'),
+                            actor_critic=treatment(False, True, False))), 17)
+        reference_count = sum(p.numel() for m in reference for p in m.parameters())
+        self.assertEqual(reference_count, 93090)
+        for history, tail in product((False, True), repeat=2):
+            model = shared_capacity_specification(history, tail)
+            actor, critic = models(dict(model=model), 17)
+            parameters = {id(p): p for m in (actor, critic) for p in m.parameters()}
+            self.assertEqual(sum(p.numel() for p in parameters.values()), 86282)
+            self.assertLess(abs(86282 / reference_count - 1), .08)
+            self.assertEqual(actor.width, 40)
+            self.assertIs(actor.world, critic.world)
+            self.assertIs(actor.history_input, critic.history_input)
+            self.assertIs(actor.history, critic.history)
+            ao, co = optimizers(actor, critic, .0003)
+            owned = [id(p) for optimizer in (ao, co) for g in optimizer.param_groups for p in g['params']]
+            self.assertEqual(len(owned), len(set(owned)))
+            self.assertEqual(set(owned), set(parameters))
+            with self.assertRaises(RuntimeError):
+                actor.load_state_dict(reference[0].state_dict())
+        for change in (dict(width=44), dict(critic_width=32), dict(cnn_layers=4),
+                       dict(unexpected=True), dict(actor_critic=treatment(False, True, False))):
+            with self.assertRaisesRegex(ValueError, 'model-spec'):
+                validate_model(dict(shared_capacity_specification(), **change))
+        with self.assertRaisesRegex(ValueError, 'fixed cnn2'):
+            validate_model(dict(specification('cnn2'), width=40, critic_width=40,
+                                actor_critic=treatment(True, True, False)))
+
     def test_best_world_stays_hidden_and_history_toggle_is_effective(self):
-        for shared, history in product((False, True), repeat=2):
+        for width, shared, history in model_cases():
             config = treatment(shared, history, False)
-            actor, critic, *_ = learners(config, self.device)
+            actor, critic, *_ = learners(config, self.device, width)
             steps = inputs(config)
             def predict(items):
                 with torch.no_grad():
-                    return predictions(actor, critic, prepare(items, dict(self.config, actor_critic=config), 32, self.device), self.config)
+                    return predictions(actor, critic, prepare(items, dict(self.config, actor_critic=config), width, self.device), self.config)
             before = predict(steps)
             changed = deepcopy(steps)
             changed[1]['critic_observation']['best']['raster'] *= 10
@@ -164,9 +200,9 @@ class CombinationTests(unittest.TestCase):
                 predict(malformed)
 
     def test_tail_preserves_policy_adam_and_joint_shuffle_for_both_backbones(self):
-        for shared, history in product((False, True), repeat=2):
-            stop = learners(treatment(shared, history, False), self.device)
-            tail = learners(treatment(shared, history, True), self.device)
+        for width, shared, history in model_cases():
+            stop = learners(treatment(shared, history, False), self.device, width)
+            tail = learners(treatment(shared, history, True), self.device, width)
             results, payloads = experiences(*stop[:2], self.config)
             before = parameter_hash(stop[1])
             a = update(*stop, results, self.config, microbatch=2, experiences=payloads)
@@ -184,15 +220,15 @@ class CombinationTests(unittest.TestCase):
                 self.assertAlmostEqual(row['approximate_kl'], b['epochs'][-1]['approximate_kl'], places=12)
 
     def test_checkpoint_continuation_preserves_aliases_adam_and_updates(self):
-        for shared in (False, True):
+        for width, shared in ((32, False), (32, True), (40, True)):
             config = treatment(shared, True, True)
-            first = learners(config, self.device)
+            first = learners(config, self.device, width)
             results, payloads = experiences(*first[:2], self.config)
             update(*first, results, self.config, microbatch=2, experiences=payloads)
             with tempfile.TemporaryDirectory() as tmp:
                 root = Path(tmp)
                 ref = save_checkpoint(root, root/'checkpoint.pt', first, 'test-protocol', 'test-job', 1)
-                second = learners(config, self.device)
+                second = learners(config, self.device, width)
                 restore_checkpoint(root, ref, second, 'test-protocol', 'test-job', 1)
                 self.assertEqual(second[0].world is second[1].world, shared)
                 self.assertTrue(second[2].state and second[3].state)
