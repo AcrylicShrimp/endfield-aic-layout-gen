@@ -66,14 +66,16 @@ class Tracker:
         directory.mkdir(parents=True, exist_ok=True)
         online = self.config['mode'] == 'online'
         identifier = run_id(self.protocol_hash, job['id'])
+        model = self.protocol['spec'].get('model')
+        model_label = '' if model is None else f"cnn-{model['cnn_layers']}-d{','.join(map(str, model['cnn_dilations']))}--"
         self.active = wandb.init(entity=self.config['entity'] or None, project=self.config['project'],
-            id=identifier, name=job['id'], group=f"ppo-{self.protocol['config']['purpose']}-{self.protocol_hash[:12]}",
+            id=identifier, name=model_label + job['id'], group=f"ppo-{self.protocol['config']['purpose']}-{self.protocol_hash[:12]}",
             job_type=self.protocol['config']['purpose'],
             mode=self.config['mode'], resume='allow' if online else None, dir=str(directory),
             save_code=False, settings=wandb.Settings(console='off', disable_code=True, x_disable_meta=True,
                 x_disable_stats=True, x_disable_machine_info=True, init_timeout=20, finish_timeout=10),
             config=dict(protocol_sha256=self.protocol_hash, candidate=job['candidate'], seed=job['seed'],
-                        policy=self.protocol['spec']['policy'], ppo=self.protocol['config']['ppo'],
+                        policy=self.protocol['spec']['policy'], model=model, ppo=self.protocol['config']['ppo'],
                         training=self.protocol['config']['training'], evaluation=self.protocol['config']['evaluation'],
                         execution=self.protocol['config']['execution']))
         try:
