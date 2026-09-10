@@ -490,7 +490,7 @@ impl Episode {
             .map(|(k, v)| (k.clone(), serde_json::to_value(v).unwrap()))
             .collect();
         Ok(
-            json!({"schema_version": 3, "ports": ports, "chains": p.decomposition.chains, "actions": p.actions, "poses": p.report}),
+            json!({"schema_version": 4, "ports": ports, "chains": p.decomposition.chains, "actions": p.actions, "poses": p.report}),
         )
     }
 }
