@@ -1,0 +1,172 @@
+{
+  "schema": "fresh-cnn2-routing-twelve-hour-launch-v1",
+  "source_commit": "d434768",
+  "root": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910",
+  "run": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts/factory-edit-pilot/cnn2-routing-twelve-hour",
+  "service": "aic-ppo-cnn2-routing-12h-20260910.service",
+  "session": "ac1e006e3fd446e8b5ba5e852a92086d",
+  "supervisor_pid": 652194,
+  "started_at": "2026-09-10T19:44:55.844789+09:00",
+  "expected_duration_end": "2026-09-11T07:44:55.844789+09:00",
+  "duration_seconds": 43200,
+  "initialization": {
+    "schema": "fresh-routing-cnn2-launch-check-v1",
+    "source_commit": "d434768",
+    "run": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts/factory-edit-pilot/cnn2-routing-twelve-hour",
+    "protocol_sha256": "7e9e4946a67c30440be07daeb2f36655d02b58539c3f50b0931f81599af59662",
+    "job": "current-history-16--seed-17",
+    "completed_batches": 4,
+    "actions": 4064,
+    "initial_checkpoint": {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts/factory-edit-pilot/cnn2-routing-twelve-hour/current-history-16--seed-17/initial-ac1e006e3fd446e8b5ba5e852a92086d.pt",
+      "sha256": "1ee96057c3cbac475a6630305b9e12eb5d8ed42b260e481a222891735a68c294",
+      "policy_sha256": "3469f39eb14c6cc3f6e5dbfdba607bd50e228d5e65f4b174ada017969ca15bdd",
+      "critic_sha256": "4720ed9a6b50d94983168ddc31f75557aef8461fde702813f915d98efb66112c"
+    },
+    "fresh_models_match_original_initial": true,
+    "optimizers_empty_at_start": true,
+    "parent_checkpoint_imported": false,
+    "initial_evaluation_matches_readiness": true,
+    "training_prefix_inputs_verified": true,
+    "training_prefix_batches": 32,
+    "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/5ed736ee4ac1e4ae121f87b3",
+    "wandb_state": "running",
+    "wandb_records": 4,
+    "online_failure_and_reward_metrics_confirmed": true,
+    "observer": null
+  },
+  "readiness": {
+    "schema": "ppo-harness-native-readiness-v1",
+    "status": "complete",
+    "source_sha256": "22547468b339e6d1e7927ddfcac0be05728a6ecdfa012f943782dc3984a43cbb",
+    "protocol_sha256": "19d8e903c1dcb69b2d536ceab958d6d13ed23136353e66c98283deedae034230",
+    "jobs": [
+      {
+        "job": "current-history-16--seed-17",
+        "native_results": 80,
+        "behavior_probabilities_and_values_match": true,
+        "one_nonempty_checkpoint_continuation_exact": true
+      }
+    ],
+    "max_seconds": 180,
+    "seconds": 4.6752015910169575
+  },
+  "same_initial_comparison": {
+    "schema": "same-initial-policy-routing-comparison-v1",
+    "same_initial_factories": true,
+    "same_initial_policy": true,
+    "rows": [
+      {
+        "root": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/ppo-spatial-cnn2",
+        "record": {
+          "path": "current-history-16--seed-17/evaluation-0000/record-d3a54379efa345babdcb121c6e801250.json",
+          "sha256": "98b2f16bf190b3e0152ba29ec8e14948958958629ac9395c0cf9d536b10f98a6",
+          "phase": {
+            "kind": "evaluation",
+            "batch": 0
+          }
+        },
+        "policy_sha256": "3469f39eb14c6cc3f6e5dbfdba607bd50e228d5e65f4b174ada017969ca15bdd",
+        "selected": 1024,
+        "statuses": {
+          "accepted_exploration": 523,
+          "improved": 99,
+          "accepted_equal": 253,
+          "executor_rejected": 149
+        },
+        "budget_failures": 53,
+        "executor_seconds": 0.396927822,
+        "expansions": 406143,
+        "mean_area_reduction_percent": 47.325874351289315
+      },
+      {
+        "root": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts/factory-edit-pilot/cnn2-routing-readiness",
+        "record": {
+          "path": "current-history-16--seed-17/evaluation-0000/record-257ccd35fd324b56bd274628559f2c97.json",
+          "sha256": "e4c1d8a98fef5fe8da2d088bd1f182fdd3059a397c3021292d288697360e5c8c",
+          "phase": {
+            "kind": "evaluation",
+            "batch": 0
+          }
+        },
+        "policy_sha256": "3469f39eb14c6cc3f6e5dbfdba607bd50e228d5e65f4b174ada017969ca15bdd",
+        "selected": 1024,
+        "statuses": {
+          "accepted_exploration": 537,
+          "improved": 100,
+          "accepted_equal": 245,
+          "executor_rejected": 142
+        },
+        "budget_failures": 8,
+        "executor_seconds": 0.572080063,
+        "expansions": 1012196,
+        "mean_area_reduction_percent": 47.11639552754962
+      }
+    ]
+  },
+  "post_prefix": {
+    "schema": "post-prefix-generation-check-v1",
+    "seed": 212701024,
+    "status": "accepted",
+    "uses_frozen_start": false,
+    "admitted": true,
+    "seconds": 0.1605149320093915
+  },
+  "old_run": {
+    "path": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/factory-edit-pilot/cnn2-twelve-hour",
+    "status": "stopped",
+    "completed_batches": 526,
+    "admitted_actions": 528256,
+    "checkpoint": {
+      "path": "current-history-16--seed-17/training-0526/checkpoint-b4ad328c94b84eee830e049f536f4efc.pt",
+      "sha256": "a5925cabd68587f3a490596ee6b65c39f30563c85f8098d414dc027223c49554",
+      "policy_sha256": "cfccc33cb5da207ca79c3363eb7c370c1b08d34c924fd622e4451bc5e4f8925f",
+      "critic_sha256": "42ce05fe54b7eefb0e68395cf166be51b08aa07ab32089ec4855a04d37bc08f2"
+    },
+    "state_sha256": "8530d72a020b3fb925a85ddd176d340430da34deea74c211b516054a1915abe4",
+    "tracking_finished": true,
+    "termination_reason": "user-stop"
+  },
+  "files": [
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts/factory-edit-pilot/launch-evidence/fresh-initialization.json",
+      "sha256": "d3e192b374529340f58ec67a2e9500e1bee884be87cec061b6589f009fa18dd9",
+      "bytes": 976
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts/factory-edit-pilot/launch-evidence/main-launch-check.json",
+      "sha256": "de102f92c2a6b70bd5d1a312668193f311ab7ac97957d2e29812304874154637",
+      "bytes": 1342
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts/factory-edit-pilot/launch-evidence/initial-evaluation-comparison.json",
+      "sha256": "2c8cb4a1f5370de694622dd4b24791c613876609334643df42bc41b22659a89e",
+      "bytes": 1842
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts/factory-edit-pilot/launch-evidence/post-prefix-generation.json",
+      "sha256": "e4c3c3daff9d07e85d804316c5d8ddc910cc68b6fc31ca7df9a48d7669f5a8d0",
+      "bytes": 178
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts/factory-edit-pilot/launch-evidence/readiness-audit/report.json",
+      "sha256": "9e3cf476355fda9544cd0fd42e50dd8c9eb0ab687884f722ba1fa41222d6339b",
+      "bytes": 518
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts/factory-edit-pilot/launch-evidence/readiness-metrics.json",
+      "sha256": "93b76d5dbc24bb08ea6509939925dd9c63960cbf06ebdeaa65e32cb9acb0e471",
+      "bytes": 5801
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts/factory-edit-pilot/cnn2-routing-twelve-hour/protocol.json",
+      "sha256": "7e9e4946a67c30440be07daeb2f36655d02b58539c3f50b0931f81599af59662",
+      "bytes": 7111909
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/target/release/libaic_pilot_native.so",
+      "sha256": "a4213d028666f2255b6cb3d0c9ea43fdcaf656fbee4bb9007d74bca3993815d4",
+      "bytes": 5606048
+    }
+  ]
+}

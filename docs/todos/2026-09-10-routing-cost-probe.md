@@ -1,6 +1,6 @@
 # Routing cost and bounded reachability probe
 
-Status: in progress; scope expanded to implementation and a new twelve-hour run.
+Status: implementation and launch complete; the new twelve-hour run is ongoing.
 
 ## Context and contract
 
@@ -33,9 +33,9 @@ the stopped run. The user explicitly corrected the earlier warm-start plan.
 - [x] Compare an isolated reverse-reachability prototype at the same work budget.
 - [x] Independently validate candidates and check negative-search soundness.
 - [x] Implement measured routing improvements and weak failure reward cost.
-- [ ] Verify fresh random initialization and a bounded CUDA readiness run.
-- [ ] Freeze and launch a new independent twelve-hour experiment; verify progress.
-- [ ] Record findings, limitations and reproduction sources; commit checked work.
+- [x] Verify fresh random initialization and a bounded CUDA readiness run.
+- [x] Freeze and launch a new independent twelve-hour experiment; verify progress.
+- [x] Record findings, limitations and reproduction sources; commit checked work.
 
 ## Activity
 
@@ -59,3 +59,11 @@ the stopped run. The user explicitly corrected the earlier warm-start plan.
 - 2026-09-10: Reward conservation/negative-credit and frozen-prefix tests pass
   within all 60 PPO tests. New configuration has no continuation field and
   freezes the original first 32 training batches for a controlled early comparison.
+
+- 2026-09-10: Fresh CUDA readiness completed; 80 native results and exact second
+  PPO update reconstruction passed. Initial tensors/random streams match the
+  original untrained CNN-2 model and optimizers are empty.
+- 2026-09-10: Started the new independent twelve-hour service at 19:44:55 KST,
+  expected duration end 2026-09-11 07:44:55 KST. Four committed batches and online
+  W&B reward/failure metrics verified. Launch report:
+  `docs/reports/2026-09-10-fresh-cnn2-routing-twelve-hour-launch.md`.
