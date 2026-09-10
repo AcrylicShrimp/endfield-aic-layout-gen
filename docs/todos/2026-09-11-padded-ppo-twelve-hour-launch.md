@@ -1,6 +1,6 @@
 # Fresh padded PPO twelve-hour launch
 
-Status: launch complete; twelve-hour training is running.
+Status: launch complete; training stopped by user after 258 batches.
 
 Context: the user accepted the measured data-supply and padded CNN optimizations
 and requested a completely fresh twelve-hour training run. Implementation
@@ -37,3 +37,7 @@ Activity log:
   remote W&B scalars verified. The service was still running with six committed
   batches at the cloud-check snapshot. See the
   [launch report](../reports/2026-09-11-padded-ppo-twelve-hour-launch.md).
+- 2026-09-11: User requested stopping before actor/critic combination experiments.
+  The stop completed at 258 batches and 520,160 actions; final checkpoint hash,
+  service exit and tracking finalization verified. See the
+  [stop report](../reports/2026-09-11-padded-ppo-user-stop.md).
