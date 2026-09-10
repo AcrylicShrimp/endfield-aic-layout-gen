@@ -2,9 +2,10 @@
 
 ## Status
 
-Running. The first one-hour session started at 2026-09-10 02:30:32 UTC
-(11:30:32 KST) and is scheduled to stop at 03:30:32 UTC (12:30:32 KST).
-Await joint user review before any continuation.
+Stopped early at the user's explicit request, after 3,147.4 seconds
+(52 minutes 27 seconds). The user identified the single-row/single-column
+contraction action granularity as a critical issue. No automatic continuation.
+The original one-hour deadline was superseded by this stop request.
 
 ## User decision and contract
 
@@ -62,3 +63,13 @@ review before deciding whether to run another twelve hours.
   The ignored launch driver calls normal terminal export and writes
   `one-hour-summary.json` after shutdown, verifying durable record and final
   checkpoint hashes. It never resumes automatically.
+- The user explicitly stopped training after confirming each contraction action
+  removes exactly one row or column. Issued the normal CLI stop; both durable
+  state and supervisor report `stopped` with `ppo-harness.user-stop`. No live
+  owned training processes remain. Terminal W&B export completed successfully.
+- Final committed state: 165 training batches, 165,696 admitted training actions.
+  Final checkpoint: `current-history-16--seed-17/training-0165/checkpoint-3011322e84dd4966b0b8cd4284b544bf.pt`.
+  SHA-256: `95f83c5b99c77dcfc66da0f1ec87fe64b8a15c73bbb7326aae78df0d98f64ecd`.
+  Its actual file hash matches the durable manifest. Checkpoints, retained
+  episodes and interrupted work remain preserved. The automatic terminal
+  summary is available at `one-hour-summary.json` in the run root.
