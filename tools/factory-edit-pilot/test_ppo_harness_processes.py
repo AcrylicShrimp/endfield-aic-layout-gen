@@ -151,10 +151,10 @@ while True:time.sleep(.05)
                 supervisor.supervise(self.root, resume=True)
 
     def test_supervisor_progress_and_rss_watchdogs_kill_real_children(self):
-        for reason in ('progress-timeout', 'rss-limit', 'run-timeout'):
+        for reason in ('progress-timeout', 'rss-limit', 'duration-reached'):
             with self.subTest(reason=reason):
                 limits = dict(self.cfg['limits'], progress_seconds=.1 if reason == 'progress-timeout' else 30,
-                              run_seconds=.1 if reason == 'run-timeout' else 30,
+                              run_seconds=.1 if reason == 'duration-reached' else 30,
                               rss_bytes=1 if reason == 'rss-limit' else 1024**4, disk_reserve_bytes=0)
                 protocol = dict(schema=SCHEMA, backend='retained-full-factory-native', sources={}, environment={}, jobs=[], phases=[], config=dict(limits=limits))
                 write(self.root / 'protocol.json', protocol)
@@ -173,9 +173,66 @@ while True:time.sleep(.05)
                 with patch('ppo_harness_protocol.environment', return_value={}), patch.object(supervisor, 'gpu_sample', return_value=None), patch.object(supervisor.subprocess, 'Popen', side_effect=popen):
                     result = supervisor.supervise(self.root)
                 self.assertEqual(result['diagnostic']['code'], 'ppo-harness.' + reason)
+                self.assertEqual(result['status'], 'stopped' if reason == 'duration-reached' else 'failed')
                 self.assertEqual(len(spawned), 2)
                 self.assertTrue(all(child.poll() is not None for child in spawned))
                 self.assertTrue(all(not supervisor.members(child.pid) for child in spawned))
+
+    def test_session_duration_publishes_retained_state_before_observer_shutdown(self):
+        limits = dict(self.cfg['limits'], run_seconds=30, progress_seconds=30,
+                      rss_bytes=1024**4, disk_reserve_bytes=0, cleanup_seconds=2)
+        protocol = dict(schema=SCHEMA, backend='retained-full-factory-native', sources={}, environment={},
+                        jobs=[], phases=[], config=dict(limits=limits))
+        write(self.root / 'protocol.json', protocol)
+        write(self.root / 'state.json', dict(schema=SCHEMA, protocol_sha256=sha(self.root / 'protocol.json'),
+              status='prepared', jobs=[], cursor=0, elapsed_seconds=0, sessions=0, checkpoint_marker='retained'))
+        coordinator = self.script('''import signal,time,sys
+signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))
+while True: time.sleep(.01)
+''', 'coordinator.py')
+        observer = self.script('''import json,time,sys
+from pathlib import Path
+root=Path(sys.argv[1])
+while True:
+    state=json.loads((root/'state.json').read_text())
+    if state['status'] != 'running':
+        (root/'observed-terminal.json').write_text(json.dumps(state))
+        break
+    time.sleep(.01)
+''', 'observer.py')
+        real_popen = subprocess.Popen
+        def popen(args, **kwargs):
+            if any('ppo_harness_run.py' in str(a) for a in args):
+                args = [sys.executable, str(coordinator)]
+            elif any('ppo_harness_monitor.py' in str(a) for a in args):
+                args = [sys.executable, str(observer), str(self.root)]
+            return real_popen(args, **kwargs)
+        with patch('ppo_harness_protocol.environment', return_value={}), patch.object(supervisor, 'gpu_sample', return_value=None), patch.object(supervisor.subprocess, 'Popen', side_effect=popen):
+            result = supervisor.supervise(self.root, duration_seconds=.2)
+        self.assertEqual(result['status'], 'stopped')
+        self.assertEqual(result['termination_reason'], 'duration-reached')
+        self.assertEqual(result['child_exit_codes'], [0, 0])
+        observed = read(self.root / 'observed-terminal.json')
+        self.assertEqual(observed['checkpoint_marker'], 'retained')
+        self.assertEqual(observed['status'], 'stopped')
+        self.assertEqual(observed['termination_reason'], 'duration-reached')
+
+    def test_coordinator_recognizes_only_its_matching_normal_stop_intent(self):
+        from ppo_harness_run import run
+        protocol = dict(schema=SCHEMA, backend='retained-full-factory-native', sources={},
+                        config={}, jobs=[dict(seed=17)])
+        write(self.root / 'protocol.json', protocol)
+        state = dict(schema=SCHEMA, protocol_sha256=sha(self.root / 'protocol.json'),
+                     status='running', jobs=[], cursor=0, checkpoint_marker='last-commit')
+        write(self.root / 'state.json', state)
+        write(self.root / 'stop-request.json', dict(session='expected', reason='duration-reached'))
+        with patch('ppo_harness_run.learners', side_effect=InterruptedError('supervised stop')), patch('ppo_harness_run.torch.set_num_interop_threads'):
+            run(self.root, 'expected')
+            self.assertEqual(read(self.root / 'progress.json')['status'], 'stopped')
+            self.assertEqual(read(self.root / 'state.json'), state)
+            with self.assertRaises(InterruptedError):
+                run(self.root, 'different')
+            self.assertEqual(read(self.root / 'progress.json')['status'], 'failed')
 
 
 if __name__ == '__main__':

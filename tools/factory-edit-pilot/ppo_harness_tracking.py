@@ -103,7 +103,7 @@ class Tracker:
             complete=False, remote_confirmed_step=None, source_status=job['status'], export_session=self.session)
         self.publish()
 
-    def finish(self, complete):
+    def finish(self, complete, *, failed=False, reason=None):
         if self.active is None:
             return
         import wandb
@@ -111,15 +111,20 @@ class Tracker:
         record = self.value['jobs'][job]
         self.active.summary['training_complete'] = complete
         self.active.summary['source_status'] = record['source_status']
-        self.active.finish(exit_code=0 if complete else 1)
+        # Schedule completion and successful process termination are independent.
+        # A bounded training session may end normally before the batch ceiling.
+        reason = reason or ('schedule-complete' if complete else 'session-ended')
+        self.active.summary['termination_reason'] = reason
+        self.active.finish(exit_code=1 if failed else 0)
         self.active = None
         self.active_job = None
-        if complete and self.config['mode'] == 'online':
+        if not failed and self.config['mode'] == 'online':
             remote = wandb.Api(timeout=10).run(f"{self.config['entity']}/{self.config['project']}/{record['run_id']}")
             record['remote_confirmed_step'] = remote.lastHistoryStep
             require(record['remote_confirmed_step'] >= record['exported_records'] - 1, 'tracking-unconfirmed',
                     'W&B has not confirmed the final committed record', 'tracking', job)
         record['complete'] = complete
+        record.update(finished_successfully=not failed, termination_reason=reason)
         self.publish()
 
     def update(self, jobs):

@@ -19,6 +19,9 @@ def main():
     for name in ('run', 'resume', 'status', 'stop', 'plot', 'export'):
         command = commands.add_parser(name)
         command.add_argument('--run', type=Path, required=True)
+        if name in ('run', 'resume'):
+            command.add_argument('--duration-seconds', type=float,
+                                 help='End this training session normally after this duration; preserve the last committed batch')
         if name == 'plot':
             command.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
@@ -28,7 +31,7 @@ def main():
             protocol = prepare(args.config, args.output)
             result = dict(status='prepared', jobs=len(protocol['jobs']), phases_per_job=len(protocol['phases']))
         elif args.command in ('run', 'resume'):
-            result = supervise(args.run, resume=args.command == 'resume')
+            result = supervise(args.run, resume=args.command == 'resume', duration_seconds=args.duration_seconds)
         elif args.command == 'stop':
             result = stop_run(args.run)
         elif args.command == 'export':

@@ -169,6 +169,20 @@ class ComparisonTests(unittest.TestCase):
             self.assertIsNone(tracker.active_job)
             active.finish.assert_called_once_with(exit_code=1)
 
+    def test_duration_completion_is_successful_without_claiming_schedule_completion(self):
+        for failed, reason in [(False, 'duration-reached'), (True, 'error')]:
+            with self.subTest(reason=reason), tempfile.TemporaryDirectory() as directory:
+                tracker = self.online_tracker(Path(directory))
+                active = Mock(step=0, url='https://example.invalid/run', summary={})
+                with patch('wandb.init', return_value=active), patch('wandb.Api') as api:
+                    api.return_value.run.return_value.lastHistoryStep = -1
+                    tracker.start(dict(id='job', candidate='action-only', seed=17, status='running'))
+                    tracker.finish(complete=False, failed=failed, reason=reason)
+                active.finish.assert_called_once_with(exit_code=1 if failed else 0)
+                self.assertFalse(active.summary['training_complete'])
+                self.assertEqual(active.summary['termination_reason'], reason)
+                self.assertEqual(tracker.value['jobs']['job']['finished_successfully'], not failed)
+
     def test_real_sdk_commits_latest_point_and_specific_axes(self):
         import wandb
         with tempfile.TemporaryDirectory() as directory:

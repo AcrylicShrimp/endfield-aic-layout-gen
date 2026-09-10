@@ -62,7 +62,8 @@ def snapshot(root, cache=None):
                 cache[key] = read(checked_path(root, reference))
             records.append(cache[key])
         jobs.append(dict(job, records=records))
-    return dict(status=state['status'], protocol_sha256=state['protocol_sha256'], jobs=jobs)
+    return dict(status=state['status'], termination_reason=state.get('termination_reason'),
+                protocol_sha256=state['protocol_sha256'], jobs=jobs)
 
 
 def plot(root, output, value=None):
@@ -126,6 +127,7 @@ def watch(root, session):
     protocol = read(root / 'protocol.json')
     tracker = Tracker(root, protocol, sha(root / 'protocol.json'), session)
     stopped, cache, previous, retry_at = [], {}, None, 0.
+    final_status, final_reason, export_failed = 'running', 'observer-stop', False
     def stop(signum, _):
         stopped.append(signum)
     signal.signal(signal.SIGTERM, stop)
@@ -136,6 +138,8 @@ def watch(root, session):
             if status(root)['status'] == 'stale':
                 value['status'] = 'stale'
             terminal = value['status'] in ('complete', 'failed', 'stopped', 'stale')
+            final_status = value['status']
+            final_reason = value.get('termination_reason') or final_status
             signature = (value['status'], tuple((j['id'], len(j['records']), j['status']) for j in value['jobs']))
             if signature != previous:
                 try:
@@ -157,8 +161,14 @@ def watch(root, session):
             if terminal:
                 break
             time.sleep(1)
+    except BaseException:
+        export_failed = True
+        raise
     finally:
-        tracker.finish(complete=False)
+        if tracker.active_job is not None and final_status in ('stopped', 'failed', 'stale'):
+            tracker.value['jobs'][tracker.active_job]['source_status'] = final_status
+        tracker.finish(complete=final_status == 'complete',
+                       failed=export_failed or final_status in ('failed', 'stale'), reason=final_reason)
 
 
 if __name__ == '__main__':

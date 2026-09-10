@@ -152,6 +152,12 @@ def run(root, session):
         write(root / 'state.json', state)
         progress(stage='complete', status='complete')
     except BaseException as error:
+        request = root / 'stop-request.json'
+        stop = read(request) if request.is_file() else {}
+        if isinstance(error, InterruptedError) and stop.get('session') == session and stop.get('reason') in ('duration-reached', 'user-stop'):
+            progress(stage='stopped', status='stopped', diagnostic=dict(code='ppo-harness.' + stop['reason'],
+                     severity='info', stage='coordinator', entity=str(root), message='Training session ended normally; last committed checkpoint retained'))
+            return
         progress(stage='failed', status='failed', diagnostic=diagnostic(error, 'coordinator', root))
         raise
 

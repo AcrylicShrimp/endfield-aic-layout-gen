@@ -1,5 +1,6 @@
 """Single-owner process supervision, resource bounds and explicit stop/resume."""
 import json
+import math
 import os
 from pathlib import Path
 import shutil
@@ -150,7 +151,9 @@ def validate_resume(root, protocol, state):
             checked_path(root, record)
 
 
-def supervise(root, resume=False):
+def supervise(root, resume=False, duration_seconds=None):
+    require(duration_seconds is None or (math.isfinite(duration_seconds) and duration_seconds > 0),
+            'session-duration', 'duration seconds must be finite and positive', 'supervisor', root)
     root = Path(root).resolve()
     with writer_lock(root):
         old_path = root / 'supervisor.json'
@@ -190,13 +193,14 @@ def supervise(root, resume=False):
                       protocol_sha256=sha(root / 'protocol.json'), started_epoch=started, prior_seconds=prior_seconds,
                       updated_epoch=started, processes=[], elapsed_seconds=prior_seconds, diagnostic=None,
                       cleanup_seconds=limits['cleanup_seconds'])
+        status['duration_seconds'] = duration_seconds
         write(old_path, status)
         stop = []
         def interrupted(signum, _):
             stop.append(f'signal {signum}')
         prior_handlers = {sig: signal.signal(sig, interrupted) for sig in (signal.SIGTERM, signal.SIGINT)}
         children, logs = [], []
-        failure, user_stop = None, False
+        failure, normal_stop = None, None
         def launch(name, arguments, credentials=False):
             log = open(directory / f'{name}.log', 'wb')
             logs.append(log)
@@ -219,9 +223,11 @@ def supervise(root, resume=False):
                 elapsed = prior_seconds + time.monotonic() - began
                 request = root / 'stop-request.json'
                 if stop or (request.exists() and read(request).get('session') == session):
-                    user_stop = True
+                    normal_stop = 'user-stop'
                     raise InterruptedError(stop[0] if stop else 'CLI stop request')
-                require(elapsed < limits['run_seconds'], 'run-timeout', 'cumulative wall-time budget exceeded', 'supervisor', root)
+                if elapsed >= limits['run_seconds'] or (duration_seconds is not None and time.monotonic() - began >= duration_seconds):
+                    normal_stop = 'duration-reached'
+                    raise InterruptedError('Configured training duration completed; preserving the last committed batch')
                 rows = process_rows()
                 status['processes'] = discover_owned(status['processes'], session, rows)
                 groups = {p['pid'] for p in status['processes']}
@@ -253,14 +259,36 @@ def supervise(root, resume=False):
                 status['observer_finalization'] = 'pending; committed records remain available for export'
         except BaseException as error:
             failure = diagnostic(error, 'supervisor', root)
-            if user_stop:
-                failure = dict(code='ppo-harness.user-stop', severity='info', stage='supervisor', entity=str(root), message=str(error))
+            if normal_stop:
+                failure = dict(code='ppo-harness.' + normal_stop, severity='info', stage='supervisor', entity=str(root), message=str(error))
             elif failure['code'] == 'ppo-harness.coordinator-exit':
                 path = root / 'progress.json'
                 prior = read(path) if path.exists() else {}
                 if prior.get('session') == session and prior.get('diagnostic'):
                     failure = prior['diagnostic']
         finally:
+            # The coordinator is the only state writer. Stop it first, publish
+            # the terminal state, then let the observer flush and finish W&B.
+            if normal_stop:
+                write(root / 'stop-request.json', dict(session=session, reason=normal_stop, requested_epoch=time.time()))
+            if children and children[0].poll() is None:
+                signal_group(status['processes'][0], session, signal.SIGTERM)
+                try:
+                    children[0].wait(timeout=limits['cleanup_seconds'])
+                except subprocess.TimeoutExpired:
+                    signal_group(status['processes'][0], session, signal.SIGKILL)
+                    children[0].wait(timeout=3)
+            state = load_state(root)
+            genuine_failure = failure is not None and failure.get('severity') == 'error'
+            state.update(status='failed' if genuine_failure else 'stopped' if normal_stop else 'complete',
+                         termination_reason='error' if genuine_failure else normal_stop or 'schedule-complete',
+                         elapsed_seconds=prior_seconds + time.monotonic() - began, diagnostic=failure)
+            write(root / 'state.json', state)
+            if len(children) > 1 and children[1].poll() is None:
+                try:
+                    children[1].wait(timeout=limits['cleanup_seconds'])
+                except subprocess.TimeoutExpired:
+                    status['observer_finalization'] = 'pending; committed records remain available for export'
             cleanup(status['processes'], session, limits['cleanup_seconds'])
             for child in children:
                 try:
@@ -275,7 +303,9 @@ def supervise(root, resume=False):
             for log in logs:
                 log.close()
             state = load_state(root)
-            state.update(status='stopped' if user_stop else 'failed' if failure else 'complete',
+            genuine_failure = failure is not None and failure.get('severity') == 'error'
+            state.update(status='failed' if genuine_failure else 'stopped' if normal_stop else 'complete',
+                         termination_reason='error' if genuine_failure else normal_stop or 'schedule-complete',
                          elapsed_seconds=prior_seconds + time.monotonic() - began, diagnostic=failure)
             progress_path = root / 'progress.json'
             progress = read(progress_path) if progress_path.exists() else {}
@@ -285,6 +315,7 @@ def supervise(root, resume=False):
                         job['elapsed_seconds'] = max(job['elapsed_seconds'], progress['job_elapsed_seconds'])
             write(root / 'state.json', state)
             status.update(status=state['status'], updated_epoch=time.time(), elapsed_seconds=state['elapsed_seconds'],
+                          termination_reason=state['termination_reason'],
                           diagnostic=failure, child_exit_codes=[child.returncode for child in children],
                           observer_exit_code=children[1].returncode if len(children) > 1 else None)
             write(old_path, status)
@@ -298,5 +329,5 @@ def stop_run(root):
     status = read(root / 'supervisor.json')
     require(status['status'] == 'running' and identity(status['supervisor']['pid']) == status['supervisor'],
             'stop-inactive', 'no matching live supervisor', 'stop', root)
-    write(root / 'stop-request.json', dict(session=status['session'], requested_epoch=time.time()))
+    write(root / 'stop-request.json', dict(session=status['session'], reason='user-stop', requested_epoch=time.time()))
     return dict(status='stop-requested', session=status['session'])
