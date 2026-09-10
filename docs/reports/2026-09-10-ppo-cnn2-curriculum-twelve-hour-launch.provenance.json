@@ -1,0 +1,134 @@
+{
+  "schema": "ppo-curriculum-twelve-hour-launch-provenance-v1",
+  "implementation_commit": "a9af915",
+  "runtime_root": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910",
+  "run": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910/artifacts/factory-edit-pilot/cnn2-curriculum-twelve-hour",
+  "protocol_sha256": "bfd8c724948c1a26620d29f0e9c557258f4c1b3fc5b1b17937e2ce335ee394f2",
+  "session": "daa84ffc0c1947948819bda8518e7963",
+  "unit": "aic-ppo-cnn2-curriculum-64-12h-20260910.service",
+  "started_at": "2026-09-10T23:02:22.561373+09:00",
+  "expected_duration_end": "2026-09-11T11:02:22.561373+09:00",
+  "duration_seconds": 43200,
+  "actor_sha256": "3469f39eb14c6cc3f6e5dbfdba607bd50e228d5e65f4b174ada017969ca15bdd",
+  "critic_sha256": "4720ed9a6b50d94983168ddc31f75557aef8461fde702813f915d98efb66112c",
+  "initial_tensors_and_rngs_match_original": true,
+  "initial_optimizers_empty": true,
+  "parent_checkpoint_imported": false,
+  "native_sha256": "a4213d028666f2255b6cb3d0c9ea43fdcaf656fbee4bb9007d74bca3993815d4",
+  "configuration": {
+    "path": "tools/factory-edit-pilot/ppo-cnn2-curriculum-twelve-hour.json",
+    "sha256": "2ce1f88afa134de819e62ccce8fdc7974299a80bf80b68ab6a50b83ab0807600"
+  },
+  "initial_checkpoint": {
+    "path": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910/artifacts/factory-edit-pilot/cnn2-curriculum-twelve-hour/current-history-16--seed-17/initial-daa84ffc0c1947948819bda8518e7963.pt",
+    "sha256": "e29268600222f2d2fad4fa58e68537219bf3c4ac70fea494f728ac2f448a362d"
+  },
+  "evidence": {
+    "main-launch": {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910/artifacts/factory-edit-pilot/curriculum-launch-evidence/main-launch.json",
+      "sha256": "66adb23bf9f35ee7c2835dde191ad2df5985e821b46ea79bc378094f45188ef9"
+    },
+    "main-live-check": {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910/artifacts/factory-edit-pilot/curriculum-launch-evidence/main-live-check.json",
+      "sha256": "d421b682d41f7a183930bc88a4f2290a58e909c4fb079e9b040d379ad9440310"
+    },
+    "main-lineage-check": {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910/artifacts/factory-edit-pilot/curriculum-launch-evidence/main-lineage-check.json",
+      "sha256": "2a1f70d1a9b201a45e881d23982de21e8a709229dabb2a83bac1c4dab64b790e"
+    },
+    "previous-stop": {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910/artifacts/factory-edit-pilot/curriculum-launch-evidence/previous-stop.json",
+      "sha256": "2977b9d775a37dc2560fb044966e80555217a149bdd6bda5885cab9ce470081c"
+    }
+  },
+  "previous_run": {
+    "run": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts/factory-edit-pilot/cnn2-routing-twelve-hour",
+    "completed_batches": 701,
+    "selected_training_actions": 704128,
+    "checkpoint": {
+      "path": "current-history-16--seed-17/training-0701/checkpoint-ac1e006e3fd446e8b5ba5e852a92086d.pt",
+      "sha256": "5a14c688315b1708b922083e0232384045551fdca0d697e450845a12c704a7b6",
+      "policy_sha256": "441dcee3fb7fc915aa54fa08383ba6e895e989d0378e5a928e17a49cacef7988",
+      "critic_sha256": "9777c8a58f52405b1372f269731143f364797dd79a379439fc5c9cc0e569bb30"
+    },
+    "status": "stopped",
+    "termination_reason": "user-stop",
+    "tracking_status": "complete"
+  },
+  "launch_snapshot": {
+    "checked_epoch": 1789049166.4848044,
+    "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/c8f5c158d76d3261d2804785",
+    "remote_state": "running",
+    "completed_batches": 4,
+    "selected_training_actions": 8000,
+    "remote_config_verified": true,
+    "remote_metric_checks": [
+      {
+        "phase": "training",
+        "batch": 1,
+        "metric_count": 35,
+        "first_eight_area_reduction_percent": 32.28576425327654,
+        "later_area_reduction_percent": 18.324341443907738
+      },
+      {
+        "phase": "training",
+        "batch": 2,
+        "metric_count": 46,
+        "first_eight_area_reduction_percent": 30.33395970970421,
+        "later_area_reduction_percent": 12.401526115603616
+      },
+      {
+        "phase": "training",
+        "batch": 3,
+        "metric_count": 57,
+        "first_eight_area_reduction_percent": 26.570628514225085,
+        "later_area_reduction_percent": 10.473239855175523
+      },
+      {
+        "phase": "training",
+        "batch": 4,
+        "metric_count": 57,
+        "first_eight_area_reduction_percent": 30.553903814185826,
+        "later_area_reduction_percent": 8.218290154352934
+      },
+      {
+        "phase": "evaluation",
+        "batch": 0,
+        "metric_count": 12,
+        "first_eight_area_reduction_percent": 31.238079632135417,
+        "later_area_reduction_percent": 15.878315895414197
+      },
+      {
+        "phase": "evaluation",
+        "batch": 4,
+        "metric_count": 12,
+        "first_eight_area_reduction_percent": 39.57453715371728,
+        "later_area_reduction_percent": 11.195284391662067
+      }
+    ],
+    "evaluations": [
+      {
+        "batch": 0,
+        "mean_area_reduction_percent": 47.11639552754962
+      },
+      {
+        "batch": 4,
+        "mean_area_reduction_percent": 50.76982154537935
+      }
+    ],
+    "lineage": {
+      "job": "current-history-16--seed-17",
+      "training_batches": 4,
+      "depth_counts": {
+        "0": 224,
+        "1": 19,
+        "2": 13
+      },
+      "inherited_inputs": 32,
+      "consecutive_ancestry": true,
+      "current_batch_policy": true,
+      "deterministic_start_plans": true,
+      "evaluation_not_inherited": true
+    }
+  }
+}

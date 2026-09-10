@@ -1,10 +1,10 @@
 # Best-state start curriculum experiment
 
-Status: in progress.
+Status: implementation, verification and fresh launch complete; twelve-hour training running.
 
 The user requested an 80/10/10 mixture of fresh, once-optimized and twice-optimized
 factory starts, followed by testing and a fresh replacement experiment. The
-running routing/reward experiment stays active until the replacement is verified.
+preceding routing/reward experiment stayed active until replacement readiness passed.
 
 Completion criteria:
 
@@ -12,9 +12,9 @@ Completion criteria:
 - [x] Implement deterministic start plans and durable parent bundles.
 - [x] Add per-depth and episode-position metrics.
 - [x] Verify unit tests, workspace checks, native validity and CUDA PPO updates.
-- [ ] Stop the prior run, preserve its final checkpoint and start a fresh 12h run.
-- [ ] Confirm initial weights, live mixed-depth batches and online tracking.
-- [ ] Commit implementation and launch findings with compact provenance.
+- [x] Stop the prior run, preserve its final checkpoint and start a fresh 12h run.
+- [x] Confirm initial weights, live mixed-depth batches and online tracking.
+- [x] Commit implementation and launch findings with compact provenance.
 
 Activity log:
 
@@ -25,3 +25,10 @@ Activity log:
 - 2026-09-10: All 67 PPO tests and workspace checks/tests passed. Four native/CUDA
   batches exercised both inheritance depths; all 32 inherited inputs passed
   admission, and the depth-2-containing third PPO update reconstructed exactly.
+- 2026-09-10: Committed implementation as `a9af915`. Stopped the predecessor at
+  701 batches / 704,128 actions and verified its preserved checkpoint hash.
+- 2026-09-10: Started the fresh twelve-hour run at 23:02:22 KST. All initial
+  model tensors and random states match the original untrained seed-17 model.
+  Four live batches committed 8,000 actions; all 32 inherited starts passed
+  admission and lineage checks. Remote W&B configuration and new metrics match
+  local records. See the [launch report](../reports/2026-09-10-ppo-cnn2-curriculum-twelve-hour-launch.md).
