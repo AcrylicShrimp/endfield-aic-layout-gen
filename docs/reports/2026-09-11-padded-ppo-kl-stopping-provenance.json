@@ -1,0 +1,25 @@
+{
+  "schema": "ppo-kl-record-diagnosis-provenance-v1",
+  "run": "/home/ashrimp/Srv/aic-ppo-padded-curriculum-12h-20260911/artifacts/factory-edit-pilot/padded-curriculum-twelve-hour",
+  "protocol_sha256": "fb6061b7513d3d558eb6beb21b0ab1a1346978d8c42d24023e820cb2b31b7531",
+  "through": 144,
+  "trace_batches": [
+    1,
+    4,
+    16,
+    64,
+    128
+  ],
+  "source_sha256": "1c2559164e020ea43bd1148b599e0ce241c086ceeba3cadccb85d319270339b2",
+  "files": [
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-progress-analysis-20260911/artifacts/kl-through-144/report.json",
+      "sha256": "0f35f4b70d4bbe15409746368237e6e10ef19a62f1f50b150c66175a5edb092d"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-progress-analysis-20260911/artifacts/kl-through-144/inputs.json",
+      "sha256": "e62ae2fd9a6ac0aba62de8f006e284e445a9dd8f0309864a6e7ba25d98575d62"
+    }
+  ],
+  "training_unchanged": true
+}
