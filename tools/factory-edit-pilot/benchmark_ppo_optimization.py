@@ -8,7 +8,7 @@ import time
 import torch
 
 from direct_area_audit import physics_signature
-from full_factory_environment import FactoryRuntime
+from native_factory_runtime import FactoryRuntime
 from full_factory_input_contracts import observation_hash
 from full_factory_ppo_learning import rollout as reference_rollout
 from full_factory_screen import sha

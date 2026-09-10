@@ -16,7 +16,7 @@ from direct_area_reward import SCHEMA as REWARD_SCHEMA
 from ppo_area_audit import native_batch, replay, transition, verify_checkpoint
 from ppo_area_model import SCHEMA, require, models
 from ppo_area_update import update
-from full_factory_environment import FactoryRuntime, ROOT
+from native_factory_runtime import FactoryRuntime, ROOT
 from full_factory_on_policy import parameter_hash
 from full_factory_screen import sha
 from random_factory_audit import optimizer_hash

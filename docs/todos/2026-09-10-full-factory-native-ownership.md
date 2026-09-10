@@ -2,7 +2,7 @@
 
 ## Status
 
-Active. The user replaced the next-work plan with five ordered stages: profile
+Complete. The user replaced the next-work plan with five ordered stages: profile
 current execution, compare with the earlier Rust-owned environment, redesign the
 Rust contract, implement it, then profile again. The selected actor input is
 `current-history-16`. No new learning-quality or long-training run is requested.
@@ -64,3 +64,17 @@ full-factory ownership cutover. Preserve its completed experimental evidence.
   Removed the newly added mid-episode snapshot/restore contract and its tests:
   the existing harness resumes from published episodes and learner checkpoints.
   Keep that boundary and focus remaining work on caller cutover and profiling.
+
+- Stages 4 and 5 complete: normal PPO training/evaluation/setup now use retained
+  Rust observations and action handles, with an explicit native-v2 harness schema.
+  No normal Node executor or Python physical-state/observation loop remains.
+  [Caller cutover](../reports/2026-09-10.10-native-full-factory-cutover.md) records
+  the cold original-wiring import, interruption evidence and exact nonempty-Adam
+  continuation check. All ten readiness episodes validate.
+- The [second profile](../reports/2026-09-10.11-native-ownership-profile.md) matches
+  all five selected full actor/critic episodes and all 1,024 batch actions.
+  Serial collection improves 2.56–2.95x; fresh generation improves 22.9–116.6x.
+  The 24-worker collection window improves from 29.046 to 4.131 seconds and
+  sampled peak RSS falls from 30.38 to 26.39 GiB. Full evidence is archived on
+  both machines with matching hashes. No additional training-quality study or
+  optimization is included. Workspace checks and 44 PPO tests pass.

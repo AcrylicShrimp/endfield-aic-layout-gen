@@ -9,7 +9,7 @@ os.environ.setdefault('CUBLAS_WORKSPACE_CONFIG', ':4096:8')
 
 import torch
 
-from full_factory_environment import FactoryRuntime
+from native_factory_runtime import FactoryRuntime
 from ppo_area_audit import verify_result
 from ppo_area_update import load_experience
 from ppo_harness_environment import load_environment

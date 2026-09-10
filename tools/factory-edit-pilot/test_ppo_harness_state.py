@@ -109,7 +109,7 @@ class StateTests(unittest.TestCase):
                 restore_checkpoint(self.root, record, first, 'protocol', 'job', 0)
         path = self.root / 'source.py'
         path.write_text('one')
-        protocol = dict(sources={str(path): sha(path)})
+        protocol = dict(schema=SCHEMA, backend='retained-full-factory-native', sources={str(path): sha(path)})
         path.write_text('two')
         with self.assertRaisesRegex(HarnessError, 'source-drift'):
             check_sources(protocol)

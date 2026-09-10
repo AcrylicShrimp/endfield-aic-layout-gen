@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "scope": "Native complete-factory cutover and controlled second profiling",
+  "baseline_report": "docs/reports/2026-09-10.07-full-factory-ownership-profile.md",
+  "native_core_commit": "efd3bd2",
+  "retained_archive": {
+    "name": "ownership-after-retained.tar.zst",
+    "bytes": 89427607,
+    "sha256": "36765618a5babd1a6f912b325df40e0609aebf61096908f3e9b209a2916a18f2",
+    "local": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/ownership-after-retained.tar.zst",
+    "server": "/home/ashrimp/Srv/aic-factory-native-20260910/artifacts/factory-edit-pilot/ownership-after-retained.tar.zst",
+    "identities_match": true
+  },
+  "reports": {
+    "ownership-profile-after-v2/report.json": "3c0d4bf6fb6947f94352574e46ad0ca7d2bafd62a9a8efae1f1f563d07947a6e",
+    "ownership-batch-after-v1/report.json": "4a666e65cc4a0a888b28c73c519e6594f90f683efe208c37c4252e54383bb2c4"
+  },
+  "reference_protocol_sha256": "14ccc5326c4a95da3b7f91922cd484159f31c28ca135e5c4b2a783d51d6579f2",
+  "reference_checkpoint_sha256": "5294e436f043ae50e6012d7771fabd51871db765f0dfdd6856deeff935a39e52",
+  "native_library_sha256": "54d23aa7609d9bd4b1fbf6b108e65d579ae84d891305cc88b4091cf6f63ddca3",
+  "native_provenance": "44ab4b289c04222b40aa7ec7847f16636bc96bdd8c6c404b99c1dcf6b83dbf5d",
+  "notes": [
+    "The archive retains exact serial/batch runtime sources, native library, unchanged constructor/validator binaries and their full hashes.",
+    "Readiness additionally retains its source variants for cold interruption evidence exports; its protocol identifies all executed bytes.",
+    "Final source changes after measurement only improve rejection diagnostics, label historical modules, migrate additional PPO diagnostics and shorten profiler stdout; the successful observation/action/generation paths are unchanged.",
+    "Source and raw profile manifests remain in ignored evidence; only this compact record is tracked."
+  ]
+}

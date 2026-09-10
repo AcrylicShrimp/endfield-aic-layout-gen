@@ -9,7 +9,7 @@ import time
 
 import torch
 
-from full_factory_environment import FactoryRuntime
+from native_factory_runtime import FactoryRuntime
 from full_factory_input_contracts import InputContractPolicy
 from full_factory_ppo_learning import rollout
 from ppo_area_model import AreaCritic, SCHEMA

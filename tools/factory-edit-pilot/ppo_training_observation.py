@@ -1,4 +1,4 @@
-"""Shared immutable PPO observation views and bounded witness identity reuse."""
+"""Historical Python observation oracle; current PPO observations are constructed in Rust."""
 import numpy as np
 
 from full_factory_environment import digest

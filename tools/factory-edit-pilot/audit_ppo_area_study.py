@@ -7,7 +7,7 @@ import torch
 
 from analyze_fresh_factory_pilot import coverage
 from direct_area_study import checked
-from full_factory_environment import FactoryRuntime
+from native_factory_runtime import FactoryRuntime
 from full_factory_large_learning import unpack
 from full_factory_on_policy import parameter_hash
 from full_factory_screen import sha

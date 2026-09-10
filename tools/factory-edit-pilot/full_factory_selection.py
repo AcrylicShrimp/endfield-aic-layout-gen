@@ -58,12 +58,16 @@ class SelectionMemory:
 
 
 def distribution(logits,actions,allowed,balanced):
-    counts=Counter(a['kind'] for a,ok in zip(actions,allowed) if ok)
-    if len(actions)!=len(logits) or len(allowed)!=len(actions) or not counts:
-        raise ValueError('factory.selection-shape: nonempty aligned action/logit/mask arrays required')
-    adjustment=[-math.log(counts[a['kind']]) if ok and balanced else 0 for a,ok in zip(actions,allowed)]
-    adjusted=logits+torch.tensor(adjustment,device=logits.device,dtype=logits.dtype)
-    adjusted=adjusted.masked_fill(~torch.tensor(allowed,device=logits.device,dtype=torch.bool),-torch.inf)
+    return distribution_kinds(logits, [a['kind'] for a in actions], allowed, balanced)
+
+
+def distribution_kinds(logits, kinds, allowed, balanced):
+    counts = Counter(kind for kind, ok in zip(kinds, allowed) if ok)
+    if len(kinds) != len(logits) or len(allowed) != len(kinds) or not counts:
+        raise ValueError('factory.selection-shape: nonempty aligned kind/logit/mask arrays required')
+    adjustment = [-math.log(counts[kind]) if ok and balanced else 0 for kind, ok in zip(kinds, allowed)]
+    adjusted = logits + torch.tensor(adjustment, device=logits.device, dtype=logits.dtype)
+    adjusted = adjusted.masked_fill(~torch.tensor(allowed, device=logits.device, dtype=torch.bool), -torch.inf)
     return torch.distributions.Categorical(logits=adjusted)
 
 

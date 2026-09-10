@@ -1,4 +1,4 @@
-"""Selected-action accounting around the full physical factory acceptance API."""
+"""Historical Python/Node environment for explicit reference research only; PPO uses native_factory_runtime."""
 import hashlib
 from collections import OrderedDict
 import json

@@ -9,7 +9,7 @@ import time
 
 import torch
 
-from full_factory_environment import FactoryRuntime
+from native_factory_runtime import FactoryRuntime
 from full_factory_on_policy import parameter_hash
 from ppo_area_model import models
 from ppo_area_update import save_experience

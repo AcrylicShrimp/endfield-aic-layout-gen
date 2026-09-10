@@ -128,7 +128,7 @@ while True:time.sleep(.05)
         self.assertEqual((other / 'checkpoint.pt').read_bytes(), b'keep')
 
     def test_resume_reads_commit_after_old_coordinator_shutdown(self):
-        protocol = dict(schema=SCHEMA, sources={}, environment={}, jobs=[], phases=[],
+        protocol = dict(schema=SCHEMA, backend='retained-full-factory-native', sources={}, environment={}, jobs=[], phases=[],
                         config=dict(limits=dict(cleanup_seconds=.1, run_seconds=600, disk_reserve_bytes=0)))
         write(self.root / 'protocol.json', protocol)
         write(self.root / 'state.json', dict(schema=SCHEMA, protocol_sha256=sha(self.root / 'protocol.json'),
@@ -156,7 +156,7 @@ while True:time.sleep(.05)
                 limits = dict(self.cfg['limits'], progress_seconds=.1 if reason == 'progress-timeout' else 30,
                               run_seconds=.1 if reason == 'run-timeout' else 30,
                               rss_bytes=1 if reason == 'rss-limit' else 1024**4, disk_reserve_bytes=0)
-                protocol = dict(schema=SCHEMA, sources={}, environment={}, jobs=[], phases=[], config=dict(limits=limits))
+                protocol = dict(schema=SCHEMA, backend='retained-full-factory-native', sources={}, environment={}, jobs=[], phases=[], config=dict(limits=limits))
                 write(self.root / 'protocol.json', protocol)
                 write(self.root / 'state.json', dict(schema=SCHEMA, protocol_sha256=sha(self.root / 'protocol.json'),
                       status='prepared', jobs=[], cursor=0, elapsed_seconds=0, sessions=0))

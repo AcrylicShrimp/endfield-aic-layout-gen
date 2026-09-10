@@ -1,15 +1,15 @@
 """Generate a fresh complete request and independently validated randomized start."""
 from collections import Counter
-from copy import deepcopy
 import json
 from pathlib import Path
 import random
-import subprocess
 import time
 
-from full_factory_environment import ROOT, FactoryEpisode, digest
+from native_factory_runtime import ROOT
+from full_factory_environment import digest
+from native_factory_admission import admit, accept_case
 from full_factory_screen import sha
-from full_factory_selection import SelectionMemory, action_key, physical_key
+from full_factory_selection import physical_key
 
 
 def read(path):
@@ -69,27 +69,6 @@ def draw(spec, seed):
                 setup_seed=rng.getrandbits(63))
 
 
-def invoke(arguments, directory, name, seconds):
-    began = time.monotonic()
-    result = subprocess.run(arguments, capture_output=True, text=True, timeout=seconds, check=False)
-    (directory / f'{name}.stdout').write_text(result.stdout)
-    (directory / f'{name}.stderr').write_text(result.stderr)
-    if result.returncode:
-        raise RuntimeError(f'random-factory.command: {name}, exit {result.returncode}, {directory}')
-    return time.monotonic() - began
-
-
-def import_root(spec, roots, directory):
-    output = directory / 'input'
-    invoke(['node', str(Path(__file__).with_name('full_factory_inputs.mjs')), '--roots', str(roots),
-            '--validator', spec['validator'], '--output-directory', str(output)],
-           directory, 'import', 30)
-    inputs = read(output / 'inputs.json')
-    if len(inputs['rows']) != 1:
-        raise ValueError(f'random-factory.import-count: {roots}')
-    return inputs['rows'][0]
-
-
 def generate(runtime, spec, seed, directory, guard):
     started = time.monotonic()
     directory = Path(directory)
@@ -97,74 +76,57 @@ def generate(runtime, spec, seed, directory, guard):
     chosen = draw(spec, seed)
     write(directory / 'draw.json', dict(schema_version=1, generation_seed=seed, **chosen))
     generation = spec['generation']
-    study = dict(schema_version=1, cli=spec['cli'], validator=spec['validator'], catalogs=spec['catalogs'],
-        **{key: generation[key] for key in ('flow_elapsed_ms', 'validator_ms', 'max_facilities', 'construction')},
-        families=[dict(id='random-factory', split='train',
-            sources=[dict(id=chosen['product'], path=chosen['source'])], rates=[chosen['rate']])])
-    write(directory / 'admission-study.json', study)
     guard()
-    admission_seconds = invoke(['node', str(Path(__file__).with_name('full_factory_families.mjs')),
-        '--study', str(directory / 'admission-study.json'), '--output-directory', str(directory / 'admission')],
-        directory, 'admission', 60)
-    admission = read(directory / 'admission/report.json')
-    attempt = admission['rows'][0]
-    record = dict(schema_version=1, generation_seed=seed, draw=chosen, admission_seconds=admission_seconds,
+    admission_started = time.monotonic()
+    case, attempt = admit(runtime, spec, chosen, directory / 'admission', guard)
+    record = dict(schema_version=2, backend=runtime.metadata['backend'], generation_seed=seed, draw=chosen,
+                  admission_seconds=time.monotonic() - admission_started,
                   admission_status=attempt['status'], original_attempt=attempt)
     if attempt['status'] != 'accepted':
         record.update(status='rejected', seconds=time.monotonic() - started)
         write(directory / 'generation.json', record)
         return None, record
     guard()
-    base = directory / 'constructor-input'
-    base.mkdir()
-    case = import_root(spec, directory / 'admission/roots.json', base)
     setup_started = time.monotonic()
-    env = FactoryEpisode(runtime, case, chosen['setup_steps'], generation['setup_seconds'], spec['selection']['route_work'])
-    constructor_geometry = geometry_identity(env.state['current'])
-    memory = SelectionMemory(env.state['current'])
+    env = runtime.open_episode(case, chosen['setup_steps'], generation['setup_seconds'], spec['selection']['route_work'],
+                               vocabulary=generation['setup_options'])
+    constructor_geometry = geometry_identity(json.loads(env.export_layout('current')))
     rng = random.Random(chosen['setup_seed'])
-    for _ in range(chosen['setup_steps']):
-        guard()
-        description = env.describe(generation['setup_options'])
-        before = physical_key(env.state['current'])
-        keys = [action_key(action, description, env.state['current'], physical_key(env.state['best']))
-                for action in description['actions']]
-        allowed, _ = memory.mask(before, keys, description['actions'], True)
-        kinds = sorted({action['kind'] for action, ok in zip(description['actions'], allowed)
-                        if ok and action['kind'] in generation['setup_kinds']})
-        if not kinds:
-            raise ValueError(f'random-factory.setup-exhausted: {directory}')
-        kind = rng.choice(kinds)
-        index = rng.choice([i for i, (action, ok) in enumerate(zip(description['actions'], allowed))
-                            if ok and action['kind'] == kind])
-        step = env.step(description['actions'][index])
-        if step['status'] == 'late':
-            raise TimeoutError(f'random-factory.setup-late: {directory}')
-        memory.record(before, physical_key(env.state['current']), keys[index])
-        write(directory / 'setup-progress.json', env.summary())
-    roots = read(directory / 'admission/roots.json')
-    roots['roots'][0]['id'] = f'generated-{seed}'
-    roots['roots'][0]['witness'] = deepcopy(env.state['current'])
-    write(directory / 'randomized-roots.json', roots)
-    write(directory / 'setup.json', env.summary())
-    (directory / 'setup-progress.json').unlink()
+    try:
+        for _ in range(chosen['setup_steps']):
+            guard()
+            view = env.candidates()
+            kinds = sorted({runtime.kinds[k] for k, ok in zip(view['kind_ids'], view['allowed'])
+                            if ok and runtime.kinds[k] in generation['setup_kinds']})
+            if not kinds:
+                raise ValueError(f'random-factory.setup-exhausted: {directory}')
+            kind = rng.choice(kinds)
+            index = rng.choice([i for i, (k, ok) in enumerate(zip(view['kind_ids'], view['allowed']))
+                                if ok and runtime.kinds[k] == kind])
+            step = env.step(view['handle'], index)
+            if step['status'] == 'late':
+                raise TimeoutError(f'random-factory.setup-late: {directory}')
+    except BaseException:
+        write(directory / 'setup-partial.json', env.summary())
+        write(directory / 'setup-current-partial.json', json.loads(env.export_layout('current')))
+        write(directory / 'setup-best-partial.json', json.loads(env.export_layout('best')))
+        raise
+    setup = env.summary()
+    write(directory / 'setup.json', setup)
+    current = json.loads(env.export_layout('current'))
     setup_seconds = time.monotonic() - setup_started
     guard()
-    # Re-run independent original-graph and geometry acceptance on the actual
-    # randomized current state; the setup incumbent is not the episode reset.
-    final = directory / 'randomized-input'
-    final.mkdir()
-    case = import_root(spec, directory / 'randomized-roots.json', final)
-    check = FactoryEpisode(runtime, case, 1, generation['setup_seconds'], spec['selection']['route_work'])
-    geometry = geometry_identity(check.state['current'])
+    case, check = accept_case(runtime, read(case['request']), read(case['original']), current, f'generated-{seed}',
+                             directory / 'randomized-input', generation['setup_seconds'], spec['selection']['route_work'])
+    normalized = json.loads(check.export_layout('current'))
+    geometry = geometry_identity(normalized)
     record.update(status='accepted', case=case, request_sha256=sha(case['request']),
         initial_sha256=sha(case['initial']), geometry_sha256=geometry,
         constructor_geometry_sha256=constructor_geometry, geometry_changed=geometry != constructor_geometry,
-        initial_metrics=check.state['initial_metrics'], setup_seconds=setup_seconds,
-        setup_selected=env.selected, setup_kinds=dict(Counter(t['action']['kind'] for t in env.trace)),
-        setup_statuses=dict(Counter(t['status'] for t in env.trace)),
-        actual_start_is_current=digest(check.state['current']) == digest(env.state['current']),
-        seconds=time.monotonic() - started)
+        initial_metrics=check.summary()['initial_metrics'], setup_seconds=setup_seconds,
+        setup_selected=env.selected, setup_kinds=dict(Counter(t['action']['kind'] for t in setup['trace'])),
+        setup_statuses=dict(Counter(t['status'] for t in setup['trace'])),
+        actual_start_is_current=digest(normalized) == digest(current), seconds=time.monotonic() - started)
     if not record['actual_start_is_current']:
         raise ValueError(f'random-factory.reset-identity: {directory}')
     write(directory / 'generation.json', record)

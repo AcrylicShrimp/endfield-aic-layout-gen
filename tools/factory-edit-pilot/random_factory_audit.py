@@ -1,5 +1,6 @@
 """Audit fresh inputs, native witnesses, replay samples and optimizer continuity."""
 import argparse
+import json
 from collections import Counter
 from copy import deepcopy
 from pathlib import Path
@@ -8,7 +9,8 @@ import time
 
 import torch
 
-from full_factory_environment import FactoryRuntime, FactoryEpisode, digest
+from full_factory_environment import digest
+from native_factory_runtime import FactoryRuntime
 from full_factory_input_learning import rollout
 from full_factory_large_learning import unpack
 from full_factory_on_policy import parameter_hash
@@ -48,7 +50,8 @@ def verify_native_result(runtime, result, scratch):
     for name, expected in case['files_sha256'].items():
         require(sha(Path(case['request']).parent / name) == expected, name)
     reference = read(Path(case['request']).with_name('reference.json'))
-    require(reference['coverage']['factory_validated'], 'independent initial coverage')
+    require(reference.get('schema_version') == 2 and reference['factory_validated'] and
+            reference['request_sha256'] == generation['request_sha256'], 'native original-request acceptance')
     episode = unpack(Path(row['directory']) / 'episode.json.gz')
     best = unpack(Path(row['directory']) / 'best.json.gz')
     require(row['policy_sha256'] == result['policy_sha256'] == episode['policy_sha256'], 'episode policy')
@@ -58,12 +61,12 @@ def verify_native_result(runtime, result, scratch):
     require(Counter(step['action']['kind'] for step in episode['trace']) == row['kinds'], 'action count')
     require(all(step.get('acceptance', {}).get('candidate_validated') for step in episode['trace']
                 if step['status'] in ('improved', 'accepted_exploration', 'accepted_equal')), 'native acceptance records')
-    initial = FactoryEpisode(runtime, case, 1, 120, 5000)
-    require(initial.state['initial_metrics'] == row['initial_metrics'], 'native reset score')
-    require(geometry_identity(initial.state['current']) == generation['geometry_sha256'], 'geometry identity')
+    initial = runtime.open_episode(case, 1, 120, 5000)
+    require(initial.summary()['initial_metrics'] == row['initial_metrics'], 'native reset score')
+    require(geometry_identity(json.loads(initial.export_layout('current'))) == generation['geometry_sha256'], 'geometry identity')
     write(scratch / 'best.json', best)
-    accepted = FactoryEpisode(runtime, dict(case, initial=str(scratch / 'best.json')), 1, 120, 5000)
-    require(accepted.state['initial_metrics'] == row['best_metrics'], 'native best validity and score')
+    accepted = runtime.open_episode(dict(case, initial=str(scratch / 'best.json')), 1, 120, 5000)
+    require(accepted.summary()['initial_metrics'] == row['best_metrics'], 'native best validity and score')
 
 
 def verify_result(runtime, result, scratch):

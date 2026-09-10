@@ -6,10 +6,8 @@ import importlib.metadata
 import platform
 from pathlib import Path
 import random
-import re
-import subprocess
 
-from full_factory_environment import ROOT
+from native_factory_runtime import ROOT, BACKEND
 from full_factory_input_contracts import CONTRACTS
 from ppo_harness_environment import tracking_destination
 from ppo_harness_state import HarnessError, sync_directory, SCHEMA, require, read, write, sha, mkdir
@@ -109,13 +107,6 @@ def sources():
                 local = directory / f'{name}.py'
                 if local.is_file():
                     pending.append(local)
-    pending = [directory / name for name in ('full_factory_executor.mjs', 'full_factory_inputs.mjs', 'full_factory_families.mjs')]
-    while pending:
-        path = pending.pop().resolve()
-        if path in found:
-            continue
-        found.add(path)
-        pending.extend(path.parent / name for name in re.findall(r"(?:from\s+|import\s*\()['\"](\.[^'\"]+)['\"]", path.read_text()))
     return found
 
 
@@ -176,7 +167,6 @@ def environment():
         except importlib.metadata.PackageNotFoundError:
             packages[name] = None
     return dict(python=platform.python_version(), platform=platform.system(), packages=packages,
-                node=subprocess.run(['node', '--version'], capture_output=True, text=True, timeout=5, check=True).stdout.strip(),
                 cuda=torch.version.cuda)
 
 
@@ -217,7 +207,7 @@ def prepare(config_path, root):
     sync_directory(root.parent)
     write(root / 'catalogs.json', spec['catalogs'])
     identities[str(root / 'catalogs.json')] = sha(root / 'catalogs.json')
-    protocol = dict(schema=SCHEMA, config=config, spec=spec, jobs=jobs, phases=phases(config), environment=environment(),
+    protocol = dict(schema=SCHEMA, backend=BACKEND, config=config, spec=spec, jobs=jobs, phases=phases(config), environment=environment(),
                     catalog_file=str(root / 'catalogs.json'), sources=identities)
     write(root / 'protocol.json', protocol)
     write(root / 'state.json', dict(schema=SCHEMA, protocol_sha256=sha(root / 'protocol.json'), status='prepared',
