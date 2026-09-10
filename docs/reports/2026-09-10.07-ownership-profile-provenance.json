@@ -1,0 +1,145 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "baseline_source_commit": "aa5df04",
+  "archive": {
+    "path": "artifacts/factory-edit-pilot/ownership-before-retained.tar.zst",
+    "bytes": 89846481,
+    "sha256": "953885c9018b5a73a150ca3e2c5a9bc90fbe98b2e8d18c64711ce08f88d8691a",
+    "verified_copies": [
+      "experiment server",
+      "local workstation"
+    ]
+  },
+  "source_files": {
+    "profile_factory_ownership.py": "558163c8ed53903b439ef4bdef9be23b1ee10b3a6d902ad901db41252068e14b",
+    "profile_factory_ownership_support.py": "aff912013aadcf4dbbcd8681458e75afa7ec7cef4a84898c8e2b45638872743d",
+    "profile_factory_collection_batch.py": "322ee4bae9cff3873c80d7e886fd5f12e37a96b1b9369d56b193761990000c7c"
+  },
+  "protocol_sha256": "14ccc5326c4a95da3b7f91922cd484159f31c28ca135e5c4b2a783d51d6579f2",
+  "behavior_checkpoint": {
+    "path": "/home/ashrimp/Srv/aic-ppo-area-20260909/artifacts/factory-edit-pilot/ppo-input-contract-screen/current-history-16--seed-17/training-0003/checkpoint-447b6aab0eb4416695d509a7f99f1525.pt",
+    "sha256": "5294e436f043ae50e6012d7771fabd51871db765f0dfdd6856deeff935a39e52"
+  },
+  "native_library": {
+    "path": "/home/ashrimp/Srv/aic-ppo-area-20260909/target/release/libaic_pilot_native.so",
+    "sha256": "54bb4658d8086e9b7d52ad6547f7d331d8900983a874d37caa6b0b60b724ee69"
+  },
+  "profile": {
+    "path": "artifacts/factory-edit-pilot/ownership-profile-before-v1/report.json",
+    "sha256": "8e2265b31592c3a1a8067cd9e8d8333c35d1144c73b3c5127fcc99cc9f9a58e7",
+    "seconds": 386.3211541339988,
+    "selected": [
+      {
+        "label": "copper-liquid-median-area",
+        "identity": {
+          "job": "current-history-16--seed-17",
+          "phase": "training",
+          "batch": 4,
+          "index": 18,
+          "generation_seed": 172700114,
+          "action_seed": 182700114
+        },
+        "product": "copper-liquid",
+        "facilities": 3,
+        "initial_score": [
+          608,
+          79,
+          15
+        ]
+      },
+      {
+        "label": "food-median-area",
+        "identity": {
+          "job": "current-history-16--seed-17",
+          "phase": "training",
+          "batch": 4,
+          "index": 7,
+          "generation_seed": 172700103,
+          "action_seed": 182700103
+        },
+        "product": "food",
+        "facilities": 23,
+        "initial_score": [
+          5530,
+          664,
+          127
+        ]
+      },
+      {
+        "label": "medical-median-area",
+        "identity": {
+          "job": "current-history-16--seed-17",
+          "phase": "training",
+          "batch": 4,
+          "index": 30,
+          "generation_seed": 172700126,
+          "action_seed": 182700126
+        },
+        "product": "medical",
+        "facilities": 18,
+        "initial_score": [
+          4526,
+          455,
+          82
+        ]
+      },
+      {
+        "label": "watered-grass-median-area",
+        "identity": {
+          "job": "current-history-16--seed-17",
+          "phase": "training",
+          "batch": 4,
+          "index": 17,
+          "generation_seed": 172700113,
+          "action_seed": 182700113
+        },
+        "product": "watered-grass",
+        "facilities": 2,
+        "initial_score": [
+          286,
+          51,
+          8
+        ]
+      },
+      {
+        "label": "largest-start-area",
+        "identity": {
+          "job": "current-history-16--seed-17",
+          "phase": "training",
+          "batch": 4,
+          "index": 0,
+          "generation_seed": 172700096,
+          "action_seed": 182700096
+        },
+        "product": "medical",
+        "facilities": 26,
+        "initial_score": [
+          8730,
+          743,
+          122
+        ]
+      }
+    ],
+    "repetitions": 3,
+    "warmups": 1
+  },
+  "parallel_batch": {
+    "path": "artifacts/factory-edit-pilot/ownership-batch-before-v1/report.json",
+    "sha256": "9e1e53b548b18513d2d52a71e45a4ceef52147dfa497e4b82a137f385ad0e8a0",
+    "workers": 24,
+    "actions": 1024,
+    "collection_seconds": 29.04636236501392,
+    "peak_rss_bytes": 32621772800,
+    "parity": true
+  },
+  "historical_summaries": {
+    "source_commit": "40b0159",
+    "reference_manifest": "2026-09-08.11-factory-edit-native-provenance.json",
+    "verified_sha256": {
+      "native-owned-benchmark-none/result.json": "9de46f7a10d1fe0b0edb97a32132e03c6972335f71f97d1f20c41085f29316d1",
+      "native-owned-benchmark-cpu/result.json": "0394f8e18bc25442b1d41e83b47fc27880063cca92d346974fcb344fc1051632",
+      "native-owned-training-costs/costs.json": "485f39b9784760a7ed32bfcacd7132177aeb9335845bbadafd5b2a91ac7c9286"
+    }
+  }
+}
