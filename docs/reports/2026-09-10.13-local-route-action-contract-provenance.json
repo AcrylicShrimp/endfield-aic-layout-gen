@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "source_base_commit": "410aaef796816cfcdb635892d06dc2b7b6c832ee",
+  "scope": "Retained evaluation 208 / factory 0 / action 11; 80-case isolated route replay; no training restart",
+  "reproduction": "tools/factory-edit-pilot/route_failure_probe.py",
+  "reproduction_rust": "tools/factory-edit-pilot/route_failure_probe.rs",
+  "raw_artifacts_tracked": false,
+  "files": [
+    {
+      "path": "artifacts/factory-edit-pilot/compact-policy-visual/request.json",
+      "bytes": 20989,
+      "sha256": "340d861cb2e9dcfc793806a63e13cdd8db0bf6ae7b79fa6643bbc9f8d5276da2"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/compact-policy-visual/failure-before.json",
+      "bytes": 94679,
+      "sha256": "4ae00fb698fdfc816474a0e36b629c17f0bad262a49817d056bd7eeaa96875c3"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/compact-policy-visual/failure-action.json",
+      "bytes": 165,
+      "sha256": "dbda3f1986e160b2b69b99c5a2cfd4e13108d6563c3718d086da4accbe01418c"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/compact-policy-visual/failure-domain.json",
+      "bytes": 496792,
+      "sha256": "49d454a5268c153184ce49f9677dcb64228a97ebba52b9b0bd67d742a1017277"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/compact-policy-visual/failure-result.json",
+      "bytes": 1737,
+      "sha256": "5dd4fdaac7faf69f1271cc7cf866c27a598f0779ad9afd6cf9680d0421022e5f"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/route-failure-probe/verified/summary.json",
+      "bytes": 156413,
+      "sha256": "14c90443031c6a180a132d00ac285c6cae1b9ba50a086b31ef93bbae7f9f882c"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/route-failure-probe/verified/baseline-paths.jsonl",
+      "bytes": 177476,
+      "sha256": "6ed7f710d95263a7c0a970ff5165eb2f41d4b8e5e341b6d508c5a1a98bb023e1"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/route-failure-probe/verified/crossings-12-43-first-budget-5000-paths.jsonl",
+      "bytes": 373399,
+      "sha256": "bc9ff2a47c1bb966b372a5031de741376b9695aeda10315c43e7f55cb9d744ff"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/route-failure-probe/verified/crossings-12-43-first-budget-5000-candidate.json",
+      "bytes": 100887,
+      "sha256": "8f1eb5822789d51fadcffd72e422f1418091f816a10f135695ca8985e7104a84"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/route-failure-probe/verified/crossings-11-43-first-candidate.json",
+      "bytes": 101475,
+      "sha256": "567de3da8019263883d82b81b60492396b4d74852d067ad01c14bae2847ad435"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/route-failure-probe/verified/halo-2-candidate.json",
+      "bytes": 98008,
+      "sha256": "7528f66d6f94b07de06679193bc5908871ce81973c08f9442474ce2d001ad75f"
+    },
+    {
+      "path": "data/game/normalized/facilities.json",
+      "bytes": 61298,
+      "sha256": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e"
+    },
+    {
+      "path": "data/game/normalized/recipes.json",
+      "bytes": 130580,
+      "sha256": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2"
+    },
+    {
+      "path": "data/game/normalized/items.json",
+      "bytes": 42420,
+      "sha256": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164"
+    },
+    {
+      "path": "data/game/normalized/transports.json",
+      "bytes": 275,
+      "sha256": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1"
+    },
+    {
+      "path": "data/game/normalized/logistics-components.json",
+      "bytes": 3002,
+      "sha256": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+    }
+  ]
+}
