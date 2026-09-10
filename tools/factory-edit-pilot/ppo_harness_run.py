@@ -75,6 +75,9 @@ def run(root, session):
             directory = root / scheduled['id']
             mkdir(directory)
             if len(state['jobs']) == index:
+                if 'continuation' in protocol:
+                    from ppo_harness_continuation import restore_parent
+                    restore_parent(protocol['continuation'], model_set)
                 job = dict(scheduled, status='running', next_phase=0, records=[], selected_training_actions=0,
                            elapsed_seconds=0., completed_batches=0)
                 version = save_checkpoint(root, directory / f'initial-{session}.pt', model_set,
@@ -107,6 +110,10 @@ def run(root, session):
                     record = dict(schema=SCHEMA, job=job['id'], candidate=job['candidate'], seed=job['seed'],
                                   phase=phase, results=results, quality=summary, collection=collection,
                                   reused_results=len(cached), attempts=attempts, behavior_checkpoint=job['checkpoint'])
+                    if 'continuation' in protocol:
+                        parent = protocol['continuation']
+                        record['parent_batches'] = parent['total_batches']
+                        record['parent_training_actions'] = parent['total_training_actions']
                     if phase['kind'] == 'training':
                         require(summary['accepted'] >= 2, 'insufficient-episodes', 'fewer than two complete training episodes', 'learner', location)
                         progress(stage='learner', completed=summary['accepted'], total=summary['attempted'])

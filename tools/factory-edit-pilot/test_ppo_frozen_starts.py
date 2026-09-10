@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import Mock
 
-from ppo_frozen_starts import load, materialize
+from ppo_frozen_starts import applies, load, materialize
 from ppo_harness_state import HarnessError, sha, write, read
 
 
@@ -74,6 +74,25 @@ class FrozenStartsTests(unittest.TestCase):
             with self.assertRaisesRegex(HarnessError, 'frozen-start-hash'):
                 materialize(runtime, spec, 10, root / 'attempt', lambda: None)
             runtime.open_episode.assert_not_called()
+
+    def test_evaluation_scope_preserves_missing_entry_errors_and_fresh_training(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            config, manifest, spec, _ = self.fixture(root)
+            config['training']['batches'] = 16384
+            frozen, paths = load(manifest, config, 'evaluation')
+            self.assertEqual(set(frozen['entries']), {'20'})
+            self.assertEqual(paths, {manifest})
+            self.assertFalse(applies(frozen, 10))
+            self.assertTrue(applies(frozen, 20))
+            frozen['entries'].clear()
+            self.assertTrue(applies(frozen, 20))
+            spec['frozen_starts'] = frozen
+            with self.assertRaisesRegex(HarnessError, 'frozen-start-missing'):
+                materialize(Mock(), spec, 20, root / 'missing', lambda: None)
+            config['evaluation']['attempts'] = 2
+            with self.assertRaisesRegex(HarnessError, 'frozen-start-missing'):
+                load(manifest, config, 'evaluation')
 
 
 if __name__ == '__main__':

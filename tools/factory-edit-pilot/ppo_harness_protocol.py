@@ -32,7 +32,15 @@ def positive(value, maximum, name):
 def validate(config):
     fields(config, 'schema_version purpose generation_config candidates seeds order_seed training evaluation execution limits ppo tracking retention'
            + (' input_manifest' if 'input_manifest' in config else '')
+           + (' input_manifest_scope' if 'input_manifest_scope' in config else '')
+           + (' continuation_run' if 'continuation_run' in config else '')
            + (' model' if 'model' in config else ''), 'config')
+    if 'input_manifest_scope' in config:
+        require('input_manifest' in config and config['input_manifest_scope'] in ('all', 'evaluation'),
+                'config-input-scope', 'input_manifest_scope requires a manifest and all or evaluation scope', 'prepare')
+    if 'continuation_run' in config:
+        require(isinstance(config['continuation_run'], str) and bool(config['continuation_run']),
+                'config-continuation', 'continuation_run must name an immutable parent run', 'prepare')
     if 'model' in config:
         from ppo_spatial_model import validate_model
         validate_model(config['model'])
@@ -51,7 +59,7 @@ def validate(config):
     integer(config['order_seed'], 0, 2**32 - 1, 'order_seed')
     train, evaluation, execution, limits, ppo = (config[k] for k in ('training', 'evaluation', 'execution', 'limits', 'ppo'))
     fields(train, 'batches attempts horizon generation_seed_base action_seed_base', 'training')
-    integer(train['batches'], 1, 4096, 'training.batches')
+    integer(train['batches'], 1, 16384, 'training.batches')
     integer(train['attempts'], 2, 256, 'training.attempts')
     integer(train['horizon'], 1, 256, 'training.horizon')
     fields(config['retention'], 'training_batches', 'retention')
@@ -202,8 +210,14 @@ def prepare(config_path, root):
     paths = sources() | {config_path, generation_config}
     if 'input_manifest' in config:
         from ppo_frozen_starts import load
-        spec['frozen_starts'], frozen_files = load(ROOT / config['input_manifest'], config)
+        spec['frozen_starts'], frozen_files = load(ROOT / config['input_manifest'], config,
+                                                  config.get('input_manifest_scope', 'all'))
         paths.update(frozen_files)
+    continuation = None
+    if 'continuation_run' in config:
+        from ppo_harness_continuation import prepare_parent
+        continuation, parent_files = prepare_parent(ROOT / config['continuation_run'], spec, config, environment())
+        paths.update(parent_files)
     paths.update(Path(__file__).with_name(name) for name in ('pyproject.toml', 'uv.lock'))
     paths.update(Path(spec[k]) for k in ('native_library', 'cli', 'validator'))
     paths.update(map(Path, spec['catalogs'].values()))
@@ -223,6 +237,8 @@ def prepare(config_path, root):
     identities[str(root / 'catalogs.json')] = sha(root / 'catalogs.json')
     protocol = dict(schema=SCHEMA, backend=BACKEND, config=config, spec=spec, jobs=jobs, phases=phases(config), environment=environment(),
                     catalog_file=str(root / 'catalogs.json'), sources=identities)
+    if continuation is not None:
+        protocol['continuation'] = continuation
     write(root / 'protocol.json', protocol)
     write(root / 'state.json', dict(schema=SCHEMA, protocol_sha256=sha(root / 'protocol.json'), status='prepared',
                                   jobs=[], cursor=0, elapsed_seconds=0., sessions=0))

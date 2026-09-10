@@ -7,15 +7,20 @@ import time
 from ppo_harness_state import require, read, write, sha
 
 
-def load(path, config):
+def load(path, config, scope='all'):
     path = Path(path).resolve()
     value = read(path)
     require(value.get('schema') == 'ppo-frozen-starts-v1' and isinstance(value.get('entries'), dict),
             'frozen-start-schema', 'expected ppo-frozen-starts-v1 entries', 'prepare', path)
+    require(scope in ('all', 'evaluation'), 'frozen-start-scope', 'expected all or evaluation scope', 'prepare', path)
+    schedules = [(config['evaluation'], config['evaluation']['attempts'])]
+    if scope == 'all':
+        schedules.append((config['training'], config['training']['batches'] * config['training']['attempts']))
+    evaluation_seeds = [config['evaluation']['generation_seed_base'] + seed * 100000 + i
+                        for seed in config['seeds'] for i in range(config['evaluation']['attempts'])]
     needed = {schedule['generation_seed_base'] + seed * 100000 + i
               for seed in config['seeds']
-              for schedule, count in [(config['training'], config['training']['batches'] * config['training']['attempts']),
-                                      (config['evaluation'], config['evaluation']['attempts'])]
+              for schedule, count in schedules
               for i in range(count)}
     files, entries = {path}, {}
     for seed in sorted(needed):
@@ -37,7 +42,13 @@ def load(path, config):
                     'frozen input differs from the retained baseline identity', 'prepare', source)
             files.add(source)
         entries[str(seed)] = entry
-    return dict(manifest=str(path), manifest_sha256=sha(path), entries=entries), files
+    return dict(manifest=str(path), manifest_sha256=sha(path), entries=entries,
+                scope=scope, evaluation_seeds=evaluation_seeds), files
+
+
+def applies(frozen, seed):
+    # Route by the declared schedule, never by whether an entry happens to exist.
+    return frozen.get('scope', 'all') == 'all' or seed in frozen['evaluation_seeds']
 
 
 def materialize(runtime, spec, seed, directory, guard):

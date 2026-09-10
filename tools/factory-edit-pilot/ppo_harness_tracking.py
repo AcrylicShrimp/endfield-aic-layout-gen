@@ -13,6 +13,9 @@ def run_id(protocol_hash, job):
 def metrics(record):
     value = dict(**{'train/actions': record['selected_training_actions'],
                     'train/batches': record['phase']['batch'], 'time/elapsed_seconds': record['elapsed_seconds']})
+    if 'parent_batches' in record:
+        value.update({'train/cumulative_batches': record['parent_batches'] + record['phase']['batch'],
+                      'train/cumulative_actions': record['parent_training_actions'] + record['selected_training_actions']})
     quality = record['quality']
     if record['phase']['kind'] in ('evaluation', 'comparison'):
         outcomes = dict(area_reduction_percent=quality['mean_area_reduction_percent'],
@@ -75,7 +78,8 @@ class Tracker:
             save_code=False, settings=wandb.Settings(console='off', disable_code=True, x_disable_meta=True,
                 x_disable_stats=True, x_disable_machine_info=True, init_timeout=20, finish_timeout=10),
             config=dict(protocol_sha256=self.protocol_hash, candidate=job['candidate'], seed=job['seed'],
-                        policy=self.protocol['spec']['policy'], model=model, ppo=self.protocol['config']['ppo'],
+                        policy=self.protocol['spec']['policy'], model=model, continuation=self.protocol.get('continuation'),
+                        ppo=self.protocol['config']['ppo'],
                         training=self.protocol['config']['training'], evaluation=self.protocol['config']['evaluation'],
                         execution=self.protocol['config']['execution']))
         try:
