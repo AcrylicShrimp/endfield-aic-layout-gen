@@ -12,7 +12,7 @@ from full_factory_input_contracts import observation_hash
 from full_factory_on_policy import parameter_hash, probability_hash
 from full_factory_screen import sha
 from ppo_area_model import SCHEMA, actor_distribution, models
-from ppo_area_update import save_experience, update as reference_update
+from ppo_area_update import save_experience, load_experience, update as reference_update
 from ppo_training_update import update, collect_steps
 from ppo_reward import SCHEMA as REWARD_SCHEMA, DEFAULT, totals
 from test_ppo_training_batch import observations
@@ -63,7 +63,7 @@ class UpdateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             results = experience(Path(temporary), *first[:2], self.config)
             reference = reference_update(*first, results, self.config)
-            actual = update(*second, results, self.config, microbatch=2)
+            actual = update(*second, results, self.config, microbatch=2, experiences=[load_experience(r) for r in results])
             self.assertEqual(actual['credit'], reference['credit'])
             self.assertEqual(actual['optimizer_steps'], reference['optimizer_steps'])
             self.assertEqual(actual['shuffle_rng_sha256'], reference['shuffle_rng_sha256'])
@@ -91,7 +91,7 @@ class UpdateTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             results = experience(root, *uninterrupted[:2], self.config)
-            update(*uninterrupted, results, self.config, microbatch=2)
+            update(*uninterrupted, results, self.config, microbatch=2, experiences=[load_experience(r) for r in results])
             checkpoint = root / 'checkpoint.pt'
             torch.save(dict(actor=uninterrupted[0].state_dict(), critic=uninterrupted[1].state_dict(),
                             actor_optimizer=uninterrupted[2].state_dict(), critic_optimizer=uninterrupted[3].state_dict(),
@@ -103,8 +103,8 @@ class UpdateTests(unittest.TestCase):
             resumed[4].set_state(state['shuffle'])
             self.assertTrue(resumed[2].state and resumed[3].state)
             results = experience(root, *uninterrupted[:2], self.config)
-            expected = update(*uninterrupted, results, self.config, microbatch=2)
-            actual = update(*resumed, results, self.config, microbatch=2)
+            expected = update(*uninterrupted, results, self.config, microbatch=2, experiences=[load_experience(r) for r in results])
+            actual = update(*resumed, results, self.config, microbatch=2, experiences=[load_experience(r) for r in results])
             for key in ('policy_after_sha256', 'critic_after_sha256', 'actor_optimizer_sha256',
                         'critic_optimizer_sha256', 'shuffle_rng_sha256', 'credit', 'epochs'):
                 self.assertEqual(actual[key], expected[key], key)
@@ -128,7 +128,7 @@ class UpdateTests(unittest.TestCase):
                 if field != 'compressed_bytes':
                     results[0]['experience_sha256'] = sha(path)
                 with self.subTest(field=field), self.assertRaises(ValueError):
-                    collect_steps(actor, critic, results, self.config)
+                    collect_steps(actor, critic, results, self.config, experiences=[load_experience(r) for r in results])
 
     def test_credit_loading_does_not_recompute_models_or_observation_hashes(self):
         actor, critic, *_ = self.learners()
@@ -137,9 +137,41 @@ class UpdateTests(unittest.TestCase):
             with patch.object(actor, 'forward', side_effect=AssertionError('unexpected actor replay')), \
                  patch.object(critic, 'forward', side_effect=AssertionError('unexpected critic replay')), \
                  patch('full_factory_input_contracts.observation_hash', side_effect=AssertionError('unexpected observation audit')):
-                steps, advantages, targets, _ = collect_steps(actor, critic, results, self.config)
+                steps, advantages, targets, _ = collect_steps(actor, critic, results, self.config, experiences=[load_experience(r) for r in results])
             self.assertEqual(len(steps), 3)
             self.assertEqual(len(advantages), len(targets))
+
+    def test_transient_update_never_opens_an_experience_or_deserializes_torch(self):
+        models = self.learners()
+        with tempfile.TemporaryDirectory() as temporary:
+            results = experience(Path(temporary), *models[:2], self.config)
+            payloads = [load_experience(r) for r in results]
+            for result in results:
+                Path(result.pop('experience')).unlink()
+                result.pop('experience_sha256')
+            with patch('torch.load', side_effect=AssertionError('unexpected Torch deserialization')), \
+                 patch.object(Path, 'read_bytes', side_effect=AssertionError('unexpected experience file read')):
+                actual = update(*models, results, self.config, microbatch=2, experiences=payloads)
+            self.assertEqual(actual['selected'], 3)
+            self.assertIn('experience_validation_and_credit_seconds', actual['timing'])
+
+    def test_transient_missing_or_foreign_payload_fails_before_optimizer_mutation(self):
+        models = self.learners()
+        with tempfile.TemporaryDirectory() as temporary:
+            results = experience(Path(temporary), *models[:2], self.config)
+            payloads = [load_experience(r) for r in results]
+            before = [parameter_hash(m) for m in models[:2]]
+            variants = [payloads[:-1], [None, payloads[1]]]
+            for key in ('policy_sha256', 'critic_sha256', 'input_sha256', 'input_contract'):
+                changed = deepcopy(payloads)
+                changed[0][key] = 'foreign'
+                variants.append(changed)
+            for variant in variants:
+                with self.assertRaises(ValueError):
+                    update(*models, results, self.config, microbatch=2, experiences=variant)
+                self.assertEqual([parameter_hash(m) for m in models[:2]], before)
+                self.assertFalse(models[2].state)
+                self.assertFalse(models[3].state)
 
 
 if __name__ == '__main__':

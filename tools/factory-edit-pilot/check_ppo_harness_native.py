@@ -46,10 +46,22 @@ def check(root, output, cloud):
         for job in state['jobs']:
             guard()
             records = [read(checked_path(root, r)) for r in job['records']]
-            total = 0
+            total = transient = 0
             for record in records:
                 for result in record['results']:
                     guard()
+                    task = read(Path(result['result_path']).with_name('task.json'))
+                    if task['training'] and not task['retain_details']:
+                        require('experience' not in result and
+                                not Path(result['result_path']).with_name('experience.pt.gz').exists(),
+                                'unexpected-experience-archive', 'transient training must not write experience archives',
+                                'audit', result['result_path'])
+                        require(result['status'] != 'complete' or not
+                                (Path(result['row']['directory']) / 'episode.json.gz').exists(),
+                                'unexpected-episode-trace', 'transient training must not retain a full episode trace',
+                                'audit', result['result_path'])
+                        transient += 1
+                        continue
                     verify_result(runtime, result, output)
                     total += 1
             # Reconstruct one update, including twice-optimized starts when enabled;
@@ -63,16 +75,19 @@ def check(root, output, cloud):
                           (continuation_batch == 2 or r['generation']['start_curriculum']['depth'] == 2))
             experience = load_experience(sample)
             config = dict(protocol['spec']['selection'], **protocol['config']['ppo'], reward=protocol['config']['reward'])
-            from ppo_training_update import move_prepared
+            from ppo_training_transfer import move_prepared
             batch = move_prepared(prepare(experience['steps'], config, model_set[0].width, 'cpu'), next(model_set[0].parameters()).device)
             with torch.no_grad():
                 torch.testing.assert_close(distribution(model_set[0], batch, config)[0], batch['old_logp'], rtol=5e-5, atol=5e-6)
                 torch.testing.assert_close(critic_values(model_set[1], batch), batch['old_values'], rtol=5e-5, atol=5e-6)
-            actual = update(*model_set, record['results'], config, protocol['config']['execution']['microbatch'], guard)
+            experiences = [load_experience(r) if r['status'] == 'complete' else None for r in record['results']]
+            actual = update(*model_set, record['results'], config, protocol['config']['execution']['microbatch'], guard,
+                            experiences=experiences)
             for key in ('policy_after_sha256', 'critic_after_sha256', 'actor_optimizer_sha256',
                         'critic_optimizer_sha256', 'shuffle_rng_sha256', 'epochs'):
                 require(actual[key] == record['ppo'][key], 'continuation-mismatch', f'exact saved continuation differs: {key}', entity=job['id'])
-            detail = dict(job=job['id'], native_results=total, behavior_probabilities_and_values_match=True,
+            detail = dict(job=job['id'], native_results=total, transient_results_without_archives=transient,
+                          behavior_probabilities_and_values_match=True,
                           one_nonempty_checkpoint_continuation_exact=True, reconstructed_batch=continuation_batch)
             if 'start_curriculum' in protocol['config']:
                 from audit_ppo_start_curriculum import check_records

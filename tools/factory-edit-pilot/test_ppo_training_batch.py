@@ -7,7 +7,7 @@ import torch
 
 from full_factory_input_contracts import SCHEMA
 from ppo_area_model import actor_distribution, models
-from ppo_training_batch import prepare, distribution, critic_values
+from ppo_training_batch import prepare, compile_steps, distribution, critic_values
 
 
 def observations():
@@ -88,6 +88,20 @@ class BatchedTests(unittest.TestCase):
         scaler.scale(-logp.mean() - .001 * entropy.mean() + values.square().mean()).backward()
         for model in (self.actor, self.critic):
             self.assertTrue(all(torch.isfinite(p.grad).all() for p in model.parameters() if p.grad is not None))
+
+    def test_static_inputs_reuse_across_shuffles_without_mutating_observations(self):
+        compiled = compile_steps(self.steps, self.config)
+        self.assertTrue(all('_static_inputs' not in step for step in self.steps))
+        for indices in ([2, 0, 1], [1], [0, 2]):
+            original = prepare([self.steps[i] for i in indices], self.config, 8, 'cpu')
+            cached = prepare([compiled[i] for i in indices], self.config, 8, 'cpu')
+            for key in ('allowed', 'adjustments', 'summaries', 'old_logp', 'old_values'):
+                torch.testing.assert_close(cached[key], original[key], rtol=0, atol=0)
+            torch.testing.assert_close(distribution(self.actor, cached, self.config)[0],
+                                       distribution(self.actor, original, self.config)[0], rtol=0, atol=0)
+            torch.testing.assert_close(critic_values(self.critic, cached), critic_values(self.critic, original), rtol=0, atol=0)
+        with self.assertRaisesRegex(ValueError, 'balancing configuration'):
+            prepare(compiled, dict(self.config, balanced=False), 8, 'cpu')
 
 
 

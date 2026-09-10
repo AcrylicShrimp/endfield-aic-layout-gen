@@ -16,7 +16,7 @@ from full_factory_selection import distribution_kinds
 from ppo_episode_metrics import episode_metrics
 
 
-def rollout(runtime, protocol, case, model, critic, candidate, seed, directory, training, guard):
+def rollout(runtime, protocol, case, model, critic, candidate, seed, directory, training, guard, *, retain_details=True):
     began = time.perf_counter()
     directory = Path(directory)
     directory.mkdir()
@@ -73,7 +73,8 @@ def rollout(runtime, protocol, case, model, critic, candidate, seed, directory, 
         summary.update(schema_version=1, candidate=candidate, training=training, sample_seed=seed, policy_sha256=before_hash,
             observation_schema=obs['schema'] if env.selected else None, budget_complete=env.selected == config['horizon'] and
                 time.perf_counter() - began < config['episode_seconds'] and not any(t['status'] == 'late' for t in trace))
-        save_gzip(directory / 'episode.json.gz', summary)
+        if retain_details:
+            save_gzip(directory / 'episode.json.gz', summary)
         save_gzip(directory / 'best.json.gz', json.loads(env.export_layout('best')))
         if not summary['budget_complete']:
             raise TimeoutError(f'ppo-area.episode-budget: {directory}')
@@ -98,7 +99,7 @@ def rollout(runtime, protocol, case, model, critic, candidate, seed, directory, 
             policy_sha256=before_hash, budget_complete=True)
         return row, payload
     except BaseException as error:
-        if env is not None:
+        if env is not None and retain_details:
             save_experience(directory / 'experience-partial.pt.gz', dict(schema=PPO_SCHEMA, reward_schema=SCHEMA, reward_config=dict(reward_config), status='incomplete',
                 policy_sha256=before_hash, critic_sha256=critic_hash, steps=experience))
             save_gzip(directory / 'current-partial.json.gz', json.loads(env.export_layout('current')))

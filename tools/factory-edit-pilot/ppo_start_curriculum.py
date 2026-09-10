@@ -115,10 +115,9 @@ def save_next_plan(root, directory, config, job, batch, results):
             path = inputs[key]
             require(sha(path) == generation['case']['files_sha256'][path.name], 'curriculum-input',
                     'parent obligations changed before carry-forward', 'curriculum', path)
-        summary = json.loads(gzip.decompress(owned(root, Path(row['directory']) / 'episode.json.gz').read_bytes()))
         best = json.loads(gzip.decompress(inputs['best'].read_bytes()))
         from full_factory_environment import digest
-        require(summary['best_metrics'] == row['best_metrics'] and digest(best) == summary['best_sha256'] == row['best_sha256'],
+        require(read(source)['row'] == row and digest(best) == row['best_sha256'],
                 'curriculum-best', 'parent best geometry differs from its completed episode', 'curriculum', source)
         files = {}
         for key, path in inputs.items():

@@ -83,8 +83,6 @@ class CurriculumTests(unittest.TestCase):
             best = dict(factory=index, area=80)
             metrics = dict(score=[80, 0, 0])
             (episode / 'best.json.gz').write_bytes(gzip.compress(json.dumps(best).encode()))
-            (episode / 'episode.json.gz').write_bytes(gzip.compress(json.dumps(
-                dict(best_metrics=metrics, best_sha256=digest(best))).encode()))
             write(attempt / 'task.json', dict(training=True))
             row = donor(batch, index, 0)
             row['generation'].update(case=dict(request=str(generated / 'request.json'), original=str(generated / 'original.json'),
@@ -98,7 +96,7 @@ class CurriculumTests(unittest.TestCase):
             write(attempt / 'result.json', row)
             row.update(result_path=str(attempt / 'result.json'), result_sha256=sha(attempt / 'result.json'))
             rows.append(row)
-        config = dict(start_curriculum=CONFIG, training=dict(attempts=10, horizon=32,
+        config = dict(start_curriculum=CONFIG, retention=dict(training_batches=[]), training=dict(attempts=10, horizon=32,
                       generation_seed_base=100, action_seed_base=200))
         reference = save_next_plan(root, phase / 'starts-session', config, 'job', batch, rows)
         record = phase / 'record.json'
@@ -118,9 +116,9 @@ class CurriculumTests(unittest.TestCase):
             inherited = next(s for s in plan['slots'] if s['depth'])
             for ref in inherited['files'].values():
                 self.assertTrue(checked_path(root, ref).is_file())
-            _, tasks, _, _ = phase_tasks(root, dict(config=config), 'protocol', job, dict(kind='training', batch=2))
+            _, tasks, _ = phase_tasks(root, dict(config=config), 'protocol', job, dict(kind='training', batch=2))
             before = [read(path) for _, path in tasks]
-            _, retried, _, _ = phase_tasks(root, dict(config=config), 'protocol', job, dict(kind='training', batch=2))
+            _, retried, _ = phase_tasks(root, dict(config=config), 'protocol', job, dict(kind='training', batch=2))
             self.assertEqual(before, [read(path) for _, path in retried])
             for task in before:
                 self.assertEqual(task['policy_sha256'], 'current-actor')
@@ -134,7 +132,7 @@ class CurriculumTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
             _, config, reference, job, _ = self.fixture(root)
-            _, tasks, _, _ = phase_tasks(root, dict(config=config), 'protocol', job, dict(kind='training', batch=2))
+            _, tasks, _ = phase_tasks(root, dict(config=config), 'protocol', job, dict(kind='training', batch=2))
             task = next(read(path) for _, path in tasks if read(path)['initial_start']['depth'])
             start = task['initial_start']
             best_path = checked_path(root, start['files']['best'])

@@ -1,6 +1,6 @@
 # Best-state start curriculum experiment
 
-Status: implementation, verification and fresh launch complete; twelve-hour training running.
+Status: implementation, verification and fresh launch complete; training stopped at the user's request.
 
 The user requested an 80/10/10 mixture of fresh, once-optimized and twice-optimized
 factory starts, followed by testing and a fresh replacement experiment. The
@@ -32,3 +32,6 @@ Activity log:
   Four live batches committed 8,000 actions; all 32 inherited starts passed
   admission and lineage checks. Remote W&B configuration and new metrics match
   local records. See the [launch report](../reports/2026-09-10-ppo-cnn2-curriculum-twelve-hour-launch.md).
+- 2026-09-10: User stopped training to prioritize data-supply optimization.
+  The run finalized normally at 32 batches / 64,608 actions. Its checkpoint hash
+  and completed W&B export were verified. The twelve-hour duration was not completed.

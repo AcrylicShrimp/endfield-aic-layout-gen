@@ -2073,7 +2073,7 @@
     "action_seed_base": 241000000
   },
   "execution": {
-    "workers": 8,
+    "workers": 16,
     "device": "cuda",
     "microbatch": 64
   },

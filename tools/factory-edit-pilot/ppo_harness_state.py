@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import tempfile
 
-SCHEMA = 'ppo-training-harness-native-v3'
+SCHEMA = 'ppo-training-harness-native-v4'
 
 
 class HarnessError(RuntimeError):
@@ -127,7 +127,7 @@ def writer_lock(root):
 
 def check_sources(protocol):
     require(protocol.get('schema') == SCHEMA and protocol.get('backend') == 'retained-full-factory-native',
-            'runtime-contract', 'prepare a new native-v3 run; replay older runs from their frozen reference checkout', 'prepare/resume')
+            'runtime-contract', 'prepare a new native-v4 run; replay older runs from their frozen reference checkout', 'prepare/resume')
     for name, expected in protocol['sources'].items():
         require(sha(name) == expected, 'source-drift', f'changed runtime input: {name}', 'prepare/resume', name)
 

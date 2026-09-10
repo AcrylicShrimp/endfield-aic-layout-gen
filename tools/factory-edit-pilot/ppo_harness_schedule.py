@@ -1,9 +1,8 @@
-"""Immutable phase tasks, retained-result reuse and post-commit cleanup."""
+"""Immutable phase tasks, completed-batch recovery and post-commit cleanup."""
 from collections import Counter
 from pathlib import Path
 import shutil
 
-from ppo_harness_pool import accept_result
 from ppo_harness_state import SCHEMA, require, read, write, owned, sync_directory, mkdir
 from ppo_start_curriculum import phase_plan
 from ppo_episode_metrics import progress_metrics, curriculum_metrics
@@ -17,7 +16,7 @@ def phase_tasks(root, protocol, protocol_hash, job, phase):
     starts = phase_plan(root, protocol, job, phase)
     phase_directory = root / job['id'] / f"{phase['kind']}-{phase['batch']:04d}"
     mkdir(phase_directory)
-    tasks, cached, attempts = [], {}, []
+    tasks, attempts = [], []
     for index in range(schedule['attempts']):
         ordinal = (phase['batch'] - 1) * schedule['attempts'] + index if training else index
         generation_seed = schedule['generation_seed_base'] + job['seed'] * 100000 + ordinal
@@ -27,6 +26,7 @@ def phase_tasks(root, protocol, protocol_hash, job, phase):
         logical = dict(schema=SCHEMA, protocol_sha256=protocol_hash, identity=identity, job=job['id'],
                        candidate=job['candidate'], generation_seed=generation_seed, action_seed=action_seed,
                        horizon=config['training']['horizon'], training=training, policy=version['path'],
+                       retain_details=not training or phase['batch'] in config['retention']['training_batches'],
                        policy_file_sha256=version['sha256'], policy_sha256=version['policy_sha256'],
                        critic_sha256=version['critic_sha256'])
         if starts is not None:
@@ -39,20 +39,15 @@ def phase_tasks(root, protocol, protocol_hash, job, phase):
         else:
             write(logical_path, logical)
         prior = sorted(episode.glob('attempt-*'))
-        for attempt in prior:
-            ready = attempt / 'result-ready.json'
-            if ready.is_file():
-                require(read(attempt / 'task.json') == logical, 'resumed-task', 'published attempt has a different task', 'resume', ready)
-                require(index not in cached, 'duplicate-result', 'multiple published attempts for one task', 'resume', episode)
-                cached[index] = accept_result(root, attempt / 'task.json', read(ready), reused=True)
-        if index not in cached:
-            attempt = episode / f'attempt-{len(prior):04d}'
-            mkdir(attempt)
-            path = attempt / 'task.json'
-            write(path, logical)
-            tasks.append((index, path))
-            attempts.append(dict(index=index, attempt=len(prior), interrupted_attempts_retained=len(prior)))
-    return phase_directory, tasks, cached, attempts
+        # Every uncommitted phase is resampled under the restored checkpoint.
+        # Prior diagnostics are preserved but never reused as learner inputs.
+        attempt = episode / f'attempt-{len(prior):04d}'
+        mkdir(attempt)
+        path = attempt / 'task.json'
+        write(path, logical)
+        tasks.append((index, path))
+        attempts.append(dict(index=index, attempt=len(prior), interrupted_attempts_retained=len(prior)))
+    return phase_directory, tasks, attempts
 
 
 def quality(results):

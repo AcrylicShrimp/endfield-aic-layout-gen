@@ -1,0 +1,145 @@
+{
+  "schema": "ppo-data-supply-provenance-v1",
+  "host": "ashrimp-arch",
+  "reports": [
+    {
+      "role": "decode",
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260910/artifacts/factory-edit-pilot/data-supply-profile/report.json",
+      "sha256": "a65261515aa6026bf854da6dd8644c88a7fc98330a16091ccab977f48aae78c4",
+      "bytes": 28532
+    },
+    {
+      "role": "payload",
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260910/artifacts/factory-edit-pilot/data-supply-payload/report.json",
+      "sha256": "49b83ad5032652bcf45aa4b19e9c3cc3bf2ff247db9763ba432f6bacfc6a94cc",
+      "bytes": 27427
+    },
+    {
+      "role": "transfer",
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260910/artifacts/factory-edit-pilot/data-supply-transfer-async/report.json",
+      "sha256": "bfdb648ecfedc71b823a480e523ec1ac45fe0feaf505a26b818013f9db450370",
+      "bytes": 2586
+    },
+    {
+      "role": "memory-update",
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260910/artifacts/factory-edit-pilot/data-supply-update-memory-v2/report.json",
+      "sha256": "bc47985702a420e5edf03d41cff32d179e349449c2ad77ab558bc2378105a5e6",
+      "bytes": 3325
+    },
+    {
+      "role": "prefetch-update",
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260910/artifacts/factory-edit-pilot/data-supply-update-prefetch/report.json",
+      "sha256": "02f252311d75d6bff3aab9e3086d3dfe645fa3133a5f2e7cfbbf76d4f017ee6b",
+      "bytes": 3859
+    },
+    {
+      "role": "cached-update",
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260910/artifacts/factory-edit-pilot/data-supply-update-static-cache/report.json",
+      "sha256": "21fbce77c41ceaf454e18f84882ca473bf83dadd997cf383d0f06d52fb514da3",
+      "bytes": 4718
+    },
+    {
+      "role": "kernels",
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260910/artifacts/factory-edit-pilot/data-supply-kernels/report.json",
+      "sha256": "cd1fb6529ad4cbaaf77b9e00797c7aaa936e5204169fc57ca8bffb4152f7dd83",
+      "bytes": 11302
+    },
+    {
+      "role": "stopped-training",
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260910/artifacts/factory-edit-pilot/data-supply-stop/report.json",
+      "sha256": "b0fc02e14b2c16101ab9bce32120ecd906869c3fc0de9b53f205e882a66387a9",
+      "bytes": 3470
+    },
+    {
+      "role": "native-audit",
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2/artifacts/factory-edit-pilot/data-supply-readiness-audit/report.json",
+      "sha256": "e8a203bfe2149ec400177fec768b0bc18732e21f928f1aed8ad39bf93bcb8a94",
+      "bytes": 947
+    },
+    {
+      "role": "idle-comparison-8",
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2/artifacts/factory-edit-pilot/data-supply-idle-comparison-8/report.json",
+      "sha256": "0e37e73c444b21e091eb29db7e05f16ea4aa95867c6256d0f0d16861a0903e95",
+      "bytes": 16232
+    },
+    {
+      "role": "idle-comparison-16",
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2/artifacts/factory-edit-pilot/data-supply-idle-comparison-16/report.json",
+      "sha256": "1284f5be1ab525c5c98f4c077f7cc130e6feb7d7d7825d49a707015604c35359",
+      "bytes": 16232
+    },
+    {
+      "role": "worker-counts",
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2/artifacts/factory-edit-pilot/data-supply-worker-counts-final/report.json",
+      "sha256": "f8414b6d7c9c4fdaf590046b0e5c03ede2525beb02ba53c93badeeaf331683e1",
+      "bytes": 21526
+    },
+    {
+      "role": "batch-recovery",
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2/artifacts/factory-edit-pilot/data-supply-batch-recovery/report.json",
+      "sha256": "67bb1de110325ee593bb20f90582826ec7c90b1be8a3ff3f9aab59941f7f89c8",
+      "bytes": 934
+    },
+    {
+      "role": "batch-recovery-comparison",
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2/artifacts/factory-edit-pilot/data-supply-batch-recovery/comparison.json",
+      "sha256": "262fea311fc6a295e06a8444430088d68b10ee79b9e6a6a6f76f81836292180a",
+      "bytes": 17451
+    }
+  ],
+  "frozen_inputs_and_sources": [
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910/artifacts/factory-edit-pilot/cnn2-curriculum-readiness/protocol.json",
+      "sha256": "90a076e839a70b6951fc7210810d2f64881d7746f6089962a59af7808a96029d",
+      "bytes": 1666261
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910/artifacts/factory-edit-pilot/data-supply-idle-baseline/protocol.json",
+      "sha256": "b5d1b8f766f505850ddce3a4f2f3c3abaf66a13d2877f69b2ea3832c256ea00b",
+      "bytes": 1666239
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2/artifacts/factory-edit-pilot/data-supply-readiness/protocol.json",
+      "sha256": "8374cf7b21bb478353c0b13ff29871799fb3ae9cebb11eeec599a48feb4cb3a5",
+      "bytes": 1664506
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2/artifacts/factory-edit-pilot/data-supply-readiness-16/protocol.json",
+      "sha256": "1f15cd7029c6b992586cdb067e75d522a65bdbe4a0a93b671872eb9af89a8906",
+      "bytes": 1664524
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2/artifacts/factory-edit-pilot/data-supply-batch-recovery/run/protocol.json",
+      "sha256": "a48e05a15b2c16d06133711bac08c94d4b7421916cf6e853fc7945f4281b2ca4",
+      "bytes": 1664536
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2/artifacts/factory-edit-pilot/data-supply-runtime-source-snapshot.tar.gz",
+      "sha256": "157c0e1f12a9117a18e0de5dd66fbded45938ce9620d7d5a2e03a89cdc0686b7",
+      "bytes": 578056
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260910/artifacts/factory-edit-pilot/data-supply-update-memory-v2/source-snapshot.tar.gz",
+      "sha256": "6b68a201af495a8adb7631bdd9264aa62b90065696637ecdc63d99add5043026",
+      "bytes": 952858
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260910/artifacts/factory-edit-pilot/data-supply-update-prefetch/source-snapshot.tar.gz",
+      "sha256": "5e04a29721b1c9bff5367bc2f8bf31a7e559dc1d6af188ebb533d5ad8ac74a6e",
+      "bytes": 953690
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-data-supply-20260910/artifacts/factory-edit-pilot/data-supply-update-static-cache/source-snapshot.tar.gz",
+      "sha256": "134b0e493546e2b25262ae926109f72f091de2239c42f3b1518f0669615e2127",
+      "bytes": 954085
+    }
+  ],
+  "all_frozen_runtime_sources_verified": true,
+  "training_still_stopped": true,
+  "training_checkpoint": {
+    "path": "current-history-16--seed-17/training-0032/checkpoint-daa84ffc0c1947948819bda8518e7963.pt",
+    "sha256": "2252e4b979178b1c0ebf5995672256d3b8ea50d3682d9929e8f944ac2db582c5",
+    "policy_sha256": "0f6233077ff68df1f391ceecd4d4f31cb9261d42eee6c687dc08424df56e3f3b",
+    "critic_sha256": "2bd86d4da4fb355b370c7ce4b09f6c2393fb72c267c195baf8b7f270cc8461ad"
+  }
+}

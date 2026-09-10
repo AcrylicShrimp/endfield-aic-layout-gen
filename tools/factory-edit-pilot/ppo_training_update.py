@@ -1,10 +1,7 @@
 """One PPO update with frozen recorded behavior and bounded batched execution."""
 from contextlib import nullcontext
-import gzip
-import hashlib
-import io
+from concurrent.futures import ThreadPoolExecutor
 import math
-from pathlib import Path
 import time
 
 import torch
@@ -12,9 +9,11 @@ import torch
 from full_factory_on_policy import parameter_hash
 from ppo_area_model import SCHEMA, clipped_surrogate
 from ppo_area_update import sha_bytes
-from ppo_training_batch import EXECUTION_SCHEMA, prepare, distribution, critic_values, require
+from ppo_training_batch import EXECUTION_SCHEMA, compile_steps, distribution, critic_values, require
 from random_factory_audit import optimizer_hash
 from ppo_reward import SCHEMA as REWARD_SCHEMA, DEFAULT, validate_episode
+from ppo_training_supply import prepare_cpu, prepared_batches
+from ppo_training_transfer import move_prepared
 
 
 def calculate_gae(rewards, values, lam):
@@ -27,19 +26,20 @@ def calculate_gae(rewards, values, lam):
     return advantages.float(), (advantages + values).float()
 
 
-def collect_steps(actor, critic, results, config):
-    """Check the file/envelope boundary once, then calculate credit without replay."""
+def collect_steps(actor, critic, results, config, *, experiences):
+    """Validate owned in-memory envelopes, then calculate credit without replay."""
+    require(len(results) == len(experiences), 'one experience slot per attempted episode')
     accepted = [r for r in results if r['status'] == 'complete']
     require(len(accepted) >= 2, 'at least two admitted episodes')
     actor_hash, critic_hash = parameter_hash(actor), parameter_hash(critic)
     require(all(r['policy_sha256'] == actor_hash and r['critic_sha256'] == critic_hash for r in accepted),
             'single behavior checkpoint per batch')
     steps, advantages, targets, returns = [], [], [], []
-    for result in accepted:
-        packed = Path(result['experience']).read_bytes()
-        require(hashlib.sha256(packed).hexdigest() == result['experience_sha256'], 'experience file identity')
-        with gzip.GzipFile(fileobj=io.BytesIO(packed), mode='rb') as stream:
-            payload = torch.load(stream, map_location='cpu', weights_only=False)
+    for result, payload in zip(results, experiences):
+        if result['status'] != 'complete':
+            require(payload is None, 'rejected generation must not carry experience')
+            continue
+        require(isinstance(payload, dict), 'complete training result requires an in-memory experience')
         require(payload['schema'] == SCHEMA, 'supported experience schema')
         require(all(payload[key] == result[key] for key in ('policy_sha256', 'critic_sha256', 'input_sha256')) and
                 payload['input_contract'] == result['candidate'], 'experience behavior/task/input-contract envelope')
@@ -64,13 +64,20 @@ def collect_steps(actor, critic, results, config):
         raw_advantage_std=float(deviation), returns=returns, behavior_source='recorded-immutable-trajectory')
 
 
-def statistics(actor, critic, steps, advantages, targets, config, microbatch, device, guard):
+def statistics(actor, critic, steps, advantages, targets, config, microbatch, device, guard, executor):
     log_ratios, values = [], []
+    timing = dict(wait_seconds=0.0, worker_seconds=0.0, transfer_seconds=0.0)
     with torch.no_grad():
-        for offset in range(0, len(steps), microbatch):
-            guard()
-            sample = steps[offset:offset + microbatch]
-            batch = move_prepared(prepare(sample, config, actor.width, 'cpu'), device)
+        for indices, chunks, wait, worker in prepared_batches(executor, steps, advantages, targets, config,
+                actor.width, microbatch, list(range(len(steps))), microbatch, guard):
+            timing['wait_seconds'] += wait
+            timing['worker_seconds'] += worker
+            sample = [steps[i] for i in indices]
+            began = time.perf_counter()
+            batch = move_prepared(chunks[0]['batch'], device)
+            if device.type == 'cuda':
+                torch.cuda.synchronize(device)
+            timing['transfer_seconds'] += time.perf_counter() - began
             logp, _, _ = distribution(actor, batch, config)
             # Preserve the original diagnostic's float64 subtraction of recorded Python floats.
             log_ratios.extend(float(p) - s['old_log_probability'] for p, s in zip(logp.cpu(), sample))
@@ -85,29 +92,18 @@ def statistics(actor, critic, steps, advantages, targets, config, microbatch, de
                                           ((advantages < 0) & (ratio < 1 - epsilon))).double().mean()),
         approximate_kl=float((ratio - 1 - log_ratio).mean()),
         value_loss=float(.5 * ((value - targets) ** 2).mean()),
-        explained_variance=float(1 - (value - targets).var(unbiased=False) / variance) if variance > 1e-12 else None)
-
-
-def move_prepared(value, device):
-    if isinstance(value, torch.Tensor):
-        return value.to(device)
-    if isinstance(value, dict):
-        return {key: move_prepared(item, device) for key, item in value.items()}
-    if isinstance(value, list):
-        return [move_prepared(item, device) for item in value]
-    return value
+        explained_variance=float(1 - (value - targets).var(unbiased=False) / variance) if variance > 1e-12 else None), timing
 
 
 def prepare_minibatch(steps, advantages, targets, config, width, microbatch, device):
     # Candidate filtering and shape construction happen on CPU, avoiding dynamic
     # GPU indexing synchronization before transferring complete prepared tensors.
-    chunks = []
-    for offset in range(0, len(steps), microbatch):
-        stop = min(len(steps), offset + microbatch)
-        batch = prepare(steps[offset:stop], config, width, 'cpu')
-        chunks.append(dict(batch=move_prepared(batch, device), advantages=advantages[offset:stop].to(device),
-                           targets=targets[offset:stop].to(device)))
-    return chunks
+    return move_chunks(prepare_cpu(steps, advantages, targets, config, width, microbatch), device)
+
+
+def move_chunks(chunks, device):
+    return [dict(batch=move_prepared(chunk['batch'], device), advantages=chunk['advantages'].to(device),
+                 targets=chunk['targets'].to(device)) for chunk in chunks]
 
 
 def train_prepared(actor, critic, actor_optimizer, critic_optimizer, chunks, config,
@@ -166,45 +162,66 @@ def train_minibatch(actor, critic, actor_optimizer, critic_optimizer, steps, adv
 
 
 def update(actor, critic, actor_optimizer, critic_optimizer, shuffle_rng, results, config,
-           microbatch=8, guard=lambda: None):
+           microbatch=8, guard=lambda: None, *, experiences):
     require(0 < microbatch <= config['minibatch_size'] and config['epochs'] > 0, 'positive execution bounds')
     device = next(actor.parameters()).device
     require(next(critic.parameters()).device == device, 'actor and critic on one learner device')
     before_actor, before_critic = parameter_hash(actor), parameter_hash(critic)
     began = time.perf_counter()
-    steps, advantages, targets, accounting = collect_steps(actor, critic, results, config)
-    loading_seconds = time.perf_counter() - began
+    steps, advantages, targets, accounting = collect_steps(actor, critic, results, config, experiences=experiences)
+    credit_seconds = time.perf_counter() - began
+    began = time.perf_counter()
+    steps = compile_steps(steps, config)
+    static_preparation_seconds = time.perf_counter() - began
     epochs, optimizer_steps = [], 0
     preparation_seconds = computation_seconds = statistics_seconds = 0.
-    for epoch in range(config['epochs']):
-        order = torch.randperm(len(steps), generator=shuffle_rng).tolist()
-        losses = entropies = 0.
-        a_norms, c_norms = [], []
-        for offset in range(0, len(order), config['minibatch_size']):
-            indices = order[offset:offset + config['minibatch_size']]
-            result = train_minibatch(actor, critic, actor_optimizer, critic_optimizer, [steps[i] for i in indices],
-                                     advantages[indices], targets[indices], config, microbatch, device, guard)
-            losses += result['actor_loss_sum']
-            entropies += result['entropy_sum']
-            a_norms.append(result['actor_gradient_norm'])
-            c_norms.append(result['critic_gradient_norm'])
-            preparation_seconds += result['preparation_seconds']
-            computation_seconds += result['computation_seconds']
-            optimizer_steps += result['optimizer_steps']
-        began = time.perf_counter()
-        metrics = statistics(actor, critic, steps, advantages, targets, config, microbatch, device, guard)
-        statistics_seconds += time.perf_counter() - began
-        epochs.append(dict(epoch=epoch + 1, optimizer_steps=optimizer_steps, **metrics,
-            actor_loss=losses / len(steps), entropy=entropies / len(steps),
-            actor_gradient_norm_max=max(a_norms), critic_gradient_norm_max=max(c_norms)))
-        if metrics['approximate_kl'] > config['target_kl']:
-            break
+    supply_timing = dict(training_input_wait_seconds=0.0, training_cpu_preparation_seconds=0.0,
+                        training_transfer_seconds=0.0, statistics_wait_seconds=0.0,
+                        statistics_worker_seconds=0.0, statistics_transfer_seconds=0.0)
+    with ThreadPoolExecutor(max_workers=1, thread_name_prefix='ppo-input') as executor:
+        for epoch in range(config['epochs']):
+            order = torch.randperm(len(steps), generator=shuffle_rng).tolist()
+            losses = entropies = 0.
+            a_norms, c_norms = [], []
+            for _, cpu_chunks, wait, worker in prepared_batches(executor, steps, advantages, targets, config,
+                    actor.width, microbatch, order, config['minibatch_size'], guard):
+                supply_timing['training_input_wait_seconds'] += wait
+                supply_timing['training_cpu_preparation_seconds'] += worker
+                began = time.perf_counter()
+                chunks = move_chunks(cpu_chunks, device)
+                if device.type == 'cuda':
+                    torch.cuda.synchronize(device)
+                transfer = time.perf_counter() - began
+                supply_timing['training_transfer_seconds'] += transfer
+                preparation_seconds += wait + transfer
+                began = time.perf_counter()
+                result = train_prepared(actor, critic, actor_optimizer, critic_optimizer, chunks, config, guard=guard)
+                if device.type == 'cuda':
+                    torch.cuda.synchronize(device)
+                computation_seconds += time.perf_counter() - began
+                losses += result['actor_loss_sum']
+                entropies += result['entropy_sum']
+                a_norms.append(result['actor_gradient_norm'])
+                c_norms.append(result['critic_gradient_norm'])
+                optimizer_steps += result['optimizer_steps']
+            began = time.perf_counter()
+            metrics, stats_timing = statistics(actor, critic, steps, advantages, targets, config,
+                                              microbatch, device, guard, executor)
+            statistics_seconds += time.perf_counter() - began
+            for key, value in stats_timing.items():
+                supply_timing['statistics_' + key] += value
+            epochs.append(dict(epoch=epoch + 1, optimizer_steps=optimizer_steps, **metrics,
+                actor_loss=losses / len(steps), entropy=entropies / len(steps),
+                actor_gradient_norm_max=max(a_norms), critic_gradient_norm_max=max(c_norms)))
+            if metrics['approximate_kl'] > config['target_kl']:
+                break
     return dict(**accounting, schema=EXECUTION_SCHEMA, selected=len(steps), epochs=epochs,
         optimizer_steps=optimizer_steps, kl_stopped=len(epochs) < config['epochs'],
         policy_before_sha256=before_actor, policy_after_sha256=parameter_hash(actor),
         critic_before_sha256=before_critic, critic_after_sha256=parameter_hash(critic),
         actor_optimizer_sha256=optimizer_hash(actor_optimizer), critic_optimizer_sha256=optimizer_hash(critic_optimizer),
         shuffle_rng_sha256=sha_bytes(shuffle_rng.get_state()),
-        timing=dict(experience_loading_and_credit_seconds=loading_seconds, preparation_seconds=preparation_seconds,
-                    computation_seconds=computation_seconds, statistics_seconds=statistics_seconds),
+        timing=dict(experience_validation_and_credit_seconds=credit_seconds, static_preparation_seconds=static_preparation_seconds,
+                    preparation_seconds=preparation_seconds,
+                    computation_seconds=computation_seconds, statistics_seconds=statistics_seconds, **supply_timing),
         execution=dict(microbatch=microbatch, device=str(device), precision='float32', full_update_executions=1))

@@ -55,9 +55,7 @@ def run(args):
     torch.save(saved, target)
     checkpoint['sha256'] = sha(target)
     job = dict(id=reference['job'], candidate=reference['candidate'], seed=reference['seed'], checkpoint=checkpoint)
-    phase_directory, tasks, cached, attempts = phase_tasks(args.output, protocol, sha(args.output/'protocol.json'), job, reference['phase'])
-    if cached:
-        raise ValueError('ownership-batch.unexpected-reused-task')
+    phase_directory, tasks, attempts = phase_tasks(args.output, protocol, sha(args.output/'protocol.json'), job, reference['phase'])
     began, last = time.monotonic(), 0.
     report = dict(schema='native-full-factory-ownership-batch-v2', status='running', source_sha256=sha(__file__),
                   reference_protocol_sha256=sha(args.screen/'protocol.json'), behavior_checkpoint=checkpoint,
@@ -102,7 +100,7 @@ def run(args):
                         paths.append(path)
                 else:
                     paths = [p for _, p in tasks]
-                results, timing = pool.collect(paths)
+                results, experiences, timing = pool.collect(paths)
                 signatures = [physics_signature(r) for r in results]
                 if signatures != expected_signatures or any(r['identity'] != e['identity'] for r, e in zip(results, reference['results'])):
                     raise ValueError(f'ownership-batch.replay-drift: repetition {repetition}')

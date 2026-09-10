@@ -17,6 +17,7 @@ from ppo_harness_state import SCHEMA, require, diagnostic, read, write, sha, own
 from ppo_training_rollout import rollout
 from random_factory_generation import generate
 from ppo_start_curriculum import materialize, annotate_fresh
+from ppo_harness_transport import send
 
 
 def work(root):
@@ -36,7 +37,7 @@ def work(root):
     try:
         runtime = FactoryRuntime(spec['native_library'], protocol['catalog_file'])
         loaded = None
-        print(json.dumps(dict(kind='ready', pid=os.getpid())), flush=True)
+        send(dict(kind='ready', pid=os.getpid()))
         for line in sys.stdin:
             command = json.loads(line)
             if command['op'] == 'stop':
@@ -74,21 +75,26 @@ def work(root):
                           protocol_sha256=protocol_hash, generation=generation, policy_sha256=task['policy_sha256'],
                           critic_sha256=task['critic_sha256'], pid=os.getpid())
             durable = [active.parent / 'generated' / 'generation.json']
+            payload = None
             if case is None:
                 result['status'] = 'generation-rejected'
             else:
                 selection = dict(spec['selection'], horizon=task['horizon'], reward=config['reward'])
                 row, payload = rollout(runtime, dict(config=selection), case, actor, critic, task['candidate'],
-                                       task['action_seed'], active.parent / 'episode', task['training'], guard)
+                                       task['action_seed'], active.parent / 'episode', task['training'], guard,
+                                       retain_details=task['retain_details'])
                 result.update(status='complete', row=row)
                 durable.extend(Path(case[k]) for k in ('request', 'initial', 'original'))
-                durable.extend(active.parent / 'episode' / name for name in ('episode.json.gz', 'best.json.gz'))
+                durable.append(active.parent / 'episode' / 'best.json.gz')
+                if task['retain_details']:
+                    durable.append(active.parent / 'episode' / 'episode.json.gz')
                 if payload is not None:
-                    path = active.parent / 'experience.pt.gz'
                     payload.update(policy_sha256=task['policy_sha256'], input_sha256=result['input_sha256'])
-                    save_experience(path, payload)
-                    durable.append(path)
-                    result.update(experience=str(path), experience_sha256=sha(path), experience_bytes=path.stat().st_size)
+                    if task['retain_details']:
+                        path = active.parent / 'experience.pt.gz'
+                        save_experience(path, payload)
+                        durable.append(path)
+                        result.update(experience=str(path), experience_sha256=sha(path), experience_bytes=path.stat().st_size)
             for path in durable:
                 sync_file(path)
                 sync_ancestors(path, root)
@@ -96,14 +102,14 @@ def work(root):
             path = active.parent / 'result.json'
             write(path, result)
             envelope = dict(kind='result', path=str(path), sha256=sha(path), task=str(active))
-            write(active.parent / 'result-ready.json', envelope)
-            print(json.dumps(envelope), flush=True)
+            send(dict(envelope, experience_payload=payload))
+            del payload
             active = None
     except BaseException as error:
         value = diagnostic(error, 'collection', active)
         if active is not None:
             write(active.parent / 'worker-failure.json', dict(status='failed', diagnostic=value))
-        print(json.dumps(dict(kind='error', diagnostic=value)), flush=True)
+        send(dict(kind='error', diagnostic=value))
         raise
     finally:
         if runtime is not None:

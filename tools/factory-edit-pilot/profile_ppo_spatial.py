@@ -13,7 +13,7 @@ from ppo_area_update import load_experience
 from ppo_harness_state import read, write, checked_path, sha
 from ppo_spatial_model import VARIANTS, specification
 from ppo_training_batch import prepare, distribution, critic_values
-from ppo_training_update import move_prepared
+from ppo_training_transfer import move_prepared
 
 
 def profile(root, output):

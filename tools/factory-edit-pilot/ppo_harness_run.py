@@ -102,15 +102,12 @@ def run(root, session):
                     phase = protocol['phases'][job['next_phase']]
                     progress(stage='phase-setup', phase=phase['kind'], batch=phase['batch'], completed=0, total=0)
                     began = time.monotonic()
-                    location, tasks, cached, attempts = phase_tasks(root, protocol, protocol_hash, job, phase)
-                    fresh, collection = pool.collect([path for _, path in tasks])
-                    results_by_index = dict(cached)
-                    results_by_index.update({index: result for (index, _), result in zip(tasks, fresh)})
-                    results = [results_by_index[i] for i in sorted(results_by_index)]
+                    location, tasks, attempts = phase_tasks(root, protocol, protocol_hash, job, phase)
+                    results, experiences, collection = pool.collect([path for _, path in tasks])
                     summary = quality(results)
                     record = dict(schema=SCHEMA, job=job['id'], candidate=job['candidate'], seed=job['seed'],
                                   phase=phase, results=results, quality=summary, collection=collection,
-                                  reused_results=len(cached), attempts=attempts, behavior_checkpoint=job['checkpoint'])
+                                  attempts=attempts, behavior_checkpoint=job['checkpoint'])
                     if 'continuation' in protocol:
                         parent = protocol['continuation']
                         record['parent_batches'] = parent['total_batches']
@@ -121,9 +118,10 @@ def run(root, session):
                         began_update = time.monotonic()
                         selection = dict(protocol['spec']['selection'], **config['ppo'], reward=config['reward'])
                         metrics = update(*model_set, results, selection, config['execution']['microbatch'],
-                                         guard=lambda: progress(stage='learner'))
+                                         guard=lambda: progress(stage='learner'), experiences=experiences)
                         record['update_seconds'] = time.monotonic() - began_update
                         metrics.pop('credit')
+                        del experiences
                         record['ppo'] = metrics
                         job['selected_training_actions'] += metrics['selected']
                         job['completed_batches'] = phase['batch']

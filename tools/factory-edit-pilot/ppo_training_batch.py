@@ -16,6 +16,26 @@ def require(condition, message):
         raise ValueError(f'ppo-training.contract: {message}')
 
 
+def static_inputs(step, config):
+    """These CPU features depend on recorded observations, never on weights."""
+    def tensor(value, dtype=torch.float32):
+        return torch.as_tensor(np.asarray(value), dtype=dtype)
+    allowed = tensor(step['allowed'], torch.bool)
+    frequencies = Counter(kind for kind, ok in zip(step['kinds'], step['allowed']) if ok)
+    adjustment = tensor([-math.log(frequencies[kind]) if ok and config['balanced'] else 0
+                         for kind, ok in zip(step['kinds'], step['allowed'])])
+    obs = step['critic_observation']
+    available = tensor(obs['actions'])[allowed]
+    summary = torch.cat((available.mean(0), available.max(0).values, tensor(obs['context']),
+                         allowed.float().mean().reshape(1)))
+    return allowed, adjustment, summary
+
+
+def compile_steps(steps, config):
+    """Create update-local feature caches without modifying or retaining payloads."""
+    return [dict(step, _static_inputs=static_inputs(step, config), _static_balanced=config['balanced']) for step in steps]
+
+
 def prepare_actor(observations, counts, width, device):
     def tensor(value, dtype=torch.float32):
         return torch.as_tensor(np.asarray(value), dtype=dtype, device=device)
@@ -79,13 +99,14 @@ def prepare(steps, config, width, device):
     summaries, worlds, current_indices, best_indices = [], [], [], []
     for i, (step, count) in enumerate(zip(steps, counts)):
         obs = step['critic_observation']
-        allowed[i, :count] = tensor(step['allowed'], torch.bool)
-        frequencies = Counter(kind for kind, ok in zip(step['kinds'], step['allowed']) if ok)
-        adjustments[i, :count] = tensor([-math.log(frequencies[kind]) if ok and config['balanced'] else 0
-                                        for kind, ok in zip(step['kinds'], step['allowed'])])
-        available = tensor(obs['actions'])[allowed[i, :count]]
-        summaries.append(torch.cat((available.mean(0), available.max(0).values, tensor(obs['context']),
-                                    allowed[i, :count].float().mean().reshape(1))))
+        if '_static_inputs' in step:
+            require(step['_static_balanced'] == config['balanced'], 'compiled input belongs to a different balancing configuration')
+            mask, adjustment, summary = step['_static_inputs']
+        else:
+            mask, adjustment, summary = static_inputs(step, config)
+        allowed[i, :count] = mask.to(device)
+        adjustments[i, :count] = adjustment.to(device)
+        summaries.append(summary.to(device))
         current_indices.append(len(worlds))
         worlds.append(obs['current'])
         if obs['best_is_current']:

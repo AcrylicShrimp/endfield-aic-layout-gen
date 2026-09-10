@@ -31,7 +31,8 @@ class ProcessTests(unittest.TestCase):
 
     def script(self, text, name='worker.py'):
         path = self.root / name
-        path.write_text(text)
+        prelude = 'import sys\nsys.path.insert(0, ' + repr(str(Path(__file__).resolve().parent)) + ')\nfrom ppo_harness_transport import send, HEADER, MAGIC, channel\n'
+        path.write_text(prelude + text)
         return path
 
     def pool(self, script):
@@ -41,8 +42,8 @@ class ProcessTests(unittest.TestCase):
         for name, source, expected, collect in [
             ('startup', 'import time; time.sleep(20)', 'startup-timeout', False),
             ('eof', '', 'worker-eof', False),
-            ('task', 'import time; print(\'{"kind":"ready"}\',flush=True); time.sleep(20)', 'worker-timeout', True),
-            ('oversize', 'print("x" * (1024 * 1024 + 1),flush=True)', 'worker-message-size', False)]:
+            ('task', 'import time; send(dict(kind="ready")); time.sleep(20)', 'worker-timeout', True),
+            ('oversize', 'channel().sendall(HEADER.pack(MAGIC, 2**64-1))', 'worker-message-size', False)]:
             with self.subTest(fault=name):
                 script = self.script(source)
                 began = time.monotonic()
@@ -57,18 +58,20 @@ class ProcessTests(unittest.TestCase):
     def test_completion_order_is_separate_from_training_order_and_credentials_removed(self):
         worker = self.script('''import json,os,sys,time
 assert 'WANDB_API_KEY' not in os.environ
-print(json.dumps(dict(kind='ready')),flush=True)
+send(dict(kind='ready'))
 for line in sys.stdin:
     command=json.loads(line)
     if command['op']=='stop':break
     index=int(command['task'])
     time.sleep(.15 if index==0 else .01)
-    print(json.dumps(dict(kind='result',index=index)),flush=True)
+    send(dict(kind='result', index=index, status='complete', row=dict(training=True), experience_payload=dict(index=index, data=bytes(2*1024*1024))))
 ''')
         self.cfg['limits']['task_seconds'] = 2
         with patch.dict(os.environ, WANDB_API_KEY='fake-private-key'), patch('ppo_harness_pool.accept_result', side_effect=lambda root,path,msg: msg):
             with self.pool(worker) as pool:
-                results, timing = pool.collect([0, 1, 2])
+                results, experiences, timing = pool.collect([0, 1, 2])
+                self.assertEqual([e['index'] for e in experiences], [0, 1, 2])
+                self.assertEqual(len(experiences[0]['data']), 2*1024*1024)
                 self.assertEqual([r['index'] for r in results], [0, 1, 2])
                 self.assertEqual(timing['completion_order'], [1, 2, 0])
             self.assertTrue(all(child.poll() is not None for child in pool.children))
@@ -114,7 +117,7 @@ while True:time.sleep(.05)
         job = dict(id='job', candidate='history-no-restore', seed=17,
                    checkpoint=dict(path='checkpoint.pt', sha256='file', policy_sha256='actor', critic_sha256='critic'))
         with patch('ppo_harness_state.sync_directory', side_effect=lambda path: synced.append(Path(path))):
-            phase, tasks, _, _ = phase_tasks(self.root, dict(config=self.cfg), 'protocol', job, dict(kind='training', batch=1))
+            phase, tasks, _ = phase_tasks(self.root, dict(config=self.cfg), 'protocol', job, dict(kind='training', batch=1))
         self.assertIn(self.root, synced)
         self.assertIn(self.root / 'job', synced)
         self.assertIn(phase, synced)

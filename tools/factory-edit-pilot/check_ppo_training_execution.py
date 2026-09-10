@@ -14,7 +14,7 @@ from full_factory_on_policy import parameter_hash
 from full_factory_screen import sha
 from ppo_area_audit import native_batch
 from ppo_area_study import learners
-from ppo_area_update import save_experience
+from ppo_area_update import save_experience, load_experience
 from ppo_training_batch import EXECUTION_SCHEMA, require
 from ppo_training_rollout import rollout
 from ppo_training_update import update, collect_steps
@@ -85,6 +85,7 @@ def run(args):
                 results.append(result)
             # The extra witness/experience audit is deliberate integration-test work.
             audit = native_batch(runtime, results, batch_dir / 'test-audit')
+            experiences = [load_experience(r) for r in results]
             if batch_index == 1:
                 state = torch.load(args.output / 'checkpoint.pt', weights_only=True)
                 resumed = learners(protocol['spec'], 17, config)
@@ -92,7 +93,7 @@ def run(args):
                     model.load_state_dict(state[key])
                 resumed[4].set_state(state['shuffle_rng'])
                 require(resumed[2].state and resumed[3].state, 'resume nonempty Adam')
-                steps, advantages, targets, _ = collect_steps(actor, critic, results, config)
+                steps, advantages, targets, _ = collect_steps(actor, critic, results, config, experiences=experiences)
                 require(len(steps) == config['minibatch_size'], 'one complete representative minibatch')
                 torch.save(dict(spec=protocol['spec'], config=config, checkpoint=state, steps=steps,
                                 advantages=advantages, targets=targets,
@@ -101,14 +102,14 @@ def run(args):
                                               experiences=[r['experience_sha256'] for r in results])),
                            args.output / 'workload.pt')
             started = time.monotonic()
-            metrics = update(*model_set, results, config, microbatch=8, guard=guard)
+            metrics = update(*model_set, results, config, microbatch=8, guard=guard, experiences=experiences)
             seconds = time.monotonic() - started
             if batch_index == 0:
                 torch.save(dict(schema=EXECUTION_SCHEMA, policy=actor.state_dict(), critic=critic.state_dict(),
                                 actor_optimizer=aopt.state_dict(), critic_optimizer=copt.state_dict(),
                                 shuffle_rng=rng.get_state()), args.output / 'checkpoint.pt')
             else:
-                continuation = update(*resumed, results, config, microbatch=8, guard=guard)
+                continuation = update(*resumed, results, config, microbatch=8, guard=guard, experiences=experiences)
                 for key in ('policy_after_sha256', 'critic_after_sha256', 'actor_optimizer_sha256',
                             'critic_optimizer_sha256', 'shuffle_rng_sha256', 'credit', 'epochs'):
                     require(metrics[key] == continuation[key], f'exact resumed {key}')

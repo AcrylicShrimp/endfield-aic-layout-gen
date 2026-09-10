@@ -334,3 +334,34 @@ Native and reference admission reject duplicate `move_lengths` or `segment_lengt
 with `input.config.duplicate_length`, naming the affected key. Remove duplicates
 from external configuration before rerunning. Existing tracked configurations
 already contain distinct lengths. See the [four-perspective audit](../../docs/reports/2026-09-08.44-training-implementation-audit.md).
+
+## Native PPO data supply and recovery
+
+The native-v4 `ppo_harness.py` uses Linux collectors with anonymous shared-memory
+array delivery. It stores full experiences and traces only for training batches
+explicitly listed in `retention.training_batches`; held-out evaluation evidence
+and compact result/checkpoint/curriculum records remain durable. `resume` restores
+the last committed actor, critic, Adam, shuffle RNG and curriculum plan, then
+resamples the entire uncommitted phase. Older runs require their frozen runtime.
+
+CPU input preparation overlaps one minibatch ahead, with immutable per-update
+feature caching and asynchronous CUDA tensor transfers. PPO minibatch size,
+shuffle order, FP32 arithmetic and stopping rules are unchanged. See the
+[data-supply contract](../../docs/designs/2026-09-10-ppo-data-supply.md) and
+[verified measurements](../../docs/reports/2026-09-11-ppo-data-supply.md).
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/ppo_harness.py prepare --config tools/factory-edit-pilot/ppo-data-supply-readiness.json --output artifacts/factory-edit-pilot/data-supply-readiness
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/ppo_harness.py run --run artifacts/factory-edit-pilot/data-supply-readiness --duration-seconds 900
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/check_ppo_harness_native.py --run artifacts/factory-edit-pilot/data-supply-readiness --output artifacts/factory-edit-pilot/data-supply-readiness-audit
+```
+
+This bounded configuration requires the explicit frozen initial-factory manifest
+at `artifacts/factory-edit-pilot/region-starts/manifest.json`, as used by the
+64-factory curriculum readiness experiment. Retained experience profiling and
+old-runtime timing comparisons are separate diagnostic CLIs:
+`profile_ppo_data_supply.py`, `profile_ppo_payload.py`,
+`benchmark_ppo_data_supply.py`, `benchmark_ppo_collection_supply.py` and
+`compare_ppo_supply_runs.py`. `check_ppo_batch_recovery.py` exercises actual CLI
+stop/resume against an uninterrupted readiness reference. Each requires explicit
+inputs and fresh output.

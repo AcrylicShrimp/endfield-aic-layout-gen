@@ -1,5 +1,6 @@
 """Frozen-trajectory PPO minibatches with value fitting, GAE and measured ratio diagnostics."""
 import gzip
+import io
 import math
 from pathlib import Path
 
@@ -21,8 +22,10 @@ def save_experience(path, payload):
 
 def load_experience(result):
     require(sha(result['experience']) == result['experience_sha256'], 'experience file hash')
-    with gzip.open(result['experience'], 'rb') as stream:
-        payload = torch.load(stream, map_location='cpu', weights_only=False)
+    # Audit archives are read into a seekable buffer once. A Torch ZIP reader
+    # seeking directly in GzipFile repeatedly inflates earlier archive bytes.
+    payload = torch.load(io.BytesIO(gzip.decompress(Path(result['experience']).read_bytes())),
+                         map_location='cpu', weights_only=False)
     require(payload['schema'] == SCHEMA and payload['policy_sha256'] == result['policy_sha256'] and
             payload['critic_sha256'] == result['critic_sha256'] and
             payload['input_sha256'] == result['input_sha256'], 'experience schema/checkpoint/input identity')

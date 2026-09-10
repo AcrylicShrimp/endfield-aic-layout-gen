@@ -3,14 +3,16 @@ import json
 import os
 from pathlib import Path
 import selectors
+import socket
 import subprocess
 import sys
 import time
 
 from ppo_harness_state import SCHEMA, require, read, sha, owned, HarnessError
+from ppo_harness_transport import Reader, receive
 
 
-def accept_result(root, task_path, envelope, reused=False):
+def accept_result(root, task_path, envelope):
     task_path = owned(root, task_path)
     require(envelope.get('kind') == 'result' and owned(root, envelope['task']) == task_path,
             'result-envelope', f'result belongs to another task: {task_path}', 'collection', task_path)
@@ -23,23 +25,24 @@ def accept_result(root, task_path, envelope, reused=False):
             'result-identity', f'result/behavior identity mismatch: {task_path}', 'collection', task_path)
     require(result['status'] in ('complete', 'generation-rejected'), 'result-status', 'unsupported worker outcome', 'collection', path)
     if result['status'] == 'complete':
-        require(result['row']['budget_complete'] and result['row']['selected'] == task['horizon'],
+        require(result['row']['budget_complete'] and result['row']['selected'] == task['horizon'] and
+                result['row']['training'] == task['training'],
                 'result-budget', 'incomplete episode cannot enter learning', 'collection', path)
-        if task['training']:
+        if task['training'] and task['retain_details']:
             experience = owned(root, result['experience'])
             require(experience == task_path.with_name('experience.pt.gz'), 'experience-path', 'wrong experience location', 'collection', path)
-            if reused:
-                require(sha(experience) == result['experience_sha256'], 'experience-identity',
-                        'retained experience changed before resume', 'collection', experience)
+        else:
+            require('experience' not in result, 'experience-retention',
+                    'transient episode must not publish a stored experience', 'collection', path)
     return dict(result, result_path=str(path), result_sha256=envelope['sha256'])
 
 
 class Pool:
     def __init__(self, root, directory, config, progress, worker_script=None):
         self.root, self.config, self.progress = Path(root), config, progress
-        self.children, self.logs, self.buffers = [], [], {}
+        self.children, self.logs, self.readers = [], [], {}
+        self.channels = []
         self.selector = selectors.DefaultSelector()
-        self.pending_messages = []
         directory.mkdir(parents=True)
         began = time.monotonic()
         try:
@@ -52,12 +55,18 @@ class Pool:
             for slot in range(config['execution']['workers']):
                 log = open(directory / f'worker-{slot}.log', 'wb')
                 self.logs.append(log)
-                child = subprocess.Popen([sys.executable, str(worker_script or Path(__file__).with_name('ppo_harness_worker.py')),
-                                          '--run', str(root)], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=log,
-                                         env=environment, bufsize=0)
+                parent_socket, worker_socket = socket.socketpair()
+                self.channels.append(parent_socket)
+                try:
+                    child = subprocess.Popen([sys.executable, str(worker_script or Path(__file__).with_name('ppo_harness_worker.py')),
+                                              '--run', str(root)], stdin=subprocess.PIPE, stdout=log, stderr=log,
+                                             env=dict(environment, AIC_PPO_TRANSPORT_FD=str(worker_socket.fileno())),
+                                             pass_fds=(worker_socket.fileno(),), bufsize=0)
+                finally:
+                    worker_socket.close()
                 self.children.append(child)
-                self.selector.register(child.stdout, selectors.EVENT_READ, slot)
-                self.buffers[slot] = b''
+                self.selector.register(parent_socket, selectors.EVENT_READ, slot)
+                self.readers[slot] = Reader(config['limits']['rss_bytes'])
             ready = set()
             while len(ready) < len(self.children):
                 self.progress(stage='worker-startup', completed=len(ready), total=len(self.children), advanced=False)
@@ -76,13 +85,9 @@ class Pool:
         messages = []
         for key, _ in self.selector.select(timeout=.1):
             slot = key.data
-            data = os.read(key.fileobj.fileno(), 65536)
+            data, descriptors = receive(key.fileobj)
             require(bool(data), 'worker-eof', f'worker {slot} exited without a result', 'collection', self.children[slot].pid)
-            self.buffers[slot] += data
-            require(len(self.buffers[slot]) <= 1024 * 1024, 'worker-message-size', 'worker pipe exceeded message bound', 'collection', slot)
-            while b'\n' in self.buffers[slot]:
-                line, self.buffers[slot] = self.buffers[slot].split(b'\n', 1)
-                message = json.loads(line)
+            for message in self.readers[slot].feed(data, descriptors):
                 if message.get('kind') == 'error':
                     error = HarnessError('worker-failed', f'worker {slot} failed', 'collection', slot)
                     error.diagnostic = message['diagnostic']
@@ -92,7 +97,11 @@ class Pool:
 
     def collect(self, tasks):
         began = time.monotonic()
-        pending, results, completion = {}, {}, []
+        pending, results, experiences, completion = {}, {}, {}, []
+        initial_bytes = sum(r.bytes for r in self.readers.values())
+        initial_shared = sum(r.shared_bytes for r in self.readers.values())
+        initial_logical = sum(r.logical_bytes for r in self.readers.values())
+        initial_decode = sum(r.decode_seconds for r in self.readers.values())
         remaining = iter(enumerate(tasks))
         def assign(slot):
             item = next(remaining, None)
@@ -113,11 +122,19 @@ class Pool:
                 require(slot in pending, 'unexpected-result', 'idle worker sent a result', 'collection', slot)
                 index, path, _ = pending.pop(slot)
                 results[index] = accept_result(self.root, path, message)
+                experiences[index] = message.pop('experience_payload', None)
+                require((experiences[index] is not None) ==
+                        (results[index]['status'] == 'complete' and results[index].get('row', {}).get('training', False)),
+                        'experience-delivery', 'training result must carry exactly one transient experience', 'collection', path)
                 completion.append(index)
                 self.progress(stage='collection', completed=len(results), total=len(tasks), advanced=True)
                 assign(slot)
-        return [results[i] for i in range(len(tasks))], dict(seconds=time.monotonic() - began,
-            completion_order=completion, startup_seconds=self.startup_seconds)
+        return [results[i] for i in range(len(tasks))], [experiences[i] for i in range(len(tasks))], dict(
+            seconds=time.monotonic() - began, completion_order=completion, startup_seconds=self.startup_seconds,
+            transport_bytes=sum(r.bytes for r in self.readers.values()) - initial_bytes,
+            transport_shared_bytes=sum(r.shared_bytes for r in self.readers.values()) - initial_shared,
+            transport_logical_array_bytes=sum(r.logical_bytes for r in self.readers.values()) - initial_logical,
+            transport_decode_seconds=sum(r.decode_seconds for r in self.readers.values()) - initial_decode)
 
     def close(self):
         deadline = time.monotonic() + self.config['limits']['cleanup_seconds']
@@ -134,8 +151,11 @@ class Pool:
             except subprocess.TimeoutExpired:
                 child.kill()
                 child.wait(timeout=2)
-            child.stdout.close()
         self.selector.close()
+        for stream in self.channels:
+            stream.close()
+        for reader in self.readers.values():
+            reader.close()
         for log in self.logs:
             log.close()
 

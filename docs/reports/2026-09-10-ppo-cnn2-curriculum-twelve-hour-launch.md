@@ -1,5 +1,10 @@
 # CNN-2 best-state curriculum: fresh twelve-hour launch
 
+Follow-up: the user stopped this run normally at 32 batches / 64,608 actions to
+prioritize [data-supply optimization](../designs/2026-09-10-ppo-data-supply.md).
+Its final checkpoint identity and completed W&B export were verified. The
+twelve-hour allowance was not completed. The launch snapshot below is historical.
+
 The 64-factory experiment started from the original untrained seed-17 CNN-2
 initialization at **2026-09-10 23:02:22 KST**. Its new 43,200-second allowance ends
 nominally at **2026-09-11 11:02:22 KST**, followed by bounded finalization. This

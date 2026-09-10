@@ -27,9 +27,7 @@ def run(args):
     if sha(target) != checkpoint['sha256']:
         raise ValueError('ownership-batch.checkpoint-hash')
     job = dict(id=reference['job'], candidate=reference['candidate'], seed=reference['seed'], checkpoint=checkpoint)
-    phase_directory, tasks, cached, attempts = phase_tasks(args.output, protocol, sha(args.output/'protocol.json'), job, reference['phase'])
-    if cached:
-        raise ValueError('ownership-batch.unexpected-reused-task')
+    phase_directory, tasks, attempts = phase_tasks(args.output, protocol, sha(args.output/'protocol.json'), job, reference['phase'])
     began, last = time.monotonic(), 0.
     report = dict(schema='full-factory-ownership-batch-v1', status='running', source_sha256=sha(__file__),
                   reference_protocol_sha256=sha(args.screen/'protocol.json'), behavior_checkpoint=checkpoint,
@@ -60,7 +58,7 @@ def run(args):
             last_stage = value['stage']
     try:
         with Pool(args.output, args.output/'workers', protocol['config'], progress) as pool:
-            results, timing = pool.collect([p for _, p in tasks])
+            results, experiences, timing = pool.collect([p for _, p in tasks])
         report.update(results=results, collection=timing, elapsed_seconds=time.monotonic()-began,
                       quality=quality(results))
         for reference_result, result in zip(reference['results'], results):

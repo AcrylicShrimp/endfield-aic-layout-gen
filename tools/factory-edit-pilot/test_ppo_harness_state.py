@@ -151,7 +151,7 @@ class StateTests(unittest.TestCase):
         for job in jobs:
             rows = []
             for phase in phases(cfg):
-                _, tasks, _, _ = phase_tasks(self.root, protocol, 'protocol', job, phase)
+                _, tasks, _ = phase_tasks(self.root, protocol, 'protocol', job, phase)
                 rows.append((phase, [read(path)['generation_seed'] for _, path in tasks]))
             schedules[job['id']] = rows
         self.assertEqual(*schedules.values())
@@ -162,12 +162,12 @@ class StateTests(unittest.TestCase):
         self.assertTrue(all(seeds == evaluation[0] for seeds in evaluation))
         self.assertFalse(set(training) & set(evaluation[0]))
 
-    def test_interrupted_attempts_are_preserved_and_a_published_result_is_reused(self):
+    def test_uncommitted_phase_is_resampled_even_with_published_result_files(self):
         cfg = config()
         job = dict(id='job', candidate='history-no-restore', seed=17,
                    checkpoint=dict(path='checkpoint.pt', sha256='file', policy_sha256='actor', critic_sha256='critic'))
         phase = dict(kind='training', batch=1)
-        directory, tasks, _, _ = phase_tasks(self.root, dict(config=cfg), 'protocol', job, phase)
+        directory, tasks, _ = phase_tasks(self.root, dict(config=cfg), 'protocol', job, phase)
         index, path = tasks[0]
         (path.parent / 'irreplaceable-partial.pt').write_bytes(b'actual interrupted state')
         task = read(tasks[1][1])
@@ -176,9 +176,8 @@ class StateTests(unittest.TestCase):
                                **{k: task[k] for k in ('identity', 'candidate', 'protocol_sha256', 'policy_sha256', 'critic_sha256')}))
         write(result_path.with_name('result-ready.json'), dict(kind='result', path=str(result_path),
               sha256=sha(result_path), task=str(tasks[1][1])))
-        _, retried, cached, attempts = phase_tasks(self.root, dict(config=cfg), 'protocol', job, phase)
-        self.assertIn(1, cached)
-        self.assertNotIn(1, [i for i, _ in retried])
+        _, retried, attempts = phase_tasks(self.root, dict(config=cfg), 'protocol', job, phase)
+        self.assertEqual([i for i, _ in retried], [i for i, _ in tasks])
         self.assertEqual((path.parent / 'irreplaceable-partial.pt').read_bytes(), b'actual interrupted state')
         self.assertEqual(retried[0][1].parent.name, 'attempt-0001')
         self.assertEqual(attempts[0]['interrupted_attempts_retained'], 1)
