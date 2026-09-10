@@ -59,6 +59,9 @@ def validate(config):
     if 'model' in config:
         from ppo_spatial_model import validate_model
         validate_model(config['model'])
+        if 'actor_critic' in config['model']:
+            require(config['candidates'] == ['current-history-16'], 'combinations-input',
+                    'actor/critic combinations require current-history-16 actor input', 'prepare')
     if 'input_manifest' in config:
         require(isinstance(config['input_manifest'], str) and config['input_manifest'], 'config-input-manifest',
                 'input_manifest must be an explicit path to frozen initial factories', 'prepare')

@@ -14,6 +14,8 @@ from ppo_area_update import save_experience
 from full_factory_screen import save_gzip, write
 from full_factory_selection import distribution_kinds
 from ppo_episode_metrics import episode_metrics
+from ppo_actor_critic import observation as critic_observation, predictions as model_predictions
+from ppo_critic_metrics import episode as critic_prediction_metrics
 
 
 def rollout(runtime, protocol, case, model, critic, candidate, seed, directory, training, guard, *, retain_details=True):
@@ -27,22 +29,29 @@ def rollout(runtime, protocol, case, model, critic, candidate, seed, directory, 
     experience = []
     trace = []
     critic_hash = parameter_hash(critic)
+    measure_values = training or hasattr(critic, 'treatment')
     try:
         env = runtime.open_episode(case, config['horizon'], config['episode_seconds'], config['route_work'],
                                    candidate, config['memory'])
         rng = torch.Generator().manual_seed(seed)
         while not env.done:
             guard()
-            view = env.observe(training)
+            view = env.observe(measure_values)
             obs, critic_obs, allowed = view['actor'], view['critic'], view['allowed']
+            if measure_values:
+                critic_obs = critic_observation(critic, obs, critic_obs)
             obs_hash = observation_hash(obs)
             with torch.no_grad():
-                dist = distribution_kinds(model(obs) / config['temperature'], view['kind_ids'], allowed, config['balanced'])
+                if measure_values:
+                    logits, prediction = model_predictions(model, critic, obs, critic_obs, allowed)
+                else:
+                    logits, prediction = model(obs), None
+                dist = distribution_kinds(logits / config['temperature'], view['kind_ids'], allowed, config['balanced'])
                 index = int(torch.multinomial(dist.probs.detach(), 1, generator=rng))
                 sampled_logp = float(dist.log_prob(torch.tensor(index)))
                 sampled_entropy = float(dist.entropy())
                 sampled_hash = probability_hash(dist.probs)
-                old_value = float(critic(critic_obs, allowed)) if training else None
+                old_value = float(prediction) if measure_values else None
             guard()
             if env.done:
                 break
@@ -50,6 +59,8 @@ def rollout(runtime, protocol, case, model, critic, candidate, seed, directory, 
             apply(step, reward_config)
             step.update(observation_sha256=obs_hash, old_log_probability=sampled_logp,
                         sampling_entropy=sampled_entropy, probabilities_sha256=sampled_hash)
+            if measure_values:
+                step['old_value'] = old_value
             if training:
                 critic_obs_hash = observation_hash(critic_obs)
                 experience.append(dict(actor_observation=obs, critic_observation=critic_obs,
@@ -67,7 +78,9 @@ def rollout(runtime, protocol, case, model, critic, candidate, seed, directory, 
         summary = dict(env.summary(), case=case['id'], trace=trace)
         accounting = totals(trace, reward_config)
         progress = episode_metrics(trace)
+        prediction_metrics = dict(critic_prediction=critic_prediction_metrics(trace)) if measure_values else {}
         summary.update(**accounting, **progress, gamma=1.0)
+        summary.update(prediction_metrics)
         payload = dict(schema=PPO_SCHEMA, reward_schema=SCHEMA, reward_config=dict(reward_config),
                        input_contract=candidate, steps=experience, critic_sha256=critic_hash) if training else None
         summary.update(schema_version=1, candidate=candidate, training=training, sample_seed=seed, policy_sha256=before_hash,
@@ -82,7 +95,7 @@ def rollout(runtime, protocol, case, model, critic, candidate, seed, directory, 
             selected=env.selected, directory=str(directory.resolve()), training=training,
             initial_metrics=summary['initial_metrics'], best_metrics=summary['best_metrics'],
             best_sha256=summary['best_sha256'],
-            **accounting, **progress,
+            **accounting, **progress, **prediction_metrics,
             kinds=dict(Counter(t['action']['kind'] for t in trace)), statuses=dict(Counter(t['status'] for t in trace)),
             improvements=dict(Counter(t['action']['kind'] for t in trace if t['status'] == 'improved')),
             route_expansions=sum(t['route_expansions'] for t in trace),

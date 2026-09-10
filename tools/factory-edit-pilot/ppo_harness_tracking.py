@@ -39,10 +39,20 @@ def metrics(record):
                       if type(number) in (int, float)})
         value.update({'ppo/optimizer_steps': ppo['optimizer_steps'], 'ppo/epochs': len(ppo['epochs']),
                       'ppo/kl_stopped': int(ppo['kl_stopped']), 'ppo/raw_advantage_std': ppo['raw_advantage_std']})
+        if 'actor_critic' in ppo:
+            value.update({f'ppo/{key}': ppo[key] for key in
+                          ('actor_epochs', 'critic_epochs', 'actor_optimizer_steps', 'critic_optimizer_steps')})
+            if ppo['critic_tail']['epochs']:
+                final = ppo['critic_tail']['epochs'][-1]
+                value.update({f'ppo/after_critic_tail/{key}': final[key] for key in
+                              ('value_loss', 'explained_variance', 'approximate_kl')})
         value.update({f'timing/{key}': number for key, number in ppo['timing'].items()})
         value.update({'timing/update_seconds': record['update_seconds'],
                       'timing/checkpoint_seconds': record['checkpoint_seconds']})
     prefix = 'training' if record['phase']['kind'] == 'training' else 'evaluation'
+    for group, estimates in quality.get('critic_prediction', {}).items():
+        value.update({f'{prefix}/critic_prediction/{group}/{key}': number
+                      for key, number in estimates.items() if number is not None})
     for name in ('area_improvement_fraction', 'accepted_physical_unchanged_fraction', 'physical_unchanged_fraction',
                  'mean_first_eight_area_reduction_percent', 'mean_later_area_reduction_percent'):
         if name in quality:
@@ -92,6 +102,9 @@ class Tracker:
         identifier = run_id(self.protocol_hash, job['id'])
         model = self.protocol['spec'].get('model')
         model_label = '' if model is None else f"cnn-{model['cnn_layers']}-d{','.join(map(str, model['cnn_dilations']))}--"
+        if model is not None and 'actor_critic' in model:
+            from ppo_actor_critic import label
+            model_label = label(model['actor_critic']) + '--' + model_label
         self.active = wandb.init(entity=self.config['entity'] or None, project=self.config['project'],
             id=identifier, name=model_label + job['id'], group=f"ppo-{self.protocol['config']['purpose']}-{self.protocol_hash[:12]}",
             job_type=self.protocol['config']['purpose'],

@@ -14,6 +14,13 @@ def specification(name):
 
 
 def validate_model(model):
+    if 'actor_critic' in model:
+        from ppo_actor_critic import validate
+        validate(model['actor_critic'])
+        base = {k: v for k, v in model.items() if k != 'actor_critic'}
+        if base != specification('cnn2'):
+            raise ValueError('ppo-spatial.model-spec: actor/critic combinations require the fixed cnn2 backbone')
+        return
     # This bounded screen intentionally admits only the four predeclared treatments.
     if not any(model == specification(name) for name in VARIANTS):
         raise ValueError('ppo-spatial.model-spec: expected one of the four versioned spatial-reach specifications')

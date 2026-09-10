@@ -9,7 +9,8 @@ import torch
 from full_factory_on_policy import parameter_hash
 from ppo_area_model import SCHEMA, clipped_surrogate
 from ppo_area_update import sha_bytes
-from ppo_training_batch import EXECUTION_SCHEMA, compile_steps, distribution, critic_values, require
+from ppo_training_batch import EXECUTION_SCHEMA, compile_steps, distribution, critic_values, predictions, require
+from ppo_actor_critic import optimizer_parameters
 from random_factory_audit import optimizer_hash
 from ppo_reward import SCHEMA as REWARD_SCHEMA, DEFAULT, validate_episode
 from ppo_training_supply import prepare_cpu, prepared_batches
@@ -78,10 +79,10 @@ def statistics(actor, critic, steps, advantages, targets, config, microbatch, de
             if device.type == 'cuda':
                 torch.cuda.synchronize(device)
             timing['transfer_seconds'] += time.perf_counter() - began
-            logp, _, _ = distribution(actor, batch, config)
+            logp, _, _, predicted = predictions(actor, critic, batch, config)
             # Preserve the original diagnostic's float64 subtraction of recorded Python floats.
             log_ratios.extend(float(p) - s['old_log_probability'] for p, s in zip(logp.cpu(), sample))
-            values.extend(critic_values(critic, batch).cpu().tolist())
+            values.extend(predicted.cpu().tolist())
     log_ratio = torch.tensor(log_ratios, dtype=torch.float64)
     ratio, value = log_ratio.exp(), torch.tensor(values)
     epsilon, variance = config['clip_epsilon'], targets.var(unbiased=False)
@@ -117,8 +118,7 @@ def train_prepared(actor, critic, actor_optimizer, critic_optimizer, chunks, con
         guard()
         context = torch.autocast(device.type, dtype=precision) if precision is not None else nullcontext()
         with context:
-            logp, entropy, _ = distribution(actor, chunk['batch'], config)
-            values = critic_values(critic, chunk['batch'])
+            logp, entropy, _, values = predictions(actor, critic, chunk['batch'], config)
         surrogate, _ = clipped_surrogate(logp, chunk['batch']['old_logp'], chunk['advantages'], config['clip_epsilon'])
         actor_loss = -surrogate - config['entropy_coefficient'] * entropy
         value_loss = .5 * (values - chunk['targets']).square()
@@ -132,8 +132,8 @@ def train_prepared(actor, critic, actor_optimizer, critic_optimizer, chunks, con
     if scaler is not None:
         scaler.unscale_(actor_optimizer)
         scaler.unscale_(critic_optimizer)
-    a_norm = torch.nn.utils.clip_grad_norm_(actor.parameters(), config['gradient_clip'])
-    c_norm = torch.nn.utils.clip_grad_norm_(critic.parameters(), config['gradient_clip'])
+    a_norm = torch.nn.utils.clip_grad_norm_(optimizer_parameters(actor_optimizer), config['gradient_clip'])
+    c_norm = torch.nn.utils.clip_grad_norm_(optimizer_parameters(critic_optimizer), config['gradient_clip'])
     require(torch.isfinite(a_norm) & torch.isfinite(c_norm), 'finite actor/critic gradients')
     if scaler is None:
         actor_optimizer.step()
@@ -163,6 +163,9 @@ def train_minibatch(actor, critic, actor_optimizer, critic_optimizer, steps, adv
 
 def update(actor, critic, actor_optimizer, critic_optimizer, shuffle_rng, results, config,
            microbatch=8, guard=lambda: None, *, experiences):
+    treatment = getattr(critic, 'treatment', None)
+    if treatment is not None:
+        config = dict(config, actor_critic=treatment)
     require(0 < microbatch <= config['minibatch_size'] and config['epochs'] > 0, 'positive execution bounds')
     device = next(actor.parameters()).device
     require(next(critic.parameters()).device == device, 'actor and critic on one learner device')
@@ -174,6 +177,7 @@ def update(actor, critic, actor_optimizer, critic_optimizer, shuffle_rng, result
     steps = compile_steps(steps, config)
     static_preparation_seconds = time.perf_counter() - began
     epochs, optimizer_steps = [], 0
+    tail = dict(epochs=[], optimizer_steps=0, seconds=0.)
     preparation_seconds = computation_seconds = statistics_seconds = 0.
     supply_timing = dict(training_input_wait_seconds=0.0, training_cpu_preparation_seconds=0.0,
                         training_transfer_seconds=0.0, statistics_wait_seconds=0.0,
@@ -215,7 +219,11 @@ def update(actor, critic, actor_optimizer, critic_optimizer, shuffle_rng, result
                 actor_gradient_norm_max=max(a_norms), critic_gradient_norm_max=max(c_norms)))
             if metrics['approximate_kl'] > config['target_kl']:
                 break
-    return dict(**accounting, schema=EXECUTION_SCHEMA, selected=len(steps), epochs=epochs,
+        if treatment is not None and treatment['critic_after_kl'] and len(epochs) < config['epochs']:
+            from ppo_critic_tail import finish
+            tail = finish(actor, critic, actor_optimizer, critic_optimizer, shuffle_rng, steps, advantages,
+                          targets, config, len(epochs), microbatch, device, guard, executor, statistics)
+    result = dict(**accounting, schema=EXECUTION_SCHEMA, selected=len(steps), epochs=epochs,
         optimizer_steps=optimizer_steps, kl_stopped=len(epochs) < config['epochs'],
         policy_before_sha256=before_actor, policy_after_sha256=parameter_hash(actor),
         critic_before_sha256=before_critic, critic_after_sha256=parameter_hash(critic),
@@ -225,3 +233,9 @@ def update(actor, critic, actor_optimizer, critic_optimizer, shuffle_rng, result
                     preparation_seconds=preparation_seconds,
                     computation_seconds=computation_seconds, statistics_seconds=statistics_seconds, **supply_timing),
         execution=dict(microbatch=microbatch, device=str(device), precision='float32', full_update_executions=1))
+    if treatment is not None:
+        result.update(actor_critic=treatment, actor_epochs=len(epochs),
+                      critic_epochs=len(epochs) + len(tail['epochs']), actor_optimizer_steps=optimizer_steps,
+                      critic_optimizer_steps=optimizer_steps + tail['optimizer_steps'], critic_tail=tail)
+        result['timing']['critic_tail_seconds'] = tail['seconds']
+    return result

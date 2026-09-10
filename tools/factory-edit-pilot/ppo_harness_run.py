@@ -10,6 +10,7 @@ os.environ.setdefault('CUBLAS_WORKSPACE_CONFIG', ':4096:8')
 import torch
 
 from ppo_area_model import models
+from ppo_actor_critic import optimizers
 from ppo_harness_pool import Pool
 from ppo_harness_schedule import phase_tasks, quality, evaluation_pairs, cleanup_phase
 from ppo_harness_state import (SCHEMA, require, read, write, sha, diagnostic, load_state, check_sources,
@@ -47,7 +48,7 @@ def learners(protocol, seed):
     actor, critic = models(protocol['spec'], seed)
     actor, critic = actor.to(device), critic.to(device)
     learning_rate = protocol['config']['ppo']['learning_rate']
-    aopt, copt = (torch.optim.Adam(model.parameters(), lr=learning_rate) for model in (actor, critic))
+    aopt, copt = optimizers(actor, critic, learning_rate)
     return actor, critic, aopt, copt, torch.Generator().manual_seed(seed + 31000000)
 
 

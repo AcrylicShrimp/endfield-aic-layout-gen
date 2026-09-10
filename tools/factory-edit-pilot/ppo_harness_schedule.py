@@ -6,6 +6,7 @@ import shutil
 from ppo_harness_state import SCHEMA, require, read, write, owned, sync_directory, mkdir
 from ppo_start_curriculum import phase_plan
 from ppo_episode_metrics import progress_metrics, curriculum_metrics
+from ppo_critic_metrics import aggregate as critic_prediction_metrics
 
 
 def phase_tasks(root, protocol, protocol_hash, job, phase):
@@ -62,6 +63,7 @@ def quality(results):
     for r in covered:
         failure_codes.update(r['routing_failure_codes'])
     return dict(**progress_metrics([r['row'] for r in complete]), **curriculum_metrics(results),
+                **critic_prediction_metrics([r['row'] for r in complete]),
                 routing_detailed_actions=detailed_actions, failed_actions=failed,
                 routing_budget_failed_actions=budget_failed, routing_failure_codes=dict(failure_codes),
                 routing_budget_failure_fraction=budget_failed / detailed_actions if detailed_actions else None,

@@ -193,7 +193,7 @@ class InputContractPolicy(nn.Module):
         self.history = nn.GRU(width, width, batch_first=True)
         self.score = nn.Sequential(nn.Linear(ACTION_WIDTH + 10 * width + CONTEXT_WIDTH, width), nn.SiLU(), nn.Linear(width, 1))
 
-    def forward(self, obs):
+    def forward(self, obs, *, current_features=None, history_features=None):
         if obs['schema'] != SCHEMA:
             raise ValueError('input-contract.observation-schema')
         device = next(self.parameters()).device
@@ -209,7 +209,7 @@ class InputContractPolicy(nn.Module):
             member_context = torch.zeros(member_count, 2 * self.width, device=device)
             current_global = torch.zeros(2 * self.width, device=device)
         else:
-            h, raster, current_global = self.world(obs['current'])
+            h, raster, current_global = self.world(obs['current']) if current_features is None else current_features
             operands = torch.cat((torch.zeros(1, self.width, device=device), h))[tensor('operands', torch.long)].flatten(1)
             xy = tensor('action_xy', torch.long)
             local = raster[:, xy[:, 1], xy[:, 0]].T
@@ -222,7 +222,9 @@ class InputContractPolicy(nn.Module):
         if obs['best'] is not None:
             best_global = current_global if obs['best_is_current'] else self.world(obs['best'])[2]
         history_h = torch.zeros(self.width, device=device)
-        if len(obs['history']):
+        if history_features is not None:
+            history_h = history_features
+        elif len(obs['history']):
             _, hidden = self.history(self.history_input(tensor('history')).unsqueeze(0))
             history_h = hidden[-1, 0]
         global_h = torch.cat((current_global, best_global, history_h, tensor('context'))).expand(count, -1)

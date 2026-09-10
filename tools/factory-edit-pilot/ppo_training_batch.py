@@ -115,20 +115,53 @@ def prepare(steps, config, width, device):
         else:
             best_indices.append(len(worlds))
             worlds.append(obs['best'])
-    return dict(size=len(steps), counts=counts, width=width, actor=prepare_actor(actors, counts, width, device),
+    treatment = config.get('actor_critic')
+    if treatment is not None:
+        for step in steps:
+            expected = step['actor_observation']['history']
+            if not treatment['critic_history']:
+                expected = expected[:0]
+            require(np.array_equal(step['critic_observation']['history'], expected), 'critic history must match treatment')
+    shared = treatment is not None and treatment['shared_backbone']
+    if shared:
+        require(all(a['current'] is not None and a['best'] is None for a in actors),
+                'shared combination requires the fixed current-history actor input')
+        combined = [dict(a, best=s['critic_observation']['best'],
+                         best_is_current=s['critic_observation']['best_is_current']) for a, s in zip(actors, steps)]
+        actor_batch = prepare_actor(combined, counts, width, device)
+        current_index = actor_batch['current_indices'] - 1
+        best_index = actor_batch['best_indices'] - 1
+        # Best worlds are encoded for the critic but absent from actor features.
+        actor_batch['best_indices'] = torch.zeros_like(actor_batch['best_indices'])
+        critic_worlds = None
+    else:
+        actor_batch = prepare_actor(actors, counts, width, device)
+        current_index, best_index = tensor(current_indices, torch.long), tensor(best_indices, torch.long)
+        critic_worlds = prepare_worlds(worlds, device)
+    return dict(size=len(steps), counts=counts, width=width, actor=actor_batch,
                 allowed=allowed, adjustments=adjustments, chosen=tensor([s['index'] for s in steps], torch.long),
                 old_logp=tensor([s['old_log_probability'] for s in steps]), old_values=tensor([s['old_value'] for s in steps]),
-                summaries=torch.stack(summaries), critic_worlds=prepare_worlds(worlds, device),
-                current_indices=tensor(current_indices, torch.long), best_indices=tensor(best_indices, torch.long))
+                summaries=torch.stack(summaries), critic_worlds=critic_worlds, shared_backbone=shared,
+                current_indices=current_index, best_indices=best_index)
 
 
-def actor_logits(actor, batch):
+def history_features(model, obs):
+    history = obs['zero_history']
+    if obs['has_history']:
+        # Padded future tokens cannot affect a unidirectional GRU's endpoint.
+        with torch.autocast(next(model.parameters()).device.type, enabled=False):
+            output, _ = model.history(model.history_input(obs['history']))
+            history = torch.where(obs['history_present'], output[obs['history_rows'], obs['history_end']], history)
+    return history
+
+
+def actor_logits(actor, batch, *, encoded=None, history=None):
     obs, width = batch['actor'], batch['width']
     if obs['worlds'] is None:
         operands, local, member_context = obs['zero_operands'], obs['zero_local'], obs['zero_members']
         current, best = obs['zero_global'], obs['zero_global']
     else:
-        h, spatial, global_features = encode_worlds(actor.world, obs['worlds'])
+        h, spatial, global_features = encode_worlds(actor.world, obs['worlds']) if encoded is None else encoded
         padded_nodes = torch.cat((h.new_zeros(1, width), h))
         operands = padded_nodes[obs['operands']].flatten(1)
         local = spatial['actions']
@@ -137,20 +170,14 @@ def actor_logits(actor, batch):
         current, best = padded_global[obs['current_indices']], padded_global[obs['best_indices']]
     members = actor.member(torch.cat((member_context, obs['member_pose']), 1)).float()
     pooled = torch.zeros_like(obs['zero_operands']).index_add_(0, obs['member_actions'], members) / obs['member_counts']
-    history = obs['zero_history']
-    if obs['has_history']:
-        # A padded future cannot affect a unidirectional GRU's true endpoint.
-        # Keep recurrence and its input normalization in FP32 during AMP probes.
-        with torch.autocast(next(actor.parameters()).device.type, enabled=False):
-            output, _ = actor.history(actor.history_input(obs['history']))
-            history = torch.where(obs['history_present'], output[obs['history_rows'], obs['history_end']], history)
+    history = history_features(actor, obs) if history is None else history
     global_h = torch.cat((current, best, history, obs['contexts']), 1)
     expanded = torch.cat([global_h[i].expand(count, -1) for i, count in enumerate(batch['counts'])])
     return actor.score(torch.cat((obs['actions'], operands, local, pooled, expanded), 1)).float().squeeze(1)
 
 
-def distribution(actor, batch, config):
-    logits = actor_logits(actor, batch).split(batch['counts'])
+def distribution(actor, batch, config, *, encoded=None, history=None):
+    logits = actor_logits(actor, batch, encoded=encoded, history=history).split(batch['counts'])
     padded = torch.nn.utils.rnn.pad_sequence(logits, batch_first=True, padding_value=-torch.inf)
     adjusted = (padded / config['temperature'] + batch['adjustments']).masked_fill(~batch['allowed'], -torch.inf)
     result = torch.distributions.Categorical(logits=adjusted, validate_args=False)
@@ -158,7 +185,27 @@ def distribution(actor, batch, config):
     return result.log_prob(batch['chosen']), entropy, result.probs
 
 
-def critic_values(critic, batch):
-    pooled = encode_worlds(critic.world, batch['critic_worlds'])[2]
+def critic_values(critic, batch, *, pooled=None, history=None):
+    worlds = batch['actor']['worlds'] if batch.get('shared_backbone') else batch['critic_worlds']
+    pooled = encode_worlds(critic.world, worlds)[2] if pooled is None else pooled
     features = torch.cat((pooled[batch['current_indices']], pooled[batch['best_indices']], batch['summaries']), 1)
+    if hasattr(critic, 'treatment'):
+        if critic.treatment['critic_history']:
+            history = history_features(critic, batch['actor']) if history is None else history
+        else:
+            history = batch['actor']['zero_history']
+        features = torch.cat((features, history), 1)
     return critic.head(features).float().squeeze(1)
+
+
+def predictions(actor, critic, batch, config):
+    if batch.get('shared_backbone'):
+        require(actor.world is critic.world and actor.history is critic.history, 'shared model identity')
+        encoded = encode_worlds(actor.world, batch['actor']['worlds'])
+        history = history_features(actor, batch['actor'])
+        policy = distribution(actor, batch, config, encoded=encoded, history=history)
+        values = critic_values(critic, batch, pooled=encoded[2], history=history)
+    else:
+        policy = distribution(actor, batch, config)
+        values = critic_values(critic, batch)
+    return (*policy, values)

@@ -47,7 +47,11 @@ def models(spec, seed):
         # Actor allocation must not change the critic's initial weights or RNG stream.
         with torch.random.fork_rng(devices=[]):
             torch.random.default_generator.manual_seed(seed + model['critic_seed_offset'])
-            critic = AreaCritic(model['critic_graph_layers'], model['critic_width'])
+            if 'actor_critic' in model:
+                from ppo_actor_critic import CombinationCritic
+                critic = CombinationCritic(actor, model['actor_critic'])
+            else:
+                critic = AreaCritic(model['critic_graph_layers'], model['critic_width'])
         return actor, critic
     actor = InputContractPolicy(spec['policy']['depth'], spec['policy']['width'])
     critic = AreaCritic(spec['policy']['depth'], spec['policy']['width'])

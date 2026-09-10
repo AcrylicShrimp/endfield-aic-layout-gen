@@ -75,6 +75,8 @@ def check(root, output, cloud):
                           (continuation_batch == 2 or r['generation']['start_curriculum']['depth'] == 2))
             experience = load_experience(sample)
             config = dict(protocol['spec']['selection'], **protocol['config']['ppo'], reward=protocol['config']['reward'])
+            if hasattr(model_set[1], 'treatment'):
+                config['actor_critic'] = model_set[1].treatment
             from ppo_training_transfer import move_prepared
             batch = move_prepared(prepare(experience['steps'], config, model_set[0].width, 'cpu'), next(model_set[0].parameters()).device)
             with torch.no_grad():
@@ -89,6 +91,13 @@ def check(root, output, cloud):
             detail = dict(job=job['id'], native_results=total, transient_results_without_archives=transient,
                           behavior_probabilities_and_values_match=True,
                           one_nonempty_checkpoint_continuation_exact=True, reconstructed_batch=continuation_batch)
+            if 'actor_critic' in actual:
+                require(actual['critic_tail']['epochs'] and actual['critic_tail']['actor_parameters_and_optimizer_unchanged'],
+                        'critic-tail-missing', 'readiness must exercise a critic-only tail', entity=job['id'])
+                for key in ('actor_epochs', 'critic_epochs', 'actor_optimizer_steps', 'critic_optimizer_steps'):
+                    require(actual[key] == record['ppo'][key], 'critic-tail-count', f'tail differs: {key}', entity=job['id'])
+                detail.update(critic_tail_preserves_policy=True, critic_history_matches_actor=True,
+                              actor_epochs=actual['actor_epochs'], critic_epochs=actual['critic_epochs'])
             if 'start_curriculum' in protocol['config']:
                 from audit_ppo_start_curriculum import check_records
                 detail['curriculum'] = check_records(root, protocol, records)

@@ -382,3 +382,26 @@ The default windows cover twenty training batches and five evaluations. It
 reports action-weighted rejection rates, per-kind realized area contribution,
 physical repeats, early/later gains, curriculum depth and KL stopping. The
 optional static figure requires matplotlib in the diagnostic environment.
+
+## Actor/critic combination screen
+
+`run_ppo_combinations.py` prepares the registered 2 x 2 x 2 comparison of shared
+encoders, critic action history and critic fitting after policy KL stopping.
+The [experiment contract](../../docs/designs/2026-09-11-ppo-actor-critic-combinations.md)
+specifies matched fresh starts, two initialization seeds and a fixed actor input.
+Shared weights have one optimizer owner. Critic-only tails freeze every actor
+parameter, including shared encoders; only private critic parameters keep learning.
+Evaluation records include predictive value error against realized remaining
+reward, separate from the training-target error measured after an update.
+
+```sh
+python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env prepare --config tools/factory-edit-pilot/ppo-actor-critic-screen.json --output artifacts/factory-edit-pilot/combinations-readiness --readiness
+python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env run --matrix artifacts/factory-edit-pilot/combinations-readiness/matrix.json
+```
+
+Audit each completed readiness cell with `check_ppo_harness_native.py`. Then
+prepare a new output directory without `--readiness` and execute its matrix.
+Cells run sequentially through the supervised public PPO CLI. The screen retains
+all checkpoints, selected training traces and every evaluation trace. Use
+`compare_ppo_combinations.py --matrix MATRIX --output FRESH_OUTPUT --validate-final-layouts`
+to check hashes, matching inputs, predictive diagnostics and paired factor effects.
