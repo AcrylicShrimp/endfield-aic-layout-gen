@@ -31,7 +31,11 @@ def positive(value, maximum, name):
 
 def validate(config):
     fields(config, 'schema_version purpose generation_config candidates seeds order_seed training evaluation execution limits ppo tracking retention'
-           + (' input_manifest' if 'input_manifest' in config else ''), 'config')
+           + (' input_manifest' if 'input_manifest' in config else '')
+           + (' model' if 'model' in config else ''), 'config')
+    if 'model' in config:
+        from ppo_spatial_model import validate_model
+        validate_model(config['model'])
     if 'input_manifest' in config:
         require(isinstance(config['input_manifest'], str) and config['input_manifest'], 'config-input-manifest',
                 'input_manifest must be an explicit path to frozen initial factories', 'prepare')
@@ -189,6 +193,8 @@ def prepare(config_path, root):
     spec = deepcopy(resolve_spec(generation_config))
     spec = {k: spec[k] for k in ('native_library', 'cli', 'validator', 'catalogs', 'products', 'generation', 'policy', 'selection')}
     spec['policy'] = {k: spec['policy'][k] for k in ('depth', 'width')}
+    if 'model' in config:
+        spec['model'] = deepcopy(config['model'])
     spec['selection']['horizon'] = config['training']['horizon']
     validate_spec(spec)
     jobs = [dict(candidate=c, seed=s, id=f'{c}--seed-{s}') for c in config['candidates'] for s in config['seeds']]

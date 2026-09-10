@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "purpose": "input-screen",
+  "generation_config": "tools/factory-edit-pilot/random-factory-server-pilot.json",
+  "candidates": [
+    "current-history-16"
+  ],
+  "seeds": [
+    17
+  ],
+  "order_seed": 20260910,
+  "training": {
+    "batches": 32,
+    "attempts": 32,
+    "horizon": 32,
+    "generation_seed_base": 211000000,
+    "action_seed_base": 221000000
+  },
+  "evaluation": {
+    "at": [
+      0,
+      8,
+      16,
+      24,
+      32
+    ],
+    "attempts": 32,
+    "generation_seed_base": 231000000,
+    "action_seed_base": 241000000
+  },
+  "execution": {
+    "workers": 8,
+    "device": "cuda",
+    "microbatch": 64
+  },
+  "limits": {
+    "startup_seconds": 120,
+    "task_seconds": 360,
+    "batch_seconds": 900,
+    "progress_seconds": 400,
+    "run_seconds": 46860,
+    "rss_bytes": 34359738368,
+    "disk_reserve_bytes": 17179869184,
+    "cleanup_seconds": 20
+  },
+  "ppo": {
+    "gamma": 1,
+    "gae_lambda": 0.95,
+    "clip_epsilon": 0.2,
+    "epochs": 4,
+    "minibatch_size": 64,
+    "target_kl": 0.02,
+    "learning_rate": 0.0003,
+    "entropy_coefficient": 0.001,
+    "gradient_clip": 0.5
+  },
+  "tracking": {
+    "backend": "wandb",
+    "mode": "online",
+    "entity": "",
+    "project": ""
+  },
+  "retention": {
+    "training_batches": [
+      1,
+      2,
+      8,
+      16,
+      24,
+      32
+    ]
+  },
+  "input_manifest": "artifacts/factory-edit-pilot/region-starts/manifest.json",
+  "model": {
+    "schema": "ppo-actor-spatial-reach-v1",
+    "architecture": "mean-message-residual-cnn",
+    "graph_layers": 2,
+    "width": 32,
+    "cnn_layers": 8,
+    "cnn_dilations": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ],
+    "spatial_blocks": "conv-silu-identity-residual-no-extra-normalization",
+    "critic_graph_layers": 2,
+    "critic_width": 32,
+    "critic_cnn_dilations": [
+      1,
+      1
+    ],
+    "critic_seed_offset": 100000
+  }
+}

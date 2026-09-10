@@ -39,6 +39,16 @@ class AreaCritic(nn.Module):
 
 def models(spec, seed):
     torch.manual_seed(seed)
+    if 'model' in spec:
+        from ppo_spatial_model import validate_model
+        model = spec['model']
+        validate_model(model)
+        actor = InputContractPolicy(model['graph_layers'], model['width'], model['cnn_dilations'])
+        # Actor allocation must not change the critic's initial weights or RNG stream.
+        with torch.random.fork_rng(devices=[]):
+            torch.random.default_generator.manual_seed(seed + model['critic_seed_offset'])
+            critic = AreaCritic(model['critic_graph_layers'], model['critic_width'])
+        return actor, critic
     actor = InputContractPolicy(spec['policy']['depth'], spec['policy']['width'])
     critic = AreaCritic(spec['policy']['depth'], spec['policy']['width'])
     return actor, critic

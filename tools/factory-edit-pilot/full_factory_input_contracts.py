@@ -140,22 +140,36 @@ def selection_mask(state, description, memory, name, enabled=True):
 
 
 class WorldEncoder(nn.Module):
-    def __init__(self, depth, width):
+    def __init__(self, depth, width, cnn_dilations=(1, 1)):
         super().__init__()
+        if len(cnn_dilations) < 2 or tuple(cnn_dilations[:2]) != (1, 1) or any(type(d) is not int or d < 1 for d in cnn_dilations):
+            raise ValueError('input-contract.cnn-dilations: two dense stem layers and positive integer dilations required')
         self.width = width
         self.raster = nn.Sequential(nn.Conv2d(RASTER_WIDTH, width, 3, padding=1), nn.GroupNorm(4, width), nn.SiLU(),
                                     nn.Conv2d(width, width, 3, padding=1), nn.SiLU())
+        self.spatial_blocks = nn.ModuleList(nn.Conv2d(width, width, 3, padding=d, dilation=d)
+                                           for d in cnn_dilations[2:])
         self.node = nn.Linear(NODE_WIDTH + width, width)
         self.edge = nn.Linear(EDGE_WIDTH, width)
         self.messages = nn.ModuleList(nn.Linear(width, width) for _ in range(depth))
         self.updates = nn.ModuleList(nn.Linear(2 * width, width) for _ in range(depth))
         self.norms = nn.ModuleList(nn.LayerNorm(width) for _ in range(depth))
 
+    def encode_raster(self, raster):
+        # Shared by collection and learning, including FP32 nonlinearities under autocast.
+        for layer in self.raster:
+            raster = layer(raster)
+            if isinstance(layer, nn.Conv2d):
+                raster = raster.float()
+        for convolution in self.spatial_blocks:
+            raster = raster + torch.nn.functional.silu(convolution(raster).float())
+        return raster
+
     def forward(self, world):
         device = next(self.parameters()).device
         def tensor(key, dtype=torch.float32):
             return torch.as_tensor(world[key], dtype=dtype, device=device)
-        raster = self.raster(tensor('raster').unsqueeze(0))[0]
+        raster = self.encode_raster(tensor('raster').unsqueeze(0))[0]
         xy = tensor('node_xy', torch.long)
         h = torch.nn.functional.silu(self.node(torch.cat((tensor('nodes'), raster[:, xy[:, 1], xy[:, 0]].T), dim=1)))
         if world['messages']:
@@ -170,10 +184,10 @@ class WorldEncoder(nn.Module):
 
 class InputContractPolicy(nn.Module):
     """Identical parameter allocation for all contracts; one shared world encoder."""
-    def __init__(self, depth=2, width=32):
+    def __init__(self, depth=2, width=32, cnn_dilations=(1, 1)):
         super().__init__()
         self.depth, self.width = depth, width
-        self.world = WorldEncoder(depth, width)
+        self.world = WorldEncoder(depth, width, cnn_dilations)
         self.member = nn.Sequential(nn.Linear(2 * width + 10, 2 * width), nn.SiLU())
         self.history_input = nn.Sequential(nn.Linear(HISTORY_WIDTH, width), nn.LayerNorm(width), nn.SiLU())
         self.history = nn.GRU(width, width, batch_first=True)

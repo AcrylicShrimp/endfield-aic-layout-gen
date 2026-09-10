@@ -35,9 +35,7 @@ def prepare_worlds(worlds, device):
 def encode_worlds(encoder, batch):
     samples, rasters, raster_means = ([None] * batch['count'] for _ in range(3))
     for bucket in batch['buckets']:
-        raster = encoder.raster[0](bucket['raster']).float()
-        raster = encoder.raster[2](encoder.raster[1](raster))
-        raster = encoder.raster[4](encoder.raster[3](raster).float())
+        raster = encoder.encode_raster(bucket['raster'])
         for j, i in enumerate(bucket['indices']):
             xy = batch['node_xy'][i]
             rasters[i] = raster[j]
