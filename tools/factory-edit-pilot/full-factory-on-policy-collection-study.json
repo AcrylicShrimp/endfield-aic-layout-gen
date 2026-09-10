@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "groups": [0, 7],
+  "initializations": ["random", "imitation-warm"],
+  "workers": [1, 2, 4],
+  "repeats": 2,
+  "episode_seconds": 300,
+  "group_seconds": 1200,
+  "study_seconds": 14400,
+  "sampled_rss_bytes": 12884901888
+}

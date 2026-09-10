@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "groups": 50,
+  "schedule_seed": 17,
+  "model_seed": 17,
+  "training_seed_base": 3100000,
+  "evaluation_banks": [3200000, 3200001],
+  "episode_seconds": 300,
+  "group_seconds": 1200,
+  "arm_seconds": 7200,
+  "study_seconds": 28800,
+  "evaluation_seconds": 14400,
+  "sampled_rss_bytes": 12884901888,
+  "panel_observation_bytes": 536870912,
+  "arms": [
+    {"name": "ordinary", "learning_rate": 0.0003, "skip_flat": false},
+    {"name": "lower-rate", "learning_rate": 0.00003, "skip_flat": false},
+    {"name": "skip-flat", "learning_rate": 0.0003, "skip_flat": true},
+    {"name": "lower-rate-skip-flat", "learning_rate": 0.00003, "skip_flat": true}
+  ]
+}
