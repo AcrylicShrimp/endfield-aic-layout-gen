@@ -128,6 +128,18 @@ def compare(root, output, batches):
                           final_epoch=r['ppo']['epochs'][-1]) for r in training])
         item['resources'] = resource_summary(runs[name])
         report['variants'][name] = item
+    report['planned_contrasts'] = []
+    for left, right in [('cnn4', 'cnn4-dilated'), ('cnn4-dilated', 'cnn8')]:
+        points = []
+        for before, after in zip(report['variants'][left]['evaluation'], report['variants'][right]['evaluation']):
+            assert before['batch'] == after['batch']
+            delta = [b['reduction_pp']-a['reduction_pp'] for a,b in zip(before['pairs'],after['pairs'])]
+            assert all(a['seed']==b['seed'] for a,b in zip(before['pairs'],after['pairs']))
+            points.append(dict(batch=before['batch'], right_minus_left_pp=mean(delta),
+                               learning_delta_difference_pp=after['learning_delta_pp']-before['learning_delta_pp'],
+                               wins=sum(d>1e-9 for d in delta), ties=sum(abs(d)<=1e-9 for d in delta),
+                               losses=sum(d< -1e-9 for d in delta), paired_differences_pp=delta))
+        report['planned_contrasts'].append(dict(left=left,right=right,evaluation=points))
     report['interpretation'] = dict(quality='Mean per-factory best-area reduction from the identical initial factory.',
         selection='One training seed and reused evaluation factories; selection evidence only.',
         pose_groups='Conditional on selected actions. Routed labels mean a nonempty initial region chain set; categories overlap.',
