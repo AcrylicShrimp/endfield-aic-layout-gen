@@ -1,7 +1,8 @@
-"""Native 24-worker replay with explicit checkpoint import and current runtime provenance."""
+"""Native worker-count replay with explicit checkpoint import and retained-worker repetitions."""
 import argparse
 import os
 from pathlib import Path
+import shutil
 import time
 
 import torch
@@ -25,6 +26,8 @@ def run(args):
     args.output.mkdir(parents=True)
     protocol = read(args.screen / 'protocol.json')
     protocol.update(schema=SCHEMA, backend='retained-full-factory-native', spec=current_spec(protocol), environment=environment())
+    if args.workers is not None:
+        protocol['config']['execution']['workers'] = args.workers
     catalog_file = args.output / 'catalogs.json'
     write(catalog_file, protocol['spec']['catalogs'])
     protocol['catalog_file'] = str(catalog_file)
@@ -56,10 +59,10 @@ def run(args):
     if cached:
         raise ValueError('ownership-batch.unexpected-reused-task')
     began, last = time.monotonic(), 0.
-    report = dict(schema='native-full-factory-ownership-batch-v1', status='running', source_sha256=sha(__file__),
+    report = dict(schema='native-full-factory-ownership-batch-v2', status='running', source_sha256=sha(__file__),
                   reference_protocol_sha256=sha(args.screen/'protocol.json'), behavior_checkpoint=checkpoint,
                   reference_checkpoint=reference['behavior_checkpoint'], runtime=runtime_metadata,
-                  peak_rss_bytes=0, max_processes=0, results=[], workers=protocol['config']['execution']['workers'])
+                  peak_rss_bytes=0, max_processes=0, results=[], repetitions=[], workers=protocol['config']['execution']['workers'])
     last_stage = None
     def progress(**value):
         nonlocal last, last_stage
@@ -85,18 +88,42 @@ def run(args):
             print(dict(**value, elapsed_seconds=now-began), flush=True)
             last_stage = value['stage']
     try:
+        expected_signatures = [physics_signature(r) for r in reference['results']]
+        logical_tasks = [read(p) for _, p in tasks]
         with Pool(args.output, args.output/'workers', protocol['config'], progress) as pool:
-            results, timing = pool.collect([p for _, p in tasks])
-        report.update(results=results, collection=timing, elapsed_seconds=time.monotonic()-began,
-                      quality=quality(results))
-        for reference_result, result in zip(reference['results'], results):
-            if result['identity'] != reference_result['identity'] or physics_signature(result) != physics_signature(reference_result):
-                raise ValueError(f'ownership-batch.replay-drift: {result["identity"]}')
+            for repetition in range(args.repeats):
+                if repetition:
+                    directory = args.output / f'repetition-{repetition}'
+                    paths = []
+                    for index, logical in enumerate(logical_tasks):
+                        path = directory / f'episode-{index:04d}' / 'task.json'
+                        path.parent.mkdir(parents=True)
+                        write(path, logical)
+                        paths.append(path)
+                else:
+                    paths = [p for _, p in tasks]
+                results, timing = pool.collect(paths)
+                signatures = [physics_signature(r) for r in results]
+                if signatures != expected_signatures or any(r['identity'] != e['identity'] for r, e in zip(results, reference['results'])):
+                    raise ValueError(f'ownership-batch.replay-drift: repetition {repetition}')
+                report['repetitions'].append(dict(repetition=repetition, cold=repetition == 0,
+                    collection=timing, quality=quality(results), semantic_sha256=signatures,
+                    all_generation_physical_and_sampling_parity=True))
+                if not repetition:
+                    report.update(results=results, collection=timing, quality=quality(results))
+                write(args.output/'report.json', report)
+                if repetition:
+                    # Identical regenerable repeats are represented by the first
+                    # retained inputs/experiences plus verified semantic hashes.
+                    shutil.rmtree(directory)
+                print(dict(stage='repetition-complete', workers=report['workers'], repetition=repetition,
+                           seconds=timing['seconds'], peak_rss_bytes=report['peak_rss_bytes']), flush=True)
+        report['elapsed_seconds'] = time.monotonic()-began
         report.update(status='complete', all_generation_physical_and_sampling_parity=True)
         write(args.output/'report.json', report)
         # Preserve selected source inputs, experiences, checkpoints and final witnesses.
-        cleanup_phase(args.output, phase_directory, results, retain_training=True)
-        print({k:v for k,v in report.items() if k not in ('results','behavior_checkpoint','reference_checkpoint','runtime')}, flush=True)
+        cleanup_phase(args.output, phase_directory, report['results'], retain_training=True)
+        print({k:v for k,v in report.items() if k not in ('results','repetitions','behavior_checkpoint','reference_checkpoint','runtime')}, flush=True)
     except BaseException as error:
         report.update(status='failed', diagnostic=dict(code='ownership-batch.failed', severity='error',
                       stage='collection', entity=str(args.output), message=str(error)))
@@ -109,7 +136,11 @@ if __name__ == '__main__':
     parser.add_argument('--screen', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--seconds', type=float, default=600)
+    parser.add_argument('--workers', type=int)
+    parser.add_argument('--repeats', type=int, default=1)
     args = parser.parse_args()
     if not 0 < args.seconds <= 1200:
         parser.error('seconds must be in (0, 1200]')
+    if args.workers is not None and not 1 <= args.workers <= 32 or not 1 <= args.repeats <= 8:
+        parser.error('workers must be 1..32 and repeats must be 1..8')
     run(args)

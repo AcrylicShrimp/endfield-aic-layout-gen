@@ -1,0 +1,23 @@
+{
+  "name": "native-worker-scaling-v1.tar.zst",
+  "bytes": 408309911,
+  "sha256": "8a43e891a4adea80dab1d9c2614479164e2f715ad53b167ee985f77eade44dfc",
+  "reports": {
+    "workers-01/report.json": "13dfbf917f89fddcd5186080e33aa4480c4065419203a409acc97e21d842582e",
+    "workers-02/report.json": "55286af4ffa0f3264db8e2929b50003e445351aba7a9d9fded26255a60cf896e",
+    "workers-04/report.json": "ce6df2c98cab248f30640a77b82d2062cd6c98230d2b214e47c9e976b36c190b",
+    "workers-08/report.json": "20bd1b23b8a7eebcd2c24ae131789b5810704a4fa5b0303bea61990ddea3701e",
+    "workers-12/report.json": "bbf1d84708c72c0fa49e849adce6b78b62d53bc68d31187bb95cdc8fb79fba82",
+    "workers-16/report.json": "104ab4932923d12321a22a87b0dc3464b6c7b9b2a0bd80109f7ac80d39f38064",
+    "workers-24/report.json": "20b4c4a0e04f8ed68c577cde5fa48b1af57b9204bc4f41053ddc1987c35cbe64",
+    "workers-32/report.json": "fedddff9ca915b6f86f906e3b1dc88385f017cfa7ca0951898450d5408c75331"
+  },
+  "summary_sha256": "4e5ac8811632012b0e643ba6522b3922eb402f5f7b1789e977deea9ffb23c1c2",
+  "profile_source_sha256": "ecd824e002e8c9d68af0c5bfb859694ba44662fff3b3e994efc3eb483a02fd09",
+  "schema_version": 1,
+  "source_base_commit": "447c7f5",
+  "scope": "Native worker-count sweep; user selected eight workers",
+  "local": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/native-worker-scaling-v1.tar.zst",
+  "server": "/home/ashrimp/Srv/aic-factory-native-20260910/artifacts/factory-edit-pilot/native-worker-scaling-v1.tar.zst",
+  "identities_match": true
+}
