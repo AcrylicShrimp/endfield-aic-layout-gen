@@ -1,0 +1,96 @@
+{
+  "schema": "ppo-recorded-action-work-probe-v1",
+  "run": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/factory-edit-pilot/cnn2-twelve-hour",
+  "protocol_sha256": "292bd6dce26bfa79f4e31dbef18e45d99fb1e154e8c204489450fb93af3d1265",
+  "record": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/factory-edit-pilot/cnn2-twelve-hour/current-history-16--seed-17/evaluation-0368/record-b4ad328c94b84eee830e049f536f4efc.json",
+  "record_sha256": "edaa26b1cbafbc2794526ca7d155ace25995abf4233fd653f6f55c5e25a51454",
+  "episode_sha256": "ff624d10c58efa8e20d4c5abf2c66aba70d3b5729597102eb09e7fd64c845553",
+  "request_sha256": "340d861cb2e9dcfc793806a63e13cdd8db0bf6ae7b79fa6643bbc9f8d5276da2",
+  "before_sha256": "5b684cec263660006aa95d51fd6419b9a20bbaf4df55253cbe4f03ce532ef1e3",
+  "job": "current-history-16--seed-17",
+  "phase": "evaluation",
+  "batch": 368,
+  "episode_index": 0,
+  "action_number": 31,
+  "action": {
+    "body_area": 50,
+    "height": 12,
+    "kind": "pose",
+    "poses": [
+      {
+        "member": 14,
+        "rotation": 0,
+        "x": 36,
+        "y": 10
+      },
+      {
+        "member": 15,
+        "rotation": 0,
+        "x": 36,
+        "y": 3
+      }
+    ],
+    "source_x": 36,
+    "source_y": 20,
+    "width": 5,
+    "x": 36,
+    "y": 3
+  },
+  "prefix_replayed_exactly": 30,
+  "baseline_replayed_exactly": true,
+  "baseline_work": 5000,
+  "repair_limits": {
+    "attempts": 4,
+    "chains": 64,
+    "crossings_per_route": 8,
+    "extra_chains": 8,
+    "port_trials": 4
+  },
+  "trials": [
+    {
+      "work_budget": 5000,
+      "status": "executor_rejected",
+      "validated": false,
+      "metrics": {
+        "definition": "used-area-layer-tiles-all-terminal-arms-v1",
+        "empty_xy_cells": 607,
+        "facility_xy_cells": 303,
+        "height": 34,
+        "occupied_xy_cells": 787,
+        "score": [
+          1394,
+          484,
+          108
+        ],
+        "transport_xy_cells": 484,
+        "width": 41
+      },
+      "route_expansions": 5000,
+      "witness": null
+    },
+    {
+      "work_budget": 10000,
+      "status": "accepted_exploration",
+      "validated": true,
+      "metrics": {
+        "definition": "used-area-layer-tiles-all-terminal-arms-v1",
+        "empty_xy_cells": 528,
+        "facility_xy_cells": 303,
+        "height": 34,
+        "occupied_xy_cells": 866,
+        "score": [
+          1394,
+          563,
+          122
+        ],
+        "transport_xy_cells": 563,
+        "width": 41
+      },
+      "route_expansions": 9341,
+      "witness": {
+        "path": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/factory-edit-pilot/pose-15-16-step31-verified/work-10000-valid.json",
+        "sha256": "a827038028cbaf1f92248fd7fc0f0a8ffd0627bcbc36589138b6f2671e53cf1d"
+      }
+    }
+  ]
+}
