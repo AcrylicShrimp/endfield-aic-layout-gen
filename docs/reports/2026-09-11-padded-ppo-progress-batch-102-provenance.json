@@ -1,0 +1,53 @@
+{
+  "schema": "ppo-progress-snapshot-provenance-v1",
+  "training_runtime_commit": "d20b416",
+  "run": "/home/ashrimp/Srv/aic-ppo-padded-curriculum-12h-20260911/artifacts/factory-edit-pilot/padded-curriculum-twelve-hour",
+  "protocol_sha256": "fb6061b7513d3d558eb6beb21b0ab1a1346978d8c42d24023e820cb2b31b7531",
+  "through_training_batch": 102,
+  "training_actions": 205376,
+  "evaluation_batches": [
+    84,
+    88,
+    92,
+    96,
+    100
+  ],
+  "training_batches": [
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99,
+    100,
+    101,
+    102
+  ],
+  "source_sha256": "5669b14882405a64c8c63ffdbc0a7af15e3e9d62e80252789fbde192a3c7572e",
+  "input_manifest": {
+    "path": "/home/ashrimp/Srv/aic-ppo-progress-analysis-20260911/artifacts/batch-102-verified/inputs.json",
+    "sha256": "732f2e2b1c11b6b69d5b779551af8d83f536f464418d171f839af71582d12619"
+  },
+  "evidence": [
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-progress-analysis-20260911/artifacts/batch-102-verified/report.json",
+      "sha256": "d0d22683d1f9fe56717fa17d10551af0f716a99b5759de3fc34788a5c007392d"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-progress-analysis-20260911/artifacts/batch-102-verified/progress.png",
+      "sha256": "b41cab18408a2e04683fdd6bdf0900520518271dea04b5e617c5b7137c3cf387"
+    }
+  ],
+  "training_unchanged": true
+}

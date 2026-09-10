@@ -374,3 +374,11 @@ old-runtime timing comparisons are separate diagnostic CLIs:
 `compare_ppo_supply_runs.py`. `check_ppo_batch_recovery.py` exercises actual CLI
 stop/resume against an uninterrupted readiness reference. Each requires explicit
 inputs and fresh output.
+
+For a bounded live progress snapshot, use `profile_ppo_progress.py --run RUN
+--through COMMITTED_BATCH --output FRESH_OUTPUT --plot`. It reads committed rows
+and complete evaluation traces without GPU execution or changing the learner.
+The default windows cover twenty training batches and five evaluations. It
+reports action-weighted rejection rates, per-kind realized area contribution,
+physical repeats, early/later gains, curriculum depth and KL stopping. The
+optional static figure requires matplotlib in the diagnostic environment.
