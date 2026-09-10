@@ -2,7 +2,9 @@
 
 ## Status
 
-Prepared configuration; execution not yet started.
+Running. The first one-hour session started at 2026-09-10 02:30:32 UTC
+(11:30:32 KST) and is scheduled to stop at 03:30:32 UTC (12:30:32 KST).
+Await joint user review before any continuation.
 
 ## User decision and contract
 
@@ -43,3 +45,20 @@ review before deciding whether to run another twelve hours.
 - Raise only the existing configuration update-count ceiling from 256 to 4,096
   so a later approved continuation cannot exhaust the frozen schedule early.
   This does not authorize execution beyond the first one-hour timer.
+- Configuration and minimal schedule-ceiling change committed as `db34894`.
+  Existing 44 PPO tests, configuration/seed-disjointness validation, workspace
+  check, and artifact worktree/index checks pass. Rust sources are unchanged
+  from the preceding 541-test workspace run.
+- Freeze an isolated runtime at `/home/ashrimp/Srv/aic-ppo-one-hour-20260910`.
+  Run root: `artifacts/factory-edit-pilot/ppo-one-hour-trial` within that runtime.
+  Protocol SHA-256: `33740e98524a0e6512165c8b25e7c0e2c8bf397e1f4841b425586935c9a4aba4`.
+  The protocol records 256 source/binary/input identities. The ignored launch
+  archive records the exact committed source; existing verified native binaries
+  are copied without rebuilding. Credentials remain outside the runtime.
+- Start one detached timed session. The initial evaluation admits all 32
+  factories; the first training collection also admits all 32 and reaches the
+  CUDA learner. W&B publishes the initial evaluation successfully.
+- Live W&B run: <https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/357b97c90f050966c1b59dcc>.
+  The ignored launch driver calls normal terminal export and writes
+  `one-hour-summary.json` after shutdown, verifying durable record and final
+  checkpoint hashes. It never resumes automatically.
