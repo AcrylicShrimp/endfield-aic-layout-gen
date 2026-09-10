@@ -269,7 +269,7 @@ impl FactoryEditSession {
                 .map_err(|e| error("factory.proposal-schema", "proposal", e.to_string()))
                 .and_then(|input| validation::accept(&self.request, &input, &self.catalogs))
         };
-        self.finish(result, began.elapsed().as_secs_f64() * 1000.0)
+        self.finish(result, began.elapsed().as_secs_f64() * 1000.0, None)
     }
 
     fn reserve_proposal(&mut self) -> Option<FactoryEditOutcome> {
@@ -297,15 +297,35 @@ impl FactoryEditSession {
         let began = Instant::now();
         let result = validation::accept(&self.request, candidate, &self.catalogs);
         let elapsed_ms = began.elapsed().as_secs_f64() * 1000.0;
-        self.finish(result, elapsed_ms)
+        self.finish(result, elapsed_ms, None)
+    }
+
+    /// An owning episode can have an earlier deadline than this acceptance session.
+    /// Check both deadlines before committing the validated physical state.
+    pub fn propose_with_deadline(
+        &mut self,
+        candidate: &WitnessProbeInput,
+        deadline: Instant,
+    ) -> FactoryEditOutcome {
+        if let Some(outcome) = self.reserve_proposal() {
+            return outcome;
+        }
+        let began = Instant::now();
+        let result = validation::accept(&self.request, candidate, &self.catalogs);
+        self.finish(
+            result,
+            began.elapsed().as_secs_f64() * 1000.0,
+            Some(deadline),
+        )
     }
 
     fn finish(
         &mut self,
         result: Result<(WitnessProbeInput, FactoryLayoutMetrics)>,
         validation_ms: f64,
+        deadline: Option<Instant>,
     ) -> FactoryEditOutcome {
-        let late = self.expired();
+        let late = self.expired() || deadline.is_some_and(|d| Instant::now() >= d);
         let (candidate, metrics) = match result {
             Ok(value) => value,
             Err(d) => {

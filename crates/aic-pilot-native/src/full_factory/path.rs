@@ -1,0 +1,332 @@
+//! Deterministic bounded local A*, including catalog-backed crossing modules.
+
+use std::cmp::Reverse;
+use std::collections::BinaryHeap;
+
+use aic_data::layouts::FactoryEditCatalogs;
+use aic_data::logistics::{LogisticsComponentKind, TransportKind};
+use aic_data::recipes::Rate;
+use indexmap::{IndexMap, IndexSet};
+use serde::Serialize;
+
+use super::catalog::cardinal_index;
+use super::chains::Chain;
+use super::types::*;
+
+#[derive(Clone, Debug, Serialize)]
+pub struct Crossing {
+    pub position: Point,
+    pub direction: usize,
+    pub component: String,
+    pub rotation: i64,
+    pub transport: TransportKind,
+    pub kind: LogisticsComponentKind,
+    pub carrier_chain: usize,
+    pub carrier_network: usize,
+}
+pub type Crossings = IndexMap<(Point, usize), Crossing>;
+
+pub fn crossing_options(
+    carriers: &[Chain],
+    job: &Chain,
+    catalogs: &FactoryEditCatalogs,
+    excluded: &IndexSet<Point>,
+) -> Crossings {
+    let mut visits = IndexMap::<Point, Vec<(&Chain, usize)>>::new();
+    for c in carriers.iter().filter(|c| c.transport == job.transport) {
+        for (i, p) in c.cells.iter().enumerate() {
+            visits.entry(*p).or_default().push((c, i));
+        }
+    }
+    let sufficient = |quantity: i64, duration: i64, rate: Rate| {
+        i128::from(quantity) * 1000 * i128::from(rate.denominator)
+            >= i128::from(rate.numerator) * i128::from(duration)
+    };
+    let poses: Vec<_> = catalogs
+        .components
+        .catalog()
+        .components
+        .iter()
+        .filter(|c| {
+            c.kind == LogisticsComponentKind::Bridge
+                && c.transport == job.transport
+                && c.footprint.width == 1
+                && c.footprint.height == 1
+                && sufficient(c.capacity.quantity, c.capacity.duration_ms, job.rate)
+        })
+        .flat_map(|c| {
+            c.allowed_rotations
+                .iter()
+                .map(move |&rotation| (c, rotation))
+        })
+        .collect();
+    let mut options = IndexMap::new();
+    for (p, xs) in visits {
+        if xs.len() != 1 || excluded.contains(&p) {
+            continue;
+        }
+        let (c, i) = xs[0];
+        if c.id == job.id || i == 0 || i + 1 == c.cells.len() {
+            continue;
+        }
+        let Some(d) = direction(c.cells[i - 1], p) else {
+            continue;
+        };
+        if direction(p, c.cells[i + 1]) != Some(d) {
+            continue;
+        }
+        for next in [(d + 1) % 4, (d + 3) % 4] {
+            let pose = poses.iter().find(|&&(def, rotation)| {
+                sufficient(def.capacity.quantity, def.capacity.duration_ms, c.rate)
+                    && [d, next].iter().all(|&axis| {
+                        def.input_directions.iter().any(|&e| {
+                            (cardinal_index(e) + rotation as usize / 90) % 4 == (axis + 2) % 4
+                        }) && def
+                            .output_directions
+                            .iter()
+                            .any(|&e| (cardinal_index(e) + rotation as usize / 90) % 4 == axis)
+                    })
+            });
+            if let Some(&(def, rotation)) = pose {
+                options.insert(
+                    (p, next),
+                    Crossing {
+                        position: p,
+                        direction: next,
+                        component: def.id.clone(),
+                        rotation,
+                        transport: job.transport,
+                        kind: LogisticsComponentKind::Bridge,
+                        carrier_chain: c.id,
+                        carrier_network: c.network,
+                    },
+                );
+            }
+        }
+    }
+    options
+}
+
+pub struct PathOptions<'a> {
+    pub first: Option<usize>,
+    pub last: Option<usize>,
+    pub work_budget: usize,
+    pub crossings: &'a Crossings,
+    pub crossing_limit: usize,
+    pub allow_zero_length: bool,
+}
+#[derive(Debug, Serialize)]
+pub struct PathResult {
+    pub status: &'static str,
+    pub expanded: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cells: Option<Vec<Point>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub crossings: Option<Vec<Crossing>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub steps: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub turns: Option<i64>,
+}
+impl PathResult {
+    pub fn stopped(status: &'static str, expanded: usize) -> Self {
+        Self {
+            status,
+            expanded,
+            cells: None,
+            crossings: None,
+            steps: None,
+            turns: None,
+        }
+    }
+    fn found(
+        cells: Vec<Point>,
+        crossings: Vec<Crossing>,
+        steps: i64,
+        turns: i64,
+        expanded: usize,
+    ) -> Self {
+        Self {
+            status: "found",
+            expanded,
+            cells: Some(cells),
+            crossings: Some(crossings),
+            steps: Some(steps),
+            turns: Some(turns),
+        }
+    }
+}
+#[derive(Clone)]
+struct State {
+    point: Point,
+    direction: usize,
+    used: usize,
+    id: i64,
+    g: i64,
+    via: Option<Crossing>,
+}
+
+pub fn shortest_path(
+    start: Point,
+    end: Point,
+    blocked: &IndexSet<Point>,
+    bounds: Bounds,
+    options: PathOptions<'_>,
+) -> Result<PathResult> {
+    let PathOptions {
+        first,
+        last,
+        work_budget,
+        crossings,
+        crossing_limit,
+        allow_zero_length,
+    } = options;
+    let width = bounds.width();
+    let height = bounds.height();
+    let area = i128::from(width) * i128::from(height);
+    if width < 1
+        || height < 1
+        || area > 250000
+        || work_budget < 1
+        || first.is_some_and(|d| d > 3)
+        || last.is_some_and(|d| d > 3)
+        || crossing_limit > 8
+    {
+        let mut d = Diagnostic::new(
+            "path-invalid-input",
+            "Invalid grid, endpoint, direction, crossing or work budget",
+            serde_json::Value::Null,
+        );
+        d.stage = "local-path";
+        return Err(d);
+    }
+    if !bounds.contains(start)
+        || !bounds.contains(end)
+        || blocked.contains(&start)
+        || blocked.contains(&end)
+    {
+        return Ok(PathResult::stopped("blocked-endpoint", 0));
+    }
+    if start == end {
+        return Ok(if allow_zero_length && first.is_none() && last.is_none() {
+            PathResult::found(vec![start], vec![], 0, 0, 0)
+        } else {
+            PathResult::stopped("same-endpoint", 0)
+        });
+    }
+    let weight = width * height * 4 * (crossing_limit as i64 + 1) + 1;
+    let id = |p: Point, d: usize, used: usize| {
+        (((p.y - bounds.min_y) * width + p.x - bounds.min_x) * 5 + d as i64)
+            * (crossing_limit as i64 + 1)
+            + used as i64
+    };
+    let initial = id(start, 4, 0);
+    let mut states = vec![State {
+        point: start,
+        direction: 4,
+        used: 0,
+        id: initial,
+        g: 0,
+        via: None,
+    }];
+    let mut heap = BinaryHeap::from([Reverse((
+        start.distance(end) * weight,
+        0_i64,
+        initial,
+        0_usize,
+    ))]);
+    let mut best = IndexMap::from([(initial, 0)]);
+    // Match the oracle's map from state ID to its latest predecessor object.
+    let mut parents = IndexMap::<i64, usize>::new();
+    let mut expanded = 0;
+    while let Some(Reverse((_, _, _, pi))) = heap.pop() {
+        let p = states[pi].clone();
+        if best.get(&p.id) != Some(&p.g) {
+            continue;
+        }
+        if expanded == work_budget {
+            return Ok(PathResult::stopped("work-budget", expanded));
+        }
+        expanded += 1;
+        if p.point == end && (last.is_none() || last == Some(p.direction)) {
+            let mut cells = Vec::new();
+            let mut crossings = Vec::new();
+            let mut current = Some(pi);
+            while let Some(i) = current {
+                let s = &states[i];
+                cells.push(s.point);
+                if let Some(via) = &s.via {
+                    crossings.push(via.clone());
+                }
+                current = parents.get(&s.id).copied();
+            }
+            cells.reverse();
+            crossings.reverse();
+            if cells.iter().collect::<IndexSet<_>>().len() != cells.len() {
+                return Ok(PathResult::stopped("repeated-cell", expanded));
+            }
+            return Ok(PathResult::found(
+                cells,
+                crossings,
+                p.g / weight,
+                p.g % weight,
+                expanded,
+            ));
+        }
+        for d in 0..4 {
+            if p.via.is_some() && d != p.direction {
+                continue;
+            }
+            if p.direction == 4 && first.is_some_and(|first| d != first) {
+                continue;
+            }
+            if p.direction != 4 && (d + 2) % 4 == p.direction {
+                continue;
+            }
+            let q = p.point.offset(d);
+            let via = if blocked.contains(&q) {
+                let Some(site) = crossings.get(&(q, d)) else {
+                    continue;
+                };
+                if p.used >= crossing_limit {
+                    continue;
+                }
+                if site.position != q || site.direction != d {
+                    let mut e = Diagnostic::new(
+                        "path-invalid-crossing",
+                        "Crossing module does not match its entry cell and direction",
+                        serde_json::Value::Null,
+                    );
+                    e.stage = "local-path";
+                    return Err(e);
+                }
+                Some(site.clone())
+            } else {
+                None
+            };
+            if !bounds.contains(q) || q == start || (q == end && last.is_some_and(|last| d != last))
+            {
+                continue;
+            }
+            let used = p.used + usize::from(via.is_some());
+            let g = p.g + weight + i64::from(p.direction != 4 && p.direction != d);
+            let qid = id(q, d, used);
+            if best.get(&qid).is_some_and(|&old| old <= g) {
+                continue;
+            }
+            best.insert(qid, g);
+            parents.insert(qid, pi);
+            let qi = states.len();
+            states.push(State {
+                point: q,
+                direction: d,
+                used,
+                id: qid,
+                g,
+                via,
+            });
+            heap.push(Reverse((g + q.distance(end) * weight, g, qid, qi)));
+        }
+    }
+    Ok(PathResult::stopped("no-path", expanded))
+}

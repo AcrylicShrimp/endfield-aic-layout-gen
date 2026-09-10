@@ -13,6 +13,7 @@ anyhow = "1"
 clap = { version = "4", features = ["derive"] }
 crossbeam-channel = "0.5"
 good_lp = { version = "1", default-features = false, features = ["microlp"] }
+indexmap = "2"
 pumpkin-solver = "0.5"
 pyo3 = "0.29"
 numpy = "0.29"

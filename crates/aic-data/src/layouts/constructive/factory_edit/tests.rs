@@ -140,6 +140,21 @@ fn translate(w: &mut WitnessProbeInput, dx: i64, dy: i64) {
     }
 }
 
+#[test]
+fn earlier_owner_deadline_prevents_commit_but_charges_validation() {
+    let f = Fixture::load();
+    let mut session = f.session(f.input.clone(), 3);
+    let before = serde_json::to_value(session.snapshot().current).unwrap();
+    let result = session.propose_with_deadline(&f.input, Instant::now() - Duration::from_millis(1));
+    assert_eq!(result.status, FactoryEditStatus::Late);
+    assert!(result.charged);
+    assert_eq!(
+        before,
+        serde_json::to_value(session.snapshot().current).unwrap()
+    );
+    assert_eq!(session.snapshot().proposals, 1);
+}
+
 // A supplied physical proposal that translates downstream bodies and explicitly
 // lengthens every crossing route. The production executor does not choose this edit.
 fn stretch(w: &WitnessProbeInput, column: i64) -> WitnessProbeInput {
@@ -351,7 +366,7 @@ fn deadline_after_validation_prevents_commit_without_reclassifying_validity() {
     session.proposals = 1;
     // Simulate the clock crossing the deadline during independent validation.
     session.started = Instant::now() - Duration::from_millis(session.budget.elapsed_ms + 1);
-    let result = session.finish(validated, 1.0);
+    let result = session.finish(validated, 1.0, None);
     assert_eq!(result.status, FactoryEditStatus::Late);
     assert!(result.charged && result.candidate_validated);
     assert_eq!(result.current, initial);

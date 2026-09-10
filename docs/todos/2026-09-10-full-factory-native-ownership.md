@@ -28,7 +28,7 @@ full-factory ownership cutover. Preserve its completed experimental evidence.
    distinguish different physical scopes, model sizes, action domains and work;
    do not present cross-workload timings as a controlled language speed ratio.
 3. Write the new Rust environment contract using the profile evidence: inputs,
-   outputs, state ownership, invariants, failures, diagnostics, snapshots and
+   outputs, state ownership, invariants, failures, diagnostics, evidence exports and
    semantic/performance verification. Preserve current full-factory semantics.
 4. Implement the contract and cut the current training/evaluation path over
    together. Remove obsolete normal Node/Python environment paths. Keep any
@@ -56,3 +56,11 @@ full-factory ownership cutover. Preserve its completed experimental evidence.
 - Retained the full baseline runtime, profiles, selected inputs/experiences and
   historical summaries with matching server/workstation archive hashes. Proceed
   to evidence-based full-factory Rust contract redesign.
+- Stage 3 complete: [native contract](../designs/2026-09-10.08-full-factory-native-environment.md).
+  Stage 4 has a working retained native environment with matching geometry,
+  candidate order and observation arrays. The normal PPO/generation callers
+  still await cutover; the second profile has not started.
+- The user requested a narrower implementation after the work took too long.
+  Removed the newly added mid-episode snapshot/restore contract and its tests:
+  the existing harness resumes from published episodes and learner checkpoints.
+  Keep that boundary and focus remaining work on caller cutover and profiling.

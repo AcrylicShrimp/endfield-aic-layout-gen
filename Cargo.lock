@@ -46,6 +46,7 @@ name = "aic-pilot-native"
 version = "0.1.0"
 dependencies = [
  "aic-data",
+ "indexmap",
  "num-rational",
  "num-traits",
  "numpy",

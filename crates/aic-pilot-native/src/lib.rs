@@ -8,6 +8,7 @@ mod command;
 mod diagnostic;
 mod edits;
 mod engine;
+mod full_factory;
 mod observation;
 mod python_engine;
 mod python_factory;
@@ -21,5 +22,8 @@ fn aic_pilot_native(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<python_engine::PythonHandle>()?;
     module.add_class::<python_engine::PythonEngine>()?;
     module.add_class::<python_factory::PythonFactory>()?;
+    module.add_class::<full_factory::python::PythonRuntime>()?;
+    module.add_class::<full_factory::python::PythonEpisode>()?;
+    module.add_class::<full_factory::python::PythonHandle>()?;
     Ok(())
 }

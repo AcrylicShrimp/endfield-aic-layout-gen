@@ -21,7 +21,7 @@ fn error(message: impl std::fmt::Display) -> PyErr {
     PyValueError::new_err(format!("factory.input: {message}"))
 }
 
-fn decode<T: DeserializeOwned>(value: &str) -> std::result::Result<T, String> {
+pub(crate) fn decode<T: DeserializeOwned>(value: &str) -> std::result::Result<T, String> {
     if value.len() > MAX_JSON_BYTES {
         return Err("JSON exceeds the 16 MiB input work guard".into());
     }
@@ -32,7 +32,11 @@ fn encode(value: &impl Serialize) -> PyResult<String> {
     serde_json::to_string(value).map_err(error)
 }
 
-fn read<T: DeserializeOwned>(root: &Path, path: &Path, provenance: &mut Vec<Value>) -> PyResult<T> {
+pub(crate) fn read<T: DeserializeOwned>(
+    root: &Path,
+    path: &Path,
+    provenance: &mut Vec<Value>,
+) -> PyResult<T> {
     let path = root.join(path);
     let file = std::fs::File::open(&path).map_err(|e| error(format!("{}: {e}", path.display())))?;
     let mut bytes = Vec::new();
@@ -59,6 +63,43 @@ struct Paths {
     components: PathBuf,
 }
 
+pub(crate) fn load_catalogs(
+    root: &Path,
+    catalog_paths_json: &str,
+) -> PyResult<(Arc<FactoryEditCatalogs>, Vec<Value>)> {
+    let paths: Paths = decode(catalog_paths_json).map_err(error)?;
+    let mut provenance = Vec::new();
+    let catalogs = FactoryEditCatalogs {
+        facilities: ValidatedFacilityCatalog::try_from_catalog(read(
+            root,
+            &paths.facilities,
+            &mut provenance,
+        )?)
+        .map_err(|e| error(format!("{}: {e:?}", paths.facilities.display())))?,
+        recipes: ValidatedRecipeBook::try_from_recipe_book(read(
+            root,
+            &paths.recipes,
+            &mut provenance,
+        )?)
+        .map_err(|e| error(format!("{}: {e:?}", paths.recipes.display())))?,
+        items: ValidatedItemCatalog::try_from_catalog(read(root, &paths.items, &mut provenance)?)
+            .map_err(|e| error(format!("{}: {e:?}", paths.items.display())))?,
+        transports: ValidatedTransportCatalog::try_from_catalog(read(
+            root,
+            &paths.transports,
+            &mut provenance,
+        )?)
+        .map_err(|e| error(format!("{}: {e:?}", paths.transports.display())))?,
+        components: ValidatedLogisticsComponentCatalog::try_from_catalog(read(
+            root,
+            &paths.components,
+            &mut provenance,
+        )?)
+        .map_err(|e| error(format!("{}: {e:?}", paths.components.display())))?,
+    };
+    Ok((Arc::new(catalogs), provenance))
+}
+
 #[pyclass(name = "FactoryEditSession")]
 pub struct PythonFactory {
     session: FactoryEditSession,
@@ -76,44 +117,11 @@ impl PythonFactory {
         budget_json: &str,
     ) -> PyResult<Self> {
         let root = Path::new(root);
-        let paths: Paths = decode(catalog_paths_json).map_err(error)?;
         let budget = decode(budget_json).map_err(error)?;
-        let mut provenance = Vec::new();
-        let catalogs = FactoryEditCatalogs {
-            facilities: ValidatedFacilityCatalog::try_from_catalog(read(
-                root,
-                &paths.facilities,
-                &mut provenance,
-            )?)
-            .map_err(|e| error(format!("{}: {e:?}", paths.facilities.display())))?,
-            recipes: ValidatedRecipeBook::try_from_recipe_book(read(
-                root,
-                &paths.recipes,
-                &mut provenance,
-            )?)
-            .map_err(|e| error(format!("{}: {e:?}", paths.recipes.display())))?,
-            items: ValidatedItemCatalog::try_from_catalog(read(
-                root,
-                &paths.items,
-                &mut provenance,
-            )?)
-            .map_err(|e| error(format!("{}: {e:?}", paths.items.display())))?,
-            transports: ValidatedTransportCatalog::try_from_catalog(read(
-                root,
-                &paths.transports,
-                &mut provenance,
-            )?)
-            .map_err(|e| error(format!("{}: {e:?}", paths.transports.display())))?,
-            components: ValidatedLogisticsComponentCatalog::try_from_catalog(read(
-                root,
-                &paths.components,
-                &mut provenance,
-            )?)
-            .map_err(|e| error(format!("{}: {e:?}", paths.components.display())))?,
-        };
+        let (catalogs, mut provenance) = load_catalogs(root, catalog_paths_json)?;
         let request = read(root, Path::new(request_path), &mut provenance)?;
         let witness = read(root, Path::new(witness_path), &mut provenance)?;
-        let session = FactoryEditSession::new(request, witness, Arc::new(catalogs), budget)
+        let session = FactoryEditSession::new(request, witness, catalogs, budget)
             .map_err(|d| error(serde_json::to_string(&d).unwrap_or_else(|_| d.message.clone())))?;
         let build: Value = serde_json::from_str(env!("AIC_PILOT_BUILD_INFO")).map_err(error)?;
         let metadata = json!({"schema_version": 1, "backend": "production-physical-witness",
