@@ -1,0 +1,52 @@
+{
+  "schema": "ppo-action-contribution-provenance-v1",
+  "base_source_commit": "abc5df0",
+  "through_cumulative_batch": 512,
+  "evaluations_per_run": 65,
+  "episodes_per_run": 2080,
+  "actions_per_run": 66560,
+  "matched_evaluation_inputs": 32,
+  "recent_window": {
+    "batches": [
+      456,
+      464,
+      472,
+      480,
+      488,
+      496,
+      504,
+      512
+    ],
+    "episodes_per_run": 256,
+    "actions_per_run": 8192
+  },
+  "run_arguments": [
+    "new=0=/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts/factory-edit-pilot/cnn2-routing-twelve-hour/current-history-16--seed-17",
+    "old=0=/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/factory-edit-pilot/ppo-spatial-cnn2/current-history-16--seed-17",
+    "old=32=/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/factory-edit-pilot/cnn2-twelve-hour/current-history-16--seed-17"
+  ],
+  "audit_source_sha256": "a7227ca223b67dbc87025dd502e054da9b8a719e0817aa5476b9e8f669c07887",
+  "plot_source_sha256": "a89879e3e720a8b88ae68d56965d8b05bde046e0450d05b5c0f0f68d7cd4c609",
+  "input_manifest": {
+    "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/action-contributions-512-cost/inputs.json",
+    "sha256": "726bbec4e7191d2b3d709a00f8b9fec6987c4043800fd126d6be16ae2b588a01",
+    "files": 4290
+  },
+  "report": {
+    "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/action-contributions-512-cost/report.json",
+    "sha256": "e22932211dd124681401443ad13f7764de89a838167067ff85fac1196b6630b8"
+  },
+  "plot": {
+    "path": "/home/ashrimp/Srv/aic-routing-diagnosis-20260910/artifacts/action-contributions-512-cost/contributions.png",
+    "sha256": "b9dda512fd21e674cad38454075f2f72e9d58999d5e0a0e9b7c9eb12522de787"
+  },
+  "checks": {
+    "complete_trace_coverage": true,
+    "matched_initial_factory_hashes": true,
+    "per_step_and_episode_area_conservation": true,
+    "phase_quality_conservation": true,
+    "physical_identity_flags": true,
+    "separate_shaped_failure_costs": true
+  },
+  "causal_limit": "Direct realized best-area attribution; overlapping future windows are observational, not causal credit."
+}
