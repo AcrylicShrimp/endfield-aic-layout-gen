@@ -90,3 +90,7 @@ outside tracked source directories.
   the original experiment runtime separately and retained the final archive
   with matching workstation/server hashes. The shallow comparison is complete;
   the cancelled long run and fixed-reset screen remain stopped.
+
+- After completion, the user selected current-history-16 as the baseline for
+  subsequent training. Recorded its measured runtime decomposition and scaling
+  limits in the comparison report; the completed screen protocol is unchanged.
