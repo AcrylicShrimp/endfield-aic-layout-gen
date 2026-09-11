@@ -1,0 +1,91 @@
+{
+  "schema": "blueprint-policy-diagnosis-provenance-v1",
+  "protocol_sha256": "3bef9feb3b054d43857ea9e641299aa64b3a3a25eae6dfe00d946fda83d0ba8b",
+  "runtime_commit": "c6ed2cd",
+  "cutoff": 160,
+  "sources": [
+    {
+      "path": "tools/factory-edit-pilot/diagnose_blueprint_policy.py",
+      "sha256": "d2658e206a17f9086ede79366cd4fea6da00d5709c96fb7e49c925a98b2db55e",
+      "bytes": 16108
+    },
+    {
+      "path": "tools/factory-edit-pilot/summarize_blueprint_policy.py",
+      "sha256": "50d8c2368fefb4b7cfa33f1b755f7ab4f99ac0d04700d3751f2f4847b009758f",
+      "bytes": 6189
+    },
+    {
+      "path": "tools/factory-edit-pilot/test_diagnose_blueprint_policy.py",
+      "sha256": "59f5f1915f8502d1f066055e11ed9c37d282e92359b6a00f104d6d8cc2f79009",
+      "bytes": 2068
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-policy-diagnosis-20260911/source-state.json",
+      "sha256": "82ca77cd9666d6dbd160b57146e652a2e2f77d1850d7e04c9f31898a1bbe5892",
+      "bytes": 90254
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-policy-diagnosis-20260911/summary.json",
+      "sha256": "733d3be54d2e6bbafb8646344fc62f2358cbb8ccb8ea61ea141b0dbfbffb89ad",
+      "bytes": 661753
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-policy-diagnosis-20260911/inputs.json",
+      "sha256": "e5a5324bd5d2f91a7835f800fd29abee809aeba2ead259ef3730de18bef3306c",
+      "bytes": 63281
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-policy-diagnosis-20260911/compact.json",
+      "sha256": "b8f4ef1ecc36de9ba87a2967a2a34a57fe8090e67d1d2e41f17ef84c9a4b9c49",
+      "bytes": 12260
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-policy-diagnosis-20260911/later-evaluations.json",
+      "sha256": "b5504a16b4fc7f7d5d40f83644d49d612a8cf52a036b529614cc30cf787150e7",
+      "bytes": 15723
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-policy-diagnosis-20260911/summary-provenance.json",
+      "sha256": "faf6ccacabfc0877adc10900d946d59f9d1fd492e58e05fc4adf79816e0e06a3",
+      "bytes": 354
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-policy-diagnosis-20260911/diagnosis.png",
+      "sha256": "92442cffc9e8b908db18d9608ea5daed54980dfdfa139042d7c2826699ea302b",
+      "bytes": 188889
+    }
+  ],
+  "counts": {
+    "zero_reward_batches": 146,
+    "changed_models": 160,
+    "actions": 40960,
+    "negative_rewards": 0,
+    "rejected_actions": 2063
+  },
+  "exact_reference_updates": [
+    1,
+    2,
+    4,
+    9,
+    41,
+    97,
+    129
+  ],
+  "counterfactual_count": 35,
+  "probe_sha256": "4f5a24230ac5f0b57a32ef14bb404fa12763db1c7fa4be612d82af63a2521cb5",
+  "verification": {
+    "python_tests": 409,
+    "python_skipped": 7,
+    "rust_passed": 564,
+    "rust_ignored": 5,
+    "cargo_check": "passed",
+    "live_training_modified": false
+  },
+  "limitations": [
+    "Single seed and recorded trajectories.",
+    "Ablations are single updates, not new on-policy runs.",
+    "Gradient alignment is Euclidean first-order, not an Adam update prediction."
+  ]
+}
