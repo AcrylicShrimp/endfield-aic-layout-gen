@@ -55,6 +55,18 @@ Compare both audited arms with `summarize_blueprint_bc.py --control CONTROL
 [BC screen report](../../docs/reports/2026-09-11-blueprint-ppo-bc.md) records improved
 within-fixture compaction and the remaining limits of post-pose completion.
 
+The accumulating-success experiment uses `blueprint-success-replay.json` and
+`blueprint_success.py train --config CONFIG --native-library LIBRARY --output RUN
+--coefficient 0` or `--coefficient 0.05`. Buffers start empty and accept only actual
+training successes, with complete-episode returns and positive current-value
+advantage weights. Original/overlap starts provide no prebuilt compaction.
+Use `--readiness` for stochastic readiness, or `--mechanical-readiness` for an
+explicit scripted buffer/continuation fixture that never enters a main run.
+`blueprint_success.py resume --output RUN` restores learner and buffer state.
+`audit_blueprint_success.py --run RUN` reconstructs all buffer/learner updates,
+checks actual sampling and independently admits the retained native witnesses.
+See `docs/designs/2026-09-11-blueprint-success-replay.md` for the frozen contract.
+
 `blueprint_ppo.py resume --output RUN` restores the last complete durable update
 under identical recorded sources and inputs. Preserve `interrupted.pt.gz` when a
 run fails: it records partial experience beyond that update. Resuming re-collects
