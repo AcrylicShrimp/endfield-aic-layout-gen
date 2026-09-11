@@ -1,0 +1,121 @@
+{
+  "schema": "blueprint-duration-launch-provenance-v1",
+  "source_commit": "60c8cab",
+  "status": "launch_verified_training_running",
+  "purpose": "Bind immutable launch/readiness evidence, not future mutable training results. The live state.json and completion.json are deliberately not hashed.",
+  "evidence": [
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/protocol.json",
+      "sha256": "c296b55058849c5c9fb69a122c442ee59a34578a6f7c5fd7cca632dabbe862ae"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/launch.json",
+      "sha256": "0468280aa574baa151937c3fe952dcf739cb23ddad41605bfeabdb01805a518b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/job.plist",
+      "sha256": "dfc5f4680b54fa3da4cfe25d2ecd15ba2fb0451e5d984a9a0b7d051a569a1cab"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-launch-evidence-20260911/launch-observation.json",
+      "sha256": "a31fe36dce860d1a638cc049c535332c9431f3ec24fa5488ec588237c31c668a"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-launch-evidence-20260911/blueprint-duration-python-tests.log",
+      "sha256": "801debaaacadd827f3b3e8c51912b0e9444bc061d657c13ec0a92cc2a89d42c0"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-launch-evidence-20260911/blueprint-duration-readiness.log",
+      "sha256": "13c3006c3ce3c5db46d40a7643ce1a8e43f384a2b16c97b7cb9eeef622eebcc9"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-launch-evidence-20260911/blueprint-duration-workspace-check.log",
+      "sha256": "99f71393b9903dca098310bb446022a4bdee195ea9996f351a787195555210a6"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-launch-evidence-20260911/blueprint-duration-workspace-tests.log",
+      "sha256": "b55e398430e601f8e0174d6f7d2791c2885632381b6d2a9025d8ff03ba4396c9"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/seed-17/checkpoints/0000.pt.gz",
+      "sha256": "9747d025912321fc15e62c0c31862d88670ad7bd4c002ccd9772b2a3a7850b06"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/seed-17/checkpoints/0002.pt.gz",
+      "sha256": "52d5e9746f13dfa438986e0cbfacbd4da8133a0251e4621a7c93d9a6016eb71e"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/seed-17/checkpoints/0008.pt.gz",
+      "sha256": "5a9cf321d098bdb26d9a0b3ba107008d3b086c38c90fc867bfe24afe83031959"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/seed-17/checkpoints/0009.pt.gz",
+      "sha256": "d76d9b31bfdf5ce6415f9a20555d22ed0ba575f6850d8ac57c3d31bf2d456361"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-readiness-v2-20260911/protocol.json",
+      "sha256": "0e3a7c62b48a657f0fb0a525cea6761e67ce7cacc4e0e7493d765e4587b3f74a"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-readiness-v2-20260911/state.json",
+      "sha256": "47260c2f76357848fe64fb5a029f3f28f3eadb35541177f2aec33b2e8283d4bb"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-readiness-v2-20260911/audit.json",
+      "sha256": "212ce7c8f3380162b649752e8bbc62eab2e3d73a2d381561a10439f048159747"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-deadline-v1-20260911/protocol.json",
+      "sha256": "06b19ad8351235ca51f8a0652387c49dc6943a4a52cf4f72abf0d97738150f1a"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-deadline-v1-20260911/state.json",
+      "sha256": "deeb255efaed31841bd59620c3aa7ea7adc95d7fdf5fed397db406c3eec45e8e"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-deadline-v1-20260911/audit.json",
+      "sha256": "e0e47089e69ba2841f939ead9bd9f68e7465366182eab18937c6885cd5c3db5b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-deadline-v1-20260911/completion.json",
+      "sha256": "b963a6079dacd06915ff39af3e424a512af9c8b41d736e91edb2b86903a449c0"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-deadline-v1-20260911/job.plist",
+      "sha256": "933981901808c56149af57c8f286a5f6f687c6b0ff9eb40544ccacd04c3c54b8"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-deadline-v1-20260911/job.log",
+      "sha256": "b40c2d87942f773c1629ba81b97f4a62a31a647bbd7b67c44c3aacc268e718e7"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-signal-v1-20260911/protocol.json",
+      "sha256": "288962f5250b43a2fb327e20c0a869020d91394c24c616d2138a94a116d5f235"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-signal-v1-20260911/state.json",
+      "sha256": "1aae29255dc9d412814ff2422038ebf279f0cc30f7f7a437436c702a70f900ad"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-signal-v1-20260911/audit.json",
+      "sha256": "9385af9c734c09a61b2f957640db689014a47b0d7fbd9b5a988e7cf3d5f87304"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-signal-v1-20260911/completion.json",
+      "sha256": "30d28e5dd1107b42157f4cccfab54ac5183b9d748490829d2db07b674777512a"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-signal-v1-20260911/job.plist",
+      "sha256": "cfa0a731e2c8c1f63ba05953d6e50f03198921639ddf83c7d61f1fe44fd52caf"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-signal-v1-20260911/job.log",
+      "sha256": "8a70907f61f5ab26b932ccf85710853283c7c01dba7ad20038a7e7b95f205796"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-launch-evidence-20260911/launch-state-snapshot.json",
+      "sha256": "d105a374ef3d4143d486040afa384ff4d6363e4b9292c6130b8032001f0be7da"
+    }
+  ],
+  "state_snapshot_captured_at": "2026-09-11T08:46:43.218787+00:00"
+}

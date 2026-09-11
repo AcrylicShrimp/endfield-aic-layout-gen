@@ -1,6 +1,6 @@
 # Launch 64-action blueprint training for twelve hours
 
-Status: in progress.
+Status: launch complete; twelve-hour training running.
 
 Context: the user requested twelve hours of training and confirmed that 64 means
 the episode length, replacing 256 actions.
@@ -21,3 +21,8 @@ Activity log:
   pause/resume at action 32. A launchd deadline run finished its open episode and
   passed the automatic tail audit. Python: 393 tests, 7 skipped; workspace
   check/tests passed. Preparing the committed frozen launch.
+- 2026-09-11: Committed executable/configuration as `60c8cab`, created a detached
+  source worktree and launched the Standard launchd job at 17:41:52 KST.
+  Observed 125 updates / 32,000 actions, two admitted successes and actual replay.
+  Startup and monitoring evidence is recorded in the launch report. Final quality
+  remains pending until the duration run finishes.
