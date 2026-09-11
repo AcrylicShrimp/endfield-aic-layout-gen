@@ -14,22 +14,16 @@
     "elapsed_ms": 300000
   },
   "evaluation": {
-    "at": [
-      0,
-      2000000
-    ],
-    "starts": [
-      "original",
-      "overlap"
-    ],
-    "samples": 3,
     "elapsed_ms": 2000,
     "max_actions": 64,
     "action_milestones": [
       8,
       32,
       64
-    ]
+    ],
+    "interval_batches": 4,
+    "cohort": "artifacts/factory-edit-pilot/blueprint-evaluation-cohort-20260911/cohort.json",
+    "expected_cases": 32
   },
   "limits": {
     "run_seconds": 43380,
@@ -95,11 +89,14 @@
     ]
   },
   "duration": {
-    "schema": "blueprint-success-duration-v1",
+    "schema": "blueprint-success-duration-v2",
     "seconds": 43200,
     "finish_grace_seconds": 180,
-    "evaluation_interval_seconds": 1800,
     "min_free_bytes": 21474836480,
     "compression_level": 6
+  },
+  "tracking": {
+    "backend": "wandb",
+    "mode": "online"
   }
 }

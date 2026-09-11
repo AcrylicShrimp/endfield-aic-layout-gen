@@ -13,10 +13,12 @@ from blueprint_ppo import check_sources
 from blueprint_ppo_batch import pack
 from blueprint_ppo_environment import Runtime, Stream, semantic
 from blueprint_ppo_store import ROOT, checked, load, read, restore_learners, sha, write
-from blueprint_ppo_update import digest, predictions, require
+from blueprint_ppo_update import digest, learners, predictions, require
 from blueprint_success import restore_buffer
 from blueprint_success_buffer import Evidence, SuccessBuffer
 from blueprint_success_update import update_success
+from blueprint_evaluation_cohort import case_runtime, load_cohort
+from blueprint_duration_metrics import training_quality
 from blueprint_ppo_batch import distribution
 
 
@@ -25,14 +27,20 @@ from audit_blueprint_success import audit_sampling
 
 def audit_run(output, full=False):
     protocol, state = read(output / 'protocol.json'), read(output / 'state.json')
-    require(protocol['schema'] == state['schema'] == 'blueprint-success-duration-v1', 'blueprint.duration-audit: schema')
+    require(protocol['schema'] == state['schema'] == 'blueprint-success-duration-v2',
+            'blueprint.duration-audit: v2 required; audit historical v1 with its frozen sources')
     require(state['status'] in ('complete', 'paused') and state['protocol_sha256'] == sha(output / 'protocol.json'), 'stopped source-bound run')
     check_sources(protocol)
     config = protocol['config']
     runtime = Runtime(config, protocol['native_library'])
+    cohort, _ = load_cohort(config['evaluation']['cohort'], config['evaluation']['expected_cases'],
+                            {k: ROOT / p for k, p in runtime.spec['catalogs'].items()})
+    cohort = {c['generation_seed']: c for c in cohort}
     counts, by_start, replayed, evaluations, scopes = Counter(), {}, [], [], []
     with tempfile.TemporaryDirectory(prefix='blueprint-ppo-audit-') as temporary:
         checker = WitnessAudit(runtime, temporary)
+        cohort_checkers = {seed: WitnessAudit(case_runtime(runtime, case), Path(temporary) / str(seed))
+                           for seed, case in cohort.items()}
         for seed in config['seeds']:
             job = state['jobs'][str(seed)]
             require(job['status'] == state['status'], 'blueprint.duration-audit: durable stopped seed')
@@ -42,6 +50,12 @@ def audit_run(output, full=False):
             saved, buffer = restore_buffer(load(directory / f'checkpoints/{first_update:04d}.pt.gz'))
             if first_update == 0:
                 require(buffer.snapshot() == SuccessBuffer().snapshot(), 'blueprint.duration-audit: cold empty buffer')
+                cold_model, _, _ = learners(seed, config['ppo'])
+                require(digest(saved['model']) == digest(cold_model.state_dict())
+                        and not saved['actor_optimizer']['state'] and not saved['critic_optimizer']['state'],
+                        'blueprint.duration-audit: fresh untrained model and empty optimizers')
+                require(job['initialization']['evaluated_before_training'] and job['evaluations'][0]['update'] == 0,
+                        'iteration-zero evaluation precedes training')
             evidence = Evidence(output, job)
             model, actor, critic, sampler, shuffle = restore_learners(saved, config['ppo'], state['protocol_sha256'])
             prior_frontiers = {s['index']: dict(semantic=s['expected']) for s in saved['streams'] if s['expected'] is not None}
@@ -50,6 +64,7 @@ def audit_run(output, full=False):
                 chunk = load(checked(record['chunk'], output))
                 require(record['update'] == chunk['update'] == ordinal and chunk['seed'] == seed, 'ordered chunk identity')
                 require(chunk['protocol_sha256'] == state['protocol_sha256'], 'chunk protocol identity')
+                require(record['quality'] == training_quality(chunk), 'durable training metrics match native episode evidence')
                 require(chunk['model_before'] == digest(model.state_dict()), 'behavior checkpoint identity')
                 require(len(chunk['samples']) == config['training']['streams'] * config['training']['chunk_actions'], 'registered chunk size')
                 for before in chunk['native_before']:
@@ -138,11 +153,24 @@ def audit_run(output, full=False):
                 if eval_ref['update'] < first_update:
                     continue
                 report = read(checked(eval_ref, output))
+                require([r['generation_seed'] for r in report['rows']] == list(cohort)
+                        and [r['generation_seed'] for r in report['cases']] == list(cohort), 'complete ordered 32-factory evaluation')
                 checkpoint, _ = restore_buffer(load(directory / f'checkpoints/{eval_ref["update"]:04d}.pt.gz'))
                 eval_model, _, _, _, _ = restore_learners(checkpoint, config['ppo'], state['protocol_sha256'])
                 for case_ref in report['cases']:
+                    evaluation_checker = cohort_checkers[case_ref['generation_seed']]
                     case = load(checked(case_ref, output))
-                    checker.check(case['initial']['blueprint'], case['result']['best'])
+                    row = next(r for r in report['rows'] if r['generation_seed'] == case_ref['generation_seed'])
+                    require(row['start_score'] == case['initial']['best_metrics']['score']
+                            and row['best_score'] == case['result']['best_metrics']['score'], 'evaluation metric score evidence')
+                    area = case['initial']['initial_metrics']['score'][0]
+                    require(abs(row['total_area_reduction_percent'] - 100 * (area - row['best_score'][0]) / area) < 1e-12,
+                            'evaluation area reduction evidence')
+                    require(row['counts'].get('status/rejected', 0) == sum(t['outcome']['status'] == 'rejected' for t in case['trace']),
+                            'evaluation failed-action evidence')
+                    evaluation_checker.check(case['initial']['blueprint'], case['result']['best'])
+                    require(case['initial']['initial_metrics']['score'] == cohort[case_ref['generation_seed']]['initial_metrics']['score'],
+                            'historical evaluation factory admission metrics')
                     require(case['result']['factory_validated'], 'timed evaluation final best validated')
                     rows = []
                     for entry in case['trace']:
@@ -150,7 +178,7 @@ def audit_run(output, full=False):
                         require(prepared['actions'][entry['index']] == entry['action'], 'evaluation candidate identity')
                         rows.append(dict(input=prepared, index=entry['index'], old_logp=entry['old_logp'], old_value=entry['old_value']))
                         if entry['validated_witness'] is not None:
-                            checker.check(case['initial']['blueprint'], entry['validated_witness'])
+                            evaluation_checker.check(case['initial']['blueprint'], entry['validated_witness'])
                     with torch.no_grad():
                         for start in range(0, len(rows), 64):
                             batch = rows[start:start + 64]
@@ -160,9 +188,10 @@ def audit_run(output, full=False):
                     counts['evaluation_cases'] += 1
                     counts['evaluation_actions'] += sum(e['outcome']['charged'] for e in case['trace'])
                 evaluations.extend(report['rows'])
-        counts.update(witness_references=checker.references, unique_physically_validated_witnesses=len(checker.unique))
+        counts.update(witness_references=checker.references + sum(c.references for c in cohort_checkers.values()),
+                      unique_physically_validated_witnesses=len(checker.unique) + sum(len(c.unique) for c in cohort_checkers.values()))
     require(counts['exact_update_replays'] == sum(s['through_update'] - s['checkpoint_update'] for s in scopes), 'all updates in declared audit interval')
-    result = dict(schema='blueprint-duration-audit-v1', status='passed', scopes=scopes, full_run=full, protocol_sha256=state['protocol_sha256'],
+    result = dict(schema='blueprint-duration-audit-v2', status='passed', scopes=scopes, full_run=full, protocol_sha256=state['protocol_sha256'],
         counts=dict(counts), training_by_start={k: dict(v) for k, v in by_start.items()}, replayed=replayed,
         evaluation=evaluations, audit_source_sha256=sha(Path(__file__)))
     write(output / 'audit.json', result)

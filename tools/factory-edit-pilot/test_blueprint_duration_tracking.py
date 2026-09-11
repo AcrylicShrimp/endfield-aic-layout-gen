@@ -23,15 +23,15 @@ class TrackingTests(unittest.TestCase):
         return dict(path=name, sha256=sha(path), **extra)
 
     def training(self, update):
-        return self.ref(f'{update}.json', dict(update=update, actions=256, area_reward=.5,
+        return self.ref(f'{update}.json', dict(update=update, actions=256, area_reward=.5, elapsed_seconds=update * 2.,
             collection_seconds=.2, buffer=dict(entries=4, positive_commits=9),
             ppo=dict(actor_epochs=2, success=dict(positive_labels=3, selected_ids=['private']),
                      epochs=[dict(value_loss=.125)])))
 
     def evaluation(self, update):
         return self.ref(f'eval-{update}.json', dict(update=update, rows=[
-            dict(start='original', policy_area_reduction_percent=0., best_score=[700, 1, 1]),
-            dict(start='overlap', policy_area_reduction_percent=10., best_score=[630, 1, 1])]),
+            dict(start='original', sample=0, total_area_reduction_percent=0., start_score=[700, 1, 1], best_score=[700, 1, 1], policy_actions=64, counts={}),
+            dict(start='overlap', sample=0, total_area_reduction_percent=10., start_score=[700, 1, 1], best_score=[630, 1, 1], policy_actions=64, counts={'status/rejected': 2})]),
             update=update, seconds=12.)
 
     def state(self, update=2, status='running'):
@@ -57,10 +57,14 @@ class TrackingTests(unittest.TestCase):
         self.assertEqual(cursor, 3)
         self.assertEqual([c.kwargs['step'] for c in run.log.call_args_list], [1, 2])
         self.assertEqual(run.log.call_args_list[-1].args[0]['train/actions'], 512)
-        self.assertEqual(run.log.call_args_list[-1].args[0]['training/mean_area_reward'], .5 / 256)
+        self.assertEqual(run.log.call_args_list[-1].args[0]['time/elapsed_seconds'], 4.)
+        self.assertEqual(run.log.call_args_list[-1].args[0]['train/batches'], 2)
+        self.assertEqual(run.log.call_args_list[-1].args[0]['ppo/value_loss'], .125)
+        self.assertNotIn('training/mean_area_reward', run.log.call_args_list[-1].args[0])
         self.assertNotIn('success/selected_ids', run.log.call_args_list[-1].args[0])
-        evaluation = metrics(self.root, events(state)[0], 256)
-        self.assertEqual(evaluation['evaluation/all/mean_area_reduction_percent'], 5.)
+        baseline = read(self.root / 'eval-0.json')['rows']
+        evaluation = metrics(self.root, events(state)[0], 256, baseline)
+        self.assertEqual(evaluation['evaluation/all_admitted/by_seconds/area_reduction_percent'], 5.)
         self.assertEqual(evaluation['evaluation/overlap/mean_best_area'], 630)
         with self.assertRaisesRegex(ValueError, 'ahead'):
             export_pending(run, self.root, state, 4, 256)
@@ -75,7 +79,7 @@ class TrackingTests(unittest.TestCase):
     def setup_observer(self, status):
         config = dict(seeds=[17], training=dict(streams=8, chunk_actions=32), ppo={},
                       success=dict(coefficient=.05), duration={}, evaluation={}, purpose='test')
-        write(self.root / 'protocol.json', dict(schema='blueprint-success-duration-v1', config=config))
+        write(self.root / 'protocol.json', dict(schema='blueprint-success-duration-v2', config=config))
         state = self.state(status=status)
         state.update(protocol_sha256=sha(self.root / 'protocol.json'), stop_reason='duration' if status == 'complete' else None,
                      started_at='2026-09-11T08:41:52+00:00', seconds=12.)

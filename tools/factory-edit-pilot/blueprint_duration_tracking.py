@@ -10,6 +10,7 @@ import time
 
 from ppo_harness_environment import load_environment, tracking_destination
 from ppo_harness_state import read, sha, write
+from blueprint_duration_metrics import metrics as canonical_metrics, define_metrics
 
 
 def require(condition, message):
@@ -29,34 +30,16 @@ def events(state):
     job = next(iter(state['jobs'].values()))
     limit = job['update'] - (state['status'] == 'running')
     rows = [(i, 0, ref) for i, ref in enumerate(job['records'], 1) if i <= limit]
-    rows.extend((ref['update'], 1, ref) for ref in job['evaluations'] if ref['update'] <= limit)
+    rows.extend((ref['update'], 1, ref) for ref in job['evaluations'] if ref['update'] == 0 or ref['update'] <= limit)
     return sorted(rows, key=lambda row: row[:2])
 
 
-def metrics(root, event, actions_per_update):
+def metrics(root, event, actions_per_update, baseline):
     update, evaluation, ref = event
     record = checked_json(root, ref)
-    require(record['update'] == update, f'update identity: {ref["path"]}')
-    value = {'train/actions': update * actions_per_update, 'train/updates': update}
-    if evaluation:
-        rows = record['rows']
-        require(bool(rows), f'empty evaluation: {ref["path"]}')
-        for group in ['all'] + sorted({r['start'] for r in rows}):
-            selected = rows if group == 'all' else [r for r in rows if r['start'] == group]
-            prefix = f'evaluation/{group}'
-            value[f'{prefix}/mean_area_reduction_percent'] = sum(r['policy_area_reduction_percent'] for r in selected) / len(selected)
-            value[f'{prefix}/mean_best_area'] = sum(r['best_score'][0] for r in selected) / len(selected)
-            value[f'{prefix}/samples'] = len(selected)
-        value['evaluation/elapsed_seconds'] = ref['seconds']
-        return value
-    require(record['actions'] == actions_per_update, f'action count: {ref["path"]}')
-    value.update({'training/area_reward': record['area_reward'],
-                  'training/mean_area_reward': record['area_reward'] / record['actions'],
-                  'timing/collection_seconds': record['collection_seconds']})
-    for prefix, source in [('buffer', record['buffer']), ('ppo', record['ppo']),
-                           ('success', record['ppo']['success']), ('ppo/final_epoch', record['ppo']['epochs'][-1])]:
-        value.update({f'{prefix}/{key}': number for key, number in source.items() if type(number) in (int, float, bool)})
-    return value
+    return canonical_metrics(record, update, actions_per_update,
+        seconds=ref['seconds'] if evaluation else record.get('elapsed_seconds'),
+        initial=baseline if evaluation else None)
 
 
 def trainer_alive(root):
@@ -72,6 +55,8 @@ def trainer_alive(root):
 
 def export_pending(run, root, state, cursor, actions_per_update):
     rows = events(state)
+    job = next(iter(state['jobs'].values()))
+    baseline = checked_json(root, job['evaluations'][0])['rows'] if job['evaluations'] else None
     if cursor > len(rows) and state['status'] == 'running':
         # A trainer resumed from a pause can briefly expose the already exported
         # final update as the withheld running frontier. Wait for its successor.
@@ -79,25 +64,25 @@ def export_pending(run, root, state, cursor, actions_per_update):
         return cursor
     require(0 <= cursor <= len(rows), 'remote history is ahead of durable evidence')
     for ordinal in range(cursor, len(rows)):
-        run.log(metrics(root, rows[ordinal], actions_per_update), step=ordinal, commit=True)
+        run.log(metrics(root, rows[ordinal], actions_per_update, baseline), step=ordinal, commit=True)
     return len(rows)
 
 
 def observe(root, destination, interval, stopped, wandb):
     protocol_hash = sha(root / 'protocol.json')
     protocol = read(root / 'protocol.json')
-    require(protocol['schema'] == 'blueprint-success-duration-v1', 'unsupported protocol')
+    require(protocol['schema'] == 'blueprint-success-duration-v2', 'unsupported protocol')
     config = protocol['config']
     identifier = hashlib.sha256(f'blueprint-duration:{protocol_hash}'.encode()).hexdigest()[:24]
     directory = root / 'wandb-telemetry'
     directory.mkdir(exist_ok=True)
     path = root / 'wandb-observer.json'
-    status = dict(schema='blueprint-duration-wandb-v1', protocol_sha256=protocol_hash,
+    status = dict(schema='blueprint-duration-wandb-v2', protocol_sha256=protocol_hash,
                   run_id=identifier, pid=os.getpid(), status='starting', attached_epoch=time.time())
     write(path, status)
     run = None
     try:
-        run = wandb.init(**destination, id=identifier, name=f'blueprint-success-64-12h--seed-{config["seeds"][0]}',
+        run = wandb.init(**destination, id=identifier, name=f'{config["purpose"]}--seed-{config["seeds"][0]}',
             group=f'blueprint-duration-{protocol_hash[:12]}', job_type=config['purpose'], mode='online', resume='allow',
             dir=str(directory), save_code=False,
             settings=wandb.Settings(console='off', disable_code=True, x_disable_meta=True,
@@ -109,15 +94,18 @@ def observe(root, destination, interval, stopped, wandb):
         remote_path = f'{destination["entity"]}/{destination["project"]}/{identifier}'
         remote = wandb.Api(timeout=10).run(remote_path)
         cursor = max(run.step, remote.lastHistoryStep + 1)
-        for axis in ('train/actions', 'train/updates'):
-            run.define_metric(axis)
-        for prefix in ('training', 'ppo', 'success', 'buffer', 'timing', 'evaluation'):
-            run.define_metric(f'{prefix}/*', step_metric='train/actions')
-        status.update(url=run.url, status='running', remote_confirmed_step=remote.lastHistoryStep)
+        define_metrics(run)
+        status.update(url=run.url, status='ready', remote_confirmed_step=remote.lastHistoryStep)
+        write(path, status)
         while True:
             state = read(root / 'state.json')
             require(state['protocol_sha256'] == protocol_hash, 'trainer protocol changed')
-            require(state['status'] in ('running', 'complete', 'paused', 'failed'), 'trainer has not started')
+            if state['status'] == 'prepared':
+                require(trainer_alive(root), 'trainer process absent before initialization')
+                if stopped.wait(interval):
+                    raise RuntimeError('observer stopped before trainer initialization')
+                continue
+            require(state['status'] in ('running', 'complete', 'paused', 'failed'), 'unsupported trainer state')
             cursor = export_pending(run, root, state, cursor,
                                     config['training']['streams'] * config['training']['chunk_actions'])
             summary = dict(source_status=state['status'], source_stop_reason=state['stop_reason'],
@@ -160,7 +148,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--env-file', type=Path, default=Path(__file__).resolve().parents[2] / '.env')
-    parser.add_argument('--poll-seconds', type=float, default=10)
+    parser.add_argument('--poll-seconds', type=float, default=1)
     args = parser.parse_args()
     require(args.poll_seconds > 0, '--poll-seconds must be positive')
     root = args.output.resolve()

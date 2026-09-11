@@ -27,9 +27,15 @@ def validate(config):
             training['updates'] % (training['episode_actions'] // training['chunk_actions']) == 0, 'complete terminal episodes at final update')
     names = [s['name'] for s in config['starts']]
     require(len(names) == len(set(names)) and training['streams'] > 0 and training['streams'] % len(names) == 0, 'balanced named starts')
-    require(set(evaluation['starts']) <= set(names) and evaluation['samples'] > 0 and evaluation['elapsed_ms'] > 0, 'bounded known evaluation starts')
-    require(evaluation['at'] == sorted(set(evaluation['at'])) and evaluation['at'][0] == 0
-            and evaluation['at'][-1] == training['updates'], 'initial/final ordered evaluation checkpoints')
+    if config.get('duration', {}).get('schema') == 'blueprint-success-duration-v2':
+        require(evaluation['interval_batches'] == 4 and 'at' not in evaluation,
+                'duration evaluation uses every four batches, initialization and final stop')
+        require(evaluation['cohort'] and evaluation['expected_cases'] == 32 and evaluation['elapsed_ms'] > 0,
+                'duration evaluation requires the full historical 32-factory cohort')
+    else:
+        require(set(evaluation['starts']) <= set(names) and evaluation['samples'] > 0 and evaluation['elapsed_ms'] > 0, 'bounded known evaluation starts')
+        require(evaluation['at'] == sorted(set(evaluation['at'])) and evaluation['at'][0] == 0
+                and evaluation['at'][-1] == training['updates'], 'initial/final ordered evaluation checkpoints')
     require(ppo['learning_rate'] == .0003 and ppo['gamma'] == 1. and 0 < ppo['gae_lambda'] <= 1, 'fixed rate and continuing GAE')
     require(ppo['epochs'] == 4 and ppo['minibatch_size'] > 0 and ppo['target_kl'] > 0, 'bounded PPO epochs/minibatches/KL')
 
@@ -49,6 +55,8 @@ def check_sources(protocol):
     for relative, expected in protocol['sources'].items():
         require(sha(ROOT / relative) == expected, f'frozen source/input changed: {relative}')
     require(sha(protocol['native_library']) == protocol['native_sha256'], 'frozen native library changed')
+    for absolute, expected in protocol.get('external_sources', {}).items():
+        require(sha(absolute) == expected, f'frozen external cohort input changed: {absolute}')
 
 
 def initialize(config_path, native_library, output, is_readiness):

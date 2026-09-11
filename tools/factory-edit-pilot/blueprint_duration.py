@@ -11,52 +11,76 @@ from blueprint_duration_store import SequenceCache, boundary_stop, exclusive_run
 from blueprint_ppo import check_sources
 from blueprint_ppo_collect import collect
 from blueprint_ppo_environment import Runtime, Stream
-from blueprint_ppo_evaluate import evaluate
+from blueprint_evaluation_cohort import evaluate_cohort, load_cohort
 from blueprint_ppo_store import ROOT, checked, load, read, reference, restore_learners, sha, write
 from blueprint_ppo_update import digest, learners, require
 from blueprint_success import initialize as initialize_success, restore_buffer, snapshot
 from blueprint_success_buffer import Evidence, SuccessBuffer
 from blueprint_success_update import update_success
+from blueprint_duration_metrics import training_quality
+from ppo_harness_environment import load_environment, tracking_destination
 
 
-def prepare(config_path, library, output, readiness=False):
+def prepare(config_path, library, output, readiness=False, env_file=None, evaluation_cohort=None):
+    raw = read(config_path)
+    require(raw['duration']['schema'] == 'blueprint-success-duration-v2',
+            'blueprint.duration: v2 configuration required; keep historical v1 runs with their frozen runner')
+    require(readiness or raw.get('tracking', {}).get('backend') == 'wandb'
+            and raw['tracking'].get('mode') == 'online', 'blueprint.duration: normal jobs require online W&B')
+    if not readiness and raw['tracking']['backend'] == 'wandb':
+        load_environment(env_file or ROOT / '.env')
+        destination = tracking_destination(required=True)
     initialize_success(config_path, library, output, 'main', .05)
     protocol = read(output / 'protocol.json')
     config = protocol['config']
-    require(config['duration']['schema'] == 'blueprint-success-duration-v1', 'blueprint.duration: duration schema')
+    require(config['duration']['schema'] == 'blueprint-success-duration-v2', 'blueprint.duration: duration schema')
     require(len(config['seeds']) == 1, 'blueprint.duration: one continuing learner')
     require(config['training']['episode_actions'] == 64 and config['training']['chunk_actions'] == 32,
             'blueprint.duration: 32-action chunks and 64-action true episodes')
     if readiness:
         config['purpose'] = 'blueprint-success-duration-readiness'
         config['training']['updates'] = 6
-        config['evaluation'].update(at=[0, 6], samples=1)
-        config['duration'].update(seconds=120, evaluation_interval_seconds=60, min_free_bytes=0)
+        config['duration'].update(seconds=120, min_free_bytes=0)
+        config['tracking'] = dict(backend='disabled')
         config['limits'].update(run_seconds=300, max_output_bytes=1024**3)
+    elif config['tracking']['backend'] == 'wandb':
+        config['tracking'].update(destination)
     require(config['duration']['seconds'] > 0 and config['duration']['finish_grace_seconds'] > 0
-            and config['duration']['evaluation_interval_seconds'] > 0, 'blueprint.duration: positive time bounds')
+            and config['evaluation']['interval_batches'] == 4
+            and 'evaluation_interval_seconds' not in config['duration'], 'blueprint.duration: time bounds and four-batch evaluation')
     require(config['limits']['run_seconds'] == config['duration']['seconds'] + config['duration']['finish_grace_seconds'],
             'blueprint.duration: explicit hard finalization deadline')
-    protocol['schema'] = 'blueprint-success-duration-v1'
+    protocol['schema'] = 'blueprint-success-duration-v2'
     protocol['source_root'] = str(ROOT)
     for name in ('blueprint_duration.py', 'blueprint_duration_store.py', 'blueprint_duration_job.py', 'audit_blueprint_duration.py',
-                 'audit_blueprint_success.py', 'audit_blueprint_ppo.py'):
+                 'audit_blueprint_success.py', 'audit_blueprint_ppo.py', 'blueprint_duration_tracking.py',
+                 'blueprint_duration_metrics.py', 'blueprint_evaluation_cohort.py', 'blueprint_duration_tracking_job.py',
+                 'ppo_harness_environment.py', 'ppo_harness_state.py'):
         path = Path(__file__).with_name(name)
         protocol['sources'][str(path.relative_to(ROOT))] = sha(path)
+    spec = read(ROOT / config['probe_spec'])
+    cohort_path = (evaluation_cohort or ROOT / config['evaluation']['cohort']).resolve()
+    config['evaluation']['cohort'] = str(cohort_path)
+    _, protocol['external_sources'] = load_cohort(cohort_path, config['evaluation']['expected_cases'],
+                                                 {k: ROOT / p for k, p in spec['catalogs'].items()})
     write(output / 'protocol.json', protocol)
-    write(output / 'state.json', dict(schema='blueprint-success-duration-v1', status='prepared',
+    write(output / 'state.json', dict(schema='blueprint-success-duration-v2', status='prepared',
         protocol_sha256=sha(output / 'protocol.json'), seconds=0., jobs={}, stop_reason=None,
         requested_seconds=config['duration']['seconds'], prepared_at=datetime.now(timezone.utc).isoformat()))
 
 
-def run(output, stop_after_updates=None):
+def run(output, stop_after_updates=None, env_file=None):
     with exclusive_run(output):
+        if stop_after_updates is None:
+            from blueprint_duration_job import execute
+            return execute(output, env_file)
         return run_locked(output, stop_after_updates)
 
 
-def run_locked(output, stop_after_updates=None):
+def run_locked(output, stop_after_updates=None, health=None):
     protocol, state = read(output / 'protocol.json'), read(output / 'state.json')
-    require(protocol['schema'] == state['schema'] == 'blueprint-success-duration-v1', 'blueprint.duration: schema')
+    require(protocol['schema'] == state['schema'] == 'blueprint-success-duration-v2',
+            'blueprint.duration: v2 required; historical v1 resume requires its frozen runner')
     require(state['protocol_sha256'] == sha(output / 'protocol.json'), 'blueprint.duration: protocol binding')
     require(state['status'] != 'complete', 'blueprint.duration: already complete')
     check_sources(protocol)
@@ -64,6 +88,8 @@ def run_locked(output, stop_after_updates=None):
     require(stop_after_updates is None or config['purpose'] == 'blueprint-success-duration-readiness',
             'blueprint.duration: stop-after-updates is a declared readiness facility')
     runtime = Runtime(config, protocol['native_library'])
+    cohort, _ = load_cohort(config['evaluation']['cohort'], config['evaluation']['expected_cases'],
+                            {k: ROOT / p for k, p in runtime.spec['catalogs'].items()})
     directory = output / f'seed-{seed}'
     level = config['duration']['compression_level']
     elapsed_before, began = state['seconds'], time.monotonic()
@@ -73,6 +99,8 @@ def run_locked(output, stop_after_updates=None):
         requested[0] = True
     previous_handlers = {s: signal.signal(s, request_stop) for s in (signal.SIGTERM, signal.SIGINT)}
     def guard():
+        if health is not None:
+            health()
         require(elapsed() < config['limits']['run_seconds'], 'blueprint.duration: hard finalization deadline')
     job = state['jobs'].get(str(seed))
     if job is None:
@@ -84,6 +112,9 @@ def run_locked(output, stop_after_updates=None):
         path = directory / 'checkpoints/0000.pt.gz'
         save_compact(path, snapshot(model, actor, critic, sampler, shuffle, seed, 0, streams, state['protocol_sha256'], buffer), level)
         job = dict(status='running', update=0, latest_checkpoint=reference(path, output), records=[], evaluations=[], removed_checkpoints=[])
+        job['initialization'] = dict(update=0, model_sha256=digest(model.state_dict()),
+            actor_optimizer_entries=len(actor.state), critic_optimizer_entries=len(critic.state),
+            success_sequences=len(buffer.state['entries']), imported_checkpoint=None)
         state['jobs'][str(seed)] = job
     else:
         saved, buffer = restore_buffer(load(checked(job['latest_checkpoint'], output)))
@@ -101,18 +132,28 @@ def run_locked(output, stop_after_updates=None):
         ordinal = job['update']
         if any(e['update'] == ordinal for e in job['evaluations']):
             return
-        rows = evaluate(runtime, model, seed, ordinal, directory / f'evaluation/{ordinal:07d}', guard)
+        before_sampler, before_shuffle = digest(sampler.get_state()), digest(shuffle.get_state())
+        rows = evaluate_cohort(runtime, model, seed, ordinal, directory / f'evaluation/{ordinal:07d}', guard, cohort)
+        require(digest(sampler.get_state()) == before_sampler and digest(shuffle.get_state()) == before_shuffle,
+                'blueprint.duration: evaluation altered training RNG')
         path = directory / f'evaluation/{ordinal:07d}/report.json'
         write(path, dict(schema='blueprint-ppo-evaluation-v1', seed=seed, update=ordinal, rows=rows,
-            cases=[reference(p, output) for p in sorted(path.parent.glob('*.pt.gz'))]))
+            cases=[dict(generation_seed=row['generation_seed'],
+                        **reference(path.parent / f'{row["start"]}-{row["sample"]}.pt.gz', output)) for row in rows]))
         job['evaluations'].append(dict(update=ordinal, seconds=elapsed(), **reference(path, output)))
         state['last_evaluation_seconds'] = elapsed()
+        state['seconds'] = elapsed()
+        write(output / 'state.json', state)
         print(dict(evaluation=ordinal, mean_area_reduction_percent=sum(r['policy_area_reduction_percent'] for r in rows) / len(rows)), flush=True)
 
     try:
         state['storage'] = storage_guard(output, config)
         if not job['evaluations']:
             publish_evaluation()
+            if health is not None:
+                health(initial=True)
+            job['initialization']['evaluated_before_training'] = True
+            write(output / 'state.json', state)
         reason = None
         while reason is None:
             reason = boundary_stop(elapsed(), config['duration']['seconds'], streams,
@@ -146,7 +187,8 @@ def run_locked(output, stop_after_updates=None):
                                              state['protocol_sha256'], buffer), level)
             record = dict(seed=seed, update=ordinal, chunk=reference(chunk, output), checkpoint=reference(checkpoint, output),
                 actions=len(payload['samples']), area_reward=sum(s['reward'] for s in payload['samples']),
-                collection_seconds=payload['collection_seconds'], ppo=result,
+                elapsed_seconds=elapsed(), collection_seconds=payload['collection_seconds'],
+                quality=training_quality(payload), ppo=result,
                 buffer=dict(before_sha256=digest(before), after_sha256=digest(buffer.state),
                     entries=len(buffer.state['entries']), positive_commits=buffer.state['positive_commits'],
                     admissions=buffer.state['admissions'], duplicates=buffer.state['duplicates']))
@@ -159,7 +201,8 @@ def run_locked(output, stop_after_updates=None):
             write(output / 'state.json', state)
             print(dict(update=ordinal, seconds=round(state['seconds'], 2), actions=state['actions'],
                 reward=record['area_reward'], entries=state['buffer_entries'], positive_labels=result['success']['positive_labels']), flush=True)
-            if all(s.session is None for s in streams) and elapsed() - state.get('last_evaluation_seconds', 0) >= config['duration']['evaluation_interval_seconds']:
+            if ordinal % config['evaluation']['interval_batches'] == 0:
+                require(all(s.session is None for s in streams), 'blueprint.duration: evaluation at a complete episode boundary')
                 publish_evaluation()
             prune_checkpoints(output, directory, job)
             if ordinal % 32 == 0:
@@ -196,16 +239,20 @@ def main():
     prep.add_argument('--native-library', type=Path, required=True)
     prep.add_argument('--output', type=Path, required=True)
     prep.add_argument('--readiness', action='store_true')
+    prep.add_argument('--env-file', type=Path)
+    prep.add_argument('--evaluation-cohort', type=Path, help='Explicit retained cohort manifest outside a frozen checkout')
     execute = sub.add_parser('run')
     execute.add_argument('--output', type=Path, required=True)
     execute.add_argument('--stop-after-updates', type=int)
+    execute.add_argument('--env-file', type=Path)
     args = parser.parse_args()
     torch.set_num_threads(1)
     torch.use_deterministic_algorithms(True)
     if args.command == 'prepare':
-        prepare(args.config.resolve(), args.native_library.resolve(), args.output.resolve(), args.readiness)
+        prepare(args.config.resolve(), args.native_library.resolve(), args.output.resolve(), args.readiness, args.env_file,
+                args.evaluation_cohort)
     else:
-        run(args.output.resolve(), args.stop_after_updates)
+        run(args.output.resolve(), args.stop_after_updates, args.env_file)
 
 
 if __name__ == '__main__':
