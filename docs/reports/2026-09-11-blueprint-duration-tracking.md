@@ -91,3 +91,32 @@ available. No browser rendering inspection was performed.
 this view; `--verify-url URL` checks the saved view without creating another.
 Use an environment with `wandb-workspaces` installed and the existing W&B settings.
 The script and immutable workspace verification are retained for reproduction.
+
+## Training-time area curve
+
+Added **Area reduction (%) over training time** at the top of the same view.
+Its x axis is the already exported `evaluation/elapsed_seconds`: cumulative active
+training time measured when each evaluation completed, including collection,
+updates, I/O and evaluation. It is neither W&B export time nor inference time
+within a single layout edit episode. The three y series show all six evaluations,
+three original starts, and three overlap starts, respectively, at each checkpoint.
+
+The first scheduled checkpoint, around 1,803.17 seconds, has mean area reductions
+of 6.6667% for original and 10% for overlap; their combined mean is 8.3333%.
+The initial checkpoint is 0% in both groups. Each percentage uses the validated
+best area retained at evaluation start as its denominator. The visible series
+contain evaluation checkpoints, not inferred per-update quality measurements.
+
+Historical harness metrics aggregate generated/admitted factories and include
+admission and execution failure counts. This experiment evaluates a fixed
+blueprint under original/overlap starts, so those categories are not identical.
+However, area reduction retains its basic meaning; changing every common metric
+name was not required by the training method. The initial observer unnecessarily
+made the existing charts incompatible. This view correction uses the available
+metrics without modifying the active trainer or observer.
+
+The view now has eleven panels. `--update-url URL` updates the dedicated duration
+view in place; `--verify-url URL` remains read-only. Source/history key presence,
+all saved axes and series, and both remote evaluation points were checked against
+local evidence. Workspace check and tests passed. No new model behavior or
+telemetry fields were introduced, and no training process was restarted.

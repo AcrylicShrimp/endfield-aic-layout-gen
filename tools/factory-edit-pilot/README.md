@@ -637,5 +637,9 @@ The duration observer uses its own metric keys; historical harness panels may
 therefore be empty for this run. In a separate admin environment with
 `wandb-workspaces` installed, run `blueprint_duration_workspace.py --run RUN
 --output NEW_VERIFICATION_JSON --env-file /path/to/tracking.env` to create a view
-with ten matching training/evaluation panels. `--verify-url URL` verifies an
+with matching training/evaluation panels. `--verify-url URL` verifies an
 existing view. The learner and observer do not require this optional UI package.
+The top **Area reduction (%) over training time** panel uses cumulative active
+training seconds at each evaluation checkpoint. It includes overall,
+original-start and overlap-start means. Use `--update-url URL` to update the
+existing dedicated view in place. It does not restart training or telemetry.

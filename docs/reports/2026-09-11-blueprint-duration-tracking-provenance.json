@@ -54,6 +54,22 @@
     {
       "path": "artifacts/factory-edit-pilot/blueprint-duration-tracking-evidence-20260911/workspace.json",
       "sha256": "99bff21c61eb6da813893b3bce5972d105b2aa01a0d8105d8b7c18f4cc78a411"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-tracking-evidence-20260911/workspace-time.json",
+      "sha256": "74aa88fd25e452fa5a20a2f2c5939d4b75882e5c2e1d2bd0d45500b23a3971ca"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-tracking-evidence-20260911/time-axis-history.json",
+      "sha256": "7ee08be0cc20ece59c834be0eef72b318978c90c4588ccf62776bff1f2667004"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-tracking-evidence-20260911/blueprint-workspace-time-check.log",
+      "sha256": "99f71393b9903dca098310bb446022a4bdee195ea9996f351a787195555210a6"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-tracking-evidence-20260911/blueprint-workspace-time-tests.log",
+      "sha256": "c8d2e1529c2eac44da5b08313ea11063ae17e2cbdfdd18ba5a70b40bdda486a8"
     }
   ]
 }
