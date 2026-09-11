@@ -438,6 +438,9 @@ Adam learning rate for both learners, to 0.0001 and 0.00003. Compare against the
 retained 0.0003 cell of the completed capacity experiment. The
 [registered contract](../../docs/designs/2026-09-11-ppo-learning-rate-screen.md)
 specifies matched seeds, workload, initial conditions and required audits.
+The [completed comparison](../../docs/reports/2026-09-11-ppo-learning-rate-screen.md)
+reports worse final quality at both lower rates on both seeds under this budget,
+despite fewer KL stops and more actor updates.
 
 ```sh
 python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env prepare --config tools/factory-edit-pilot/ppo-learning-rate-screen.json --output artifacts/factory-edit-pilot/learning-rate-readiness --learning-rates --readiness
@@ -446,6 +449,21 @@ python tools/factory-edit-pilot/check_ppo_harness_native.py --run artifacts/fact
 python tools/factory-edit-pilot/check_ppo_harness_native.py --run artifacts/factory-edit-pilot/learning-rate-readiness/lr-3e-5 --output artifacts/factory-edit-pilot/learning-rate-readiness-audit-3e-5
 python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env prepare --config tools/factory-edit-pilot/ppo-learning-rate-screen.json --output artifacts/factory-edit-pilot/learning-rate-matrix --learning-rates
 python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env run --matrix artifacts/factory-edit-pilot/learning-rate-matrix/matrix.json
+```
+
+After both cells finish, audit their native results and every checkpoint's Adam
+learning rate, then verify W&B and compare against the retained capacity audit.
+The rate comparison requires identical initial evaluation and first-batch
+collection, including action choices, behavior probabilities, value predictions
+and native outcomes. It reports actual epochs, optimizer steps, KL and clipping
+diagnostics alongside quality. Earlier source trees and evidence must remain
+available at the paths recorded in the baseline provenance.
+
+```sh
+python tools/factory-edit-pilot/compare_ppo_combinations.py --matrix NEW_MATRIX --output RATE_AUDIT --validate-final-layouts
+python tools/factory-edit-pilot/check_ppo_combinations_tracking.py --matrix NEW_MATRIX --output TRACKING_REPORT --env-file /path/to/tracking.env
+python tools/factory-edit-pilot/compare_ppo_learning_rates.py --baseline-provenance docs/reports/2026-09-11-ppo-shared-capacity-provenance.json --lower-report RATE_AUDIT/report.json --lower-inputs RATE_AUDIT/inputs.json --output RATE_COMPARISON
+python tools/factory-edit-pilot/plot_ppo_learning_rates.py --report RATE_COMPARISON/report.json --output RATE_PLOTS
 ```
 
 ### Shared model with approximately matched total capacity

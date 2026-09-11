@@ -68,6 +68,11 @@ def workload_controls(old, new):
               and model.pop('critic_width') == width, 'declared capacity model differs')
         model.pop('actor_critic')
     check(old_config == new_config, 'non-capacity workload or PPO configuration differs')
+    allowed = {'tools/factory-edit-pilot/ppo_spatial_model.py', 'tools/factory-edit-pilot/ppo_harness_tracking.py'}
+    return dict(runtime_controls(old, new, allowed), non_capacity_configuration_identical=True)
+
+
+def runtime_controls(old, new, allowed_source_changes):
     check(old['environment'] == new['environment'], 'runtime package or device environment differs')
     old_root = str(Path(old['spec']['cli']).parents[2])
     new_root = str(Path(new['spec']['cli']).parents[2])
@@ -90,12 +95,10 @@ def workload_controls(old, new):
     left, right = runtime_sources(old, old_root), runtime_sources(new, new_root)
     check(set(left) == set(right), 'runtime Python source coverage differs')
     changed = {path: dict(before=left[path], after=right[path]) for path in left if left[path] != right[path]}
-    allowed = {'tools/factory-edit-pilot/ppo_spatial_model.py', 'tools/factory-edit-pilot/ppo_harness_tracking.py'}
-    check(set(changed) <= allowed, f'unregistered runtime changes: {set(changed) - allowed}')
+    check(set(changed) <= allowed_source_changes, f'unregistered runtime changes: {set(changed) - allowed_source_changes}')
     return dict(runtime_files_compared=len(left), changed_runtime_sources=changed,
                 fixed_source_files_compared=len(fixed_old), catalogs_and_native_sources_identical=True,
-                environment=old['environment'], native_binaries_identical=True,
-                non_capacity_configuration_identical=True)
+                environment=old['environment'], native_binaries_identical=True)
 
 
 def paired(wide, control):

@@ -1,0 +1,103 @@
+{
+  "schema": "ppo-learning-rate-final-provenance-v1",
+  "purpose": "Compact evidence identities for two lower rates against the retained shared-width-40 control",
+  "implementation_commit": "5d3ed19",
+  "baseline_results_commit": "7e8867a",
+  "matrix": {
+    "path": "/home/ashrimp/Srv/aic-ppo-learning-rate-screen-20260911/artifacts/factory-edit-pilot/matrix/matrix.json",
+    "sha256": "20c7aaf815a1e041a3d08e8a0890b1ec2657ea0a78e8361f8a99db61bf204f93",
+    "bytes": 2002
+  },
+  "matrix_seconds": 3405.2556841373444,
+  "comparison": {
+    "path": "/home/ashrimp/Srv/aic-ppo-learning-rate-analysis-20260911/artifacts/factory-edit-pilot/comparison/report.json",
+    "sha256": "294cd610439a6278df6df37aa9449aec2569d8c71009285cd9586c8b6060ad79",
+    "bytes": 395965
+  },
+  "comparison_inputs": {
+    "path": "/home/ashrimp/Srv/aic-ppo-learning-rate-analysis-20260911/artifacts/factory-edit-pilot/comparison/inputs.json",
+    "sha256": "338ed0ff325d603a52afcea19125c04b4eb16a039b83fa6d459557a784af7a7f",
+    "bytes": 5140140
+  },
+  "controls": {
+    "path": "/home/ashrimp/Srv/aic-ppo-learning-rate-analysis-20260911/artifacts/factory-edit-pilot/controls/report.json",
+    "sha256": "c4c5c74182144a35e047fc44d3555d5180dff10feace80cc68cda2b758e2d837",
+    "bytes": 339120
+  },
+  "controls_inputs": {
+    "path": "/home/ashrimp/Srv/aic-ppo-learning-rate-analysis-20260911/artifacts/factory-edit-pilot/controls/inputs.json",
+    "sha256": "0a9e021eb8cb9294e4d30f3fa6baa4ec745a96077f209bd8f3a261f51c1e4a2c",
+    "bytes": 15972432
+  },
+  "baseline_report_sha256": "e0657e78b8aa571602a5713e626c9cda6317591e35f620a2b16dd9850aaf14d3",
+  "verified_new_file_identities": 20354,
+  "verified_combined_file_identities": 60793,
+  "matched_input_identities": 4416,
+  "input_geometry_sha256": "25066e2c0f69567835a6061387a2513bf25411812247f4f3f08e9a25ae46d41d",
+  "initial_collection_positions": 192,
+  "initial_collection_steps": 5888,
+  "initial_collection_sha256": "af1fb25902bdfda2de9ff802dd0d489e54d2cd4ac9f5619eed7ced7b54ad10ea",
+  "checkpoint_learning_rates_verified": 198,
+  "native_final_layouts_verified": 124,
+  "training_actions": 256256,
+  "tracking_audit": {
+    "path": "/home/ashrimp/Srv/aic-ppo-learning-rate-analysis-20260911/artifacts/factory-edit-pilot/wandb-check.json",
+    "sha256": "d2fadb689665cf9969471dc9f31556f0828dae2e45746ccde9035a34cf62408b",
+    "bytes": 2055
+  },
+  "tracking_records": 168,
+  "tracking_scalars": 16142,
+  "analysis_sources": {
+    "path": "/home/ashrimp/Srv/aic-ppo-learning-rate-analysis-20260911/artifacts/factory-edit-pilot/analysis-sources.json",
+    "sha256": "b34ac4f1db44bbe1eb2e5514beb47ea33af34decfbbf9f47957aecf7347b61be",
+    "bytes": 620
+  },
+  "analysis_source_files_sha256": {
+    "compare_ppo_combinations.py": "5f55d4afe62e6a65e07a87519ed55215d3997f656680ae9f69783c0a22007270",
+    "compare_ppo_capacity.py": "9cc325d719eeacf811c3929d3f195236d99e4170f6a3c0c18f410c67eeeb0473",
+    "compare_ppo_learning_rates.py": "5b1e143ed0d9a6c42ecc193afc8fb5895e30c61e6c853472e01d957cb100f1de",
+    "plot_ppo_learning_rates.py": "450d38291957de3b14c362d78608c0cb763ad06b97d7c1805113dee0a78bcf57",
+    "check_ppo_combinations_tracking.py": "1e4f123c9ae2743145908f3b59d833544886c97c9da26124fcc8314816b6386e",
+    "test_ppo_learning_rate_analysis.py": "0b78b4481d01caae1f1ad6970a89cb86a1036a9c7707e80f2d17b5f07cc4b2fc"
+  },
+  "source_verification": {
+    "path": "/home/ashrimp/Srv/aic-ppo-learning-rate-screen-20260911/artifacts/factory-edit-pilot/source-verification.json",
+    "sha256": "37784f441230c113a3a16ac6be967d06f944ef48988ee1221615f7a15d5ddbb3",
+    "bytes": 7983
+  },
+  "native_regression": {
+    "path": "/home/ashrimp/Srv/aic-ppo-learning-rate-analysis-20260911/artifacts/factory-edit-pilot/python-tests-native-final.log",
+    "sha256": "02fcae5965391fe04903014bd3d12a71211586d1d786e905d325adf7e36ec958",
+    "bytes": 194
+  },
+  "cells": [
+    {
+      "name": "lr-1e-4",
+      "learning_rate": 0.0001,
+      "config_sha256": "c73d27ae5d9575d77e0f43cdaf2f3bf76012ef583ba23ae052583c1338eed512",
+      "protocol_sha256": "5f60de83df2cd7c94b48a49e49818d3d72b8f101c9cd87c6bd1f3eb95cc9551c",
+      "state_sha256": "ad28d0a1d23800f8d1a02ec4473c02d83ab7a0a898ead5de5f74401249d7ba4f",
+      "exit_code": 0
+    },
+    {
+      "name": "lr-3e-5",
+      "learning_rate": 3e-05,
+      "config_sha256": "ef9321e8c175336fb909405954f8a3c5910de067ac8cdd8fb69e0ec400a2816b",
+      "protocol_sha256": "7aed2ee1cd15dce92e9c64e3cacf9d502435fedc28afe9ac855a83ca0456e00d",
+      "state_sha256": "3118e9f24113b3c34edc5ac566e75fba82c9e9508e1d495476e01aeb497c5eca",
+      "exit_code": 0
+    }
+  ],
+  "figures": [
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-learning-rate-analysis-20260911/artifacts/factory-edit-pilot/plots/learning.png",
+      "sha256": "214a2ac6a79e6dcbb418403d1d8051135c5a7c3623ea3ab732573ae074138d58",
+      "bytes": 402311
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-learning-rate-analysis-20260911/artifacts/factory-edit-pilot/plots/updates.png",
+      "sha256": "34b0d0f0ae92475ea8993a997d2a8a8956e3e0f20f4311a8e46392ea3baf5671",
+      "bytes": 429622
+    }
+  ]
+}

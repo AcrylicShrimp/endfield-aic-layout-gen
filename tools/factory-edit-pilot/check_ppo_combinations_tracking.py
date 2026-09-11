@@ -20,7 +20,8 @@ def require(condition, message):
 def check(matrix_path, output):
     import wandb
     matrix = read(matrix_path)
-    expected_cells = {'ppo-actor-critic-matrix-v1': 8, 'ppo-shared-capacity-matrix-v1': 4}.get(matrix['schema'])
+    expected_cells = {'ppo-actor-critic-matrix-v1': 8, 'ppo-shared-capacity-matrix-v1': 4,
+                      'ppo-learning-rate-matrix-v1': 2}.get(matrix['schema'])
     require(expected_cells is not None and matrix['status'] == 'complete'
             and not matrix['readiness'] and len(matrix['cells']) == expected_cells,
             'completed registered screen required')
@@ -50,6 +51,7 @@ def check(matrix_path, output):
                 require(remote.state == 'finished' and remote.lastHistoryStep == len(records)-1,
                         f'remote completion: {saved["url"]}')
                 require(remote.config['model'] == protocol['spec']['model'], f'remote model: {saved["url"]}')
+                require(remote.config['ppo'] == protocol['config']['ppo'], f'remote PPO configuration: {saved["url"]}')
                 rows = list(remote.scan_history(min_step=0, max_step=len(records), page_size=100))
                 history = {row['_step']: row for row in rows}
                 require(len(rows) == len(history) == len(records) and set(history) == set(range(len(records))),

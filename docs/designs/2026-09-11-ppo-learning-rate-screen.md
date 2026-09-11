@@ -1,6 +1,7 @@
 # Lower PPO learning-rate screen
 
-Status: registered before execution.
+Status: complete. See the [final findings](../reports/2026-09-11-ppo-learning-rate-screen.md)
+and [compact provenance](../reports/2026-09-11-ppo-learning-rate-provenance.json).
 
 Readiness passed before the main run. Both two-batch cells completed in 46.54
 seconds, with all 96 native result records valid and exact second-batch update

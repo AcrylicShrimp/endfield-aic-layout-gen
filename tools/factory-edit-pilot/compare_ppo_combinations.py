@@ -3,6 +3,7 @@ import argparse
 from copy import deepcopy
 import gzip
 import hashlib
+import io
 from itertools import product, combinations
 import json
 import math
@@ -178,17 +179,32 @@ def schedule_prefixes(updates):
     return result
 
 
+def check_checkpoint_rate(data, rate, protocol, job, batch):
+    import torch
+    saved = torch.load(io.BytesIO(data), map_location='cpu', weights_only=False)
+    check((saved['protocol_sha256'], saved['job'], saved['batch']) == (protocol, job, batch),
+          'learning-rate checkpoint identity differs')
+    for name in ('actor_optimizer', 'critic_optimizer'):
+        groups = saved[name]['param_groups']
+        check(groups and all(group['lr'] == rate for group in groups), f'{name} learning rate differs')
+
+
 def compare(matrix_path, output, native):
     check(not output.exists(), f'fresh output required: {output}')
     manifest = {}
     matrix = read(matrix_path, manifest)
-    expected_cells = {'ppo-actor-critic-matrix-v1': 8, 'ppo-shared-capacity-matrix-v1': 4}.get(matrix['schema'])
+    from run_ppo_combinations import RATE_SCHEMA, LOWER_RATES
+    expected_cells = {'ppo-actor-critic-matrix-v1': 8, 'ppo-shared-capacity-matrix-v1': 4,
+                      RATE_SCHEMA: 2}.get(matrix['schema'])
     check(expected_cells is not None and matrix['status'] == 'complete'
           and not matrix['readiness'] and len(matrix['cells']) == expected_cells, 'completed registered screen required')
-    capacity = expected_cells == 4
-    expected_factors = set(product((True,) if capacity else (False, True), (False, True), (False, True)))
+    rates = matrix['schema'] == RATE_SCHEMA
+    capacity = expected_cells in (2, 4)
+    expected_factors = {(True, True, True)} if rates else set(product((True,) if capacity else (False, True), (False, True), (False, True)))
     check({tuple(c['factors'][k] for k in FIELDS) for c in matrix['cells']} == expected_factors,
           'registered factor coverage differs')
+    if rates:
+        check({c['name']: c['learning_rate'] for c in matrix['cells']} == LOWER_RATES, 'registered learning-rate coverage differs')
     read(matrix['source_config']['path'], manifest, matrix['source_config']['sha256'])
     cells, controls, geometries, initial_actors, initial_critics = [], None, {}, {}, {}
     updates = {}
@@ -206,7 +222,9 @@ def compare(matrix_path, output, native):
         check(state['status'] == 'complete' and len(state['jobs']) == 2, 'both seeds must finish')
         config = deepcopy(protocol['config'])
         factors = config['model'].pop('actor_critic')
-        check(factors == cell['factors'] and label(factors) == cell['name'], 'cell treatment mismatch')
+        check(factors == cell['factors'] and (rates or label(factors) == cell['name']), 'cell treatment mismatch')
+        if rates:
+            check(config['ppo'].pop('learning_rate') == cell['learning_rate'], 'cell learning rate differs')
         from ppo_spatial_model import specification, shared_capacity_specification
         expected_model = (shared_capacity_specification(factors['critic_history'], factors['critic_after_kl'])
                           if capacity else dict(specification('cnn2'), actor_critic=factors))
@@ -218,16 +236,23 @@ def compare(matrix_path, output, native):
             from native_factory_runtime import FactoryRuntime
             native_runtime = FactoryRuntime(protocol['spec']['native_library'], protocol['catalog_file'])
         item = dict(name=cell['name'], factors=factors, root=str(root), jobs={})
-        update_key = tuple(factors[k] for k in FIELDS)
+        if rates:
+            item['learning_rate'] = cell['learning_rate']
+        update_key = cell['learning_rate'] if rates else tuple(factors[k] for k in FIELDS)
         updates[update_key] = {}
         for job in state['jobs']:
             check(job['completed_batches'] == config['training']['batches'], 'incomplete training prefix')
             seed = str(job['seed'])
             train, evaluations = [], []
+            previous_checkpoint = None
             for reference in job['records']:
                 record = read(root/reference['path'], manifest, reference['sha256'])
                 phase = record['phase']
                 check(record['seed'] == job['seed'], 'record seed differs')
+                if rates:
+                    if previous_checkpoint is not None:
+                        check(record['behavior_checkpoint'] == previous_checkpoint, 'checkpoint chain differs')
+                    previous_checkpoint = record['checkpoint']
                 record.update(_minibatch_size=config['ppo']['minibatch_size'], _epochs=config['ppo']['epochs'])
                 retained = phase['kind'] == 'evaluation' or phase['batch'] in config['retention']['training_batches']
                 audit_record(record, retained, manifest)
@@ -242,11 +267,16 @@ def compare(matrix_path, output, native):
                     data = (root/checkpoint['path']).read_bytes()
                     check(sha(data) == checkpoint['sha256'], 'checkpoint hash differs')
                     manifest[str(root/checkpoint['path'])] = sha(data)
+                    if rates:
+                        check_checkpoint_rate(data, cell['learning_rate'], cell['protocol_sha256'], job['id'], phase['batch'])
                 else:
                     evaluations.append(evaluation(record))
                     if phase['batch'] == 0:
                         checkpoint = record['checkpoint']
                         verify_file(root/checkpoint['path'], manifest, checkpoint['sha256'])
+                        if rates:
+                            check_checkpoint_rate((root/checkpoint['path']).read_bytes(), cell['learning_rate'],
+                                                  cell['protocol_sha256'], job['id'], 0)
                         actors = {r['policy_sha256'] for r in record['results']}
                         critics = {r['critic_sha256'] for r in record['results']}
                         check(len(actors) == len(critics) == 1, 'one initial parameter set required')
@@ -257,6 +287,8 @@ def compare(matrix_path, output, native):
                         for r in record['results']:
                             verify_result(native_runtime, r, output)
                             verified_layouts += r['status'] == 'complete'
+            if rates:
+                check(job['checkpoint'] == previous_checkpoint, 'final checkpoint differs')
             check([r['phase']['batch'] for r in train] == list(range(1, config['training']['batches']+1)), 'training sequence differs')
             check([r['batch'] for r in evaluations] == config['evaluation']['at'], 'evaluation schedule differs')
             summary = {k: evaluations[-1][k] for k in ('area_reduction_pp', 'later_reduction_pp', 'failure_percent',
@@ -276,11 +308,12 @@ def compare(matrix_path, output, native):
     if native_runtime is not None:
         native_runtime.close()
     (output/'best.json').unlink(missing_ok=True)
-    check(len({tuple(c['factors'][k] for k in FIELDS) for c in cells}) == expected_cells, 'complete unique factorial required')
+    if not rates:
+        check(len({tuple(c['factors'][k] for k in FIELDS) for c in cells}) == expected_cells, 'complete unique factorial required')
     geometry_bytes = json.dumps(sorted(geometries.items()), separators=(',', ':')).encode()
-    report = dict(schema='ppo-shared-capacity-comparison-v1' if capacity else 'ppo-actor-critic-comparison-v1',
-                  model=controls['model'], cells=cells, effects=effects(cells),
-                  schedule_prefixes=schedule_prefixes(updates),
+    report = dict(schema='ppo-learning-rate-comparison-v1' if rates else 'ppo-shared-capacity-comparison-v1' if capacity else 'ppo-actor-critic-comparison-v1',
+                  model=controls['model'], cells=cells, effects=[] if rates else effects(cells),
+                  schedule_prefixes=[] if rates else schedule_prefixes(updates),
                   source_sha256=sha(Path(__file__).read_bytes()),
                   matrix_sha256=manifest[str(matrix_path.resolve())],
                   input_geometry_sha256=sha(geometry_bytes),
