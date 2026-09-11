@@ -36,6 +36,18 @@ tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/audit_bluepri
 tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/summarize_blueprint_ppo.py --run artifacts/factory-edit-pilot/blueprint-learning
 ```
 
+The registered PPO/BC comparison is defined in
+`docs/designs/2026-09-11-blueprint-ppo-bc.md`. Its external configuration is
+`blueprint-ppo-bc.json`. Build and audit the configured dataset with
+`build_blueprint_bc_data.py --config CONFIG --output DATA_DIRECTORY` and
+`audit_blueprint_bc_data.py --dataset DATA_DIRECTORY/dataset.pt.gz`.
+Run each fresh arm using `blueprint_bc.py train --config CONFIG --native-library
+LIBRARY --output ARM_DIRECTORY --coefficient 0` or `--coefficient 0.05`.
+Add `--readiness` for the short mechanical check. Audit an arm using
+`audit_blueprint_bc.py --run ARM_DIRECTORY`; `blueprint_bc.py resume --output
+ARM_DIRECTORY` restores its durable checkpoint. Teacher paths contain the useful
+move and validated repair/commit, and are auxiliary actor labels only.
+
 `blueprint_ppo.py resume --output RUN` restores the last complete durable update
 under identical recorded sources and inputs. Preserve `interrupted.pt.gz` when a
 run fails: it records partial experience beyond that update. Resuming re-collects
