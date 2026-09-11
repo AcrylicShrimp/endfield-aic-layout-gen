@@ -83,13 +83,15 @@ def observe(root, destination, interval, stopped, wandb):
     run = None
     try:
         run = wandb.init(**destination, id=identifier, name=f'{config["purpose"]}--seed-{config["seeds"][0]}',
-            group=f'blueprint-duration-{protocol_hash[:12]}', job_type=config['purpose'], mode='online', resume='allow',
+            group=config.get('experiment', {}).get('group', f'blueprint-duration-{protocol_hash[:12]}'),
+            job_type=config['purpose'], mode='online', resume='allow',
             dir=str(directory), save_code=False,
             settings=wandb.Settings(console='off', disable_code=True, x_disable_meta=True,
                 x_disable_stats=True, x_disable_machine_info=True, init_timeout=20, finish_timeout=10),
             config=dict(protocol_sha256=protocol_hash, seed=config['seeds'][0], training=config['training'],
                         ppo=config['ppo'], success_coefficient=config['success']['coefficient'],
                         duration=config['duration'], evaluation=config['evaluation'],
+                        experiment=config.get('experiment'),
                         telemetry='independent observer; history timestamps are export times'))
         remote_path = f'{destination["entity"]}/{destination["project"]}/{identifier}'
         remote = wandb.Api(timeout=10).run(remote_path)

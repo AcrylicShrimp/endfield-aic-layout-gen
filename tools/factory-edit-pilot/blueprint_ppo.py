@@ -21,6 +21,9 @@ from native import load_native
 def validate(config):
     require(config['schema'] == 'blueprint-persistent-ppo-v1' and config['device'] == 'cpu', 'registered CPU graph learner schema')
     training, evaluation, ppo = config['training'], config['evaluation'], config['ppo']
+    require(type(ppo['width']) is int and ppo['width'] > 0
+            and type(ppo.get('message_rounds', 2)) is int and ppo.get('message_rounds', 2) > 0,
+            'positive integer graph width and message rounds')
     require(config['seeds'] and len(set(config['seeds'])) == len(config['seeds']), 'unique nonempty model seeds')
     require(training['updates'] >= 2 and 0 < training['chunk_actions'] < training['episode_actions'], 'persistent chunks shorter than real episodes')
     require(training['episode_actions'] % training['chunk_actions'] == 0 and

@@ -1,0 +1,19 @@
+{
+  "schema": "blueprint-capacity-matrix-v1",
+  "name": "blueprint-capacity-20260911",
+  "base_config": "tools/factory-edit-pilot/blueprint-success-64-12h.json",
+  "seeds": [17, 29],
+  "models": [
+    {"name": "w40-r2", "width": 40, "message_rounds": 2},
+    {"name": "w80-r2", "width": 80, "message_rounds": 2},
+    {"name": "w40-r4", "width": 40, "message_rounds": 4},
+    {"name": "w80-r4", "width": 80, "message_rounds": 4}
+  ],
+  "updates": 512,
+  "last_window_batches": 128,
+  "duration_seconds": 14400,
+  "finish_grace_seconds": 180,
+  "min_free_bytes": 8589934592,
+  "max_run_bytes": 8589934592,
+  "max_parallel": 4
+}

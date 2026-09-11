@@ -35,7 +35,7 @@ def digest(value):
 
 def learners(seed, config):
     torch.manual_seed(seed)
-    model = BlueprintActorCritic(config['width'])
+    model = BlueprintActorCritic(config['width'], config.get('message_rounds', 2))
     actor = [p for name, p in model.named_parameters() if not name.startswith('critic.')]
     critic = list(model.critic.parameters())
     return model, torch.optim.Adam(actor, lr=config['learning_rate']), torch.optim.Adam(critic, lr=config['learning_rate'])

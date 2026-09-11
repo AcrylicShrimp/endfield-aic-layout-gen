@@ -128,13 +128,15 @@ def prepare(observation):
 
 class BlueprintActorCritic(nn.Module):
     """Shared blueprint encoder with separate policy and value heads."""
-    def __init__(self, width=40):
+    def __init__(self, width=40, message_rounds=2):
         super().__init__()
+        if type(width) is not int or width <= 0 or type(message_rounds) is not int or message_rounds <= 0:
+            raise ValueError('blueprint.model-config: width and message_rounds must be positive integers')
         self.nodes = nn.Sequential(nn.Linear(NODE_STATIC + NODE_STATE, width), nn.Tanh())
         self.edges = nn.Sequential(nn.Linear(EDGE_STATIC + EDGE_STATE, width), nn.Tanh())
         self.paths = nn.Sequential(nn.Linear(2, width), nn.Tanh())
-        self.messages = nn.ModuleList(nn.Linear(width * 3, width) for _ in range(2))
-        self.updates = nn.ModuleList(nn.Linear(width * 2, width) for _ in range(2))
+        self.messages = nn.ModuleList(nn.Linear(width * 3, width) for _ in range(message_rounds))
+        self.updates = nn.ModuleList(nn.Linear(width * 2, width) for _ in range(message_rounds))
         self.context = nn.Sequential(nn.Linear(width + GLOBAL_FEATURES, width), nn.Tanh())
         self.actor = nn.Sequential(nn.Linear(width * 3 + ACTION_FEATURES, width), nn.Tanh(), nn.Linear(width, 1))
         self.critic = nn.Sequential(nn.Linear(width, width), nn.Tanh(), nn.Linear(width, 1))
