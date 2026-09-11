@@ -1,4 +1,4 @@
-"""New blueprint/draft graph contract and an untrained experimental actor/critic.
+"""Blueprint/draft graph contract and experimental actor/critic.
 
 No existing PPO checkpoint or finite-horizon observation is adapted here.
 Categorical fingerprints are features only; native IDs remain the authority.
@@ -127,7 +127,7 @@ def prepare(observation):
 
 
 class BlueprintActorCritic(nn.Module):
-    """Small graph smoke model, not a trained long-horizon policy."""
+    """Shared blueprint encoder with separate policy and value heads."""
     def __init__(self, width=40):
         super().__init__()
         self.nodes = nn.Sequential(nn.Linear(NODE_STATIC + NODE_STATE, width), nn.Tanh())
@@ -142,6 +142,13 @@ class BlueprintActorCritic(nn.Module):
     def forward(self, batch):
         if batch['schema'] != SCHEMA:
             raise ValueError(f'blueprint.model-schema: expected {SCHEMA}')
+        from blueprint_ppo_batch import pack
+        logits, values = self.forward_packed(pack([batch]))
+        return logits, values[0]
+
+    def forward_packed(self, batch):
+        if batch['schema'] != 'blueprint-edit-packed-v1':
+            raise ValueError('blueprint.model-schema: expected disjoint packed graphs')
         nodes = self.nodes(torch.cat((batch['node_static'], batch['node_state']), dim=-1))
         edges = self.edges(torch.cat((batch['edge_static'], batch['edge_state']), dim=-1))
         route_sum = torch.zeros_like(edges)
@@ -155,9 +162,14 @@ class BlueprintActorCritic(nn.Module):
             incoming.index_add_(0, target, torch.tanh(message(torch.cat((nodes[source], nodes[target], edges), dim=-1))))
             incoming.index_add_(0, source, torch.tanh(message(torch.cat((nodes[target], nodes[source], -edges), dim=-1))))
             nodes = torch.tanh(update(torch.cat((nodes, incoming), dim=-1)))
-        pooled = self.context(torch.cat((nodes.mean(dim=0), batch['global_features'])))
+        node_graph = batch['node_graph']
+        pooled = torch.zeros((batch['size'], nodes.shape[1]), dtype=nodes.dtype)
+        pooled.index_add_(0, node_graph, nodes)
+        pooled = pooled / torch.bincount(node_graph, minlength=batch['size']).clamp_min(1).unsqueeze(-1)
+        pooled = self.context(torch.cat((pooled, batch['global_features']), dim=-1))
         references = batch['action_references']
         selected = nodes[references.clamp_min(0)]
-        selected = torch.where((references >= 0).unsqueeze(-1), selected, pooled)
-        logits = self.actor(torch.cat((selected.flatten(1), pooled.expand(len(references), -1), batch['action_features']), dim=-1)).squeeze(-1)
+        action_context = pooled[batch['action_graph']]
+        selected = torch.where((references >= 0).unsqueeze(-1), selected, action_context.unsqueeze(1))
+        logits = self.actor(torch.cat((selected.flatten(1), action_context, batch['action_features']), dim=-1)).squeeze(-1)
         return logits, self.critic(pooled).squeeze(-1)

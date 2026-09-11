@@ -11,12 +11,15 @@ use serde_json::json;
 use super::super::identity;
 use super::*;
 
+mod checkpoint;
+
 pub struct Session {
     catalogs: Arc<FactoryEditCatalogs>,
     request: FactoryEditRequest,
     original: Witness,
     blueprint: Blueprint,
     blueprint_sha256: String,
+    catalog_sha256: String,
     draft: Draft,
     best_draft: Draft,
     best: Witness,
@@ -24,6 +27,7 @@ pub struct Session {
     initial_metrics: FactoryLayoutMetrics,
     config: Config,
     started: Instant,
+    elapsed_before: Duration,
     attempts: u64,
     revision: u64,
     closed: bool,
@@ -72,6 +76,15 @@ impl Session {
             )?;
         }
         let blueprint_sha256 = identity::digest(&blueprint);
+        // Raw catalog DTOs are read-only Deserialize types. Their ordered Debug
+        // representations bind all parsed values under the recorded native build.
+        let catalog_sha256 = identity::digest(&[
+            format!("{:?}", catalogs.facilities.catalog()),
+            format!("{:?}", catalogs.recipes.recipe_book()),
+            format!("{:?}", catalogs.items.catalog()),
+            format!("{:?}", catalogs.transports.catalog()),
+            format!("{:?}", catalogs.components.catalog()),
+        ]);
         Ok(Self {
             catalogs,
             request,
@@ -79,12 +92,14 @@ impl Session {
             original,
             blueprint,
             blueprint_sha256,
+            catalog_sha256,
             best_draft: draft.clone(),
             draft,
             initial_metrics: metrics.clone(),
             best_metrics: metrics,
             config,
             started: Instant::now(),
+            elapsed_before: Duration::ZERO,
             attempts: 0,
             revision: 0,
             closed: false,
@@ -92,8 +107,11 @@ impl Session {
         })
     }
 
+    fn elapsed(&self) -> Duration {
+        self.elapsed_before.saturating_add(self.started.elapsed())
+    }
     fn expired(&self) -> bool {
-        self.started.elapsed() >= Duration::from_millis(self.config.elapsed_ms)
+        self.elapsed() >= Duration::from_millis(self.config.elapsed_ms)
     }
     fn done(&self) -> bool {
         self.closed || self.attempts >= self.config.max_actions || self.expired()
@@ -124,7 +142,7 @@ impl Session {
             "revision": self.revision, "draft_factory_validated": self.draft_validated, "facilities": self.draft.placements,
             "nodes": nodes, "edges": edges, "conflicts": geometry::conflicts(&self.blueprint, &self.draft),
             "best_metrics": self.best_metrics, "initial_metrics": self.initial_metrics,
-            "attempts": self.attempts, "config": self.config, "elapsed_ms": self.started.elapsed().as_secs_f64() * 1000.,
+            "attempts": self.attempts, "config": self.config, "elapsed_ms": self.elapsed().as_secs_f64() * 1000.,
             "done": self.done()}),
         )
     }
@@ -331,7 +349,7 @@ impl Session {
             "factory_validated": true, "best": self.best, "best_metrics": self.best_metrics,
             "attempts": self.attempts, "revision": self.revision,
             "unfinished_draft": !self.draft_validated,
-            "elapsed_ms": self.started.elapsed().as_secs_f64() * 1000.})
+            "elapsed_ms": self.elapsed().as_secs_f64() * 1000.})
     }
 
     pub fn validated_draft(&self) -> Result<Value> {

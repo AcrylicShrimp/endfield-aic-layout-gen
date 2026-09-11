@@ -56,7 +56,8 @@ struct Blueprint {
     edges: Vec<Edge>,
 }
 
-#[derive(Clone, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct Draft {
     placements: Vec<FacilityPlacement>,
     paths: Vec<Option<Vec<Point>>>,

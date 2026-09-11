@@ -5,6 +5,7 @@ use serde_json::{Value, json};
 use super::super::tests::{fixture, fixture_request};
 use super::*;
 
+mod checkpoint;
 mod guards;
 
 fn session() -> Session {

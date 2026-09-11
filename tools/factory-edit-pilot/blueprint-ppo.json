@@ -1,0 +1,17 @@
+{
+  "schema": "blueprint-persistent-ppo-v1",
+  "purpose": "learning-screen",
+  "probe_spec": "tools/factory-edit-pilot/blueprint-edit-probe.json",
+  "seeds": [17, 29],
+  "device": "cpu",
+  "training": {"updates": 64, "streams": 8, "chunk_actions": 32, "episode_actions": 256, "elapsed_ms": 300000},
+  "evaluation": {"at": [0, 16, 32, 64], "starts": ["original", "overlap", "improved"], "samples": 2, "elapsed_ms": 2000, "max_actions": 4096, "action_milestones": [8, 32, 64, 128, 256]},
+  "limits": {"run_seconds": 1800, "max_output_bytes": 2147483648},
+  "ppo": {"width": 40, "learning_rate": 0.0003, "gamma": 1.0, "gae_lambda": 0.95, "clip_epsilon": 0.2, "epochs": 4, "minibatch_size": 64, "target_kl": 0.02, "entropy_coefficient": 0.001, "gradient_clip": 0.5},
+  "starts": [
+    {"name": "original", "prefix": []},
+    {"name": "overlap", "prefix": [{"kind": "pose", "instance": "A0", "x": 2, "y": 7, "rotation": 90}]},
+    {"name": "repair_ready", "prefix": [{"kind": "pose", "instance": "C1", "x": 27, "y": 13, "rotation": 90}]},
+    {"name": "improved", "prefix": [{"kind": "pose", "instance": "C1", "x": 27, "y": 13, "rotation": 90}, {"kind": "repair_all"}, {"kind": "commit"}]}
+  ]
+}

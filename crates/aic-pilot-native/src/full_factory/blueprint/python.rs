@@ -71,4 +71,22 @@ impl PythonSession {
                 .map_err(diagnostic)?,
         )
     }
+
+    fn checkpoint_json(&self, py: Python<'_>) -> PyResult<String> {
+        encode(&py.detach(|| self.session.checkpoint()))
+    }
+
+    #[staticmethod]
+    fn from_checkpoint(
+        py: Python<'_>,
+        root: &str,
+        catalogs_json: &str,
+        checkpoint_json: &str,
+    ) -> PyResult<Self> {
+        let (catalogs, _) = load_catalogs(Path::new(root), catalogs_json)?;
+        let session = py
+            .detach(|| Session::from_checkpoint(checkpoint_json, catalogs))
+            .map_err(diagnostic)?;
+        Ok(Self { session })
+    }
 }

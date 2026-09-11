@@ -22,6 +22,27 @@ check. It does not train a policy or establish a learning improvement. See the
 [contract](../../docs/designs/2026-09-11-blueprint-edit-contract.md) and
 [verified results](../../docs/reports/2026-09-11-blueprint-edit-contract.md).
 
+The persistent-draft PPO learner keeps native sessions alive across 32-action
+rollout chunks inside 256-action episodes. Its separate checkpoint contract
+retains private geometry, both Adam states and sampling/shuffle RNGs. The
+[registered learning screen](../../docs/designs/2026-09-11-blueprint-persistent-ppo.md)
+uses two fresh seeds and compares timed inference to each untrained checkpoint.
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/blueprint_ppo.py train --config tools/factory-edit-pilot/blueprint-ppo.json --native-library "$AIC_NATIVE_LIBRARY" --output artifacts/factory-edit-pilot/blueprint-readiness --readiness
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/audit_blueprint_ppo.py --run artifacts/factory-edit-pilot/blueprint-readiness
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/blueprint_ppo.py train --config tools/factory-edit-pilot/blueprint-ppo.json --native-library "$AIC_NATIVE_LIBRARY" --output artifacts/factory-edit-pilot/blueprint-learning
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/audit_blueprint_ppo.py --run artifacts/factory-edit-pilot/blueprint-learning
+```
+
+`blueprint_ppo.py resume --output RUN` restores the last complete durable update
+under identical recorded sources and inputs. Preserve `interrupted.pt.gz` when a
+run fails: it records partial experience beyond that update. Resuming re-collects
+that incomplete chunk from its last durable checkpoint; wall-clock observations
+can differ. The audit exactly reconstructs every **retained learner update**,
+checks native draft continuity and bootstraps, and independently validates every
+unique retained commit/final witness. It does not claim future sampling replay.
+
 ## Historical fixed-factory pilot
 
 This is the explicit local-edit learning pilot, separate from the production constructor and
