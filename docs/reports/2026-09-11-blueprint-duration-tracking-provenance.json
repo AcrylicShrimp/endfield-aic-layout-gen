@@ -50,6 +50,10 @@
     {
       "path": "artifacts/factory-edit-pilot/blueprint-duration-tracking-evidence-20260911/blueprint-tracking-python-tests-native.log",
       "sha256": "7a343935db866f808e2ec430804a1fd013552aac599f6640e9e0249b765b0382"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-tracking-evidence-20260911/workspace.json",
+      "sha256": "99bff21c61eb6da813893b3bce5972d105b2aa01a0d8105d8b7c18f4cc78a411"
     }
   ]
 }

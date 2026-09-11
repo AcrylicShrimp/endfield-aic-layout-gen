@@ -630,3 +630,12 @@ python tools/factory-edit-pilot/plot_ppo_capacity.py --report CAPACITY_COMPARISO
 ```
 Lower later absolute gain can reflect improvements moving earlier; compare it
 with final factory quality rather than treating it as a separate objective.
+
+### Blueprint duration dashboard
+
+The duration observer uses its own metric keys; historical harness panels may
+therefore be empty for this run. In a separate admin environment with
+`wandb-workspaces` installed, run `blueprint_duration_workspace.py --run RUN
+--output NEW_VERIFICATION_JSON --env-file /path/to/tracking.env` to create a view
+with ten matching training/evaluation panels. `--verify-url URL` verifies an
+existing view. The learner and observer do not require this optional UI package.
