@@ -1,5 +1,6 @@
 //! Retained complete-factory environment. The physical authority remains aic-data.
 
+pub(crate) mod blueprint;
 mod candidates;
 mod catalog;
 mod chains;

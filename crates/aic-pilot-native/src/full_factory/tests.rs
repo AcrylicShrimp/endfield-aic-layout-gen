@@ -43,7 +43,7 @@ fn oracle(request: Value) -> Value {
     );
     serde_json::from_slice(&result.stdout).unwrap()
 }
-fn fixture() -> (Witness, FactoryEditCatalogs, Value) {
+pub(super) fn fixture() -> (Witness, FactoryEditCatalogs, Value) {
     let root = root();
     let data = root.join("data/game/normalized");
     let paths = json!({"facilities": data.join("facilities.json"), "recipes": data.join("recipes.json"), "items": data.join("items.json"),
@@ -81,7 +81,7 @@ fn fixture() -> (Witness, FactoryEditCatalogs, Value) {
     (w, catalogs, paths)
 }
 
-fn fixture_request(w: &Witness) -> aic_data::layouts::FactoryEditRequest {
+pub(super) fn fixture_request(w: &Witness) -> aic_data::layouts::FactoryEditRequest {
     use aic_data::layouts::{
         FactoryEditEndpoint, FactoryEditInstance, FactoryEditRequest, FactoryEditTerminal,
         TransportNetworkEndpoint,

@@ -1,0 +1,66 @@
+{
+  "schema": "blueprint-edit-provenance-v1",
+  "base_commit": "10b934627d9762790174e002e0b04f891aebc30e",
+  "contract": "blueprint-edit-v1",
+  "observation": "blueprint-edit-observation-v1",
+  "graph_input": "blueprint-edit-graph-v1",
+  "runtime": {
+    "python": "3.14.7",
+    "torch": "2.14.0",
+    "platform": "macOS-26.6.2-arm64-arm-64bit-Mach-O"
+  },
+  "source_sha256": {
+    "crates/aic-pilot-native/src/full_factory/blueprint/geometry.rs": "951be4d1528bd16910bc06e9ee1740d85d43be28675e10ee6d75465f821d0689",
+    "crates/aic-pilot-native/src/full_factory/blueprint/python.rs": "8d7630b3252054b25e9d605fb8855bc304e742dc3b0477bc7428df2f47e0e607",
+    "crates/aic-pilot-native/src/full_factory/blueprint/session.rs": "fe2224bb591dbc1bba005a18875eac0fd7000605fd4d524f8b5936a7b7e4c34d",
+    "crates/aic-pilot-native/src/full_factory/blueprint/tests/guards.rs": "7acdc842f9b8447b6f2550cd0b83b591b7a67c86e903c7d9a020055d0ca36782",
+    "crates/aic-pilot-native/src/full_factory/blueprint/tests.rs": "24e23cf3bb38fc60eaa8afaa04ef1af74d371e3f2aa53ea44361319ec3d00f86",
+    "crates/aic-pilot-native/src/full_factory/blueprint/topology.rs": "25b9ec7f4c9bb71aa1ed30331a1be7de82e702bc90d33bbbefba7e3cab267603",
+    "crates/aic-pilot-native/src/full_factory/blueprint.rs": "4292c1d6814a1935ebdc3b968355f205b84162665581a8a7958b9e155294e8e9",
+    "crates/aic-pilot-native/src/full_factory/tests.rs": "8180e22aeda4388fa5f194e7689c49d4f1c90a45b8adb06f0ea05916c1bd5e20",
+    "crates/aic-pilot-native/src/full_factory.rs": "120a71a46f60939fffc08e30fac56bfc2427d4506dd92257fe996332cf4a3c89",
+    "crates/aic-pilot-native/src/lib.rs": "1a1d52a635de8e69004da144f217f021b3dd9cfb447d4a747ed8549f2f1d2d95",
+    "tools/factory-edit-pilot/blueprint-edit-probe.json": "e0752d62e40b8f29d07b5cd416fb19094d2b30e2bacde089dcb4c016f223a4f6",
+    "tools/factory-edit-pilot/blueprint_edit_audit.py": "56de98633db962127dba1f0e5019148de2c000ea6ce1b805cad02ce23ac4bc52",
+    "tools/factory-edit-pilot/blueprint_edit_input.py": "33a577b1889ca84a141d529fd42f6757eaaecc4782cef5cc3f70c7c0ca8e2a7a",
+    "tools/factory-edit-pilot/plot_blueprint_edit.py": "d8b13ce1e4be8ee577d187ea28b68b93878e253bb61d067ef5692e761a316046",
+    "tools/factory-edit-pilot/probe_blueprint_edit.py": "091b6e2c3299bdb852d4dcfabca6fd2a378a7b6221ad7b39b30e6bb7bb92e9bf",
+    "tools/factory-edit-pilot/pyproject.toml": "7966e43556aefabf4196f7d30550c4c2755eff5ee1db3a9b8da2abeafdf7f7d2",
+    "tools/factory-edit-pilot/test_blueprint_edit_contract.py": "4e0b08d7507af7898c1b721a04572cfcb0ee86bc88fc205e55ffb27486441724",
+    "tools/factory-edit-pilot/uv.lock": "a92c3fbadd39d9cb6060f527cfaf1c1d8e0c122c87b531a05d2cbb2b0cd0ff15"
+  },
+  "original_inputs_sha256": {
+    "/Users/ashrimp/Devel/endfield-aic-layout-gen/docs/benchmarks/constructive-bound-interconnect/fixtures/crossing-witness.json": "b3b4f9e9110dad9dfa5be94dfd0236bf720c4e076c79760dec8877d1f96e22d8",
+    "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/facilities.json": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e",
+    "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/recipes.json": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2",
+    "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/items.json": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164",
+    "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/transports.json": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1",
+    "/Users/ashrimp/Devel/endfield-aic-layout-gen/data/game/normalized/logistics-components.json": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+  },
+  "native_library": {
+    "path": "target/release/libaic_pilot_native.dylib",
+    "sha256": "8a4a50180a9db0c449c0317864f0e665bb73540aa9dfdae240833600235992d1"
+  },
+  "retained_evidence": "artifacts/factory-edit-pilot/blueprint-edit-20260911",
+  "evidence_sha256": {
+    "report.json": "e3a3ab926d6a4a3af7bcb16107a69a134f6accbcbdf4585f207e39138c592fc5",
+    "contract.png": "40f5f5c76565b1e9e0a803c0ab97e32f92509c65c489df3d78368f9529c48669",
+    "verification/blueprint-edit-all-python-tests.log": "7d796f1dd0213d0d1c123956d784cb9f33f13052824995afec33d05acdb19a96",
+    "verification/blueprint-edit-build.log": "b078e190ce5f70e9da577b38e763fda30343a44ffef4978779093ba2963591c8",
+    "verification/blueprint-edit-python-tests.log": "c2ac77bafdcedbd54a01c07cc3364c6c58815814ee38120681cd1e2231ce41ca",
+    "verification/blueprint-edit-tests.log": "b81dc2d7b5076d70dab654a8df6602e383130f247b91b416cab2598553e8d9a8",
+    "verification/blueprint-edit-workspace-check.log": "861f4a7e650dcb65040126bcd53c4bf68b89e31e22a7aa9c3ac7d71b06c83808",
+    "verification/blueprint-edit-workspace-tests.log": "4edb6ab9e5de2525e61dd59c9a63579e4063cac2d6c94e12f635ab2daa6ef283"
+  },
+  "blueprint_sha256": "bb3c63abc9e0e453ef11f18787026f882c16f8c5580ec89e3259a3ffdbf7a341",
+  "scripted_scenarios": 5,
+  "scripted_attempts": 57,
+  "original_edges": 15,
+  "trained_policy": false,
+  "focused_native_tests": 9,
+  "new_python_tests": 3,
+  "workspace_passed": 561,
+  "workspace_ignored": 5,
+  "python_passed": 369,
+  "python_skipped": 7
+}

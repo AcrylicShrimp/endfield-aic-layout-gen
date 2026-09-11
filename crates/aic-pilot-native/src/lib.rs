@@ -25,5 +25,6 @@ fn aic_pilot_native(module: &Bound<'_, PyModule>) -> PyResult<()> {
     module.add_class::<full_factory::python::PythonRuntime>()?;
     module.add_class::<full_factory::python::PythonEpisode>()?;
     module.add_class::<full_factory::python::PythonHandle>()?;
+    module.add_class::<full_factory::blueprint::python::PythonSession>()?;
     Ok(())
 }

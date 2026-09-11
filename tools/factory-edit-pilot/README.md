@@ -1,5 +1,29 @@
 # Fixed-factory edit pilot
 
+## Blueprint-preserving draft experiment
+
+The new `blueprint-edit-v1` experiment permits facility overlap and pending
+connections across multiple private actions, while freezing the original directed
+blueprint. Wrong endpoints, rewiring and altered metadata are rejected before
+draft mutation. Only complete native validation permits a witness export; final
+results always return the best valid factory. It is a separate experimental
+contract with a new graph actor/critic input, not an existing PPO checkpoint mode.
+
+After the native build below, select its library for your platform and run:
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/probe_blueprint_edit.py --spec tools/factory-edit-pilot/blueprint-edit-probe.json --native-library "$AIC_NATIVE_LIBRARY" --output target/blueprint-edit-probe
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/plot_blueprint_edit.py --probe target/blueprint-edit-probe --output target/blueprint-edit-probe/contract.png
+```
+
+The probe uses the registered crossing-witness source fixture, checks original
+branch/merge/bridge incidence, and runs an untrained graph-model forward/backward
+check. It does not train a policy or establish a learning improvement. See the
+[contract](../../docs/designs/2026-09-11-blueprint-edit-contract.md) and
+[verified results](../../docs/reports/2026-09-11-blueprint-edit-contract.md).
+
+## Historical fixed-factory pilot
+
 This is the explicit local-edit learning pilot, separate from the production constructor and
 isolated global exact research. A 100,898-parameter CNN/object MLP scores the seven declared
 local commands. PPO starts from fresh weights; every episode starts from the same complete

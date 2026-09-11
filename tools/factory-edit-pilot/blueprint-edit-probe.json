@@ -1,0 +1,65 @@
+{
+  "schema": "blueprint-edit-probe-v1",
+  "initial": "docs/benchmarks/constructive-bound-interconnect/fixtures/crossing-witness.json",
+  "catalogs": {
+    "facilities": "data/game/normalized/facilities.json",
+    "recipes": "data/game/normalized/recipes.json",
+    "items": "data/game/normalized/items.json",
+    "transports": "data/game/normalized/transports.json",
+    "components": "data/game/normalized/logistics-components.json"
+  },
+  "config": {
+    "schema": "blueprint-edit-v1",
+    "max_actions": 256,
+    "elapsed_ms": 60000,
+    "route_expansions": 100000,
+    "search_padding": 4
+  },
+  "scenarios": [
+    {
+      "name": "overlap-and-original-topology-recovery",
+      "steps": [
+        {"action": {"kind": "pose", "instance": "A0", "x": 2, "y": 7, "rotation": 90}, "expect": "draft_accepted", "overlap": true, "model_smoke": true},
+        {"action": {"kind": "commit"}, "expect": "rejected", "code": "blueprint.unfinished-conflicts", "overlap": true},
+        {"action": {"kind": "pose", "instance": "A1", "x": 2, "y": 11, "rotation": 90}, "expect": "draft_accepted"},
+        {"action": {"kind": "pose", "instance": "A0", "x": 3, "y": 2, "rotation": 90}, "expect": "draft_accepted"},
+        {"action": {"kind": "repair_all"}, "expect": "draft_accepted"},
+        {"action": {"kind": "commit"}, "expect": "validated", "all_routed": true}
+      ]
+    },
+    {
+      "name": "reject-topology-changes",
+      "steps": [
+        {"probe": "wrong_endpoint", "edge": 0, "expect": "rejected", "code": "blueprint.route-endpoint"},
+        {"action": {"kind": "rewire", "edge": 0, "target": 2}, "expect": "rejected", "code": "blueprint.action-schema"},
+        {"action": {"kind": "pose", "instance": "A0", "x": 2, "y": 2, "rotation": 90, "recipe": "forbidden-change"}, "expect": "rejected", "code": "blueprint.action-schema"},
+        {"probe": "stale_revision", "expect": "rejected", "code": "blueprint.stale-envelope"}
+      ]
+    },
+    {
+      "name": "unfinished-stop-retains-best",
+      "steps": [
+        {"action": {"kind": "pose", "instance": "A0", "x": 2, "y": 7, "rotation": 90}, "expect": "draft_accepted", "overlap": true},
+        {"action": {"kind": "repair_all"}, "expect": "rejected", "code": "blueprint.routing-failed"}
+      ],
+      "unfinished_draft": true
+    },
+    {
+      "name": "continue-past-32-actions",
+      "steps": [
+        {"action": {"kind": "pose", "instance": "A0", "x": 2, "y": 7, "rotation": 90}, "repeat": 40, "expect": "draft_accepted", "overlap": true},
+        {"action": {"kind": "restore_best"}, "expect": "draft_accepted", "all_routed": true}
+      ]
+    },
+    {
+      "name": "validated-area-improvement",
+      "steps": [
+        {"action": {"kind": "pose", "instance": "C1", "x": 27, "y": 13, "rotation": 90}, "expect": "draft_accepted"},
+        {"action": {"kind": "repair_all"}, "expect": "draft_accepted"},
+        {"action": {"kind": "commit"}, "expect": "improved", "all_routed": true},
+        {"action": {"kind": "commit"}, "expect": "validated", "all_routed": true}
+      ],
+      "expect_area_improvement": true
+    }
+  ]
+}
