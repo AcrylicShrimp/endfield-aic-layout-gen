@@ -1,11 +1,12 @@
 # Blueprint graph model capacity screen
 
-Status: registered before implementation and model training.
+Status: registered before implementation and model training; server matrix running.
 
 The user requested testing whether greater representation capacity helps the new
 blueprint-edit contract, and explicitly requested stopping the monitored training
 before running this comparison on the server. The existing Mac trainer paused at
-update 1396; its final tail audit may finish independently. The remote server's
+update 1396; its final tail audit passed and its launch registration was removed.
+The remote server's
 older padded-curriculum run was already stopped. No previous learner is resumed
 or imported into this comparison.
 
@@ -73,6 +74,10 @@ starts; evaluation uses distinct factories. Keep that limitation explicit rather
 than changing training diversity simultaneously with model capacity. A null or
 mixed 512-batch result can motivate a longer controlled comparison without being
 presented as proof that representation capacity never matters.
+
+Elapsed time is an existing policy feature. Architecture-dependent inference
+cost can therefore change policy inputs even when all cases reach the action
+cap. Preserve that contract and report this limit on causal interpretation.
 
 ## Verification and failure modes
 

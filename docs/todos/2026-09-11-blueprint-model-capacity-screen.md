@@ -23,3 +23,10 @@ Activity log:
   capacity regressions, all 413 Python tests (seven skipped), workspace checks
   and Rust tests passed. Actual matrix CLI prepared all eight local arms.
   Server readiness and full comparison remain pending.
+- 2026-09-11: All eight server readiness arms completed eight updates and passed
+  their tail audits. The width-80/four-round full replay passed all eight updates,
+  32 training episodes and 96 evaluation cases. All 768 readiness cases reached
+  64 actions. Measured main-output estimate is 36.84 GiB, leaving 17.11 GiB free.
+- 2026-09-11: Started the registered 512-update matrix under a supervised server
+  user service on CPU slots 0, 1, 4 and 5. Created and read back a dedicated W&B
+  view, including authentic iteration-zero evaluation points. Final results pending.
