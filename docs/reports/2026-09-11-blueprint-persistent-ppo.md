@@ -49,8 +49,9 @@ episode persisted across eight 32-action rollout chunks. The run took 258.46
 seconds including periodic evaluations and retained evidence I/O.
 
 The sampled pose share in the timed evaluation dropped from 21.8% to 0.7% for
-seed 17 and from 21.2% to 1.7% for seed 29. Pose includes both movement and
-rotation. The final policies mostly selected repairs, commits and restore-best.
+seed 17 and from 21.2% to 1.7% for seed 29. The sampled pose candidates change
+coordinates while retaining rotation; the native API additionally supports
+manual rotations. The final policies mostly selected repairs, commits and restore-best.
 This is evidence of reduced placement exploration; the run does not isolate its
 cause. Actor KL stopping alone is not an adequate explanation: seed 29 used all
 four actor epochs at every update and showed the same direction of change.
@@ -155,3 +156,60 @@ advantages assigned to pose actions against subsequent repairs/commits, and
 separate sparse true area reward from critic/bootstrap error. The present run
 cannot establish which cause dominates. Changing reward, curriculum, horizon
 or architecture simultaneously would obscure that question.
+
+## Follow-up: recorded credit diagnosis
+
+The subsequent read-only diagnosis used every recorded training chunk without
+changing the learner or collecting new experience. Run:
+
+```sh
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/diagnose_blueprint_credit.py --run artifacts/factory-edit-pilot/blueprint-ppo-20260911
+```
+
+Of 128 batches, 119 had zero sampled area reward. Their GAE still contained
+value predictions and, except at true terminals, a bootstrap. The learner
+normalizes each batch's advantages to unit standard deviation. Consequently,
+small value-derived differences can drive policy updates even when that batch
+contains no observed improvement. This is the implemented PPO rule, not a
+newly discovered sign or terminal-mask bug. Its usefulness depends on the
+critic predicting the relevant future gains accurately.
+
+Seed 17's first batch already assigned pose actions a mean normalized advantage
+of -0.252; 40 of its 53 poses (75.5%) had negative normalized advantage. The
+second batch had no positive reward and its pose mean was -0.305. Across the
+first eight batches, the pose mean was -0.283 versus +0.054 for commit. Pose
+samples fell from 53 to six per 256-sample batch. Seed 29 initially had a
+positive pose mean (+0.132 in batch one) and retained exploration longer.
+This is direct evidence that the recorded policy objective often discouraged
+movement, though shared-encoder value gradients and later Adam steps prevent
+attributing the entire probability change to this statistic alone.
+
+Environment persistence does not make GAE span the whole 256-action episode.
+Its direct sampled-reward contribution stops at the 32-action chunk boundary;
+later reward is represented by the frozen successor value. Within a chunk,
+lambda .95 also attenuates a reward 16 actions away to about 44% of its direct
+contribution. In the realized trajectories, 58 poses preceded a later positive
+reward in the same episode. For 45 of them, that reward lay outside their
+sampled chunk, leaving zero direct sampled-reward contribution. Thirty-two of
+the 58 received negative normalized advantage. A pose preceding a reward need
+not have caused it, so these counts do not prove those labels were incorrect.
+They identify how heavily learning these trajectories relies on the critic.
+
+All four seed-17 area improvements came from supplied repair-ready starts;
+none followed a policy pose in that episode. Seven of the ten total area gains
+came from that start. The observed successful examples therefore emphasize
+repair/commit much more than policy-discovered movement followed by recovery.
+
+On one identical frozen original-state input per seed, pose probability changed
+from 22.01% to 0.85% for seed 17 and from 20.49% to 1.58% for seed 29 between
+checkpoints 0 and 64, setting elapsed fraction to zero. Setting only elapsed
+fraction to one changed final probabilities to 0.86% and 1.60%. Thus elapsed
+feature extrapolation does not explain the suppression on these fixed states;
+this narrow probe does not rule out all training/evaluation distribution shifts.
+
+The leading hypothesis is a feedback loop between rare movement-to-reward
+examples, critic-dependent delayed credit and reduced movement exploration.
+This evidence motivates a controlled credit comparison before another long
+training run; it does not isolate one cause experimentally. The earlier prose
+describing sampled pose as movement plus rotation was corrected above: rotations
+were available to manual native actions, not this policy's candidate generator.

@@ -4,7 +4,8 @@
   "retention": "Ignored local evidence; preserve non-replayable experience and checkpoints. Not a backup.",
   "analysis_sources": {
     "tools/factory-edit-pilot/audit_blueprint_ppo.py": "bd28b47bf67d6afaf28a8ccdaff15c7584707c09e5833bb59db987aa24499e1c",
-    "tools/factory-edit-pilot/summarize_blueprint_ppo.py": "3d0609582506bea36b6671056d949f9fff6096c65e3f007431083a6b6fa0fa74"
+    "tools/factory-edit-pilot/summarize_blueprint_ppo.py": "3d0609582506bea36b6671056d949f9fff6096c65e3f007431083a6b6fa0fa74",
+    "tools/factory-edit-pilot/diagnose_blueprint_credit.py": "3eb61fa0c60ec4bb44af5176c1a595b56b7207366a699ac30410bfdf0956aab1"
   },
   "runs": [
     {
@@ -108,6 +109,10 @@
         {
           "path": "seed-29/checkpoints/0064.pt.gz",
           "sha256": "a0638e6bb762df0b60f81b10d80b2463960cc114c242ed4404cfcc6dd6caccaf"
+        },
+        {
+          "path": "credit-diagnostic.json",
+          "sha256": "782aaca0747cfe4c727e8861fff20f7cadcc850ead6348316184507a2c6cab9a"
         }
       ],
       "continuation_origin": null
