@@ -1,7 +1,8 @@
 # Launch of twelve-hour, 64-action blueprint training
 
-Status: launch verified; training is running. This is a launch report, not a
-completed twelve-hour quality result.
+Status: historical launch; stopped at user request after update 1778. See the
+[corrected fresh launch](2026-09-11-blueprint-corrected-twelve-hour-launch.md).
+The following records the original launch configuration and observations.
 
 The user requested twelve hours and explicitly confirmed that 64 is the episode
 length, replacing 256. Training started on **2026-09-11 at 17:41:52 KST**

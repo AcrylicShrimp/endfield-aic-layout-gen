@@ -1,6 +1,6 @@
 # Correct stopped blueprint duration evaluation
 
-Status: in progress.
+Status: complete.
 
 Context: the user requested stopping training, restoring four-batch evaluation,
 and reusing existing metric names. The user confirmed the original 32 factories, fresh training initialization and
@@ -30,3 +30,7 @@ Activity log:
 - 2026-09-11: Final online readiness and all six update replays passed; server
   history confirms 32 cases at 0/4/6 and canonical axes. Implementation complete;
   freeze source and launch the fresh twelve-hour run next.
+
+- 2026-09-11: Fresh twelve-hour job launched at 19:00:35 KST from c6ed2cd.
+  Actual initial and four-batch evaluations verified online; existing dedicated
+  chart view updated. Launch report and compact provenance recorded.

@@ -1,0 +1,156 @@
+{
+  "schema": "blueprint-corrected-launch-provenance-v1",
+  "source_commit": "c6ed2cdbf834676032f1cffb804db6906222817e",
+  "native_fix_commit": "d3d4f10bb6fa620f5675a518ec91b2c5cec118d4",
+  "source_root": "artifacts/factory-edit-pilot/blueprint-64-12h-corrected-source-20260911",
+  "runtime_artifacts": [
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-corrected-20260911/protocol.json",
+      "sha256": "3bef9feb3b054d43857ea9e641299aa64b3a3a25eae6dfe00d946fda83d0ba8b",
+      "bytes": 87701
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-corrected-20260911/libaic_pilot_native.dylib",
+      "sha256": "0a6a05d5df545916ebdad9ff28d9b233c5bdbde0cb790d17931db394bf4aecdf",
+      "bytes": 4651888
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-corrected-20260911/job.plist",
+      "sha256": "6bd58ffecc9a60f7fe75ee0e48c383a90a89064ccda9440f4af723ec0874f1fe",
+      "bytes": 1505
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-corrected-20260911/launch-prepared.json",
+      "sha256": "1067f68ee34832842b0c7d3c28b8d4b10ddc0328fcf661288d4aa76a12a21864",
+      "bytes": 739
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-corrected-20260911/launch-state.json",
+      "sha256": "bc807e1319b167139faf128eff3b4c96d4d5e2d9f5fd922e00d3c4333054f7f3",
+      "bytes": 5524
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-corrected-20260911/seed-17/checkpoints/0000.pt.gz",
+      "sha256": "5f4801e7829b7d34bb59ddd912ee37f59fed09d4b2a14fb9602aa347f23f6b22",
+      "bytes": 109618
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-corrected-20260911/remote-evaluation-verification.json",
+      "sha256": "0dbe97b52e3fa87dc90135e240ca60208a58bd56a3020464957991c9211810cb",
+      "bytes": 1269
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-corrected-20260911/workspace.json",
+      "sha256": "6301905d5ab89755fb58907e7eaeff1e7182f205ef337987abe517ee8c551368",
+      "bytes": 2609
+    }
+  ],
+  "readiness_artifacts": [
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-evaluation-correction-final-20260911/protocol.json",
+      "sha256": "b78afa74de5fe64237145d8ad941dbb291665605273fbed388a22c906edf062d",
+      "bytes": 87617
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-evaluation-correction-final-20260911/state.json",
+      "sha256": "92f56dd85a6ff50d1ac769e2b9766c9cc650c7edaab2c3e94839d5b9a665cf50",
+      "bytes": 2934
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-evaluation-correction-final-20260911/completion.json",
+      "sha256": "f7e087206ddc2973a97317f3f2c985702a1d11c6c485348f09ce4a1be09f7c41",
+      "bytes": 484
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-evaluation-correction-final-20260911/audit.json",
+      "sha256": "c3e59ad899f99cc80db2f00860ce8bef415435fa25c0e4ab3027306347dcfa62",
+      "bytes": 154357
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-evaluation-correction-final-20260911/full-audit.json",
+      "sha256": "9cc7b1e21b11eb10a78966ae351f5a7a595dd4e483f9c2a564154240ce3f44dc",
+      "bytes": 230912
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-evaluation-correction-final-20260911/remote-evaluation-verification.json",
+      "sha256": "5aea4fb1cdc01419f670245c153fadf243fc5355769c2b96eacd1aa30fb5d42c",
+      "bytes": 1126
+    }
+  ],
+  "cohort_manifest": {
+    "path": "artifacts/factory-edit-pilot/blueprint-evaluation-cohort-20260911/cohort.json",
+    "sha256": "029ce0e827c8e96ab6b9446dad3db7dcb873385f888b1f30edaa6b90c0478099",
+    "bytes": 43054
+  },
+  "old_stopped_artifacts": [
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/protocol.json",
+      "sha256": "c296b55058849c5c9fb69a122c442ee59a34578a6f7c5fd7cca632dabbe862ae",
+      "bytes": 66195
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/completion.json",
+      "sha256": "45334ea433339da23abe62559887b5d01921933e4718632d15d8a5fb8a3f0863",
+      "bytes": 484
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/audit.json",
+      "sha256": "7552409369905b01660afd73a564c3e488882d50c9d029ede750c3abcbf60336",
+      "bytes": 15996
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/wandb-observer.json",
+      "sha256": "e2e9cd2b221a11642d9fb55bf3274e7f6744c65a70047543855f871e1c6687ef",
+      "bytes": 847
+    }
+  ],
+  "readiness_counts": {
+    "native_restorations": 48,
+    "training_actions": 1536,
+    "kind/pose": 250,
+    "status/draft_accepted": 1063,
+    "area_reward": 0.0,
+    "actions_with_pending": 536,
+    "actions_with_overlap": 311,
+    "kind/commit": 364,
+    "status/rejected": 234,
+    "kind/repair_all": 347,
+    "kind/restore_best": 341,
+    "kind/repair": 234,
+    "status/validated": 230,
+    "status/improved": 9,
+    "improvements_after_8": 8,
+    "improvements_after_32": 3,
+    "improvements_after_64": 0,
+    "nonterminal_bootstraps": 24,
+    "archived_successes": 0,
+    "admitted_sequences": 0,
+    "duplicate_sequences": 0,
+    "sampled_success_labels": 0,
+    "positive_weight_labels": 0,
+    "updates_with_positive_imitation_weight": 0,
+    "exact_update_replays": 6,
+    "retained_checkpoints": 6,
+    "continuity_checks": 24,
+    "terminal_frontiers": 24,
+    "completed_episodes": 24,
+    "evaluation_cases": 96,
+    "evaluation_actions": 6144,
+    "witness_references": 1333,
+    "unique_physically_validated_witnesses": 112
+  },
+  "initialization": {
+    "update": 0,
+    "model_sha256": "e3a7d90be94ec659a76f5ec27e898d83bbcb848a0df597de49aa3d34977064aa",
+    "actor_optimizer_entries": 0,
+    "critic_optimizer_entries": 0,
+    "success_sequences": 0,
+    "imported_checkpoint": null,
+    "evaluated_before_training": true
+  },
+  "started_at": "2026-09-11T10:00:35.588175+00:00",
+  "planned_end": "2026-09-11T22:00:35.588175+00:00",
+  "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen?nw=z1oi3o9iuzd",
+  "run_id": "11537d338118ad65d0663c3b",
+  "no_old_checkpoint_imported": true
+}

@@ -1,6 +1,6 @@
 # Correct duration evaluation and restore shared tracking metrics
 
-Status: implemented and verified; fresh twelve-hour launch follows. Preserve the stopped run's frozen inputs,
+Status: implemented, verified and launched as a fresh twelve-hour run. Preserve the stopped run's frozen inputs,
 model, both optimizers, RNG, native state, experience and completed evaluations.
 
 ## Evaluation schedule
