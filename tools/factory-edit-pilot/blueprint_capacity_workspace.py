@@ -4,8 +4,17 @@ from importlib.metadata import version
 from pathlib import Path
 
 from blueprint_duration_workspace import PANELS
+from blueprint_duration_metrics import evaluation_metrics
 from ppo_harness_environment import load_environment, tracking_destination
 from ppo_harness_state import read, write
+
+
+def evaluation_rows(history, metric, delta):
+    # The history API can include training rows with null evaluation fields.
+    rows = [row for row in history if row.get(metric) is not None]
+    if any(row.get(k) is None for row in rows for k in ('train/batches', 'train/actions', delta)):
+        raise ValueError('online evaluation is missing its axes or paired baseline delta')
+    return rows
 
 
 def main():
@@ -23,6 +32,7 @@ def main():
     import wandb_workspaces.workspaces as ws
     import wandb_workspaces.reports.v2 as wr
     matrix = read(args.matrix / 'matrix.json')
+    complete = read(args.matrix / 'state.json')['status'] == 'complete'
     matrix_hash = matrix['matrix_sha256']
     api = wandb.Api(timeout=15)
     runs = list(api.runs(f'{destination["entity"]}/{destination["project"]}',
@@ -33,14 +43,36 @@ def main():
     actual_arms = {(r.config['experiment']['variant'], r.config['seed']) for r in runs}
     if not actual_arms <= expected_arms or len(actual_arms) != len(runs):
         parser.error('remote matrix run identities differ from the registered arms')
+    if complete and (actual_arms != expected_arms or any(r.state != 'finished' for r in runs)):
+        parser.error('completed matrix requires all eight online runs to be finished')
     metric = 'evaluation/all_admitted/by_batches/area_reduction_percent'
+    delta = 'evaluation/all_admitted/by_batches/delta_from_initial_pp'
     histories = {}
     for run in runs:
-        rows = list(run.scan_history(keys=['train/batches', metric], page_size=200))
+        arm = next(a for a in matrix['arms'] if
+                   (a['model']['name'], a['seed']) == (run.config['experiment']['variant'], run.config['seed']))
+        if run.config['protocol_sha256'] != arm['protocol']['sha256']:
+            parser.error(f'online run protocol differs: {run.id}')
+        rows = evaluation_rows(run.scan_history(keys=['train/batches', 'train/actions', metric, delta],
+                                               page_size=200), metric, delta)
         if not rows or rows[0]['train/batches'] != 0:
             parser.error(f'missing actual untrained evaluation: {run.id}')
         histories[run.id] = dict(variant=run.config['experiment']['variant'], seed=run.config['seed'],
             state=run.state, evaluation_points=len(rows), first_batch=0, last_batch=rows[-1]['train/batches'])
+        if complete:
+            directory = args.matrix / arm['directory']
+            job = read(directory / 'state.json')['jobs'][str(arm['seed'])]
+            reports = [read(directory / ref['path']) for ref in job['evaluations']]
+            if [r['train/batches'] for r in rows] != [r['update'] for r in reports]:
+                parser.error(f'online evaluation cadence differs: {run.id}')
+            config = read(directory / 'protocol.json')['config']
+            actions_per_batch = config['training']['streams'] * config['training']['chunk_actions']
+            for observed, report in zip(rows, reports):
+                expected = evaluation_metrics(report['rows'], reports[0]['rows'])
+                if (any(abs(observed[k] - expected[k]) > 1e-6 for k in (metric, delta)) or
+                        observed['train/actions'] != report['update'] * actions_per_batch):
+                    parser.error(f'online evaluation values differ: {run.id}, batch {report["update"]}')
+            histories[run.id]['all_durable_evaluation_values_verified'] = True
     panels = PANELS + [('Compute cost', 'timing/collection_seconds', 'train/batches', ['timing/collection_seconds']),
                        ('Compute cost', 'timing/update_seconds', 'train/batches', ['timing/update_seconds'])]
     sections = [ws.Section(name=group, is_open=True, panels=[

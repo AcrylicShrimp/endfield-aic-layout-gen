@@ -1,0 +1,337 @@
+{
+  "schema": "blueprint-capacity-provenance-v1",
+  "status": "complete",
+  "runtime_source_commit": "cd2f64066f580995e77eb7a1d3e449946e2f6863",
+  "matrix_spec_sha256": "aa4d709d7605f15b1d6ef2a00eeb734b924032429d786c3a6ab2e1c58d5beb62",
+  "native_sha256": "41f214689bc97f590383af934fe7e9bca7c53bfcb2090f5bc6c83a0698d2853c",
+  "retained_native": {
+    "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-runtime/libaic_pilot_native.so",
+    "sha256": "41f214689bc97f590383af934fe7e9bca7c53bfcb2090f5bc6c83a0698d2853c"
+  },
+  "source_hashes": {
+    "tools/factory-edit-pilot/blueprint_capacity.py": "604193bf9a16ed66df847a3c5584d4ac080f3f317a25de5f8a02678e22369a79",
+    "tools/factory-edit-pilot/compare_blueprint_capacity.py": "6ef6466b867fd2742cc5b1eaf835d261844eac1690e753bf533b3d3a5f61c1c0",
+    "tools/factory-edit-pilot/blueprint_capacity_workspace.py": "808e4487c20530bd5d3c9491a8dc7ded91d8031f505289106bbb58f15607bb8d",
+    "tools/factory-edit-pilot/blueprint-capacity-screen.json": "aa4d709d7605f15b1d6ef2a00eeb734b924032429d786c3a6ab2e1c58d5beb62"
+  },
+  "server_source_root": "/home/ashrimp/Srv/aic-blueprint-capacity-20260911",
+  "server_evidence_root": "/home/ashrimp/Srv/aic-blueprint-capacity-20260911/artifacts/factory-edit-pilot",
+  "local_metadata_root": "artifacts/factory-edit-pilot/blueprint-capacity-20260911",
+  "training_actions": 1048576,
+  "training_episodes": 16384,
+  "evaluation_cases": 33024,
+  "full_action_evaluation_cases": 33024,
+  "online_evaluation_points_verified": 1032,
+  "artifacts": {
+    "analysis.json": {
+      "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/analysis.json",
+      "sha256": "6c27bc48b21ca17c1ba3d91f5064ab0cb84cfcf0af03c224cf0203e49a9a4e47"
+    },
+    "capacity-curves.png": {
+      "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-curves.png",
+      "sha256": "f57021dcca5005cf70d1781ae7c06377cae1118a23dcc7dc72f0fa0c0c72946d"
+    },
+    "workspace-final.json": {
+      "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/workspace-final.json",
+      "sha256": "a4dc932b950ecbbd672547d9862312a4e8ab8a098f7353e7bd106c2195ceb206"
+    },
+    "verification/summary.json": {
+      "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/verification/summary.json",
+      "sha256": "5df2cd62d885fb9344ca7409d0f4ee967a6b8acb5be18f04bc16991951e98511"
+    },
+    "stopped-run.json": {
+      "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/stopped-run.json",
+      "sha256": "282d2206f001757dd1dcb17f42caef8d432ce84cd3f8288c35576bcb6c4b2222"
+    },
+    "source-archive.json": {
+      "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/source-archive.json",
+      "sha256": "d56456329d2dbfca7f605b34dafeb7ca8aae5a653df8e49acd9e7502e7061ebf"
+    },
+    "readiness-analysis.json": {
+      "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/readiness-analysis.json",
+      "sha256": "88a190c3c75838e42c9473608c42d570a1aebf27d827bebf7eab1c7eafe72ee2"
+    },
+    "capacity-runtime/manifest.json": {
+      "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-runtime/manifest.json",
+      "sha256": "cfd599cfcc24309173b6d5ca4febb3cf926dbb63e15612e01510d46a9380c065"
+    },
+    "capacity-main/matrix.json": {
+      "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/matrix.json",
+      "sha256": "2a0025bce753b783afd2c81efa3bdb0632a516a1ea8c8c24b883248f1a80a949"
+    },
+    "capacity-main/state.json": {
+      "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/state.json",
+      "sha256": "60601b534a6d523755bdd4de4497a8f5ce04c8a809465a983232a7fe11db37c0"
+    },
+    "capacity-main/host.json": {
+      "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/host.json",
+      "sha256": "88eb2c275973f9c49c6d41e238aa7231e91ba4282a1fd11fd32cfc44efeb248e"
+    },
+    "capacity-main/execution.json": {
+      "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/execution.json",
+      "sha256": "db1ba463e0628716b8e0b5b82300edceeb8d52452f9e5cc9f44c7251421dbfd5"
+    },
+    "capacity-readiness/matrix.json": {
+      "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-readiness/matrix.json",
+      "sha256": "b4741b95f48715537d026a405bc26a0c11efb8e32b03fc8adce9a6784f8b22e6"
+    },
+    "capacity-readiness/state.json": {
+      "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-readiness/state.json",
+      "sha256": "a876dea3fba36b2f0b61a0371122a5f6c89deda13d308ae2b0cb70b6c15f619b"
+    },
+    "capacity-readiness/w80-r4-seed-17/full-audit.json": {
+      "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-readiness/w80-r4-seed-17/full-audit.json",
+      "sha256": "37286c91b42134d257d2235ef920f6f0e285c4aac21d6a6a0aad569b0f9197b3"
+    }
+  },
+  "arms": [
+    {
+      "name": "w40-r2-seed-17",
+      "cpu": 0,
+      "parameters": 26842,
+      "protocol": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r2-seed-17/protocol.json",
+        "sha256": "3c08437926a118283947bf0c6700cc118a914ea4746f286cbfca545d1978f734"
+      },
+      "completion": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r2-seed-17/completion.json",
+        "sha256": "aa511c63201c0420f234545ba0fc926c8afe3fab6165ca698b6a65b81fb70081"
+      },
+      "audit": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r2-seed-17/audit.json",
+        "sha256": "92781efa8130ef6778c9184e8e144b1fdf6bf00621671670e12c348af8a463ec"
+      },
+      "observer": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r2-seed-17/wandb-observer.json",
+        "sha256": "81bbbcb14f1735d06293c6fb10e16fd2c2fb84df5b492c4aab3d08e10324d8b1"
+      },
+      "final_checkpoint": {
+        "path": "capacity-main/w40-r2-seed-17/seed-17/checkpoints/0512.pt.gz",
+        "sha256": "590f62af8a754cb0d22125469488e8ae33948db6c7d965f159fb8aae4662646d",
+        "location": "server evidence root"
+      },
+      "final_area_reduction_percent": 1.9524602552619794,
+      "last_window_mean_percent": 0.8020365743255298,
+      "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/9310bdea2971571d705fe067"
+    },
+    {
+      "name": "w80-r2-seed-17",
+      "cpu": 1,
+      "parameters": 101682,
+      "protocol": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r2-seed-17/protocol.json",
+        "sha256": "a437f3969c10d315557a7fd15d2feb387efa917472db7b331b163afd23652923"
+      },
+      "completion": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r2-seed-17/completion.json",
+        "sha256": "8391bb0cb4efacc9ac6a98d6d988fcb78c33ac5fe0a4e93e64f653f97d0890c7"
+      },
+      "audit": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r2-seed-17/audit.json",
+        "sha256": "ad2da11bc0e700b36f529b303b6b14ca685c09981efd8c62e87159d1b1a70073"
+      },
+      "observer": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r2-seed-17/wandb-observer.json",
+        "sha256": "dc7a2792069135378c0951171b444737ef37698df557840ce88ff8897d5b1b4d"
+      },
+      "final_checkpoint": {
+        "path": "capacity-main/w80-r2-seed-17/seed-17/checkpoints/0512.pt.gz",
+        "sha256": "799d8db9187e7c3a0fac6da080e8d3554010ec78aea51e5e02d56b316fe1a1ed",
+        "location": "server evidence root"
+      },
+      "final_area_reduction_percent": 0.0,
+      "last_window_mean_percent": 0.2477486145320197,
+      "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/7187033b9543a45559e97de7"
+    },
+    {
+      "name": "w40-r4-seed-17",
+      "cpu": 4,
+      "parameters": 43002,
+      "protocol": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r4-seed-17/protocol.json",
+        "sha256": "e6aeea6a1acfc09e58bfa7af5ff3b9449723fa8a068682a682ef8ec277464a27"
+      },
+      "completion": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r4-seed-17/completion.json",
+        "sha256": "b9d4a00ff8dce233e3397a33d62a4a24f013db1e10b8d9df126859f709dd8480"
+      },
+      "audit": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r4-seed-17/audit.json",
+        "sha256": "f8ef8fb7c8646dc504fc63011ef8731f4b83f804884a0326a2b910d1ab943f8d"
+      },
+      "observer": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r4-seed-17/wandb-observer.json",
+        "sha256": "c4f886257349941245a317a99db085131d7c19b5c29f0ecdd30f88f6652e211d"
+      },
+      "final_checkpoint": {
+        "path": "capacity-main/w40-r4-seed-17/seed-17/checkpoints/0512.pt.gz",
+        "sha256": "391e48ed9b5c500923ddfe13708c460caee1b3764a0b3b84c8639c993faf1c1a",
+        "location": "server evidence root"
+      },
+      "final_area_reduction_percent": 0.0,
+      "last_window_mean_percent": 0.19757266575019808,
+      "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/a6164a43915244b094e01683"
+    },
+    {
+      "name": "w80-r4-seed-17",
+      "cpu": 5,
+      "parameters": 166002,
+      "protocol": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r4-seed-17/protocol.json",
+        "sha256": "2bd1d8fe4e2c71de9d212b03fd41aa3317fffa78a9a74a084860d6f8f61ec2b9"
+      },
+      "completion": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r4-seed-17/completion.json",
+        "sha256": "395f6c81be50eb063856d28f4790140e46773d26c0a2eb0ba70aa9bcfd1c70ac"
+      },
+      "audit": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r4-seed-17/audit.json",
+        "sha256": "7d19ba03ac412206206094ddd88c24fd2d7294f687cef98d84382e04854de934"
+      },
+      "observer": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r4-seed-17/wandb-observer.json",
+        "sha256": "ebc5b21273f66636c614c4e1e4c2fc9e6f1c40d7b62779dec19bbd8db331d088"
+      },
+      "final_checkpoint": {
+        "path": "capacity-main/w80-r4-seed-17/seed-17/checkpoints/0512.pt.gz",
+        "sha256": "96cb6e4684addb1e85b2c552eaa07396095e1ef7728a467d7c67a48838f4cdcf",
+        "location": "server evidence root"
+      },
+      "final_area_reduction_percent": 0.0,
+      "last_window_mean_percent": 0.002712673611111111,
+      "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/5b8ce83fa92f80d8356f23af"
+    },
+    {
+      "name": "w80-r4-seed-29",
+      "cpu": 4,
+      "parameters": 166002,
+      "protocol": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r4-seed-29/protocol.json",
+        "sha256": "25d36c87d342846773297e80f86eab6592339d80e26040934cee2a07f856e7ce"
+      },
+      "completion": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r4-seed-29/completion.json",
+        "sha256": "f5672083903aba7588688f0db49d2fda727171614077157182c52834a2918c46"
+      },
+      "audit": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r4-seed-29/audit.json",
+        "sha256": "0476f34521fc1728ca00ac030c67ee30552b69adfbd32841b54efe44b05b7ba5"
+      },
+      "observer": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r4-seed-29/wandb-observer.json",
+        "sha256": "38af6e73b045cb6be1712c1ca28fc291d52e68707cbb674b97f76d66950dbd71"
+      },
+      "final_checkpoint": {
+        "path": "capacity-main/w80-r4-seed-29/seed-29/checkpoints/0512.pt.gz",
+        "sha256": "fdfebe94c629ef96370f673e5a693eb0034c9face94d7f9503d9c0e9bdb261c9",
+        "location": "server evidence root"
+      },
+      "final_area_reduction_percent": 0.0,
+      "last_window_mean_percent": 0.013950892857142858,
+      "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/8bbcd07aadf1a30674d8997d"
+    },
+    {
+      "name": "w40-r4-seed-29",
+      "cpu": 0,
+      "parameters": 43002,
+      "protocol": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r4-seed-29/protocol.json",
+        "sha256": "a8e123d5ec09a721ed494e2f281fc0c2e0ff6cf69605309cb8cd66a50c8ffbc7"
+      },
+      "completion": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r4-seed-29/completion.json",
+        "sha256": "733cb16bfec857c6c5d2133cb685cf8fe27c870b6b8da9d065e2cec7886fe0fb"
+      },
+      "audit": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r4-seed-29/audit.json",
+        "sha256": "bc5a076d3dd4b4f16bae961ee492df2ed54e5a164074a479489f360ad0ec19de"
+      },
+      "observer": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r4-seed-29/wandb-observer.json",
+        "sha256": "f4d7519585bd742ca99e1637521535faac21ef875731ebf74ed7ef41335945a0"
+      },
+      "final_checkpoint": {
+        "path": "capacity-main/w40-r4-seed-29/seed-29/checkpoints/0512.pt.gz",
+        "sha256": "c0d79bf2464accfaa8eb76e5c66dd6a89a3bf50126d7d4c975ffefb2c6551e2f",
+        "location": "server evidence root"
+      },
+      "final_area_reduction_percent": 0.0,
+      "last_window_mean_percent": 0.042309690578817734,
+      "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/51a6acb4f59336342a36a294"
+    },
+    {
+      "name": "w80-r2-seed-29",
+      "cpu": 5,
+      "parameters": 101682,
+      "protocol": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r2-seed-29/protocol.json",
+        "sha256": "0732ec33ee7d3488acfeb084d0efa74229927569e269db03bd1d8ea0e2682958"
+      },
+      "completion": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r2-seed-29/completion.json",
+        "sha256": "566dbac99fcb8bb7194ee14fa0b18fb1b68185a8d38ace53077c3fb5f1bca005"
+      },
+      "audit": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r2-seed-29/audit.json",
+        "sha256": "9eff621c3dce3d2d4943e826e60accd8e76b72971c4c61d3d2a8569a73faeb4f"
+      },
+      "observer": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w80-r2-seed-29/wandb-observer.json",
+        "sha256": "1c52c689d61afa07760ce75203255b5af456f5ae032461d9e591ec58234521ee"
+      },
+      "final_checkpoint": {
+        "path": "capacity-main/w80-r2-seed-29/seed-29/checkpoints/0512.pt.gz",
+        "sha256": "53e60a335263e2cf83f6bb4e4492a8e478e671ae97ffc5b892a3ee22957bfae9",
+        "location": "server evidence root"
+      },
+      "final_area_reduction_percent": 0.2982954545454546,
+      "last_window_mean_percent": 0.34338035348272417,
+      "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/241ddda5e1c09b364c0fef27"
+    },
+    {
+      "name": "w40-r2-seed-29",
+      "cpu": 1,
+      "parameters": 26842,
+      "protocol": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r2-seed-29/protocol.json",
+        "sha256": "cffcbeeaa859d8f410821629e56475393623ad63f0eedc4f56e1f00f4971489a"
+      },
+      "completion": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r2-seed-29/completion.json",
+        "sha256": "f53af5bc22f2c2c112d4b9ca0ef1d8b78087760df179b13b62ae01c18bad8c05"
+      },
+      "audit": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r2-seed-29/audit.json",
+        "sha256": "e40c6c138ee8608f0a86f29070cd4f99dc17a926efa2da977c5f397eef5f96c2"
+      },
+      "observer": {
+        "path": "artifacts/factory-edit-pilot/blueprint-capacity-20260911/capacity-main/w40-r2-seed-29/wandb-observer.json",
+        "sha256": "5deade0dbda62aeeb357ee6aaf6ab6a56485d27e7484ceb42a2778c21ef3bce4"
+      },
+      "final_checkpoint": {
+        "path": "capacity-main/w40-r2-seed-29/seed-29/checkpoints/0512.pt.gz",
+        "sha256": "211b523b640ca97717cd18922f8f2e5fa1351a10494ff203ab328d021bf251aa",
+        "location": "server evidence root"
+      },
+      "final_area_reduction_percent": 0.0,
+      "last_window_mean_percent": 0.034877232142857144,
+      "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/e14712ae97a02fe385ae12c9"
+    }
+  ],
+  "verification": {
+    "python_run": 417,
+    "python_passed": 410,
+    "python_skipped": 7,
+    "rust_passed": 564,
+    "rust_ignored": 5,
+    "tail_audits_passed": 8,
+    "largest_readiness_full_audit": "passed",
+    "online_values_match": true
+  },
+  "limitations": [
+    "Fixed-budget early capacity screen; convergence is untested.",
+    "Two training seeds; one five-facility training fixture in two starts.",
+    "Native elapsed guards and actual CPU allocation remain measured factors.",
+    "Elapsed time remains a policy feature, so runtime differences can also change policy inputs."
+  ]
+}

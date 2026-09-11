@@ -1,6 +1,8 @@
 # Blueprint graph model capacity screen
 
-Status: registered before implementation and model training; server matrix running.
+Status: complete. Registered before implementation and model training; all eight
+server arms completed. See the
+[results](../reports/2026-09-11-blueprint-model-capacity-screen.md).
 
 The user requested testing whether greater representation capacity helps the new
 blueprint-edit contract, and explicitly requested stopping the monitored training

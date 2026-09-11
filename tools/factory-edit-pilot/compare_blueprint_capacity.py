@@ -46,8 +46,16 @@ def analyze(output):
         require(config['seeds'] == [seed] and config['training']['updates'] == spec['updates'], 'matched seed/budget')
         require(all(config['ppo'][k] == factors[k] for k in ('width', 'message_rounds')), 'registered architecture')
         require(config['experiment']['matrix_sha256'] == matrix['matrix_sha256'], 'registered matrix identity')
+        config_sources = [k for k in protocol['sources'] if
+                          Path(k).name == f'{arm["name"]}.json' and Path(k).parent.name == 'configs']
+        require(len(config_sources) == 1, 'one bound generated arm configuration')
+        config_source = config_sources[0]
+        require(sha(output / 'configs' / f'{arm["name"]}.json') == protocol['sources'][config_source],
+                'generated arm configuration identity')
         normalized = dict(config=common_config(config), native_sha256=protocol['native_sha256'],
-                          runtime=protocol['runtime'], external_sources=protocol['external_sources'])
+                          runtime=protocol['runtime'], external_sources=protocol['external_sources'],
+                          sources={k: v for k, v in protocol['sources'].items() if k != config_source},
+                          native_build=protocol['native_build'])
         if shared is None:
             shared = normalized
         require(normalized == shared, 'capacity comparison changed a non-factor input')
@@ -56,11 +64,14 @@ def analyze(output):
         completion = read(checked(parent['completion'], output))
         child = read(checked(parent['state'], output))
         require(completion['status'] == child['status'] == 'complete', 'completed child')
+        require(child['protocol_sha256'] == arm['protocol']['sha256'], 'child protocol identity')
         checked(completion['state'], directory)
         audit = read(checked(completion['tail_audit'], directory))
-        require(audit['status'] == 'passed', 'passing final audit')
+        require(audit['status'] == 'passed' and audit['protocol_sha256'] == child['protocol_sha256'],
+                'passing source-bound final audit')
         observer = read(checked(parent['observer'], output))
-        require(observer['status'] == 'finished', 'finished tracking')
+        require(observer['status'] == 'finished' and observer['protocol_sha256'] == child['protocol_sha256'],
+                'finished source-bound tracking')
         job = child['jobs'][str(seed)]
         require(job['update'] == spec['updates'] and len(job['records']) == spec['updates'], 'full training budget')
         require(job['initialization']['evaluated_before_training'], 'untrained evaluation present')

@@ -1,6 +1,6 @@
 # Compare blueprint graph capacity
 
-Status: in progress.
+Status: complete.
 
 Context: the user requested trying model changes after the harder blueprint
 contract, then requested stopping monitored training and using the server.
@@ -30,3 +30,13 @@ Activity log:
 - 2026-09-11: Started the registered 512-update matrix under a supervised server
   user service on CPU slots 0, 1, 4 and 5. Created and read back a dedicated W&B
   view, including authentic iteration-zero evaluation points. Final results pending.
+- 2026-09-11: All eight arms completed 512 batches and passed their final audits.
+  All 33,024 evaluation cases reached 64 actions; the server service exited zero.
+  Final two-seed area means were 0.9762%, 0.1491%, 0% and 0% in registered model
+  order. The baseline had the highest aggregate quality, but ranking reversed
+  between seeds for width 80/two rounds. No consistent scaling gain was found.
+- 2026-09-11: Retained exact native binaries outside Cargo cleanup, complete
+  server evidence, local metadata/curves and verification logs. Removed the
+  temporary tracking environment after all observers finished. Final W&B
+  verification compares every evaluation value and axis against durable records.
+  Findings and limitations are recorded in the capacity screen report.
