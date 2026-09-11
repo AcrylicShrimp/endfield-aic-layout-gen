@@ -1,0 +1,245 @@
+{
+  "schema": "blueprint-bc-provenance-v1",
+  "implementation_commit": "ee95acc",
+  "purpose": "Bind selected local evidence; all generated runs remain ignored. Protocol/state references bind full experience and native source/build identities.",
+  "evidence": [
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-data-20260911/dataset.pt.gz",
+      "sha256": "29e806a86f17392753176ce87adc2273dda5fab8b9619574429b65128a28089a"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-data-20260911/summary.json",
+      "sha256": "94e9923a25a06f3a2d372b108da8c0c2ba118b0f42b001f64a3a267c71ba8454"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-control-20260911/protocol.json",
+      "sha256": "e6508801685938abec46ae647da0db3901d179cdd0c7502247025cfa6f90de06"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-control-20260911/state.json",
+      "sha256": "7e077145610285015646f39fa44c53e75652e4a6c63f2e2f39595cc622335d11"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-control-20260911/audit.json",
+      "sha256": "d5161583091ee692cd6698720755a98cee3caf20058f1fd3057c80dd43018d0d"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-control-20260911/completion/report.json",
+      "sha256": "dfe511ccad8628715e8a20e5b375849687b63189719b90d615272a3ee9246ee8"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-control-20260911/completion/audit.json",
+      "sha256": "befb83ca5a82076606ee5540390205c3635641a2d6fc08ed7277bc7525423578"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-control-20260911/seed-17/checkpoints/0000.pt.gz",
+      "sha256": "29d0ebc8c8b220268ca43968a4915635af8fb9850afd675c7081da22b2547a6b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-control-20260911/seed-17/checkpoints/0064.pt.gz",
+      "sha256": "32498e13b0e73cc17c8354b315f0dffdb73f105283a86952b7ba19e4ec584a61"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-control-20260911/seed-29/checkpoints/0000.pt.gz",
+      "sha256": "191c7178b2c00575b8959eba7aa90eec68cca05e78aa555a4738a8679894bac9"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-control-20260911/seed-29/checkpoints/0064.pt.gz",
+      "sha256": "e5ce50cb267e7f43256742a07de07514e384e5dde589a9d707ba1c8b7d4a7242"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-treatment-20260911/protocol.json",
+      "sha256": "80d3c488e3e35459d150e3eda303a6436ca449a6875351f1466b322d472aab64"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-treatment-20260911/state.json",
+      "sha256": "b03f6118e368e6b467b84678bc6cbafced2562a59fa4ed6704e83566b359baa3"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-treatment-20260911/audit.json",
+      "sha256": "14ffb6354d3a8e653d7d537e9dfd12043f4f4cbb20f5be0d647f56fece57851c"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-treatment-20260911/completion/report.json",
+      "sha256": "fddac708863cde24145c175fb50e5d0a9cf4dbaa7e0d0016153600b9f4a29041"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-treatment-20260911/completion/audit.json",
+      "sha256": "92b9f1199c984c6f94b5985e104f2ad8c344af600357b75cfb4ad3a32694617d"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-treatment-20260911/seed-17/checkpoints/0000.pt.gz",
+      "sha256": "44d90b34992d573312676241c0da48fb7fcebf0fd135c98c8d52942537b85501"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-treatment-20260911/seed-17/checkpoints/0064.pt.gz",
+      "sha256": "fe8ed087276ca2ad6f0db1f31646b9e880892f6220b6920b88ef1bb4f7e5fb95"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-treatment-20260911/seed-29/checkpoints/0000.pt.gz",
+      "sha256": "7325464b8382a0449b6770cead1f89d38651b2ddd70a6fccc9bf13758e93c440"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-treatment-20260911/seed-29/checkpoints/0064.pt.gz",
+      "sha256": "b22ce8c6dc95c2751d099579ccd19bb02150c6f7a1a541cf90ce74bb7f1c380e"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-readiness-20260911/protocol.json",
+      "sha256": "eeedb2d28b8e8b48f93c607b5a11aed74f0b568754d3be1491449e9c3acc52f2"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-readiness-20260911/state.json",
+      "sha256": "b617d11ec5aeb1eefc6214a8fe7dcc57d3ca6710159176369e40d2652a9f09a6"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-readiness-20260911/audit.json",
+      "sha256": "79790c30aa161bc398425a8ac5a84cf58c76ab51d849316b3ec17b41ab2940a5"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-resume-readiness-20260911/protocol.json",
+      "sha256": "eeedb2d28b8e8b48f93c607b5a11aed74f0b568754d3be1491449e9c3acc52f2"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-resume-readiness-20260911/state.json",
+      "sha256": "65074601d317d383db2ed912f2394a58ff8841a73d18d8194a9cf2d37cee2bd9"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-resume-readiness-20260911/audit.json",
+      "sha256": "4a04b7cc48381a0820b600c11056a08eeb550a0fe98109d4e8eaf968332016e2"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-readiness-20260911/completion/report.json",
+      "sha256": "79b3ae62571ee4165d288df78823efdf879739b761d33ba70c9a7469a42f9199"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-readiness-20260911/completion/audit.json",
+      "sha256": "1aa61a2bdb0b7c9662cd7d85b221a165ed4d4430226a6db4f1e697983ed0131c"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-ppo-20260911/protocol.json",
+      "sha256": "35f59d7e5d5a43cb3a11152550b67bb628239f2d565efa2eba5008481e9d803b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-ppo-20260911/audit.json",
+      "sha256": "b7747f66a537c1216905dab715c5c78843d3f0ab538bcdaf0b075e3d6ead3a87"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/post-pose-recovery-20260911/protocol.json",
+      "sha256": "4afe25f74ca9ec0ba1aca720d448878312d9cfe4a2c7d5c881e4030e2ae6b1b7"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/post-pose-recovery-20260911/report.json",
+      "sha256": "875096d48e6595208b7f99c2f3bd3a99d8850b6366d46324002aef4d3e3a5f53"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/summary.json",
+      "sha256": "29ad0e7adadd0c89699681a965c77a455964639de3355eb69e94b4f0c1ca6ff9"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/comparison.png",
+      "sha256": "9a77038be4c23cdc7b6fa974591b9ed652f7d0fba67c395a878ce0eaca292197"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/completion.png",
+      "sha256": "52ec169e79ce73af91731e6b47f2bd25f8d3e187693e6d50ac2e01076d93c8ef"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/policy-improvement.png",
+      "sha256": "2d52a863a3d1e7809d22db00d091deffb34035c5434d441bc5e061322c7397db"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/comparison.log",
+      "sha256": "ac53d8d11905ab699b2b8f6197e5849685287140d5bb08fa4adce00e3e586e22"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/completion-readiness-audit.log",
+      "sha256": "6c2c05c14ea646e79bbf40507f78f4658c984e03b4d113ba02748a1e8d179e5f"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/completion-readiness.log",
+      "sha256": "f034da9a412b851a045a9333f3ac6f9c9d7cd7ab0492342d42b817abcdea80aa"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/control-audit.log",
+      "sha256": "82ffc0d5ee8632279f2bd16f315fa6892b9ddee4cbeb861dea4f832ac76435c2"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/control-completion-audit.log",
+      "sha256": "0a6018831ae4d47801eeb37a6208d8a394d2f62492fc2db70acb65b6708ac274"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/control-completion.log",
+      "sha256": "a9021bed23488fd8690bcf2c5a1247fc142dc0833b7b065633f99f12be075afd"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/control.log",
+      "sha256": "eec582702f300385deabb25c66e0cc397471e609b4357aa170466f7d808f6597"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/data-audit.log",
+      "sha256": "42a89382ee7461b35bddaba4650b5a9cc65cf53a26c0e1e57b4166c68ccbfd2b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/maintenance-final.log",
+      "sha256": "6c6c689caf17fa205f05625acaa90e7afec12bbe50b664cde2e371c05c2a4375"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/python-tests.log",
+      "sha256": "8593570bfa07475177404626e1f69a0181aee23c8cd802da0c0dd5edb1eacd0c"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/readiness-audit.log",
+      "sha256": "8d5453481f53f4dd6f20c7b52039ca3becf4d0b2ceb90a118d3d1ea78bc8ac44"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/readiness.log",
+      "sha256": "c26a32ebb29a91dc1e84f02f1af840c2aedd6d05736d40b146d9048b7d5dd002"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/resume-readiness-audit.log",
+      "sha256": "8d5453481f53f4dd6f20c7b52039ca3becf4d0b2ceb90a118d3d1ea78bc8ac44"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/resume-readiness.log",
+      "sha256": "132c2b4e23034219370b92448f62b677c17fc7440900abf7726b04cc98612f06"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/treatment-audit.log",
+      "sha256": "7cac2bd02d69849dd17b6cd9a68434f9a0a326af140f9e0532e451796895597b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/treatment-completion-audit.log",
+      "sha256": "7fa32ece211b7eb8e7687afb43eb9e7057f41ea2b52885a6509749abcc9a0727"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/treatment-completion.log",
+      "sha256": "a9021bed23488fd8690bcf2c5a1247fc142dc0833b7b065633f99f12be075afd"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/treatment.log",
+      "sha256": "ac9dcfba5c8a1c7629b8106ed6bd73b32a25211123b00994f8437e930b9a53b6"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/workspace-check.log",
+      "sha256": "ee1d3fffa2022e962e63e0dbe4d35c9c198450a20c29fc09030f635dbb38bfcd"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-bc-comparison-20260911/verification/workspace-tests.log",
+      "sha256": "5877f338079d7f79558f93eedcc62a5eb5e0c0084883e69496f72261104f072c"
+    }
+  ],
+  "sources": {
+    "tools/factory-edit-pilot/blueprint-ppo-bc.json": "a11ac09052feb2e769e98177eb6b17d26690da5f51c4f3a36a91767bc82ad2e4",
+    "tools/factory-edit-pilot/build_blueprint_bc_data.py": "0bccd58ab7b2be63b89ed712b78a12b9116f621bd1d14c5c3cc6650b520ddfd3",
+    "tools/factory-edit-pilot/audit_blueprint_bc_data.py": "3e18e3bca46ea0b0e71a23c94ed8c60d740116d13840172b954ef09872dfa1e0",
+    "tools/factory-edit-pilot/blueprint_bc_update.py": "235979309052234409bfb86be3540d09f02f9b00f22f71ed2ecb982edf61da0d",
+    "tools/factory-edit-pilot/blueprint_bc.py": "e9399262eff7420dcec609caa8276f4d6a691674afe002d81b5654e77e927864",
+    "tools/factory-edit-pilot/audit_blueprint_bc.py": "2e3a5f539b20d1713d2261d40c4ab13a5cc81c8a143b6bfbd7b584d32bec0000",
+    "tools/factory-edit-pilot/test_blueprint_bc.py": "01bc6afdd59e6522be51aef6f6f49dc443e714c798d34e8ef279a4565f54f0f3",
+    "tools/factory-edit-pilot/evaluate_blueprint_bc_completion.py": "42a462bfb00869157c2d8073ae6002d3094588bdad336b0f7d8fc0684444e453",
+    "tools/factory-edit-pilot/audit_blueprint_bc_completion.py": "e1ab5e7c9c60c82b27608d4ad8aefd2694e878b89e9291eafc7af7ecc15a3f36",
+    "tools/factory-edit-pilot/summarize_blueprint_bc.py": "1047c0b45be56ac51119271a377cda8ca26bf7b43ff81f18e25685c7c6323e8f",
+    "docs/designs/2026-09-11-blueprint-ppo-bc.md": "ab770bd3243bd5d6787511d8e1596b00943157224aca3314ab486e03e49ece9d",
+    "docs/reports/2026-09-11-blueprint-ppo-bc.md": "bc4c241b65632ef83deb9ee504aaecdd02dffeb280faffd9152bd6b3d887c4cc"
+  }
+}

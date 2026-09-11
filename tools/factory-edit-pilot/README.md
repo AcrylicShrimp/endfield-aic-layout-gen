@@ -47,6 +47,13 @@ Add `--readiness` for the short mechanical check. Audit an arm using
 `audit_blueprint_bc.py --run ARM_DIRECTORY`; `blueprint_bc.py resume --output
 ARM_DIRECTORY` restores its durable checkpoint. Teacher paths contain the useful
 move and validated repair/commit, and are auxiliary actor labels only.
+After an arm passes its audit, run `evaluate_blueprint_bc_completion.py --run
+ARM_DIRECTORY` and `audit_blueprint_bc_completion.py --run ARM_DIRECTORY` to
+measure autonomous completion on held-out drafts and verify its recorded sampling.
+Compare both audited arms with `summarize_blueprint_bc.py --control CONTROL
+--treatment TREATMENT --output OUTPUT`. The
+[BC screen report](../../docs/reports/2026-09-11-blueprint-ppo-bc.md) records improved
+within-fixture compaction and the remaining limits of post-pose completion.
 
 `blueprint_ppo.py resume --output RUN` restores the last complete durable update
 under identical recorded sources and inputs. Preserve `interrupted.pt.gz` when a

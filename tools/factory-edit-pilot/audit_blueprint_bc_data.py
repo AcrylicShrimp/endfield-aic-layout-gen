@@ -29,6 +29,7 @@ def audit_dataset(path, protocol=None):
         require(protocol['dataset_sha256'] == sha(path) and protocol['native_sha256'] == dataset['native_sha256'], 'blueprint.bc-audit: dataset/native run binding')
     runtime = Runtime(source_protocol['config'], source_protocol['native_library'])
     groups = {'train': set(), 'holdout': set()}
+    physical_inputs = {'train': set(), 'holdout': set()}
     ids = set()
     with tempfile.TemporaryDirectory(prefix='blueprint-bc-data-audit-') as temporary:
         checker = WitnessAudit(runtime, temporary)
@@ -47,6 +48,9 @@ def audit_dataset(path, protocol=None):
                 require(group == demo['group'] and digest(dict(group=group, action=duplicate['action'])) == demo['id'], 'blueprint.bc-audit: physical deduplication identity')
             require(demo['after']['score'][0] < min(demo['before']['score'][0], demo['best_score'][0]), 'blueprint.bc-audit: incremental area contribution')
             require([r['action']['kind'] for r in demo['after']['rows']] == ['pose', 'repair_all', 'commit'], 'blueprint.bc-audit: complete labels')
+            for row in demo['after']['rows']:
+                observation = row['observation']
+                physical_inputs[demo['split']].add(digest(dict(draft=draft(observation), best=observation['best_metrics'])))
             for branch in ('before', 'after'):
                 original = demo[branch]
                 actual = replay(runtime, saved, [r['action'] for r in original['rows']], checker)
@@ -59,6 +63,7 @@ def audit_dataset(path, protocol=None):
                     for key in ('status', 'reward', 'charged', 'best_metrics', 'revision'):
                         require(a['outcome'][key] == b['outcome'][key], f'blueprint.bc-audit: branch outcome {key}')
         require(groups['train'] and groups['holdout'] and groups['train'].isdisjoint(groups['holdout']), 'blueprint.bc-audit: nonempty disjoint physical splits')
+        require(physical_inputs['train'].isdisjoint(physical_inputs['holdout']), 'blueprint.bc-audit: no cross-split physical label inputs')
     return dataset
 
 
