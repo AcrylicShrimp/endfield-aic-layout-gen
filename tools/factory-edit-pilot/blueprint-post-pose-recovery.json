@@ -1,0 +1,10 @@
+{
+  "schema": "blueprint-post-pose-recovery-v1",
+  "population": "all-training-poses",
+  "branch_elapsed_ms": 5000,
+  "branch_actions": 64,
+  "run_seconds": 1800,
+  "expanded_route_expansions": 1000000,
+  "expanded_search_padding": 16,
+  "ordered_repairs": ["reverse_id", "longest_first", "shortest_first"]
+}

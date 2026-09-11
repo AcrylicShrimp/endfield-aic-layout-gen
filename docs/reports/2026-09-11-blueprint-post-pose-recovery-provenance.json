@@ -1,0 +1,81 @@
+{
+  "schema": "blueprint-post-pose-provenance-v1",
+  "source_ppo_implementation_commit": "96ab815",
+  "diagnostic_base_commit": "41a0f18",
+  "output": "artifacts/factory-edit-pilot/post-pose-recovery-20260911",
+  "protocol_sha256": "4afe25f74ca9ec0ba1aca720d448878312d9cfe4a2c7d5c881e4030e2ae6b1b7",
+  "native_sha256": "313ef523a05aa93747ddb00d278d6e0e81b6ebd4e5be5b243bee5f77241bae51",
+  "source_run": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/blueprint-ppo-20260911",
+  "sources": {
+    "tools/factory-edit-pilot/post_pose_recovery.py": "a0c0392a52242d84804a235ff35b2f4a9d326795a38d3bb072ea3d6a23b22650",
+    "tools/factory-edit-pilot/probe_post_pose_recovery.py": "54bcd792c4d5c87602dd1bd1ec96ac50c2129a1cedbce7507763bb4bcb1cc0da",
+    "tools/factory-edit-pilot/summarize_post_pose_recovery.py": "bcc8ccb009238ba5b0087191616441f71e26a66fbb8cb1b6636f3d4312a38c07",
+    "tools/factory-edit-pilot/test_post_pose_recovery.py": "3412d5ec7a5faa1e131f308c451c79015a056f2bee8ce479d7a90ec7c4ff7949",
+    "tools/factory-edit-pilot/blueprint-post-pose-recovery.json": "9282f5c7bc724d84774563d89f00733e5c90de076524736e363ae3cc7749197f",
+    "tools/factory-edit-pilot/audit_blueprint_ppo.py": "bd28b47bf67d6afaf28a8ccdaff15c7584707c09e5833bb59db987aa24499e1c",
+    "tools/factory-edit-pilot/plot_blueprint_edit.py": "d8b13ce1e4be8ee577d187ea28b68b93878e253bb61d067ef5692e761a316046"
+  },
+  "selected": [
+    {
+      "path": "protocol.json",
+      "sha256": "4afe25f74ca9ec0ba1aca720d448878312d9cfe4a2c7d5c881e4030e2ae6b1b7"
+    },
+    {
+      "path": "report.json",
+      "sha256": "875096d48e6595208b7f99c2f3bd3a99d8850b6366d46324002aef4d3e3a5f53"
+    },
+    {
+      "path": "summary.json",
+      "sha256": "b820679d19ed3fc8ee61356972a2663f6e199a4d7e470709568be99efc69e487"
+    },
+    {
+      "path": "source-episodes.pt.gz",
+      "sha256": "eecab0adc93b7e60e132c18aecab1b72d96fc0ff7cd1db54a4d83b32ac34c9f7"
+    },
+    {
+      "path": "recovery.png",
+      "sha256": "6dbccb4fe4096ab743c348ec38c8fefe3c15cf4e98373c16df44866c497861e7"
+    },
+    {
+      "path": "area_then_restore.png",
+      "sha256": "752376eaf7601fce68c07b70b1ffe977612e7d6226638092e28869efb9c873bf"
+    },
+    {
+      "path": "order_recovery.png",
+      "sha256": "3c7d6119185fc570734bff70ca12595a98caee99f7630db91d4f01823e7d4b43"
+    },
+    {
+      "path": "overlap.png",
+      "sha256": "35259363492d4278991f26bce712afd2b4db2a493bb0131bc8b9e32e9c1a3860"
+    },
+    {
+      "path": "verification/post-pose-all-python-tests.log",
+      "sha256": "c93f23b8ca7407f105419982a50f1f5f7779cab5568b656f72c6e834cd171958"
+    },
+    {
+      "path": "verification/post-pose-recovery-tests.log",
+      "sha256": "6c6e85bc8f2cebb86c2395ab2385844c501d4b0d4b69a48a9082d6ecce781600"
+    },
+    {
+      "path": "verification/post-pose-workspace-check.log",
+      "sha256": "e61c2ce9556c79f1c15a55ac7f5fda5cdcb7174af24fdb16c54afc5722de07b7"
+    },
+    {
+      "path": "verification/post-pose-workspace-tests.log",
+      "sha256": "ad5cca6d6f485524336c6bb83dbc41f7a895ce3a8227c87813b88c66f67b37c2"
+    },
+    {
+      "path": "cases/s17-u0001-v0-a001.pt.gz",
+      "sha256": "74412f4bc7bd868ec5d1524b7bbf1fe5adf9bc809f6c11a6a98d500f9955f9f9"
+    },
+    {
+      "path": "cases/s17-u0001-v0-a013.pt.gz",
+      "sha256": "95defe320fd901e2fce32c3dd95796efd0ad36e45474253c3f7f19699808a306"
+    },
+    {
+      "path": "cases/s17-u0025-v5-a018.pt.gz",
+      "sha256": "b59b29ef57e02216dbfff664b66cf02518bf727a9af8598608c388fab5959ff8"
+    }
+  ],
+  "retention": "All authenticated post-pose cases and source experience remain in ignored local artifacts; this is not a backup."
+}

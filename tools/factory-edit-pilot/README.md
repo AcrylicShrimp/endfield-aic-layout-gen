@@ -47,6 +47,15 @@ The [first learning report](../../docs/reports/2026-09-11-blueprint-persistent-p
 records passing mechanics but lower aggregate final area improvement than the
 untrained policies; the trained checkpoints are experimental evidence.
 
+`probe_post_pose_recovery.py --run SOURCE_RUN --config
+tools/factory-edit-pilot/blueprint-post-pose-recovery.json --output FRESH_OUTPUT`
+restores every accepted training pose and probes bounded fixed-pose recovery.
+`summarize_post_pose_recovery.py --run FRESH_OUTPUT` independently audits the
+source states/witnesses and compares recovery opportunities with actual policy
+continuations. The [recovery diagnosis](../../docs/reports/2026-09-11-blueprint-post-pose-recovery.md)
+separates geometry requiring further movement, route-order failures and
+recoverable drafts that the policy discards before committing.
+
 ## Historical fixed-factory pilot
 
 This is the explicit local-edit learning pilot, separate from the production constructor and
