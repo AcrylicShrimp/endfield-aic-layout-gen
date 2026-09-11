@@ -164,9 +164,24 @@ pub(super) fn directions(
                 .iter()
                 .find(|p| &p.instance == instance)
                 .unwrap();
-            let ports = catalog::placement_ports(p, catalogs)?;
-            let p = ports.iter().find(|p| &p.id == port).unwrap();
-            result[i] = Some((catalog::edge_index(p.edge) + if i == 0 { 0 } else { 2 }) % 4);
+            if let Some(original_direction) = result[i] {
+                // The connection cell may turn immediately outside the port.
+                // Preserve that original route direction relative to the facility,
+                // rather than replacing it with the facility boundary normal.
+                let original = bp
+                    .facilities
+                    .iter()
+                    .find(|f| &f.instance == instance)
+                    .unwrap();
+                let turns = (p.rotation - original.rotation) / 90;
+                result[i] = Some((original_direction as i64 + turns).rem_euclid(4) as usize);
+            } else {
+                // A zero-length original edge has no transport segment direction;
+                // its two facility boundary arms must still face each other.
+                let ports = catalog::placement_ports(p, catalogs)?;
+                let p = ports.iter().find(|p| &p.id == port).unwrap();
+                result[i] = Some((catalog::edge_index(p.edge) + if i == 0 { 0 } else { 2 }) % 4);
+            }
         }
     }
     Ok((result[0], result[1]))

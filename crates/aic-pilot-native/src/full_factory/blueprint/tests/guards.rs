@@ -137,3 +137,80 @@ fn routing_work_is_shared_and_unvalidated_exports_fail() {
     assert_eq!(before["revision"], after["revision"]);
     assert_eq!(before["edges"], after["edges"]);
 }
+
+#[test]
+fn admitted_port_turns_keep_original_headings_and_rotate_with_the_facility() {
+    let (_, catalogs, _) = fixture();
+    let original: Witness = serde_json::from_slice(
+        &std::fs::read(
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("tests/fixtures/blueprint-port-turn.json"),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    let (bp, draft) = topology::compile(&original).unwrap();
+    let mut bent = 0;
+    for edge in &bp.edges {
+        geometry::check_path(
+            &bp,
+            &draft,
+            &catalogs,
+            edge,
+            draft.paths[edge.id].as_ref().unwrap(),
+        )
+        .unwrap();
+        let initial = topology::directions(edge, &bp, &draft, &catalogs).unwrap();
+        assert_eq!(initial, (edge.first, edge.last));
+        for (endpoint, node) in [edge.source, edge.target].into_iter().enumerate() {
+            if let Some(terminal) = &bp.nodes[node].terminal
+                && let aic_data::layouts::TransportNetworkEndpoint::Facility { instance, port } =
+                    &terminal.endpoint
+            {
+                let placement = draft
+                    .placements
+                    .iter()
+                    .find(|p| &p.instance == instance)
+                    .unwrap();
+                let ports =
+                    super::super::super::catalog::placement_ports(placement, &catalogs).unwrap();
+                let port = ports.iter().find(|p| &p.id == port).unwrap();
+                let normal =
+                    (super::super::super::catalog::edge_index(port.edge) + endpoint * 2) % 4;
+                let original_direction = [initial.0, initial.1][endpoint].unwrap();
+                bent += usize::from(original_direction != normal);
+                let mut rotated = draft.clone();
+                let placement = rotated
+                    .placements
+                    .iter_mut()
+                    .find(|p| &p.instance == instance)
+                    .unwrap();
+                placement.rotation = (placement.rotation + 90) % 360;
+                let directions = topology::directions(edge, &bp, &rotated, &catalogs).unwrap();
+                assert_eq!(
+                    [directions.0, directions.1][endpoint],
+                    Some((original_direction + 1) % 4)
+                );
+            }
+        }
+    }
+    assert!(bent > 0);
+    let mut session = Session::new(
+        fixture_request(&original),
+        original.clone(),
+        Arc::new(catalogs),
+        Config {
+            schema: CONTRACT.into(),
+            max_actions: 1,
+            elapsed_ms: 60_000,
+            route_expansions: 100,
+            search_padding: 4,
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        step(&mut session, json!({"kind": "commit"}))["status"],
+        "validated"
+    );
+    assert_eq!(session.finish()["best"], json!(original));
+}
