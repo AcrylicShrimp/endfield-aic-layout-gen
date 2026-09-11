@@ -33,6 +33,7 @@ tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/blueprint_ppo
 tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/audit_blueprint_ppo.py --run artifacts/factory-edit-pilot/blueprint-readiness
 tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/blueprint_ppo.py train --config tools/factory-edit-pilot/blueprint-ppo.json --native-library "$AIC_NATIVE_LIBRARY" --output artifacts/factory-edit-pilot/blueprint-learning
 tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/audit_blueprint_ppo.py --run artifacts/factory-edit-pilot/blueprint-learning
+tools/factory-edit-pilot/.venv/bin/python tools/factory-edit-pilot/summarize_blueprint_ppo.py --run artifacts/factory-edit-pilot/blueprint-learning
 ```
 
 `blueprint_ppo.py resume --output RUN` restores the last complete durable update
@@ -42,6 +43,9 @@ that incomplete chunk from its last durable checkpoint; wall-clock observations
 can differ. The audit exactly reconstructs every **retained learner update**,
 checks native draft continuity and bootstraps, and independently validates every
 unique retained commit/final witness. It does not claim future sampling replay.
+The [first learning report](../../docs/reports/2026-09-11-blueprint-persistent-ppo.md)
+records passing mechanics but lower aggregate final area improvement than the
+untrained policies; the trained checkpoints are experimental evidence.
 
 ## Historical fixed-factory pilot
 

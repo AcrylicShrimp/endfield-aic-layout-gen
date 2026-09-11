@@ -1,0 +1,182 @@
+{
+  "schema": "blueprint-persistent-ppo-provenance-v1",
+  "implementation_commit": "96ab815",
+  "retention": "Ignored local evidence; preserve non-replayable experience and checkpoints. Not a backup.",
+  "analysis_sources": {
+    "tools/factory-edit-pilot/audit_blueprint_ppo.py": "bd28b47bf67d6afaf28a8ccdaff15c7584707c09e5833bb59db987aa24499e1c",
+    "tools/factory-edit-pilot/summarize_blueprint_ppo.py": "3d0609582506bea36b6671056d949f9fff6096c65e3f007431083a6b6fa0fa74"
+  },
+  "runs": [
+    {
+      "root": "artifacts/factory-edit-pilot/blueprint-ppo-20260911",
+      "status": "complete",
+      "protocol_sha256": "35f59d7e5d5a43cb3a11152550b67bb628239f2d565efa2eba5008481e9d803b",
+      "native_sha256": "313ef523a05aa93747ddb00d278d6e0e81b6ebd4e5be5b243bee5f77241bae51",
+      "selected": [
+        {
+          "path": "protocol.json",
+          "sha256": "35f59d7e5d5a43cb3a11152550b67bb628239f2d565efa2eba5008481e9d803b"
+        },
+        {
+          "path": "state.json",
+          "sha256": "59915c515fadc3d7f0e20af89e7d95f7417c4cc33dfd143cc0304e700896f0a5"
+        },
+        {
+          "path": "audit.json",
+          "sha256": "b7747f66a537c1216905dab715c5c78843d3f0ab538bcdaf0b075e3d6ead3a87"
+        },
+        {
+          "path": "summary.json",
+          "sha256": "546143889552a7eb63059c27d778e9262ad8ec9ad919e7dc253d333e57933765"
+        },
+        {
+          "path": "learning.png",
+          "sha256": "709fde86aeb058e91deaf3b16a80204009d7e32b44e38b81eea58076f1104bc3"
+        },
+        {
+          "path": "evaluation.png",
+          "sha256": "6002c7802a4e91b1ae99b1dcac21d75e937b9ca817f8e21285247bcc49737d5f"
+        },
+        {
+          "path": "first-improvement.png",
+          "sha256": "ca4e368202f250b2b204e777f0e3f4c38ad827a80d616dfc962304de2f070083"
+        },
+        {
+          "path": "verification/blueprint-ppo-all-python-tests.log",
+          "sha256": "e8661d9ff5caff57870cf7b91547712080d77d8ae55182a48f0ca57f279d6617"
+        },
+        {
+          "path": "verification/blueprint-ppo-main-audit.log",
+          "sha256": "ae191ddc7647d44fee67c3530a5478157faa78781ca605f61ddd4520553b25c2"
+        },
+        {
+          "path": "verification/blueprint-ppo-resume-readiness-audit.log",
+          "sha256": "8d5453481f53f4dd6f20c7b52039ca3becf4d0b2ceb90a118d3d1ea78bc8ac44"
+        },
+        {
+          "path": "verification/blueprint-ppo-workspace-check.log",
+          "sha256": "aa5380c68530fb0b54c1afa2b44975cc52c727d84320c6e3061fb799576dade3"
+        },
+        {
+          "path": "verification/blueprint-ppo-workspace-tests.log",
+          "sha256": "778182b8c99f58573fd0175028aaab473b2cad9bd62c0b10c56908ba3e8ad983"
+        },
+        {
+          "path": "seed-17/checkpoints/0000.pt.gz",
+          "sha256": "d3dce49c5c4b96fba3ab48636678f308435e130055a4e9690ac54277cc17aae2"
+        },
+        {
+          "path": "seed-17/checkpoints/0001.pt.gz",
+          "sha256": "9f17d1e6ae5cb76834f0ece79d16706a3cd8412835cfea2a91288f30c57e26d8"
+        },
+        {
+          "path": "seed-17/checkpoints/0002.pt.gz",
+          "sha256": "84e9cdf0b5290cef272208341d87f4fb4bb18bbe7071b286ce49d2cf07f839ff"
+        },
+        {
+          "path": "seed-17/checkpoints/0016.pt.gz",
+          "sha256": "94a1cc4ea4700bbd97134b0593a2b430859eaf856a232390b192b66164f2469a"
+        },
+        {
+          "path": "seed-17/checkpoints/0032.pt.gz",
+          "sha256": "e71bfc0bd362c72064a092f8db9fc4e71e8568f73f1ed3965833279117947886"
+        },
+        {
+          "path": "seed-17/checkpoints/0064.pt.gz",
+          "sha256": "54012da8e5d779d1e8e81acfd85fa4a2ea97d724b49bb27af425dc75918c339f"
+        },
+        {
+          "path": "seed-29/checkpoints/0000.pt.gz",
+          "sha256": "7066830d5264778566bb0d7f1daddaf9b68605856b803ff9207ec6be826da364"
+        },
+        {
+          "path": "seed-29/checkpoints/0001.pt.gz",
+          "sha256": "45a331b73aca7d4e19f7da55727d92b588b57f4c62672ebbcc2839d0ec3a74a8"
+        },
+        {
+          "path": "seed-29/checkpoints/0002.pt.gz",
+          "sha256": "90c7c0e16a703c06ffac0949968b37788c9c6c51db29712b88fe8e3e3c7f5b9a"
+        },
+        {
+          "path": "seed-29/checkpoints/0016.pt.gz",
+          "sha256": "c84150c6de47b3022a0abe6f4959817ec95bee21212b26eee22cf4b4661ea638"
+        },
+        {
+          "path": "seed-29/checkpoints/0032.pt.gz",
+          "sha256": "0d4998e1e5392516136f021492d62f1112985390bde3410c310fe88a150ccb5d"
+        },
+        {
+          "path": "seed-29/checkpoints/0064.pt.gz",
+          "sha256": "a0638e6bb762df0b60f81b10d80b2463960cc114c242ed4404cfcc6dd6caccaf"
+        }
+      ],
+      "continuation_origin": null
+    },
+    {
+      "root": "artifacts/factory-edit-pilot/blueprint-ppo-readiness-v2-20260911",
+      "status": "complete",
+      "protocol_sha256": "7b7463ecb250a2add057bcfa6851d9981bef7a52c2c3d799aa6b0d76abaab3ba",
+      "native_sha256": "313ef523a05aa93747ddb00d278d6e0e81b6ebd4e5be5b243bee5f77241bae51",
+      "selected": [
+        {
+          "path": "protocol.json",
+          "sha256": "7b7463ecb250a2add057bcfa6851d9981bef7a52c2c3d799aa6b0d76abaab3ba"
+        },
+        {
+          "path": "state.json",
+          "sha256": "5504d0fb9e31c0bd290feddb070e3e4ad5c06fe09dc17b7106dd42fe4078cd91"
+        },
+        {
+          "path": "audit.json",
+          "sha256": "b48e7c52e8bbc5252c05ee371b5e8543feb20836c8b029806ee214c5af88d107"
+        },
+        {
+          "path": "seed-17/checkpoints/0000.pt.gz",
+          "sha256": "18306630d6be3d9f50e6a9add02de524d5d860ac4030d91ab5e68567d8cba7b8"
+        },
+        {
+          "path": "seed-17/checkpoints/0001.pt.gz",
+          "sha256": "f13387205b269bfafeb16738c3e268ffc62d3e6e65d14e85d7beae7a8450cfe1"
+        },
+        {
+          "path": "seed-17/checkpoints/0002.pt.gz",
+          "sha256": "9b90d7f4010ce6a926c39288d1a8fd5c7217b95310ce941a0219334b4916513f"
+        }
+      ],
+      "continuation_origin": null
+    },
+    {
+      "root": "artifacts/factory-edit-pilot/blueprint-ppo-resume-readiness-20260911",
+      "status": "complete",
+      "protocol_sha256": "7b7463ecb250a2add057bcfa6851d9981bef7a52c2c3d799aa6b0d76abaab3ba",
+      "native_sha256": "313ef523a05aa93747ddb00d278d6e0e81b6ebd4e5be5b243bee5f77241bae51",
+      "selected": [
+        {
+          "path": "protocol.json",
+          "sha256": "7b7463ecb250a2add057bcfa6851d9981bef7a52c2c3d799aa6b0d76abaab3ba"
+        },
+        {
+          "path": "state.json",
+          "sha256": "9ba1b587ef03cfa5f343c4d67f6da99164f34fb1181d798a37dd988856ee54a1"
+        },
+        {
+          "path": "audit.json",
+          "sha256": "45f2fa2308bd2e704fdd937d12d2a6bd43840e80fb06bafa5e447ca763540c8d"
+        },
+        {
+          "path": "seed-17/checkpoints/0000.pt.gz",
+          "sha256": "18306630d6be3d9f50e6a9add02de524d5d860ac4030d91ab5e68567d8cba7b8"
+        },
+        {
+          "path": "seed-17/checkpoints/0001.pt.gz",
+          "sha256": "f13387205b269bfafeb16738c3e268ffc62d3e6e65d14e85d7beae7a8450cfe1"
+        },
+        {
+          "path": "seed-17/checkpoints/0002.pt.gz",
+          "sha256": "998514a5077795cba1573d421814dde4157e61cc64aea392cea8f6cdcb10830d"
+        }
+      ],
+      "continuation_origin": "Copy of readiness v2 reset to its last durable update 1; original evidence unchanged."
+    }
+  ]
+}
