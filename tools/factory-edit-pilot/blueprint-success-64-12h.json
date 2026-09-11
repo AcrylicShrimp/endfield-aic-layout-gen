@@ -1,0 +1,105 @@
+{
+  "schema": "blueprint-persistent-ppo-v1",
+  "purpose": "blueprint-success-duration-training",
+  "probe_spec": "tools/factory-edit-pilot/blueprint-edit-probe.json",
+  "seeds": [
+    17
+  ],
+  "device": "cpu",
+  "training": {
+    "updates": 2000000,
+    "streams": 8,
+    "chunk_actions": 32,
+    "episode_actions": 64,
+    "elapsed_ms": 300000
+  },
+  "evaluation": {
+    "at": [
+      0,
+      2000000
+    ],
+    "starts": [
+      "original",
+      "overlap"
+    ],
+    "samples": 3,
+    "elapsed_ms": 2000,
+    "max_actions": 64,
+    "action_milestones": [
+      8,
+      32,
+      64
+    ]
+  },
+  "limits": {
+    "run_seconds": 43380,
+    "max_output_bytes": 103079215104
+  },
+  "ppo": {
+    "width": 40,
+    "learning_rate": 0.0003,
+    "gamma": 1.0,
+    "gae_lambda": 0.95,
+    "clip_epsilon": 0.2,
+    "epochs": 4,
+    "minibatch_size": 64,
+    "target_kl": 0.02,
+    "entropy_coefficient": 0.001,
+    "gradient_clip": 0.5
+  },
+  "starts": [
+    {
+      "name": "original",
+      "prefix": []
+    },
+    {
+      "name": "overlap",
+      "prefix": [
+        {
+          "kind": "pose",
+          "instance": "A0",
+          "x": 2,
+          "y": 7,
+          "rotation": 90
+        }
+      ]
+    }
+  ],
+  "success": {
+    "schema": "blueprint-success-buffer-v1",
+    "coefficients": [
+      0.0,
+      0.05
+    ],
+    "sequences_per_minibatch": 8,
+    "max_sequences": 4096,
+    "max_labels": 32768,
+    "weighting": "positive_monte_carlo_advantage",
+    "mechanical_actions": [
+      {
+        "kind": "restore_best"
+      },
+      {
+        "kind": "pose",
+        "instance": "C1",
+        "x": 27,
+        "y": 15,
+        "rotation": 90
+      },
+      {
+        "kind": "repair_all"
+      },
+      {
+        "kind": "commit"
+      }
+    ]
+  },
+  "duration": {
+    "schema": "blueprint-success-duration-v1",
+    "seconds": 43200,
+    "finish_grace_seconds": 180,
+    "evaluation_interval_seconds": 1800,
+    "min_free_bytes": 21474836480,
+    "compression_level": 6
+  }
+}

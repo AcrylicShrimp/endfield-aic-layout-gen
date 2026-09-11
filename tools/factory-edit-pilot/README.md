@@ -71,6 +71,16 @@ CONTROL --treatment TREATMENT --output OUTPUT`. The
 [completed screen](../../docs/reports/2026-09-11-blueprint-success-replay.md)
 reports discovery, durable reuse, positive-weight gating and autonomous quality.
 
+The duration runner uses `blueprint-success-64-12h.json`: one fresh seed, 64-action
+episodes, 32-action chunks and twelve active hours. Prepare with
+`blueprint_duration.py prepare --config CONFIG --native-library LIBRARY --output
+RUN`, then execute or resume with `blueprint_duration.py run --output RUN`.
+`blueprint_duration_job.py --output RUN` additionally prevents idle sleep on macOS
+and audits the final two updates after stopping. `audit_blueprint_duration.py
+--run RUN --all` explicitly audits the entire retained run; its default audits
+only the last two updates. Use frozen sources for unattended execution. See the
+[duration contract](../../docs/designs/2026-09-11-blueprint-success-64-12h.md).
+
 `blueprint_ppo.py resume --output RUN` restores the last complete durable update
 under identical recorded sources and inputs. Preserve `interrupted.pt.gz` when a
 run fails: it records partial experience beyond that update. Resuming re-collects
