@@ -69,8 +69,13 @@ def check(root, output, cloud):
             continuation_batch = 3 if 'start_curriculum' in protocol['config'] else 2
             record = next(r for r in records if r['phase'] == dict(kind='training', batch=continuation_batch))
             model_set = learners(protocol, job['seed'])
+            learning_rate = protocol['config']['ppo']['learning_rate']
+            require(all(g['lr'] == learning_rate for optimizer in model_set[2:4] for g in optimizer.param_groups),
+                    'learning-rate', 'fresh Adam parameter groups differ from the configured learning rate')
             saved = restore_checkpoint(root, record['behavior_checkpoint'], model_set, state['protocol_sha256'], job['id'], continuation_batch - 1)
             require(saved['actor_optimizer']['state'] and saved['critic_optimizer']['state'], 'empty-adam', 'nonempty optimizer checkpoint required')
+            require(all(g['lr'] == learning_rate for optimizer in model_set[2:4] for g in optimizer.param_groups),
+                    'learning-rate', 'restored Adam parameter groups differ from the configured learning rate')
             sample = next(r for r in record['results'] if r['status'] == 'complete' and
                           (continuation_batch == 2 or r['generation']['start_curriculum']['depth'] == 2))
             experience = load_experience(sample)
@@ -89,6 +94,7 @@ def check(root, output, cloud):
                         'critic_optimizer_sha256', 'shuffle_rng_sha256', 'epochs'):
                 require(actual[key] == record['ppo'][key], 'continuation-mismatch', f'exact saved continuation differs: {key}', entity=job['id'])
             detail = dict(job=job['id'], native_results=total, transient_results_without_archives=transient,
+                          actor_and_critic_learning_rate=learning_rate,
                           behavior_probabilities_and_values_match=True,
                           one_nonempty_checkpoint_continuation_exact=True, reconstructed_batch=continuation_batch)
             if 'actor_critic' in actual:

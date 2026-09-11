@@ -1,4 +1,4 @@
-"""Prepare and execute registered actor/critic or shared-capacity screens sequentially."""
+"""Prepare and execute registered PPO factor, capacity or learning-rate screens."""
 import argparse
 from copy import deepcopy
 from itertools import product
@@ -15,20 +15,35 @@ from ppo_harness_state import read, write, sha, require, diagnostic
 
 SCHEMA = 'ppo-actor-critic-matrix-v1'
 CAPACITY_SCHEMA = 'ppo-shared-capacity-matrix-v1'
+RATE_SCHEMA = 'ppo-learning-rate-matrix-v1'
+LOWER_RATES = {'lr-1e-4': 0.0001, 'lr-3e-5': 0.00003}
 
 
-def configurations(base, readiness, shared_capacity=False):
+def configurations(base, readiness, shared_capacity=False, learning_rates=False):
+    require(not (shared_capacity and learning_rates), 'matrix-mode', 'select one registered matrix mode', 'prepare')
+    if learning_rates:
+        from ppo_spatial_model import shared_capacity_specification
+        require(base.get('model') == shared_capacity_specification(True, True)
+                and base['ppo']['learning_rate'] == 0.0003, 'matrix-model',
+                'lower rates require width-40 shared history/critic-tail and the 0.0003 base rate', 'prepare')
     if shared_capacity:
         from ppo_spatial_model import SHARED_CAPACITY_SCHEMA
         require(base.get('model', {}).get('schema') == SHARED_CAPACITY_SCHEMA,
                 'matrix-model', 'shared capacity requires its explicit width-40 model', 'prepare')
+    if learning_rates:
+        treatments = [dict(name=name, factors=treatment(True, True, True), learning_rate=rate)
+                      for name, rate in LOWER_RATES.items()]
+    else:
+        treatments = [dict(name=label(treatment(*bits)), factors=treatment(*bits))
+                      for bits in product((True,) if shared_capacity else (False, True), (False, True), (False, True))]
     cells = []
-    for shared, history, tail in product((True,) if shared_capacity else (False, True), (False, True), (False, True)):
-        if readiness and not tail:
+    for cell in treatments:
+        if readiness and not cell['factors']['critic_after_kl']:
             continue
         config = deepcopy(base)
-        factors = treatment(shared, history, tail)
-        config['model']['actor_critic'] = factors
+        config['model']['actor_critic'] = cell['factors']
+        if learning_rates:
+            config['ppo']['learning_rate'] = cell['learning_rate']
         if readiness:
             config.update(purpose='readiness', seeds=[17])
             config['training'].update(batches=2, attempts=16)
@@ -39,16 +54,17 @@ def configurations(base, readiness, shared_capacity=False):
             config['retention']['training_batches'] = [1, 2]
             config['tracking'].update(backend='none', mode='offline')
         validate(config)
-        cells.append(dict(name=label(factors), factors=factors, config=config))
+        cells.append(dict(**cell, config=config))
     random.Random(20260911).shuffle(cells)
     return cells
 
 
-def prepare_matrix(config_path, output, readiness, shared_capacity=False):
+def prepare_matrix(config_path, output, readiness, shared_capacity=False, learning_rates=False):
     require(not output.exists(), 'matrix-output', 'matrix requires a fresh output directory', 'prepare', output)
-    cells = configurations(read(config_path), readiness, shared_capacity)
+    cells = configurations(read(config_path), readiness, shared_capacity, learning_rates)
     output.mkdir(parents=True)
-    matrix = dict(schema=CAPACITY_SCHEMA if shared_capacity else SCHEMA, status='preparing', readiness=readiness,
+    matrix = dict(schema=RATE_SCHEMA if learning_rates else CAPACITY_SCHEMA if shared_capacity else SCHEMA,
+                  status='preparing', readiness=readiness,
                   source_config=dict(path=str(config_path), sha256=sha(config_path)), cells=[])
     write(output/'matrix.json', matrix)
     for cell in cells:
@@ -56,7 +72,7 @@ def prepare_matrix(config_path, output, readiness, shared_capacity=False):
         write(config_file, cell['config'])
         root = output/cell['name']
         protocol = prepare(config_file, root)
-        matrix['cells'].append(dict(name=cell['name'], factors=cell['factors'], root=str(root),
+        matrix['cells'].append(dict(**{k: v for k, v in cell.items() if k != 'config'}, root=str(root),
             status='prepared', config_sha256=sha(config_file), protocol_sha256=sha(root/'protocol.json'),
             jobs=len(protocol['jobs'])))
         write(output/'matrix.json', matrix)
@@ -67,7 +83,7 @@ def prepare_matrix(config_path, output, readiness, shared_capacity=False):
 
 def run_matrix(path, env_file):
     matrix = read(path)
-    require(matrix['schema'] in (SCHEMA, CAPACITY_SCHEMA) and matrix['status'] in ('prepared', 'running'),
+    require(matrix['schema'] in (SCHEMA, CAPACITY_SCHEMA, RATE_SCHEMA) and matrix['status'] in ('prepared', 'running'),
             'matrix-state', 'expected prepared/running combination matrix', 'run', path)
     matrix.update(status='running', started_epoch=matrix.get('started_epoch', time.time()))
     write(path, matrix)
@@ -113,13 +129,16 @@ if __name__ == '__main__':
     prepare_parser.add_argument('--config', type=Path, required=True)
     prepare_parser.add_argument('--output', type=Path, required=True)
     prepare_parser.add_argument('--readiness', action='store_true')
-    prepare_parser.add_argument('--shared-capacity', action='store_true',
+    modes = prepare_parser.add_mutually_exclusive_group()
+    modes.add_argument('--shared-capacity', action='store_true',
                                 help='Run the four width-40 shared history/schedule combinations')
+    modes.add_argument('--learning-rates', action='store_true',
+                       help='Run 0.0001 and 0.00003 with the fixed width-40 shared history/critic-tail model')
     run_parser = commands.add_parser('run')
     run_parser.add_argument('--matrix', type=Path, required=True)
     args = parser.parse_args()
     load_environment(args.env_file)
     if args.command == 'prepare':
-        prepare_matrix(args.config.resolve(), args.output.resolve(), args.readiness, args.shared_capacity)
+        prepare_matrix(args.config.resolve(), args.output.resolve(), args.readiness, args.shared_capacity, args.learning_rates)
     else:
         run_matrix(args.matrix.resolve(), args.env_file.resolve())

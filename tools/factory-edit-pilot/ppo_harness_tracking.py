@@ -107,6 +107,7 @@ class Tracker:
         if model is not None and 'actor_critic' in model:
             from ppo_actor_critic import label
             model_label = label(model['actor_critic']) + '--' + model_label
+        model_label += f"lr-{self.protocol['config']['ppo']['learning_rate']:g}--"
         self.active = wandb.init(entity=self.config['entity'] or None, project=self.config['project'],
             id=identifier, name=model_label + job['id'], group=f"ppo-{self.protocol['config']['purpose']}-{self.protocol_hash[:12]}",
             job_type=self.protocol['config']['purpose'],

@@ -430,6 +430,24 @@ ordinals, including the five comparison rows added after each seed finishes.
 The [completed factorial and mature-critic findings](../../docs/reports/2026-09-11-ppo-actor-critic-combinations.md)
 include all eight combinations, both seeds, conditional effects and limitations.
 
+### Lower learning rates for the wider shared model
+
+`ppo-learning-rate-screen.json` fixes width 40, shared encoders, critic history
+and critic tails. The explicit `--learning-rates` matrix changes only the fixed
+Adam learning rate for both learners, to 0.0001 and 0.00003. Compare against the
+retained 0.0003 cell of the completed capacity experiment. The
+[registered contract](../../docs/designs/2026-09-11-ppo-learning-rate-screen.md)
+specifies matched seeds, workload, initial conditions and required audits.
+
+```sh
+python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env prepare --config tools/factory-edit-pilot/ppo-learning-rate-screen.json --output artifacts/factory-edit-pilot/learning-rate-readiness --learning-rates --readiness
+python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env run --matrix artifacts/factory-edit-pilot/learning-rate-readiness/matrix.json
+python tools/factory-edit-pilot/check_ppo_harness_native.py --run artifacts/factory-edit-pilot/learning-rate-readiness/lr-1e-4 --output artifacts/factory-edit-pilot/learning-rate-readiness-audit-1e-4
+python tools/factory-edit-pilot/check_ppo_harness_native.py --run artifacts/factory-edit-pilot/learning-rate-readiness/lr-3e-5 --output artifacts/factory-edit-pilot/learning-rate-readiness-audit-3e-5
+python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env prepare --config tools/factory-edit-pilot/ppo-learning-rate-screen.json --output artifacts/factory-edit-pilot/learning-rate-matrix --learning-rates
+python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env run --matrix artifacts/factory-edit-pilot/learning-rate-matrix/matrix.json
+```
+
 ### Shared model with approximately matched total capacity
 
 `ppo-shared-capacity-screen.json` uses the explicit `ppo-shared-capacity-v1`
