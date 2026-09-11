@@ -1,0 +1,273 @@
+{
+  "schema": "blueprint-success-provenance-v1",
+  "implementation_commit": "397bfc3",
+  "purpose": "Bind selected local evidence; raw runs remain ignored. Protocol/state identities bind all retained experience, checkpoints and native source/build identities. Each main seed begins with an empty self-generated buffer.",
+  "audits": {
+    "main_updates": 512,
+    "on_policy_actions": 131072,
+    "main_evaluation_cases": 96,
+    "stochastic_readiness": "passed",
+    "mechanical_readiness": "passed",
+    "nonempty_cli_resume": "passed"
+  },
+  "evidence": [
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-control-20260911/protocol.json",
+      "sha256": "9ba4ffb58a8e48167adafbb40bedd3a222ea76c0b41cd310b7ddf4afb991c0af"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-control-20260911/state.json",
+      "sha256": "a35af1fc68946e10a149c78c88b69a1b941bb1dbd232c6ee17a5a3f253915f1d"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-control-20260911/audit.json",
+      "sha256": "f3d697e359dd59993e7e4fd02421a703d9af1b2df2178889d92b5121c84b2407"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-control-20260911/libaic_pilot_native.dylib",
+      "sha256": "313ef523a05aa93747ddb00d278d6e0e81b6ebd4e5be5b243bee5f77241bae51"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-control-20260911/seed-17/checkpoints/0000.pt.gz",
+      "sha256": "5e90c1a00a7a6015e14be194919650cf61e8096b3a035f86773576d6503c7365"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-control-20260911/seed-17/checkpoints/0088.pt.gz",
+      "sha256": "28b875dd35d43a4b9616317f6f115cfc6df14ce7e7b4bb8480ed47b48274b309"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-control-20260911/seed-17/checkpoints/0089.pt.gz",
+      "sha256": "380239a8840010f402723baa7905c74bafdf1f411cbf173e6800d36cdbc5d625"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-control-20260911/seed-17/checkpoints/0128.pt.gz",
+      "sha256": "e764a64503b40a55a7ad407c9b8ba3223e19f4d935465138a66207d57bce95ce"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-control-20260911/seed-29/checkpoints/0000.pt.gz",
+      "sha256": "9011fc7d6ed160aa9c51132308e59426f3f35a33c6f9e9bafeca4998219ac75d"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-control-20260911/seed-29/checkpoints/0008.pt.gz",
+      "sha256": "4843b23d5d8d524f3078e7b76d520953269d8ddfe6b4f1cd5f3fa816b4bcb07c"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-control-20260911/seed-29/checkpoints/0009.pt.gz",
+      "sha256": "ece0400905a10398749b4a1a104596f80cab39f139ff3ebd4a75a4f7a1fdfd43"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-control-20260911/seed-29/checkpoints/0128.pt.gz",
+      "sha256": "30ef06b0a63f0669cee2fb0f193817c08583114c19ea275da85b1b4ac8d62993"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-treatment-20260911/protocol.json",
+      "sha256": "028bd029b5e7c9f172b08d28d48ad73eebbe8dfae6afe441d915a4e451c1d53b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-treatment-20260911/state.json",
+      "sha256": "e09976cb834c5891913b79e00d0d78d394de4ffc2f577b66f3c1e7ffb754482d"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-treatment-20260911/audit.json",
+      "sha256": "0a92eb0ef9e768c7a6742a2f5823a6b6266589408f4a2d3d930891c5dee1e315"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-treatment-20260911/libaic_pilot_native.dylib",
+      "sha256": "313ef523a05aa93747ddb00d278d6e0e81b6ebd4e5be5b243bee5f77241bae51"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-treatment-20260911/seed-17/checkpoints/0000.pt.gz",
+      "sha256": "f874d2ef072dee830f1a12e706bc2aa57088212a3211bfdea92ded839a23a34f"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-treatment-20260911/seed-17/checkpoints/0056.pt.gz",
+      "sha256": "897c9244c35497dd85194bab23b36e158e93ceaa0ccdb4508f2c12354c15c7cb"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-treatment-20260911/seed-17/checkpoints/0057.pt.gz",
+      "sha256": "6775a1b4938f92d61784c0344e67c25e0b91174a5e4cf7e9568bb5ccf4af8929"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-treatment-20260911/seed-17/checkpoints/0128.pt.gz",
+      "sha256": "45bc3547a0173fd282e5ca672ff2ff9d2953d73093acbaf15f5fb04d539a0789"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-treatment-20260911/seed-29/checkpoints/0000.pt.gz",
+      "sha256": "a1b4c6dcfa066d2fdebb632f8fadd475b9b1c438c931b09a3a175007ff9b8a66"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-treatment-20260911/seed-29/checkpoints/0008.pt.gz",
+      "sha256": "495a1a2c2202b335884596464ca8a5be0c393b10697ca7516ddbe37b4752638b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-treatment-20260911/seed-29/checkpoints/0009.pt.gz",
+      "sha256": "4f74d348ebe4a371a04885cf0760cb66969fed02de4b5eee17581ae94f7978fb"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-treatment-20260911/seed-29/checkpoints/0128.pt.gz",
+      "sha256": "f176c080affe0b47af247cd275934e9ab73ad2607b3b20583e6482bacd353d23"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-mechanical-v4-20260911/protocol.json",
+      "sha256": "c53b289873973c0ceb47b3994de183cc2072b2e8f6d307600b4ee9df55234cc6"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-mechanical-v4-20260911/state.json",
+      "sha256": "06a06b20f19480213e9921e785e7db72bb4db542613066aba425b7b8fcbf6e99"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-mechanical-v4-20260911/audit.json",
+      "sha256": "470d11268a8c24211bfebfb5cec697dfe12d2ee50e42fb472aae6a39bbab4841"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-mechanical-v4-20260911/seed-17/checkpoints/0000.pt.gz",
+      "sha256": "0fa4eb60a64fae554de318002d4c18201a87fa51452ed40acee4451bbf9807f8"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-mechanical-v4-20260911/seed-17/checkpoints/0003.pt.gz",
+      "sha256": "2c441c12b80a5bf6a00e0812854cfc7df08985a00d14429abb4368546580e742"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-mechanical-v4-20260911/seed-17/checkpoints/0004.pt.gz",
+      "sha256": "8ecb2debb493fc3f4aaafafe3361cbed2c456d1f9a98ce5a0b1b1f6315f93eb5"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-readiness-v2-20260911/protocol.json",
+      "sha256": "3f49fefed2ec9dc3f8ed8a8eb10bf121b6a4507b18a93e8c07bb9d0f45eb3831"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-readiness-v2-20260911/state.json",
+      "sha256": "71d194d8b7fd0b474d2ebc7802a657686279840cb7c6a02b487241d07f0a41c0"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-readiness-v2-20260911/audit.json",
+      "sha256": "a2f7bd58b4695249e88ee86b04d8e84e5b38d61626ff741bb968450e52105f20"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-readiness-v2-20260911/seed-17/checkpoints/0000.pt.gz",
+      "sha256": "b8428ef8246ca7cf8eb590209d67e1329a6afa9e11f23fadb299aaca2f8f15fb"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-readiness-v2-20260911/seed-17/checkpoints/0001.pt.gz",
+      "sha256": "d625eec2f0cc2b693ac35f283f6e4429ea6519bb04f56cd70bc74bb2d98b02a9"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-readiness-v2-20260911/seed-17/checkpoints/0002.pt.gz",
+      "sha256": "4acb6b483df9916b257a2954fcdc9fb39a518f96cdd9b6c9f4510d82c0d698a9"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-resume-readiness-v2-20260911/protocol.json",
+      "sha256": "c53b289873973c0ceb47b3994de183cc2072b2e8f6d307600b4ee9df55234cc6"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-resume-readiness-v2-20260911/state.json",
+      "sha256": "30683a404ce6070f5c0b70cc183cb536a3a3642c055dbeefe762c7dfa639448a"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-resume-readiness-v2-20260911/audit.json",
+      "sha256": "d3aebdc28e7e0eb786892b4293e459924caf215dcac622be6ad8c73ae8bc30d8"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-resume-readiness-v2-20260911/seed-17/checkpoints/0000.pt.gz",
+      "sha256": "0fa4eb60a64fae554de318002d4c18201a87fa51452ed40acee4451bbf9807f8"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-resume-readiness-v2-20260911/seed-17/checkpoints/0003.pt.gz",
+      "sha256": "2c441c12b80a5bf6a00e0812854cfc7df08985a00d14429abb4368546580e742"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-resume-readiness-v2-20260911/seed-17/checkpoints/0004.pt.gz",
+      "sha256": "1a74943e0ce8ff4eec8490091506df612b9a2fdf1441fef2388761f7c1a87b05"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-comparison-20260911/summary.json",
+      "sha256": "7295a55b6abfd0b1db34030a716b6643aacea407a9e872446ff806eedb4a3d2a"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-comparison-20260911/buffer.png",
+      "sha256": "cdf1903faa7fa2ba796b642bc8053009326f6dd1c18175a1dd3196924ec26142"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-comparison-20260911/comparison.png",
+      "sha256": "b379e465106361879534c472c1cdc258d899b7f056e4b5e5e97d3a41798235be"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-comparison-20260911/policy-improvement.png",
+      "sha256": "a867b0ad364b15d330f1feb905a319959c258026fb389108d0d8a502f53a7680"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-comparison-20260911/verification/blueprint-success-control-audit.log",
+      "sha256": "54a54c61f390ce34a7204bf11935c0e52b30452246c8202d3c532541f200fba1"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-comparison-20260911/verification/blueprint-success-control.log",
+      "sha256": "6b290a380fdf1f64cd9979accf8576e1477aa8ecf156dfa73e8fab18f1e291d1"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-comparison-20260911/verification/blueprint-success-python-tests.log",
+      "sha256": "e6485e9ed17f1977695a949230f7617913231d9a34faad468504550e6476f7f2"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-comparison-20260911/verification/blueprint-success-summary.log",
+      "sha256": "379888073d8af678831b11027d683f4490d31275f89b6b7f6f2a9840291e278c"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-comparison-20260911/verification/blueprint-success-treatment-audit.log",
+      "sha256": "b5208792f7078fd24a8914069b4537ddfe0fb65831b7119514baba80acfff8dd"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-comparison-20260911/verification/blueprint-success-treatment.log",
+      "sha256": "4ff68f12cfeb8317c1b466db628ecf7c99eadc34845ec686aaa2310a95f49428"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-comparison-20260911/verification/blueprint-success-workspace-check.log",
+      "sha256": "8c233a54790c4800d3dd585436af679aa838da259bfdb129412e2d51cdb75cdc"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-comparison-20260911/verification/blueprint-success-workspace-tests.log",
+      "sha256": "fbffee215021d088636bb80c4b2f013564e5a0d5ed18304a1063c85e9cdb46c1"
+    }
+  ],
+  "sources": [
+    {
+      "path": "tools/factory-edit-pilot/blueprint_success.py",
+      "sha256": "fca44391b838f4a4d7f8007bd926bbc6d71cc0ebd16e4d2b18815cc60b0c7f9b"
+    },
+    {
+      "path": "tools/factory-edit-pilot/blueprint_success_buffer.py",
+      "sha256": "6e6b9262e4148f0649a9b257e58bccc0c3cb2b265bf39dcb2a9d970dacbfda2d"
+    },
+    {
+      "path": "tools/factory-edit-pilot/blueprint_success_collect.py",
+      "sha256": "65910e1f335594343864ae5ea6e5e9c36486cd4dd465ba01fbf80ec3b77d2ce7"
+    },
+    {
+      "path": "tools/factory-edit-pilot/blueprint_success_update.py",
+      "sha256": "48336664a74e67cfd780ffe0a3ea0c1dc8cbccbee13bb88cfe8f184e746983de"
+    },
+    {
+      "path": "tools/factory-edit-pilot/audit_blueprint_success.py",
+      "sha256": "9dc5da946b0292973a86dd873563bf7e561c73eab47362a33cfc277bf2a758e3"
+    },
+    {
+      "path": "tools/factory-edit-pilot/test_blueprint_success.py",
+      "sha256": "c3f6878907005f91a3db3a65296fa19b46627d37fe57027a5ef1db60002f95e9"
+    },
+    {
+      "path": "tools/factory-edit-pilot/summarize_blueprint_success.py",
+      "sha256": "fbf3a8fe7e40140dd1a377659bf5d9cdc78b6e23185a6ddc4c6308bb68e4f2a5"
+    },
+    {
+      "path": "tools/factory-edit-pilot/blueprint-success-replay.json",
+      "sha256": "5940ec88f9f157235721c5f84733dcdc0b0c30d871914cefac34a5e53524f1b1"
+    },
+    {
+      "path": "docs/designs/2026-09-11-blueprint-success-replay.md",
+      "sha256": "47ecd18caabea9bcc7fc9db77ee4616847c0f331c2f50df82828aff7db1b4d55"
+    },
+    {
+      "path": "docs/reports/2026-09-11-blueprint-success-replay.md",
+      "sha256": "314a2525ee907c3bc3b674b7ddc175fb6352e401a2e34dc28b1732636923d90b"
+    }
+  ]
+}

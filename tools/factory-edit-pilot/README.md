@@ -66,6 +66,10 @@ explicit scripted buffer/continuation fixture that never enters a main run.
 `audit_blueprint_success.py --run RUN` reconstructs all buffer/learner updates,
 checks actual sampling and independently admits the retained native witnesses.
 See `docs/designs/2026-09-11-blueprint-success-replay.md` for the frozen contract.
+After both audits, compare the arms with `summarize_blueprint_success.py --control
+CONTROL --treatment TREATMENT --output OUTPUT`. The
+[completed screen](../../docs/reports/2026-09-11-blueprint-success-replay.md)
+reports discovery, durable reuse, positive-weight gating and autonomous quality.
 
 `blueprint_ppo.py resume --output RUN` restores the last complete durable update
 under identical recorded sources and inputs. Preserve `interrupted.pt.gz` when a

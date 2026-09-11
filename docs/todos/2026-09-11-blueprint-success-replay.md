@@ -1,6 +1,6 @@
 # Accumulating policy-discovered success replay
 
-Status: in progress.
+Status: complete.
 
 Context: the user wants rare successful policy experience to remain available for
 later learning, using an auxiliary imitation term beside PPO.
@@ -24,3 +24,10 @@ Activity log:
 - 2026-09-11: Passed stochastic and scripted mechanical readiness plus actual
   resume from a nonempty buffer/Adam checkpoint. Workspace check/tests passed;
   Python suite: 389 tests run, 7 skipped. Main runs use no scripted actions.
+- 2026-09-11: Completed both registered 65,536-action arms. Reconstructed all
+  512 learner/buffer updates and every main training action choice; native
+  witness and frozen evaluation prediction audits pass.
+- 2026-09-11: Treatment retains 22 unique sequences from 25 successes and has
+  71,370 positive-weight label draws. Final mean area reduction rises from .83%
+  to 1.67%, but both policies remain below their initial 7.92% and have no final
+  area gain through 256 actions. Retention works; robust efficacy is not established.
