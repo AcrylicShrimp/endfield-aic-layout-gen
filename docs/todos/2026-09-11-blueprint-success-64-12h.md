@@ -26,3 +26,7 @@ Activity log:
   Observed 125 updates / 32,000 actions, two admitted successes and actual replay.
   Startup and monitoring evidence is recorded in the launch report. Final quality
   remains pending until the duration run finishes.
+- 2026-09-11: Corrected omitted W&B telemetry by attaching an independent observer
+  without restarting training. Online state is running; actual observer resume
+  and all 1,154 downloaded scalar-history rows verified. Python: 398 tests,
+  7 skipped; Rust workspace checks/tests passed. See the tracking report.

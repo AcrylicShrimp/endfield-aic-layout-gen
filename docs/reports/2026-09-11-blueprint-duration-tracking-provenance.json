@@ -1,0 +1,55 @@
+{
+  "schema": "blueprint-duration-tracking-provenance-v1",
+  "training_source_commit": "60c8cabfef57c2e873adbda2b996cc2e78a97734",
+  "run_id": "e27974e4e6061cd9bf19099e",
+  "evidence": [
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-tracking-evidence-20260911/online-verification.json",
+      "sha256": "36bdf5f1c9346c52b667c6990963cc9f5a73b701a793292866530150dd4728e2"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-tracking-evidence-20260911/observer-detached.json",
+      "sha256": "27a5d095b56e44bb939e942f4db25846fa0a82fe01d84db24ffaef4edaddc37a"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-tracking-evidence-20260911/observer-before-resume.py",
+      "sha256": "385fcb2c31ca9ed2d675be4e1aad92eb23f8afd1ddf344dad27f56c0a12b3da1"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/wandb-observer.plist",
+      "sha256": "88b7f25820a215a72abc3a25f3378d33b7e2204e6660c55fcfb7a8447be10f58"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/protocol.json",
+      "sha256": "c296b55058849c5c9fb69a122c442ee59a34578a6f7c5fd7cca632dabbe862ae"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/wandb-observer-source/blueprint_duration_tracking.py",
+      "sha256": "bc17f17b6084fd543573b9603821e2e7bf2967784fb901640b11fac0c2509954"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/wandb-observer-source/ppo_harness_environment.py",
+      "sha256": "4e962d942c2b2adbb13522a1c1ba402c3279ce0a196e10e17c895b0cbf40329b"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-success-64-12h-20260911/wandb-observer-source/ppo_harness_state.py",
+      "sha256": "06f2658c891eb6a676c8bb371491a67d11d47a0fc1263b2cfb19cc91e6648528"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-tracking-evidence-20260911/blueprint-tracking-workspace-check.log",
+      "sha256": "99f71393b9903dca098310bb446022a4bdee195ea9996f351a787195555210a6"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-tracking-evidence-20260911/blueprint-tracking-workspace-tests.log",
+      "sha256": "05d0ab50e3bd691dcbb65a8720cdd72e624a56fb1c776d49b2f13874adf28423"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-tracking-evidence-20260911/blueprint-tracking-python-tests.log",
+      "sha256": "05beb3a0957b97d38ae1bdb7ef07e2153dee06758a5b8f8f970608f8995995cf"
+    },
+    {
+      "path": "artifacts/factory-edit-pilot/blueprint-duration-tracking-evidence-20260911/blueprint-tracking-python-tests-native.log",
+      "sha256": "7a343935db866f808e2ec430804a1fd013552aac599f6640e9e0249b765b0382"
+    }
+  ]
+}

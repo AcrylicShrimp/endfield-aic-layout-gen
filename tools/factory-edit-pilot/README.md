@@ -81,6 +81,14 @@ and audits the final two updates after stopping. `audit_blueprint_duration.py
 only the last two updates. Use frozen sources for unattended execution. See the
 [duration contract](../../docs/designs/2026-09-11-blueprint-success-64-12h.md).
 
+Attach online W&B monitoring with `blueprint_duration_tracking.py --output RUN
+--env-file /path/to/tracking.env`. Run this observer alongside the trainer; it
+backfills authenticated update/evaluation metrics and stays attached until the
+trainer stops. `wandb-observer.json` contains its URL, heartbeat and export status.
+Restarting the observer resumes the same W&B run. It cannot pause or restart
+training. Backfilled history uses training actions as its axis; W&B timestamps
+are export times. See the [observer contract](../../docs/designs/2026-09-11-blueprint-duration-tracking.md).
+
 `blueprint_ppo.py resume --output RUN` restores the last complete durable update
 under identical recorded sources and inputs. Preserve `interrupted.pt.gz` when a
 run fails: it records partial experience beyond that update. Resuming re-collects

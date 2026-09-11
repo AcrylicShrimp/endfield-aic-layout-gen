@@ -84,3 +84,7 @@ eventual stop reason and tail-audit reference. `audit.json` states its precise
 audited interval; the automatic last-two-update audit is not a full-run audit.
 Use the frozen `audit_blueprint_duration.py --run RUN --all` for an explicit full
 replay afterward. Preserve the frozen source worktree while this job is active.
+
+W&B was omitted at initial launch. The subsequent
+[tracking correction](2026-09-11-blueprint-duration-tracking.md) attaches an online
+observer and backfills the retained metrics without restarting this trainer.
