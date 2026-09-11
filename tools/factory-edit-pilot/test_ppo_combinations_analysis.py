@@ -45,6 +45,14 @@ class AnalysisTests(unittest.TestCase):
         self.assertAlmostEqual(main['mean']['area_reduction_pp'], 18.25)
         self.assertAlmostEqual(result[FIELDS[:2]]['mean']['area_reduction_pp'], 15.5)
         self.assertAlmostEqual(result[FIELDS]['mean']['area_reduction_pp'], 17.)
+        shared = [c for c in cells if c['factors']['shared_backbone']]
+        reduced = {tuple(e['factors']): e for e in effects(shared)}
+        self.assertEqual(set(reduced), {(FIELDS[1],), (FIELDS[2],), FIELDS[1:]})
+        self.assertAlmostEqual(reduced[(FIELDS[1],)]['mean']['area_reduction_pp'], 24.)
+        self.assertAlmostEqual(reduced[(FIELDS[2],)]['mean']['area_reduction_pp'], 32.)
+        self.assertAlmostEqual(reduced[FIELDS[1:]]['mean']['area_reduction_pp'], 28.)
+        with self.assertRaisesRegex(ValueError, 'complete unique factorial'):
+            effects(shared[:-1])
 
     def test_shared_capacity_has_all_four_cells_with_the_original_workload(self):
         base = json.loads(Path(__file__).with_name('ppo-shared-capacity-screen.json').read_text())
@@ -78,6 +86,11 @@ class AnalysisTests(unittest.TestCase):
             tail[2]['policy_after_sha256'] = 'subsequent-policy'
         summaries = schedule_prefixes(updates)
         self.assertEqual([r['first_tail_batch'] for r in summaries], [2]*4)
+        wide = {k: v for k, v in updates.items() if k[0]}
+        self.assertEqual([r['first_tail_batch'] for r in schedule_prefixes(wide)], [2]*2)
+        wide.pop((True, True, True))
+        with self.assertRaisesRegex(ValueError, 'complete schedule pairs'):
+            schedule_prefixes(wide)
         corrupt = deepcopy(updates)
         corrupt[(False, False, True)]['17'][0]['critic_after_sha256'] = 'premature-divergence'
         with self.assertRaisesRegex(ValueError, 'critic differs before first tail'):

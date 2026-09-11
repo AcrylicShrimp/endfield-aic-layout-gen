@@ -1,6 +1,8 @@
 # Shared PPO capacity comparison
 
-Status: registered before execution; native/CUDA readiness passed.
+Status: complete. All eight main runs and final audits passed; see the
+[findings](../reports/2026-09-11-ppo-shared-capacity.md) and
+[compact provenance](../reports/2026-09-11-ppo-shared-capacity-provenance.json).
 
 The user explicitly requested running the wider shared model experiment after
 the initial implementation stopped at configuration and unit verification.
@@ -14,6 +16,8 @@ factory attempts, 32 actions, and evaluations at 0/8/16/24/32 with 32 attempts.
 Keep all workload seeds, native binaries, catalogs, PPO settings, action inputs,
 retention and resource bounds equal to the completed factorial. Every run starts
 fresh. Do not resume the stopped twelve-hour run.
+The actor always receives its last 16 actions; the history factor changes only
+the critic's input. The actor's best-world input remains hidden in every cell.
 
 The existing eight width-32 cells are retained controls, not newly randomized
 concurrent runs. Compare width 40 against the matching shared width-32 and
@@ -43,12 +47,16 @@ source trees and irreplaceable checkpoints unchanged.
 - English findings, compact provenance and reproducible commands committed;
   generated evidence and plots retained under ignored artifacts directories.
 
-Two seeds are exploratory. Reused held-out factories do not provide an untouched
+Two seeds are exploratory. Each run seed controls both model initialization and
+factory/action random draws; compare treatments within the same seed. Reused
+held-out factories do not provide an untouched
 confirmation set. This is an approximately matched total parameter comparison;
 width also changes the actor's capacity, initial function and compute. It cannot
 alone attribute differences to gradient interference or guarantee a ranking
 under the earlier inherited-start curriculum. Timing also includes changed KL
 stopping, visited geometry and non-concurrent machine conditions.
+Learning gains from different untrained policies are descriptive; a larger gain
+does not by itself establish better final quality or faster causal learning.
 
 ## Readiness evidence
 

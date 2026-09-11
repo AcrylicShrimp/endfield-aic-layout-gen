@@ -1,0 +1,105 @@
+{
+  "schema": "ppo-shared-capacity-final-provenance-v1",
+  "implementation_commit": "6ae3c5c",
+  "model_commit": "a9baf9a",
+  "matrix": {
+    "path": "/home/ashrimp/Srv/aic-ppo-shared-capacity-screen-20260911/artifacts/factory-edit-pilot/matrix/matrix.json",
+    "sha256": "a24f9b610836656a3d477fa00dc5af87db98924171a02ee0401dcb8c9dd91cfa",
+    "bytes": 3585
+  },
+  "matrix_seconds": 5758.760881900787,
+  "comparison": {
+    "path": "/home/ashrimp/Srv/aic-ppo-shared-capacity-analysis-20260911/artifacts/factory-edit-pilot/comparison/report.json",
+    "sha256": "e0657e78b8aa571602a5713e626c9cda6317591e35f620a2b16dd9850aaf14d3",
+    "bytes": 802105
+  },
+  "comparison_inputs": {
+    "path": "/home/ashrimp/Srv/aic-ppo-shared-capacity-analysis-20260911/artifacts/factory-edit-pilot/comparison/inputs.json",
+    "sha256": "839211295e2c892c915b9e361c824c0b995b44f244a21d135f1d47a8a056bdd7",
+    "bytes": 10831368
+  },
+  "controls": {
+    "path": "/home/ashrimp/Srv/aic-ppo-shared-capacity-analysis-20260911/artifacts/factory-edit-pilot/controls/report.json",
+    "sha256": "c80382fb32838931bf15730320c3e472a2713413668344256479f63e71fe9ab8",
+    "bytes": 1123721
+  },
+  "controls_inputs": {
+    "path": "/home/ashrimp/Srv/aic-ppo-shared-capacity-analysis-20260911/artifacts/factory-edit-pilot/controls/inputs.json",
+    "sha256": "c272d95f05b29cc7dda034da7e5a5f4a9379fd16c69c21582761a9c402853fa3",
+    "bytes": 32281148
+  },
+  "baseline_report_sha256": "a7cec8476b0e4e10abfc06980ca44111fb0ac6f94e0fe8cf8dc7a971951191a6",
+  "verified_wide_file_identities": 40434,
+  "verified_combined_file_identities": 121033,
+  "matched_input_identities": 4416,
+  "input_geometry_sha256": "25066e2c0f69567835a6061387a2513bf25411812247f4f3f08e9a25ae46d41d",
+  "native_final_layouts_verified": 248,
+  "training_actions": 512512,
+  "tracking_audit": {
+    "path": "/home/ashrimp/Srv/aic-ppo-shared-capacity-analysis-20260911/artifacts/factory-edit-pilot/wandb-check.json",
+    "sha256": "d0005ae5177fb3b00d50f1b4b626e3520be3fc734fab02945276cd51011d7e23",
+    "bytes": 3867
+  },
+  "tracking_records": 336,
+  "tracking_scalars": 32496,
+  "analysis_sources": {
+    "path": "/home/ashrimp/Srv/aic-ppo-shared-capacity-analysis-20260911/artifacts/factory-edit-pilot/analysis-sources.json",
+    "sha256": "f3a82c35937c48de494f72afba87801de2c1428a752b0e5166468fd371d72138",
+    "bytes": 613
+  },
+  "analysis_source_files_sha256": {
+    "compare_ppo_combinations.py": "c9c03993906935f77b88926b6595c5ed628ea217cc8a2207808705c2081c316f",
+    "compare_ppo_capacity.py": "ac6d5f5963aefed148f2585844798c637aead3c90f4c2b670c7464cdb0844863",
+    "plot_ppo_capacity.py": "69892ebaaf981a1d0687a1ab6cbcdb6d24da5dfb8f381b7a29abe3a4ab4d2c49",
+    "check_ppo_combinations_tracking.py": "0e507f7a3cca59118e2a992e71ed2042655bc39a0c91531e0086ebf8c134ecb7",
+    "test_ppo_combinations_analysis.py": "b87115bbcc6c3e9775ac5722957c62ade3cb97298525fb6d59d1476406c70473",
+    "test_ppo_capacity_analysis.py": "3d7430e71b2f0882c91c996b8ca1cc43d0080f864a819cbc277868a768a43072"
+  },
+  "source_verification": {
+    "path": "/home/ashrimp/Srv/aic-ppo-shared-capacity-screen-20260911/artifacts/factory-edit-pilot/source-verification.json",
+    "sha256": "f14c54b2da11bf287fcb1feb131093f504666684e62cf5d41279d990160ec46b",
+    "bytes": 7433
+  },
+  "cells": [
+    {
+      "name": "shared-history-tail",
+      "config_sha256": "89537dff0905d0eac4f70756a7f2f57bbf10a42aece13e421179a100ed3a3eff",
+      "protocol_sha256": "0a2ff4a18ea771104f7097de4e6177d8050c22f3d9c423bcae9394c048dd5051",
+      "state_sha256": "00396455df88859d3aea3992c9b6a9f2ba27bfb0254ba62db41dd492b0a086e0",
+      "exit_code": 0
+    },
+    {
+      "name": "shared-nohistory-tail",
+      "config_sha256": "e958c45502fb1d035e1816f5cae099096f0d4d2bc9bedd14c45fcbcb4c5da7a8",
+      "protocol_sha256": "f854e071009bf4c77fc7543d58a914980f94935cfae7c33cdf079c6b41d396f5",
+      "state_sha256": "71aadf3a1c1fd966ac91013403b212ccf06d132b2b13aa902bf1e5379a6202d5",
+      "exit_code": 0
+    },
+    {
+      "name": "shared-nohistory-stop",
+      "config_sha256": "9fffc9bab16ac4ac07fd311dd17f47116d42d8db11db55b1ccabfbaa0f927f6d",
+      "protocol_sha256": "6c8470dc2ccb1825ec87e7afe06d99aa58c0856fbf864182a4117dc8dff31f55",
+      "state_sha256": "a49f1191918817bcd819c811a84dd37a4fe7be01c873a9f75f8375dd54b34626",
+      "exit_code": 0
+    },
+    {
+      "name": "shared-history-stop",
+      "config_sha256": "bfa260504af005406a4e1e1467de0cb0c72eda365b1b325bd3b92c97f43d0a14",
+      "protocol_sha256": "e06fd7879322f54e652941cdaf39f34549bb335e68e74d9bb5698efcc2a12d85",
+      "state_sha256": "82c32737ffbcc03e9754a5dfbf25afbbc506e28a241e9217ec3c0e8752bcf23e",
+      "exit_code": 0
+    }
+  ],
+  "figures": [
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-shared-capacity-analysis-20260911/artifacts/factory-edit-pilot/plots/learning.png",
+      "sha256": "3387d230089716694c9b84a37a48201ac3cc1e1e3edbc9b900b1a052c2bd8f15",
+      "bytes": 531961
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-ppo-shared-capacity-analysis-20260911/artifacts/factory-edit-pilot/plots/effects.png",
+      "sha256": "cd46119d24f121192a08bdaeb0124c1b9972bc3bd0e58c34a9bceb354897a825",
+      "bytes": 208964
+    }
+  ]
+}

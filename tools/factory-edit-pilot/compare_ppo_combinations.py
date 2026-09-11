@@ -117,13 +117,17 @@ def evaluation(record):
 def effects(cells):
     """Average matched factor effects within seed; contexts are not replicates."""
     lookup = {tuple(c['factors'][k] for k in FIELDS): c for c in cells}
+    domains = [sorted({key[i] for key in lookup}) for i in range(len(FIELDS))]
+    check(len(lookup) == len(cells) and set(lookup) == set(product(*domains)), 'complete unique factorial required')
+    varying = [i for i, domain in enumerate(domains) if len(domain) > 1]
     seeds = sorted(cells[0]['jobs'])
+    check(all(sorted(c['jobs']) == seeds for c in cells), 'factorial seeds differ')
     metrics = ('area_reduction_pp', 'later_reduction_pp', 'failure_percent', 'critic_mae_pp',
                'critic_late_mae_pp', 'critic_late_bias_pp', 'training_seconds', 'update_seconds')
     result = []
-    for size in (1, 2, 3):
-        for selected in combinations(range(3), size):
-            remaining = [i for i in range(3) if i not in selected]
+    for size in range(1, len(varying) + 1):
+        for selected in combinations(varying, size):
+            remaining = [i for i in varying if i not in selected]
             by_seed = {}
             conditional = []
             for seed in seeds:
@@ -131,7 +135,7 @@ def effects(cells):
                 for rest in product((False, True), repeat=len(remaining)):
                     delta = dict.fromkeys(metrics, 0.)
                     for bits in product((False, True), repeat=len(selected)):
-                        factors = [False]*3
+                        factors = [domain[0] for domain in domains]
                         for i, bit in zip(remaining, rest):
                             factors[i] = bit
                         for i, bit in zip(selected, bits):
@@ -151,7 +155,9 @@ def effects(cells):
 def schedule_prefixes(updates):
     """Only the first critic tail can separate otherwise identical schedules."""
     result = []
-    for shared, history in product((False, True), repeat=2):
+    backbones = sorted({key[0] for key in updates})
+    check(set(updates) == set(product(backbones, (False, True), (False, True))), 'complete schedule pairs required')
+    for shared, history in product(backbones, (False, True)):
         controls, tails = updates[(shared, history, False)], updates[(shared, history, True)]
         check(set(controls) == set(tails), 'schedule-pair seeds differ')
         for seed, left in controls.items():
@@ -176,8 +182,13 @@ def compare(matrix_path, output, native):
     check(not output.exists(), f'fresh output required: {output}')
     manifest = {}
     matrix = read(matrix_path, manifest)
-    check(matrix['schema'] == 'ppo-actor-critic-matrix-v1' and matrix['status'] == 'complete'
-          and not matrix['readiness'] and len(matrix['cells']) == 8, 'completed eight-cell screen required')
+    expected_cells = {'ppo-actor-critic-matrix-v1': 8, 'ppo-shared-capacity-matrix-v1': 4}.get(matrix['schema'])
+    check(expected_cells is not None and matrix['status'] == 'complete'
+          and not matrix['readiness'] and len(matrix['cells']) == expected_cells, 'completed registered screen required')
+    capacity = expected_cells == 4
+    expected_factors = set(product((True,) if capacity else (False, True), (False, True), (False, True)))
+    check({tuple(c['factors'][k] for k in FIELDS) for c in matrix['cells']} == expected_factors,
+          'registered factor coverage differs')
     read(matrix['source_config']['path'], manifest, matrix['source_config']['sha256'])
     cells, controls, geometries, initial_actors, initial_critics = [], None, {}, {}, {}
     updates = {}
@@ -196,6 +207,10 @@ def compare(matrix_path, output, native):
         config = deepcopy(protocol['config'])
         factors = config['model'].pop('actor_critic')
         check(factors == cell['factors'] and label(factors) == cell['name'], 'cell treatment mismatch')
+        from ppo_spatial_model import specification, shared_capacity_specification
+        expected_model = (shared_capacity_specification(factors['critic_history'], factors['critic_after_kl'])
+                          if capacity else dict(specification('cnn2'), actor_critic=factors))
+        check(protocol['config']['model'] == expected_model, 'registered model differs')
         if controls is None:
             controls = config
         check(config == controls, 'non-factor configuration differs')
@@ -261,14 +276,18 @@ def compare(matrix_path, output, native):
     if native_runtime is not None:
         native_runtime.close()
     (output/'best.json').unlink(missing_ok=True)
-    check(len({tuple(c['factors'][k] for k in FIELDS) for c in cells}) == 8, 'complete unique factorial required')
-    report = dict(schema='ppo-actor-critic-comparison-v1', cells=cells, effects=effects(cells),
+    check(len({tuple(c['factors'][k] for k in FIELDS) for c in cells}) == expected_cells, 'complete unique factorial required')
+    geometry_bytes = json.dumps(sorted(geometries.items()), separators=(',', ':')).encode()
+    report = dict(schema='ppo-shared-capacity-comparison-v1' if capacity else 'ppo-actor-critic-comparison-v1',
+                  model=controls['model'], cells=cells, effects=effects(cells),
                   schedule_prefixes=schedule_prefixes(updates),
                   source_sha256=sha(Path(__file__).read_bytes()),
+                  matrix_sha256=manifest[str(matrix_path.resolve())],
+                  input_geometry_sha256=sha(geometry_bytes),
                   matched_input_identities=len(geometries), native_final_layouts_verified=verified_layouts,
                   initial_actor_hashes={k:next(iter(v)) for k,v in initial_actors.items()},
                   initial_critic_hashes={k:next(iter(v)) for k,v in initial_critics.items()},
-                  limitations=['Two initialization seeds; factorial contexts and actions are not independent replicates.',
+                  limitations=['Two run seeds, each with its own initialization and factory cohort; contexts and actions are not independent replicates.',
                     'Reused held-out evaluation factories; no untouched final confirmation test.',
                     'Shared-model critic tails update the private head; independent tails update the whole critic.',
                     'Fresh starts isolate input distribution; earlier inherited-start curriculum is not tested.',

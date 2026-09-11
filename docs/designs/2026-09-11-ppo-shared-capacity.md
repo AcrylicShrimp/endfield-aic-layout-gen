@@ -1,12 +1,13 @@
 # Wider shared PPO model
 
-Status: complete; model/configuration verified, training comparison not run.
+Status: model/configuration slice complete. The subsequent
+[training comparison](../reports/2026-09-11-ppo-shared-capacity.md) is also complete.
 
 The user requested increasing shared-model capacity to approximately the total
 parameter count of the separate width-32 actor/critic pair (93,090). This slice
 adds a runnable model configuration and verifies forward/backward, optimizer
 ownership, critic-tail freezing and checkpoint continuation. It does not include
-a new training comparison or claim a performance improvement.
+a new training comparison; that work is documented separately above.
 
 ## Contract
 

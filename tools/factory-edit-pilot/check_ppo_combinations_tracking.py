@@ -20,9 +20,10 @@ def require(condition, message):
 def check(matrix_path, output):
     import wandb
     matrix = read(matrix_path)
-    require(matrix['schema'] == 'ppo-actor-critic-matrix-v1' and matrix['status'] == 'complete'
-            and not matrix['readiness'] and len(matrix['cells']) == 8,
-            'completed eight-cell screen required')
+    expected_cells = {'ppo-actor-critic-matrix-v1': 8, 'ppo-shared-capacity-matrix-v1': 4}.get(matrix['schema'])
+    require(expected_cells is not None and matrix['status'] == 'complete'
+            and not matrix['readiness'] and len(matrix['cells']) == expected_cells,
+            'completed registered screen required')
     require(not output.exists(), f'fresh tracking audit output required: {output}')
     output.parent.mkdir(parents=True, exist_ok=True)
     report = dict(schema='ppo-combinations-tracking-audit-v1', status='running',
@@ -68,7 +69,7 @@ def check(matrix_path, output):
                 report['jobs'].append(detail)
                 write(output, report)
                 print(dict(cell=cell['name'], seed=job['seed'], scalars_verified=count), flush=True)
-        require(len(report['jobs']) == 16, 'sixteen completed remote runs required')
+        require(len(report['jobs']) == 2 * expected_cells, 'two completed remote runs per cell required')
         report.update(status='complete', records=sum(j['records'] for j in report['jobs']),
                       scalars_verified=sum(j['scalars_verified'] for j in report['jobs']))
     except BaseException as error:

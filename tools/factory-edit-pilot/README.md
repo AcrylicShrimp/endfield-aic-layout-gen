@@ -444,8 +444,8 @@ Both critic factor booleans remain configurable; sharing must be enabled.
 Prepare this individual cell through the harness, or use the explicit
 `--shared-capacity` matrix mode for all four history/tail combinations.
 Use fresh weights because width-32 checkpoints cannot load into
-width 40. This configuration has been verified but has no measured training
-quality result yet.
+width 40. The completed [four-condition, two-seed experiment](../../docs/reports/2026-09-11-ppo-shared-capacity.md)
+reports all final scores, learning curves, paired controls and audit evidence.
 
 ```sh
 python tools/factory-edit-pilot/ppo_harness.py --env-file /path/to/tracking.env prepare --config tools/factory-edit-pilot/ppo-shared-capacity-screen.json --output artifacts/factory-edit-pilot/shared-capacity-screen
@@ -461,6 +461,25 @@ python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/trac
 python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env run --matrix artifacts/factory-edit-pilot/shared-capacity-readiness/matrix.json
 python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env prepare --config tools/factory-edit-pilot/ppo-shared-capacity-screen.json --output artifacts/factory-edit-pilot/shared-capacity-matrix --shared-capacity
 python tools/factory-edit-pilot/run_ppo_combinations.py --env-file /path/to/tracking.env run --matrix artifacts/factory-edit-pilot/shared-capacity-matrix/matrix.json
+```
+
+After completion, `compare_ppo_combinations.py` audits either registered matrix
+schema, including native final layouts and exact stop/tail prefixes. The wider
+screen reports the two history/schedule effects and their interaction. Verify
+its online records with `check_ppo_combinations_tracking.py`.
+
+`compare_ppo_capacity.py` then checks the retained baseline report and every
+referenced input identity against its compact provenance, verifies equal
+workloads/native binaries and paired factory geometry, and compares each wider
+cell with its matching shared and separate width-32 controls. It reports final
+levels and changes from each model's own initialization separately. The baseline
+source trees and retained results must remain available at their recorded paths.
+
+```sh
+python tools/factory-edit-pilot/compare_ppo_combinations.py --matrix NEW_MATRIX --output NEW_AUDIT --validate-final-layouts
+python tools/factory-edit-pilot/check_ppo_combinations_tracking.py --matrix NEW_MATRIX --output TRACKING_REPORT --env-file /path/to/tracking.env
+python tools/factory-edit-pilot/compare_ppo_capacity.py --baseline-provenance docs/reports/2026-09-11-ppo-combinations-provenance.json --wide-report NEW_AUDIT/report.json --wide-inputs NEW_AUDIT/inputs.json --output CAPACITY_COMPARISON
+python tools/factory-edit-pilot/plot_ppo_capacity.py --report CAPACITY_COMPARISON/report.json --output CAPACITY_PLOTS
 ```
 Lower later absolute gain can reflect improvements moving earlier; compare it
 with final factory quality rather than treating it as a separate objective.
