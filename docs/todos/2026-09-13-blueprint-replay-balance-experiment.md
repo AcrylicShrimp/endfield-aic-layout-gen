@@ -1,6 +1,6 @@
 # Replay balance experiment
 
-Status: design complete; implementation and execution pending.
+Status: implementation in progress; main training is gated on measured readiness.
 
 ## Context
 
@@ -29,6 +29,18 @@ It preserves centered GAE and current blueprint semantics.
 
 ## Activity
 
+- User authorized implementation and execution with "Start" after the throughput
+  requirements. First work unit: device-capable packed graph execution and a
+  persistent native worker pool using the established shared-memory transport.
+  The worker owns its stream/session and complete chunk evidence. The coordinator
+  owns ordered policy sampling and frozen behavior weights. Commands are begin,
+  step (selected index/log probability/value), finish (bootstrap), snapshot,
+  restore, evaluation and stop; responses carry a command identity, worker/stream
+  identity, prepared graph arrays or completed evidence, and timing. No unfinished
+  stream crosses worker ownership without an authenticated native snapshot.
+- Operational inspection found 14 GiB free on the server, below the 16 GiB
+  reserve. Reclaim only regenerable build caches first; preserve retained runs.
+
 - 2026-09-13: inspected the current centered continuation, SIL buffer/loss,
   persistent session restoration, historical cohort, native worker study,
   shared-memory/padded learner report and previous completion diagnostics.
@@ -39,9 +51,22 @@ It preserves centered GAE and current blueprint semantics.
   completion helper changes clocks/action limits; those overrides are excluded.
 - Preserved the original cohort as a continuity panel and specified a separate
   identity-filtered geometry-transfer panel. No unseen-request claim is planned.
-- No runtime code, training default, source checkpoint or running process changed.
+- At design completion, no runtime code, training default, source checkpoint or
+  running process had changed.
 - User follow-up explicitly requires avoiding another effectively single-core
   run. Strengthened launch gates to inspect actual process affinity and quota,
   target CUDA batched learning, include evaluation/storage in timing, and reject
   unmeasured or serial fallback. Per-worker single-threading remains compatible
   with eight genuinely concurrent workers. These requirements are not yet verified.
+
+- Implemented and verified persistent native workers, shared graph transport,
+  parallel evaluation, per-slot fresh-input publication, CPU/CUDA packed updates
+  and one-batch-ahead CPU preparation. See the
+  [execution slice](../reports/2026-09-13-blueprint-parallel-execution.md).
+  The full 1.5x throughput gate and eight-update real fork remain pending.
+- User requested selective raw-evidence cleanup. Reduced server AIC artifacts
+  from 102.96 to 17.41 GiB while authenticating all 12,064 files required by the
+  continuation/import/cohort contract. Future runs should retain result tables,
+  selected witnesses/checkpoints, active buffer sources and recovery windows,
+  without accumulating every completed evaluation trace. See the
+  [retention report](../reports/2026-09-13-experiment-evidence-pruning.md).

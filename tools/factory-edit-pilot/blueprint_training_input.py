@@ -106,8 +106,8 @@ class FreshInputs:
     def acquire(self, stream, episode):
         identity = self.identity(stream, episode)
         self.root.mkdir(parents=True, exist_ok=True)
-        # Hold the shared lock through publication. Paired arms consume exactly
-        # the same actual input, including any non-replayable setup outcomes.
+        # Initialize shared metadata briefly; independent slots generate in parallel.
+        # A slot lock still publishes exactly one actual input for all paired arms.
         with (self.root / '.generation.lock').open('a') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
             manifest = self.root / 'manifest.json'
@@ -117,6 +117,13 @@ class FreshInputs:
                 require(not any(self.root.iterdir()) or set(p.name for p in self.root.iterdir()) == {'.generation.lock'},
                         'blueprint.training-input.store: unowned nonempty directory')
                 write(manifest, self.contract)
+            catalogs = self.root / 'catalogs.json'
+            if not catalogs.exists():
+                write(catalogs, self.spec['catalogs'])
+            else:
+                require(read(catalogs) == self.spec['catalogs'], 'blueprint.training-input.catalogs: store catalog paths changed')
+        with (self.root / f'.slot-{identity["slot"]:08d}.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
             directory = self.root / f'episode-{identity["slot"]:08d}'
             completed = directory / 'episode.json'
             if completed.exists():
@@ -131,9 +138,7 @@ class FreshInputs:
             try:
                 if self.native is None:
                     from native_factory_runtime import FactoryRuntime
-                    catalogs = self.root / 'catalogs.json'
-                    write(catalogs, self.spec['catalogs'])
-                    self.native = FactoryRuntime(self.spec['native_library'], catalogs)
+                    self.native = FactoryRuntime(self.spec['native_library'], self.root / 'catalogs.json')
                 from random_factory_generation import generate
                 for attempt in range(self.options['max_attempts']):
                     guard()

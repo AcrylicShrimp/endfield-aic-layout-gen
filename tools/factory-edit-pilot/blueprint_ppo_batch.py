@@ -31,16 +31,26 @@ def pack(observations):
         kinds.extend(math.log(kind_counts[a['kind']]) for a in observation['actions'])
         node_offset += len(observation['node_static'])
         edge_offset += len(observation['edge_static'])
-    return dict(schema=SCHEMA, size=len(observations), action_counts=counts,
+    result = dict(schema=SCHEMA, size=len(observations), action_counts=counts,
                 **{k: torch.cat(v) for k, v in fields.items()}, edge_index=torch.cat(edges, dim=1),
                 node_graph=torch.cat(nodes), action_graph=torch.cat(actions),
                 kind_log_counts=torch.tensor(kinds, dtype=torch.float32))
+    # Compute integer segment lengths during CPU preparation, avoiding device
+    # synchronization for output-size inference in CUDA bincount.
+    result['path_counts'] = torch.bincount(result['path_edges'], minlength=edge_offset).clamp_min(1)
+    result['node_counts'] = torch.bincount(result['node_graph'], minlength=result['size']).clamp_min(1)
+    return result
+
+
+def to_device(batch, device):
+    return {key: value.to(device, non_blocking=True) if isinstance(value, torch.Tensor) else value
+            for key, value in batch.items()}
 
 
 def distribution(logits, batch):
     adjusted = logits - batch['kind_log_counts']
     graph = batch['action_graph']
-    maximum = torch.full((batch['size'],), -torch.inf, dtype=adjusted.dtype)
+    maximum = adjusted.new_full((batch['size'],), -torch.inf)
     maximum.scatter_reduce_(0, graph, adjusted, reduce='amax', include_self=True)
     shifted = adjusted - maximum[graph]
     denominator = torch.zeros_like(maximum).index_add_(0, graph, shifted.exp())

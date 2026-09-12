@@ -1,7 +1,8 @@
 # Separate success exposure, replay balance and imitation strength
 
-Status: design complete; implementation, readiness and training have not started.
-This is the proposed next bounded research slice, not a runnable configuration.
+Status: implementation in progress; execution primitives are verified, while
+complete-cycle readiness and main training remain gated. This is the registered
+bounded research slice, not yet a runnable main configuration.
 
 ## Question and evidence
 
@@ -323,9 +324,9 @@ report written after training:
   Keep normal phase counters lightweight. Do not repeat costly readiness,
   optimizer replay or whole-run auditing per arm or at automatic completion.
 
-No worker pool, CUDA implementation or speedup has been verified by this design.
-Those are unfinished execution requirements, not capabilities already available
-in the current blueprint runner.
+The [execution primitive slice](../reports/2026-09-13-blueprint-parallel-execution.md)
+verifies worker continuity, parallel evaluation and CPU/CUDA update semantics.
+Complete-cycle speedup and launch readiness remain unverified.
 
 Verify valid physics, candidate identity, tensor/mask/offset isolation, probability
 agreement and gradient ownership, including the shared encoder value gradient.
@@ -380,4 +381,5 @@ frozen in a launch manifest before any main optimizer update.
 4. Execute the registered screen; then run the separate anchor continuation probe.
 5. Report all paired contrasts, failures, preservation gates and remaining uncertainty.
 
-This design records no new learning result and starts no training process.
+This design records no new learning result. Main training starts only after the
+registered readiness and launch checks pass.

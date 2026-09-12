@@ -155,7 +155,7 @@ class BlueprintActorCritic(nn.Module):
         edges = self.edges(torch.cat((batch['edge_static'], batch['edge_state']), dim=-1))
         route_sum = torch.zeros_like(edges)
         route_sum.index_add_(0, batch['path_edges'], self.paths(batch['path_cells']))
-        count = torch.bincount(batch['path_edges'], minlength=len(edges)).clamp_min(1).unsqueeze(-1)
+        count = batch['path_counts'].unsqueeze(-1)
         edges = edges + route_sum / count
         source, target = batch['edge_index']
         for message, update in zip(self.messages, self.updates):
@@ -165,9 +165,9 @@ class BlueprintActorCritic(nn.Module):
             incoming.index_add_(0, source, torch.tanh(message(torch.cat((nodes[target], nodes[source], -edges), dim=-1))))
             nodes = torch.tanh(update(torch.cat((nodes, incoming), dim=-1)))
         node_graph = batch['node_graph']
-        pooled = torch.zeros((batch['size'], nodes.shape[1]), dtype=nodes.dtype)
+        pooled = nodes.new_zeros((batch['size'], nodes.shape[1]))
         pooled.index_add_(0, node_graph, nodes)
-        pooled = pooled / torch.bincount(node_graph, minlength=batch['size']).clamp_min(1).unsqueeze(-1)
+        pooled = pooled / batch['node_counts'].unsqueeze(-1)
         pooled = self.context(torch.cat((pooled, batch['global_features']), dim=-1))
         references = batch['action_references']
         selected = nodes[references.clamp_min(0)]
