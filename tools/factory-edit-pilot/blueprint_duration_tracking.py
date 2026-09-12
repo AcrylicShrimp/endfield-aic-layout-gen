@@ -91,6 +91,7 @@ def observe(root, destination, interval, stopped, wandb):
             config=dict(protocol_sha256=protocol_hash, seed=config['seeds'][0], training=config['training'],
                         ppo=config['ppo'], success_coefficient=config['success']['coefficient'],
                         duration=config['duration'], evaluation=config['evaluation'],
+                        training_input=config.get('training_input'),
                         experiment=config.get('experiment'),
                         telemetry='independent observer; history timestamps are export times'))
         remote_path = f'{destination["entity"]}/{destination["project"]}/{identifier}'

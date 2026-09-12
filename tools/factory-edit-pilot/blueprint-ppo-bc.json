@@ -1,6 +1,6 @@
 {
   "schema": "blueprint-persistent-ppo-v1",
-  "purpose": "behavior-cloning-screen",
+  "purpose": "behavior-cloning-screen-diagnostic",
   "probe_spec": "tools/factory-edit-pilot/blueprint-edit-probe.json",
   "seeds": [
     17,
@@ -119,5 +119,9 @@
     "completion_actions": 64,
     "completion_elapsed_ms": 2000,
     "completion_samples": 2
+  },
+  "training_input": {
+    "schema": "blueprint-training-input-v1",
+    "kind": "fixed-fixture-diagnostic"
   }
 }

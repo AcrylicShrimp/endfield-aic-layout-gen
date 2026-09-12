@@ -63,9 +63,11 @@ def audit_run(output):
                 require(chunk['protocol_sha256'] == state['protocol_sha256'], 'chunk protocol identity')
                 require(chunk['model_before'] == digest(model.state_dict()), 'behavior checkpoint identity')
                 require(len(chunk['samples']) == config['training']['streams'] * config['training']['chunk_actions'], 'registered chunk size')
+                checker.inputs.clear()
                 for before in chunk['native_before']:
                     restored = Stream.restore(runtime, before)
                     observation = json.loads(restored.session.observation_json())
+                    checker.register(restored.runtime, observation['blueprint'])
                     first = next(s for s in chunk['samples'] if s['stream'] == before['index'])
                     require(semantic(observation) == semantic(first['observation']), 'actual native snapshot restoration')
                     if before['policy_actions']:

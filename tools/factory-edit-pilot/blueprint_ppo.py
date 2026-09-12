@@ -16,9 +16,11 @@ from blueprint_ppo_evaluate import evaluate
 from blueprint_ppo_store import ROOT, checked, load, model_checkpoint, read, reference, restore_learners, save, sha, write
 from blueprint_ppo_update import digest, learners, require, update
 from native import load_native
+from blueprint_training_input import source_paths, validate_input
 
 
 def validate(config):
+    validate_input(config)
     require(config['schema'] == 'blueprint-persistent-ppo-v1' and config['device'] == 'cpu', 'registered CPU graph learner schema')
     training, evaluation, ppo = config['training'], config['evaluation'], config['ppo']
     require(type(ppo['width']) is int and ppo['width'] > 0
@@ -68,6 +70,8 @@ def initialize(config_path, native_library, output, is_readiness):
     if is_readiness:
         config = readiness(config)
     validate(config)
+    if config['training_input']['kind'] == 'fresh-random' and config['training_input']['directory'] == '@run':
+        config['training_input']['directory'] = str(output / 'training-inputs')
     module = load_native(native_library)
     build = json.loads(module.BlueprintEditSession.build_info_json())
     for relative, expected in build['files_sha256'].items():
@@ -81,7 +85,10 @@ def initialize(config_path, native_library, output, is_readiness):
                     'blueprint_edit_input.py', 'blueprint_edit_audit.py', 'probe_blueprint_edit.py', 'native.py',
                     'pyproject.toml', 'uv.lock']
     paths = [ROOT / 'tools/factory-edit-pilot' / name for name in python_files]
-    paths += [config_path, ROOT / config['probe_spec'], ROOT / spec['initial'], *(ROOT / p for p in spec['catalogs'].values())]
+    paths += [config_path, ROOT / config['probe_spec'], *(ROOT / p for p in spec['catalogs'].values()),
+              Path(__file__).with_name('blueprint_training_input.py'), *source_paths(config)]
+    if config['training_input']['kind'] == 'fixed-fixture-diagnostic':
+        paths.append(ROOT / spec['initial'])
     sources = dict(build['files_sha256'])
     sources.update({str(p.resolve().relative_to(ROOT)): sha(p) for p in paths})
     protocol = dict(schema='blueprint-ppo-protocol-v1', config=config, sources=sources,

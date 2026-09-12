@@ -1,0 +1,65 @@
+{
+  "schema": "blueprint-random-restoration-provenance-v1",
+  "artifacts": {
+    "artifacts/factory-edit-pilot/blueprint-random-restoration-20260912/final-readiness/protocol.json": {
+      "sha256": "3dfb093055bf5f7f71b9f99b89705277a0e1ec04f1eebea42f4f41d531566663",
+      "bytes": 89228
+    },
+    "artifacts/factory-edit-pilot/blueprint-random-restoration-20260912/final-readiness/state.json": {
+      "sha256": "674db1f3744f333e1da9ccce19c86adc845dfe866dfb1fb1ad4c98b0300564d2",
+      "bytes": 2968
+    },
+    "artifacts/factory-edit-pilot/blueprint-random-restoration-20260912/final-readiness/audit-full.json": {
+      "sha256": "6703ba329b7ccc198ca01596a751a92b109eca120ffc2c68fb804fb81b9d4002",
+      "bytes": 230005
+    },
+    "artifacts/factory-edit-pilot/blueprint-random-restoration-20260912/final-readiness/completion.json": {
+      "sha256": "7edeebe2e293852d4b2cf25b5813aa2d4fedb2fe87158395bea845aab1b2eb29",
+      "bytes": 484
+    },
+    "artifacts/factory-edit-pilot/blueprint-random-restoration-20260912/final-input-summary.json": {
+      "sha256": "73ee4689675779811da5e68422c9fd39ff940d6ea949a1c06518c3b0eff14ca2",
+      "bytes": 4989
+    },
+    "artifacts/factory-edit-pilot/blueprint-random-restoration-20260912/verification/cargo-check.log": {
+      "sha256": "4b588cb9d444e1b4c48ed797ee384d183d09b19ef4a7508e809d2f3ce7245b4e",
+      "bytes": 282
+    },
+    "artifacts/factory-edit-pilot/blueprint-random-restoration-20260912/verification/cargo-test.log": {
+      "sha256": "5fc99f7406b72e3b4c41cd596d049f9926c181c74496fe7510723d7f1bef526a",
+      "bytes": 69918
+    },
+    "artifacts/factory-edit-pilot/blueprint-random-restoration-20260912/verification/python-tests-final.log": {
+      "sha256": "9a7454cfeaf0c31df6a915b1c4ff7ed11a49359f0c9cd61c844385f5bc38b10b",
+      "bytes": 400
+    }
+  },
+  "input_coverage": {
+    "seed": 17,
+    "updates": 6,
+    "started_episodes": 24,
+    "completed_episodes": 24,
+    "unique_generation_seeds": 24,
+    "products": {
+      "copper-liquid": 7,
+      "medical": 8,
+      "watered-grass": 7,
+      "food": 2
+    },
+    "distinct_product_rates": 20,
+    "distinct_requests": 20,
+    "distinct_geometries": 23,
+    "generation_attempts": 24,
+    "setup_seconds": 3.5115960419061594,
+    "ordered_input_digest": "b183e952c50b6b9fcc59e89ccf2d13b7f5950afe557987494eed97d52a90b3de"
+  },
+  "source_base": "208de4f",
+  "verification": {
+    "python_run": 420,
+    "python_passed": 413,
+    "python_skipped": 7,
+    "rust_passed": 564,
+    "rust_ignored": 5,
+    "workspace_check": "passed"
+  }
+}

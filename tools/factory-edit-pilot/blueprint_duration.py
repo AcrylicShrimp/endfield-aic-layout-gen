@@ -17,12 +17,14 @@ from blueprint_ppo_update import digest, learners, require
 from blueprint_success import initialize as initialize_success, restore_buffer, snapshot
 from blueprint_success_buffer import Evidence, SuccessBuffer
 from blueprint_success_update import update_success
-from blueprint_duration_metrics import training_quality
+from blueprint_duration_metrics import fresh_inputs, training_quality
 from ppo_harness_environment import load_environment, tracking_destination
 
 
 def prepare(config_path, library, output, readiness=False, env_file=None, evaluation_cohort=None):
     raw = read(config_path)
+    require(raw.get('training_input', {}).get('kind') == 'fresh-random',
+            'blueprint.duration: fresh-random episode input is required; fixed fixtures belong to diagnostics')
     require(raw['duration']['schema'] == 'blueprint-success-duration-v2',
             'blueprint.duration: v2 configuration required; keep historical v1 runs with their frozen runner')
     require(readiness or raw.get('tracking', {}).get('backend') == 'wandb'
@@ -40,9 +42,9 @@ def prepare(config_path, library, output, readiness=False, env_file=None, evalua
     if readiness:
         config['purpose'] = 'blueprint-success-duration-readiness'
         config['training']['updates'] = 6
-        config['duration'].update(seconds=120, min_free_bytes=0)
+        config['duration'].update(seconds=1200, min_free_bytes=0)
         config['tracking'] = dict(backend='disabled')
-        config['limits'].update(run_seconds=300, max_output_bytes=1024**3)
+        config['limits'].update(run_seconds=1200 + config['duration']['finish_grace_seconds'], max_output_bytes=4 * 1024**3)
     elif config['tracking']['backend'] == 'wandb':
         config['tracking'].update(destination)
     require(config['duration']['seconds'] > 0 and config['duration']['finish_grace_seconds'] > 0
@@ -189,6 +191,7 @@ def run_locked(output, stop_after_updates=None, health=None):
                 actions=len(payload['samples']), area_reward=sum(s['reward'] for s in payload['samples']),
                 elapsed_seconds=elapsed(), collection_seconds=payload['collection_seconds'],
                 quality=training_quality(payload), ppo=result,
+                training_inputs=fresh_inputs(payload),
                 buffer=dict(before_sha256=digest(before), after_sha256=digest(buffer.state),
                     entries=len(buffer.state['entries']), positive_commits=buffer.state['positive_commits'],
                     admissions=buffer.state['admissions'], duplicates=buffer.state['duplicates']))

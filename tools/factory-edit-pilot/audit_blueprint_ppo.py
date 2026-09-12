@@ -20,15 +20,22 @@ class WitnessAudit:
     def __init__(self, runtime, directory):
         self.runtime, self.directory = runtime, Path(directory)
         self.unique, self.references = set(), 0
-        write(self.directory / 'request.json', runtime.request)
+        self.inputs = {}
+
+    def register(self, runtime, blueprint):
+        self.inputs[digest(blueprint)] = runtime
 
     def check(self, blueprint, witness):
         self.references += 1
-        audit(self.runtime.original, blueprint, witness)
-        identity = digest(witness)
+        runtime = self.inputs.get(digest(blueprint), self.runtime)
+        require(runtime.original is not None and runtime.request is not None,
+                'blueprint.training-input.audit: no authenticated original for this blueprint')
+        audit(runtime.original, blueprint, witness)
+        identity = digest((runtime.request, blueprint, witness))
         if identity in self.unique:
             return
         write(self.directory / 'witness.json', witness)
+        write(self.directory / 'request.json', runtime.request)
         verifier = self.runtime.module.FactoryEditSession.open(str(ROOT), str(self.directory / 'request.json'),
             str(self.directory / 'witness.json'), json.dumps(self.runtime.spec['catalogs']),
             json.dumps(dict(proposals=1, elapsed_ms=60000)))
@@ -76,9 +83,11 @@ def audit_run(output):
                 require(chunk['protocol_sha256'] == state['protocol_sha256'], 'chunk protocol identity')
                 require(chunk['model_before'] == digest(model.state_dict()), 'behavior checkpoint identity')
                 require(len(chunk['samples']) == config['training']['streams'] * config['training']['chunk_actions'], 'registered chunk size')
+                checker.inputs.clear()
                 for before in chunk['native_before']:
                     restored = Stream.restore(runtime, before)
                     observation = json.loads(restored.session.observation_json())
+                    checker.register(restored.runtime, observation['blueprint'])
                     first = next(s for s in chunk['samples'] if s['stream'] == before['index'])
                     require(semantic(observation) == semantic(first['observation']), 'actual native snapshot restoration')
                     if before['policy_actions']:

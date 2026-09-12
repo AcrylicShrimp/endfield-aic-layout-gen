@@ -18,7 +18,7 @@ from blueprint_success import restore_buffer
 from blueprint_success_buffer import Evidence, SuccessBuffer
 from blueprint_success_update import update_success
 from blueprint_evaluation_cohort import case_runtime, load_cohort
-from blueprint_duration_metrics import training_quality
+from blueprint_duration_metrics import fresh_inputs, training_quality
 from blueprint_ppo_batch import distribution
 
 
@@ -65,11 +65,14 @@ def audit_run(output, full=False):
                 require(record['update'] == chunk['update'] == ordinal and chunk['seed'] == seed, 'ordered chunk identity')
                 require(chunk['protocol_sha256'] == state['protocol_sha256'], 'chunk protocol identity')
                 require(record['quality'] == training_quality(chunk), 'durable training metrics match native episode evidence')
+                require(record['training_inputs'] == fresh_inputs(chunk), 'durable generation metadata matches actual native inputs')
                 require(chunk['model_before'] == digest(model.state_dict()), 'behavior checkpoint identity')
                 require(len(chunk['samples']) == config['training']['streams'] * config['training']['chunk_actions'], 'registered chunk size')
+                checker.inputs.clear()
                 for before in chunk['native_before']:
                     restored = Stream.restore(runtime, before)
                     observation = json.loads(restored.session.observation_json())
+                    checker.register(restored.runtime, observation['blueprint'])
                     first = next(s for s in chunk['samples'] if s['stream'] == before['index'])
                     require(semantic(observation) == semantic(first['observation']), 'actual native snapshot restoration')
                     if before['policy_actions']:

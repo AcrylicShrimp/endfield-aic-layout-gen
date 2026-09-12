@@ -1,6 +1,7 @@
 {
   "schema": "blueprint-persistent-ppo-v1",
-  "purpose": "learning-screen",
+  "purpose": "learning-screen-diagnostic",
+  "training_input": {"schema": "blueprint-training-input-v1", "kind": "fixed-fixture-diagnostic"},
   "probe_spec": "tools/factory-edit-pilot/blueprint-edit-probe.json",
   "seeds": [17, 29],
   "device": "cpu",

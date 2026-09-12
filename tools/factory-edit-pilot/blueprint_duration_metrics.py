@@ -10,6 +10,16 @@ def training_quality(payload):
     selected = len(payload['samples'])
     failed = sum(s['outcome']['status'] == 'rejected' for s in payload['samples'])
     quality = dict(failed_actions=failed, failure_fraction=failed / selected if selected else 0.)
+    fresh = fresh_inputs(payload)
+    if fresh:
+        quality.update(generated_episodes=len(fresh), generation_attempts=sum(len(row['attempts']) for row in fresh),
+            generation_rejections=sum(len(row['attempts']) - 1 for row in fresh),
+            generated_products=len({row['draw']['product'] for row in fresh}),
+            input_access_seconds=sum(s['metadata']['input_access_seconds'] for s in payload['native_before']
+                                     if s['policy_actions'] == 0),
+            # Cost of the recorded setup. A paired arm may read that setup
+            # without repeating construction; actual access cost is separate.
+            recorded_setup_seconds=sum(row['setup_seconds'] for row in fresh))
     completed = payload['completed']
     if completed:
         require(all(e['result']['factory_validated'] for e in completed), 'unvalidated completed training episode')
@@ -19,6 +29,11 @@ def training_quality(payload):
             mean_area_reward=sum(e['counts']['area_reward'] for e in completed) / len(completed),
             mean_reward=sum(e['counts']['area_reward'] for e in completed) / len(completed))
     return quality
+
+
+def fresh_inputs(payload):
+    return [s['metadata']['training_input'] for s in payload.get('native_before', [])
+            if s['policy_actions'] == 0 and s['metadata'].get('training_input') is not None]
 
 
 def evaluation_metrics(rows, initial):

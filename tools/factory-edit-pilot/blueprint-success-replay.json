@@ -1,6 +1,6 @@
 {
   "schema": "blueprint-persistent-ppo-v1",
-  "purpose": "accumulating-self-imitation-screen",
+  "purpose": "accumulating-self-imitation-screen-diagnostic",
   "probe_spec": "tools/factory-edit-pilot/blueprint-edit-probe.json",
   "seeds": [
     17,
@@ -98,5 +98,9 @@
         "kind": "commit"
       }
     ]
+  },
+  "training_input": {
+    "schema": "blueprint-training-input-v1",
+    "kind": "fixed-fixture-diagnostic"
   }
 }

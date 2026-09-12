@@ -39,6 +39,8 @@
 - Do not hardcode facility, recipe, item, belt, pipe, or game-balance data in application code.
 - Runtime data must come from external files loaded on each execution.
 - Schema definitions and validators may live in code, but actual game data must remain external.
+- Normal learned-edit training must generate fresh production products, rates, and complete randomized initial layouts for each new episode. Preserve this input contract across learner or environment replacements. Fixed factories are explicit diagnostics only, never an implicit main-training input or fallback.
+- Bind every training episode to its actual generated request and initial layout. Preserve unfinished episodes across rollout chunks and process restoration without regenerating their inputs. Keep evaluation inputs separate; report generation coverage and failures alongside learning results.
 
 ## Generated Artifact Policy
 
