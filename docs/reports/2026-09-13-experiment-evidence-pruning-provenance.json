@@ -1,0 +1,695 @@
+{
+  "schema": "experiment-evidence-pruning-provenance-v1",
+  "date": "2026-09-13",
+  "host": "ashrimp-arch",
+  "prior_cache_cleanup_commit": "90938c3",
+  "previous_artifacts_allocated": 110553780224,
+  "final_artifacts_allocated": 18694922240,
+  "artifact_directory_reduction": 91858857984,
+  "measured_operation_reclaimed_allocated": 91915059200,
+  "raw_manifest_location": {
+    "local": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/server-cleanup-20260913",
+    "remote": "/home/ashrimp/Srv/endfield-aic-layout-gen/artifacts/server-cleanup-20260913"
+  },
+  "stages": [
+    {
+      "name": "evaluation-prune",
+      "result_sha256": "4e5fe8d11e398fc16dd732a25c68d0af76819a8685c50154ec5f94e472f71f1e",
+      "result": {
+        "schema": "completed-evaluation-trace-prune-v1",
+        "status": "complete",
+        "files_removed": 24768,
+        "retained_reports": 774,
+        "retained_factory_results": 24768,
+        "removed_bytes": 24426203486,
+        "removed_allocated": 24476848128,
+        "before": {
+          "total": 249845608448,
+          "used": 177041182720,
+          "free": 60038434816
+        },
+        "after": {
+          "total": 249845608448,
+          "used": 152581795840,
+          "free": 84497821696
+        },
+        "seconds": 2.065337896347046,
+        "plan_sha256": "89a4f8bccfbcc20e80f037648a856aa28b5a8b4c0452c2634f328344e3274803"
+      }
+    },
+    {
+      "name": "chunk-prune",
+      "result_sha256": "9b4e0e68cdee4f0c50718c7b3ad2692a5b897b6aa23cbbd46f78e054463beec4",
+      "result": {
+        "schema": "blueprint-selected-training-retention-v1",
+        "status": "complete",
+        "arms": [
+          {
+            "arm": "center-seed-17",
+            "retained_successes": 287,
+            "retained_chunks": 320,
+            "removed_chunks": 192,
+            "checkpoint": {
+              "path": "seed-17/checkpoints/0512.pt.gz",
+              "sha256": "d101e5e23bd6ad8732aa9e61b20b6b0c8cc5254a77bfa31392d779a30a228c1a"
+            }
+          },
+          {
+            "arm": "center-seed-29",
+            "retained_successes": 206,
+            "retained_chunks": 259,
+            "removed_chunks": 253,
+            "checkpoint": {
+              "path": "seed-29/checkpoints/0512.pt.gz",
+              "sha256": "b4e5fed8d5c8d2f1b561e28ceeb35c863b1f4f25f360b3f0dfaa02adfeb48e7d"
+            }
+          },
+          {
+            "arm": "center-seed-41",
+            "retained_successes": 311,
+            "retained_chunks": 317,
+            "removed_chunks": 195,
+            "checkpoint": {
+              "path": "seed-41/checkpoints/0512.pt.gz",
+              "sha256": "fcaf515f9b0043836cfc1050548f1378e27f9dffc3853b559482bfabc85df0d7"
+            }
+          },
+          {
+            "arm": "standardize-seed-17",
+            "retained_successes": 3,
+            "retained_chunks": 5,
+            "removed_chunks": 507,
+            "checkpoint": {
+              "path": "seed-17/checkpoints/0512.pt.gz",
+              "sha256": "5de5ea9ab4b62b007bc46a55c5d7f21d2c6b854c97150936c31f34aebb39cd5e"
+            }
+          },
+          {
+            "arm": "standardize-seed-29",
+            "retained_successes": 2,
+            "retained_chunks": 5,
+            "removed_chunks": 507,
+            "checkpoint": {
+              "path": "seed-29/checkpoints/0512.pt.gz",
+              "sha256": "d06032a083d61f5a59cbff13155347e5751d7c689ba515b4172e0ed1cf9ce415"
+            }
+          },
+          {
+            "arm": "standardize-seed-41",
+            "retained_successes": 0,
+            "retained_chunks": 1,
+            "removed_chunks": 511,
+            "checkpoint": {
+              "path": "seed-41/checkpoints/0512.pt.gz",
+              "sha256": "c9347490dfc5af4a8a9d4e842d98b8f22472eb2d38e7e56100b86abb2a66ba5a"
+            }
+          }
+        ],
+        "removed_files": 2165,
+        "removed_bytes": 11074046651,
+        "removed_allocated": 11078397952,
+        "retained_files": 907,
+        "retained_bytes": 3731555554,
+        "before": {
+          "total": 249845608448,
+          "used": 152582918144,
+          "free": 84496699392
+        },
+        "after": {
+          "total": 249845608448,
+          "used": 141505183744,
+          "free": 95574433792
+        },
+        "plan_sha256": "8a552799d93661571b4e6e1cca6e1c043b82826fb08781b884e6e7f28338e995"
+      }
+    },
+    {
+      "name": "legacy-tensor-prune",
+      "result_sha256": "42991611595e706397287bdf8c9c2a23bf47408f26ba08afef0bdcb35b6e4973",
+      "result": {
+        "schema": "legacy-experiment-tensor-prune-v1",
+        "status": "complete",
+        "removed_files": 11592,
+        "removed_bytes": 15716752618,
+        "removed_allocated": 15740489728,
+        "retained_files": 8071,
+        "retained_bytes": 13534508178,
+        "skipped_files": 519,
+        "by_project": {
+          "aic-ppo-data-supply-20260911-r2": 383213568,
+          "aic-ppo-combinations-analysis-20260911": 49647616,
+          "aic-ppo-cnn2-curriculum-64-12h-20260910": 1012146176,
+          "aic-ppo-padded-curriculum-12h-20260911": 952291328,
+          "aic-ppo-cnn2-routing-12h-20260910": 553013248,
+          "aic-ppo-spatial-20260910": 923156480,
+          "aic-ppo-shared-capacity-screen-20260911": 899301376,
+          "aic-ppo-learning-rate-screen-20260911": 449519616,
+          "aic-ppo-area-20260909": 3601883136,
+          "aic-direct-area-20260909": 810700800,
+          "aic-ppo-cnn2-12h-20260910": 468299776,
+          "aic-ppo-combinations-screen-20260911": 1817722880,
+          "aic-ppo-region-20260910": 230600704,
+          "aic-ppo-compact-20260910-r2": 1418280960,
+          "aic-ppo-batched-indexing-20260911": 127737856,
+          "aic-random-factory-20260909": 1042083840,
+          "aic-ppo-one-hour-20260910": 1000890368
+        },
+        "before": {
+          "total": 249845608448,
+          "used": 141522796544,
+          "free": 95556820992
+        },
+        "after": {
+          "total": 249845608448,
+          "used": 125791424512,
+          "free": 111288193024
+        },
+        "plan_sha256": "ed708bed2c9255019c0512b4501056c7c455f78b591f10118d84a7773cf14ab3"
+      }
+    },
+    {
+      "name": "completed-legacy-prune",
+      "result_sha256": "464e17b907e2cb4a7dff15e088228e4d48a204bc94f334d95c353ba3df090ca7",
+      "result": {
+        "schema": "completed-legacy-payload-prune-v1",
+        "status": "complete",
+        "removed_files": 7992,
+        "removed_bytes": 15003903177,
+        "removed_allocated": 15020740608,
+        "protected_files": 1973,
+        "by_reason": {
+          "completed experiment tensor; model/input/results retained": 11425570816,
+          "completed experiment intermediate checkpoint; initial and latest two retained": 3595169792
+        },
+        "before": {
+          "total": 249845608448,
+          "used": 125796728832,
+          "free": 111282888704
+        },
+        "after": {
+          "total": 249845608448,
+          "used": 110780428288,
+          "free": 126299189248
+        },
+        "plan_sha256": "f8cf499bed85c7780b26914a77a3febe3c2f5e47c785ac6cf626e7795a56f47f"
+      }
+    },
+    {
+      "name": "completed-jsonl-compression",
+      "result_sha256": "c215182dbe09a327cd864f43a3c0ca0d38a9c6333ffbf60f36fc6f9a75bd632a",
+      "result": {
+        "schema": "completed-jsonl-lossless-retention-v1",
+        "status": "complete",
+        "files": 55,
+        "source_bytes": 1955935352,
+        "compressed_bytes": 74714760,
+        "reclaimed_allocated": 1881366528,
+        "before": {
+          "total": 249845608448,
+          "used": 110780444672,
+          "free": 126299172864
+        },
+        "after": {
+          "total": 249845608448,
+          "used": 108899311616,
+          "free": 128180305920
+        }
+      }
+    },
+    {
+      "name": "legacy-archives",
+      "result_sha256": "4aaf3596f60686967805dd3d32c6c72731862401df1b6bcf5a3142827d43d0ce",
+      "result": {
+        "schema": "legacy-artifact-archive-retention-v1",
+        "status": "complete",
+        "projects": [
+          {
+            "project": "aic-ppo-learning-rate-analysis-20260911",
+            "status": "small-tree-retained",
+            "allocated": 22749184
+          },
+          {
+            "project": "aic-ppo-combinations-analysis-20260911",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-ppo-combinations-analysis-20260911/artifacts",
+            "source_allocated": 155676672,
+            "archive": "/home/ashrimp/Srv/aic-ppo-combinations-analysis-20260911/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 100071106,
+            "archive_sha256": "06cfdfdf313363d3d7d8766921cdd15bbb2459b9b16e694ff75243ae1b447c76",
+            "preserved_summary_files": 1,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-ppo-combinations-analysis-20260911/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-ppo-combinations-analysis-20260911",
+            "retained_allocated": 100466688,
+            "reclaimed_allocated": 55209984
+          },
+          {
+            "project": "aic-ppo-data-supply-20260910",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-ppo-data-supply-20260910/artifacts",
+            "source_allocated": 204103680,
+            "archive": "/home/ashrimp/Srv/aic-ppo-data-supply-20260910/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 127813072,
+            "archive_sha256": "95f25922667ad621c34250a70c7f9c4172873a67df74c592874e1f4b7c680838",
+            "preserved_summary_files": 11,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-ppo-data-supply-20260910/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-ppo-data-supply-20260910",
+            "retained_allocated": 127983616,
+            "reclaimed_allocated": 76120064
+          },
+          {
+            "project": "aic-ppo-learning-rate-readiness-20260911",
+            "status": "small-tree-retained",
+            "allocated": 49577984
+          },
+          {
+            "project": "aic-routing-diagnosis-20260910",
+            "status": "small-tree-retained",
+            "allocated": 10878976
+          },
+          {
+            "project": "aic-ppo-data-supply-20260911-r2",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2/artifacts",
+            "source_allocated": 194289664,
+            "archive": "/home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 43673412,
+            "archive_sha256": "bc512db6289e95736cf9bd9e36260899471d4137bddb5460be9f646b812cc9cd",
+            "preserved_summary_files": 10,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-ppo-data-supply-20260911-r2",
+            "retained_allocated": 43851776,
+            "reclaimed_allocated": 150437888
+          },
+          {
+            "project": "aic-ppo-cnn2-curriculum-64-12h-20260910",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910/artifacts",
+            "source_allocated": 785735680,
+            "archive": "/home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 273261335,
+            "archive_sha256": "1a36816248ebc98c86d23fab9b2dc7915a32a18f7ebbed6cc0d2020676b73277",
+            "preserved_summary_files": 4,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-ppo-cnn2-curriculum-64-12h-20260910",
+            "retained_allocated": 273326080,
+            "reclaimed_allocated": 512409600
+          },
+          {
+            "project": "aic-ppo-padded-curriculum-12h-20260911",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-ppo-padded-curriculum-12h-20260911/artifacts",
+            "source_allocated": 1903353856,
+            "archive": "/home/ashrimp/Srv/aic-ppo-padded-curriculum-12h-20260911/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 549916952,
+            "archive_sha256": "9720580713af52beee93d81b8694f684b7f2ce2f2d78567ff9dfe412094d7af6",
+            "preserved_summary_files": 2,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-ppo-padded-curriculum-12h-20260911/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-ppo-padded-curriculum-12h-20260911",
+            "retained_allocated": 550305792,
+            "reclaimed_allocated": 1353048064
+          },
+          {
+            "project": "aic-ppo-compact-20260910",
+            "status": "small-tree-retained",
+            "allocated": 22761472
+          },
+          {
+            "project": "aic-ppo-spatial-20260910",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts",
+            "source_allocated": 597164032,
+            "archive": "/home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 211142333,
+            "archive_sha256": "27b5ec41ce34b1090a56ed8c662c0f24bfcd48b1dd62165c1e51090bf528f3f2",
+            "preserved_summary_files": 16,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-ppo-spatial-20260910/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-ppo-spatial-20260910",
+            "retained_allocated": 211341312,
+            "reclaimed_allocated": 385822720
+          },
+          {
+            "project": "aic-ppo-shared-capacity-analysis-20260911",
+            "status": "small-tree-retained",
+            "allocated": 45895680
+          },
+          {
+            "project": "aic-ppo-progress-analysis-20260911",
+            "status": "small-tree-retained",
+            "allocated": 1159168
+          },
+          {
+            "project": "aic-ppo-cnn2-routing-12h-20260910",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts",
+            "source_allocated": 2414940160,
+            "archive": "/home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 840836074,
+            "archive_sha256": "fbd77fcca0dbbf59acc60893a9347d910ff56a687ac9f70a157f3a4625e3f803",
+            "preserved_summary_files": 3,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-ppo-cnn2-routing-12h-20260910",
+            "retained_allocated": 841125888,
+            "reclaimed_allocated": 1573814272
+          },
+          {
+            "project": "aic-ppo-learning-rate-screen-20260911",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-ppo-learning-rate-screen-20260911/artifacts",
+            "source_allocated": 1083326464,
+            "archive": "/home/ashrimp/Srv/aic-ppo-learning-rate-screen-20260911/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 185562569,
+            "archive_sha256": "c310d2a5d99d089284bebda915971f32b2857822f2000b83b846568554a69bd2",
+            "preserved_summary_files": 2,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-ppo-learning-rate-screen-20260911/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-ppo-learning-rate-screen-20260911",
+            "retained_allocated": 185643008,
+            "reclaimed_allocated": 897683456
+          },
+          {
+            "project": "aic-ppo-combinations-20260911",
+            "status": "small-tree-retained",
+            "allocated": 102760448
+          },
+          {
+            "project": "aic-ppo-shared-capacity-screen-20260911",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-ppo-shared-capacity-screen-20260911/artifacts",
+            "source_allocated": 2136166400,
+            "archive": "/home/ashrimp/Srv/aic-ppo-shared-capacity-screen-20260911/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 367156605,
+            "archive_sha256": "2c431514986903248f92e90db0973e7f0e87a162ad9383071ab7d33e61c20d12",
+            "preserved_summary_files": 4,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-ppo-shared-capacity-screen-20260911/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-ppo-shared-capacity-screen-20260911",
+            "retained_allocated": 367292416,
+            "reclaimed_allocated": 1768873984
+          },
+          {
+            "project": "aic-ppo-shared-capacity-readiness-20260911",
+            "status": "small-tree-retained",
+            "allocated": 54358016
+          },
+          {
+            "project": "aic-direct-area-20260909",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-direct-area-20260909/artifacts",
+            "source_allocated": 1969795072,
+            "archive": "/home/ashrimp/Srv/aic-direct-area-20260909/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 91873151,
+            "archive_sha256": "edb1f21c844aae5dde9e96f41db5e51481a1b893ed599c531f3a69ef3a9b5b5c",
+            "preserved_summary_files": 9,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-direct-area-20260909/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-direct-area-20260909",
+            "retained_allocated": 92209152,
+            "reclaimed_allocated": 1877585920
+          },
+          {
+            "project": "aic-ppo-area-20260909",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-ppo-area-20260909/artifacts",
+            "source_allocated": 4789469184,
+            "archive": "/home/ashrimp/Srv/aic-ppo-area-20260909/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 713113271,
+            "archive_sha256": "8ae2c676d66e5adb85053f95323881faf5657030b45902f4e9f1642a32fa8158",
+            "preserved_summary_files": 47,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-ppo-area-20260909/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-ppo-area-20260909",
+            "retained_allocated": 714854400,
+            "reclaimed_allocated": 4074614784
+          },
+          {
+            "project": "aic-ppo-cnn2-12h-20260910",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts",
+            "source_allocated": 2071244800,
+            "archive": "/home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 697722928,
+            "archive_sha256": "046b04fd81de411cd1a2eb96d97805262a54054be9e991cb3662bad5b9aec772",
+            "preserved_summary_files": 7,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-ppo-cnn2-12h-20260910",
+            "retained_allocated": 698097664,
+            "reclaimed_allocated": 1373147136
+          },
+          {
+            "project": "aic-ppo-region-20260910",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts",
+            "source_allocated": 206274560,
+            "archive": "/home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 88385883,
+            "archive_sha256": "71a9855cffd112664a3d6f43994015ab15afa11aee58d033726cbbabd0240d91",
+            "preserved_summary_files": 5,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-ppo-region-20260910/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-ppo-region-20260910",
+            "retained_allocated": 88457216,
+            "reclaimed_allocated": 117817344
+          },
+          {
+            "project": "aic-ppo-compact-20260910-r2",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-ppo-compact-20260910-r2/artifacts",
+            "source_allocated": 1422245888,
+            "archive": "/home/ashrimp/Srv/aic-ppo-compact-20260910-r2/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 362029020,
+            "archive_sha256": "6d4b7b8fbcc3f287c0d3b4dc261b99130c9247fbd78c1ef154bb3765acc674b2",
+            "preserved_summary_files": 4,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-ppo-compact-20260910-r2/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-ppo-compact-20260910-r2",
+            "retained_allocated": 362209280,
+            "reclaimed_allocated": 1060036608
+          },
+          {
+            "project": "aic-factory-native-20260910",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-factory-native-20260910/artifacts",
+            "source_allocated": 1180229632,
+            "archive": "/home/ashrimp/Srv/aic-factory-native-20260910/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 764925861,
+            "archive_sha256": "6e0d9989d6a762c03ae676088e74df7ece2872d6e8b522a6349d90edc26b609c",
+            "preserved_summary_files": 16,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-factory-native-20260910/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-factory-native-20260910",
+            "retained_allocated": 768479232,
+            "reclaimed_allocated": 411750400
+          },
+          {
+            "project": "aic-ppo-batched-indexing-20260911",
+            "status": "small-tree-retained",
+            "allocated": 58118144
+          },
+          {
+            "project": "aic-blueprint-capacity-20260911",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-blueprint-capacity-20260911/artifacts",
+            "source_allocated": 1205026816,
+            "archive": "/home/ashrimp/Srv/aic-blueprint-capacity-20260911/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 926235017,
+            "archive_sha256": "8bb74dc6397e3fdb7bb635f2ac9d414f460171bd9f1350943f6c416a6e36f66b",
+            "preserved_summary_files": 50,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-blueprint-capacity-20260911/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-blueprint-capacity-20260911",
+            "retained_allocated": 929144832,
+            "reclaimed_allocated": 275881984
+          },
+          {
+            "project": "aic-ppo-combinations-screen-20260911",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-ppo-combinations-screen-20260911/artifacts",
+            "source_allocated": 4203339776,
+            "archive": "/home/ashrimp/Srv/aic-ppo-combinations-screen-20260911/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 667249175,
+            "archive_sha256": "0e3b14edb93b7d580b1e8c9285ac5233fb82f376cf940397938573c79f0006be",
+            "preserved_summary_files": 8,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-ppo-combinations-screen-20260911/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-ppo-combinations-screen-20260911",
+            "retained_allocated": 667504640,
+            "reclaimed_allocated": 3535835136
+          },
+          {
+            "project": "aic-random-factory-20260909",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-random-factory-20260909/artifacts",
+            "source_allocated": 3532009472,
+            "archive": "/home/ashrimp/Srv/aic-random-factory-20260909/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 161466659,
+            "archive_sha256": "51843119b82f56d53e5a33701c3453bebe58784c64516dc655f9e49e609fcdd7",
+            "preserved_summary_files": 11,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-random-factory-20260909/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-random-factory-20260909",
+            "retained_allocated": 161767424,
+            "reclaimed_allocated": 3370242048
+          },
+          {
+            "project": "aic-ppo-one-hour-20260910",
+            "status": "complete",
+            "source": "/home/ashrimp/Srv/aic-ppo-one-hour-20260910/artifacts",
+            "source_allocated": 1163890688,
+            "archive": "/home/ashrimp/Srv/aic-ppo-one-hour-20260910/artifacts/retained-artifacts.tar.zst",
+            "archive_bytes": 316870503,
+            "archive_sha256": "ffb66018ff2be72c22d62e637873a7fc84e9b675289f5bc783e3494b75bdda87",
+            "preserved_summary_files": 2,
+            "verification": "zstd checksum and GNU tar byte/metadata comparison before removing the unpacked tree",
+            "restore_command": "zstd -dc /home/ashrimp/Srv/aic-ppo-one-hour-20260910/artifacts/retained-artifacts.tar.zst | tar -xf - -C /home/ashrimp/Srv/aic-ppo-one-hour-20260910",
+            "retained_allocated": 317005824,
+            "reclaimed_allocated": 846884864
+          }
+        ],
+        "reclaimed_allocated": 23717216256,
+        "before": {
+          "total": 249845608448,
+          "used": 108899364864,
+          "free": 128180252672
+        },
+        "after": {
+          "total": 249845608448,
+          "used": 85182279680,
+          "free": 151897337856
+        }
+      }
+    }
+  ],
+  "verification": {
+    "sha256": "301ff412316e44081c125b640be57122b83ac2e48358c1f199a83d034fcb0cbe",
+    "schema": "post-prune-required-evidence-verification-v1",
+    "status": "pass",
+    "verified_unique_files": 12064,
+    "counts": {
+      "retained_training_chunks": 907,
+      "final_learner_checkpoints": 6,
+      "historical_evaluation_reports": 774,
+      "training_inputs": 2048,
+      "training_input_files": 8192,
+      "generation_records": 2087,
+      "historical_panel_sources": 98
+    },
+    "artifacts_allocated": 18694922240,
+    "usage": [
+      {
+        "project": "aic-blueprint-advantage-20260912",
+        "allocated": 6233636864
+      },
+      {
+        "project": "endfield-aic-layout-gen",
+        "allocated": 4591898624
+      },
+      {
+        "project": "aic-blueprint-capacity-20260911",
+        "allocated": 929148928
+      },
+      {
+        "project": "aic-ppo-cnn2-routing-12h-20260910",
+        "allocated": 841129984
+      },
+      {
+        "project": "aic-factory-native-20260910",
+        "allocated": 768483328
+      },
+      {
+        "project": "aic-ppo-area-20260909",
+        "allocated": 714854400
+      },
+      {
+        "project": "aic-ppo-cnn2-12h-20260910",
+        "allocated": 698101760
+      },
+      {
+        "project": "aic-ppo-combinations-screen-20260911",
+        "allocated": 667504640
+      },
+      {
+        "project": "aic-ppo-padded-curriculum-12h-20260911",
+        "allocated": 550305792
+      },
+      {
+        "project": "aic-ppo-shared-capacity-screen-20260911",
+        "allocated": 367296512
+      },
+      {
+        "project": "aic-ppo-compact-20260910-r2",
+        "allocated": 362213376
+      },
+      {
+        "project": "aic-ppo-one-hour-20260910",
+        "allocated": 317009920
+      },
+      {
+        "project": "aic-ppo-cnn2-curriculum-64-12h-20260910",
+        "allocated": 273330176
+      },
+      {
+        "project": "aic-ppo-spatial-20260910",
+        "allocated": 211345408
+      },
+      {
+        "project": "aic-ppo-learning-rate-screen-20260911",
+        "allocated": 185647104
+      },
+      {
+        "project": "aic-random-factory-20260909",
+        "allocated": 161767424
+      },
+      {
+        "project": "aic-ppo-data-supply-20260910",
+        "allocated": 127987712
+      },
+      {
+        "project": "aic-ppo-combinations-20260911",
+        "allocated": 102760448
+      },
+      {
+        "project": "aic-ppo-combinations-analysis-20260911",
+        "allocated": 100470784
+      },
+      {
+        "project": "aic-direct-area-20260909",
+        "allocated": 92213248
+      },
+      {
+        "project": "aic-ppo-region-20260910",
+        "allocated": 88461312
+      },
+      {
+        "project": "aic-ppo-batched-indexing-20260911",
+        "allocated": 58118144
+      },
+      {
+        "project": "aic-ppo-shared-capacity-readiness-20260911",
+        "allocated": 54358016
+      },
+      {
+        "project": "aic-ppo-learning-rate-readiness-20260911",
+        "allocated": 49577984
+      },
+      {
+        "project": "aic-ppo-shared-capacity-analysis-20260911",
+        "allocated": 45895680
+      },
+      {
+        "project": "aic-ppo-data-supply-20260911-r2",
+        "allocated": 43855872
+      },
+      {
+        "project": "aic-ppo-compact-20260910",
+        "allocated": 22761472
+      },
+      {
+        "project": "aic-ppo-learning-rate-analysis-20260911",
+        "allocated": 22749184
+      },
+      {
+        "project": "aic-routing-diagnosis-20260910",
+        "allocated": 10878976
+      },
+      {
+        "project": "aic-ppo-progress-analysis-20260911",
+        "allocated": 1159168
+      }
+    ],
+    "filesystem": {
+      "total": 249845608448,
+      "used": 85182312448,
+      "free": 151897305088
+    }
+  }
+}

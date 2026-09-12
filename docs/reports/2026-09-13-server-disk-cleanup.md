@@ -1,5 +1,10 @@
 # Server disk cleanup
 
+This report describes the initial cache-only cleanup. The subsequent
+[selective evidence cleanup](2026-09-13-experiment-evidence-pruning.md) reduced
+the retained experiment footprint; the preservation statements below apply
+only to this earlier pass.
+
 ## Result
 
 On `ashrimp-arch`, available space increased from approximately 14 GiB at the
