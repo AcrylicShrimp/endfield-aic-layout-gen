@@ -1,0 +1,54 @@
+{
+  "schema": "blueprint-success-learning-provenance-v1",
+  "date": "2026-09-13",
+  "source_base_commit": "5590913",
+  "remote_host": "ashrimp-arch",
+  "frozen_root": "/home/ashrimp/Srv/aic-blueprint-advantage-20260912",
+  "matrix": "artifacts/factory-edit-pilot/advantage-main",
+  "matrix_sha256": "90216cf073b19ecb567ffe39f8e3372ccc285e9dee4920321a2bcf37cdc3c1d9",
+  "script": {
+    "path": "tools/factory-edit-pilot/diagnose_blueprint_success_learning.py",
+    "sha256": "b5f275530f276977415cba712902ed7ca50c19464cd227147b5ae43480d9edb5"
+  },
+  "selection": {
+    "remote_path": "artifacts/factory-edit-pilot/bottlenecks-20260913/rare-large-successes.json",
+    "local_path": "artifacts/factory-edit-pilot/blueprint-bottlenecks-20260913/rare-large-successes.json",
+    "sha256": "6bab27932ee7dab829992120a6c0e99832f24ed1dcb5a0741b63444687a13efb"
+  },
+  "result": {
+    "remote_path": "artifacts/factory-edit-pilot/success-learning-20260913/final.json",
+    "local_path": "artifacts/factory-edit-pilot/blueprint-success-learning-20260913/final.json",
+    "sha256": "c84f5c6b603c9204390fe07e1380ae2ba7a108a64ad8b34c1c0536096f1b554c"
+  },
+  "scope": {
+    "training_cases": 5,
+    "label_states": 15,
+    "checkpoints": 33,
+    "predictions": 495,
+    "backward_only_updates": [
+      {
+        "arm": "standardize-seed-17",
+        "update": 512
+      },
+      {
+        "arm": "standardize-seed-29",
+        "update": 512
+      }
+    ],
+    "optimizer_steps": 0,
+    "native_actions": 0
+  },
+  "verification": {
+    "cargo_check_sha256": "ee1d3fffa2022e962e63e0dbe4d35c9c198450a20c29fc09030f635dbb38bfcd",
+    "cargo_test_sha256": "e58e947e048c44df2d3a4b35247cff07808ddc0038025f575e38ecc54e0e4553",
+    "tests_passed": 564,
+    "tests_ignored": 5
+  },
+  "runtime_sources": {
+    "/home/ashrimp/Srv/aic-blueprint-advantage-20260912/tools/factory-edit-pilot/blueprint_edit_input.py": "b126989f52e65fb4a7bfac6fe9e834187e2fabb080dd01f38c9b0c8392de7322",
+    "/home/ashrimp/Srv/aic-blueprint-advantage-20260912/tools/factory-edit-pilot/blueprint_ppo_batch.py": "a6f6c169314dd1e960e4ef1983313d91f29ecee1e11aa1020733dbf82c52f4ed",
+    "/home/ashrimp/Srv/aic-blueprint-advantage-20260912/tools/factory-edit-pilot/blueprint_ppo_update.py": "21180b1e779d682ac61db7d7ea5a73b41da697a392b8c876e4cfebf9c2ee9fe2",
+    "/home/ashrimp/Srv/aic-blueprint-advantage-20260912/tools/factory-edit-pilot/blueprint_success_update.py": "b6887849852ee1cbb0a63505a6711272a5ac6c4d0e5d59f00625027ac1b59e72",
+    "/home/ashrimp/Srv/aic-blueprint-advantage-20260912/tools/factory-edit-pilot/blueprint_success_buffer.py": "6e6b9262e4148f0649a9b257e58bccc0c3cb2b265bf39dcb2a9d970dacbfda2d"
+  }
+}
