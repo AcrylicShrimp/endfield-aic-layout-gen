@@ -1,0 +1,28 @@
+{
+  "schema": "blueprint-capacity-relocation-provenance-v1",
+  "verified_copy": {
+    "status": "verified",
+    "source": "/home/ashrimp/Srv/aic-blueprint-capacity-20260911/artifacts/factory-edit-pilot/capacity-main",
+    "destination": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/blueprint-capacity-20260911/retained-linux/capacity-main",
+    "files": 43517,
+    "total_bytes": 43618950166,
+    "source_manifest_sha256": "4e5522f8f2e229fcfd75208365be4eff76b4170c73d3393f09c3f3338d22f369",
+    "verified_at": "2026-09-12T13:18:27.333989+00:00"
+  },
+  "raw_relocation": {
+    "schema": "blueprint-capacity-raw-relocation-v1",
+    "status": "migrated",
+    "source": "/home/ashrimp/Srv/aic-blueprint-capacity-20260911/artifacts/factory-edit-pilot/capacity-main",
+    "destination": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/blueprint-capacity-20260911/retained-linux/capacity-main",
+    "source_manifest_sha256": "4e5522f8f2e229fcfd75208365be4eff76b4170c73d3393f09c3f3338d22f369",
+    "raw_files": 38208,
+    "raw_bytes": 43399221073,
+    "started_at": "2026-09-12T13:22:41.875681+00:00",
+    "finished_at": "2026-09-12T13:22:43.044420+00:00"
+  },
+  "artifacts": {
+    "artifacts/factory-edit-pilot/blueprint-capacity-20260911/retained-linux/source-manifest.json": "4e5522f8f2e229fcfd75208365be4eff76b4170c73d3393f09c3f3338d22f369",
+    "artifacts/factory-edit-pilot/blueprint-capacity-20260911/retained-linux/verified.json": "883d7b6ba80b9ac3c9b33fa7fcfb99ec0a49c4f236c6fdc5eacc2abe22e9192b",
+    "artifacts/factory-edit-pilot/blueprint-capacity-20260911/retained-linux/remote-migration.json": "b23cf387a8210398454776e4608222d13151555b40312d74ec5a322b4cd7d5b2"
+  }
+}

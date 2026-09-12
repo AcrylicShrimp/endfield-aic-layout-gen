@@ -68,7 +68,7 @@ width 80/four rounds. Whole-run and evaluation timings also depend on chosen
 actions, route work, success replay and serialization, so they do not measure
 architecture speed in isolation. All 33,024 evaluation cases reached 64 actions;
 none hit the elapsed guard. The eight arms completed 16,384 training episodes.
-Main outputs occupy 40.62 GiB, leaving 13.23 GiB free on the server, above the
+At completion, main outputs occupied 40.62 GiB, leaving 13.23 GiB free on the server, above the
 registered eight-GiB reserve. The temporary tracking environment file was removed
 after all jobs and observers finished.
 
@@ -203,3 +203,19 @@ these artifacts, matrix and child identities, the selected native library,
 readiness audit, verification logs and the stopped prior run. The dedicated
 [W&B view](https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen?nw=4dqqc53g6rr)
 contains only this registered matrix.
+
+## Retention location update, 2026-09-12
+
+To make room for the authorized fresh-input experiment, the complete main output
+was copied to local ignored
+`artifacts/factory-edit-pilot/blueprint-capacity-20260911/retained-linux/capacity-main/`.
+All 43,517 files/symlinks matched the source manifest. After a second source hash
+check with the training service inactive, only the 38,208 copied `.pt.gz` files
+(40.4187 GiB) were removed from the server. JSON metadata, frozen source and native
+runtime copies remain there. The actual non-replayable tensors/checkpoints remain
+in the verified local copy; they were not discarded as regenerable output.
+
+The [relocation provenance](2026-09-12-blueprint-capacity-artifact-relocation.json)
+binds both verification records and the full local file manifest. Linux replay
+requires the recorded frozen source/runtime and restoration of selected retained
+raw files to their original referenced paths. A local retained copy is not a backup.
