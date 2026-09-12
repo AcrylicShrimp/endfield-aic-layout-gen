@@ -1,0 +1,76 @@
+{
+  "schema": "blueprint-large-factory-bottleneck-provenance-v1",
+  "frozen_source_commit": "f313821",
+  "preceding_results_commit": "861360e",
+  "matrix": {
+    "path": "matrix.json",
+    "sha256": "90216cf073b19ecb567ffe39f8e3372ccc285e9dee4920321a2bcf37cdc3c1d9"
+  },
+  "analysis_source": {
+    "path": "tools/factory-edit-pilot/analyze_blueprint_bottlenecks.py",
+    "sha256": "79599c57fa2ccc769bb91135674ef420bb5f929871046a26925a24efc0cfe5ef"
+  },
+  "server_root": "/home/ashrimp/Srv/aic-blueprint-advantage-20260912/artifacts/factory-edit-pilot/bottlenecks-20260913",
+  "local_root": "artifacts/factory-edit-pilot/blueprint-bottlenecks-20260913",
+  "retained_evidence": [
+    {
+      "path": "analysis.json",
+      "sha256": "71bbc9d4b12920e9b817447e32b68ed1dbe8c99bbc2182758e994979c767fe6f"
+    },
+    {
+      "path": "summary.json",
+      "sha256": "c8bc0849a476b50cb7f141c15e8aa7a2dec77a48c9b13149f2081c7d88a90733"
+    },
+    {
+      "path": "rare-large-successes.json",
+      "sha256": "6bab27932ee7dab829992120a6c0e99832f24ed1dcb5a0741b63444687a13efb"
+    },
+    {
+      "path": "cargo-check.log",
+      "sha256": "4f27ac380b22e1d975eee20ce727fa8cbc09061177f6253af0777fd4de7b7506"
+    },
+    {
+      "path": "cargo-test.log",
+      "sha256": "bf2186accc1a186ee036a42184a784352a95b90e760670e7d5933e0bacf66f31"
+    }
+  ],
+  "scope": {
+    "unique_final_evaluation_traces": 192,
+    "unique_final_checkpoints": 6,
+    "rare_large_training_successes": 5,
+    "new_policy_actions": 0,
+    "optimizer_replays": 0,
+    "native_session_executions": 0
+  },
+  "semantic_sources": [
+    {
+      "path": "crates/aic-pilot-native/src/full_factory/blueprint/topology.rs",
+      "sha256": "e468e5e78c795fe8fcd9f61a01adabd9f739ae7a951e619ecf211398084441bd"
+    },
+    {
+      "path": "crates/aic-pilot-native/src/full_factory/blueprint/session.rs",
+      "sha256": "498240f6e1bf4de48504d09da6d17b0c4e394f0237f9a4672c0a7302e5fbaa69"
+    },
+    {
+      "path": "tools/factory-edit-pilot/blueprint_edit_input.py",
+      "sha256": "b126989f52e65fb4a7bfac6fe9e834187e2fabb080dd01f38c9b0c8392de7322"
+    },
+    {
+      "path": "tools/factory-edit-pilot/blueprint_success_buffer.py",
+      "sha256": "6e6b9262e4148f0649a9b257e58bccc0c3cb2b265bf39dcb2a9d970dacbfda2d"
+    },
+    {
+      "path": "tools/factory-edit-pilot/blueprint_success_update.py",
+      "sha256": "b6887849852ee1cbb0a63505a6711272a5ac6c4d0e5d59f00625027ac1b59e72"
+    }
+  ],
+  "observations": {
+    "center_large_final_cases": 51,
+    "center_large_final_valid_commit_cases": 0,
+    "center_large_last_window_cases": 1632,
+    "center_large_last_window_positive_cases": 0,
+    "center_positive_commits": 804,
+    "center_medical_food_positive_commits": 0,
+    "fixed_anchor_saturated_case": 232700027
+  }
+}

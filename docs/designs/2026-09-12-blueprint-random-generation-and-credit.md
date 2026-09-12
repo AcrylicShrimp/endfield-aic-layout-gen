@@ -135,3 +135,19 @@ runs. The missing previous persistent-worker capability is also an established
 migration obligation. This experiment did not modify the frozen execution path
 or complete those separate migration items; they remain open and must be closed
 before claiming that the broader training cutover preserves established work.
+
+## Follow-up decision after inspecting learning by factory size
+
+Use centered-only advantage as the working baseline for the next research
+slice, retaining the existing geometry-overlap limitation. A
+[retained-evidence diagnosis](../reports/2026-09-13-blueprint-large-factory-bottlenecks.md)
+found that the upward trend is concentrated in two/three-facility factories.
+The 17 large evaluation factories have zero area improvement in the last block
+under both modes. Centered final large drafts all remain unfinished, and their
+804 positive replay entries all come from the two small product families.
+
+Investigate large-factory success discovery and the move/repair/commit sequence
+before making a long training run the next main investment. Five existing
+large training successes provide concrete diagnostic examples under the current
+contract. A targeted fit/reproduction experiment is recommended next; it has
+not been run, and no new long training run was started by the diagnosis.
