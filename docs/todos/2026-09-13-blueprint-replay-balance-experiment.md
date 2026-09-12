@@ -17,6 +17,9 @@ It preserves centered GAE and current blueprint semantics.
 - [x] Record continuity requirements and the missing execution optimizations.
 - [x] Predeclare gates, failure interpretation, resource limits and evidence.
 - [ ] Restore applicable optimized worker/supply/learner execution and measure it.
+- [ ] Pass the enforced throughput gate: eight real workers on distinct cores,
+  parallel evaluation, measured learner device, at least 1.5x complete-cycle
+  throughput, and an input-bound matrix forecast; reject serial launch fallback.
 - [ ] Implement versioned fork/import/stratified replay with cheap diagnostics.
 - [ ] Pass bounded readiness including nonempty Adam/buffer continuation.
 - [ ] Freeze actual training/evaluation inputs, sampling seeds and launch manifest.
@@ -37,3 +40,8 @@ It preserves centered GAE and current blueprint semantics.
 - Preserved the original cohort as a continuity panel and specified a separate
   identity-filtered geometry-transfer panel. No unseen-request claim is planned.
 - No runtime code, training default, source checkpoint or running process changed.
+- User follow-up explicitly requires avoiding another effectively single-core
+  run. Strengthened launch gates to inspect actual process affinity and quota,
+  target CUDA batched learning, include evaluation/storage in timing, and reject
+  unmeasured or serial fallback. Per-worker single-threading remains compatible
+  with eight genuinely concurrent workers. These requirements are not yet verified.

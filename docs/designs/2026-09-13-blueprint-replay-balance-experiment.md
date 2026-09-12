@@ -151,6 +151,7 @@ Maximum matrix wall budget is 18 hours including bounded setup and post-run
 diagnostics, excluding implementation. Readiness must forecast a median-cost
 screen under eight hours with this schedule; otherwise revise execution design
 before launching, without silently enlarging the scientific or resource budgets.
+This absolute ceiling does not substitute for the relative throughput gate below.
 
 Use the following fixed arm order to distribute temporal/host drift across the
 three seed blocks: seed 17 C/U05/B05/U50/B50; seed 29 B50/U50/B05/U05/C;
@@ -267,7 +268,8 @@ the experiment and restore the wrong contract.
 | Persistent collectors | Eight native workers for eight persistent streams; checkpoint worker-owned unfinished sessions, stable stream order, explicit worker failure/recovery |
 | Shared-memory delivery | Bounded reusable transport for prepared variable-size graph arrays, with lengths/offsets and ownership; no repeated full Python trajectory serialization at each step |
 | Overlapped CPU preparation | Prepare the next needed immutable graph/input batch while the learner works; never collect new PPO actions with stale weights or reset an open stream |
-| Batched device work | Preserve disjoint packed graph semantics and stage-balanced SIL; adapt the existing optimized learner supply/device path without introducing a raster/CNN model |
+| Batched device work | Target CUDA batched learning, preserving disjoint packed graph semantics and stage-balanced SIL; adapt the existing optimized learner supply/device path without introducing a raster/CNN model |
+| Parallel evaluation | Use the persistent pool for independent evaluation factories with fixed per-case RNGs and stable output ordering; do not leave the 32-case panel in a serial loop |
 | Cached immutable replay/input data | Authenticate once at admission, cache prepared tensors and invalidate on explicit source/schema changes |
 | Measured normal operation | Account for generation/admission, collect/prepare/transfer, PPO/SIL update, evaluation, serialization and checkpoint time; no hidden completion audit |
 
@@ -279,10 +281,51 @@ this allocation on the blueprint workload instead of copying old timing claims.
 Readiness is one explicit bounded job: a fixed small/large generated workload,
 one warmup and three measured complete cycles, comparing serial reference with
 the restored pool/supply path. Also compare packed graph update execution on
-CPU and CUDA with the same model, samples and minibatch sizes; choose the faster
-complete update path that passes semantic/numerical and memory checks. Device
-choice follows measured execution cost, not quality outcomes, and is common to
-all arms. Reusing the old environment path is not proof of optimized execution.
+CPU and CUDA with the same model, samples and minibatch sizes. CUDA is the target
+learner path. A CPU learner is admissible only if the same-workload measurements
+show that it makes the complete parallel schedule faster, while passing the same
+semantic/numerical and memory checks. Record that measured decision explicitly;
+CUDA initialization failure must never silently fall back to CPU. Device choice
+is common to all arms. Reusing the old environment path is not proof of optimized
+execution.
+
+### Enforced throughput gate before the first main update
+
+The user's explicit follow-up prohibits repeating the previous effectively
+single-core experiment. Enforce this in preparation and launch, not merely in a
+report written after training:
+
+- Verify eight live persistent native worker processes, concurrently executing
+  work on eight distinct allocated CPU cores. Inspect effective affinity and
+  available CPU quota: children must not inherit a one-core parent restriction.
+  One Torch thread per worker is allowed to prevent oversubscription; the overall
+  workload must be parallel. Give the coordinator/learner a separate CPU allocation.
+- Verify the selected learner device and actual batched forward/backward execution,
+  including SIL and data transfer. A CUDA model allocation or GPU memory use alone
+  does not establish that training executes there. Capture this once in readiness,
+  not through a profiler left attached to every training update.
+- Measure a complete four-update cycle including its scheduled 32-case evaluation,
+  input/setup work, replay preparation, serialization and checkpoint publication.
+  Compare one warmup and three measured repetitions against the serial reference,
+  with matching actual inputs and action/evaluation budgets. Record cold startup,
+  warmed medians, ranges, process-tree memory and device memory separately.
+- Require at least **1.5x warmed end-to-end throughput** versus that serial
+  reference, in addition to the full-matrix time forecast. This is a minimum
+  engineering gate, not a predicted result or proof of optimal hardware use.
+  Missing actions, early evaluation truncation, skipped checkpoints or omitted
+  required work cannot count as a speedup. If the gate fails, finish execution
+  optimization before main training; do not accept the serial path as a fallback.
+- Attribute collection, learner, evaluation and storage time explicitly. In
+  particular, parallelize evaluation and remove repeated immutable-data work
+  when those dominate; a fast learner kernel alone does not pass the gate.
+- Bind the launch manifest to the measured worker/device/runtime settings, verify
+  them at startup, and reject mismatches with `replay-balance.execution-gate`.
+  Keep normal phase counters lightweight. Do not repeat costly readiness,
+  optimizer replay or whole-run auditing per arm or at automatic completion.
+
+No worker pool, CUDA implementation or speedup has been verified by this design.
+Those are unfinished execution requirements, not capabilities already available
+in the current blueprint runner.
 
 Verify valid physics, candidate identity, tensor/mask/offset isolation, probability
 agreement and gradient ownership, including the shared encoder value gradient.
