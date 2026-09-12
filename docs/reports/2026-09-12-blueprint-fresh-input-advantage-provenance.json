@@ -1,0 +1,300 @@
+{
+  "schema": "blueprint-fresh-input-advantage-provenance-v1",
+  "source_commit": "f313821",
+  "restoration_commit": "6e7a3e5",
+  "continuity_policy_commit": "41a9707",
+  "verification_policy_commit": "a05fa9f",
+  "source_archive_sha256": "d5ce9340607b9a37ac4c6eaca0a2574d40c3f8887a4340999f490a3f479b4e2b",
+  "server_root": "/home/ashrimp/Srv/aic-blueprint-advantage-20260912/artifacts/factory-edit-pilot",
+  "local_metadata_root": "artifacts/factory-edit-pilot/blueprint-advantage-20260912",
+  "local_mirror_excludes": "Raw input payloads and compressed checkpoints remain on server.",
+  "selected_evidence": [
+    {
+      "path": "advantage-main/matrix.json",
+      "sha256": "90216cf073b19ecb567ffe39f8e3372ccc285e9dee4920321a2bcf37cdc3c1d9"
+    },
+    {
+      "path": "advantage-main/state.json",
+      "sha256": "e9598f82f82b79be13bda3636274ab57cf6b9bc2ca6ca17e6c403f118df14681"
+    },
+    {
+      "path": "advantage-main-analysis.json",
+      "sha256": "fbb6915a1818db5ee16daf2381a1554a2965966e6325e23ecdc2969121b80f76"
+    },
+    {
+      "path": "advantage-readiness-analysis.json",
+      "sha256": "42617bbf03a74af2b963fe3e0ae23f1726d84a9b5f03d702cdde976490f85d56"
+    },
+    {
+      "path": "quarter-trend.json",
+      "sha256": "bd48aa6b803bf08beec0abf321b42116a2161151b7075f5e91dd10eb0734f455"
+    },
+    {
+      "path": "secondary-summary.json",
+      "sha256": "6b843497a7047dc5951f7b0bff1f105f61a7b9f3078fae555487e520318af596"
+    },
+    {
+      "path": "secondary-summary.py",
+      "sha256": "09b85ea1d27fc2a851e8744cc930c471ab8ae1292b19cf286bde367ffe7e1fe7"
+    },
+    {
+      "path": "advantage-main/input-store-coverage.json",
+      "sha256": "9aada9b2cb8bdd6982456d43f2aedce25143ad89c00a643cbec4eb38c2b54a54"
+    },
+    {
+      "path": "advantage-main/evaluation-geometry-overlap.json",
+      "sha256": "a31cbe19b05422129c336baecf88725104d614ed5cc4e828651e18dc92fc68cd"
+    },
+    {
+      "path": "advantage-main/generation-retention.json",
+      "sha256": "e4100a62a3dcb1dbee9c2fd8cf8105fcb75980ef3d2aec11fa965419ed95ca06"
+    },
+    {
+      "path": "advantage-main/generation-retention-plan.json",
+      "sha256": "99acf0b17eca0989e6f6dfdb877343380805465f3401c1928e6ecac8a97fe1b1"
+    },
+    {
+      "path": "advantage-main/training-inputs/manifest.json",
+      "sha256": "6e260222359ccf89fbde834c0cdbd51fc0831edabc25ffa28ee18d0d85070782"
+    },
+    {
+      "path": "advantage-curves.png",
+      "sha256": "0324009e94ab302feaeec4435d22bbe786766767267af51d8dca144304d33b27"
+    },
+    {
+      "path": "workspace-final.json",
+      "sha256": "9be48799ed300279c0192591f3f87c93e0e28a199b6af6c30dd70573ee86e876"
+    },
+    {
+      "path": "service-final.json",
+      "sha256": "eff88dd2410313b36d0dd834acf14daab8d226f4bf08161df7699635cf10ae4e"
+    },
+    {
+      "path": "advantage-runtime/manifest.json",
+      "sha256": "afe912315bb565eb2c231259ffcf4001d2fd72d2dc6616a475369ddd32a29b35"
+    },
+    {
+      "path": "verification/manifest.json",
+      "sha256": "629512b21e937c8f74bd891ab922bfdbeedd11c8fd157192d4fdeb3b8f7aaa44"
+    }
+  ],
+  "runtime": {
+    "source_commit": "f313821",
+    "python": "/home/ashrimp/Srv/aic-ppo-padded-curriculum-12h-20260911/tools/factory-edit-pilot/.venv/bin/python",
+    "files": {
+      "build.log": {
+        "bytes": 298,
+        "sha256": "80010c6bdcbfc52b358044760c810d20925b00408010cdf5f25417edc0b37475"
+      },
+      "aic-cli": {
+        "bytes": 12754264,
+        "sha256": "a531bafaea966ef8d91a7fde83e84df46cada4f6cc48248b59386814bc62681f"
+      },
+      "libaic_pilot_native.so": {
+        "bytes": 6070336,
+        "sha256": "41f214689bc97f590383af934fe7e9bca7c53bfcb2090f5bc6c83a0698d2853c"
+      }
+    },
+    "extension_module": true
+  },
+  "verification": {
+    "advantage-python-tests-final.log": {
+      "bytes": 400,
+      "sha256": "93f9ac96eb5b2b06d4ebe12a20307bbdddafb19a04d12e607a795d41c5cfcd62"
+    },
+    "advantage-cargo-check.log": {
+      "bytes": 72,
+      "sha256": "9d892c5778d0c975f64a671e66ea5a753502353da3addd1dfdf3825225e406a2"
+    },
+    "advantage-cargo-test.log": {
+      "bytes": 69762,
+      "sha256": "59810e731f29dbaf236fad9a66a0b4a22ec0d9c36ac7e60cf516102ac518ae85"
+    }
+  },
+  "input_sequence_sha256": "2611944b6ec176f9fa7213067228119ceef4ead266882ec811da465af9554373",
+  "status": "complete",
+  "training_actions": 786432,
+  "evaluation_cases": 24768,
+  "arms": [
+    {
+      "name": "standardize-seed-17",
+      "cpu": 0,
+      "protocol": {
+        "path": "standardize-seed-17/protocol.json",
+        "sha256": "a4fded2b5ac8fb4a1a0b8a273aee7df649582eb7f171dbc4d142c513108dbb6e"
+      },
+      "completion": {
+        "path": "standardize-seed-17/completion.json",
+        "sha256": "ecb1cbac068747c50fdf63dc538d5e73c14d9565b8472bc073f43060d5b3a4e7"
+      },
+      "audit": {
+        "path": "standardize-seed-17/audit.json",
+        "sha256": "1bf48f89fb4be86983465e18f79a11bc6f4a7839032fae5372bed6631fb2daa2"
+      },
+      "audit_counts": {
+        "exact_update_replays": 2,
+        "native_restorations": 16,
+        "continuity_checks": 8,
+        "completed_episodes": 8,
+        "evaluation_cases": 32,
+        "evaluation_actions": 2048,
+        "unique_physically_validated_witnesses": 114
+      },
+      "evaluation_guards": {
+        "actions": 4128
+      },
+      "full_action_cases": 4128,
+      "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/41fa99ac00e00ec4d96673ae"
+    },
+    {
+      "name": "center-seed-17",
+      "cpu": 1,
+      "protocol": {
+        "path": "center-seed-17/protocol.json",
+        "sha256": "1f3e6791d518c1e3920a24c677d9e0e5129962708c5bc1ea29ff2e84979fa8c0"
+      },
+      "completion": {
+        "path": "center-seed-17/completion.json",
+        "sha256": "17731f826f54d570f4aa3620a288cf025e6f3567a2db106095a2a0a79b4180e3"
+      },
+      "audit": {
+        "path": "center-seed-17/audit.json",
+        "sha256": "c26b2b5c08eef76d7fb61ff2929e4c84e6938fa5eff14b4879314fe4057ccb56"
+      },
+      "audit_counts": {
+        "exact_update_replays": 2,
+        "native_restorations": 16,
+        "continuity_checks": 8,
+        "completed_episodes": 8,
+        "evaluation_cases": 32,
+        "evaluation_actions": 2048,
+        "unique_physically_validated_witnesses": 78
+      },
+      "evaluation_guards": {
+        "actions": 4128
+      },
+      "full_action_cases": 4128,
+      "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/1d72b1759752f22111a250e1"
+    },
+    {
+      "name": "center-seed-29",
+      "cpu": 4,
+      "protocol": {
+        "path": "center-seed-29/protocol.json",
+        "sha256": "878c7cf068db3b33b0a12cc102287361be11e687bb497a3f02fd247470d27801"
+      },
+      "completion": {
+        "path": "center-seed-29/completion.json",
+        "sha256": "6012182acb3d2bf260f2a394ce77d587925c1bcc4c13f34fb5a1413b8a81faa9"
+      },
+      "audit": {
+        "path": "center-seed-29/audit.json",
+        "sha256": "e0bf9a3317aa9d0b98196f8eaaf62cb667334976425d70c56ce216423cd63c0b"
+      },
+      "audit_counts": {
+        "exact_update_replays": 2,
+        "native_restorations": 16,
+        "continuity_checks": 8,
+        "completed_episodes": 8,
+        "evaluation_cases": 32,
+        "evaluation_actions": 2048,
+        "unique_physically_validated_witnesses": 46
+      },
+      "evaluation_guards": {
+        "actions": 4128
+      },
+      "full_action_cases": 4128,
+      "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/eff974321870c3d0411515ab"
+    },
+    {
+      "name": "standardize-seed-29",
+      "cpu": 5,
+      "protocol": {
+        "path": "standardize-seed-29/protocol.json",
+        "sha256": "4c42f494376d16a897f2d0f2b4c8af9212c098c254224d454e42ca7faec5528a"
+      },
+      "completion": {
+        "path": "standardize-seed-29/completion.json",
+        "sha256": "ab9b29299c1a369726725e0964085f45409cd770bb3c6fcfeee19fb19e58c520"
+      },
+      "audit": {
+        "path": "standardize-seed-29/audit.json",
+        "sha256": "f644e2adc234fb25d5f82952b230892905d7834bda1723e05df7aac1710785c0"
+      },
+      "audit_counts": {
+        "exact_update_replays": 2,
+        "native_restorations": 16,
+        "continuity_checks": 8,
+        "completed_episodes": 8,
+        "evaluation_cases": 32,
+        "evaluation_actions": 2048,
+        "unique_physically_validated_witnesses": 93
+      },
+      "evaluation_guards": {
+        "actions": 4128
+      },
+      "full_action_cases": 4128,
+      "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/345a8d2fdf5bbd8b66b528cd"
+    },
+    {
+      "name": "standardize-seed-41",
+      "cpu": 4,
+      "protocol": {
+        "path": "standardize-seed-41/protocol.json",
+        "sha256": "f489b8d0e172fa1da95af1702d965abfc316c67b4ec45aef68fcd44c719f7751"
+      },
+      "completion": {
+        "path": "standardize-seed-41/completion.json",
+        "sha256": "e36a73d80432964d716556f7845d1b12e0ae9821d4b2504503912d44d509817e"
+      },
+      "audit": {
+        "path": "standardize-seed-41/audit.json",
+        "sha256": "6f5ee6edf62ed602a10f186909bb39b119bfacd26961a04c17fbfcd772814f75"
+      },
+      "audit_counts": {
+        "exact_update_replays": 2,
+        "native_restorations": 16,
+        "continuity_checks": 8,
+        "completed_episodes": 8,
+        "evaluation_cases": 32,
+        "evaluation_actions": 2048,
+        "unique_physically_validated_witnesses": 99
+      },
+      "evaluation_guards": {
+        "actions": 4128
+      },
+      "full_action_cases": 4128,
+      "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/8bf8de40a8299a41f7612459"
+    },
+    {
+      "name": "center-seed-41",
+      "cpu": 1,
+      "protocol": {
+        "path": "center-seed-41/protocol.json",
+        "sha256": "056ca745d0814cfca7594d7dad8aef77bb3de44ea2b736b9ca661b16d07b4003"
+      },
+      "completion": {
+        "path": "center-seed-41/completion.json",
+        "sha256": "3eb6e72251ee85637ceb218c73954e94a858bcc5a1d3013d57c9621c23b608cb"
+      },
+      "audit": {
+        "path": "center-seed-41/audit.json",
+        "sha256": "8b2fee0b5caae5fef124acb3bf704ab120e29fe0907d8c1af20f67a7e12763c7"
+      },
+      "audit_counts": {
+        "exact_update_replays": 2,
+        "native_restorations": 16,
+        "continuity_checks": 8,
+        "completed_episodes": 8,
+        "evaluation_cases": 32,
+        "evaluation_actions": 2048,
+        "unique_physically_validated_witnesses": 68
+      },
+      "evaluation_guards": {
+        "actions": 4128
+      },
+      "full_action_cases": 4128,
+      "url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/1566e46424a36ce6131892fa"
+    }
+  ]
+}

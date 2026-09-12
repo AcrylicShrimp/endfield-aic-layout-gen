@@ -1,6 +1,7 @@
 # Fresh blueprint inputs and advantage scaling
 
-Status: in progress.
+Status: complete for fresh-input restoration and the registered advantage screen.
+Results: [final report](../reports/2026-09-12-blueprint-fresh-input-advantage.md).
 
 Context: restore the previously required per-episode random products, rates and
 initial layouts before conducting the user-requested advantage comparison.
@@ -30,3 +31,17 @@ Contract: [design](../designs/2026-09-12-blueprint-random-generation-and-credit.
   and self-imitation replay tests, a shared matrix supervisor, paired-input
   result analysis and a dedicated W&B view helper. Six-arm preparation passed
   locally; the server readiness matrix precedes main training.
+
+- 2026-09-13 KST: completed all six registered 512-update arms after six-arm
+  readiness. All arms consumed the same 2,048 fresh inputs (194 requests,
+  1,723 geometries); all 24,768 evaluations completed 64 actions. Final tail
+  audits and 774-point tracking readback passed. Centering wins the primary
+  final/late means, but its 25-case geometry-exclusion late mean loses; both
+  modes show rising aggregate block means after an early drop. Preserved raw
+  server evidence and local metadata/provenance; no additional long run.
+- 2026-09-13 KST: recorded general continuity and bounded isolated verification
+  rules in `AGENTS.md` (`41a9707`, `a05fa9f`). Existing blueprint execution still
+  lacks the previous persistent collector-worker capability and attaches costly
+  audits to normal completion. These are open migration obligations documented
+  in the final report, not resolved capabilities or newly optional enhancements.
+  This bounded experiment's completion does not certify the full learner cutover.

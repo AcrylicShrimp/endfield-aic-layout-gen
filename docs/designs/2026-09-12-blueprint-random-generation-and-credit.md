@@ -1,7 +1,8 @@
 # Restore fresh blueprint training inputs, then compare advantage scaling
 
-Status: fresh-input restoration verified and committed as `6e7a3e5`;
-advantage comparison implementation in progress. Authorized on 2026-09-12.
+Status: fresh-input restoration verified in `6e7a3e5`; registered advantage
+screen (`f313821`) completed on 2026-09-13 KST. Authorized on 2026-09-12.
+Results: [final report](../reports/2026-09-12-blueprint-fresh-input-advantage.md).
 
 ## Regression and required order
 
@@ -104,8 +105,33 @@ learner/sampling seeds, not six different training-data distributions.
 Evaluate at 0, 4, ..., 512 (129 points per arm), using the unchanged 32 factories.
 Primary outcomes are final evaluation and the last-128-update window, points
 388 through 512. Retain the full per-seed results and own-initial deltas. Each arm
-has a three-hour operational ceiling plus 180 seconds finalization, an eight-GiB
+has a three-hour learner ceiling plus 180 seconds to finish an open episode, an eight-GiB
 output ceiling and an eight-GiB shared filesystem reserve. Resource termination
 before update 512 is incomplete, not a matched result. Use at most four explicitly
 pinned single-thread CPU workers on one host. Source/native identity and actual
 CPU allocation are recorded; elapsed policy input remains a measured limitation.
+
+## Observed completion and boundaries
+
+All six arms completed 512 updates with the exact same ordered 2,048 actual
+fresh inputs. Initial weights were paired by seed, non-factor contracts matched,
+all 24,768 evaluation cases used 64 actions, registered tail audits passed, and
+774 W&B evaluation points matched durable reports. No new longer training run
+was selected automatically. The final report retains the complete per-seed
+results, upward block-average trends after the initial dip, input overlap,
+secondary sensitivity, credit diagnostics and execution cost.
+
+The historical cohort is not strictly held out from the finite random input
+space: all 32 requests occur in training, two initial files match exactly, and
+seven initial geometries match when excluding rates/utilization. Keep the
+registered primary population and label the 30/25-case exclusions post-hoc.
+Center wins the primary endpoints; the 25-case late-window ranking reverses.
+This does not establish unseen-request generalization or robust superiority.
+
+The source-frozen matrix's automatic completion audits are outside its learner
+clock and delayed CPU-slot release. The subsequent general verification rule
+requires expensive diagnostics to be bounded, explicit and isolated from normal
+runs. The missing previous persistent-worker capability is also an established
+migration obligation. This experiment did not modify the frozen execution path
+or complete those separate migration items; they remain open and must be closed
+before claiming that the broader training cutover preserves established work.
