@@ -1,6 +1,6 @@
 # Replay balance experiment
 
-Status: implementation in progress; main training is gated on measured readiness.
+Status: main training is running with the verified eight-worker CUDA launch.
 
 ## Context
 
@@ -16,13 +16,14 @@ It preserves centered GAE and current blueprint semantics.
 - [x] Define known-state learning, autonomous completion and transfer separately.
 - [x] Record continuity requirements and the missing execution optimizations.
 - [x] Predeclare gates, failure interpretation, resource limits and evidence.
-- [ ] Restore applicable optimized worker/supply/learner execution and measure it.
-- [ ] Pass the enforced throughput gate: eight real workers on distinct cores,
+- [x] Restore applicable optimized worker/supply/learner execution and measure it.
+- [x] Pass the enforced throughput gate: eight real workers on distinct cores,
   parallel evaluation, measured learner device, at least 1.5x complete-cycle
   throughput, and an input-bound matrix forecast; reject serial launch fallback.
-- [ ] Implement versioned fork/import/stratified replay with cheap diagnostics.
-- [ ] Pass bounded readiness including nonempty Adam/buffer continuation.
-- [ ] Freeze actual training/evaluation inputs, sampling seeds and launch manifest.
+- [x] Implement versioned fork/import/stratified replay with cheap diagnostics.
+- [x] Pass bounded readiness including nonempty Adam/buffer continuation.
+- [x] Freeze the evaluation panels, on-demand training namespace, sampling seeds
+  and launch manifest; retain all actual training inputs as they are generated.
 - [ ] Complete five arms by three seeds, 128 updates per arm, or report incomplete pairs.
 - [ ] Run the bounded independent anchor continuation diagnostic and report all contrasts.
 - [ ] Complete relevant source verification and commit implementation/results slices.
@@ -70,3 +71,17 @@ It preserves centered GAE and current blueprint semantics.
   selected witnesses/checkpoints, active buffer sources and recovery windows,
   without accumulating every completed evaluation trace. See the
   [retention report](../reports/2026-09-13-experiment-evidence-pruning.md).
+- Admitted 804 centered parent sequences and the exact five imported sequences
+  with fifteen labels. The explicit child checkpoint preserves both Adam states,
+  sampling/shuffle state, global/child ordinals and eight live native sessions.
+- Final complete-cycle readiness selects eight workers plus CUDA: warmed median
+  7.932 s versus 18.210 s serial, a 2.296x speedup; conservative screen forecast
+  5,460 s. Fixed labels, evaluation and storage are included. See the
+  [runtime report](../reports/2026-09-13-blueprint-replay-runtime.md).
+- Native mechanical admission, eight-update fork restoration, exact CUDA update
+  replay, forced KL actor freezing and a separate CUDA execution profile passed.
+  Sixteen transfer factories were admitted in seventeen attempts before training.
+- Published the source-bound launch manifest and started C/seed 17. Its first
+  four updates completed, including an actual child-own terminal admission.
+  The 15-arm screen and separate continuation/report commands are still active
+  work; there is no endpoint conclusion or promotion decision yet.

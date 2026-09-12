@@ -1,8 +1,8 @@
 # Separate success exposure, replay balance and imitation strength
 
-Status: implementation in progress; execution primitives are verified, while
-complete-cycle readiness and main training remain gated. This is the registered
-bounded research slice, not yet a runnable main configuration.
+Status: the explicit runtime and complete-cycle readiness are verified. Main
+training requires the frozen launch manifest. This remains the registered bounded
+research slice; see the [runtime report](../reports/2026-09-13-blueprint-replay-runtime.md).
 
 ## Question and evidence
 
@@ -326,7 +326,9 @@ report written after training:
 
 The [execution primitive slice](../reports/2026-09-13-blueprint-parallel-execution.md)
 verifies worker continuity, parallel evaluation and CPU/CUDA update semantics.
-Complete-cycle speedup and launch readiness remain unverified.
+The [complete-cycle runtime](../reports/2026-09-13-blueprint-replay-runtime.md)
+now measures 2.296x speedup with eight workers and CUDA, with a 5,460-second
+conservative forecast. Launch must still authenticate the matching frozen files.
 
 Verify valid physics, candidate identity, tensor/mask/offset isolation, probability
 agreement and gradient ownership, including the shared encoder value gradient.
@@ -381,5 +383,5 @@ frozen in a launch manifest before any main optimizer update.
 4. Execute the registered screen; then run the separate anchor continuation probe.
 5. Report all paired contrasts, failures, preservation gates and remaining uncertainty.
 
-This design records no new learning result. Main training starts only after the
+This design records no main learning result. Main training starts only after the
 registered readiness and launch checks pass.

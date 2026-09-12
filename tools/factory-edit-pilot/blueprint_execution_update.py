@@ -1,5 +1,6 @@
 """Packed device PPO/SIL with one-batch-ahead CPU preparation and isolated replay RNG."""
 from concurrent.futures import ThreadPoolExecutor
+from collections import Counter
 import time
 
 import torch
@@ -186,6 +187,9 @@ def update_packed(model, actor_optimizer, critic_optimizer, shuffle_rng, samples
         weighted_loss=float(torch.stack(losses).mean()) if losses else None,
         rng_sha256=digest(generator.get_state()), order_rng_sha256=digest(order_generator.get_state()),
         **summarize_imitation(diagnostics, groups))
+    lookup = {sequence['id']: sequence for sequence in sequences}
+    success['draws_by_origin'] = dict(Counter(lookup[identity]['origin'] for group in selected_ids for identity in group))
+    success['draws_by_stratum'] = dict(Counter(lookup[identity]['stratum'] for group in selected_ids for identity in group))
     return dict(**credit_metrics(raw, advantages, samples, config), success=success,
         model_before=before, model_after=digest(model.state_dict()), actor_optimizer=digest(actor_optimizer.state_dict()),
         critic_optimizer=digest(critic_optimizer.state_dict()), shuffle_rng=digest(shuffle_rng.get_state()),

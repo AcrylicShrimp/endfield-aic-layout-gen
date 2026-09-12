@@ -34,6 +34,12 @@ def validate_input(config):
             'blueprint.training-input.paths: generation spec and durable directory required')
     require(type(value.get('episode_setup_seconds')) in (int, float) and value['episode_setup_seconds'] > 0,
             'blueprint.training-input.budget: positive total episode setup deadline required')
+    namespace = value.get('namespace')
+    if namespace is not None:
+        require(namespace.get('schema') == 'blueprint-input-namespace-v1'
+                and type(namespace.get('global_first_slot')) is int and namespace['global_first_slot'] >= 0
+                and type(namespace.get('slots')) is int and namespace['slots'] > 0,
+                'replay-balance.input-namespace: explicit nonnegative global offset and positive slot count required')
 
 
 def source_paths(config):
@@ -68,6 +74,8 @@ class FreshInputs:
             spec_sha256=sha(ROOT / self.options['spec']), native_sha256=sha(library),
             blueprint_config=blueprint_spec['config'],
             sources={str(p.resolve().relative_to(ROOT)): sha(p) for p in source_paths(config)})
+        if 'namespace' in self.options:
+            self.contract['namespace'] = deepcopy(self.options['namespace'])
         self.native = None
 
     def identity(self, stream, episode):
@@ -75,6 +83,14 @@ class FreshInputs:
         require(type(stream) is int and 0 <= stream < streams and type(episode) is int and episode >= 0,
                 'blueprint.training-input.slot: invalid stream/episode identity')
         slot = episode * streams + stream
+        namespace = self.options.get('namespace')
+        if namespace is not None:
+            global_slot = slot
+            slot -= namespace['global_first_slot']
+            require(0 <= slot < namespace['slots'],
+                    f'replay-balance.input-namespace: global slot {global_slot} outside the registered child bank')
+            return dict(stream=stream, episode=episode, slot=slot, global_slot=global_slot,
+                        first_seed=self.options['seed_base'] + slot * self.options['max_attempts'])
         return dict(stream=stream, episode=episode, slot=slot,
                     first_seed=self.options['seed_base'] + slot * self.options['max_attempts'])
 

@@ -28,6 +28,8 @@ class BlueprintPool:
         self.selector = selectors.DefaultSelector()
         self.phase_seconds = {}
         self.request_id = 0
+        self.worker_cpu_seconds = [0.] * len(cores)
+        self.max_step_concurrency = 0
         self.output = Path(output)
         self.output.mkdir(parents=True, exist_ok=True)
         try:
@@ -64,6 +66,7 @@ class BlueprintPool:
         require(len(commands) <= len(self.workers), 'worker command coverage')
         pending = set(range(len(commands)))
         results = [None] * len(commands)
+        intervals = []
         self.request_id += 1
         for index, command in enumerate(commands):
             self.guard()
@@ -88,10 +91,17 @@ class BlueprintPool:
                     results[index] = message['result']
                     operation = commands[index]['operation']
                     self.phase_seconds[operation] = self.phase_seconds.get(operation, 0.) + message['seconds']
+                    self.worker_cpu_seconds[index] += message['cpu_seconds']
+                    if operation == 'step':
+                        intervals.append(message['interval_ns'])
                     pending.remove(index)
             for index in pending:
                 require(self.workers[index].poll() is None,
                         f'replay-balance.worker-lost: worker {index} exited; see {self.output}')
+        active = 0
+        for _, delta in sorted([(start, 1) for start, _ in intervals] + [(end, -1) for _, end in intervals]):
+            active += delta
+            self.max_step_concurrency = max(self.max_step_concurrency, active)
         return results
 
     def snapshot(self):

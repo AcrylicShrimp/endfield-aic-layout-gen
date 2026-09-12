@@ -97,6 +97,10 @@ class Worker:
             row.update(generation_seed=case['generation_seed'], action_seed=command['action_seed'],
                 request_sha256=case['files']['request']['sha256'], initial_sha256=case['files']['initial']['sha256'])
             return dict(row=row)
+        if operation == 'continuation':
+            from blueprint_replay_anchors import continuation
+            require(self.before is None and self.model is not None, 'continuation requires idle training and loaded weights')
+            return dict(row=continuation(self.runtime, self.model, command))
         raise ValueError(f'unknown blueprint worker operation: {operation}')
 
     def preserve(self, directory, error):
@@ -131,10 +135,12 @@ def main():
                 if command['operation'] == 'close':
                     return
                 began = time.perf_counter()
+                started_ns, cpu_before = time.monotonic_ns(), time.process_time()
                 require(command['schema'] == SCHEMA, 'worker command schema')
                 result = worker.execute(command)
                 send(arrays(dict(schema=SCHEMA, request_id=command['request_id'], worker_index=worker.stream.index,
-                    ok=True, result=result, seconds=time.perf_counter() - began), True), stream)
+                    ok=True, result=result, seconds=time.perf_counter() - began,
+                    interval_ns=(started_ns, time.monotonic_ns()), cpu_seconds=time.process_time() - cpu_before), True), stream)
     except BaseException as error:
         worker.preserve(args.failure_directory, error)
         try:

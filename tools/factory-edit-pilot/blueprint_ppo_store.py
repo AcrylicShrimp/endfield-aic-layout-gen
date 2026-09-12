@@ -1,6 +1,7 @@
 """Bounded experiment I/O and source-bound learner checkpoints."""
 import gzip
 import hashlib
+import io
 import json
 from pathlib import Path
 
@@ -31,13 +32,31 @@ def save(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + '.tmp')
     with gzip.open(temporary, 'wb', compresslevel=1) as stream:
-        torch.save(value, stream)
+        torch.save(serializable(value), stream)
     temporary.replace(path)
+
+
+def serializable(value):
+    # Empty NumPy views delivered through shared memory may have the same
+    # nonzero address with different dtypes. Torch mistakes these zero-byte
+    # storages for overlapping typed payloads. Owning empty tensors use ptr=0.
+    if isinstance(value, torch.Tensor):
+        return value.clone() if value.numel() == 0 else value
+    if isinstance(value, dict):
+        return {key: serializable(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [serializable(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(serializable(item) for item in value)
+    return value
 
 
 def load(path):
     with gzip.open(path, 'rb') as stream:
-        return torch.load(stream, map_location='cpu', weights_only=False)
+        # Torch's ZIP reader seeks between tensor records. Seeking backwards in
+        # gzip repeatedly inflates the same prefix; inflate once before loading.
+        with io.BytesIO(stream.read()) as payload:
+            return torch.load(payload, map_location='cpu', weights_only=False)
 
 
 def sha(path):
