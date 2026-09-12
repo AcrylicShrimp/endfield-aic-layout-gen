@@ -1,0 +1,86 @@
+{
+  "schema": "server-disk-cleanup-provenance-v1",
+  "host": "ashrimp-arch",
+  "date": "2026-09-13",
+  "observations": {
+    "initial_available_rounded": "approximately 14 GiB, before debug cleanup",
+    "after_debug_before_other_cleanup": "Filesystem        1B-blocks         Used   Available Use% Mounted on\n/dev/nvme2n1p2 249845608448 216404668416 20674949120  92% /\n",
+    "final": "Filesystem        1B-blocks         Used   Available Use% Mounted on\n/dev/nvme2n1p2 249845608448 176141778944 60937838592  75% /\n",
+    "retained_aic_artifacts_allocated_bytes": 110553780224
+  },
+  "removed_docker_image": {
+    "id": "sha256:26354b5efac552a9a0ac8e46beb16dde7490b14486c9bb7bd6b818f54d0e93f7",
+    "repo_digests": [
+      "vllm/vllm-openai@sha256:26354b5efac552a9a0ac8e46beb16dde7490b14486c9bb7bd6b818f54d0e93f7"
+    ],
+    "bytes": 28777580426
+  },
+  "removed_archive_duplicates": [
+    {
+      "remote": "/home/ashrimp/Srv/aic-ppo-area-20260909/artifacts/factory-edit-pilot/ppo-area-retained.tar.zst",
+      "local": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/ppo-area-retained.tar.zst",
+      "bytes": 3737496713,
+      "sha256": "0c10aa361140f7e2900947783aad60e12ebd905e7a7feb58712b9c1bfac89bed"
+    },
+    {
+      "remote": "/home/ashrimp/Srv/aic-ppo-area-20260909/artifacts/factory-edit-pilot/ppo-input-contract-screen-retained.tar.zst",
+      "local": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/ppo-input-contract-screen-retained.tar.zst",
+      "bytes": 2731841419,
+      "sha256": "d4318fedb3ce90d072661aecef273cd9ea69bcc7b57978ed7c2815f800d4683f"
+    },
+    {
+      "remote": "/home/ashrimp/Srv/aic-factory-native-20260910/artifacts/factory-edit-pilot/native-worker-scaling-v1.tar.zst",
+      "local": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/native-worker-scaling-v1.tar.zst",
+      "bytes": 408309911,
+      "sha256": "8a43e891a4adea80dab1d9c2614479164e2f715ad53b167ee985f77eade44dfc"
+    },
+    {
+      "remote": "/home/ashrimp/Srv/aic-direct-area-20260909/artifacts/factory-edit-pilot/direct-area-retained.tar.gz",
+      "local": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/direct-area-retained.tar.gz",
+      "bytes": 308423225,
+      "sha256": "6ac1a64ff0bd81fe4e6407165bbdfa63643a1fcc52e3f7955f52cc6acd70c9c1"
+    },
+    {
+      "remote": "/home/ashrimp/Srv/aic-random-factory-20260909/artifacts/factory-edit-pilot/fresh-factory-launch-retained.tar.gz",
+      "local": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/fresh-factory-launch-retained.tar.gz",
+      "bytes": 305438247,
+      "sha256": "35e0d688a9edbf38d99ec2cdb84403d034c4df55b6664ec7de6fb47359f3a569"
+    },
+    {
+      "remote": "/home/ashrimp/Srv/aic-ppo-area-20260909/artifacts/factory-edit-pilot/ppo-harness-readiness-retained.tar.zst",
+      "local": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/ppo-harness-readiness-retained.tar.zst",
+      "bytes": 144152162,
+      "sha256": "31b46d16dbac77b3e36c51fd40022bf64c76417607a032028facadf5ff12433d"
+    },
+    {
+      "remote": "/home/ashrimp/Srv/aic-ppo-area-20260909/artifacts/factory-edit-pilot/ppo-input-execution-retained.tar.zst",
+      "local": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/factory-edit-pilot/ppo-input-execution-retained.tar.zst",
+      "bytes": 115152610,
+      "sha256": "1b0c827ba242d3f1014b507637681b420aca56a214d02e33e81ca499380d17bf"
+    }
+  ],
+  "records": [
+    {
+      "path": "artifacts/server-cleanup-20260913/remote/cache-inventory.json",
+      "sha256": "dd8818d0b889469c10bfdae254de988ab03b36a6ab8bc3ce40f1b2ac3f7c7ab3"
+    },
+    {
+      "path": "artifacts/server-cleanup-20260913/remote/removed-build-caches.json",
+      "sha256": "601f9051ad4ccdf1cab400617bf128c87a16eee0a8bfdb2b842372518a359e53"
+    },
+    {
+      "path": "artifacts/server-cleanup-20260913/verified-archives.json",
+      "sha256": "5e9b5b9b7912601a22cad9f535c8b75071d5a91cb287484063b3bd8af1950d27"
+    },
+    {
+      "path": "artifacts/server-cleanup-20260913/remote/removed-archive-duplicates.json",
+      "sha256": "327d3e9c50d1fae73f7be34ff14d1ea9482e1d2dadd6a08fe2d50ddf1e84b0d3"
+    },
+    {
+      "path": "artifacts/server-cleanup-20260913/remote/result.json",
+      "sha256": "9364d2cccd8af0ad0ac9323f941c70459cf3b360b181603d5e7d4442776bad8b"
+    }
+  ],
+  "root_owned_model_cache": "Deletion did not succeed; permission denied, sudo requires a password",
+  "verification": "Torch 2.14.0+cu130 import and CUDA availability passed"
+}
