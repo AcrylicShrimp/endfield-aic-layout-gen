@@ -70,6 +70,16 @@
 - Prefer the new contract over reusing old code. Delete or rewrite old code when reuse would distort the new design.
 - For external data or CLI contracts, make breaking changes explicit through schema versions, migration notes, or diagnostics instead of preserving obsolete internal code paths.
 
+## Preserve Established Work Across Changes
+
+- Treat every change as a continuation of this project, not a blank slate. Existing accepted requirements, design decisions, solved problems and verified capabilities remain obligations even when the latest request does not repeat them. A rewrite, new component or hard cutover does not by itself authorize discarding them.
+- Before substantial work, inspect the relevant existing implementation, decisions, reports, configuration and tests. Record a concise continuity checklist in the slice's design or TODO: what already works, why it exists, which prior failures it prevents, where it belongs after the change, and how its preservation will be verified. Do not infer the full contract from a small example or the latest prompt alone.
+- Consider the whole system: user-visible behavior and workflows, data and semantic contracts, correctness guarantees, edge cases, failure handling and recovery, observability, resource controls, performance, verification, and operational procedures. Preserve established benefits and safeguards, including those outside the component being rewritten. If applicability is unclear, investigate it and keep the item open; do not silently assume it is obsolete.
+- Reuse compatible existing work. When the new design needs a different implementation, carry forward the underlying requirement and benefit through that design without unnecessary compatibility shims. Simplifying structure is welcome; deleting a capability, guarantee or accumulated knowledge is not a simplification by itself. Review previously resolved problems and rejected approaches before reintroducing them.
+- Verify continuity through the actual integrated command or workflow. The presence of an old module, a copied setting, a similar name, or a passing isolated example does not prove that the new path preserves its behavior. Exercise representative normal, boundary, failure and recovery cases, and compare with retained predecessor evidence. Where a claimed benefit is quantitative, measure it under comparable conditions and state material differences.
+- Before declaring substantial replacement work complete, using it as the normal path, or launching expensive downstream work through it, close the continuity checklist. A correct final example or a successful build alone is insufficient. Completion reports must account for established capabilities and decisions, verification evidence, regressions or tradeoffs, and any explicitly authorized exceptions.
+- Do not reframe an omitted established requirement, solved problem or working capability as a newly discovered optional enhancement. Restore omissions within the authorized work. Intentional removal, weakening or deferral of a user-required capability needs explicit user authorization; permission to redesign its implementation is not permission to remove it.
+
 ## Constructive Planner And Local Solver Policy
 
 - The production architecture must construct a complete valid factory first and improve that concrete layout iteratively afterward.
