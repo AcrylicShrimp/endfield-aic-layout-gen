@@ -148,6 +148,11 @@
 
 ## Verification
 
+- Keep verification proportional to a concrete failure mode and the change's impact. Reuse existing evidence and run the smallest sufficient checks. Do not add redundant tests, repeat successful checks without new cause, or broaden verification merely for reassurance.
+- Keep expensive verification out of normal execution and performance-critical paths. Avoid repeated proof/replay work, duplicate computation, full source or artifact rehashing, and whole-directory scans in hot loops. Validate stable inputs at an appropriate boundary and reuse the result while their required identity remains valid. Retain checks necessary for input rejection, required invariants, resource limits and committed-output validity; improve their placement or implementation rather than weakening the contract.
+- Use performance-affecting verification only when its necessity is established, as an explicitly invoked, bounded, one-off diagnostic. State the question it answers and its stopping condition. Expensive audits must not become implicit per-step, per-batch, periodic or normal completion work, or silently repeat for every production/training job.
+- Isolate such diagnostics from long-running training and other normal workloads. Use a separate command/process and temporary configuration; do not attach costly inspection to an active long run or leave diagnostic modes, hooks, workers or schedules enabled afterward. Before a long run, verify that its actual launch path uses normal settings and that one-off diagnostics have ended. Include representative runtime measurements when checking that diagnostic work is absent from the normal path.
+- A verification requirement is not permission to rerun the workload unnecessarily. Prefer retained evidence and targeted replay in the isolated diagnostic. Once the relevant checks pass, proceed with the task; add further verification only for a new change, failure or specific unresolved concern.
 - Run `node docs/maintenance/check-tracked-files.mjs --worktree` after artifact or documentation changes and `node docs/maintenance/check-tracked-files.mjs --index` after staging, before committing. The index check also catches force-added ignored outputs and oversized staged content.
 - Run `cargo fmt --all` after Rust edits.
 - Run `cargo check --workspace` before considering code changes complete.
