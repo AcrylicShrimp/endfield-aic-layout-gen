@@ -1,0 +1,514 @@
+{
+  "schema": "blueprint-replay-results-provenance-v1",
+  "launch": {
+    "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/launch.json",
+    "sha256": "4c25719b41800c5930c682e2fc73f10fdebec745f02de89eccb0bf51397a3a4d",
+    "bytes": 186352
+  },
+  "matrix_state": {
+    "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/state.json",
+    "sha256": "25316a73e17a02ed12461540d72c34a83e35dbed6d72318c7ea76a98fc0f7e30",
+    "bytes": 5371
+  },
+  "analysis": {
+    "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-analysis.json",
+    "sha256": "ef6cfd6026d189a0167b00389ecaec9b68fa708fbb0b56c6734315757f349fe7",
+    "bytes": 113293
+  },
+  "input_manifest": {
+    "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-input-manifest.json",
+    "sha256": "d85deefd2d040ed409b3e36e2fd02b73b00f4b878df8b54e5c9228e5833a8e5c",
+    "bytes": 416478
+  },
+  "continuation": {
+    "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/report.json",
+    "sha256": "cd252f567d200a21230080c1f4adb01ed208e60257218db1b6f3123e45fdb064",
+    "bytes": 3065
+  },
+  "training_seconds": 6468.5764317540015,
+  "probe_seconds": 66.07061118300044,
+  "host": "ashrimp-arch",
+  "runtime_commit": "804a11b",
+  "derived_evidence": {
+    "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-results-evidence.json",
+    "sha256": "4991695532133006185be7a4e1f053aae03a2f8dd729603981168f97706c32fa"
+  },
+  "counts": {
+    "arms": 15,
+    "updates_per_arm": 128,
+    "actions": 491520,
+    "episodes": 7680,
+    "actual_training_inputs": 512,
+    "eligible_transfer_factories": 15,
+    "continuation_branches": 2160
+  },
+  "jobs": {
+    "C-seed-17": {
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/C-seed-17/state.json",
+        "sha256": "f610d986403ded6b2830852cc041c7dee2112e7ac613a38f9312ffaa841be053",
+        "bytes": 45017
+      },
+      "checkpoints": {
+        "0": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/C-seed-17/checkpoints/0000.pt.gz",
+          "sha256": "93ece0e366324712520db55d296b5d76a520a6174cb7fa296092ddc79c58a9ba",
+          "bytes": 324533
+        },
+        "64": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/C-seed-17/checkpoints/0064.pt.gz",
+          "sha256": "26db116616a3af12219acaeeb27670c2a0c13c671b9ddd5b509105c6fa0020d8",
+          "bytes": 354960
+        },
+        "128": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/C-seed-17/checkpoints/0128.pt.gz",
+          "sha256": "48253abe9b2b77b23ae13c8fddfa548a92cc373595e1a405f7a93d1882fd78c0",
+          "bytes": 373840
+        }
+      },
+      "tracking_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/tz74uy2i"
+    },
+    "U05-seed-17": {
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U05-seed-17/state.json",
+        "sha256": "66bdc16de99570e780694544af5a5a68fbe6442c8c27d792f49cc5e8eeb570a1",
+        "bytes": 45540
+      },
+      "checkpoints": {
+        "0": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U05-seed-17/checkpoints/0000.pt.gz",
+          "sha256": "67506a3c7b32690980b6bc764691235c9ac54bfe552d5fedf7707776cebd0fbf",
+          "bytes": 324531
+        },
+        "64": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U05-seed-17/checkpoints/0064.pt.gz",
+          "sha256": "70d250a45abce26ce30505a596c077348114ec7238ca0623eac04a433caaa024",
+          "bytes": 354860
+        },
+        "128": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U05-seed-17/checkpoints/0128.pt.gz",
+          "sha256": "42d93a65b4cd7448c5bf2eb3cc5de4b583d6c8f0859a762bd032e3ed5ce6bc78",
+          "bytes": 368500
+        }
+      },
+      "tracking_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/zemm6ihr"
+    },
+    "B05-seed-17": {
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B05-seed-17/state.json",
+        "sha256": "5e70220ead24db918245de446ffe30e8ed5ade4423316d61ff182f38098924bb",
+        "bytes": 43966
+      },
+      "checkpoints": {
+        "0": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B05-seed-17/checkpoints/0000.pt.gz",
+          "sha256": "ff78ae9434c700bc566dfd6be6fe5b23c9a10d4cee67ab1f9c60d80d5d9fbad9",
+          "bytes": 324527
+        },
+        "64": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B05-seed-17/checkpoints/0064.pt.gz",
+          "sha256": "59083220b8be0f67458dc557e95a87442647b20fd5426101d05bf20d5dc97f29",
+          "bytes": 357537
+        },
+        "128": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B05-seed-17/checkpoints/0128.pt.gz",
+          "sha256": "0d105684b13cf31a916eda63bb8322f05f5014c8b954ed6add99f29e2931e2e7",
+          "bytes": 381311
+        }
+      },
+      "tracking_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/bdouc321"
+    },
+    "U50-seed-17": {
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U50-seed-17/state.json",
+        "sha256": "ad9ac60910db0aac4026248400fa9b053c05e2c8bae45a7d9dd762ab5cf42895",
+        "bytes": 46064
+      },
+      "checkpoints": {
+        "0": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U50-seed-17/checkpoints/0000.pt.gz",
+          "sha256": "de66cd4fa673a6780638d7398de7f69edb8fd471ae96a9c37036adc9fdaa8cce",
+          "bytes": 324531
+        },
+        "64": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U50-seed-17/checkpoints/0064.pt.gz",
+          "sha256": "c37de9e72b69888693d3d6d4236034bd7cfc02eb2649e45440c4726f67868fbc",
+          "bytes": 351758
+        },
+        "128": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U50-seed-17/checkpoints/0128.pt.gz",
+          "sha256": "869f9922ac248b0eeabde0687c2e428df2987c38027aa3b23ffc4af1dc0e505e",
+          "bytes": 370903
+        }
+      },
+      "tracking_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/on7yhoz0"
+    },
+    "B50-seed-17": {
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B50-seed-17/state.json",
+        "sha256": "2b2ec4e1ee655f2b32711308911eacbb7d7a187ee27f4753fa27f6e5aca0454e",
+        "bytes": 43969
+      },
+      "checkpoints": {
+        "0": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B50-seed-17/checkpoints/0000.pt.gz",
+          "sha256": "36dd29813cac22c367214a88b1b3c766aac14c07ad8f3232458b698fc88ad56d",
+          "bytes": 324530
+        },
+        "64": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B50-seed-17/checkpoints/0064.pt.gz",
+          "sha256": "1ae391b2bd94f4daa8bd69204f4d69e6182b81721af0d275f53c4408c4161d26",
+          "bytes": 354412
+        },
+        "128": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B50-seed-17/checkpoints/0128.pt.gz",
+          "sha256": "2d653f0e15b9756b14861bae4e5f207c51b256efaf147fef1b437ff6439c2151",
+          "bytes": 377723
+        }
+      },
+      "tracking_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/36pmuil1"
+    },
+    "B50-seed-29": {
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B50-seed-29/state.json",
+        "sha256": "b8afdae76c5b9a89c0df3aafecd82704c63135930f7ca9c2797711db6b5bb846",
+        "bytes": 47767
+      },
+      "checkpoints": {
+        "0": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B50-seed-29/checkpoints/0000.pt.gz",
+          "sha256": "8fa890a5738c2bd3886e0d887cf3cdf45f9af0cc3b5f8ace4bfc819f562aefdc",
+          "bytes": 324087
+        },
+        "64": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B50-seed-29/checkpoints/0064.pt.gz",
+          "sha256": "ab072e0bbcefa5296ecd05438c2bd315918e729076b7d8de5ab81bd83bd0e245",
+          "bytes": 341014
+        },
+        "128": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B50-seed-29/checkpoints/0128.pt.gz",
+          "sha256": "0552369ba967d4a882bf061f6c0f2f6f71204e6f3a3b5679c3d64345956b1029",
+          "bytes": 352024
+        }
+      },
+      "tracking_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/43whncgj"
+    },
+    "U50-seed-29": {
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U50-seed-29/state.json",
+        "sha256": "f8dba25a41f7500cde9ce0fdba81de96008c94dfb4633c0efa99c2c34d7f6a8b",
+        "bytes": 48159
+      },
+      "checkpoints": {
+        "0": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U50-seed-29/checkpoints/0000.pt.gz",
+          "sha256": "b5a4be860a4f9d69368c3e8209fa3dcba484ce841b66f5134c4741b5e9d54da3",
+          "bytes": 324083
+        },
+        "64": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U50-seed-29/checkpoints/0064.pt.gz",
+          "sha256": "105a6775e7d036115c2bfe141dc7d92b5ac50574fa4177b6056bfde436fac8b0",
+          "bytes": 344428
+        },
+        "128": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U50-seed-29/checkpoints/0128.pt.gz",
+          "sha256": "c4c16cfd18b77e899b0ec65a1855f1bac21f2981afea2178d0487793722afefd",
+          "bytes": 355642
+        }
+      },
+      "tracking_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/72m5cb39"
+    },
+    "B05-seed-29": {
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B05-seed-29/state.json",
+        "sha256": "31d746664b0819087bfe58e7f0858a9e93e44b25f35db4251336100db1defc88",
+        "bytes": 48160
+      },
+      "checkpoints": {
+        "0": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B05-seed-29/checkpoints/0000.pt.gz",
+          "sha256": "b94fe2fe863b12ee1b1ac5957e6183bde259c46ab228c33de1d155412c4a5cd2",
+          "bytes": 324088
+        },
+        "64": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B05-seed-29/checkpoints/0064.pt.gz",
+          "sha256": "d29ffa4d2bffa16fb61899d14d9cb85ef9ef493367700212af6617bf761518f9",
+          "bytes": 347929
+        },
+        "128": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B05-seed-29/checkpoints/0128.pt.gz",
+          "sha256": "cecdb6e1412d8bac5e2b447704f3303f6fa2d599aba9ff5eaeb4372de214032b",
+          "bytes": 361217
+        }
+      },
+      "tracking_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/vf5uhzz8"
+    },
+    "U05-seed-29": {
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U05-seed-29/state.json",
+        "sha256": "92cd1c44cd1b26c10b3c459f378d746a08ddc6c3ab481bd42313e3ac036ac9b8",
+        "bytes": 47898
+      },
+      "checkpoints": {
+        "0": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U05-seed-29/checkpoints/0000.pt.gz",
+          "sha256": "1a5850c029a98fc589785223b1780440ce5cd4e5c7a27eeba902eb17c7ef3b96",
+          "bytes": 324086
+        },
+        "64": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U05-seed-29/checkpoints/0064.pt.gz",
+          "sha256": "7212ce67a3611277970b022b1689f2ac132733353e8a4a1dd7522399640f5f27",
+          "bytes": 341909
+        },
+        "128": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U05-seed-29/checkpoints/0128.pt.gz",
+          "sha256": "6c0e6d0678cb792255c34f4938386beb0349769ad22a44469f0df48db8959368",
+          "bytes": 355062
+        }
+      },
+      "tracking_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/6mwsre69"
+    },
+    "C-seed-29": {
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/C-seed-29/state.json",
+        "sha256": "ee615ae873ce88e06fe734951d0d47a6f4b18f44e78dd5fd8cb8658732fac885",
+        "bytes": 47635
+      },
+      "checkpoints": {
+        "0": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/C-seed-29/checkpoints/0000.pt.gz",
+          "sha256": "fe3a40425873c0e2cb8cb1e31b0e6436e15940e2da27705c70181331b4e2d0e5",
+          "bytes": 324092
+        },
+        "64": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/C-seed-29/checkpoints/0064.pt.gz",
+          "sha256": "5bd712a6b5e1ca982f91ac49dc10bd67a2d24245c842d9161d8981f879651f31",
+          "bytes": 343982
+        },
+        "128": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/C-seed-29/checkpoints/0128.pt.gz",
+          "sha256": "c1f82cf872fb73b5fa8be8212a08c658916f4494fb89577a1ac9d87aa177b0cf",
+          "bytes": 355347
+        }
+      },
+      "tracking_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/2cwk604p"
+    },
+    "B05-seed-41": {
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B05-seed-41/state.json",
+        "sha256": "5d110b3626141ad5ba6725e6e8236dda29ee6db3baa49c497f3742673020d471",
+        "bytes": 46326
+      },
+      "checkpoints": {
+        "0": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B05-seed-41/checkpoints/0000.pt.gz",
+          "sha256": "ff27753c35e6c5e797ec810c375862d943e59d49cfc6d8b06dd6ccf913b00ac0",
+          "bytes": 323943
+        },
+        "64": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B05-seed-41/checkpoints/0064.pt.gz",
+          "sha256": "63a009702fab8bd89e7f53425746a533cb332b06a5fd467a30df25ef2cc3860d",
+          "bytes": 354147
+        },
+        "128": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B05-seed-41/checkpoints/0128.pt.gz",
+          "sha256": "19c613b6b6aaa55ae613baf69a5393afab5c6ce8bac23978d218a9a9d5ffde0c",
+          "bytes": 371493
+        }
+      },
+      "tracking_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/34q5t235"
+    },
+    "C-seed-41": {
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/C-seed-41/state.json",
+        "sha256": "fc7a6c5fc91671bc93f8d9b08aaf231b5808aac4e3fec72789a7085b955240a2",
+        "bytes": 47898
+      },
+      "checkpoints": {
+        "0": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/C-seed-41/checkpoints/0000.pt.gz",
+          "sha256": "d43979fb9db7a4eb3b08b23a9da723ad2f4b1581916179d2462e2370ed733196",
+          "bytes": 323939
+        },
+        "64": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/C-seed-41/checkpoints/0064.pt.gz",
+          "sha256": "13951dec15662514b8f8273e256048945d0338a7b9659aea95976a98a9b39907",
+          "bytes": 353447
+        },
+        "128": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/C-seed-41/checkpoints/0128.pt.gz",
+          "sha256": "91e867321585641110c94eb4e332c3e498cf113bbd60c7415dbb83d9035ebf86",
+          "bytes": 365766
+        }
+      },
+      "tracking_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/px2bnczm"
+    },
+    "B50-seed-41": {
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B50-seed-41/state.json",
+        "sha256": "b7267d3cca5213a6ecd9a120748d6febd67ea3a6c4e66d1fbdea348081c4333b",
+        "bytes": 45803
+      },
+      "checkpoints": {
+        "0": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B50-seed-41/checkpoints/0000.pt.gz",
+          "sha256": "937c6643ec88e80338b86640981f525fbf867ee285e6ff7f286f7377662895d4",
+          "bytes": 323939
+        },
+        "64": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B50-seed-41/checkpoints/0064.pt.gz",
+          "sha256": "ca5e8ba619038f3defeaa54b8075a10a4067fb2db5155342745b9072e7d231dd",
+          "bytes": 356258
+        },
+        "128": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/B50-seed-41/checkpoints/0128.pt.gz",
+          "sha256": "292fb2dac0057b275709f5a7dc23697a0ed065ffa0d94b854d8bf8c54c39f4e6",
+          "bytes": 372870
+        }
+      },
+      "tracking_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/965ond4o"
+    },
+    "U05-seed-41": {
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U05-seed-41/state.json",
+        "sha256": "ddd2dee2b0ea34d665ebe0316a4d840102e1c7a64e8498d3ce9a23339156ce0a",
+        "bytes": 44623
+      },
+      "checkpoints": {
+        "0": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U05-seed-41/checkpoints/0000.pt.gz",
+          "sha256": "3824c19cc0eceffc47cb3fa45f0aa27324c85c8d684556904e40f8a07a6e5513",
+          "bytes": 323944
+        },
+        "64": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U05-seed-41/checkpoints/0064.pt.gz",
+          "sha256": "502c438a82ebdb518ba6f569552bb2f1afbbbc4e63841c0badf18067bed27b56",
+          "bytes": 353198
+        },
+        "128": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U05-seed-41/checkpoints/0128.pt.gz",
+          "sha256": "5e0739237171a9210bea8f2bab6e5d0117bb255a0a78b063c7e7f8ffbdfc4cf1",
+          "bytes": 372901
+        }
+      },
+      "tracking_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/ye3pouar"
+    },
+    "U50-seed-41": {
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U50-seed-41/state.json",
+        "sha256": "2573194207d4bae585167f54a1e363041a640cef1763aa036e634eceda8ffd2a",
+        "bytes": 44492
+      },
+      "checkpoints": {
+        "0": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U50-seed-41/checkpoints/0000.pt.gz",
+          "sha256": "fa0d58ffa04ce3cc4745072c6076a792193afb174cd911273c081cad1240db32",
+          "bytes": 323944
+        },
+        "64": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U50-seed-41/checkpoints/0064.pt.gz",
+          "sha256": "5d1fc4899be75555bfc28556c96811463720bd4619bc55ee3f37ced7cf0e52b6",
+          "bytes": 359576
+        },
+        "128": {
+          "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-main/U50-seed-41/checkpoints/0128.pt.gz",
+          "sha256": "76ff5ad37a2e2e703c1124b0875c70ee5ecd37c98621ff5526f95a08f1ddaa2a",
+          "bytes": 376036
+        }
+      },
+      "tracking_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/yhpe6uid"
+    }
+  },
+  "probe_records": {
+    "C-seed-17-update-0": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/C-seed-17/0000/report.json",
+      "sha256": "0f2c10b6f5ac3c76f285c603fa0886dbb8e406ad2b09e3e1ca738e4ff181d30e",
+      "bytes": 91029
+    },
+    "C-seed-17-update-128": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/C-seed-17/0128/report.json",
+      "sha256": "db95fe25dd7c430f56c24aa47073d30672431ccf83d0d6ff8ceaeb143e6340ad",
+      "bytes": 91222
+    },
+    "U05-seed-17-update-128": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/U05-seed-17/0128/report.json",
+      "sha256": "3fbd165b7adcee8804d92ecef0e662eb9bb70f980afa6e2277565310c8e498ff",
+      "bytes": 90529
+    },
+    "B05-seed-17-update-128": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/B05-seed-17/0128/report.json",
+      "sha256": "313ed552daeec4ff206c7e37157406762b6e44f9965849ea56705d5157874820",
+      "bytes": 98844
+    },
+    "U50-seed-17-update-128": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/U50-seed-17/0128/report.json",
+      "sha256": "dd7969013a5aae567704ec46073e67f62c4fe4c940e6db5b365d87a3a741a558",
+      "bytes": 95305
+    },
+    "B50-seed-17-update-128": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/B50-seed-17/0128/report.json",
+      "sha256": "a35fc6ad492af27061f7d2d060dcefddf65abda34b627c179247f2298295cd36",
+      "bytes": 99159
+    },
+    "C-seed-29-update-0": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/C-seed-29/0000/report.json",
+      "sha256": "7e29b4c7b5966b4c148275d0fd653aafc2d130f173d09c0a114b35199929a7bc",
+      "bytes": 90370
+    },
+    "B50-seed-29-update-128": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/B50-seed-29/0128/report.json",
+      "sha256": "bca24c532460490c4ed23a4534c62d9ecf9863d5c987b8653f991de02e1c4750",
+      "bytes": 99113
+    },
+    "U50-seed-29-update-128": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/U50-seed-29/0128/report.json",
+      "sha256": "658572fb7cb1f49a5ab5ce173dd7d37277d526db48b2fafb2ad0c2bf97bc80c3",
+      "bytes": 95780
+    },
+    "B05-seed-29-update-128": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/B05-seed-29/0128/report.json",
+      "sha256": "ae0e8052435ec9993521f966d79f25be246472240696d8ca07f54376c5e4394a",
+      "bytes": 98548
+    },
+    "U05-seed-29-update-128": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/U05-seed-29/0128/report.json",
+      "sha256": "c937c22150a068c4f8af6d4dcd0b9fb1283ffaa627ac431d12ebde18fc0c012a",
+      "bytes": 93181
+    },
+    "C-seed-29-update-128": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/C-seed-29/0128/report.json",
+      "sha256": "c0f927b71e14200acf60307de6155b8e74945af5a0623896c1cc3380ebc62f3f",
+      "bytes": 90203
+    },
+    "C-seed-41-update-0": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/C-seed-41/0000/report.json",
+      "sha256": "98d30d394c92e5c1fafe5143b988cea22a470f858b2653ba93e501899196fca6",
+      "bytes": 91548
+    },
+    "B05-seed-41-update-128": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/B05-seed-41/0128/report.json",
+      "sha256": "605bdac4a55881850d2a653bee17061d87bb99b622d4beec2170a121c30d54de",
+      "bytes": 100163
+    },
+    "C-seed-41-update-128": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/C-seed-41/0128/report.json",
+      "sha256": "4e0f1b01be2730c7f819a015bdfbb344963ee92d97dfce813b4eba33573f78f2",
+      "bytes": 90859
+    },
+    "B50-seed-41-update-128": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/B50-seed-41/0128/report.json",
+      "sha256": "9822524b1d4ed0451a40eb83ebace30bf06cbed057f7f18f853a514f8eacda6d",
+      "bytes": 98856
+    },
+    "U05-seed-41-update-128": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/U05-seed-41/0128/report.json",
+      "sha256": "bc30221067d9bdaeccf692ddeb414c6c99528b5a35b21c4a28e39a3ac1ef90ea",
+      "bytes": 91595
+    },
+    "U50-seed-41-update-128": {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/replay-continuation/U50-seed-41/0128/report.json",
+      "sha256": "2227c8708f6836b3b89c8fc84102da31d61d734f83c2d7fa32048e7c6faaf0ba",
+      "bytes": 95017
+    }
+  }
+}

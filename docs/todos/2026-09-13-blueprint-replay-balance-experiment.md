@@ -1,6 +1,8 @@
 # Replay balance experiment
 
-Status: main training is running with the verified eight-worker CUDA launch.
+Status: complete. All fifteen runs and the separate continuation diagnostic
+finished; no treatment passed the registered transfer or known-state gate.
+See the [results](../reports/2026-09-13-blueprint-replay-balance-results.md).
 
 ## Context
 
@@ -24,9 +26,9 @@ It preserves centered GAE and current blueprint semantics.
 - [x] Pass bounded readiness including nonempty Adam/buffer continuation.
 - [x] Freeze the evaluation panels, on-demand training namespace, sampling seeds
   and launch manifest; retain all actual training inputs as they are generated.
-- [ ] Complete five arms by three seeds, 128 updates per arm, or report incomplete pairs.
-- [ ] Run the bounded independent anchor continuation diagnostic and report all contrasts.
-- [ ] Complete relevant source verification and commit implementation/results slices.
+- [x] Complete five arms by three seeds, 128 updates per arm, or report incomplete pairs.
+- [x] Run the bounded independent anchor continuation diagnostic and report all contrasts.
+- [x] Complete relevant source verification and commit implementation/results slices.
 
 ## Activity
 
@@ -85,3 +87,16 @@ It preserves centered GAE and current blueprint semantics.
   four updates completed, including an actual child-own terminal admission.
   The 15-arm screen and separate continuation/report commands are still active
   work; there is no endpoint conclusion or promotion decision yet.
+- Completed all 491,520 training actions and 7,680 episode executions without a
+  correctness/resource guard failure. All runs shared 512 actual new inputs.
+  Main training took 107.8 minutes; the explicit 2,160-branch continuation probe
+  took 66.1 seconds. The registered report command completed successfully.
+- Fifteen transfer factories remain eligible after one geometry overlap with
+  the continuation bank. Only B50 has positive final transfer, with 1/0/2
+  improved factories by seed. It fails the required breadth across two seeds.
+  Its pre-pose target rates are 17.5/12.5/17.5%, below the known-state threshold.
+  B05/U50/B50 preserve pooled small continuity; U05 does not.
+- Retained endpoint/recovery checkpoints, actual input payloads, source episodes,
+  selected physical witnesses and compact metrics. Recorded every paired
+  contrast, stage effect, realized exposure and limitation in the results report.
+  No coefficient promotion, longer training or new scientific treatment followed.

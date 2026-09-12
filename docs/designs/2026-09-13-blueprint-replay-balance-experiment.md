@@ -1,8 +1,11 @@
 # Separate success exposure, replay balance and imitation strength
 
-Status: the explicit runtime and complete-cycle readiness are verified. Main
-training requires the frozen launch manifest. This remains the registered bounded
-research slice; see the [runtime report](../reports/2026-09-13-blueprint-replay-runtime.md).
+Status: completed under the frozen launch manifest. All fifteen runs and the
+separate continuation diagnostic finished. No treatment passed the registered
+transfer or known-state gate; see the
+[results](../reports/2026-09-13-blueprint-replay-balance-results.md) and
+[runtime report](../reports/2026-09-13-blueprint-replay-runtime.md).
+The contracts and thresholds below remain the registered bounded research slice.
 
 ## Question and evidence
 
@@ -383,5 +386,6 @@ frozen in a launch manifest before any main optimizer update.
 4. Execute the registered screen; then run the separate anchor continuation probe.
 5. Report all paired contrasts, failures, preservation gates and remaining uncertainty.
 
-This design records no main learning result. Main training starts only after the
-registered readiness and launch checks pass.
+Main training passed the registered readiness and launch checks before execution.
+The linked results record the completed comparison without changing these
+thresholds or authorizing a longer run.
