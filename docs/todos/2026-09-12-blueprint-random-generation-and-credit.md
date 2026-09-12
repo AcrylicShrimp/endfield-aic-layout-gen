@@ -25,3 +25,8 @@ Contract: [design](../designs/2026-09-12-blueprint-random-generation-and-credit.
   episodes, four products, 20 requests, 23 geometries, six exact update replays
   and 96 full-action evaluation cases. Python 420 tests (seven skipped), Rust
   check and 564 tests (five ignored) passed. Advantage comparison remains next.
+- 2026-09-12: registered 512 updates per condition and three learner seeds.
+  Added centered-only credit with unchanged value targets, exact nonempty-Adam
+  and self-imitation replay tests, a shared matrix supervisor, paired-input
+  result analysis and a dedicated W&B view helper. Six-arm preparation passed
+  locally; the server readiness matrix precedes main training.

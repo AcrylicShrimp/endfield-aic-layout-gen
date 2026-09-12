@@ -1,7 +1,7 @@
 """PPO plus positive-return-advantage weighted imitation of self-generated successes."""
 import torch
 
-from blueprint_ppo_update import credit, digest, predictions, require, statistics, update
+from blueprint_ppo_update import credit, credit_metrics, digest, predictions, require, statistics, update
 
 
 def imitation_loss(model, sequences):
@@ -96,7 +96,7 @@ def update_success(model, actor_optimizer, critic_optimizer, shuffle_rng, sample
     if tail_actor is not None:
         require(tail_actor == digest({k: v for k, v in model.state_dict().items() if not k.startswith('critic.')}), 'critic tail preserves actor/encoder')
         require(tail_optimizer == digest(actor_optimizer.state_dict()), 'critic tail preserves actor optimizer')
-    return dict(success=dict(coefficient=coefficient, selected_ids=selected_ids,
+    return dict(**credit_metrics(raw, advantages, samples, config), success=dict(coefficient=coefficient, selected_ids=selected_ids,
                     label_count=sum(d['labels'] for d in diagnostics), positive_labels=sum(d['positive'] for d in diagnostics),
                     weighted_loss=sum(losses) / len(losses), diagnostics=diagnostics,
                     rng_sha256=digest(generator.get_state())), model_before=before, model_after=digest(model.state_dict()),

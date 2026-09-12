@@ -1,6 +1,7 @@
 # Restore fresh blueprint training inputs, then compare advantage scaling
 
-Status: implementation in progress. Authorized on 2026-09-12.
+Status: fresh-input restoration verified and committed as `6e7a3e5`;
+advantage comparison implementation in progress. Authorized on 2026-09-12.
 
 ## Regression and required order
 
@@ -89,3 +90,22 @@ delta, success commits, action distribution, raw advantage scale and critic
 error by seed. Movement frequency alone is not a winning criterion. Preserve
 source/input/native provenance, exact learner replay evidence, W&B records and
 resource termination reasons. No peak-checkpoint selection or automatic long run.
+
+### Registered main budget after restoration readiness
+
+The restored native readiness completed 24 genuine 64-action random episodes,
+six exact update replays and 96 full-action historical evaluations. Register
+`blueprint-advantage-screen.json` before launching main training: 512 updates per
+arm, six arms, 131,072 actions and 2,048 episodes per arm, 786,432 actions total.
+All arms use the same ordered 2,048 newly generated episode inputs; sharing is
+across policies only. No input is cycled within a learner. Seeds 17/29/41 are
+learner/sampling seeds, not six different training-data distributions.
+
+Evaluate at 0, 4, ..., 512 (129 points per arm), using the unchanged 32 factories.
+Primary outcomes are final evaluation and the last-128-update window, points
+388 through 512. Retain the full per-seed results and own-initial deltas. Each arm
+has a three-hour operational ceiling plus 180 seconds finalization, an eight-GiB
+output ceiling and an eight-GiB shared filesystem reserve. Resource termination
+before update 512 is incomplete, not a matched result. Use at most four explicitly
+pinned single-thread CPU workers on one host. Source/native identity and actual
+CPU allocation are recorded; elapsed policy input remains a measured limitation.

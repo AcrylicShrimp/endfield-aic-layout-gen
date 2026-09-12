@@ -1,0 +1,15 @@
+{
+  "schema": "blueprint-advantage-matrix-v1",
+  "name": "blueprint-fresh-input-advantage-20260912",
+  "base_config": "tools/factory-edit-pilot/blueprint-success-64-12h.json",
+  "seeds": [17, 29, 41],
+  "variants": ["standardize", "center"],
+  "updates": 512,
+  "last_window_batches": 128,
+  "generation_seed_base": 361000000,
+  "duration_seconds": 10800,
+  "finish_grace_seconds": 180,
+  "max_parallel": 4,
+  "min_free_bytes": 8589934592,
+  "max_run_bytes": 8589934592
+}

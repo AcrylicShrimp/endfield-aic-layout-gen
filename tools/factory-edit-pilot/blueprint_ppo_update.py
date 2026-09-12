@@ -77,8 +77,22 @@ def credit(samples, frontiers, config):
         advantage, target = gae([s['reward'] for s in rows], [s['old_value'] for s in rows],
             [s['terminal'] for s in rows], frontier['bootstrap'], config['gamma'], config['gae_lambda'])
         raw[indices], targets[indices] = advantage, target
-    normalized = (raw - raw.mean()) / raw.std(unbiased=False).clamp_min(1e-8)
+    normalized = actor_advantages(raw, config.get('advantage_normalization', 'standardize'))
     return raw, normalized, targets
+
+
+def actor_advantages(raw, normalization):
+    require(normalization in ('standardize', 'center'), 'registered advantage normalization: standardize or center')
+    centered = raw - raw.mean()
+    return centered / raw.std(unbiased=False).clamp_min(1e-8) if normalization == 'standardize' else centered
+
+
+def credit_metrics(raw, advantages, samples, config):
+    mode = config.get('advantage_normalization', 'standardize')
+    return dict(advantage_normalization=mode,
+                advantage_scale=1. / max(float(raw.std(unbiased=False)), 1e-8) if mode == 'standardize' else 1.,
+                actor_advantage_mean=float(advantages.mean()), actor_advantage_std=float(advantages.std(unbiased=False)),
+                zero_reward_batch=all(s['reward'] == 0 for s in samples))
 
 
 def statistics(model, samples, targets, config):
@@ -151,7 +165,7 @@ def update(model, actor_optimizer, critic_optimizer, shuffle_rng, samples, front
     if tail_actor is not None:
         require(tail_actor == digest({k: v for k, v in model.state_dict().items() if not k.startswith('critic.')}), 'critic tail preserves actor/encoder')
         require(tail_optimizer == digest(actor_optimizer.state_dict()), 'critic tail preserves actor optimizer')
-    return dict(model_before=before, model_after=digest(model.state_dict()),
+    return dict(**credit_metrics(raw, advantages, samples, config), model_before=before, model_after=digest(model.state_dict()),
                 actor_optimizer=digest(actor_optimizer.state_dict()), critic_optimizer=digest(critic_optimizer.state_dict()),
                 shuffle_rng=digest(shuffle_rng.get_state()), raw_advantage_mean=float(raw.mean()),
                 raw_advantage_std=float(raw.std(unbiased=False)), targets_sha256=digest(targets),

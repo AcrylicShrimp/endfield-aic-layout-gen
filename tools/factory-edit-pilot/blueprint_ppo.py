@@ -23,6 +23,8 @@ def validate(config):
     validate_input(config)
     require(config['schema'] == 'blueprint-persistent-ppo-v1' and config['device'] == 'cpu', 'registered CPU graph learner schema')
     training, evaluation, ppo = config['training'], config['evaluation'], config['ppo']
+    require(ppo.get('advantage_normalization', 'standardize') in ('standardize', 'center'),
+            'registered advantage normalization: standardize or center')
     require(type(ppo['width']) is int and ppo['width'] > 0
             and type(ppo.get('message_rounds', 2)) is int and ppo.get('message_rounds', 2) > 0,
             'positive integer graph width and message rounds')
