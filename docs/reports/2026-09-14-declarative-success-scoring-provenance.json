@@ -1,0 +1,30 @@
+{
+  "schema": "declarative-success-scoring-provenance-v1",
+  "update": 1410,
+  "input": {
+    "path": "artifacts/declarative-success-scoring/20260914/input.json.gz",
+    "sha256": "94ea4b166ef95004aad88fc42f13f933566a4b4b370427dbcafb1bec97832760",
+    "bytes": 619203
+  },
+  "configuration": {
+    "path": "tools/factory-edit-pilot/diagnostics/declarative-success-scoring.json",
+    "sha256": "54b073c15017edc95271e9684a4c379007161cd4f352e061833b30b9551b69bc",
+    "bytes": 601
+  },
+  "checkpoint": {
+    "path": "checkpoints/1410.pt.gz",
+    "sha256": "d36335f986a6d5358bdd5252e453a72fb882b3e59e938055ed7fa12a78234668"
+  },
+  "source_run": "/home/ashrimp/Srv/aic-declarative-efficiency-20260913/artifacts/resumed-four-hour/seed-29",
+  "capture_seconds": 16.482890450002742,
+  "decoded_chunks": 35,
+  "source_bytes": 214590497,
+  "local_analysis_seconds": 0.12428333307616413,
+  "outputs": [
+    "report.json",
+    "selection.png",
+    "geometry-examples.png",
+    "geometry-examples.json"
+  ],
+  "scope": "Retained-pool ranking only; no counterfactual validity, online retention or policy-performance claim."
+}

@@ -1,0 +1,13 @@
+{
+  "schema": "declarative-success-scoring-experiment-v1",
+  "budgets_per_stratum": [128, 512, 1024],
+  "profiles": {
+    "area": {"rare": 0, "center": 0, "exterior": 0},
+    "rare_1pp": {"rare": 0.01, "center": 0, "exterior": 0},
+    "rare_3pp": {"rare": 0.03, "center": 0, "exterior": 0},
+    "rare_10pp": {"rare": 0.1, "center": 0, "exterior": 0},
+    "rare_3pp_center": {"rare": 0.03, "center": 0.1, "exterior": 0},
+    "rare_3pp_exterior_uncapped": {"rare": 0.03, "center": 0, "exterior": 1},
+    "rare_3pp_exterior_capped": {"rare": 0.03, "center": 0, "exterior": 1, "cap_geometry": true}
+  }
+}
