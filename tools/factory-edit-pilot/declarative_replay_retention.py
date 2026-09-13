@@ -1,6 +1,7 @@
 """Bounded replay replacement using observed SIL contribution, without rescoring."""
 from collections import Counter
 import math
+import heapq
 
 from blueprint_ppo_update import require
 
@@ -34,29 +35,53 @@ def observe(entries, measurements, ordinal, config):
             draws=row['draws']+(old['draws'] if old else 0),updates=1+(old['updates'] if old else 0),last_update=ordinal)
 
 
+class ReplacementIndex:
+    """One fixed-update ordering, with logarithmic removal and admission."""
+    def __init__(self, entries, ordinal, config, strata):
+        validate(config)
+        self.entries, self.ordinal, self.config, self.strata = entries, ordinal, config, strata
+        self.counts, self.present, self.next_token = Counter(), {}, 0
+        self.mature, self.oldest = {}, {}
+        for entry in entries.values():
+            self.add(entry)
+
+    def add(self, entry):
+        name = stratum(entry,self.strata)
+        token = self.next_token; self.next_token += 1
+        self.present[entry['id']] = token
+        self.counts[name] += 1
+        tail = (entry['admitted_update'],entry['id'],token)
+        heapq.heappush(self.oldest.setdefault(name,[]),tail)
+        value = entry.get('utility')
+        if value is not None and value['draws']>=self.config['minimum_draws'] and value['updates']>=self.config['minimum_updates']:
+            age = max(0,self.ordinal-value['last_update'])
+            score = value['ema']/(1+age/self.config['stale_updates'])
+            heapq.heappush(self.mature.setdefault(name,[]),(score,*tail))
+
+    def current(self, heap):
+        while heap and self.present.get(heap[0][-2]) != heap[0][-1]:
+            heapq.heappop(heap)
+        return bool(heap)
+
+    def choose(self, incoming):
+        require(bool(self.present), 'declarative.replay-retention: no removable entry')
+        name = stratum(incoming,self.strata)
+        chosen = max((s for s,n in self.counts.items() if n),
+            key=lambda s:(self.counts[s]+(s==name),s==name,s))
+        experienced = self.mature.setdefault(chosen,[])
+        if self.current(experienced):
+            selected = heapq.heappop(experienced)[-2]
+            reason = 'lowest_observed_contribution'
+        else:
+            oldest = self.oldest[chosen]
+            require(self.current(oldest), 'declarative.replay-retention: empty indexed stratum')
+            selected = heapq.heappop(oldest)[-2]
+            reason = 'insufficient_observations_oldest'
+        entry = self.entries[selected]
+        del self.present[selected];self.counts[chosen] -= 1
+        return selected,dict(reason=reason,stratum=chosen,utility=entry.get('utility'),
+            admitted_update=entry['admitted_update'],labels=len(entry['labels']))
+
+
 def victim(entries, incoming, ordinal, config, strata):
-    """Protect scarce strata, then retire the least useful sufficiently observed row."""
-    validate(config)
-    require(bool(entries), 'declarative.replay-retention: no removable entry')
-    incoming_stratum=stratum(incoming,strata)
-    counts=Counter(stratum(e,strata) for e in entries.values());counts[incoming_stratum]+=1
-    # Count the arriving experience when balancing capacity. This permits a
-    # scarce stratum to grow instead of endlessly replacing its few examples.
-    available={stratum(e,strata) for e in entries.values()}
-    chosen=max(available,key=lambda s:(counts[s],s==incoming_stratum,s))
-    candidates=[e for e in entries.values() if stratum(e,strata)==chosen]
-    def mature(entry):
-        value=entry.get('utility')
-        return value is not None and value['draws']>=config['minimum_draws'] and value['updates']>=config['minimum_updates']
-    experienced=[e for e in candidates if mature(e)]
-    if experienced:
-        def rank(entry):
-            u=entry['utility'];age=max(0,ordinal-u['last_update'])
-            return (u['ema']/(1+age/config['stale_updates']),entry['admitted_update'],entry['id'])
-        selected=min(experienced,key=rank);reason='lowest_observed_contribution'
-    else:
-        # Capacity is still a hard bound when no candidate has enough evidence.
-        # Give newer/unobserved arrivals a chance; report this fallback honestly.
-        selected=min(candidates,key=lambda e:(e['admitted_update'],e['id']));reason='insufficient_observations_oldest'
-    return selected['id'],dict(reason=reason,stratum=chosen,utility=selected.get('utility'),
-        admitted_update=selected['admitted_update'],labels=len(selected['labels']))
+    return ReplacementIndex(entries,ordinal,config,strata).choose(incoming)

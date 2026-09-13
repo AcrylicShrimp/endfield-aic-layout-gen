@@ -60,7 +60,12 @@ class Worker(TransportWorker):
         if operation == 'finish':
             require(len(self.samples)==self.runtime.config['training']['chunk_actions'], 'declarative chunk coverage')
             frontier, completed = finish_stream(self.stream,self.observation,self.prepared,command['value'])
-            result = dict(native_before=self.before,samples=self.samples,frontier=frontier,completed=completed)
+            # The coordinator already owns the exact inputs used to select
+            # these actions. Do not transmit the entire tensor/domain batch a
+            # second time. Worker-local inputs remain available for failure
+            # preservation until this successful finish response is formed.
+            samples=[{k:v for k,v in row.items() if k!='input'} for row in self.samples]
+            result = dict(native_before=self.before,samples=samples,frontier=frontier,completed=completed)
             self.before, self.samples = None, []
             return result
         if operation == 'snapshot':

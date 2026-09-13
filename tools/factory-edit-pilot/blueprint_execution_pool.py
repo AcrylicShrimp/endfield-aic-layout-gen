@@ -9,7 +9,7 @@ import time
 
 import torch
 
-from blueprint_execution_worker import SCHEMA, arrays
+from blueprint_execution_worker import SCHEMA
 from blueprint_ppo_batch import distribution, pack
 from blueprint_ppo_update import digest, require
 from ppo_harness_transport import Reader, receive, send
@@ -51,7 +51,7 @@ class BlueprintPool:
                     child.close()
                 self.workers.append(process)
                 self.sockets.append(parent)
-                self.readers.append(Reader(message_bytes))
+                self.readers.append(Reader(message_bytes, owned_buffers=policy is not None))
                 self.selector.register(parent, selectors.EVENT_READ, index)
             self.identities = self.exchange([dict(operation='initialize', config=config, library=str(library), index=i,
                 saved=None if saved is None else saved[i]) for i in range(len(cores))])
@@ -71,7 +71,7 @@ class BlueprintPool:
         self.request_id += 1
         for index, command in enumerate(commands):
             self.guard()
-            send(arrays(dict(command, schema=SCHEMA, request_id=self.request_id), True), self.sockets[index])
+            send(dict(command, schema=SCHEMA, request_id=self.request_id), self.sockets[index])
         while pending:
             self.guard()
             for key, _ in self.selector.select(.1):
@@ -85,7 +85,7 @@ class BlueprintPool:
                 messages = self.readers[index].feed(data, descriptors)
                 require(len(messages) <= 1, 'replay-balance.worker-lost: duplicate worker response')
                 if messages:
-                    message = arrays(messages[0], False)
+                    message = messages[0]
                     require(message['ok'], f'replay-balance.worker-lost: worker {index}: {message.get("error")}')
                     require(message['schema'] == SCHEMA and message['request_id'] == self.request_id
                             and message['worker_index'] == index, 'replay-balance.worker-lost: response identity mismatch')
@@ -109,10 +109,14 @@ class BlueprintPool:
         return [r['stream'] for r in self.exchange([dict(operation='snapshot') for _ in self.workers])]
 
     def collect(self, model, sampler):
-        require(next(model.parameters()).device.type == 'cpu', 'ordered policy sampler requires a CPU behavior copy')
+        require(self.policy is not None or next(model.parameters()).device.type == 'cpu',
+                'default ordered policy sampler requires a CPU behavior copy')
         began, behavior = time.perf_counter(), digest(model.state_dict())
         replies = self.exchange([dict(operation='begin') for _ in self.workers])
+        inputs=[]
         for _ in range(self.config['training']['chunk_actions']):
+            if self.policy is not None:
+                inputs.append([r['input'] for r in replies])
             if self.policy is not None:
                 with torch.no_grad():
                     commands = self.policy.sample(model, [r['input'] for r in replies], sampler)
@@ -138,7 +142,8 @@ class BlueprintPool:
         require(digest(model.state_dict()) == behavior, 'collection changed frozen behavior parameters')
         return dict(schema=self.config.get('chunk_schema', 'blueprint-ppo-chunk-v1'), model_before=behavior,
             native_before=[c['native_before'] for c in chunks],
-            samples=[c['samples'][step] for step in range(self.config['training']['chunk_actions']) for c in chunks],
+            samples=[dict(c['samples'][step],input=inputs[step][i]) if self.policy is not None else c['samples'][step]
+                for step in range(self.config['training']['chunk_actions']) for i,c in enumerate(chunks)],
             frontiers=[c['frontier'] for c in chunks], completed=[c['completed'] for c in chunks if c['completed'] is not None],
             collection_seconds=time.perf_counter() - began)
 

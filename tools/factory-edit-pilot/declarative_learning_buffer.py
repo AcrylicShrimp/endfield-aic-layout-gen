@@ -24,6 +24,14 @@ class Buffer:
         return deepcopy(self.state)
 
     def eligible(self, evidence, ordinal_update, strata):
+        self.hydrate(evidence, strata)
+        result=[]
+        for identity,entry in sorted(self.state['entries'].items()):
+            require(entry['admitted_update']<ordinal_update, 'declarative current update cannot enter replay')
+            result.append(self.cache[identity])
+        return result
+
+    def hydrate(self, evidence, strata):
         # On restoration many uncached sequences refer to the same source chunk.
         # Load that chunk once, instead of repeatedly inflating it in ID order.
         pending={identity:entry for identity,entry in self.state['entries'].items() if identity not in self.cache}
@@ -43,11 +51,6 @@ class Buffer:
             require(len(matches)==1, 'declarative replay product must identify one configured stratum')
             self.cache[identity]=dict(id=identity,child_admitted_update=entry['admitted_update'],origin='own',
                 stratum=matches[0],product=product,rows=rows[identity])
-        result=[]
-        for identity,entry in sorted(self.state['entries'].items()):
-            require(entry['admitted_update']<ordinal_update, 'declarative current update cannot enter replay')
-            result.append(self.cache[identity])
-        return result
 
     def mark_used(self, groups):
         for group in groups:
@@ -59,6 +62,7 @@ class Buffer:
 
     def ingest(self, chunk, ordinal, evidence, config, gamma, strata=None):
         events = []
+        replacement = None
         before = {s['index']:s for s in chunk['native_before']}
         for index, sample in enumerate(chunk['samples']):
             reference = (ordinal,index)
@@ -107,8 +111,10 @@ class Buffer:
                             'declarative.replay-retention: incoming sequence exceeds capacity or strata missing')
                         incoming=dict(input=active['input'])
                         while len(self.state['entries'])>=config['max_sequences'] or self.label_count+len(labels)>config['max_labels']:
-                            from declarative_replay_retention import victim
-                            removed,detail=victim(self.state['entries'],incoming,ordinal,config['retention'],strata)
+                            if replacement is None:
+                                from declarative_replay_retention import ReplacementIndex
+                                replacement=ReplacementIndex(self.state['entries'],ordinal,config['retention'],strata)
+                            removed,detail=replacement.choose(incoming)
                             if 'selected_uses_total' not in self.state:self.state['selected_uses_total']=sum(self.state['selected_uses'].values())
                             self.state['selected_uses'].pop(removed,None)
                             entry=self.state['entries'].pop(removed);self.cache.pop(removed,None)
@@ -121,6 +127,7 @@ class Buffer:
                     self.state['entries'][identity] = dict(id=identity,admitted_update=ordinal,labels=labels,
                         segment=segment,input=active['input'],episode=episode,stream=stream,
                         episode_chunks=sorted({ref[0] for ref,_ in active['rows']}),uses=0,occurrences=1)
+                    if replacement is not None:replacement.add(self.state['entries'][identity])
                     self.label_count+=len(labels)
                     self.state['admissions'] += 1
                     events.append(dict(kind='admitted',id=identity,labels=len(labels)))
@@ -128,9 +135,8 @@ class Buffer:
         return events
 
     def retained_chunks(self):
-        retained = {ordinal for entry in self.state['entries'].values() for ordinal in entry['episode_chunks']}
-        retained.update(ref[0] for active in self.state['active'].values() for ref,_ in active['rows'])
-        return retained
+        from declarative_replay_storage import references
+        return set(references(self.state))
 
     def summary(self, eligible):
         return dict(eligible=len(eligible),by_stratum=dict(Counter(s['stratum'] for s in eligible)),

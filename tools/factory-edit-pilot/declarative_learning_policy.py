@@ -103,9 +103,13 @@ def action(prepared, decision):
 
 def sample(model, inputs, sampler, *, uniform=False):
     """One encoder pass, batched conditional heads, deterministic depth/stream order."""
-    batch = pack(inputs)
+    device = next(model.parameters()).device
+    batch = to_device(pack(inputs), device)
     logits, predicted, nodes, pooled = model.root(batch)
     logp, entropy = distribution(torch.zeros_like(logits) if uniform else logits, batch)
+    # Keep the established CPU categorical RNG and stream/depth draw order.
+    # Transfer each head's complete result once, not one GPU scalar per choice.
+    logp, entropy, predicted = logp.cpu(), entropy.cpu(), predicted.cpu()
     decisions, total_logp, total_entropy = [], [], []
     for start, count, ent in zip(offsets(batch['action_counts']), batch['action_counts'], entropy, strict=True):
         selected = int(torch.multinomial(logp[start:start+count].exp(), 1, generator=sampler))
@@ -120,9 +124,10 @@ def sample(model, inputs, sampler, *, uniform=False):
         if not owners:
             break
         rows = [branch(inputs[i], decisions[i], depth) for i in owners]
-        branches = pack_branches(rows, owners, node_offsets)
+        branches = to_device(pack_branches(rows, owners, node_offsets), device)
         logits = model.ports(nodes, pooled, branches)
         conditional, entropy = distribution(torch.zeros_like(logits) if uniform else logits, branches)
+        conditional, entropy = conditional.cpu(), entropy.cpu()
         for owner, row, start, count, ent in zip(owners, rows, offsets(branches['action_counts']), branches['action_counts'], entropy, strict=True):
             index = int(torch.multinomial(conditional[start:start+count].exp(), 1, generator=sampler))
             decisions[owner]['ports'].append(row['keep'][index])
@@ -133,9 +138,9 @@ def sample(model, inputs, sampler, *, uniform=False):
 
 
 def values(model, inputs):
-    batch = pack(inputs)
+    batch = to_device(pack(inputs), next(model.parameters()).device)
     _, pooled = model.encode_packed(batch)
-    return model.critic(pooled).squeeze(-1)
+    return model.critic(pooled).squeeze(-1).cpu()
 
 
 def prepare_rows(rows):

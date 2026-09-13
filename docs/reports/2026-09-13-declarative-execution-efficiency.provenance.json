@@ -1,0 +1,45 @@
+{
+  "schema": "declarative-execution-efficiency-provenance-v1",
+  "status": "verified",
+  "source_root": "/home/ashrimp/Srv/aic-declarative-efficiency-20260913",
+  "parent": {
+    "directory": "/home/ashrimp/Srv/aic-declarative-four-hour-20260913/artifacts/declarative-duration/four-hour",
+    "launch_sha256": "e2ae21385d6c73fd5d78cf8216e6635d5ca7d6a9b9367b4255f3d6c7f76c64d4",
+    "state_sha256": "2ccd9a65f8bf755d5929c44aaa23545d86f71d2718ad9b8f8eceb698b613c4b6",
+    "job_sha256": "13e28a7fffc611ee8df1c18594700bf94077f10fb961232c120499ffd730862f",
+    "checkpoint": {
+      "path": "checkpoints/0080.pt.gz",
+      "sha256": "7ac89ef8b6869467edb16f7625a68f5443e3afbab10d0d64383de6293d410f27"
+    }
+  },
+  "source_sha256": "fc2b648df23778c9780c0f1f3698a629c482b0a817d05b1f9e87dcdd57346e0e",
+  "config_sha256": "9b8bb2b26de5223a95b59b22bb6aaa4b055cf39fc8f5d88a3eeeab652032c16a",
+  "verification": {
+    "path": "artifacts/verification-v3/verification.json",
+    "sha256": "bc442e7f4ef7b49446adb44eb1d8976af0d83fb389a3cd0a73e46ab3f4d405f1"
+  },
+  "policy": {
+    "path": "artifacts/policy-device-v1.json",
+    "sha256": "73c62cfb7ec6b67901086d2beed1c41dc8f00670378b600a2a62c311a2140c04"
+  },
+  "retained_replay": {
+    "path": "artifacts/replay-proof-v3/report.json",
+    "sha256": "19b60bb1e2e4e0c2681d829cea0233344be4187ab57457789b5a0a1a9da56a94"
+  },
+  "compact_sources": {
+    "path": "artifacts/compact-parent-v1/manifest.json",
+    "sha256": "d0e41b8954227d874d707633464cb06af946d2cfe82fb2344954f360c7e1953f",
+    "sources": 67,
+    "original_bytes": 2832160154,
+    "compact_bytes": 197074241
+  },
+  "normal": {
+    "path": "artifacts/verification-v3/normal",
+    "launch_sha256": "32204a4dc9cb3b40142ab4ea22d41f970ea1d4ac12ff92de399e834e7b54bcbd",
+    "actions": 2048,
+    "completed_episodes": 32,
+    "restored_streams": 32,
+    "tests": 50
+  },
+  "retention": "Raw learning and diagnostic artifacts remain in ignored artifacts directories. This manifest contains only selected provenance."
+}

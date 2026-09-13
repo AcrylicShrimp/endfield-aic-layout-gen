@@ -14,6 +14,7 @@ import time
 import numpy as np
 
 from ppo_harness_state import require
+from ppo_tensor_pickle import dumps as tensor_dumps
 
 HEADER = struct.Struct('!4sQ')
 MAGIC = b'AIC4'
@@ -47,7 +48,7 @@ def channel():
 def encode(message):
     """Return a metadata frame and an owned fd; callers must close the latter."""
     buffers = []
-    metadata = pickle.dumps(message, protocol=5, buffer_callback=buffers.append)
+    metadata = tensor_dumps(message, buffer_callback=buffers.append)
     unique, keys, references, offsets = [], {}, [], []
     total = logical = 0
     for buffer in buffers:
@@ -115,8 +116,9 @@ def receive(stream):
 
 
 class Reader:
-    def __init__(self, limit):
+    def __init__(self, limit, *, owned_buffers=False):
         self.limit = limit
+        self.owned_buffers = owned_buffers
         self.buffer = bytearray()
         self.descriptors = deque()
         self.bytes = self.shared_bytes = self.logical_bytes = 0
@@ -159,6 +161,16 @@ class Reader:
                 mapping = mmap.mmap(fd, size, access=mmap.ACCESS_COPY)
             finally:
                 os.close(fd)
+            if self.owned_buffers:
+                # Persistent policy inputs can outlive thousands of messages.
+                # Python 3.12 mmap retains an fd for each live mapping. Copy the
+                # contiguous bytes once, before decoding, and release that fd;
+                # no recursive tensor conversion or repeat transmission occurs.
+                try:
+                    owned = bytearray(mapping)
+                finally:
+                    mapping.close()
+                mapping = owned
         views = [memoryview(mapping)[offset:offset + length] if mapping is not None else memoryview(bytearray())
                  for offset, length in offsets]
         message = pickle.loads(wire['metadata'], buffers=[views[i] for i in references])

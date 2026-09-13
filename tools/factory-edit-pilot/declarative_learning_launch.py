@@ -23,6 +23,13 @@ def validate(config):
     require(config['training_input']['kind']=='fresh-random' and 'fixture_diagnostic' not in config['success'],
         'declarative main training must use fresh inputs only')
     training=config['training']
+    options=config.get('execution_options',{})
+    require(set(options)<= {'workers','behavior_device'} and type(options.get('workers',8)) is int and
+        1<=options.get('workers',8)<=training['streams'] and options.get('behavior_device','cpu') in ('cpu','cuda:0'),
+        'declarative explicit execution worker/device configuration')
+    traces=config['retention'].get('training_traces',[])
+    require(isinstance(traces,list) and all(type(n) is int and n>0 for n in traces) and len(traces)==len(set(traces)),
+        'declarative explicit retained diagnostic trace updates')
     require(training['streams'] in (8,32) and 0<training['chunk_actions']<training['episode_actions'] and
         training['episode_actions']%training['chunk_actions']==0 and
         training['updates']%(training['episode_actions']//training['chunk_actions'])==0, 'declarative complete persistent horizon')

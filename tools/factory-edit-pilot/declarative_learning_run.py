@@ -72,11 +72,12 @@ def run_arm(launch, matrix, seed, state, matrix_guard, requested_stop=lambda:Fal
         config['limits']['matrix_rss_bytes'],config['limits']['min_free_bytes'])
     def guard():
         matrix_guard();resource()
-    tracking=wandb.init(**tracking_destination(required=True),mode=config['tracking']['mode'],
+    tracking=wandb.init(**tracking_destination(required=True),mode=config['tracking']['mode'],allow_val_change=True,
         name=f'declarative-seed-{seed}',group=config['tracking']['group'],id=job.get('wandb_id'),resume='allow',dir=str(directory),
-        config=dict(seed=seed,launch_sha256=identity,config=config,device=config['device'],workers=8))
+        config=dict(seed=seed,launch_sha256=identity,config=config,device=config['device'],workers=len(launch['allocation']['workers'])))
     job.update(wandb_id=tracking.id,wandb_url=tracking.url)
     define_metrics(tracking)
+    job['status']='running';write(directory/'state.json',job)
     evidence=Evidence(directory,job)
     allocation=launch['allocation'];workers=None
     cases=evaluation_cases(read(launch['panel']['path']),config)
@@ -122,7 +123,7 @@ def run_arm(launch, matrix, seed, state, matrix_guard, requested_stop=lambda:Fal
                 worker_phase_seconds=dict(workers.phase_seconds),native_seconds=sum(s['outcome']['seconds'] for s in payload['samples']),
                 mean_root_candidates=sum(len(s['input']['actions']) for s in payload['samples'])/len(payload['samples']),
                 mean_selected_ports=sum(len(s['decision']['ports']) for s in payload['samples'])/len(payload['samples']))
-            publish(learner,payload,record,snapshots,directory,job,workers=workers)
+            publish(learner,payload,record,snapshots,directory,job,workers=workers,evidence=evidence)
             job['seconds']=previous+time.monotonic()-resource.began
             job['resource']=dict(resource.last,peak_rss=max(job.get('resource',{}).get('peak_rss',0),resource.peak_rss))
             retain(learner,directory,job)
@@ -131,6 +132,7 @@ def run_arm(launch, matrix, seed, state, matrix_guard, requested_stop=lambda:Fal
             print(dict(stage='train',seed=seed,update=learner.ordinal,reward=record['area_reward'],
                 eligible=record['buffer']['eligible'],successes=record['buffer']['own_entries'],
                 actor_epochs=record['ppo']['actor_epochs'],seconds=round(job['seconds'],3)),flush=True)
+            del payload,snapshots
         job.update(status='paused' if reason=='requested_stop' else 'complete',stop_reason=reason or 'update_limit',
             seconds=previous+time.monotonic()-resource.began,
             resource=dict(resource.last,peak_rss=max(job.get('resource',{}).get('peak_rss',0),resource.peak_rss)),

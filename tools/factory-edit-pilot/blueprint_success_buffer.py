@@ -25,9 +25,14 @@ class Evidence:
             return self.current[1]
         if ordinal not in self.cache:
             require(0 < ordinal <= len(self.job['records']), f'blueprint.success-buffer: unknown source chunk {ordinal}')
-            record = read(checked(self.job['records'][ordinal - 1], self.output))
-            require(record['update'] == ordinal, 'blueprint.success-buffer: ordered source record')
-            self.cache[ordinal] = load(checked(record['chunk'], self.output))
+            if 'replay_sources' in self.job:
+                require(str(ordinal) in self.job['replay_sources'], f'blueprint.success-buffer: missing replay source {ordinal}')
+                reference = self.job['replay_sources'][str(ordinal)]
+            else:
+                record = read(checked(self.job['records'][ordinal - 1], self.output))
+                require(record['update'] == ordinal, 'blueprint.success-buffer: ordered source record')
+                reference = record['chunk']
+            self.cache[ordinal] = load(checked(reference, self.output))
             if len(self.cache) > 8:
                 self.cache.popitem(last=False)
         self.cache.move_to_end(ordinal)
@@ -36,8 +41,18 @@ class Evidence:
     def sample(self, reference):
         ordinal, index = reference
         samples = self.chunk(ordinal)['samples']
-        require(0 <= index < len(samples), f'blueprint.success-buffer: source sample {reference}')
+        require(index in samples if isinstance(samples, dict) else 0 <= index < len(samples),
+                f'blueprint.success-buffer: source sample {reference}')
         return samples[index]
+
+    def published(self, ordinal, compact):
+        """Keep the small immutable replay payload already in memory after commit."""
+        self.cache[ordinal] = compact
+        self.cache.move_to_end(ordinal)
+        while len(self.cache) > 8:
+            self.cache.popitem(last=False)
+        if self.current is not None and self.current[0] == ordinal:
+            self.current = None
 
     def successor(self, reference):
         ordinal, index = reference

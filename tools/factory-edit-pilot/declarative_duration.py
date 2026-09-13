@@ -19,7 +19,7 @@ def build(config, library, panel, parent_path, verification, output, *, diagnost
         path='tools/factory-edit-pilot/'+name
         require(receipt['files_sha256'][path]==value['launch']['source']['files_sha256'][path], f'declarative.duration: changed model/credit contract {name}')
     require(sha(panel)==value['launch']['panel']['sha256'], 'declarative.duration: changed frozen evaluation panel')
-    allocation=cpu_allocation(8)
+    allocation=cpu_allocation(config.get('execution_options',{}).get('workers',8))
     if not diagnostic:
         proof=read(verification)
         require(proof['status']=='passed' and proof['continuity_closed'] and proof['config_sha256']==digest(config) and

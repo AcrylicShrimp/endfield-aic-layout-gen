@@ -93,6 +93,15 @@ class Stream:
         self.session = self.expected = None
         self.next_start = curriculum.first_start(index) if runtime.config.get('start_curriculum') else None
         self.metadata, self.counts = {}, Counter()
+        self.immutable_observation = None
+
+    def observation(self):
+        value=json.loads(self.session.observation_json())
+        if self.immutable_observation is None:
+            self.immutable_observation={k:value[k] for k in ('blueprint_sha256','blueprint','allowed_rotations','port_options','config')}
+        require(value['blueprint_sha256']==self.immutable_observation['blueprint_sha256'], 'declarative immutable blueprint changed')
+        value.update(self.immutable_observation)
+        return value
 
     def observe(self):
         if self.session is None:
@@ -101,7 +110,8 @@ class Stream:
             access = time.perf_counter()-began
             config = self.runtime.config['training']
             self.session, admission = self.runtime.open(config['episode_actions'],config['elapsed_ms'])
-            observation = json.loads(self.session.observation_json())
+            self.immutable_observation = None
+            observation = self.observation()
             if metadata and self.next_start is not None:
                 metadata=curriculum.annotate(metadata,self.next_start,observation['initial_metrics']['score'])
                 if self.next_start['depth']>0:
@@ -116,7 +126,7 @@ class Stream:
             if metadata:
                 require(metadata['blueprint_sha256']==observation['blueprint_sha256'], 'declarative episode blueprint/input binding')
             self.policy_actions, self.counts, self.expected = 0, Counter(), None
-        observation = json.loads(self.session.observation_json())
+        observation = self.observation()
         require(not observation['done'], 'declarative training session exhausted before its action horizon')
         if self.expected is not None:
             require(semantic(observation)==self.expected, 'declarative draft changed across optimizer boundary')
@@ -150,7 +160,7 @@ def step_stream(stream, observation, prepared, command):
     require(decode(prepared,command['decision'])==command['action'], 'declarative sampled/native action identity')
     outcome = stream.runtime.step(stream.session,observation,command['action'])
     stream.policy_actions += 1
-    after = json.loads(stream.session.observation_json())
+    after = stream.observation()
     terminal = stream.policy_actions == stream.runtime.config['training']['episode_actions']
     require(after['done']==terminal and outcome['charged'], 'declarative native guard interrupted training horizon')
     require(not any(d['code'] in ('declarative.elapsed','declarative.budget-exhausted') for d in outcome['diagnostics']),

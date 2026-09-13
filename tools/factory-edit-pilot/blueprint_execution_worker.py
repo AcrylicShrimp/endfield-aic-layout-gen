@@ -6,7 +6,6 @@ import socket
 import time
 import traceback
 
-import numpy as np
 import torch
 
 from blueprint_edit_input import BlueprintActorCritic, prepare
@@ -18,20 +17,6 @@ from blueprint_ppo_update import require
 from ppo_harness_transport import Reader, receive, send
 
 SCHEMA = 'blueprint-worker-message-v1'
-
-
-def arrays(value, outgoing):
-    if outgoing and isinstance(value, torch.Tensor):
-        return value.detach().cpu().numpy()
-    if not outgoing and isinstance(value, np.ndarray):
-        return torch.from_numpy(value)
-    if isinstance(value, dict):
-        return {k: arrays(v, outgoing) for k, v in value.items()}
-    if isinstance(value, list):
-        return [arrays(v, outgoing) for v in value]
-    if isinstance(value, tuple):
-        return tuple(arrays(v, outgoing) for v in value)
-    return value
 
 
 class Worker:
@@ -131,16 +116,16 @@ def main(worker_class=Worker):
             if not data:
                 raise EOFError('coordinator disconnected')
             for wire in reader.feed(data, descriptors):
-                command = arrays(wire, False)
+                command = wire
                 if command['operation'] == 'close':
                     return
                 began = time.perf_counter()
                 started_ns, cpu_before = time.monotonic_ns(), time.process_time()
                 require(command['schema'] == SCHEMA, 'worker command schema')
                 result = worker.execute(command)
-                send(arrays(dict(schema=SCHEMA, request_id=command['request_id'], worker_index=worker.stream.index,
+                send(dict(schema=SCHEMA, request_id=command['request_id'], worker_index=worker.stream.index,
                     ok=True, result=result, seconds=time.perf_counter() - began,
-                    interval_ns=(started_ns, time.monotonic_ns()), cpu_seconds=time.process_time() - cpu_before), True), stream)
+                    interval_ns=(started_ns, time.monotonic_ns()), cpu_seconds=time.process_time() - cpu_before), stream)
     except BaseException as error:
         worker.preserve(args.failure_directory, error)
         try:

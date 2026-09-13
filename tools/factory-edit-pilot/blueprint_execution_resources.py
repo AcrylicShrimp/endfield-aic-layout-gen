@@ -16,7 +16,7 @@ def cpu_allocation(workers=8):
         physical.setdefault(key, cpu)
     selected = list(physical.values())
     check(len(selected) >= workers + 1, 'execution-gate', 'resources',
-          'need eight independent worker cores and a separate coordinator core', allowed)
+          f'need {workers} independent worker cores and a separate coordinator core', allowed)
     group = next(line.split('::', 1)[1] for line in Path('/proc/self/cgroup').read_text().splitlines() if line.startswith('0::'))
     root = Path('/sys/fs/cgroup')
     current = root / group.lstrip('/')

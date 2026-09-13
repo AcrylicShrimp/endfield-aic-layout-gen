@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import torch
+import ppo_tensor_pickle
 
 from blueprint_ppo_update import digest, learners, require
 
@@ -32,23 +33,8 @@ def save(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + '.tmp')
     with gzip.open(temporary, 'wb', compresslevel=1) as stream:
-        torch.save(serializable(value), stream)
+        torch.save(value, stream, pickle_module=ppo_tensor_pickle, pickle_protocol=5)
     temporary.replace(path)
-
-
-def serializable(value):
-    # Empty NumPy views delivered through shared memory may have the same
-    # nonzero address with different dtypes. Torch mistakes these zero-byte
-    # storages for overlapping typed payloads. Owning empty tensors use ptr=0.
-    if isinstance(value, torch.Tensor):
-        return value.clone() if value.numel() == 0 else value
-    if isinstance(value, dict):
-        return {key: serializable(item) for key, item in value.items()}
-    if isinstance(value, list):
-        return [serializable(item) for item in value]
-    if isinstance(value, tuple):
-        return tuple(serializable(item) for item in value)
-    return value
 
 
 def load(path):

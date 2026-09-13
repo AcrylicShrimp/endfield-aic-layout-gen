@@ -41,10 +41,10 @@ class Learner:
                 for parameter,state in optimizer.state.items():
                     require(all(state[k].shape==parameter.shape for k in ('exp_avg','exp_avg_sq')),
                         'declarative restored Adam parameter ownership')
-        self.behavior = deepcopy(self.model).cpu().eval()
+        self.behavior = deepcopy(self.model).to(config.get('execution_options',{}).get('behavior_device','cpu')).eval()
 
     def behavior_copy(self):
-        self.behavior.load_state_dict({k:v.detach().cpu() for k,v in self.model.state_dict().items()})
+        self.behavior.load_state_dict(self.model.state_dict())
         return self.behavior
 
     def checkpoint(self, streams):
@@ -68,6 +68,9 @@ class Learner:
             from declarative_replay_retention import observe
             observe(self.buffer.state['entries'],result['success']['sequence_utility'],ordinal,success['retention'])
         events = self.buffer.ingest(payload,ordinal,evidence,success,self.config['ppo']['gamma'],self.config['strata'])
+        # New labels are still in memory. Do not serialize them merely to load
+        # and decode the same inputs again at the next optimizer boundary.
+        self.buffer.hydrate(evidence,self.config['strata'])
         self.ordinal = ordinal
         work = {key:sum(s['outcome']['details'][key] for s in payload['samples'])
                 for key in ('route_expansions','preflight_expansions','route_calls','validations')}
@@ -99,13 +102,20 @@ def account_remove(job, path):
     job.setdefault('removed_files',[]).append(dict(path=key,bytes=size))
 
 
-def publish(learner, payload, record, streams, directory, job, *, workers=None):
+def publish(learner, payload, record, streams, directory, job, *, workers=None, evidence=None):
     began = time.perf_counter()
     ordinal = learner.ordinal
-    chunk = directory/f'chunks/{ordinal:04d}.pt.gz'
+    full_trace = ordinal in learner.config['retention'].get('training_traces',[])
+    chunk = directory/f'{"chunks" if full_trace else "replay"}/{ordinal:04d}.pt.gz'
     checkpoint = directory/f'checkpoints/{ordinal:04d}.pt.gz'
-    save(chunk,payload)
+    from declarative_replay_storage import compact, references
+    retained = compact(payload,references(learner.buffer.state).get(ordinal,set()))
+    save(chunk,payload if full_trace else retained)
     chunk_ref=reference(chunk,directory)
+    # A first publication can follow an imported legacy prefix. Its source
+    # migration supplies replay_sources; fresh runs begin the index here.
+    if not job['records'] or 'replay_sources' in job:
+        job.setdefault('replay_sources',{})[str(ordinal)] = chunk_ref
     if learner.config.get('start_curriculum') and payload['completed']:
         from declarative_learning_curriculum import next_plan
         require(workers is not None, 'declarative.curriculum-publication: workers required for next-start assignment')
@@ -120,7 +130,8 @@ def publish(learner, payload, record, streams, directory, job, *, workers=None):
     save(checkpoint,learner.checkpoint(streams))
     account_write(job,chunk); account_write(job,checkpoint)
     record.update(chunk=chunk_ref,checkpoint=reference(checkpoint,directory),
-        publication_seconds=time.perf_counter()-began)
+        publication_seconds=time.perf_counter()-began,full_trace_retained=full_trace,
+        replay_samples_retained=len(retained['samples']))
     path = directory/f'updates/{ordinal:04d}.json'
     write(path,record); account_write(job,path)
     require(len(job['records'])==ordinal-1, 'declarative durable update publication order')
@@ -128,6 +139,8 @@ def publish(learner, payload, record, streams, directory, job, *, workers=None):
     job.update(update=ordinal,latest_checkpoint=record['checkpoint'])
     job.setdefault('checkpoint_chunks',{})[str(ordinal)] = sorted(learner.buffer.retained_chunks())
     write(directory/'state.json',job)
+    if evidence is not None:
+        evidence.published(ordinal,retained)
 
 
 def retain(learner, directory, job):
@@ -142,11 +155,12 @@ def retain(learner, directory, job):
     for name in list(job.get('retained_files',{})):
         from pathlib import Path
         path = Path(name)
-        if path.parent.name not in ('chunks','checkpoints'):
+        if path.parent.name not in ('chunks','replay','checkpoints'):
             continue
-        allowed = chunks if path.parent.name=='chunks' else keep
+        allowed = chunks|set(config.get('training_traces',[])) if path.parent.name in ('chunks','replay') else keep
         if int(path.name.split('.')[0]) not in allowed:
             account_remove(job,path)
+            if path.parent.name in ('chunks','replay'):job.get('replay_sources',{}).pop(str(int(path.name.split('.')[0])),None)
             if path.parent.name=='checkpoints':
                 job.get('checkpoint_chunks',{}).pop(str(int(path.name.split('.')[0])),None)
     write(directory/'state.json',job)
