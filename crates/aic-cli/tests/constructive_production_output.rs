@@ -62,7 +62,7 @@ impl Fixture {
             let input = override_input
                 .filter(|(selected, _)| *selected == flag)
                 .map_or(Path::new(default), |(_, input)| input);
-            command.arg(flag).arg(input);
+            command.arg(flag).arg(self.root.join(input));
         }
         command
     }
@@ -233,4 +233,95 @@ fn failed_artifact_writes_never_announce_completion() {
         assert!(output.stdout.is_empty());
         assert!(!output.stderr.is_empty());
     }
+}
+
+#[test]
+fn final_json_preserves_complete_geometry_without_creating_files() {
+    let fixture = Fixture::new();
+    let source = fixture
+        .root
+        .join("tools/factory-edit-pilot/family-watered-grass.json");
+    let old = fixture.run("256", Some(("--source-plan", &source)));
+    assert!(old.status.success());
+    let report: Value =
+        serde_json::from_slice(&fs::read(fixture.directory.join("report.json")).unwrap()).unwrap();
+    fs::remove_file(fixture.directory.join("report.json")).unwrap();
+    fs::remove_file(fixture.directory.join("history.html")).unwrap();
+    let output = fixture
+        .command("256", Some(("--source-plan", &source)))
+        .current_dir(&fixture.directory)
+        .arg("--final-json")
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let final_value: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(final_value["kind"], "constructive-production-final");
+    assert_eq!(final_value["complete"], true);
+    for key in ["placements", "transport_networks", "logistics_components"] {
+        assert_eq!(final_value["final_node"][key], report["final_node"][key]);
+    }
+    assert!(final_value.get("steps").is_none());
+    assert_eq!(fs::read_dir(&fixture.directory).unwrap().count(), 0);
+}
+
+#[test]
+fn final_json_preserves_partial_and_input_failures_without_files() {
+    for steps in ["0", "1"] {
+        let fixture = Fixture::new();
+        let output = fixture
+            .command(steps, None)
+            .current_dir(&fixture.directory)
+            .arg("--final-json")
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(1));
+        let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+        assert_eq!(result["kind"], "constructive-production-final");
+        assert_eq!(result["complete"], false);
+        assert!(!result["diagnostics"].as_array().unwrap().is_empty());
+        assert_eq!(fs::read_dir(&fixture.directory).unwrap().count(), 0);
+    }
+    let fixture = Fixture::new();
+    let invalid = fixture.invalid_catalog("logistics-components");
+    let output = fixture
+        .command("1", Some(("--logistics-component-catalog", &invalid)))
+        .current_dir(&fixture.directory)
+        .arg("--final-json")
+        .output()
+        .unwrap();
+    assert_eq!(output.status.code(), Some(1));
+    let result: Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(result["status"], "invalid-input");
+    assert!(!result["diagnostics"].as_array().unwrap().is_empty());
+    assert!(result.get("input_failure").is_some());
+    assert_eq!(fs::read_dir(&fixture.directory).unwrap().count(), 1);
+}
+
+#[test]
+fn final_json_rejects_diagnostic_output_flags_before_execution() {
+    let fixture = Fixture::new();
+    for flag in [
+        "--report-output",
+        "--visualization-output",
+        "--localization-catalog",
+    ] {
+        let output = fixture
+            .command("0", None)
+            .arg("--final-json")
+            .arg(flag)
+            .arg(fixture.directory.join("unexpected.json"))
+            .output()
+            .unwrap();
+        assert_eq!(output.status.code(), Some(2));
+        assert!(output.stdout.is_empty());
+    }
+    assert_eq!(
+        fixture.command("0", None).output().unwrap().status.code(),
+        Some(2)
+    );
+    assert_eq!(fs::read_dir(&fixture.directory).unwrap().count(), 0);
 }

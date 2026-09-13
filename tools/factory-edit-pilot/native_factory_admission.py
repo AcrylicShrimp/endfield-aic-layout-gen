@@ -18,7 +18,7 @@ def rejected(row, status, stage, entity, diagnostics=None):
     return None, row
 
 
-def process(binary, arguments, milliseconds, directory, name):
+def process(binary, arguments, milliseconds, directory, name, *, retain_stdout=True):
     began = time.monotonic()
     timed_out = False
     try:
@@ -29,7 +29,8 @@ def process(binary, arguments, milliseconds, directory, name):
         stdout, stderr, code = error.stdout or b'', error.stderr or b'', None
         stdout = stdout.decode() if isinstance(stdout, bytes) else stdout
         stderr = stderr.decode() if isinstance(stderr, bytes) else stderr
-    (directory / f'{name}.stdout').write_text(stdout)
+    if retain_stdout:
+        (directory / f'{name}.stdout').write_text(stdout)
     (directory / f'{name}.stderr').write_text(stderr)
     record = dict(code=code, timed_out=timed_out, elapsed_ms=(time.monotonic() - began) * 1000,
                   binary=binary, argv=arguments)
@@ -109,24 +110,32 @@ def admit(runtime, spec, chosen, directory, guard):
     targets = {n['id'] for n in wiring['nodes'] if n['kind'] == 'target'}
     target = next(e['source'] for e in wiring['edges'] if e['target'] in targets)
     c = generation['construction']
-    report_path = directory / 'construction.json'
     arguments = ['layouts', 'construct-production', '--recipes', catalogs['recipes'], '--source-plan', str(plan),
         '--facility-catalog', catalogs['facilities'], '--item-catalog', catalogs['items'],
         '--transport-catalog', catalogs['transports'], '--logistics-component-catalog', catalogs['components'],
         '--target-instance', target]
     for key in ('max_steps', 'max_placement_attempts', 'max_route_searches', 'analysis_workers'):
         arguments.extend(['--' + key.replace('_', '-'), str(c[key])])
-    arguments.extend(['--downstream-closed-growth', '--report-output', str(report_path),
-                      '--visualization-output', str(directory / 'construction.html')])
+    arguments.extend(['--downstream-closed-growth', '--final-json'])
     guard()
-    result, _ = process(spec['cli'], arguments, c['elapsed_ms'], directory, 'construction-process')
+    result, stdout = process(spec['cli'], arguments, c['elapsed_ms'], directory, 'construction-process',
+                             retain_stdout=False)
     row['construction_ms'] = result['elapsed_ms']
-    if result['timed_out'] or not report_path.exists():
-        return rejected(row, 'construction-budget' if result['timed_out'] else 'construction-rejected', 'construction', report_path)
-    report = read(report_path)
+    if result['timed_out']:
+        return rejected(row, 'construction-budget', 'construction', plan)
+    try:
+        report = json.loads(stdout)
+    except json.JSONDecodeError:
+        if result['code'] == 0:
+            raise ValueError(f'random-factory.construction-json: {directory}') from None
+        return rejected(row, 'construction-rejected', 'construction', plan)
+    if report.get('schema_version') != 1 or report.get('kind') != 'constructive-production-final':
+        raise ValueError(f'random-factory.construction-schema: {directory}')
     row['construction_status'] = report['status']
     if result['code'] != 0 or report.get('success') is not True or report.get('complete') is not True:
-        return rejected(row, 'construction-stopped', 'construction', report_path, report['diagnostics'])
+        if 'input_failure' in report:
+            row['construction_input_failure'] = report['input_failure']
+        return rejected(row, 'construction-stopped', 'construction', plan, report['diagnostics'])
     final = report['final_node']
     witness = dict(schema_version=1, **{k: final[k] for k in ('placements', 'transport_networks', 'logistics_components')},
                    utilizations={n['id']: n['work_seconds_per_second'] for n in nodes})

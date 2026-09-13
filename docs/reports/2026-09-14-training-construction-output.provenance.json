@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "scope": "Construction output-only change; actual learning state retained",
+  "evidence": [
+    {
+      "path": "artifacts/construction-storage/evidence-20260914/cleanup-before.json",
+      "sha256": "3a7531a3f7a5f096adabc39fecd2b4432fa002dc8df52cee603b8b316dbc0afb"
+    },
+    {
+      "path": "artifacts/construction-storage/evidence-20260914/cleanup-final.json",
+      "sha256": "1849b9f5d87ec51863c779c72b2e4769ccbcc812c0ee5dc01f2de7e31e0e0384"
+    },
+    {
+      "path": "artifacts/construction-storage/evidence-20260914/verification.json",
+      "sha256": "e6010bc09204cfa4eaaa10796da69dbcf743abdc383d1fe84326ffa6b417886c"
+    },
+    {
+      "path": "artifacts/construction-storage/evidence-20260914/resumed.json",
+      "sha256": "f8663973a2aad451bfd4d8fd2883d58dec0e9529909111127e6fe19a65396250"
+    },
+    {
+      "path": "artifacts/construction-storage/evidence-20260914/resumed-observation.json",
+      "sha256": "ed5c2a35687d9e23f334b8e6a0461148ff8fa3fbacab209e2f3418b1a358295e"
+    }
+  ],
+  "source_sha256": "69204c34efb31f3c52bc4e747571d9bab564a8c2fa1c527c403b4887d6cef5e6",
+  "cli_sha256": "4832a6500282c93bdd231ec7f4640fcddaee95bc90d2dc68996923a07f5953db",
+  "native_sha256": "dc84066c78d07c60911193e8e32b0d996db4c33ccd9b24378e86fd80cd797226",
+  "source_changes": [
+    "target/release/aic-cli",
+    "tools/factory-edit-pilot/native_factory_admission.py"
+  ],
+  "paused_update": 1044,
+  "observed_update": 1050,
+  "future_first_slot": 16704,
+  "requested_until_utc": "2026-09-14T01:00:00+00:00",
+  "physical_allocated_bytes_unlinked": 45894303744,
+  "new_inputs_without_report_files": 104,
+  "verification_products": [
+    "food",
+    "watered-grass",
+    "copper-liquid",
+    "medical"
+  ]
+}

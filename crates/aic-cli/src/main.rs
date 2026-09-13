@@ -407,13 +407,17 @@ enum LayoutsCommand {
         #[arg(long)]
         profile: bool,
 
+        /// Write only final geometry and diagnostics to stdout, without report or HTML files.
+        #[arg(long, conflicts_with_all = ["visualization_output", "report_output", "localization_catalog"])]
+        final_json: bool,
+
         /// Standalone paginated HTML history of validated construction states.
-        #[arg(long, value_name = "FILE")]
-        visualization_output: PathBuf,
+        #[arg(long, value_name = "FILE", required_unless_present = "final_json")]
+        visualization_output: Option<PathBuf>,
 
         /// Full JSON report and detailed diagnostics. Stdout contains only a short summary.
-        #[arg(long, value_name = "FILE")]
-        report_output: PathBuf,
+        #[arg(long, value_name = "FILE", required_unless_present = "final_json")]
+        report_output: Option<PathBuf>,
 
         /// Optional localization catalog used for facility labels.
         #[arg(long, value_name = "FILE")]
@@ -842,6 +846,7 @@ fn run() -> Result<CommandStatus> {
                 flow_direction,
                 connection_first_placement,
                 profile,
+                final_json,
                 visualization_output,
                 report_output,
                 localization_catalog,
@@ -862,6 +867,7 @@ fn run() -> Result<CommandStatus> {
                     downstream_closed_growth,
                     flow_direction,
                     connection_first_placement,
+                    final_json,
                     visualization_output,
                     report_output,
                     localization_catalog,
@@ -1870,8 +1876,9 @@ fn construct_production_command(
     downstream_closed_growth: bool,
     flow_direction: Option<String>,
     connection_first_placement: bool,
-    visualization_output: PathBuf,
-    report_output: PathBuf,
+    final_json: bool,
+    visualization_output: Option<PathBuf>,
+    report_output: Option<PathBuf>,
     localization_catalog: Option<PathBuf>,
 ) -> Result<CommandStatus> {
     let loaded = measure_operation(ProfileOp::InputLoading, || -> Result<_> {
@@ -1880,7 +1887,7 @@ fn construct_production_command(
         ) {
             Ok(components) => components,
             Err(report) => {
-                write_constructive_production_report_file(&report_output, &report)?;
+                write_production_input_failure(report_output.as_deref(), &report)?;
                 return Ok(None);
             }
         };
@@ -1893,7 +1900,7 @@ fn construct_production_command(
         )? {
             Ok(inputs) => inputs,
             Err(report) => {
-                write_constructive_production_report_file(&report_output, &report)?;
+                write_production_input_failure(report_output.as_deref(), &report)?;
                 return Ok(None);
             }
         };
@@ -1902,7 +1909,7 @@ fn construct_production_command(
         )?) {
             Ok(catalog) => catalog,
             Err(report) => {
-                write_constructive_production_report_file(&report_output, &report)?;
+                write_production_input_failure(report_output.as_deref(), &report)?;
                 return Ok(None);
             }
         };
@@ -1916,7 +1923,9 @@ fn construct_production_command(
         )))
     })?;
     let Some((components, localization, wiring, facilities, items, transports)) = loaded else {
-        write_constructive_production_summary("invalid-input", false, &report_output, None)?;
+        if let Some(output) = report_output.as_deref() {
+            write_constructive_production_summary("invalid-input", false, output, None)?;
+        }
         return Ok(CommandStatus::Failure);
     };
     let request = ConstructiveProductionRequest {
@@ -1946,6 +1955,17 @@ fn construct_production_command(
         &request,
     );
     let success = report.success;
+    if final_json {
+        write_production_final_json(&production_final_json(&report))?;
+        return Ok(if success {
+            CommandStatus::Success
+        } else {
+            CommandStatus::Failure
+        });
+    }
+    let report_output = report_output.expect("clap requires a report unless --final-json");
+    let visualization_output =
+        visualization_output.expect("clap requires a visualization unless --final-json");
     // Preserve structured input/construction failures even when there is no geometry to render.
     write_constructive_production_report_file(&report_output, &report)?;
     if report.final_node.is_none() {
@@ -1974,6 +1994,52 @@ fn construct_production_command(
         Ok(CommandStatus::Success)
     } else {
         Ok(CommandStatus::Failure)
+    }
+}
+
+fn production_final_json(
+    report: &aic_data::layouts::ConstructiveProductionReport,
+) -> serde_json::Value {
+    serde_json::json!({
+        "schema_version": 1,
+        "kind": "constructive-production-final",
+        "status": report.status,
+        "success": report.success,
+        "complete": report.complete,
+        "final_node": report.final_node.as_ref().map(|node| serde_json::json!({
+            "placements": node.placements,
+            "transport_networks": node.transport_networks,
+            "logistics_components": node.logistics_components,
+        })),
+        "diagnostics": report.diagnostics,
+    })
+}
+
+fn write_production_final_json(value: &serde_json::Value) -> Result<()> {
+    use std::io::Write;
+    let mut stdout = std::io::stdout().lock();
+    serde_json::to_writer(&mut stdout, value).context("failed to write final construction JSON")?;
+    stdout
+        .write_all(b"\n")
+        .context("failed to finish final construction JSON")?;
+    Ok(())
+}
+
+fn write_production_input_failure<T: Serialize>(output: Option<&Path>, report: &T) -> Result<()> {
+    if let Some(output) = output {
+        write_constructive_production_report_file(output, report)
+    } else {
+        write_production_final_json(&serde_json::json!({
+            "schema_version": 1,
+            "kind": "constructive-production-final",
+            "status": "invalid-input",
+            "success": false,
+            "complete": false,
+            "final_node": null,
+            "diagnostics": [{"code": "construction.invalid-input", "severity": "error",
+                "stage": "input", "message": "Construction input validation failed; see input_failure."}],
+            "input_failure": report,
+        }))
     }
 }
 
@@ -3102,8 +3168,8 @@ mod tests {
         assert_eq!(analysis_workers, 4);
         assert!(profile);
         assert_eq!(transport_catalog, PathBuf::from("transports.json"));
-        assert_eq!(visualization_output, PathBuf::from("production.html"));
-        assert_eq!(report_output, PathBuf::from("production.json"));
+        assert_eq!(visualization_output, Some(PathBuf::from("production.html")));
+        assert_eq!(report_output, Some(PathBuf::from("production.json")));
     }
 
     #[test]
