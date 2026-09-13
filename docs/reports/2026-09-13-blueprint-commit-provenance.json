@@ -1,0 +1,200 @@
+{
+  "schema": "blueprint-commit-provenance-v1",
+  "host": "ashrimp-arch",
+  "source": {
+    "path": "tools/factory-edit-pilot/diagnose_blueprint_commit.py",
+    "sha256": "a5152ce97c6664d6b00b2242db0fb05663da1b3d111919a3687e494c503b1381",
+    "bytes": 22804
+  },
+  "report": {
+    "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/report.json",
+    "sha256": "be2d0cacc02a85109f9b65b8ba1298c6b3b8d9922d57a40b90ede878c35a3b3c",
+    "bytes": 42532
+  },
+  "anchors": {
+    "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/anchors.json",
+    "sha256": "9468255aeed127339a96b8712bb04c39fc54ea6f253264231fd59b025c47fffd",
+    "bytes": 75113
+  },
+  "selected_windows": {
+    "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/selected-windows.json",
+    "sha256": "1ce80feec811d61fc13215fcd7334b9bb666724a6f8074985ef811232d6aebe7",
+    "bytes": 3935
+  },
+  "predecessor_provenance": {
+    "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-code/2026-09-13-blueprint-replay-results-provenance.json",
+    "sha256": "aabae90601a3c7043b7f9af4b794203d75bdeea52b8d7783084a6f07be8829aa"
+  },
+  "native_sha256": "41f214689bc97f590383af934fe7e9bca7c53bfcb2090f5bc6c83a0698d2853c",
+  "scope": {
+    "transfer_episodes": 480,
+    "strict_episodes": 450,
+    "anchor_branches": 120,
+    "new_policy_actions": 0,
+    "optimizer_steps": 0
+  },
+  "seconds": 5.05511844499415,
+  "native_probes": 41,
+  "case_reports": [
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000016.json",
+      "sha256": "606e474eb3fc382e6adfc205e5711779165daa9feae14b217cf666ac62030549",
+      "episodes": 30,
+      "probes": 1,
+      "worker": {
+        "pid": 25444,
+        "core": 3
+      }
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000040.json",
+      "sha256": "0859c2ef026888d1036a18ee8edc4c7a4e3bccc8942e7e9edf1659efb9d4bd48",
+      "episodes": 30,
+      "probes": 3,
+      "worker": {
+        "pid": 25443,
+        "core": 2
+      }
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000056.json",
+      "sha256": "4cae926e698513a22504c13da852b444bbd2ab36723b61113a4e7962f7781dcd",
+      "episodes": 30,
+      "probes": 6,
+      "worker": {
+        "pid": 25448,
+        "core": 7
+      }
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000000.json",
+      "sha256": "0fdd159a51f84da3f6cb8f448c1d8728d1c7f2f52c950e48ee19f62f55822336",
+      "episodes": 30,
+      "probes": 2,
+      "worker": {
+        "pid": 25441,
+        "core": 0
+      }
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000032.json",
+      "sha256": "ceb7e744559147e39bad096ecc78e00b50d8bc1f4fea0a4c77e4734be2befdcb",
+      "episodes": 30,
+      "probes": 3,
+      "worker": {
+        "pid": 25446,
+        "core": 5
+      }
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000048.json",
+      "sha256": "9ceca58396e60a7b7fae9903c26827d40e8cb5f2e5d29eef3792cdbc872cd44b",
+      "episodes": 30,
+      "probes": 1,
+      "worker": {
+        "pid": 25447,
+        "core": 6
+      }
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000024.json",
+      "sha256": "88294848cbebfe5093bb6761ff248e5f6033034f4503dd6ab14eff075cc15fb0",
+      "episodes": 30,
+      "probes": 3,
+      "worker": {
+        "pid": 25445,
+        "core": 4
+      }
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000072.json",
+      "sha256": "11bb0c461af61da5eff21d1f8fc3cd7647531daf03709a67e9e64953b546ea00",
+      "episodes": 30,
+      "probes": 1,
+      "worker": {
+        "pid": 25443,
+        "core": 2
+      }
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000009.json",
+      "sha256": "c94c334645cbfd1dd400d937f6dbb6bde06d8355da2e3e6e2fa9b01df1056ce4",
+      "episodes": 30,
+      "probes": 4,
+      "worker": {
+        "pid": 25442,
+        "core": 1
+      }
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000080.json",
+      "sha256": "0e22f6b8c10be53c88c418c58fd19f537c90379e2b2299dd94e808dfc3ab3c7b",
+      "episodes": 30,
+      "probes": 1,
+      "worker": {
+        "pid": 25448,
+        "core": 7
+      }
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000064.json",
+      "sha256": "bccc7ce92858a3766a23f884df4e96d14255a99a4c71f68d4b1e0890f82726db",
+      "episodes": 30,
+      "probes": 3,
+      "worker": {
+        "pid": 25444,
+        "core": 3
+      }
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000096.json",
+      "sha256": "1e6e4ebf570fa8c66948e9c16d653b3d2330f1fe825798258fbc63199a576d16",
+      "episodes": 30,
+      "probes": 1,
+      "worker": {
+        "pid": 25446,
+        "core": 5
+      }
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000112.json",
+      "sha256": "5f003b00a183ed16228ef2446ff1cd77b0874d28640d3e2df02f28f7aad6f5b9",
+      "episodes": 30,
+      "probes": 1,
+      "worker": {
+        "pid": 25445,
+        "core": 4
+      }
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000104.json",
+      "sha256": "0c55e82c1fbc9f8062fe0fdb8d70e6c82c1090864c4c0288e363991e8a7f0194",
+      "episodes": 30,
+      "probes": 1,
+      "worker": {
+        "pid": 25447,
+        "core": 6
+      }
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000088.json",
+      "sha256": "6d6d490da9e55c3c3c5dedd62868e1d13a6419740c84e0b55b702e3515addcd7",
+      "episodes": 30,
+      "probes": 2,
+      "worker": {
+        "pid": 25441,
+        "core": 0
+      }
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-blueprint-replay-balance-20260913/artifacts/factory-edit-pilot/commit-diagnosis-v1/case-401000120.json",
+      "sha256": "79b48b388ee2520e2becfe970009550829ede4db510b529ba85621da2db66659",
+      "episodes": 30,
+      "probes": 3,
+      "worker": {
+        "pid": 25443,
+        "core": 2
+      }
+    }
+  ]
+}
