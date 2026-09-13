@@ -19,6 +19,7 @@ class Buffer:
             positive_improvements=0,admissions=0,duplicates=0,selected_uses={})
         require(self.state['schema']==SCHEMA, 'declarative replay checkpoint schema')
         self.cache = {}
+        self.admission_observer = None
         self.label_count=sum(len(e['labels']) for e in self.state['entries'].values())
 
     def snapshot(self):
@@ -64,6 +65,7 @@ class Buffer:
     def ingest(self, chunk, ordinal, evidence, config, gamma, strata=None):
         events = []
         replacement = None
+        terminal_order = 0
         before = {s['index']:s for s in chunk['native_before']}
         for index, sample in enumerate(chunk['samples']):
             reference = (ordinal,index)
@@ -97,7 +99,7 @@ class Buffer:
             returns, value = {},0.
             for ref,reward in reversed(active['rows']):
                 value = reward+gamma*value; returns[ref] = value
-            for segment in active['pending']:
+            for segment_order,segment in enumerate(active['pending']):
                 labels = [dict(reference=ref,stage=evidence.sample(ref)['action']['kind'],return_to_terminal=returns[ref])
                           for ref in segment['references']]
                 identity = digest([dict(state=physical(evidence.sample(label['reference'])['observation']),
@@ -105,6 +107,15 @@ class Buffer:
                     for label in labels])
                 features = success_features.extract([evidence.sample(label['reference']) for label in labels], identity) \
                     if success_features.required(config) else None
+                candidate = None
+                if self.admission_observer is not None or identity not in self.state['entries']:
+                    candidate = dict(id=identity,admitted_update=ordinal,labels=labels,
+                        segment=segment,input=active['input'],episode=episode,stream=stream,
+                        episode_chunks=sorted({ref[0] for ref,_ in active['rows']}),uses=0,occurrences=1)
+                    if features is not None:
+                        candidate['retention_features_v1'] = features
+                if self.admission_observer is not None:
+                    self.admission_observer((ordinal,terminal_order,segment_order),candidate,evidence)
                 if identity in self.state['entries']:
                     if features is not None:
                         require(self.state['entries'][identity].get('retention_features_v1') == features,
@@ -130,16 +141,13 @@ class Buffer:
                     require(len(self.state['entries'])<config['max_sequences'], 'declarative replay sequence limit')
                     require(self.label_count+len(labels)<=config['max_labels'],
                         'declarative replay label limit')
-                    self.state['entries'][identity] = dict(id=identity,admitted_update=ordinal,labels=labels,
-                        segment=segment,input=active['input'],episode=episode,stream=stream,
-                        episode_chunks=sorted({ref[0] for ref,_ in active['rows']}),uses=0,occurrences=1)
-                    if features is not None:
-                        self.state['entries'][identity]['retention_features_v1'] = features
+                    self.state['entries'][identity] = candidate
                     if replacement is not None:replacement.add(self.state['entries'][identity])
                     self.label_count+=len(labels)
                     self.state['admissions'] += 1
                     events.append(dict(kind='admitted',id=identity,labels=len(labels)))
             del self.state['active'][stream]
+            terminal_order += 1
         return events
 
     def retained_chunks(self):
