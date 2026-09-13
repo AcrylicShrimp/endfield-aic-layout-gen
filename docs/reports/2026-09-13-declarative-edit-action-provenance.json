@@ -1,0 +1,548 @@
+{
+  "schema": "declarative-action-provenance-v1",
+  "authoritative_comparison": "comparison-v2",
+  "base_commit": "6d9c611",
+  "local_evidence_root": "artifacts/factory-edit-pilot/declarative-action-20260913/declarative-action",
+  "server_evidence_root": "/home/ashrimp/Srv/aic-declarative-action-screen-20260913/artifacts/declarative-action",
+  "scope": "Bounded learning-free experiment; no normal-path cutover. Raw outputs stay ignored.",
+  "evidence": [
+    {
+      "path": "comparison-v2/report.json",
+      "sha256": "74c219cce45fda06568345da167ff65d9d66ba052921defa1fe19064b753a49e"
+    },
+    {
+      "path": "contract-probe-v2/report.json",
+      "sha256": "c6c8bbb65c5badffd1fd2c9d51014eeaa7313151ac31b43506932a63934485d1"
+    },
+    {
+      "path": "fresh-panel-v1/panel.json",
+      "sha256": "7a98fb4118be8973b3338953d0d273b36155acbbd3e199fd13f2b360d4d1ae48"
+    },
+    {
+      "path": "comparison-v2/replay-agreement.json",
+      "sha256": "f0d53f7d6eb2b9d309e5f0595d36427d4d8a448da38883dcecbe3ab0cd2fafc9"
+    },
+    {
+      "path": "comparison-v2/band-preparation-probe.json",
+      "sha256": "f84ce6bd0a2ec0fa8f487ab4d25c23194f74730c50a16c106c44670b82b48105"
+    },
+    {
+      "path": "comparison-v2/resource-boundary-probe.json",
+      "sha256": "f9d7ddea7caa7eff6109e33800d2bcde6663233248740269b1c0cb470644f81e"
+    },
+    {
+      "path": "comparison-v1/large-grid-patterns.json",
+      "sha256": "eb81690f39e466f93b29c7f984cb908e86fec67fcc45aeb920d35849ffceb9ec"
+    },
+    {
+      "path": "generation-source-bindings.json",
+      "sha256": "37dbb2062d8dd26ce4fac15abaa383d6de5ff6fb44678dc5feb4d9a2a5e7baf6"
+    },
+    {
+      "path": "retention.json",
+      "sha256": "f6f5a9a359dc8fa88c016b2bf3f5c806e6a372a567f47100f27ee477eb587355"
+    },
+    {
+      "path": "pre-observation-fix/manifest.json",
+      "sha256": "1896f17af50d9eabe9f7db2970b729c626f2d8ec25eef3c620a8fbd490921d07"
+    },
+    {
+      "path": "comparison-v2/workers/job-000/comparison/report.json",
+      "sha256": "d1d6b6c9098f03581eeebd1addf6efacd6c6f495f364942816aaf727939e0677"
+    },
+    {
+      "path": "comparison-v2/workers/job-001/comparison/report.json",
+      "sha256": "ebe1198cfcfa746cddbee82e64cd51be36c071d2fbb058c606d26408c91943b1"
+    },
+    {
+      "path": "comparison-v2/workers/job-002/comparison/report.json",
+      "sha256": "46d55e335dadbeff47ed48dcb8f8d095bb4efbc6cdf10966959265e035144edb"
+    },
+    {
+      "path": "comparison-v2/workers/job-003/comparison/report.json",
+      "sha256": "2167fe217fd4bb93de10f7e2a57e506b1c48858bd57961893738a1d084a0d647"
+    },
+    {
+      "path": "comparison-v2/workers/job-004/comparison/report.json",
+      "sha256": "02472b1cf3553cf9d1e7988cb505aa2fa35d7224a4a6c3be695081e59f3824b2"
+    },
+    {
+      "path": "comparison-v2/workers/job-005/comparison/report.json",
+      "sha256": "dd5912d3500546be54fd331bfc169e7466d245d8bf0ac6d82413a3cd9f61c8f3"
+    },
+    {
+      "path": "comparison-v2/workers/job-006/comparison/report.json",
+      "sha256": "59156239611b7da4ef50a5cb8d9242b664932bd736b1a1315fe80d6e503e916c"
+    },
+    {
+      "path": "comparison-v2/workers/job-007/comparison/report.json",
+      "sha256": "33aafd17b4137c0ae13bf78fa3330d4973a9ea3683a1d30d9f295514eece1733"
+    },
+    {
+      "path": "comparison-v2/workers/job-008/comparison/report.json",
+      "sha256": "9a629161254cd962459d45ddc17d4bf36eeae4be5c8c560d8fd4860884c880af"
+    },
+    {
+      "path": "comparison-v2/workers/job-009/comparison/report.json",
+      "sha256": "c19e61b11078fe720d0caa38253b2b464a7244a6a92ccabfdca4c526ec9a18a7"
+    },
+    {
+      "path": "comparison-v2/workers/job-010/comparison/report.json",
+      "sha256": "b20c00cfbd025706b49bada70cc47186baa470ff8396102359d7967054efa9ff"
+    },
+    {
+      "path": "comparison-v2/workers/job-011/comparison/report.json",
+      "sha256": "ca83637bdb9aaced90ad0d23f2c14f3ef59231af7ff882546915d672830cde14"
+    },
+    {
+      "path": "comparison-v2/workers/job-012/comparison/report.json",
+      "sha256": "89666ab678ff070869c0be7c1a0fed927615f70dc54b7568f516ef91ae32a375"
+    },
+    {
+      "path": "comparison-v2/workers/job-013/comparison/report.json",
+      "sha256": "d3196d50f1155ac65396bce7070aa0e371e8168f48ef9aaf425a5b056ccf978f"
+    },
+    {
+      "path": "comparison-v2/workers/job-014/comparison/report.json",
+      "sha256": "b687e916e445343802a7ba8a5508b2f6ff9c6eb2c5b45c000ec4887a37672130"
+    },
+    {
+      "path": "comparison-v2/workers/job-015/comparison/report.json",
+      "sha256": "9a52f45204249ea62ded868227e84d67373a75d46eb68cbd246805617a424f42"
+    }
+  ],
+  "cases": [
+    {
+      "case": 0,
+      "product": "copper-liquid",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 18000
+      },
+      "facilities": 3,
+      "geometry_identity": "03382d11f5880d451f2a967f8fcbbb19f466dd4af5f12fc119681c236bc13330",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-000/job-000/generated/randomized-input/request.json",
+          "sha256": "8d1cca45bb2d11f0a1d08e269e34c04707a9b8dc3af12832491bf08a6d81f987"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-000/job-000/generated/randomized-input/initial.json",
+          "sha256": "ca6045dd76a029dd57390fc532381d48777f90f013fc0be987a13a74431dfa8d"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-000/job-000/generated/randomized-input/original-request.json",
+          "sha256": "568a5d79878ff68fdf2d5b58429556ff052aa0a3e3a262c1343466933751a772"
+        }
+      }
+    },
+    {
+      "case": 1,
+      "product": "watered-grass",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 10000
+      },
+      "facilities": 2,
+      "geometry_identity": "a6eaa76ef0c72af825602a7ef5e4bc1aba6833b7fb05ce97042b04fc35444968",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-000/job-001/generated/randomized-input/request.json",
+          "sha256": "4455f2d9c2bfe83ceb48c92193971619d01d4a20ec4d299427988433b2d79979"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-000/job-001/generated/randomized-input/initial.json",
+          "sha256": "a6fcb9b1f28c3c42f2725cbc3bf1d028aa6c9674797a575b9ab593ae88c31892"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-000/job-001/generated/randomized-input/original-request.json",
+          "sha256": "303ef7988a5022dcdda076bb1f57d9e52fe8fbe92907f5733aefba3ea1bf395b"
+        }
+      }
+    },
+    {
+      "case": 2,
+      "product": "watered-grass",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 14000
+      },
+      "facilities": 2,
+      "geometry_identity": "16720b692de1ac6109f3ea492514a6d941ad5822a5d4a8f6aa7beb69bfd88eff",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-000/job-002/generated/randomized-input/request.json",
+          "sha256": "1ee15839d20bfea479665ba06225f8f054ae0f687e3234c448bdc2ea76c92cf7"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-000/job-002/generated/randomized-input/initial.json",
+          "sha256": "425888b89274659de6c6529eddda7a46f69e2b03b5c11921c519ac3b8bbc1022"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-000/job-002/generated/randomized-input/original-request.json",
+          "sha256": "f09ca9bd83dd01862490314309d1cfc7b38a2a11e68323ccf6620f42afb38161"
+        }
+      }
+    },
+    {
+      "case": 3,
+      "product": "copper-liquid",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 7000
+      },
+      "facilities": 3,
+      "geometry_identity": "41af3d062a2296418b711a3b60769b862b37d0fe9e41744b08c27ee05d28fa5c",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-000/job-003/generated/randomized-input/request.json",
+          "sha256": "b9281c92ee394438d14440afe520b00baec32049fa7189315c16f713637f10ad"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-000/job-003/generated/randomized-input/initial.json",
+          "sha256": "e4b7e9bc6b3c95060f58b2e8a263272e590627a57fd8f5ea11b4d1cb19a051c6"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-000/job-003/generated/randomized-input/original-request.json",
+          "sha256": "884df0e5f44ade52ccc04ab8c33aa4f92f59688ba3dc2791c5f4592c22b8637b"
+        }
+      }
+    },
+    {
+      "case": 4,
+      "product": "watered-grass",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 20000
+      },
+      "facilities": 2,
+      "geometry_identity": "91b93913a6169780e1cfd435f737700b986afb9b93e6391a488e715954abeefd",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-000/job-004/generated/randomized-input/request.json",
+          "sha256": "c8a6e57eda9d998e7076b836009667ca906162e79a47fb0afea96168c005f308"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-000/job-004/generated/randomized-input/initial.json",
+          "sha256": "e01a9926e88ed956b15b13ca66c038ff436d0a6b63ea0246aa44f3e9998b824e"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-000/job-004/generated/randomized-input/original-request.json",
+          "sha256": "6c3f4eaec287075f82a6a70b1ac51ceea80668899519ca450d2893eecbd0a6d2"
+        }
+      }
+    },
+    {
+      "case": 5,
+      "product": "copper-liquid",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 17000
+      },
+      "facilities": 3,
+      "geometry_identity": "dd60166100a89900d6e4976f98ce4f3adc6f2850744e64a1b7ad51d4446e481d",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-000/job-005/generated/randomized-input/request.json",
+          "sha256": "66f5efa7713cd8251386da6f0a9e27972b7052a9f5d87406fa824111772e27d9"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-000/job-005/generated/randomized-input/initial.json",
+          "sha256": "f3fb1f87350a5ae2fdb66ca86bfe83759088c1a8b4e06782a5eb60eee9199f1a"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-000/job-005/generated/randomized-input/original-request.json",
+          "sha256": "5da731fbab38a14070c6390a22aac5e919d1cd0e86c707b7e3b23146f051ff96"
+        }
+      }
+    },
+    {
+      "case": 6,
+      "product": "food",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 32000
+      },
+      "facilities": 23,
+      "geometry_identity": "6cb5da648df0c77905e20020b21616857bb80ca50cf08d72f9de086904ddac5c",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-000/job-006/generated/randomized-input/request.json",
+          "sha256": "f8f848b189979c02c638f9c7420e7302c44a720fa16086da01a8dfb8dad4e34d"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-000/job-006/generated/randomized-input/initial.json",
+          "sha256": "4c63ae7316817abb8431e519463f25690630b080e25b3bade7d5f0b13aa148a4"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-000/job-006/generated/randomized-input/original-request.json",
+          "sha256": "80cc3338b521ae44782fe4a79e862452a05c0d9c01bc78168900c3c673137334"
+        }
+      }
+    },
+    {
+      "case": 7,
+      "product": "copper-liquid",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 17000
+      },
+      "facilities": 3,
+      "geometry_identity": "eb5ee14b8d9814f7b3c0753d015d446ab79b3ea63de68686670ccd22cf0e334d",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-000/job-007/generated/randomized-input/request.json",
+          "sha256": "66f5efa7713cd8251386da6f0a9e27972b7052a9f5d87406fa824111772e27d9"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-000/job-007/generated/randomized-input/initial.json",
+          "sha256": "c9e02b2a3d8211c9e1b99649236efb6e3ea6b0b0867220d921f5bbb6624b1d83"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-000/job-007/generated/randomized-input/original-request.json",
+          "sha256": "5da731fbab38a14070c6390a22aac5e919d1cd0e86c707b7e3b23146f051ff96"
+        }
+      }
+    },
+    {
+      "case": 8,
+      "product": "watered-grass",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 2000
+      },
+      "facilities": 2,
+      "geometry_identity": "04ff728e9373e426a60b3a1cd3f55927d9e0770313cd0f0851b4d76e22b8fe8b",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-008/job-000/generated/randomized-input/request.json",
+          "sha256": "758aad31e98792979150c85207068ac0dd589fb33db0d5c82d2142aaa96c9768"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-008/job-000/generated/randomized-input/initial.json",
+          "sha256": "749a0c3f1c5a1ec3cdff6709b61399ab1534c2fb3ff21cb7d45acebe11f3efce"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-008/job-000/generated/randomized-input/original-request.json",
+          "sha256": "8035d6bcf43a6d9855b583b228fbf33f8192fa8e7a5317c91d7c2c0e70e276b7"
+        }
+      }
+    },
+    {
+      "case": 9,
+      "product": "food",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 96000
+      },
+      "facilities": 16,
+      "geometry_identity": "f4883bb9488510e97ee6327c622c3fc09eb940e645d4ccf5c3188477f574b9b5",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-008/job-001/generated/randomized-input/request.json",
+          "sha256": "e0e39533cef154b75dbc66fca0bf6ab9403a422e7675de385b11f2faab0bd43e"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-008/job-001/generated/randomized-input/initial.json",
+          "sha256": "99f6c5414b509c243e6974801607c958996b0002e6f3000988ef4f389cfaff4f"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-008/job-001/generated/randomized-input/original-request.json",
+          "sha256": "b56367dee350cf6fb7ee41cce409b048015dbe7fa6ba5f2c348c0e89c4056125"
+        }
+      }
+    },
+    {
+      "case": 10,
+      "product": "food",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 37000
+      },
+      "facilities": 23,
+      "geometry_identity": "e6712349ea05b5037303548a62294bc0e47999d4177e2de44871c3099614e59e",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-008/job-002/generated/randomized-input/request.json",
+          "sha256": "4fb21f8d2270eb7932eacf91132317d41464025480956c214bd6d299e570537c"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-008/job-002/generated/randomized-input/initial.json",
+          "sha256": "b6d57c4228b475e489664a04fdc3b3e702a8974d4bae24df2424a10439c15fa1"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-008/job-002/generated/randomized-input/original-request.json",
+          "sha256": "8fa0980d914e17d457b0b7dcff0b69a70b6ae7e69cef8da39b988ccd59c7f269"
+        }
+      }
+    },
+    {
+      "case": 11,
+      "product": "medical",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 83000
+      },
+      "facilities": 16,
+      "geometry_identity": "659a801349a5cad550649b0695a2eb24e8b678393028ba528a8b792957dc1d6e",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-008/job-003/generated/randomized-input/request.json",
+          "sha256": "ddb9590eaa1607277fe05f8e47fac614540ef94bf911bd41ff5f63f773fdabff"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-008/job-003/generated/randomized-input/initial.json",
+          "sha256": "a1bbc257cb081b51a018ef38d9d908fb6d4e3fb9ac030a4586f3e92532a64572"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-008/job-003/generated/randomized-input/original-request.json",
+          "sha256": "4f19bccbae3d50cffe86f6015afccba2013d72a6cbe2fb4c57d4aea9ad45016f"
+        }
+      }
+    },
+    {
+      "case": 12,
+      "product": "watered-grass",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 15000
+      },
+      "facilities": 2,
+      "geometry_identity": "e93e1386510699de2e2856713f7a75334d0a760096166f48a14107f739c35c39",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-008/job-004/generated/randomized-input/request.json",
+          "sha256": "d0230870d0f00860d0036bc16abddc1c2732ea42f6a536eb7770a778c2f7c460"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-008/job-004/generated/randomized-input/initial.json",
+          "sha256": "d723651c46b87dc89c495c0e12959b6bd9e096a2a5b2d3a56fabe20534efd026"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-008/job-004/generated/randomized-input/original-request.json",
+          "sha256": "b04ce2ea14ee5d6157e83fdee88f9979abfb07c3292bd9a18de8b086262c7a38"
+        }
+      }
+    },
+    {
+      "case": 13,
+      "product": "copper-liquid",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 18000
+      },
+      "facilities": 3,
+      "geometry_identity": "abc4c2df2ab10f5a9dec913f3c3e038928d228004492b9ada1719cc6f16d2577",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-008/job-005/generated/randomized-input/request.json",
+          "sha256": "8d1cca45bb2d11f0a1d08e269e34c04707a9b8dc3af12832491bf08a6d81f987"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-008/job-005/generated/randomized-input/initial.json",
+          "sha256": "d08e509c4c8175595301996a6c6c6a9356ccbd4f91d33ed633e66f3b692bd47e"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-008/job-005/generated/randomized-input/original-request.json",
+          "sha256": "568a5d79878ff68fdf2d5b58429556ff052aa0a3e3a262c1343466933751a772"
+        }
+      }
+    },
+    {
+      "case": 14,
+      "product": "medical",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 45000
+      },
+      "facilities": 18,
+      "geometry_identity": "01469165d8721d036ad8312d0fd0c3b738c04cb2b935dadfc8601452958bf95d",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-008/job-007/generated/randomized-input/request.json",
+          "sha256": "2ee787118e171be215df668e58c36fa5c58c92e7dcab022981c387d854133557"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-008/job-007/generated/randomized-input/initial.json",
+          "sha256": "d221209c0311a572f9867ea04d35dc949b3826c5e344ff21112e779836415488"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-008/job-007/generated/randomized-input/original-request.json",
+          "sha256": "ee54b99e1fb6786085549879282519b542fe50aea6ab689752a3fc54d45f1e33"
+        }
+      }
+    },
+    {
+      "case": 15,
+      "product": "watered-grass",
+      "rate": {
+        "quantity": 1,
+        "duration_ms": 14000
+      },
+      "facilities": 2,
+      "geometry_identity": "41b04bca3e8b275ebbc18640c4bc4c6d25393af39e6de0e6f477e2cbe104a079",
+      "files": {
+        "request": {
+          "path": "fresh-panel-v1/wave-016/job-000/generated/randomized-input/request.json",
+          "sha256": "1ee15839d20bfea479665ba06225f8f054ae0f687e3234c448bdc2ea76c92cf7"
+        },
+        "initial": {
+          "path": "fresh-panel-v1/wave-016/job-000/generated/randomized-input/initial.json",
+          "sha256": "a2f62c1933b3fabd13f1d48d4198cb5716d6698d1e91819666d566421dd72afc"
+        },
+        "original": {
+          "path": "fresh-panel-v1/wave-016/job-000/generated/randomized-input/original-request.json",
+          "sha256": "f09ca9bd83dd01862490314309d1cfc7b38a2a11e68323ccf6620f42afb38161"
+        }
+      }
+    }
+  ],
+  "source_sha256": {
+    "tools/factory-edit-pilot/declarative_edit_audit.py": "66f7fa6a8217916c6ed8d3bba3b781a6ffb1ed07752e412cd7b09d9b1d9d94f7",
+    "tools/factory-edit-pilot/declarative_action_compare.py": "1d4705aec952968d7487f9c00384623aca9bf0864d3ce235704c02d0b6a39459",
+    "tools/factory-edit-pilot/declarative_action_sampling.py": "9eb063d2b733df5658c78d405b3983c801b09c62d5932b021a4042d3170cc4c8",
+    "tools/factory-edit-pilot/declarative_action_experiment.py": "cd73490d1a24e75d68a95d4c3dc5ed0a0d90abe645cf20aba1d4d268b274d213",
+    "tools/factory-edit-pilot/declarative_action_probe.py": "400a0fc9ee573c329048f7218dd9236d6731c93818f7c2cfef06b6c5d3f8c081",
+    "tools/factory-edit-pilot/declarative_action_runtime.py": "d8819500538ad806b5f7a509d2fe42ece22d07041ab85c7066edb495ed68fae2",
+    "tools/factory-edit-pilot/declarative-action-experiment.json": "47c4f14552724f4afc478e83a9507bc731ccf0335233b82ba26de12d86ebe361",
+    "tools/factory-edit-pilot/test_declarative_action_experiment.py": "689b48658db7cad4734b1b5199e72f878beeaf1420d7c7daef79393c6d59d2ea",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative.rs": "bd0787374f934cadce78cf27231f2ff2f75dbbe273a35e3b9518258b0b47c6a7",
+    "crates/aic-pilot-native/src/full_factory/blueprint.rs": "d1c1da84ac04a65f82f761eac7d2bad98fe4bab4549182205c31f92fe506ee5d",
+    "crates/aic-pilot-native/src/lib.rs": "9f94f2948e46c01f98e188319c134cec621f92bf4679514ab943eca5c6b8a752",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/checkpoint.rs": "680570e696aeb8494bde8069842821e4c4f7a73c6220f738d48d106a76638d61",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/edit.rs": "771fc6f1acbf764a6fb9879f09f6682996eadbc37ff4f2a62123eaf74984b168",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/python.rs": "01d903ae720df76a759bcaddfbee59c96a3473ba229727c6d0b9f5264780f6ba",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/tests.rs": "8125d0d29453944b3669b3d03b55bf26788dbf65cfa9d43286d054057f8c975f"
+  },
+  "runtime_inputs": {
+    "data/game/normalized/facilities.json": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e",
+    "data/game/normalized/recipes.json": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2",
+    "data/game/normalized/items.json": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164",
+    "data/game/normalized/transports.json": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1",
+    "data/game/normalized/logistics-components.json": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608",
+    "target/release/libaic_pilot_native.so": "e34e13ca03847e0f0511e87e166e8c7e72b6f8e56cfa86d8f3739cde0e19bf9c"
+  },
+  "native_build": {
+    "extension_module": true,
+    "profile": "release",
+    "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+    "schema_version": 1,
+    "target": "x86_64-unknown-linux-gnu"
+  },
+  "native_source_binding_check": {
+    "actual_files_matched_local": 216,
+    "remote_archive_metadata_sidecars": 211,
+    "full_binding_in": "comparison-v2/report.json"
+  },
+  "verification": {
+    "rust_passed": 570,
+    "rust_ignored": 5,
+    "python_tests_passed": 2,
+    "cli_contract_scenarios_passed": 7,
+    "common_control_pairs_agreed": 64,
+    "semantic_replay_decisions_agreed": 27136,
+    "supplemental_boundary_cases_passed": 2,
+    "workers_observed_reaped": 56
+  },
+  "interpretation": "The large-factory sequential sample is too small and correlated to establish rare-event success probability or an effect of draft damage. Initial-state improvements establish existence only."
+}

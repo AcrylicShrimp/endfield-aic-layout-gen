@@ -1,0 +1,43 @@
+{
+  "schema": "declarative-action-experiment-v1",
+  "generator": "tools/factory-edit-pilot/random-factory-routing-50k.json",
+  "probe_spec": "tools/factory-edit-pilot/blueprint-edit-probe.json",
+  "panel": {
+    "cases": 16,
+    "max_attempts": 32,
+    "seed_base": 602100000,
+    "generation_seconds": 180
+  },
+  "comparison": {
+    "streams": 4,
+    "decisions": 64,
+    "independent_proposals": 32,
+    "action_seed_base": 602200000,
+    "independent_seed_base": 602300000,
+    "order_seed": 602400000,
+    "arms": ["legacy_random", "legacy_scripted", "automatic_common", "automatic_rotation", "automatic_ports", "automatic_grid"],
+    "translation_steps": [-2, -1, 1, 2],
+    "other_facility_origin_probability": 0.25,
+    "grid_place_probability": 0.75,
+    "band_counts": [1, 2],
+    "decision_prefixes": [1, 8, 16, 32, 64],
+    "routing_prefixes": [10000, 50000, 200000, 1000000],
+    "time_prefixes_seconds": [0.01, 0.05, 0.2, 1.0],
+    "independent_arms": ["automatic_common", "automatic_rotation", "automatic_ports", "insert_band", "delete_band"]
+  },
+  "native": {
+    "schema": "declarative-edit-v1",
+    "max_actions": 64,
+    "elapsed_ms": 30000,
+    "route_expansions": 50000,
+    "max_total_route_expansions": 3200000,
+    "search_padding": 4
+  },
+  "limits": {
+    "workers": 8,
+    "wall_seconds": 1800,
+    "worker_seconds": 300,
+    "worker_rss_bytes": 4294967296,
+    "total_decisions": 30000
+  }
+}

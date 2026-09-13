@@ -1,5 +1,6 @@
 //! Experimental private drafts with immutable original chain incidence.
 
+pub(crate) mod declarative;
 mod geometry;
 pub(crate) mod python;
 mod session;
@@ -56,7 +57,7 @@ struct Blueprint {
     edges: Vec<Edge>,
 }
 
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 struct Draft {
     placements: Vec<FacilityPlacement>,
