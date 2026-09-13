@@ -55,9 +55,10 @@ def source_paths(config):
 
 
 class FreshInputs:
-    def __init__(self, config, library, module, blueprint_spec):
+    def __init__(self, config, library, module, blueprint_spec, *, editor=None):
         from random_factory_generation import resolve_spec
         self.config, self.module, self.blueprint_spec = config, module, blueprint_spec
+        self.editor = module.BlueprintEditSession if editor is None else editor
         self.options = config['training_input']
         require(self.options['directory'] != '@run',
                 'blueprint.training-input.directory: prepare the run before opening its private input store')
@@ -167,7 +168,7 @@ class FreshInputs:
                     # Freeze the new blueprint only after randomized complete
                     # factory generation. Setup may change the original wiring;
                     # policy actions may never change this admitted blueprint.
-                    session = self.module.BlueprintEditSession.open(str(ROOT), json.dumps(self.blueprint_spec['catalogs']),
+                    session = self.editor.open(str(ROOT), json.dumps(self.blueprint_spec['catalogs']),
                         Path(case['request']).read_text(), Path(case['initial']).read_text(),
                         json.dumps(self.blueprint_spec['config']))
                     native = json.loads(session.checkpoint_json())

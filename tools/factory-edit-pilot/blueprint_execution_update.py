@@ -11,8 +11,12 @@ from blueprint_ppo_update import credit, credit_metrics, digest, require
 
 def draw_sequences(sequences, mode, generator, order_generator):
     if not sequences:
-        require(mode == 'uniform', 'replay-balance.stratum-empty: balanced replay requires both strata')
+        require(mode in ('uniform', 'balanced_available'), 'replay-balance.stratum-empty: balanced replay requires both strata')
         return []
+    if mode == 'balanced_available':
+        # Fresh learners have no imported successes. Balance every currently
+        # available stratum explicitly; absence never fabricates fixed inputs.
+        mode = 'balanced' if {s['stratum'] for s in sequences} == {'large', 'small'} else 'uniform'
     if mode == 'uniform':
         return [sequences[i] for i in torch.randint(len(sequences), (8,), generator=generator).tolist()]
     require(mode == 'balanced', 'unknown replay sampler')
@@ -24,15 +28,17 @@ def draw_sequences(sequences, mode, generator, order_generator):
     return [selected[i] for i in torch.randperm(8, generator=order_generator).tolist()]
 
 
-def prepared_rows(rows):
+def prepared_rows(rows, likelihood=None):
+    if likelihood is not None:
+        return likelihood.prepare_rows(rows)
     batch = pack([r['input'] for r in rows])
     return dict(batch=batch, selected=selected_indices(batch, [r['index'] for r in rows]))
 
 
-def prepare_minibatch(samples, indices, advantages, targets, sequences):
+def prepare_minibatch(samples, indices, advantages, targets, sequences, likelihood=None):
     began = time.perf_counter()
     rows = [samples[i] for i in indices]
-    result = dict(ppo=prepared_rows(rows), advantages=advantages[indices], targets=targets[indices],
+    result = dict(ppo=prepared_rows(rows, likelihood), advantages=advantages[indices], targets=targets[indices],
                   old_logp=torch.tensor([r['old_logp'] for r in rows]), sil=None)
     if sequences:
         labels, weights, groups = [], [], []
@@ -43,24 +49,28 @@ def prepare_minibatch(samples, indices, advantages, targets, sequences):
                 labels.append(row)
                 weights.append(1. / (len(sequences) * len(stages) * sum(r['stage'] == row['stage'] for r in sequence['rows'])))
                 groups.append((sequence['origin'], sequence['stratum'], row['stage']))
-        result['sil'] = dict(**prepared_rows(labels), returns=torch.tensor([r['return_to_terminal'] for r in labels]),
+        result['sil'] = dict(**prepared_rows(labels, likelihood), returns=torch.tensor([r['return_to_terminal'] for r in labels]),
                              weights=torch.tensor(weights), groups=groups)
     result['prepare_seconds'] = time.perf_counter() - began
     return result
 
 
-def device_rows(value, device):
+def device_rows(value, device, likelihood=None):
+    if likelihood is not None:
+        return likelihood.device_rows(value, device)
     return dict(batch=to_device(value['batch'], device), selected=value['selected'].to(device))
 
 
-def predict(model, value):
+def predict(model, value, likelihood=None):
+    if likelihood is not None:
+        return likelihood.predict(model, value)
     logits, values = model.forward_packed(value['batch'])
     logp, entropy = distribution(logits, value['batch'])
     return logp[value['selected']], entropy, values
 
 
-def imitation(model, prepared, device):
-    logp, _, values = predict(model, device_rows(prepared, device))
+def imitation(model, prepared, device, likelihood=None):
+    logp, _, values = predict(model, device_rows(prepared, device, likelihood), likelihood)
     returns = prepared['returns'].to(device)
     positive = (returns - values.detach()).clamp_min(0)
     loss = (-logp * positive * prepared['weights'].to(device)).sum()
@@ -69,11 +79,11 @@ def imitation(model, prepared, device):
     return loss, measurements
 
 
-def epoch_statistics(model, batches, samples, targets, config, device):
+def epoch_statistics(model, batches, samples, targets, config, device, likelihood=None):
     actual, predicted = [], []
     with torch.no_grad():
         for batch in batches:
-            logp, _, values = predict(model, device_rows(batch, device))
+            logp, _, values = predict(model, device_rows(batch, device, likelihood), likelihood)
             actual.append(logp)
             predicted.append(values)
         actual = torch.cat(actual).double()
@@ -108,7 +118,7 @@ def summarize_imitation(measurements, groups):
 
 
 def update_packed(model, actor_optimizer, critic_optimizer, shuffle_rng, samples, frontiers, config,
-                  sequences, coefficient, mode, seed, global_ordinal, child_ordinal, device):
+                  sequences, coefficient, mode, seed, global_ordinal, child_ordinal, device, *, likelihood=None):
     device = torch.device(device)
     require(next(model.parameters()).device == device, 'replay-balance.execution-gate: learner device mismatch')
     require(coefficient >= 0 and all(s['child_admitted_update'] < child_ordinal for s in sequences),
@@ -120,7 +130,7 @@ def update_packed(model, actor_optimizer, critic_optimizer, shuffle_rng, samples
     raw, advantages, targets = credit(samples, frontiers, config)
     actor_parameters = [p for name, p in model.named_parameters() if not name.startswith('critic.')]
     critic_parameters = list(model.critic.parameters())
-    statistics_batches = [prepared_rows(samples[i:i + config['minibatch_size']])
+    statistics_batches = [prepared_rows(samples[i:i + config['minibatch_size']], likelihood)
                           for i in range(0, len(samples), config['minibatch_size'])]
     epochs, selected_ids, diagnostics, groups, losses = [], [], [], [], []
     stopped, tail_actor, tail_optimizer = False, None, None
@@ -133,7 +143,7 @@ def update_packed(model, actor_optimizer, critic_optimizer, shuffle_rng, samples
                 selected = draw_sequences(sequences, mode, generator, order_generator) if not stopped and coefficient else []
                 if selected:
                     selected_ids.append([s['id'] for s in selected])
-                tasks.append((samples, order[start:start + config['minibatch_size']], advantages, targets, selected))
+                tasks.append((samples, order[start:start + config['minibatch_size']], advantages, targets, selected, likelihood))
             if stopped:
                 for p in actor_parameters:
                     p.requires_grad_(False)
@@ -146,7 +156,7 @@ def update_packed(model, actor_optimizer, critic_optimizer, shuffle_rng, samples
                     prepared_seconds += prepared['prepare_seconds']
                     actor_optimizer.zero_grad(set_to_none=True)
                     critic_optimizer.zero_grad(set_to_none=True)
-                    logp, entropy, values = predict(model, device_rows(prepared['ppo'], device))
+                    logp, entropy, values = predict(model, device_rows(prepared['ppo'], device, likelihood), likelihood)
                     value_loss = .5 * (values - prepared['targets'].to(device)).square().mean()
                     loss = value_loss
                     if not stopped:
@@ -156,7 +166,7 @@ def update_packed(model, actor_optimizer, critic_optimizer, shuffle_rng, samples
                         loss = loss - torch.minimum(ratio * advantage, clipped * advantage).mean()
                         loss = loss - config['entropy_coefficient'] * entropy.mean()
                         if prepared['sil'] is not None:
-                            teacher, measurement = imitation(model, prepared['sil'], device)
+                            teacher, measurement = imitation(model, prepared['sil'], device, likelihood)
                             loss = loss + coefficient * teacher
                             losses.append(teacher.detach())
                             diagnostics.append(measurement.detach())
@@ -173,7 +183,7 @@ def update_packed(model, actor_optimizer, critic_optimizer, shuffle_rng, samples
             finally:
                 for p in actor_parameters:
                     p.requires_grad_(True)
-            measured = epoch_statistics(model, statistics_batches, samples, targets, config, device)
+            measured = epoch_statistics(model, statistics_batches, samples, targets, config, device, likelihood)
             require(all(torch.isfinite(torch.tensor(v)).item() for v in measured.values()), 'replay-balance.nonfinite: epoch statistics')
             epochs.append(dict(epoch=epoch + 1, actor_updated=not stopped, **measured))
             if not stopped and measured['approximate_kl'] > config['target_kl']:

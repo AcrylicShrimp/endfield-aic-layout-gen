@@ -16,14 +16,15 @@ from ppo_harness_transport import Reader, receive, send
 
 
 class BlueprintPool:
-    def __init__(self, config, library, cores, output, guard, saved=None, message_bytes=512 * 1024**2):
+    def __init__(self, config, library, cores, output, guard, saved=None, message_bytes=512 * 1024**2, *, worker_entry=None, policy=None):
         require(sys.platform == 'linux', 'replay-balance.execution-gate: Linux shared-memory workers required')
         require(len(cores) == config['training']['streams'] and len(set(cores)) == len(cores),
                 'replay-balance.execution-gate: one distinct CPU per stream')
         require(set(cores) <= os.sched_getaffinity(0), 'replay-balance.execution-gate: worker CPU outside allocation')
         if saved is not None:
             require([s['index'] for s in saved] == list(range(len(cores))), 'worker restore stream ordering')
-        self.config, self.guard = config, guard
+        self.config, self.guard, self.policy = config, guard, policy
+        worker_entry = worker_entry or Path(__file__).with_name('blueprint_execution_worker.py')
         self.workers, self.sockets, self.readers, self.logs = [], [], [], []
         self.selector = selectors.DefaultSelector()
         self.phase_seconds = {}
@@ -38,7 +39,7 @@ class BlueprintPool:
                 log = (self.output / f'worker-{index}.log').open('ab')
                 self.logs.append(log)
                 try:
-                    process = subprocess.Popen([sys.executable, str(Path(__file__).with_name('blueprint_execution_worker.py')),
+                    process = subprocess.Popen([sys.executable, str(worker_entry),
                         '--fd', str(child.fileno()), '--core', str(core), '--message-bytes', str(message_bytes),
                         '--failure-directory', str(self.output / 'partial')], pass_fds=(child.fileno(),),
                         stdin=subprocess.DEVNULL, stdout=log, stderr=log,
@@ -112,33 +113,45 @@ class BlueprintPool:
         began, behavior = time.perf_counter(), digest(model.state_dict())
         replies = self.exchange([dict(operation='begin') for _ in self.workers])
         for _ in range(self.config['training']['chunk_actions']):
-            batch = pack([r['input'] for r in replies])
-            with torch.no_grad():
-                logits, values = model.forward_packed(batch)
-                logp, entropy = distribution(logits, batch)
-            offset, commands = 0, []
-            for count, value, ent in zip(batch['action_counts'], values, entropy, strict=True):
-                index = int(torch.multinomial(logp[offset:offset + count].exp(), 1, generator=sampler))
-                commands.append(dict(operation='step', index=index, old_logp=float(logp[offset + index]),
-                                     old_value=float(value), entropy=float(ent)))
-                offset += count
+            if self.policy is not None:
+                with torch.no_grad():
+                    commands = self.policy.sample(model, [r['input'] for r in replies], sampler)
+                commands = [dict(operation='step', **row) for row in commands]
+            else:
+                batch = pack([r['input'] for r in replies])
+                with torch.no_grad():
+                    logits, values = model.forward_packed(batch)
+                    logp, entropy = distribution(logits, batch)
+                offset, commands = 0, []
+                for count, value, ent in zip(batch['action_counts'], values, entropy, strict=True):
+                    index = int(torch.multinomial(logp[offset:offset + count].exp(), 1, generator=sampler))
+                    commands.append(dict(operation='step', index=index, old_logp=float(logp[offset + index]),
+                                         old_value=float(value), entropy=float(ent)))
+                    offset += count
             replies = self.exchange(commands)
         with torch.no_grad():
-            _, values = model.forward_packed(pack([r['input'] for r in replies]))
+            if self.policy is None:
+                _, values = model.forward_packed(pack([r['input'] for r in replies]))
+            else:
+                values = self.policy.values(model, [r['input'] for r in replies])
         chunks = self.exchange([dict(operation='finish', value=float(v)) for v in values])
         require(digest(model.state_dict()) == behavior, 'collection changed frozen behavior parameters')
-        return dict(schema='blueprint-ppo-chunk-v1', model_before=behavior,
+        return dict(schema=self.config.get('chunk_schema', 'blueprint-ppo-chunk-v1'), model_before=behavior,
             native_before=[c['native_before'] for c in chunks],
             samples=[c['samples'][step] for step in range(self.config['training']['chunk_actions']) for c in chunks],
             frontiers=[c['frontier'] for c in chunks], completed=[c['completed'] for c in chunks if c['completed'] is not None],
             collection_seconds=time.perf_counter() - began)
 
-    def evaluate(self, model, cases, seed, update, output, deadline, evaluation=None):
+    def assign_starts(self, slots):
+        require(len(slots)==len(self.workers), 'declarative.curriculum-plan: full worker slot coverage required')
+        return self.exchange([dict(operation='start',start=slot) for slot in slots])
+
+    def evaluate(self, model, cases, seed, update, output, deadline, evaluation=None, *, uniform=False):
         self.exchange([dict(operation='model', state=model.state_dict()) for _ in self.workers])
         rows = []
         for start in range(0, len(cases), len(self.workers)):
             commands = [dict(operation='evaluate', case=case, seed=seed, update=update, output=str(output),
-                deadline=deadline, evaluation=evaluation or self.config['evaluation'],
+                deadline=deadline, evaluation=evaluation or self.config['evaluation'], uniform=uniform,
                 action_seed=case['action_seed'], sample=case.get('sample', 0)) for case in cases[start:start + len(self.workers)]]
             rows.extend(r['row'] for r in self.exchange(commands))
         return rows

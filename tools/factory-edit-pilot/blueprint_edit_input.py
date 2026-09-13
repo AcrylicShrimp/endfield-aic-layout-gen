@@ -148,8 +148,10 @@ class BlueprintActorCritic(nn.Module):
         logits, values = self.forward_packed(pack([batch]))
         return logits, values[0]
 
-    def forward_packed(self, batch):
-        if batch['schema'] != 'blueprint-edit-packed-v1':
+    packed_schema = 'blueprint-edit-packed-v1'
+
+    def encode_packed(self, batch):
+        if batch['schema'] != self.packed_schema:
             raise ValueError('blueprint.model-schema: expected disjoint packed graphs')
         nodes = self.nodes(torch.cat((batch['node_static'], batch['node_state']), dim=-1))
         edges = self.edges(torch.cat((batch['edge_static'], batch['edge_state']), dim=-1))
@@ -169,6 +171,10 @@ class BlueprintActorCritic(nn.Module):
         pooled.index_add_(0, node_graph, nodes)
         pooled = pooled / batch['node_counts'].unsqueeze(-1)
         pooled = self.context(torch.cat((pooled, batch['global_features']), dim=-1))
+        return nodes, pooled
+
+    def forward_packed(self, batch):
+        nodes, pooled = self.encode_packed(batch)
         references = batch['action_references']
         selected = nodes[references.clamp_min(0)]
         action_context = pooled[batch['action_graph']]

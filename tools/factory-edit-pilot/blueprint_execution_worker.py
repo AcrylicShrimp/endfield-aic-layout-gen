@@ -112,7 +112,7 @@ class Worker:
             native_before=self.before, samples=self.samples), directory / f'worker-{os.getpid()}.pt')
 
 
-def main():
+def main(worker_class=Worker):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--fd', type=int, required=True)
     parser.add_argument('--core', type=int, required=True)
@@ -124,7 +124,7 @@ def main():
     torch.set_num_interop_threads(1)
     torch.use_deterministic_algorithms(True)
     stream = socket.socket(fileno=args.fd)
-    reader, worker = Reader(args.message_bytes), Worker()
+    reader, worker = Reader(args.message_bytes), worker_class()
     try:
         while True:
             data, descriptors = receive(stream)

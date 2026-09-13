@@ -7,7 +7,7 @@ import torch
 SCHEMA = 'blueprint-edit-packed-v1'
 
 
-def pack(observations):
+def pack(observations, *, schema='blueprint-edit-graph-v1', packed_schema=SCHEMA):
     if not observations:
         raise ValueError('blueprint.batch: empty batch')
     fields = {k: [] for k in ('node_static', 'node_state', 'edge_static', 'edge_state', 'path_cells',
@@ -15,7 +15,7 @@ def pack(observations):
     nodes, actions, edges, counts, kinds = [], [], [], [], []
     node_offset = edge_offset = 0
     for index, observation in enumerate(observations):
-        if observation['schema'] != 'blueprint-edit-graph-v1':
+        if observation['schema'] != schema:
             raise ValueError('blueprint.batch-schema: expected new graph contract')
         for key in ('node_static', 'node_state', 'edge_static', 'edge_state', 'path_cells', 'action_features'):
             fields[key].append(observation[key])
@@ -31,7 +31,7 @@ def pack(observations):
         kinds.extend(math.log(kind_counts[a['kind']]) for a in observation['actions'])
         node_offset += len(observation['node_static'])
         edge_offset += len(observation['edge_static'])
-    result = dict(schema=SCHEMA, size=len(observations), action_counts=counts,
+    result = dict(schema=packed_schema, size=len(observations), action_counts=counts,
                 **{k: torch.cat(v) for k, v in fields.items()}, edge_index=torch.cat(edges, dim=1),
                 node_graph=torch.cat(nodes), action_graph=torch.cat(actions),
                 kind_log_counts=torch.tensor(kinds, dtype=torch.float32))
