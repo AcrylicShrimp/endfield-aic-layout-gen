@@ -69,7 +69,7 @@ def extent(layout):
     return x1 - x0, y1 - y0
 
 
-def witness_extent(value):
+def witness_bounds(value):
     # Validation first canonicalizes the origin using ALL referenced geometry;
     # metrics then measures facility bodies and network cells in that frame.
     # A raw validated_draft witness has not necessarily been canonicalized.
@@ -84,6 +84,11 @@ def witness_extent(value):
             x0, y0 = min(x0, point['x']), min(y0, point['y'])
     for component in value.get('logistics_components', []):
         x0, y0 = min(x0, component['position']['x']), min(y0, component['position']['y'])
+    return x0, y0, x1, y1
+
+
+def witness_extent(value):
+    x0, y0, x1, y1 = witness_bounds(value)
     return x1 - x0, y1 - y0
 
 
