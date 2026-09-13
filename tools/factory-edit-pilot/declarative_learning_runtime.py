@@ -37,6 +37,10 @@ class Learner:
             if required(config['success']):
                 for entry in self.buffer.state['entries'].values():
                     validate_metadata(entry.get('retention_features_v1'), entry['id'])
+            from declarative_replay_sampling import priority_enabled, validate_priority
+            if priority_enabled(config['success'].get('sampling')):
+                for entry in self.buffer.state['entries'].values():
+                    validate_priority(entry.get('sampling_priority_v1'),entry['id'])
             require(digest(self.model.state_dict())==saved['model_sha256'], 'declarative restored weights mismatch')
             require(digest(self.actor.state_dict())==digest(saved['actor_optimizer']) and
                 digest(self.critic.state_dict())==digest(saved['critic_optimizer']), 'declarative restored Adam mismatch')
@@ -66,11 +70,19 @@ class Learner:
         success = self.config['success']
         result = update_packed(self.model,self.actor,self.critic,self.shuffle,payload['samples'],payload['frontiers'],
             self.config['ppo'],sequences,success['coefficient'],success['sampler'],self.seed,ordinal,ordinal,
-            self.device,likelihood=policy,measure_replay_utility=bool(success.get('retention')))
+            self.device,likelihood=policy,measure_replay_utility=bool(success.get('retention')),
+            replay_sampling=success.get('sampling'))
         self.buffer.mark_used(result['success']['selected_ids'])
         if success.get('retention'):
             from declarative_replay_retention import observe
             observe(self.buffer.state['entries'],result['success']['sequence_utility'],ordinal,success['retention'])
+        if (success.get('sampling') or {}).get('kind')=='positive_advantage':
+            from declarative_replay_sampling import observe_priorities
+            observe_priorities(self.buffer.state['entries'],result['success']['sequence_utility'],ordinal)
+        if success.get('sampling'):
+            selected={identity for group in result['success']['selected_ids'] for identity in group}
+            result['success']['sampling_exposure']['unique_episodes']=len({
+                (self.buffer.state['entries'][identity]['stream'],self.buffer.state['entries'][identity]['episode']) for identity in selected})
         events = self.buffer.ingest(payload,ordinal,evidence,success,self.config['ppo']['gamma'],self.config['strata'])
         # New labels are still in memory. Do not serialize them merely to load
         # and decode the same inputs again at the next optimizer boundary.

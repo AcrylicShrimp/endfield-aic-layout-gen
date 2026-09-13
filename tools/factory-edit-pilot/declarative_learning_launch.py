@@ -38,6 +38,13 @@ def validate(config):
         'declarative equal per-action allowance across full episode')
     require(config['device']=='cuda:0' and config['success']['sampler'] in ('uniform','balanced','balanced_available'),
         'declarative explicit CUDA/replay configuration')
+    if 'sampling' in config['success']:
+        from declarative_replay_sampling import validate as validate_sampling
+        require(isinstance(config['success']['sampling'],dict),
+            'declarative.replay-sampling.config: explicit sampling object required')
+        validate_sampling(config['success']['sampling'])
+        require(config['success']['sampler']=='balanced_available',
+            'declarative.replay-sampling.mode: explicit experiments require balanced_available')
     require(config['ppo']['advantage_normalization']=='center' and config['ppo']['gamma']==1. and
         config['ppo']['width']==40 and config['ppo']['message_rounds']==2, 'declarative retained baseline learning settings')
     if config.get('duration'):

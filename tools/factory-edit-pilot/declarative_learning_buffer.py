@@ -30,6 +30,9 @@ class Buffer:
         result=[]
         for identity,entry in sorted(self.state['entries'].items()):
             require(entry['admitted_update']<ordinal_update, 'declarative current update cannot enter replay')
+            if 'sampling_priority_v1' in entry:
+                # Priorities change after updates; the cached policy rows do not.
+                self.cache[identity]['sampling_priority_v1']=entry['sampling_priority_v1']
             result.append(self.cache[identity])
         return result
 
@@ -53,6 +56,8 @@ class Buffer:
             require(len(matches)==1, 'declarative replay product must identify one configured stratum')
             self.cache[identity]=dict(id=identity,child_admitted_update=entry['admitted_update'],origin='own',
                 stratum=matches[0],product=product,rows=rows[identity])
+            if 'retention_features_v1' in entry:
+                self.cache[identity]['retention_features_v1']=entry['retention_features_v1']
 
     def mark_used(self, groups):
         for group in groups:
@@ -65,6 +70,8 @@ class Buffer:
     def ingest(self, chunk, ordinal, evidence, config, gamma, strata=None):
         events = []
         replacement = None
+        priority_index = None
+        priority_enabled = (config.get('sampling') or {}).get('kind')=='positive_advantage'
         terminal_order = 0
         before = {s['index']:s for s in chunk['native_before']}
         for index, sample in enumerate(chunk['samples']):
@@ -123,6 +130,10 @@ class Buffer:
                     self.state['entries'][identity]['occurrences'] += 1; self.state['duplicates'] += 1
                     events.append(dict(kind='duplicate',id=identity))
                 else:
+                    if priority_enabled and priority_index is None:
+                        from declarative_replay_sampling import PriorityBootstrap
+                        require(strata is not None,'declarative.replay-sampling.strata: priority initialization requires strata')
+                        priority_index=PriorityBootstrap(self.state['entries'],strata)
                     if config.get('retention'):
                         require(strata is not None and len(labels)<=config['max_labels'],
                             'declarative.replay-retention: incoming sequence exceeds capacity or strata missing')
@@ -132,6 +143,7 @@ class Buffer:
                                 from declarative_replay_retention import ReplacementIndex
                                 replacement=ReplacementIndex(self.state['entries'],ordinal,config['retention'],strata)
                             removed,detail=replacement.choose(incoming)
+                            if priority_index is not None:priority_index.remove(removed)
                             if 'selected_uses_total' not in self.state:self.state['selected_uses_total']=sum(self.state['selected_uses'].values())
                             self.state['selected_uses'].pop(removed,None)
                             entry=self.state['entries'].pop(removed);self.cache.pop(removed,None)
@@ -142,6 +154,9 @@ class Buffer:
                     require(self.label_count+len(labels)<=config['max_labels'],
                         'declarative replay label limit')
                     self.state['entries'][identity] = candidate
+                    if priority_index is not None:
+                        candidate['sampling_priority_v1']=dict(value=priority_index.maximum(candidate),observed_update=None)
+                        priority_index.add(candidate)
                     if replacement is not None:replacement.add(self.state['entries'][identity])
                     self.label_count+=len(labels)
                     self.state['admissions'] += 1
