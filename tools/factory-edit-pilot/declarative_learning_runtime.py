@@ -33,6 +33,10 @@ class Learner:
             self.sampler.set_state(saved['sampler_rng']); self.shuffle.set_state(saved['shuffle_rng'])
             self.ordinal,self.streams = saved['update'],deepcopy(saved['streams'])
             self.buffer = Buffer(saved['buffer'])
+            from declarative_success_features import required, validate_metadata
+            if required(config['success']):
+                for entry in self.buffer.state['entries'].values():
+                    validate_metadata(entry.get('retention_features_v1'), entry['id'])
             require(digest(self.model.state_dict())==saved['model_sha256'], 'declarative restored weights mismatch')
             require(digest(self.actor.state_dict())==digest(saved['actor_optimizer']) and
                 digest(self.critic.state_dict())==digest(saved['critic_optimizer']), 'declarative restored Adam mismatch')

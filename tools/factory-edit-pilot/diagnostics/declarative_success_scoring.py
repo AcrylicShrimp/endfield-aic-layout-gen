@@ -15,7 +15,8 @@ import sys
 import time
 
 SCHEMA = 'declarative-success-scoring-input-v1'
-FIELDS = ('instance', 'x', 'y', 'width', 'height', 'rotation')
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from declarative_success_features import FIELDS, bounds, extent, witness_extent, validate_row, features, score
 
 
 def require(ok, code, message):
@@ -34,34 +35,6 @@ def write(path, value):
     with (gzip.open(path, 'wt', compresslevel=3) if str(path).endswith('.gz') else open(path, 'w')) as f:
         json.dump(value, f, allow_nan=False)
         f.write('\n')
-
-
-def bounds(layout):
-    return (min(r[1] for r in layout), min(r[2] for r in layout),
-            max(r[1] + r[3] for r in layout), max(r[2] + r[4] for r in layout))
-
-
-def extent(layout):
-    x0, y0, x1, y1 = bounds(layout)
-    return x1 - x0, y1 - y0
-
-
-def witness_extent(value):
-    # Validation first canonicalizes the origin using ALL referenced geometry;
-    # metrics then measures facility bodies and network cells in that frame.
-    # A raw validated_draft witness has not necessarily been canonicalized.
-    x0, y0, x1, y1 = bounds([[p[k] for k in FIELDS] for p in value['placements']])
-    for network in value['transport_networks']:
-        for cell in network['cells']:
-            x0, y0 = min(x0, cell['x']), min(y0, cell['y'])
-            x1, y1 = max(x1, cell['x'] + 1), max(y1, cell['y'] + 1)
-        points = [t['position'] for t in network.get('terminals', [])]
-        points += [s[k] for s in network.get('segments', []) for k in ('from', 'to')]
-        for point in points:
-            x0, y0 = min(x0, point['x']), min(y0, point['y'])
-    for component in value.get('logistics_components', []):
-        x0, y0 = min(x0, component['position']['x']), min(y0, component['position']['y'])
-    return x1 - x0, y1 - y0
 
 
 def capture(args):
@@ -138,61 +111,6 @@ def capture(args):
     write(args.output, result)
     print(json.dumps(dict(update=result['update'], entries=len(rows), **{
         k:result['provenance'][k] for k in ('capture_seconds', 'source_bytes', 'decoded_chunks')})))
-
-
-def validate_row(row):
-    require(row['native_validated'] is True, 'not-validated', row['id'])
-    require(0 < row['after_area'] < row['before_area'], 'area', row['id'])
-    require(math.prod(row['before_extent']) == row['before_area'] and
-            math.prod(row['after_extent']) == row['after_area'], 'extent', row['id'])
-    require(bool(row['actions']), 'actions', row['id'])
-    for layout in [row['before'], row['final']] + [p[k] for p in row['places'] for k in ('before', 'after')]:
-        require(bool(layout) and len({p[0] for p in layout}) == len(layout), 'geometry', row['id'])
-        require(all(len(p) == 6 and all(isinstance(v, int) for v in p) and
-            p[1] >= 0 and p[2] >= 0 and p[3] > 0 and p[4] > 0 for p in layout), 'geometry', row['id'])
-    expected = [(i, a['action']['instance']) for i, a in enumerate(row['actions']) if a['action']['kind'] == 'place']
-    require(expected == [(p['label'], p['instance']) for p in row['places']], 'place-coverage', row['id'])
-    require(set(p[0] for p in row['before']) == set(p[0] for p in row['final']), 'identity', row['id'])
-
-
-def features(row):
-    validate_row(row)
-    kinds = [a['action']['kind'] for a in row['actions']]
-    require(set(kinds) <= {'place', 'insert_band', 'delete_band'}, 'kind', row['id'])
-    family = ('place_final' if kinds[-1] == 'place' else 'place_preparation' if 'place' in kinds
-              else 'insert_preparation' if 'insert_band' in kinds else 'delete_only')
-    x0, y0, x1, y1 = bounds(row['before'])
-    center = [(x0 + x1) / 2, (y0 + y1) / 2]
-    diagonal = math.hypot(*row['before_extent'])
-    inward = Counter()
-    extent_release = 0.
-    for place in row['places']:
-        before = {p[0]:p for p in place['before']}
-        after = {p[0]:p for p in place['after']}
-        owner = place['instance']
-        require(set(before) == set(after) and owner in before, 'identity', row['id'])
-        require(all(before[k] == after[k] for k in before if k != owner), 'place-transition', row['id'])
-        a, b = before[owner], after[owner]
-        def distance(p):
-            return math.hypot(p[1] + p[3]/2 - center[0], p[2] + p[4]/2 - center[1])
-        # Signed changes cancel an inward move followed by its reversal. Max
-        # over facilities avoids a bonus merely for adding more edited objects.
-        inward[owner] += (distance(a) - distance(b)) / diagonal
-        extent_release += (math.prod(extent(place['before'])) - math.prod(extent(place['after']))) / row['before_area']
-    return dict(id=row['id'], stratum=row['stratum'], product=row['product'], geometry=row['geometry'],
-        episode=row['episode'], depth=row['depth'], family=family, has_place=bool(row['places']),
-        labels=len(kinds), gain=(row['before_area'] - row['after_area']) / row['before_area'],
-        center_inward=min(1., max([0., *inward.values()])),
-        exterior_release=min(1., max(0., extent_release)),
-        admitted_update=row['admitted_update'], uses=row['uses'])
-
-
-def score(row, weights):
-    center, exterior = row['center_inward'], row['exterior_release']
-    if weights.get('cap_geometry', False):
-        center, exterior = min(center, row['gain']), min(exterior, row['gain'])
-    return (row['gain'] + weights['rare'] * row['rarity'] +
-            weights['center'] * center + weights['exterior'] * exterior)
 
 
 def summarize(rows):

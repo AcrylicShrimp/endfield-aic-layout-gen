@@ -3,6 +3,7 @@ from collections import Counter
 from copy import deepcopy
 
 from blueprint_ppo_update import digest, require
+import declarative_success_features as success_features
 
 SCHEMA = 'declarative-success-buffer-v1'
 
@@ -102,7 +103,12 @@ class Buffer:
                 identity = digest([dict(state=physical(evidence.sample(label['reference'])['observation']),
                     action=evidence.sample(label['reference'])['action'],return_to_terminal=round(label['return_to_terminal'],12))
                     for label in labels])
+                features = success_features.extract([evidence.sample(label['reference']) for label in labels], identity) \
+                    if success_features.required(config) else None
                 if identity in self.state['entries']:
+                    if features is not None:
+                        require(self.state['entries'][identity].get('retention_features_v1') == features,
+                            'declarative.replay-retention.duplicate-features: conflicting semantic identity')
                     self.state['entries'][identity]['occurrences'] += 1; self.state['duplicates'] += 1
                     events.append(dict(kind='duplicate',id=identity))
                 else:
@@ -127,6 +133,8 @@ class Buffer:
                     self.state['entries'][identity] = dict(id=identity,admitted_update=ordinal,labels=labels,
                         segment=segment,input=active['input'],episode=episode,stream=stream,
                         episode_chunks=sorted({ref[0] for ref,_ in active['rows']}),uses=0,occurrences=1)
+                    if features is not None:
+                        self.state['entries'][identity]['retention_features_v1'] = features
                     if replacement is not None:replacement.add(self.state['entries'][identity])
                     self.label_count+=len(labels)
                     self.state['admissions'] += 1
