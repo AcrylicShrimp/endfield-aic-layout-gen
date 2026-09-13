@@ -1,0 +1,76 @@
+{
+  "schema": "declarative-duration-launch-provenance-v1",
+  "status": "launched-not-final",
+  "host": "ashrimp-arch",
+  "root": "/home/ashrimp/Srv/aic-declarative-four-hour-20260913",
+  "run": "/home/ashrimp/Srv/aic-declarative-four-hour-20260913/artifacts/declarative-duration/four-hour",
+  "source_commit": "111d01c",
+  "source_sha256": "716412a4bca5581d531b44f7c454cbe01445d333937cddd496ec7f8d31b585b1",
+  "config_canonical_sha256": "716651ef879ded608acd7875dffc52ab911971d2cf72f0be1bacc4f953a1e3d1",
+  "panel_sha256": "cc49dd8230c744483c00ec10ffeb53d70e556c31fc334394502fcf03cd71af22",
+  "started_utc": "2026-09-13T10:44:41.155244+00:00",
+  "target_seconds": 14400,
+  "finish_grace_seconds": 300,
+  "seed": 29,
+  "batch": 1024,
+  "first_update": 32,
+  "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/mltpnnfq",
+  "files": {
+    "protocol": {
+      "path": "/home/ashrimp/Srv/aic-declarative-four-hour-20260913/tools/factory-edit-pilot/declarative-four-hour.json",
+      "sha256": "b4550d198224ede7bd622b08e92f6be860e217b84b144b92cf4f6846890f217b"
+    },
+    "verification": {
+      "path": "/home/ashrimp/Srv/aic-declarative-four-hour-20260913/artifacts/declarative-duration/readiness-v2/verification.json",
+      "sha256": "094787bdac60f8b18a139a64d23537f9ccd64bf3feccb14f278d0e07c7682472"
+    },
+    "readiness_report": {
+      "path": "/home/ashrimp/Srv/aic-declarative-four-hour-20260913/artifacts/declarative-duration/readiness-v2/integrated/report.json",
+      "sha256": "56863ec01830a623de75e8fabe7c819c7620b131c45fc2c0da8aac78218b9170"
+    },
+    "launch": {
+      "path": "/home/ashrimp/Srv/aic-declarative-four-hour-20260913/artifacts/declarative-duration/four-hour/launch.json",
+      "sha256": "e2ae21385d6c73fd5d78cf8216e6635d5ca7d6a9b9367b4255f3d6c7f76c64d4"
+    },
+    "continuation": {
+      "path": "/home/ashrimp/Srv/aic-declarative-four-hour-20260913/artifacts/declarative-duration/four-hour/continuation.json",
+      "sha256": "af49b8a07818ad03432f4179f2b630bd281e1add85dbf31054bb0c854418bed8"
+    },
+    "start": {
+      "path": "/home/ashrimp/Srv/aic-declarative-four-hour-20260913/artifacts/declarative-duration/four-hour/start.json",
+      "sha256": "8b501084fc25ad447c206360c5a7121693cf3ef0b9a1870338a1bb6155de0760"
+    }
+  },
+  "parent": {
+    "directory": "/home/ashrimp/Srv/aic-declarative-batch-20260913/artifacts/declarative-batch/comparison-v1/seed-29-batch-1024",
+    "launch": {
+      "path": "launch.json",
+      "sha256": "d791e01594d6fad21f2b0312608be22a982d208d62324cd2a38d394d80da507c"
+    },
+    "checkpoint": {
+      "directory": "/home/ashrimp/Srv/aic-declarative-batch-20260913/artifacts/declarative-batch/comparison-v1/seed-29-batch-1024/seed-29",
+      "path": "checkpoints/0032.pt.gz",
+      "sha256": "f875bcd744a638d1514bfac62324f8f60c39af9f37e7b11ff23980c35b05ca42"
+    },
+    "seed": 29,
+    "update": 32
+  },
+  "imported_checkpoint": {
+    "directory": "/home/ashrimp/Srv/aic-declarative-four-hour-20260913/artifacts/declarative-duration/four-hour/seed-29",
+    "path": "initial/continued-0032.pt.gz",
+    "sha256": "0c7eaca9874f78a47b77c4d2c0dce449b0a885251afa3ab7d25de9ee4a45be1b"
+  },
+  "preserved_sha256": {
+    "model": "69ce202f1cffe0c2e9dae87c06e56c197abd04c9da60abe57d85996cfa8a3811",
+    "actor_optimizer": "0b62b4fef16d3ea18dd22cbeaf18179d5d61d9679354869d790aed607a4788d5",
+    "critic_optimizer": "9f3caded514ffd2cdafd2610f320ce5d964e389836147663d9afcbc866bbd0e0",
+    "sampler_rng": "5ea7ff1b0f46bb9aa2fdfc2a8b0e6830c158fb272040046b8e08bd54978be7de",
+    "shuffle_rng": "383159d5439d0dbd4d538a9e80c5eb90ce30d11b1b2bbb95294d8a9e6cad74ac",
+    "buffer": "fd2e93d151e7baf9c12eef255ece1c3928940db98462b74fd9d8e85b3dbf858b",
+    "streams": "c8064d74c377a1f25f42eaf592ebfe575f1582d8a8d1a600d5f7e29f74428694"
+  },
+  "next_plan": {
+    "path": "curriculum/wave-000017-709f79b29af2a186/plan.json",
+    "sha256": "1b716598df1048160f67200d91a84920811b792fa0d9d54fc55be86edfc249c7"
+  }
+}

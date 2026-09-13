@@ -1,8 +1,9 @@
 # Four-hour declarative continuation preparation
 
-Status: local preparation complete; server verification and launch explicitly held by the user.
-Do not synchronize, verify on the server, schedule a start or run training until
-the user explicitly resumes it. The selected duration is four additional hours.
+Status: server verification passed; four-hour continuation started on 2026-09-13
+at 19:44 KST after the user explicitly resumed server work. See the
+[launch record](../reports/2026-09-13-declarative-four-hour-launch.md).
+The preparation-only hold was respected until that instruction.
 
 ## Registered intent and prerequisite findings
 
@@ -47,9 +48,9 @@ the target; allow a separately bounded five-minute finalization grace. A hard
 limit failure retains the latest published checkpoint and worker partial evidence.
 A requested stop pauses instead of claiming duration completion.
 
-Final Linux/native/CUDA integration and performance closure are pending while the
-server is reserved. Local checks may establish preparation correctness; they do
-not authorize launch or stand in for the actual server launch receipt.
+Linux/native/CUDA integration and performance closure passed after the hold was
+lifted. The isolated server receipt covers two actual normal-path updates and
+32 unfinished native stream restorations, separately from the four-hour run.
 
 
 ## Prepared configuration and verification boundary
@@ -87,15 +88,20 @@ updates on a separate diagnostic input stream, checks automatic duration stop an
 reporting, and restores the intermediate 32 unfinished native streams. It also
 runs the targeted tests and records actual phase timings/RSS. Its receipt binds
 config, source, parent, panel and worker allocation. Normal preparation rejects a
-missing or mismatched receipt. This server-only step has NOT been run during the
-hold, so the integrated continuity/performance checklist remains open there.
+missing or mismatched receipt. This server-only step was not run during the
+hold; it subsequently passed in 262.747 seconds before main launch.
 
 ## Manual server procedure after the user lifts the hold
 
 First create an isolated server checkout of this prepared source. Do not update
 the frozen batch-comparison checkout. Reuse its unchanged release library and
-tracking environment. The following commands are documentation only: none were
-executed or queued during local preparation. Use the established Python venv.
+tracking environment. No commands were executed or queued during local
+preparation. After resumption, copy the unchanged `target/release/aic-cli` into
+the isolated checkout too: source binding and fresh input generation require it
+there, even when the native library is referenced in the predecessor checkout.
+Use the established Python venv. The successful server receipt is under
+`artifacts/declarative-duration/readiness-v2`; the first readiness attempt stopped
+before training because that CLI file had not yet been copied.
 
 ```sh
 aic_parent=/home/ashrimp/Srv/aic-declarative-batch-20260913/artifacts/declarative-batch/comparison-v1/seed-29-batch-1024
@@ -104,10 +110,10 @@ aic_panel=/home/ashrimp/Srv/aic-declarative-learning-short-20260913/artifacts/de
 aic_environment=/home/ashrimp/Srv/aic-declarative-batch-20260913/.tracking.env
 python tools/factory-edit-pilot/declarative_duration.py verify \
   --parent "$aic_parent" --native-library "$aic_native" --panel "$aic_panel" \
-  --environment "$aic_environment" --output artifacts/declarative-duration/readiness
+  --environment "$aic_environment" --output artifacts/declarative-duration/readiness-v2
 python tools/factory-edit-pilot/declarative_duration.py prepare \
   --parent "$aic_parent" --native-library "$aic_native" --panel "$aic_panel" \
-  --verification artifacts/declarative-duration/readiness/verification.json \
+  --verification artifacts/declarative-duration/readiness-v2/verification.json \
   --output artifacts/declarative-duration/four-hour
 nohup python tools/factory-edit-pilot/declarative_duration.py run \
   --output artifacts/declarative-duration/four-hour --environment "$aic_environment" \

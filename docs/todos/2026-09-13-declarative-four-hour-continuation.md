@@ -1,6 +1,6 @@
 # Four-hour continuation preparation
 
-Status: local preparation complete; server verification and launch remain on user hold.
+Status: preparation and server readiness complete; four-hour continuation running.
 
 Context: one seed-29, batch-1,024 continuation for four additional hours. Parent
 is update 32 of the completed batch comparison. Preserve all established learning
@@ -10,7 +10,8 @@ Completion criteria:
 - Prepare the duration/configuration and exact v2 import with durable recovery.
 - Replace least useful replay entries at capacity, preserving size-stratum coverage.
 - Verify locally and commit the prepared source/configuration.
-- Document the exact server verification/start commands and keep them unexecuted.
+- Document the exact server verification/start commands and keep them unexecuted
+  until the user lifts the hold.
 - Close actual native/CUDA/performance continuity only after the hold is lifted.
 
 Activity:
@@ -27,3 +28,12 @@ Activity:
 - Documented the exact isolated server readiness, preparation and start commands.
   No server connection, synchronization, verification, training or schedule was
   performed after the preparation-only instruction. Server readiness is pending.
+- The user lifted the hold and requested resumption. Created an isolated server
+  checkout at source commit `111d01c`, preserving the frozen predecessor.
+- First readiness stopped before training on a missing copied CLI binary. Copied
+  the unchanged predecessor CLI; the next readiness passed 12 targeted tests,
+  two CUDA updates, automatic duration completion and 32 live stream restorations.
+- Verified readiness had ended, imported the actual parent again, and started
+  the four-hour main command at 19:44:41 KST with online tracking. Preparation
+  and launch are complete; final training results remain pending. See the
+  [launch record](../reports/2026-09-13-declarative-four-hour-launch.md).
