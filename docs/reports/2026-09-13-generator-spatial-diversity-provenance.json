@@ -1,0 +1,24 @@
+{
+  "schema": "generator-spatial-diversity-evidence-v1",
+  "root": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/generator-spatial-diversity/local-v1",
+  "files": [
+    {
+      "path": "artifacts/generator-spatial-diversity/local-v1/report.json",
+      "sha256": "385d68f8a9c2fd202295531b3afc2cde0cf0437f6d905731d3900cc7e77f1fee"
+    },
+    {
+      "path": "artifacts/generator-spatial-diversity/local-v1/selection.json",
+      "sha256": "7c7b42fd0ce140012d53d30f2232bb3d4d7b9bdd7cdf7d8813f10067b9aba47b"
+    },
+    {
+      "path": "artifacts/generator-spatial-diversity/local-v1/comparison.png",
+      "sha256": "a3beef1a1573338da21e0270f050cb233c13b0d7983c7bc4aef2045f6836eb99"
+    },
+    {
+      "path": "tools/factory-edit-pilot/diagnostics/generator-spatial-diversity.json",
+      "sha256": "a871c28f9d78d4b68e8365f3004456008080640841bb82de50538378a0c89e9d"
+    }
+  ],
+  "decision": "Keep the current training distribution; alternatives were not adopted.",
+  "cleanup": "Regenerable full construction reports and HTML were removed after retaining actual admitted inputs, final current witnesses and compact results."
+}
