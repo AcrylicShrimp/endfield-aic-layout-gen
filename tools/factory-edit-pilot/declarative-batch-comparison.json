@@ -1,0 +1,15 @@
+{
+  "schema": "declarative-batch-comparison-v1",
+  "base_config": "tools/factory-edit-pilot/declarative-curriculum-short.json",
+  "actions_per_arm": 32768,
+  "evaluation_actions": [0, 16384, 32768],
+  "seeds": [17, 29],
+  "order": [[17, 256], [17, 1024], [29, 1024], [29, 256]],
+  "input_seed_base": 613800000,
+  "input_seed_stride": 100000,
+  "diagnostic_seed_base": 614100000,
+  "physical_workers": 8,
+  "seconds": 7800,
+  "readiness_seconds": 600,
+  "tracking_group": "declarative-batch-comparison-20260913"
+}

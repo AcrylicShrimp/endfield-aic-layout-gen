@@ -29,8 +29,12 @@ class Runtime:
         self.original = self.request = None
         self.inputs = None
         if config['training_input']['kind'] == 'fresh-random':
-            self.inputs = FreshInputs(config, library, self.module,
-                dict(catalogs=self.catalogs, config=config['native']), editor=self.module.DeclarativeEditSession)
+            if config['training_input'].get('canonical_streams') is not None:
+                from declarative_batch_input import CanonicalInputs
+                self.inputs=CanonicalInputs(config,library,self.module,dict(catalogs=self.catalogs,config=config['native']),self.module.DeclarativeEditSession)
+            else:
+                self.inputs = FreshInputs(config, library, self.module,
+                    dict(catalogs=self.catalogs, config=config['native']), editor=self.module.DeclarativeEditSession)
         else:
             from probe_blueprint_edit import request_from_initial
             self.original = read(ROOT/read(ROOT/config['probe_spec'])['initial'])
@@ -46,7 +50,7 @@ class Runtime:
             require(start is not None and start['stream']==index and start['wave']==episode+1,
                 'declarative.curriculum-plan: episode requires its assigned start')
         if start is not None and start['depth']>0:
-            payload,metadata=curriculum.inherited(start,index,episode)
+            payload,metadata=curriculum.inherited(start,index,episode,streams=self.config['training']['streams'])
             if saved is not None:metadata['blueprint_sha256']=saved['blueprint_sha256']
         elif saved is None:
             payload, metadata = self.inputs.acquire(index,episode)

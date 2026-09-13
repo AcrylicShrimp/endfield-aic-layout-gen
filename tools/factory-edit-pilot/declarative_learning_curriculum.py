@@ -102,7 +102,7 @@ def next_plan(config, seed, directory, payload, chunk_ref, *, legacy=False):
     return plan,reference(path,directory)
 
 
-def inherited(start, index, episode):
+def inherited(start, index, episode, *, streams=8):
     require(start['schema']==SCHEMA and start['stream']==index and start['wave']==episode+1 and start['depth'] in (1,2),
         'declarative.curriculum-identity: inherited slot differs from its episode')
     parent=start['parent']
@@ -116,8 +116,17 @@ def inherited(start, index, episode):
     payload={k:value[k] for k in ('request','original')}
     from random_factory_generation import geometry_identity
     metadata=dict(reference={k:start['input'][k] for k in ('path','sha256')},
-        input_directory=start['input']['directory'],identity=dict(stream=index,episode=episode,slot=episode*8+index),
+        input_directory=start['input']['directory'],identity=dict(stream=index,episode=episode,slot=episode*streams+index),
         generation_seed=value['generation_seed'],draw=value['draw'],input_sha256=digest(payload),
         request_sha256=digest(value['request']),geometry_sha256=geometry_identity(value['original']),
         blueprint_sha256=None,setup_seconds=0.,attempts=[],start_curriculum=deepcopy(start))
     return payload,metadata
+
+
+def initial_plan(config, seed, directory):
+    plan=choose(config['start_curriculum'],seed,1,config['training']['streams'],[])
+    for index,slot in enumerate(plan['slots']):slot.update(schema=SCHEMA,wave=1,stream=index)
+    path=directory/'curriculum/initial-plan.json'
+    if path.exists():require(read(path)==plan, f'declarative.curriculum-collision: {path}')
+    else:write(path,plan)
+    return plan,reference(path,directory)

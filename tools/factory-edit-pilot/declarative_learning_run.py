@@ -84,6 +84,16 @@ def run_arm(launch, matrix, seed, state, matrix_guard):
         workers=pool(config,launch['source']['native_library'],allocation,directory/'workers',guard,saved=learner.streams)
         os.sched_setaffinity(0,allocation['coordinator'])
         job['workers']=workers.identities
+        if learner.ordinal==0 and config.get('start_curriculum') and learner.streams is None:
+            from declarative_learning_curriculum import initial_plan
+            plan,ref=initial_plan(config,seed,directory)
+            workers.assign_starts(plan['slots'])
+            job.setdefault('curriculum_plans',{})['1']=ref
+            account_write(job,directory/ref['path'])
+            initial=directory/'checkpoints/0000.pt.gz'
+            save(initial,learner.checkpoint(workers.snapshot()));account_write(job,initial)
+            job['latest_checkpoint']=reference(initial,directory)
+            write(directory/'state.json',job)
         while True:
             guard();ordinal=learner.ordinal
             if ordinal in config['evaluation']['at'] and not any(row['update']==ordinal for row in job.get('evaluation',[])):
@@ -91,7 +101,7 @@ def run_arm(launch, matrix, seed, state, matrix_guard):
                 baseline=read(checked(job['evaluation'][0],directory))['rows']
                 tracking.log(metrics(measured,ordinal,config['training']['streams']*config['training']['chunk_actions'],
                     seconds=previous+time.monotonic()-resource.began,initial=baseline))
-            if ordinal==0 and seed==config['seeds'][0] and not job.get('random'):
+            if ordinal==0 and seed==config['seeds'][0] and not job.get('random') and not launch.get('batch_experiment'):
                 evaluate(learner,workers,cases,directory,job,resource,uniform=True)
             if ordinal==config['training']['updates']:
                 require(all(s['native'] is None for s in workers.snapshot()), 'declarative final update has unfinished episodes')
@@ -100,7 +110,8 @@ def run_arm(launch, matrix, seed, state, matrix_guard):
             register_inputs(payload,job)
             record=learner.update(payload,evidence)
             snapshots=workers.snapshot()
-            record.update(worker_cpu_seconds=workers.worker_cpu_seconds[:],max_step_concurrency=workers.max_step_concurrency,
+            record.update(input_access_seconds=sum(s['metadata']['input_access_seconds'] for s in payload['native_before'] if s['policy_actions']==0),
+                worker_cpu_seconds=workers.worker_cpu_seconds[:],max_step_concurrency=workers.max_step_concurrency,
                 worker_phase_seconds=dict(workers.phase_seconds),native_seconds=sum(s['outcome']['seconds'] for s in payload['samples']),
                 mean_root_candidates=sum(len(s['input']['actions']) for s in payload['samples'])/len(payload['samples']),
                 mean_selected_ports=sum(len(s['decision']['ports']) for s in payload['samples'])/len(payload['samples']))

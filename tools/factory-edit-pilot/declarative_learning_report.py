@@ -116,7 +116,8 @@ def report(output):
             facility_counts=dict(Counter(r['facilities'] for r in all_inputs))),
         evaluation=dict(factories=len(panel['cases']),geometry_disjoint=len(eligible),
             overlapping_seeds=[c['generation_seed'] for c in panel['cases'] if c['geometry_identity'] in geometry]),
-        interpretation='The continuation retains its parent learner, optimizers, RNG and replay. New-action totals exclude the parent prefix. Inherited starts repeat requests deliberately. This single-seed short run is not convergence or curriculum-effect evidence.',
+        interpretation=('The continuation retains its parent learner, optimizers, RNG and replay. New-action totals exclude the parent prefix. ' if first_update else 'Fresh learner seeds start with empty optimizers and replay. ')+
+            'Inherited starts repeat requests deliberately. Short results do not establish convergence or an isolated curriculum effect.',
         launch=reference(root/'launch.json',root),verification=launch['verification'],
         report_source_sha256=sha(__file__),
         timing_scope='Reused parent evaluation is excluded from continuation execution timing; phase timers do not include all cache hydration, bookkeeping and process startup costs.')

@@ -1,0 +1,101 @@
+{
+  "schema": "declarative-batch-provenance-v1",
+  "host": "ashrimp-arch",
+  "root": "/home/ashrimp/Srv/aic-declarative-batch-20260913/artifacts/declarative-batch/comparison-v1",
+  "protocol": {
+    "path": "/home/ashrimp/Srv/aic-declarative-batch-20260913/tools/factory-edit-pilot/declarative-batch-comparison.json",
+    "sha256": "73e2969ec679c2e994326afb80c1d6ce61c6d2eb679014f7363cde268e82cd48"
+  },
+  "experiment": {
+    "path": "/home/ashrimp/Srv/aic-declarative-batch-20260913/artifacts/declarative-batch/comparison-v1/experiment.json",
+    "sha256": "278261c4f052f7edd9cce175445c7f12b84a357ae9eddb6eac4147666ccc6331"
+  },
+  "report": {
+    "path": "/home/ashrimp/Srv/aic-declarative-batch-20260913/artifacts/declarative-batch/comparison-v1/report.json",
+    "sha256": "2135f3a9030e74219ca9f2c89ade668ee2c8460db9b57016a59defe140b65bad"
+  },
+  "verification": {
+    "path": "/home/ashrimp/Srv/aic-declarative-batch-20260913/artifacts/declarative-batch/verification-v2/verification.json",
+    "sha256": "8a746d85d61ba5a7692345e7ba8d1521abab81bc6b52221a8982ef99e4198368"
+  },
+  "source": {
+    "native_library": "/home/ashrimp/Srv/aic-declarative-batch-20260913/target/release/libaic_pilot_native.so",
+    "native_sha256": "dc84066c78d07c60911193e8e32b0d996db4c33ccd9b24378e86fd80cd797226",
+    "code_sha256": "8025edcf443e6bd60830580e5b0134d78adf8e07ebd1ccbbf8cf31fe492b2776"
+  },
+  "runs": [
+    {
+      "seed": 17,
+      "batch": 256,
+      "launch": {
+        "path": "/home/ashrimp/Srv/aic-declarative-batch-20260913/artifacts/declarative-batch/comparison-v1/seed-17-batch-256/launch.json",
+        "sha256": "aab1bee2b3bad4cd469efde627543f94eca594c949c402b72dde58d45bb08d3f"
+      },
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-declarative-batch-20260913/artifacts/declarative-batch/comparison-v1/seed-17-batch-256/seed-17/state.json",
+        "sha256": "3c50d1f8e0fcfebbb4eecb338b6d7621d24b363d9c45894fa1525c5099d8b8fe"
+      },
+      "checkpoint": {
+        "path": "checkpoints/0128.pt.gz",
+        "sha256": "fc741e4c6a713400d5c255c8d4a06c6e19c305e723bd716fcc8de65cc6098a6f"
+      },
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/5al8sgwm"
+    },
+    {
+      "seed": 17,
+      "batch": 1024,
+      "launch": {
+        "path": "/home/ashrimp/Srv/aic-declarative-batch-20260913/artifacts/declarative-batch/comparison-v1/seed-17-batch-1024/launch.json",
+        "sha256": "61b8a487c8cc266ad8266db7130bdcc326728034822b7cc873644a8ef0c44ee9"
+      },
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-declarative-batch-20260913/artifacts/declarative-batch/comparison-v1/seed-17-batch-1024/seed-17/state.json",
+        "sha256": "34b322577cf278e800b86f4b0d54f9a20b3540275ccb2b9d448aa8c0a4dc2724"
+      },
+      "checkpoint": {
+        "path": "checkpoints/0032.pt.gz",
+        "sha256": "c34c7c44918facc7c824b67b171a88e30ae94b4c45522b59604e5d50e8cfa962"
+      },
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/rxzpwl1p"
+    },
+    {
+      "seed": 29,
+      "batch": 1024,
+      "launch": {
+        "path": "/home/ashrimp/Srv/aic-declarative-batch-20260913/artifacts/declarative-batch/comparison-v1/seed-29-batch-1024/launch.json",
+        "sha256": "d791e01594d6fad21f2b0312608be22a982d208d62324cd2a38d394d80da507c"
+      },
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-declarative-batch-20260913/artifacts/declarative-batch/comparison-v1/seed-29-batch-1024/seed-29/state.json",
+        "sha256": "57a9312792c399df36aa373021ce7f55247486ff62f493d36da98ba4f8d3045d"
+      },
+      "checkpoint": {
+        "path": "checkpoints/0032.pt.gz",
+        "sha256": "f875bcd744a638d1514bfac62324f8f60c39af9f37e7b11ff23980c35b05ca42"
+      },
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/exedi3nl"
+    },
+    {
+      "seed": 29,
+      "batch": 256,
+      "launch": {
+        "path": "/home/ashrimp/Srv/aic-declarative-batch-20260913/artifacts/declarative-batch/comparison-v1/seed-29-batch-256/launch.json",
+        "sha256": "7dde0adb5ce41f001b5c328a930b993ee3f3c029187ed37038c75c5b1064a6b3"
+      },
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-declarative-batch-20260913/artifacts/declarative-batch/comparison-v1/seed-29-batch-256/seed-29/state.json",
+        "sha256": "461c71cd515b6ab2238725ab8b4e21c2c02243a8fa580fe82c50fc2309192d39"
+      },
+      "checkpoint": {
+        "path": "checkpoints/0128.pt.gz",
+        "sha256": "b83632a4bb6aa7b5c3c837607fccd87566381971262ed38c136100a3f5992786"
+      },
+      "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/kt1xao3g"
+    }
+  ],
+  "unique_generated_inputs": 1002,
+  "unique_generation_attempts": 1017,
+  "unique_rejected_generation_attempts": 15,
+  "observed_training_workers_alive_after_completion": [],
+  "retention_note": "Full source/input/worker records and replayable source chunks remain in the external experiment; this compact manifest records its binding hashes and selected checkpoints."
+}

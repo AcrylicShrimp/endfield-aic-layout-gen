@@ -23,7 +23,7 @@ def validate(config):
     require(config['training_input']['kind']=='fresh-random' and 'fixture_diagnostic' not in config['success'],
         'declarative main training must use fresh inputs only')
     training=config['training']
-    require(training['streams']==8 and 0<training['chunk_actions']<training['episode_actions'] and
+    require(training['streams'] in (8,32) and 0<training['chunk_actions']<training['episode_actions'] and
         training['episode_actions']%training['chunk_actions']==0 and
         training['updates']%(training['episode_actions']//training['chunk_actions'])==0, 'declarative complete persistent horizon')
     require(config['native']['schema']=='declarative-edit-v1' and
@@ -35,6 +35,7 @@ def validate(config):
         config['ppo']['width']==40 and config['ppo']['message_rounds']==2, 'declarative retained baseline learning settings')
     require(config['evaluation']['at'][0]==training.get('first_update',0) and config['evaluation']['at'][-1]==training['updates'],
         'declarative initial/final evaluation')
+    require(training['streams']==8 or config.get('execution')=='logical-stream-pool-v1', 'declarative 32 streams require logical worker execution')
     require(config['seeds'] and len(config['seeds'])==len(set(config['seeds'])), 'declarative unique learner seeds')
 
 
@@ -55,6 +56,9 @@ def sources(config, library):
 
 
 def pool(config, library, allocation, output, guard, saved=None):
+    if config.get('execution')=='logical-stream-pool-v1':
+        from declarative_batch_pool import MultiplexPool
+        return MultiplexPool(config,library,allocation['workers'],output,guard,saved=saved)
     return BlueprintPool(config,library,allocation['workers'],output,guard,saved=saved,
         worker_entry=Path(__file__).with_name('declarative_learning_worker.py'),policy=policy)
 
