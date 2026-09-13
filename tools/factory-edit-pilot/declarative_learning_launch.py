@@ -33,8 +33,17 @@ def validate(config):
         'declarative explicit CUDA/replay configuration')
     require(config['ppo']['advantage_normalization']=='center' and config['ppo']['gamma']==1. and
         config['ppo']['width']==40 and config['ppo']['message_rounds']==2, 'declarative retained baseline learning settings')
-    require(config['evaluation']['at'][0]==training.get('first_update',0) and config['evaluation']['at'][-1]==training['updates'],
-        'declarative initial/final evaluation')
+    if config.get('duration'):
+        from declarative_duration_control import validate as validate_duration
+        validate_duration(config)
+    else:
+        require(config['evaluation']['at'][0]==training.get('first_update',0) and config['evaluation']['at'][-1]==training['updates'],
+            'declarative initial/final evaluation')
+    if config['success'].get('retention'):
+        from declarative_replay_retention import validate as validate_retention
+        validate_retention(config['success']['retention'])
+        require(config['success']['max_sequences']>0 and config['success']['max_labels']>=training['episode_actions'],
+            'declarative replay must fit an entire successful episode')
     require(training['streams']==8 or config.get('execution')=='logical-stream-pool-v1', 'declarative 32 streams require logical worker execution')
     require(config['seeds'] and len(config['seeds'])==len(set(config['seeds'])), 'declarative unique learner seeds')
 

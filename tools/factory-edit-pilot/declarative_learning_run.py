@@ -15,14 +15,14 @@ from declarative_learning_runtime import Learner, account_remove, account_write,
 from ppo_harness_environment import load_environment, tracking_destination
 
 
-def evaluate(learner, workers, cases, directory, job, guard, *, uniform=False):
+def evaluate(learner, workers, cases, directory, job, guard, *, uniform=False, retain_raw=False):
     ordinal=learner.ordinal
     folder='random' if uniform else 'evaluation'
     output=directory/f'{folder}/{ordinal:04d}'
     began=time.monotonic()
     rows=workers.evaluate(learner.behavior_copy(),cases,learner.seed,ordinal,output,guard.began+guard.seconds,uniform=uniform)
     record=dict(schema='declarative-learning-evaluation-v1',update=ordinal,rows=rows,seconds=time.monotonic()-began,
-        raw_retained=ordinal in learner.config['retention']['evaluation_traces'])
+        raw_retained=retain_raw or ordinal in learner.config['retention']['evaluation_traces'])
     # The exact finite list comes from the evaluation cases, not directory scans.
     for case in cases:
         path=output/f'factory-{case["generation_seed"]}-{case["sample"]}.pt.gz'
@@ -51,7 +51,7 @@ def register_inputs(payload, job):
         inputs[key]=record
 
 
-def run_arm(launch, matrix, seed, state, matrix_guard):
+def run_arm(launch, matrix, seed, state, matrix_guard, requested_stop=lambda:False):
     import wandb
     config=launch['config']; directory=matrix/f'seed-{seed}'
     directory.mkdir(exist_ok=True)
@@ -94,16 +94,23 @@ def run_arm(launch, matrix, seed, state, matrix_guard):
             save(initial,learner.checkpoint(workers.snapshot()));account_write(job,initial)
             job['latest_checkpoint']=reference(initial,directory)
             write(directory/'state.json',job)
+        from declarative_duration_control import evaluation_due, select_best, stop_reason
+        if config.get('duration') and not job.get('best_evaluations') and job.get('evaluation'):
+            ref=job['evaluation'][0];select_best(job,config,read(checked(ref,directory)),ref)
+        reason=None
         while True:
             guard();ordinal=learner.ordinal
-            if ordinal in config['evaluation']['at'] and not any(row['update']==ordinal for row in job.get('evaluation',[])):
-                measured=evaluate(learner,workers,cases,directory,job,resource)
+            reason=stop_reason(config,ordinal,previous+time.monotonic()-resource.began,requested_stop()) if config.get('duration') else None
+            if reason=='requested_stop' and ordinal not in job.setdefault('pause_boundaries',[]):job['pause_boundaries'].append(ordinal)
+            if evaluation_due(config,ordinal,reason is not None) and not any(row['update']==ordinal for row in job.get('evaluation',[])):
+                measured=evaluate(learner,workers,cases,directory,job,resource,retain_raw=reason is not None)
+                if config.get('duration'):select_best(job,config,measured,job['evaluation'][-1])
                 baseline=read(checked(job['evaluation'][0],directory))['rows']
                 tracking.log(metrics(measured,ordinal,config['training']['streams']*config['training']['chunk_actions'],
                     seconds=previous+time.monotonic()-resource.began,initial=baseline))
             if ordinal==0 and seed==config['seeds'][0] and not job.get('random') and not launch.get('batch_experiment'):
                 evaluate(learner,workers,cases,directory,job,resource,uniform=True)
-            if ordinal==config['training']['updates']:
+            if reason is not None or ordinal==config['training']['updates']:
                 require(all(s['native'] is None for s in workers.snapshot()), 'declarative final update has unfinished episodes')
                 break
             payload=workers.collect(learner.behavior_copy(),learner.sampler)
@@ -117,13 +124,16 @@ def run_arm(launch, matrix, seed, state, matrix_guard):
                 mean_selected_ports=sum(len(s['decision']['ports']) for s in payload['samples'])/len(payload['samples']))
             publish(learner,payload,record,snapshots,directory,job,workers=workers)
             job['seconds']=previous+time.monotonic()-resource.began
+            job['resource']=dict(resource.last,peak_rss=max(job.get('resource',{}).get('peak_rss',0),resource.peak_rss))
             retain(learner,directory,job)
             tracking.log(metrics(record,learner.ordinal,len(payload['samples']),seconds=job['seconds']))
             require(job['retained_bytes']<config['limits']['arm_output_bytes'], 'declarative retained arm output limit')
             print(dict(stage='train',seed=seed,update=learner.ordinal,reward=record['area_reward'],
                 eligible=record['buffer']['eligible'],successes=record['buffer']['own_entries'],
                 actor_epochs=record['ppo']['actor_epochs'],seconds=round(job['seconds'],3)),flush=True)
-        job.update(status='complete',seconds=previous+time.monotonic()-resource.began,resource=resource.last,
+        job.update(status='paused' if reason=='requested_stop' else 'complete',stop_reason=reason or 'update_limit',
+            seconds=previous+time.monotonic()-resource.began,
+            resource=dict(resource.last,peak_rss=max(job.get('resource',{}).get('peak_rss',0),resource.peak_rss)),
             max_step_concurrency=workers.max_step_concurrency,cuda_peak_allocated_bytes=torch.cuda.max_memory_allocated())
         write(directory/'state.json',job);tracking.finish()
         return job
@@ -137,7 +147,7 @@ def run_arm(launch, matrix, seed, state, matrix_guard):
         os.sched_setaffinity(0,allocation['allowed'])
 
 
-def run(output, environment):
+def run(output, environment, requested_stop=lambda:False):
     matrix=Path(output).resolve()
     launch,state=read(matrix/'launch.json'),read(matrix/'state.json')
     require(state['launch_sha256']==sha(matrix/'launch.json'), 'declarative changed launch identity')
@@ -160,11 +170,11 @@ def run(output, environment):
     try:
         for seed in config['seeds']:
             if state['jobs'].get(str(seed),{}).get('status')=='complete':continue
-            job=run_arm(launch,matrix,seed,state,guard)
+            job=run_arm(launch,matrix,seed,state,guard,requested_stop)
             state['jobs'][str(seed)]=dict(status=job['status'],update=job['update'],seconds=job['seconds'],
                 state=reference(matrix/f'seed-{seed}/state.json',matrix),wandb_url=job['wandb_url'])
             state['seconds']=previous+time.monotonic()-guard.began;write(matrix/'state.json',state)
-        state['status']='complete'
+        state['status']='paused' if any(j['status']=='paused' for j in state['jobs'].values()) else 'complete'
     except BaseException as error:
         state.update(status='failed',diagnostic=dict(code='declarative-learning.matrix-failed',severity='error',
             stage='training',entity=str(matrix),message=str(error)))

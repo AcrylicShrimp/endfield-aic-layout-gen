@@ -62,9 +62,12 @@ class Learner:
         success = self.config['success']
         result = update_packed(self.model,self.actor,self.critic,self.shuffle,payload['samples'],payload['frontiers'],
             self.config['ppo'],sequences,success['coefficient'],success['sampler'],self.seed,ordinal,ordinal,
-            self.device,likelihood=policy)
+            self.device,likelihood=policy,measure_replay_utility=bool(success.get('retention')))
         self.buffer.mark_used(result['success']['selected_ids'])
-        events = self.buffer.ingest(payload,ordinal,evidence,success,self.config['ppo']['gamma'])
+        if success.get('retention'):
+            from declarative_replay_retention import observe
+            observe(self.buffer.state['entries'],result['success']['sequence_utility'],ordinal,success['retention'])
+        events = self.buffer.ingest(payload,ordinal,evidence,success,self.config['ppo']['gamma'],self.config['strata'])
         self.ordinal = ordinal
         work = {key:sum(s['outcome']['details'][key] for s in payload['samples'])
                 for key in ('route_expansions','preflight_expansions','route_calls','validations')}
@@ -130,6 +133,7 @@ def publish(learner, payload, record, streams, directory, job, *, workers=None):
 def retain(learner, directory, job):
     config = learner.config['retention']
     keep = set(config['checkpoints'])
+    keep.update(e['update'] for e in job.get('best_evaluations',{}).values())
     keep.update(range(max(0,learner.ordinal-config['recovery_updates']+1),learner.ordinal+1))
     chunks = learner.buffer.retained_chunks()|keep
     for ordinal in keep:

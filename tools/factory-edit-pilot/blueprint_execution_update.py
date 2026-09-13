@@ -35,22 +35,24 @@ def prepared_rows(rows, likelihood=None):
     return dict(batch=batch, selected=selected_indices(batch, [r['index'] for r in rows]))
 
 
-def prepare_minibatch(samples, indices, advantages, targets, sequences, likelihood=None):
+def prepare_minibatch(samples, indices, advantages, targets, sequences, likelihood=None, measure_replay_utility=False):
     began = time.perf_counter()
     rows = [samples[i] for i in indices]
     result = dict(ppo=prepared_rows(rows, likelihood), advantages=advantages[indices], targets=targets[indices],
                   old_logp=torch.tensor([r['old_logp'] for r in rows]), sil=None)
     if sequences:
-        labels, weights, groups = [], [], []
+        labels, weights, groups, utility_groups = [], [], [], []
         for sequence in sequences:
             stages = {r['stage'] for r in sequence['rows']}
             require(bool(stages), 'replay-balance.source-invalid: empty replay sequence')
-            for row in sequence['rows']:
+            for index,row in enumerate(sequence['rows']):
+                if measure_replay_utility:
+                    utility_groups.append((sequence['id'],1. / (len(stages) * sum(r['stage']==row['stage'] for r in sequence['rows'])),index==0))
                 labels.append(row)
                 weights.append(1. / (len(sequences) * len(stages) * sum(r['stage'] == row['stage'] for r in sequence['rows'])))
                 groups.append((sequence['origin'], sequence['stratum'], row['stage']))
         result['sil'] = dict(**prepared_rows(labels, likelihood), returns=torch.tensor([r['return_to_terminal'] for r in labels]),
-                             weights=torch.tensor(weights), groups=groups)
+                             weights=torch.tensor(weights), groups=groups, utility_groups=utility_groups)
     result['prepare_seconds'] = time.perf_counter() - began
     return result
 
@@ -97,9 +99,9 @@ def epoch_statistics(model, batches, samples, targets, config, device, likelihoo
     return dict(zip(('approximate_kl', 'outside_clip_fraction', 'value_mae', 'value_loss'), result, strict=True))
 
 
-def summarize_imitation(measurements, groups):
+def summarize_imitation(measurements, groups, utility_groups=None):
     if not measurements:
-        return dict(label_count=0, positive_labels=0, zero_labels=0, groups=[])
+        return dict(label_count=0, positive_labels=0, zero_labels=0, groups=[], **({'sequence_utility':[]} if utility_groups is not None else {}))
     values = torch.cat(measurements).cpu().tolist()
     require(len(values) == len(groups), 'replay diagnostic label coverage')
     totals = {}
@@ -113,12 +115,21 @@ def summarize_imitation(measurements, groups):
         row['value_sum'] += value
         row['return_sum'] += returned
         row['weighted_nll_sum'] += weighted_nll
-    return dict(label_count=len(values), positive_labels=sum(r['positive'] for r in totals.values()),
+    result=dict(label_count=len(values), positive_labels=sum(r['positive'] for r in totals.values()),
                 zero_labels=sum(r['zero'] for r in totals.values()), groups=[totals[k] for k in sorted(totals)])
+    if utility_groups is not None:
+        require(len(utility_groups)==len(values), 'replay utility label coverage')
+        sequences={}
+        for (identity,weight,first),measurement in zip(utility_groups,values,strict=True):
+            row=sequences.setdefault(identity,dict(id=identity,draws=0,contribution=0.))
+            row['draws']+=int(first);row['contribution']+=weight*measurement[3]
+        result['sequence_utility']=[dict(id=k,draws=row['draws'],mean_weighted_nll=row['contribution']/row['draws'])
+            for k,row in sorted(sequences.items())]
+    return result
 
 
 def update_packed(model, actor_optimizer, critic_optimizer, shuffle_rng, samples, frontiers, config,
-                  sequences, coefficient, mode, seed, global_ordinal, child_ordinal, device, *, likelihood=None):
+                  sequences, coefficient, mode, seed, global_ordinal, child_ordinal, device, *, likelihood=None, measure_replay_utility=False):
     device = torch.device(device)
     require(next(model.parameters()).device == device, 'replay-balance.execution-gate: learner device mismatch')
     require(coefficient >= 0 and all(s['child_admitted_update'] < child_ordinal for s in sequences),
@@ -135,6 +146,7 @@ def update_packed(model, actor_optimizer, critic_optimizer, shuffle_rng, samples
     epochs, selected_ids, diagnostics, groups, losses = [], [], [], [], []
     stopped, tail_actor, tail_optimizer = False, None, None
     prepared_seconds = 0.
+    utility_groups=[] if measure_replay_utility else None
     with ThreadPoolExecutor(max_workers=1, thread_name_prefix='blueprint-prepare') as supply:
         for epoch in range(config['epochs']):
             order = torch.randperm(len(samples), generator=shuffle_rng).tolist()
@@ -143,7 +155,7 @@ def update_packed(model, actor_optimizer, critic_optimizer, shuffle_rng, samples
                 selected = draw_sequences(sequences, mode, generator, order_generator) if not stopped and coefficient else []
                 if selected:
                     selected_ids.append([s['id'] for s in selected])
-                tasks.append((samples, order[start:start + config['minibatch_size']], advantages, targets, selected, likelihood))
+                tasks.append((samples, order[start:start + config['minibatch_size']], advantages, targets, selected, likelihood, measure_replay_utility))
             if stopped:
                 for p in actor_parameters:
                     p.requires_grad_(False)
@@ -171,6 +183,7 @@ def update_packed(model, actor_optimizer, critic_optimizer, shuffle_rng, samples
                             losses.append(teacher.detach())
                             diagnostics.append(measurement.detach())
                             groups.extend(prepared['sil']['groups'])
+                            if utility_groups is not None:utility_groups.extend(prepared['sil']['utility_groups'])
                     require(torch.isfinite(loss).item(), 'replay-balance.nonfinite: learner loss')
                     loss.backward()
                     norm = torch.nn.utils.clip_grad_norm_(critic_parameters, config['gradient_clip'])
@@ -196,7 +209,7 @@ def update_packed(model, actor_optimizer, critic_optimizer, shuffle_rng, samples
     success = dict(coefficient=coefficient, sampler=mode, selected_ids=selected_ids,
         weighted_loss=float(torch.stack(losses).mean()) if losses else None,
         rng_sha256=digest(generator.get_state()), order_rng_sha256=digest(order_generator.get_state()),
-        **summarize_imitation(diagnostics, groups))
+        **summarize_imitation(diagnostics, groups, utility_groups))
     lookup = {sequence['id']: sequence for sequence in sequences}
     success['draws_by_origin'] = dict(Counter(lookup[identity]['origin'] for group in selected_ids for identity in group))
     success['draws_by_stratum'] = dict(Counter(lookup[identity]['stratum'] for group in selected_ids for identity in group))

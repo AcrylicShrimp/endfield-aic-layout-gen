@@ -18,6 +18,7 @@ class Buffer:
             positive_improvements=0,admissions=0,duplicates=0,selected_uses={})
         require(self.state['schema']==SCHEMA, 'declarative replay checkpoint schema')
         self.cache = {}
+        self.label_count=sum(len(e['labels']) for e in self.state['entries'].values())
 
     def snapshot(self):
         return deepcopy(self.state)
@@ -54,8 +55,9 @@ class Buffer:
                 require(identity in self.state['entries'], 'declarative selected replay identity missing')
                 self.state['entries'][identity]['uses'] += 1
                 self.state['selected_uses'][identity] = self.state['selected_uses'].get(identity,0)+1
+                if 'selected_uses_total' in self.state:self.state['selected_uses_total']+=1
 
-    def ingest(self, chunk, ordinal, evidence, config, gamma):
+    def ingest(self, chunk, ordinal, evidence, config, gamma, strata=None):
         events = []
         before = {s['index']:s for s in chunk['native_before']}
         for index, sample in enumerate(chunk['samples']):
@@ -100,12 +102,26 @@ class Buffer:
                     self.state['entries'][identity]['occurrences'] += 1; self.state['duplicates'] += 1
                     events.append(dict(kind='duplicate',id=identity))
                 else:
+                    if config.get('retention'):
+                        require(strata is not None and len(labels)<=config['max_labels'],
+                            'declarative.replay-retention: incoming sequence exceeds capacity or strata missing')
+                        incoming=dict(input=active['input'])
+                        while len(self.state['entries'])>=config['max_sequences'] or self.label_count+len(labels)>config['max_labels']:
+                            from declarative_replay_retention import victim
+                            removed,detail=victim(self.state['entries'],incoming,ordinal,config['retention'],strata)
+                            if 'selected_uses_total' not in self.state:self.state['selected_uses_total']=sum(self.state['selected_uses'].values())
+                            self.state['selected_uses'].pop(removed,None)
+                            entry=self.state['entries'].pop(removed);self.cache.pop(removed,None)
+                            self.label_count-=len(entry['labels'])
+                            self.state['evictions']=self.state.get('evictions',0)+1
+                            events.append(dict(kind='evicted',id=removed,**detail))
                     require(len(self.state['entries'])<config['max_sequences'], 'declarative replay sequence limit')
-                    require(sum(len(e['labels']) for e in self.state['entries'].values())+len(labels)<=config['max_labels'],
+                    require(self.label_count+len(labels)<=config['max_labels'],
                         'declarative replay label limit')
                     self.state['entries'][identity] = dict(id=identity,admitted_update=ordinal,labels=labels,
                         segment=segment,input=active['input'],episode=episode,stream=stream,
                         episode_chunks=sorted({ref[0] for ref,_ in active['rows']}),uses=0,occurrences=1)
+                    self.label_count+=len(labels)
                     self.state['admissions'] += 1
                     events.append(dict(kind='admitted',id=identity,labels=len(labels)))
             del self.state['active'][stream]
@@ -120,4 +136,5 @@ class Buffer:
         return dict(eligible=len(eligible),by_stratum=dict(Counter(s['stratum'] for s in eligible)),
             own_entries=len(self.state['entries']),positive_improvements=self.state['positive_improvements'],
             admissions=self.state['admissions'],duplicates=self.state['duplicates'],
-            selected_uses=sum(self.state['selected_uses'].values()),cached_sequences=len(self.cache))
+            selected_uses=self.state.get('selected_uses_total',sum(self.state['selected_uses'].values())),cached_sequences=len(self.cache),
+            evictions=self.state.get('evictions',0),retained_labels=self.label_count)

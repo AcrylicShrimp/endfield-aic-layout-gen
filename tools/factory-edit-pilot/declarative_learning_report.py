@@ -28,9 +28,10 @@ def summarize(rows, eligible=None):
 def report(output):
     root=Path(output).resolve();launch,state=read(root/'launch.json'),read(root/'state.json')
     require(state['status']=='complete', 'declarative report requires completed registered training')
-    config=launch['config'];expected=config['training']['updates'];first_update=config['training'].get('first_update',0)
-    updates=expected-first_update
+    config=launch['config'];first_update=config['training'].get('first_update',0)
     jobs={seed:read(root/f'seed-{seed}/state.json') for seed in config['seeds']}
+    expected=next(iter(jobs.values()))['update'] if config.get('duration') else config['training']['updates']
+    updates=expected-first_update
     baseline_inputs=jobs[config['seeds'][0]]['inputs']
     paired_inputs=len(jobs)>1 and all(job['inputs']==baseline_inputs for job in jobs.values())
     all_inputs=[row for job in jobs.values() for row in job['inputs'].values()]
@@ -48,7 +49,9 @@ def report(output):
         require(sum(r['actions'] for r in records)==updates*config['training']['streams']*config['training']['chunk_actions'],
             'declarative registered action coverage')
         evaluations=[]
-        require([r['update'] for r in job['evaluation']]==config['evaluation']['at'], 'declarative evaluation checkpoint coverage')
+        from declarative_duration_control import evaluation_updates
+        expected_evaluations=evaluation_updates(config,expected,job.get('pause_boundaries',[])) if config.get('duration') else config['evaluation']['at']
+        require([r['update'] for r in job['evaluation']]==expected_evaluations, 'declarative evaluation checkpoint coverage')
         for ref in job['evaluation']:
             evaluation=read(checked(ref,directory))
             require(len(evaluation['rows'])==len(panel['cases'])*config['evaluation']['replicates'], 'declarative complete evaluation cohort')
@@ -85,7 +88,7 @@ def report(output):
                     mean_start_area_reduction_percent=mean([r['start_area_reduction_percent'] for r in completed if r['depth']==d]),
                     mean_root_area_reduction_percent=mean([r['root_area_reduction_percent'] for r in completed if r['depth']==d])) for d in (0,1,2)},
                 plans=[job['curriculum_plans'][str(w)] for w in sorted(waves)])
-        seeds.append(dict(seed=seed,first_update=first_update,curriculum=curriculum,seconds=job['seconds'],evaluations=evaluations,training_blocks=blocks,
+        seeds.append(dict(seed=seed,first_update=first_update,stop_reason=job.get('stop_reason'),best_evaluations=job.get('best_evaluations',{}),curriculum=curriculum,seconds=job['seconds'],evaluations=evaluations,training_blocks=blocks,
             actions=sum(r['actions'] for r in records),completed_episodes=sum(r['quality'].get('accepted',0) for r in records),
             positive_reward_updates=sum(r['area_reward']>0 for r in records),final_buffer=records[-1]['buffer'],
             replay=dict(draws_by_stratum=dict(sum((Counter(r['ppo']['success']['draws_by_stratum']) for r in records),Counter())),
@@ -100,12 +103,16 @@ def report(output):
             cuda_peak_allocated_bytes=job['cuda_peak_allocated_bytes'],resource=job['resource'],
             checkpoint=job['latest_checkpoint'],wandb_url=job['wandb_url']))
     first=config['seeds'][0]
-    random_ref=jobs[first]['random'][0]
-    random_rows=read(checked(random_ref,root/f'seed-{first}'))['rows']
-    result=dict(schema='declarative-learning-report-v1',status='complete',seconds=state['seconds'],seeds=seeds,
-        trained=True,random_baseline=dict(all=summarize(random_rows),
+    random_baseline=None
+    if jobs[first].get('random'):
+        random_ref=jobs[first]['random'][0]
+        random_rows=read(checked(random_ref,root/f'seed-{first}'))['rows']
+        random_baseline=dict(all=summarize(random_rows),
             by_stratum={name:summarize([r for r in random_rows if r['product'] in products]) for name,products in config['strata'].items()},
-            geometry_disjoint=summarize(random_rows,eligible)),
+            geometry_disjoint=summarize(random_rows,eligible))
+    else:require(bool(config.get('duration')), 'declarative report requires its registered random baseline')
+    result=dict(schema='declarative-learning-report-v1',status='complete',seconds=state['seconds'],seeds=seeds,
+        trained=True,random_baseline=random_baseline,
         input_coverage=dict(actual_slots_per_seed=total_slots,episode_executions=len(all_inputs),paired_across_seeds=paired_inputs,
             parent_slots=first_update*config['training']['chunk_actions']*config['training']['streams']//config['training']['episode_actions'],
             new_slots=updates*config['training']['chunk_actions']*config['training']['streams']//config['training']['episode_actions'],
