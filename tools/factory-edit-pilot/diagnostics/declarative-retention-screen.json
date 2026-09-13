@@ -1,0 +1,28 @@
+{
+  "schema": "declarative-retention-screen-v1",
+  "seeds": [
+    17,
+    29,
+    41
+  ],
+  "counts": [
+    8,
+    16,
+    32
+  ],
+  "max_sequences": 4096,
+  "max_labels": 262144,
+  "seconds": 600,
+  "max_output_bytes": 2147483648,
+  "device": "cpu",
+  "cpu_threads": 1,
+  "category_fraction": 0.1,
+  "protection_updates": 64,
+  "minimum_new_ids": 4096,
+  "minimum_facility_episodes": 10,
+  "horizon": 32,
+  "minimum_exposure_delta": 0.05,
+  "minimum_geometry_delta": 0.02,
+  "minimum_deletion_coverage_ratio": 0.9,
+  "maximum_storage_ratio": 1.25
+}

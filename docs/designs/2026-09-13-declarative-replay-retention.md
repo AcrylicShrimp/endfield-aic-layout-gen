@@ -43,3 +43,16 @@ measurement enabled or disabled on a nonempty successful replay update. Other
 checks cover stage balancing, scarce-stratum protection, immature-entry fallback,
 staleness, restoration, actual capacity replacement and cache/source references.
 Actual server/CUDA continuation readiness remains a separate pre-launch gate.
+
+## Experimental category and sampling evaluation, 2026-09-14
+
+The opt-in `declarative-replay-category-v2` policy and explicit uniform,
+score-mixture and positive-advantage sampling are implemented and locally/native
+verified. They remain experimental and are not enabled on the main launch.
+The [registered chronological screen](../reports/2026-09-14-chronological-retention-screen.md)
+completed 25 profiles times three seeds with no shortlisted candidate. Category
+protection improved retention duration, but no profile met the registered adoption
+gates. No candidate learning or runtime superiority was established. The
+[final decision](../reports/2026-09-14-training-setup-verdict.md) keeps v1 with
+balanced uniform eight-sequence replay and leaves main training paused at update
+1744. Existing default numerical behavior remains verified unchanged.
