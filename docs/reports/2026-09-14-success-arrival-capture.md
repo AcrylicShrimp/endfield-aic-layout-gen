@@ -1,5 +1,9 @@
 # Complete bounded success-arrival capture
 
+> Withdrawn from scientific selection on 2026-09-14 at the user’s request.
+> Historical execution evidence only; do not use these results or recommendations
+> to select a training setup. Replaced by the [quality-focused study](../designs/2026-09-14-quality-weighted-replay-study.md).
+
 An isolated baseline continuation produced a complete 104-update chronological
 corpus from the paused update-1744 parent. It can support the registered
 fixed-arrival screen. It does not predict successes a changed learner would

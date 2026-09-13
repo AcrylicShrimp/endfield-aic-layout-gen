@@ -1,5 +1,8 @@
 # Local success-experience scoring screen
 
+> Withdrawn from scientific selection on 2026-09-14 at the user’s request.
+> Historical record only; use the [replacement quality study](../designs/2026-09-14-quality-weighted-replay-study.md) for new selection evidence.
+
 ## Finding
 
 Rarity changes which facility-edit successes survive a small selection budget.

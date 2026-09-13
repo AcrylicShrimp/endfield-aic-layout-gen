@@ -1,5 +1,8 @@
 # Bounded category-retention verification
 
+> Withdrawn from scientific selection on 2026-09-14 at the user’s request.
+> Historical record only; use the [replacement quality study](../designs/2026-09-14-quality-weighted-replay-study.md) for new selection evidence.
+
 The opt-in `declarative-replay-category-v2` implementation passed its mechanism
 checks. It is available for experiments; the production configuration remains v1.
 This report does not establish improved learning performance.

@@ -1,5 +1,9 @@
 # Training setup verdict after bounded retention experiments
 
+> Withdrawn from scientific selection on 2026-09-14 at the user’s request.
+> Historical execution evidence only; do not use these results or recommendations
+> to select a training setup. Replaced by the [quality-focused study](../designs/2026-09-14-quality-weighted-replay-study.md).
+
 **Verdict: keep the current baseline.** This is the best-supported operational
 choice from this experiment chain, not a demonstrated globally optimal learner.
 Main training remains **paused at update 1744**. It was not resumed, extended or

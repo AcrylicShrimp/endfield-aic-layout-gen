@@ -1,5 +1,9 @@
 # Chronological retention and sampling screen
 
+> Withdrawn from scientific selection on 2026-09-14 at the user’s request.
+> Historical execution evidence only; do not use these results or recommendations
+> to select a training setup. Replaced by the [quality-focused study](../designs/2026-09-14-quality-weighted-replay-study.md).
+
 The preregistered screen completed all **25 profiles × three seeds** and returned
 **`no_candidate`**. Retain the current baseline as the supported operational
 choice. This is not evidence that baseline learning is superior: the frozen

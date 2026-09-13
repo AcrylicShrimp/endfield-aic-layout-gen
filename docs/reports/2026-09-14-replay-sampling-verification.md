@@ -1,5 +1,9 @@
 # Bounded replay-sampler verification
 
+> Withdrawn from scientific selection on 2026-09-14 at the user’s request.
+> Historical execution evidence only; do not use these results or recommendations
+> to select a training setup. Replaced by the [quality-focused study](../designs/2026-09-14-quality-weighted-replay-study.md).
+
 Explicit sampling settings are implemented and verified for uniform, score-mixture
 and positive-advantage reference sampling at 8, 16 and 32 sequences per minibatch.
 The main learner remains paused on its original configuration. These mechanism

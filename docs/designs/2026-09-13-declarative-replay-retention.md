@@ -44,7 +44,13 @@ checks cover stage balancing, scarce-stratum protection, immature-entry fallback
 staleness, restoration, actual capacity replacement and cache/source references.
 Actual server/CUDA continuation readiness remains a separate pre-launch gate.
 
-## Experimental category and sampling evaluation, 2026-09-14
+## Withdrawn experimental evaluation, 2026-09-14
+
+The following historical outcome and baseline recommendation were withdrawn at
+the user's request. They do not establish a best setup and must not gate the
+[replacement quality study](2026-09-14-quality-weighted-replay-study.md).
+
+### Historical record
 
 The opt-in `declarative-replay-category-v2` policy and explicit uniform,
 score-mixture and positive-advantage sampling are implemented and locally/native

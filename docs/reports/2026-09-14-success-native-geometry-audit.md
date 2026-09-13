@@ -1,5 +1,9 @@
 # Complete-state native geometry audit
 
+> Withdrawn from scientific selection on 2026-09-14 at the user’s request.
+> Historical execution evidence only; do not use these results or recommendations
+> to select a training setup. Replaced by the [quality-focused study](../designs/2026-09-14-quality-weighted-replay-study.md).
+
 The bounded audit permits the optional geometry package in the frozen-arrival
 screen (`geometry_eligible: true`). This is local attribution evidence, not proof
 that the heuristic is generally safe or improves a trained policy.

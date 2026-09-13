@@ -1,5 +1,8 @@
 # Independent success-scorer adoption review
 
+> Withdrawn from scientific selection on 2026-09-14 at the user’s request.
+> Historical record only; use the [replacement quality study](../designs/2026-09-14-quality-weighted-replay-study.md) for new selection evidence.
+
 ## Decision and scope
 
 **BLOCK immediate application to the running long training.** Two independent,
