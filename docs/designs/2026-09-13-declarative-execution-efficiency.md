@@ -1,6 +1,6 @@
 # Declarative execution efficiency for extended training
 
-Status: implementation and isolated verification complete; normal launch pending. The user requests improving
+Status: complete; verified execution migration launched and normal training resumed. The user requests improving
 the active four-hour experiment before scaling to 12/24/48-hour training. Keep
 training running during source inspection; pause it at a durable episode boundary
 when an isolated server experiment is needed. Tests must not compete with main

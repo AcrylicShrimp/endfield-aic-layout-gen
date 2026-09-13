@@ -1,6 +1,6 @@
 # Declarative execution efficiency
 
-Status: implementation and isolated verification complete; main resume pending.
+Status: complete; normal training resumed from the preserved update-80 boundary.
 
 Context: the active seed-29/batch-1024 run averages about 40 seconds per update;
 the user requests improving it now for future 12–48-hour training and explicitly
@@ -38,3 +38,9 @@ Activity:
 Known separate correction: the pre-existing per-update fresh-generation metric
 includes inherited starts and can produce a negative rejection count. Use the
 endpoint input-coverage report for this comparison; repair that metric separately.
+
+- Prepared the verified main continuation and resumed it at 21:21:53 KST under
+  source commit `03fac1c`; all diagnostic processes had ended. Preserved learner
+  time and W&B identity; the remaining budget is 12,229.912241585 seconds.
+- Confirmed actual normal publication through update 86, compact replay and
+  existing W&B continuation; recorded launch provenance and closed this slice.

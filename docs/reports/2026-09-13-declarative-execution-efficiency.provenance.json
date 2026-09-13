@@ -1,6 +1,6 @@
 {
   "schema": "declarative-execution-efficiency-provenance-v1",
-  "status": "verified",
+  "status": "resumed",
   "source_root": "/home/ashrimp/Srv/aic-declarative-efficiency-20260913",
   "parent": {
     "directory": "/home/ashrimp/Srv/aic-declarative-four-hour-20260913/artifacts/declarative-duration/four-hour",
@@ -41,5 +41,35 @@
     "restored_streams": 32,
     "tests": 50
   },
-  "retention": "Raw learning and diagnostic artifacts remain in ignored artifacts directories. This manifest contains only selected provenance."
+  "retention": "Raw learning and diagnostic artifacts remain in ignored artifacts directories. This manifest contains only selected provenance.",
+  "source_code_commit": "03fac1c8cb0cd77d29cdb77a0437f31631fd0963",
+  "resumed": {
+    "pid": 5505,
+    "started_utc": "2026-09-13T12:21:53.558645+00:00",
+    "expected_finish_utc": "2026-09-13T15:45:43.470887+00:00",
+    "output": "/home/ashrimp/Srv/aic-declarative-efficiency-20260913/artifacts/resumed-four-hour",
+    "diagnostics_ended": true,
+    "normal_behavior_device": "cuda:0",
+    "physical_workers": 16,
+    "launch_sha256": "bd12aeb72aeb43085b1fb96849aa4ba6001e7a0de4c5c8021986e415a66cbb9f",
+    "migration_sha256": "db7edd0b09e2b415f9dd6f8c164a8c8e6f260b9a41e8a03f3f8e7a933f930672",
+    "checkpoint": {
+      "path": "initial/execution-0080.pt.gz",
+      "sha256": "64c1b05d5ed084576cdcda9381dbc410356a237d972c006f2ac0880c3036cec0"
+    },
+    "preserved_sha256": {
+      "model": "77ea102a3e60aa508fb62b8fd6481f6956a522837ba71ce2b68c3de2ca9a29ed",
+      "actor_optimizer": "0c759c04e08c57352253d5abbea801af8835d4e076a6d85202eb0363e9da533d",
+      "critic_optimizer": "83fd597e0edbf8bf913ca20d930964b72c13d6509a050977e353d02387dc7076",
+      "sampler_rng": "a36f353be660a32f63a52bf4352ea19ac4554063ec5bba371270ec4b863edb7b",
+      "shuffle_rng": "57270bc27a13d4055f0eaa8e953c872e874a4254f783cef8f0cd3a5d635512d8",
+      "buffer": "3d235054bad82b684e7fe34ccc1ca16dd1cde5ffddefa82c0132bf5e2f79634f",
+      "streams": "5fcdea47c7513949228ca7c4edfcf3d1943a8c4f3de6586d1a13b9719d3ecadd"
+    },
+    "preserved_seconds": 2170.087758415,
+    "remaining_seconds": 12229.912241585,
+    "actual_input_files_linked": 14925,
+    "observed_through_update": 86,
+    "wandb_url": "https://wandb.ai/acrylicshrimp-personal/endfield-aic-layout-gen/runs/mltpnnfq"
+  }
 }

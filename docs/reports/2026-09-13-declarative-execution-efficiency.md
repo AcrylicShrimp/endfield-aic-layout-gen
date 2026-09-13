@@ -1,8 +1,7 @@
 # Declarative execution efficiency and preserved learning state
 
-Status: implementation and isolated verification complete. Resume the paused
-four-hour learner through the verified execution migration; record its launch
-separately. This slice changes execution and storage, not PPO settings, replay
+Status: implementation and isolated verification complete; the four-hour learner
+has resumed through the verified execution migration. This slice changes execution and storage, not PPO settings, replay
 selection, native editing semantics, the input curriculum or the duration budget.
 
 ## Findings and measured change
@@ -172,3 +171,25 @@ python tools/factory-edit-pilot/declarative_duration.py run \
 Preserve retained checkpoints and actual inputs. These local/server artifact
 locations are not backups. Successful diagnostic work need not be repeated to
 resume or complete normal training.
+
+## Resumed normal run
+
+Source commit: `03fac1c8cb0cd77d29cdb77a0437f31631fd0963`. Main process 5505
+started at 2026-09-13 12:21:53 UTC (21:21:53 KST), using
+`artifacts/resumed-four-hour` under the candidate source root. It resumes W&B run
+`mltpnnfq`, rather than adopting the diagnostic learner. The expected remaining
+training endpoint is about 2026-09-14 00:45:43 KST, with the existing bounded
+finalization allowance. This is a running experiment, not a completed result.
+
+The private input store links 14,925 unaltered actual input files and records its
+explicit catalog-location migration. Checkpoint and launch hashes, preserved state
+digests and the remaining time are in the provenance manifest. All isolated
+verification workers and GPU observation processes ended before launch. Removed
+70,362,180 bytes of redundant storage-roundtrip candidate archives after recording
+their results; original predecessor inputs/checkpoints and selected evidence remain.
+
+A lightweight startup read confirmed normal publication through update 86 and
+W&B continuation at the original run URL. Updates 83–86 took approximately
+12.489, 8.860, 12.323 and 7.176 seconds respectively, including fresh-wave work
+where due. The latest observed record retained compact replay and no full trace.
+These are initial runtime observations, not another diagnostic workload.
