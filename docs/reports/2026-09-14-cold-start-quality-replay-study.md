@@ -1,6 +1,16 @@
 # Cold-start quality replay comparison
 
-Status: all eight development arms complete; two-initialization confirmation running with a user-authorized one-hour clock extension.
+Status: Completed. All eleven arms reached update 128; 1,408 scientific updates.
+
+Uniform-16 had the highest observed confirmation mean, **25.398%**, versus
+**23.777%** for baseline. Its paired difference was **+1.621 percentage points**,
+but the 95% interval **[−0.763, +4.194]** includes zero. Priority-8 also lacked a
+confirmed advantage. This comparison does not justify declaring a superior
+replacement; it does not establish equivalence either. Main remains paused at
+update 1908, with no profile adoption.
+
+Compact source, result and cost bindings are retained in the
+[provenance manifest](2026-09-14-cold-start-quality-replay-study.manifest.json).
 
 ## Question and registered comparison
 
@@ -160,10 +170,67 @@ on development; uniform-16 trailed by 0.63768. Uniform-32's stronger early score
 did not persist to update 128. These are selection observations, not confirmed
 policy improvements.
 
+## Completed confirmation comparison
+
+Both selected profiles and baseline have 128-update endpoints for two independently
+initialized seeds, evaluated on the same 32 reserved confirmation geometries with
+two action seeds each. All 384 final confirmation rows were native-valid. The table
+uses equal weights for the two size strata and observed initializations. Intervals
+use 10,000 whole-geometry paired resamples within size strata, retaining both action
+and initialization observations together (bootstrap seed 718600000).
+
+| Profile | Seed 71 | Seed 113 | Combined | Difference vs baseline (pp) | 95% interval (pp) | Geometry win/tie/loss |
+| --- | ---: | ---: | ---: | ---: | --- | --- |
+| baseline-8 | 27.268 | 20.287 | 23.777 | — | — | — |
+| priority-8 | 26.004 | 22.713 | 24.358 | +0.581 | [-1.090, +2.374] | 15/5/12 |
+| uniform-16 | 27.268 | 23.529 | 25.398 | +1.621 | [-0.763, +4.194] | 15/4/13 |
+
+The development advantage of priority-8 did not replicate for seed 71 on confirmation:
+it was 1.264 points below baseline there, but 2.426 points above it for seed 113.
+Uniform-16 was effectively tied with baseline under seed 71 (difference −0.000187
+points), and 3.242 points higher under seed 113. Thus its combined advantage is
+driven by the second initialization. Neither confidence interval excludes zero.
+These intervals describe factory variation conditional on the two observed
+initializations; they do not establish general initialization robustness or
+convergence.
+
+| Profile | Combined small % | Combined large % | Small difference (pp) | Large difference (pp) |
+| --- | ---: | ---: | ---: | ---: |
+| baseline-8 | 28.908 | 18.647 | +0.000 | +0.000 |
+| priority-8 | 29.293 | 19.424 | +0.385 | +0.777 |
+| uniform-16 | 33.129 | 17.667 | +4.222 | -0.979 |
+
+Uniform-16's gain was concentrated in small factories; its combined large-factory
+mean was lower than baseline. Priority-8 had smaller positive point differences
+in both strata. The geometry win/tie/loss counts above average the two initializations
+for each geometry before comparison.
+
+All seed-113 initial models scored 1.86249% on confirmation. Their learning curves
+show faster early learning for both candidates, followed by declines after the
+64/96-update checkpoints. The registered endpoint remains update 128.
+
+| Profile | Seed-113 update 32 | 64 | 96 | 128 |
+| --- | ---: | ---: | ---: | ---: |
+| baseline-8 | 11.691 | 22.985 | 23.638 | 20.287 |
+| priority-8 | 21.636 | 24.177 | 24.901 | 22.713 |
+| uniform-16 | 19.750 | 25.603 | 24.971 | 23.529 |
+
+The corresponding seed-113 replay allocation was:
+
+| Profile | Confirmation draws | Draw gain % | Positive labels % | Raw SIL | Corrected SIL |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| baseline-8 | 61,696 | 4.665 | 70.63 | 28728.6 | 3591.1 |
+| priority-8 | 64,000 | 4.839 | 90.84 | 42733.6 | 2658.3 |
+| uniform-16 | 127,488 | 4.579 | 72.92 | 64185.3 | 4011.6 |
+
+Priority again concentrated on positive-advantage labels, while uniform-16 roughly
+doubled the draws. These allocation changes are directly observed, but their
+policy benefit remains uncertain in this bounded comparison.
+
 ## Physical quality and learning allocation
 
-The following quantities describe the experiences actually reused over all 128
-updates. Draw gain is the sequence's native before/after area reduction, distinct
+The following development quantities describe the experiences actually reused
+over all 128 updates. Draw gain is the sequence's native before/after area reduction, distinct
 from the policy's whole-episode held-out score. Pool gain is weighted by eligible
 entry-updates; it is not a per-draw time-matched counterfactual. Raw SIL contributions
 include stage weights; corrected contributions additionally include the existing
@@ -211,7 +278,11 @@ generation work.
 Four selected inherited collisions were replaced during development: baseline
 (wave 44, stream 5), uniform-16 (51, 15), score-8 (43, 30), and geometry-8 (60, 25).
 The other four profiles needed no inherited replacement. All completed development
-cohorts passed the original committed-input disjointness check.
+cohorts passed the original committed-input disjointness check. Confirmation added
+three inherited replacements: priority-8 (wave 33, stream 26) and uniform-16
+(34, 13 and 37, 14). Baseline113 needed none. Thus seven selected inherited slots
+were replaced across the eleven arms; all final input cohorts remained disjoint
+from both evaluation panels.
 
 ## Runtime and retained evidence
 
@@ -231,16 +302,58 @@ scan the study tree or save an extra ledger.
 The extension proposal passed independent review with notes. Its separately
 bound `finish_cold_quality_study.py` reuses the unchanged source/readiness, original
 empty initializer, persistent-worker CLI, fresh bank, initial-evaluation cache,
-ledger and statistics. Only the coordinator is suspended while the active seed-113
-baseline completes. Its completed 128-update state is then summarized once before
-the two remaining profiles start empty under the extended clock. No learned state,
-launch identity or checkpoint amendment is involved. Six focused extension checks
+ledger and statistics. Only the coordinator was suspended while the active seed-113
+baseline completed. Its completed 128-update state was summarized once before
+the two remaining profiles started empty under the extended clock. No learned state,
+launch identity or checkpoint amendment was involved. Six focused extension checks
 passed locally and on the server; workspace check/tests passed. The actual complete
 original source fingerprint remained identical after installing the controller.
 The actual handoff completed after baseline113 reached 128: its final confirmation
 score was 20.28673%, and priority113 began from the same complete empty initializer.
 The original coordinator and baseline child both exited. The scientific count at
-this boundary is exactly 1,152 updates; the last two arms are still running/pending.
+this boundary was exactly 1,152 updates. Both remaining arms completed, bringing
+the final count to 1,408 (86 carried once and 1,322 new). All eleven empty-origin
+proofs match within initialization seed, and the two seeds have different models.
+
+The continuation and extension completed at **2026-09-14 17:35:36.713 KST**,
+13 minutes 26 seconds beyond the former deadline and within the authorized
+extension. Elapsed continuation time, including evaluation and finalization, was
+**14,182.654 seconds** (3 h 56 min 22.654 s). This excludes work before the
+continuation began; the retained baseline job counter below includes its earlier
+86 valid updates. The first invalidated attempt contributes another 128 discarded
+scientific updates, for 1,536 actual cold-study updates across attempts. Diagnostic
+readiness and transition tests are separate from that scientific allocation.
+
+| Profile | Development job seconds | Confirmation job seconds |
+| --- | ---: | ---: |
+| baseline-8 | 1462.3 | 1358.1 |
+| uniform-16 | 1366.4 | 1381.9 |
+| uniform-32 | 1440.1 | — |
+| gain-8 | 1341.0 | — |
+| score-8 | 1295.0 | — |
+| geometry-8 | 1326.3 | — |
+| priority-8 | 1324.1 | 1348.0 |
+| protected-score-8 | 1316.5 | — |
+
+These are cumulative job counters, not isolated learner-kernel costs. In particular,
+the baseline development job used 1,462.3 seconds across its retained prefix and
+continuation; the 493.1-second resumed invocation alone is not comparable to other
+full arms. Per-summary timing components and exact invocation times remain in the
+retained evidence. Cached fresh-input setup costs describe original generation and
+are not charged again as newly executed wall time.
+
+The final cumulative artifact measurement was **10,139,172,715 bytes** (9.443 GiB),
+with a conservative ledger charge of **10,142,393,883 bytes** (9.446 GiB), below
+12 GiB. The continuation's newly owned versions accounted for 7,689,596,332 bytes
+across 43,052 files; the totals also carry prior attempts and readiness. The extension
+controller observed a peak process-tree RSS of **26.635 GiB**, below 48 GiB; this
+observation covers its handoff and remaining arms.
+
+The completed controller verified the original source, selection, baseline and
+pre-extension bindings, original stopped-prefix bindings, and unchanged main hashes.
+A final read-only closeout found no remaining Python execution processes in the
+study root and main still paused at update 1908. All eleven locally retained
+summary files match the checksums in the final study receipt.
 
 Current frozen server root: `/home/ashrimp/Srv/aic-quality-cold-continue-20260914`.
 The source and stopped update-86 evidence remain under
@@ -250,11 +363,15 @@ Its `artifacts/study/leakage-closeout.json` records the overlap and checkpoint.
 
 - `artifacts/readiness/readiness.json`: bounded integrated readiness receipt.
 - Original root `artifacts/cuda-proof.json`: reused unchanged-core CUDA evidence.
-- `artifacts/study/study.json`: scientific allocation, source, panels and progress.
-- `artifacts/study/selection.json`: immutable development selection, when available.
+- `artifacts/study/study.json`: complete scientific allocation, source, panels, comparisons and costs.
+- `artifacts/study/selection.json`: immutable development selection.
+- `artifacts/study/clock-extension.json`: separately bound one-hour controller amendment.
+- `artifacts/study/study-before-clock-extension.json`: immutable handoff receipt.
 - Per-arm `quality-branch.json`, `quality-summary.json` and ordinary seed job state:
   initialization, measured outcomes/allocation and retained checkpoints.
 
+Local complete study, eleven summaries, selection, clock receipt and final evidence
+bundle are retained under `artifacts/cold-quality-continuation-20260914/`.
 Local readiness and CUDA receipts are retained under
 `artifacts/cold-quality-continuation-20260914/`,
 `artifacts/cold-quality-study-r2-20260914/` and the original
@@ -267,3 +384,23 @@ artifact bytes at measurement. The replacement's
 `artifacts/study/inherited-stop-closeout.json` records the collision, zero committed
 input overlap and retained update-86 checkpoint
 `7ad05885b146926b2dbf7a5e11e2e9029a19b4fc5038b3df26de54f583f68cad`.
+
+## Reproduction and disposition
+
+Frozen learning/continuation source: `4cbdd00`; separately bound clock controller:
+`d5188dc`. The fixed scientific configuration and selected summary bindings are
+recorded in the manifest. The original deadlines are historical; a new training
+comparison requires its own explicit allocation. To inspect retained results on
+the experiment host without rerunning training:
+
+```sh
+cd /home/ashrimp/Srv/aic-quality-cold-continue-20260914
+python3 -m json.tool artifacts/study/study.json
+python3 -m json.tool artifacts/study/selection.json
+python3 -m json.tool artifacts/study/clock-extension.json
+```
+
+The user-authorized input replacement resolved the intermittent overlap without
+repeating valid learning. The full comparison is complete. Uniform-16 is the
+highest observed confirmation mean, but this experiment provides insufficient
+evidence to adopt a winner. No automatic main-run restart or adoption occurred.

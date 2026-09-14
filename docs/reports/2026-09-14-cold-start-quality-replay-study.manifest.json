@@ -1,0 +1,596 @@
+{
+  "schema": "aic-cold-quality-study-provenance-v1",
+  "status": "complete",
+  "scientific_source_commit": "4cbdd00",
+  "clock_controller_commit": "d5188dc",
+  "study": {
+    "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/study.json",
+    "sha256": "2888435535bfe9ddbd4dac4fc2ff844e5ad8dcdc8fe52e0fad5e2cc0db7a2229"
+  },
+  "scientific_protocol": {
+    "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/tools/factory-edit-pilot/operations/declarative-quality-study.json",
+    "sha256": "914f05f018112b0c1f4a7c18a7d6ff26d34d5856582e657055aa540c2fe84d6e"
+  },
+  "clock_extension": {
+    "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/clock-extension.json",
+    "sha256": "55692338003561ef06de0f38a4ac6af0f54e0ebd80671f2cbb2a90fdf80e4714"
+  },
+  "selection": {
+    "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/selection.json",
+    "sha256": "3c8d716a17581e07f78a8442c3cce444ddd9d8d63201d3705b75f1f657a45b29"
+  },
+  "source": {
+    "code_sha256": "5e8c7dc1b73a6cdacce96250203167862d6abb11e81cc60fee080d4d903236e5",
+    "native_library": "/home/ashrimp/Srv/aic-declarative-batch-20260913/target/release/libaic_pilot_native.so",
+    "native_sha256": "dc84066c78d07c60911193e8e32b0d996db4c33ccd9b24378e86fd80cd797226"
+  },
+  "readiness": {
+    "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/readiness/readiness.json",
+    "sha256": "70f76708c941acb99decd4fe242ca80d85831e368371255356ca23035d93cb58"
+  },
+  "panels": {
+    "development": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914/artifacts/study/development-panel/panel.json",
+      "sha256": "d3320d6a5aeb112557bb5de5e228edfcb4ab518a69be40289d6109eefa9db7d0"
+    },
+    "confirmation": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914/artifacts/study/confirmation-panel/panel.json",
+      "sha256": "1170b24934cd6f5b8d3c0ecf0e8dfb01e92c42d076e471f1ae5a76d7236e1579"
+    }
+  },
+  "pure_confirmation": {
+    "baseline-8": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed71-baseline-8/pure-evaluation.json",
+      "sha256": "274fb098e0b959b9db7c2fccfd3ce466a220325dea241832aef1f953121a05c4"
+    },
+    "priority-8": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed71-priority-8/pure-evaluation.json",
+      "sha256": "43e5e38c4b4fd1e56c500a50e1fb2eeb5b9b7a740722f99195e9e6c76fd1f0fc"
+    },
+    "uniform-16": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed71-uniform-16/pure-evaluation.json",
+      "sha256": "d1dbd449210911630f01aa35a0d7c15c41f8ef27e25d565c3fd5560f0f7503cf"
+    }
+  },
+  "initialization_proofs": {
+    "71": {
+      "model": "b90bc9bea06073a35aea2f6d90b19a12b4c61f6f8bb7d0ef74439d26a093756c",
+      "actor_optimizer": "7de48e758f78079f4b1e02f68fb123b73ee513bd478ec6c4cc799b309ce27964",
+      "critic_optimizer": "7a059f692c4f8e87bd6b4b8637690e8059427725999f17210dcc89fd30429943",
+      "sampler_rng": "502d937695e54e474098286e68b08941f553c39eb118fed8d45de1a0363fc4aa",
+      "shuffle_rng": "8d14195983550d1f80937438a74d86fd8dc12ed06cebafce3eea356c446723ad",
+      "buffer": "65f5a3ea6417e28f622e4b8330d11e0da954c4ce59f90242512fb3369ddbd812"
+    },
+    "113": {
+      "model": "e356b99d8fa141355390aa89f50883ed2dfcb1cfac66cb1fd1e3d233b6b6fede",
+      "actor_optimizer": "7de48e758f78079f4b1e02f68fb123b73ee513bd478ec6c4cc799b309ce27964",
+      "critic_optimizer": "7a059f692c4f8e87bd6b4b8637690e8059427725999f17210dcc89fd30429943",
+      "sampler_rng": "18abfbacea82e670df049a2ed23a807b31ff33ec427079ce81cb20c79c4d43f8",
+      "shuffle_rng": "b2e599ae001c5693d0bab1d18a12a4dba42732b71db982a095850276147f4d22",
+      "buffer": "65f5a3ea6417e28f622e4b8330d11e0da954c4ce59f90242512fb3369ddbd812"
+    }
+  },
+  "accounting": {
+    "executed_updates": 1408,
+    "carried_updates": 86,
+    "new_updates": 1322,
+    "discarded_updates": 128,
+    "total_cold_updates": 1536,
+    "began_unix": 1789360754.0594842,
+    "seconds": 14182.653643265949,
+    "wall_deadline_unix_seconds": 1789377730.8190546,
+    "conservative_added_bytes": 10142393883,
+    "actual_added": {
+      "bytes": 7689596332,
+      "files": 43052
+    },
+    "cumulative_actual_added_bytes": 10139172715
+  },
+  "resource_observation": {
+    "scope": "Clock-extension handoff and remaining arms",
+    "processes": 1,
+    "rss": 1303056384,
+    "peak_rss": 28598759424,
+    "free_bytes": 79682846720,
+    "elapsed_seconds": 3491.9137198800017
+  },
+  "confirmation": {
+    "baseline-8": {
+      "mean": 23.777362639828468,
+      "by_stratum": {
+        "large": 18.64676716430411,
+        "small": 28.907958115352823
+      }
+    },
+    "priority-8": {
+      "mean": 24.358366337682043,
+      "by_stratum": {
+        "large": 19.423882097709697,
+        "small": 29.292850577654384
+      }
+    },
+    "uniform-16": {
+      "mean": 25.398473342778743,
+      "by_stratum": {
+        "large": 17.667468847715725,
+        "small": 33.12947783784176
+      }
+    }
+  },
+  "comparisons": {
+    "priority-8": {
+      "mean_delta_pp": 0.5810036978535749,
+      "by_stratum_delta_pp": {
+        "large": 0.7771149334055862,
+        "small": 0.3848924623015601
+      },
+      "geometry_outcomes": {
+        "loss": 12,
+        "win": 15,
+        "tie": 5
+      },
+      "interval_95_pp": [
+        -1.0895239786299518,
+        2.373999361827166
+      ],
+      "resamples": 10000,
+      "seed": 718600000,
+      "scope": "Whole geometries stratified by size; both action/training replicates attached. Conditional on the two observed random initializations."
+    },
+    "uniform-16": {
+      "mean_delta_pp": 1.6211107029502756,
+      "by_stratum_delta_pp": {
+        "large": -0.9792983165883851,
+        "small": 4.221519722488941
+      },
+      "geometry_outcomes": {
+        "loss": 13,
+        "win": 15,
+        "tie": 4
+      },
+      "interval_95_pp": [
+        -0.7627191778258677,
+        4.19419232802691
+      ],
+      "resamples": 10000,
+      "seed": 718600000,
+      "scope": "Whole geometries stratified by size; both action/training replicates attached. Conditional on the two observed random initializations."
+    }
+  },
+  "observed_ranking": [
+    "uniform-16",
+    "priority-8",
+    "baseline-8"
+  ],
+  "adopted_profile": null,
+  "main": {
+    "binding": {
+      "directory": "/home/ashrimp/Srv/aic-declarative-efficiency-20260913/artifacts/resumed-four-hour",
+      "files": [
+        {
+          "path": "/home/ashrimp/Srv/aic-declarative-efficiency-20260913/artifacts/resumed-four-hour/launch.json",
+          "sha256": "e5abc14224f7631f6125f520ccc2a2d97d8abd1e78f94daeeef79010fee0838d"
+        },
+        {
+          "path": "/home/ashrimp/Srv/aic-declarative-efficiency-20260913/artifacts/resumed-four-hour/state.json",
+          "sha256": "3c1f484772e32703ea685ea3a57d2231adef414f027289d83edceef3dff38466"
+        },
+        {
+          "path": "/home/ashrimp/Srv/aic-declarative-efficiency-20260913/artifacts/resumed-four-hour/seed-29/state.json",
+          "sha256": "63bc5db18532a038db1e56dd6389258dcaa017290c3dcf5b6df630dd2a89b9e7"
+        },
+        {
+          "path": "/home/ashrimp/Srv/aic-declarative-efficiency-20260913/artifacts/resumed-four-hour/seed-29/checkpoints/1908.pt.gz",
+          "sha256": "26088d638073655fad52e80227ed6f4fa931c08b34cc36a46cd9b595cec71833"
+        }
+      ]
+    },
+    "final_status": {
+      "matrix": "paused",
+      "job": "paused",
+      "update": 1908
+    }
+  },
+  "remaining_workers": [],
+  "original_prefix_bindings": {
+    "launch": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914/artifacts/study/development-seed71-baseline-8/launch.json",
+      "sha256": "1e6554583064efb28edb625cdacb20d811e2fb6b3a8973a9a040ada9a55cbc8f"
+    },
+    "checkpoint": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914/artifacts/study/development-seed71-baseline-8/seed-71/checkpoints/0086.pt.gz",
+      "sha256": "7ad05885b146926b2dbf7a5e11e2e9029a19b4fc5038b3df26de54f583f68cad"
+    },
+    "job": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914/artifacts/study/development-seed71-baseline-8/seed-71/state.json",
+      "sha256": "269d58c7aacf986067206f23a5f586dba12a8ab4db6438fa48fde016649ec2af"
+    },
+    "origin": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914/artifacts/study/development-seed71-baseline-8/quality-branch.json",
+      "sha256": "e77bab604a344400ee95f8560c255a66bfad91842af196c26ff99736cd03db54"
+    },
+    "study": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914/artifacts/study/study.json",
+      "sha256": "cb06b80db384eb7c67c48250052659a2f6d58c63d3cd99ca83252b7891ddd15e"
+    },
+    "closeout": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914/artifacts/study/inherited-stop-closeout.json",
+      "sha256": "b132a2fd1235c356ae5f40433244a0c955fcde3be9b599db2af132df99611974"
+    }
+  },
+  "confirmation_inherited_replacements": {
+    "baseline-8": [],
+    "priority-8": [
+      {
+        "wave": 33,
+        "stream": 26,
+        "rejected_parent": {
+          "seed": 113,
+          "wave": 32,
+          "stream": 30,
+          "depth": 0,
+          "geometry_sha256": "5d8e6f5197abc877b6ccb202f49e56dfadb01c61e11b253560b1095d5dba2661",
+          "best_sha256": "f16ad8ffc6d6eba9755fce98789c3930630708b60881d1c410a85783b6beceab"
+        }
+      }
+    ],
+    "uniform-16": [
+      {
+        "wave": 34,
+        "stream": 13,
+        "rejected_parent": {
+          "seed": 113,
+          "wave": 33,
+          "stream": 8,
+          "depth": 0,
+          "geometry_sha256": "5d8e6f5197abc877b6ccb202f49e56dfadb01c61e11b253560b1095d5dba2661",
+          "best_sha256": "1a18889c40c29808ae9907b8803d86fe2a9fc50c1f74dac7b2acd7d0a6c88fbc"
+        }
+      },
+      {
+        "wave": 37,
+        "stream": 14,
+        "rejected_parent": {
+          "seed": 113,
+          "wave": 36,
+          "stream": 28,
+          "depth": 1,
+          "geometry_sha256": "5d8e6f5197abc877b6ccb202f49e56dfadb01c61e11b253560b1095d5dba2661",
+          "best_sha256": "d90ec0705934adedeea9ce8de4957a12a8efd5c086763cadaae6c2207b7d2d0a"
+        }
+      }
+    ]
+  },
+  "arms": [
+    {
+      "stage": "development",
+      "seed": 71,
+      "profile": "baseline-8",
+      "summary": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-baseline-8/quality-summary.json",
+        "sha256": "a541df85043e394c568f47a86b111f6b216bbecddf2981c8172aee127f62d256"
+      },
+      "job_seconds": 1462.347328431999,
+      "committed_inputs": 2048,
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-baseline-8/seed-71/checkpoints/0128.pt.gz",
+        "sha256": "edf670bd067d2f8eb210a21c4b30296c0c4d82130bb3b80bb049689321735ce8"
+      },
+      "branch": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-baseline-8/quality-branch.json",
+        "sha256": "6cb66fef7207295e29f617bd6cf77229feaa0f9b8458232590287adc1da261be"
+      },
+      "evaluation": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-baseline-8/seed-71/evaluation/0128/report.json",
+        "sha256": "a4e4f6b57a0d5fcc7a3c980ec97e41e46ccca147a9e4a6a9fce6d5cd4055d663"
+      },
+      "reservation_cost": {
+        "fresh_slots": 1697,
+        "generation_attempts": 1789,
+        "rejected_attempts": 62,
+        "setup_seconds": 328.2155308210131
+      },
+      "mean_native_area_reduction_percent": 33.00343595512858
+    },
+    {
+      "stage": "development",
+      "seed": 71,
+      "profile": "uniform-16",
+      "summary": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-uniform-16/quality-summary.json",
+        "sha256": "2e4b573f9fe3d9d5843f9189229d09ccc4019605aeb61ab1ca67671bb33c955d"
+      },
+      "job_seconds": 1366.3598917679992,
+      "committed_inputs": 2048,
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-uniform-16/seed-71/checkpoints/0128.pt.gz",
+        "sha256": "cf83949a4d91c62842f2de53a9ab99c918e3bf5a169b180209730d064b438df9"
+      },
+      "branch": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-uniform-16/quality-branch.json",
+        "sha256": "c8e688894fd50f1c8b2b1e411b441067ea096746e911e441ce8170c0e52743f5"
+      },
+      "evaluation": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-uniform-16/seed-71/evaluation/0128/report.json",
+        "sha256": "6b32a841b19be4ff2fb9dc46e25026bbf9bfe90812b218d967477ef13857c8a5"
+      },
+      "reservation_cost": {
+        "fresh_slots": 1705,
+        "generation_attempts": 1797,
+        "rejected_attempts": 62,
+        "setup_seconds": 326.45066354994196
+      },
+      "mean_native_area_reduction_percent": 32.36575111184965
+    },
+    {
+      "stage": "development",
+      "seed": 71,
+      "profile": "uniform-32",
+      "summary": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-uniform-32/quality-summary.json",
+        "sha256": "c04bc0ffdbe9a045c060773b662292aba218e408f87c8434d7eae0981c10f027"
+      },
+      "job_seconds": 1440.0515536839957,
+      "committed_inputs": 2048,
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-uniform-32/seed-71/checkpoints/0128.pt.gz",
+        "sha256": "b562c6b9751dd7f057f5bd858b043a067157552bcee8320a5ede02f9143d728a"
+      },
+      "branch": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-uniform-32/quality-branch.json",
+        "sha256": "5ed4aced05aa964f5672525f6228a15af06b8c19ceec264e83d4424c86ea3f98"
+      },
+      "evaluation": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-uniform-32/seed-71/evaluation/0128/report.json",
+        "sha256": "a6562241a4ee0e61c76fb3166d18535476b537c6c945a45e4d32c45fbf0bea33"
+      },
+      "reservation_cost": {
+        "fresh_slots": 1702,
+        "generation_attempts": 1795,
+        "rejected_attempts": 63,
+        "setup_seconds": 325.6771889059819
+      },
+      "mean_native_area_reduction_percent": 28.509793800296713
+    },
+    {
+      "stage": "development",
+      "seed": 71,
+      "profile": "gain-8",
+      "summary": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-gain-8/quality-summary.json",
+        "sha256": "bf4450bb3938e6bb04677ac5cc61e28de44201689f615194582e0c68ce969a8f"
+      },
+      "job_seconds": 1340.9585137279937,
+      "committed_inputs": 2048,
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-gain-8/seed-71/checkpoints/0128.pt.gz",
+        "sha256": "aec5872f2b2d6cb2ba3a52cd407b9c031cb24f4edef00028f7c80dd2bd0f6f79"
+      },
+      "branch": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-gain-8/quality-branch.json",
+        "sha256": "be40503ef601ee0e2051c297227b456db1d3f77fc3c8bb9f740dd4cf45fe1959"
+      },
+      "evaluation": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-gain-8/seed-71/evaluation/0128/report.json",
+        "sha256": "19b79c203410c1211973f189d13212f5fb75aba539bfbcd701761d053df6ca43"
+      },
+      "reservation_cost": {
+        "fresh_slots": 1702,
+        "generation_attempts": 1797,
+        "rejected_attempts": 64,
+        "setup_seconds": 329.45690439802274
+      },
+      "mean_native_area_reduction_percent": 29.645701904872986
+    },
+    {
+      "stage": "development",
+      "seed": 71,
+      "profile": "score-8",
+      "summary": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-score-8/quality-summary.json",
+        "sha256": "5b557a34aea63686cdda2e6f804f044ebf3ce3a4715592a6c23dc341f0e328c7"
+      },
+      "job_seconds": 1294.9940731239913,
+      "committed_inputs": 2048,
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-score-8/seed-71/checkpoints/0128.pt.gz",
+        "sha256": "e8c81195f98ecb6218c6fbead4c1983d13c193a46376f2f51f86ddb6bb2a2b4f"
+      },
+      "branch": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-score-8/quality-branch.json",
+        "sha256": "e406995b07ab06a34b6ab4f3fcb50c8a3e17630b17f6f78982afe850bf109527"
+      },
+      "evaluation": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-score-8/seed-71/evaluation/0128/report.json",
+        "sha256": "504a2884d8cbab358a26e66b9028bf0479aeed83e55c5843c6e198f0160e5610"
+      },
+      "reservation_cost": {
+        "fresh_slots": 1702,
+        "generation_attempts": 1794,
+        "rejected_attempts": 62,
+        "setup_seconds": 329.02152236100665
+      },
+      "mean_native_area_reduction_percent": 31.36991624144011
+    },
+    {
+      "stage": "development",
+      "seed": 71,
+      "profile": "geometry-8",
+      "summary": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-geometry-8/quality-summary.json",
+        "sha256": "7d0977b14f44bc2155b201de10fc6854f1a904745926d38b89fdc350da97447a"
+      },
+      "job_seconds": 1326.2610817399982,
+      "committed_inputs": 2048,
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-geometry-8/seed-71/checkpoints/0128.pt.gz",
+        "sha256": "9c124a47e71c5dc11c74f6dde52fec32926a2d2e365503ebe0fcb9aafb4e47b1"
+      },
+      "branch": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-geometry-8/quality-branch.json",
+        "sha256": "7f9787637cb83fc3da78e6890f5bdeabb3bc5c563168bcf4a20463519e2384c8"
+      },
+      "evaluation": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-geometry-8/seed-71/evaluation/0128/report.json",
+        "sha256": "cc63c2594ac1f1f1076587522d8ead0c5a1b22ec43ea8bf09cdf2091269e1a53"
+      },
+      "reservation_cost": {
+        "fresh_slots": 1703,
+        "generation_attempts": 1796,
+        "rejected_attempts": 62,
+        "setup_seconds": 332.4330426539891
+      },
+      "mean_native_area_reduction_percent": 31.1755670688298
+    },
+    {
+      "stage": "development",
+      "seed": 71,
+      "profile": "priority-8",
+      "summary": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-priority-8/quality-summary.json",
+        "sha256": "9b67c39ee0aea129c7740151913c1b4ba1b927dfdb25aa6ab33cdb477babecd7"
+      },
+      "job_seconds": 1324.0838487610017,
+      "committed_inputs": 2048,
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-priority-8/seed-71/checkpoints/0128.pt.gz",
+        "sha256": "5c062bb736dcc9743a7ace76dcaa2c7042eae810ed61c6da58a6003205f74633"
+      },
+      "branch": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-priority-8/quality-branch.json",
+        "sha256": "ec2817650855f99f30aa96e0e844ac027a09a9e618e04f8626b645fe6b26664b"
+      },
+      "evaluation": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-priority-8/seed-71/evaluation/0128/report.json",
+        "sha256": "a6ff21791d1fc37c2435fa792a6a8128bd00b37abe9aa9bb972066fb1f1a0dea"
+      },
+      "reservation_cost": {
+        "fresh_slots": 1698,
+        "generation_attempts": 1791,
+        "rejected_attempts": 64,
+        "setup_seconds": 323.11531011998886
+      },
+      "mean_native_area_reduction_percent": 33.934036035192484
+    },
+    {
+      "stage": "development",
+      "seed": 71,
+      "profile": "protected-score-8",
+      "summary": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-protected-score-8/quality-summary.json",
+        "sha256": "1499fe24065d481cc1dd44a65a9533916f91d0c05a69c87a9c3948ae29abf07a"
+      },
+      "job_seconds": 1316.4697635810007,
+      "committed_inputs": 2048,
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-protected-score-8/seed-71/checkpoints/0128.pt.gz",
+        "sha256": "c49b715941c34bc9ef3ab83bff16cc22b9386170569e3c2a65945fe0f11041a1"
+      },
+      "branch": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-protected-score-8/quality-branch.json",
+        "sha256": "872002c001f8812e6a68ff505d9f08bc364b0c1921820ad7bafe4d74701412aa"
+      },
+      "evaluation": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-protected-score-8/seed-71/evaluation/0128/report.json",
+        "sha256": "c9df5f13ff288ca8c693efd3dd72306f884aec362f67cba2bd27494e1a3858bc"
+      },
+      "reservation_cost": {
+        "fresh_slots": 1708,
+        "generation_attempts": 1802,
+        "rejected_attempts": 64,
+        "setup_seconds": 328.01138145998993
+      },
+      "mean_native_area_reduction_percent": 31.855609651032474
+    },
+    {
+      "stage": "confirmation",
+      "seed": 113,
+      "profile": "baseline-8",
+      "summary": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-baseline-8/quality-summary.json",
+        "sha256": "81a676b9f5460c19776aefbe53e19265760ea2d7eca0cf032b08678f39cd27b9"
+      },
+      "job_seconds": 1358.0584902569972,
+      "committed_inputs": 2048,
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-baseline-8/seed-113/checkpoints/0128.pt.gz",
+        "sha256": "8aa4eed36fec22a0a1af00d3affd1fcb9aa673bd360ad9f7cb7b660de92d5cb9"
+      },
+      "branch": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-baseline-8/quality-branch.json",
+        "sha256": "522c223738ec6e9656cd923aa21403fc4441d47084b0d1b84ba71878b04e659a"
+      },
+      "evaluation": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-baseline-8/seed-113/evaluation/0128/report.json",
+        "sha256": "ed8ee49b18f03d73aa7b78870f163167417b2fc4194f5588db9bdb0c91dbcc87"
+      },
+      "reservation_cost": {
+        "fresh_slots": 1710,
+        "generation_attempts": 1803,
+        "rejected_attempts": 61,
+        "setup_seconds": 335.4525729919915
+      },
+      "mean_native_area_reduction_percent": 20.28673279587362
+    },
+    {
+      "stage": "confirmation",
+      "seed": 113,
+      "profile": "priority-8",
+      "summary": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-priority-8/quality-summary.json",
+        "sha256": "c600760b13fd05142c5917d1f245672034da861aef1a0937acf6217940e5aae2"
+      },
+      "job_seconds": 1347.9885304580093,
+      "committed_inputs": 2048,
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-priority-8/seed-113/checkpoints/0128.pt.gz",
+        "sha256": "82dae92aa09825b48afa698d50a70931942d6ae307a2fdbbbc4d482a6d5ef5fc"
+      },
+      "branch": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-priority-8/quality-branch.json",
+        "sha256": "36455b93d1929650418e8d8173bd1fe855f6c7d1010671a52046c24d4044376d"
+      },
+      "evaluation": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-priority-8/seed-113/evaluation/0128/report.json",
+        "sha256": "d9a24cd266c2a84c137bb70ed4cdc490f3f106962895a25cdc37d226836a29a5"
+      },
+      "reservation_cost": {
+        "fresh_slots": 1718,
+        "generation_attempts": 1810,
+        "rejected_attempts": 60,
+        "setup_seconds": 330.3776058309959
+      },
+      "mean_native_area_reduction_percent": 22.712760480336367
+    },
+    {
+      "stage": "confirmation",
+      "seed": 113,
+      "profile": "uniform-16",
+      "summary": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-uniform-16/quality-summary.json",
+        "sha256": "73aa927ddc44489e0122e00f46ae45d70e33b0f4011e39fb816bd41c31cbf397"
+      },
+      "job_seconds": 1381.9413183690049,
+      "committed_inputs": 2048,
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-uniform-16/seed-113/checkpoints/0128.pt.gz",
+        "sha256": "089ae65e3259af2869b3463b7d1b62d254f82fcb820f25abf02380dadd463f77"
+      },
+      "branch": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-uniform-16/quality-branch.json",
+        "sha256": "d2a4fa766eb8b5f9548367db469c857efc35b6975763d65118b03109f887eb85"
+      },
+      "evaluation": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-uniform-16/seed-113/evaluation/0128/report.json",
+        "sha256": "ec318b549a618c0cd13cddeca9a40decff01a80ad7e3de47d64296434ddaa53a"
+      },
+      "reservation_cost": {
+        "fresh_slots": 1701,
+        "generation_attempts": 1791,
+        "rejected_attempts": 59,
+        "setup_seconds": 329.8133027539661
+      },
+      "mean_native_area_reduction_percent": 23.52914071196377
+    }
+  ]
+}
