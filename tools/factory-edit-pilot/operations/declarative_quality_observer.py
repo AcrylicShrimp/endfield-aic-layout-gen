@@ -21,6 +21,12 @@ def quartiles(entries,strata):
         distinct_values=len(set(v))) for k,v in sorted(groups.items())}
 
 
+def fixed_bins(strata):
+    return {s+'/'+c:dict(entries=0,cuts=[.01,.03,.10],
+        labels=['gain_lt_1pct','gain_1_to_3pct','gain_3_to_10pct','gain_ge_10pct'])
+        for s in strata for c in ('facility','deletion','other')}
+
+
 class Observer:
     def __init__(self,learner,initial_quartiles):
         self.learner,self.quartiles=learner,initial_quartiles
@@ -31,7 +37,9 @@ class Observer:
     def key(self,e):
         name=stratum(e,self.learner.config['strata'])+'/'+category(e)
         cuts=self.quartiles.get(name,{}).get('cuts')
-        return name,('q'+str(bisect_right(cuts,e['retention_features_v1']['gain'])+1) if cuts else 'no_initial_cohort')
+        index=bisect_right(cuts,e['retention_features_v1']['gain']) if cuts else None
+        labels=self.quartiles.get(name,{}).get('labels')
+        return name,(labels[index] if labels else 'q'+str(index+1) if cuts else 'no_initial_cohort')
 
     def begin(self):
         self.groups={};self.attempts=[];groups=defaultdict(list)
@@ -75,6 +83,7 @@ class Observer:
         rows=[]
         for _,r in sorted(self.groups.items()):
             rows.append(dict(r,mean_native_gain=r['native_gain_mass']/r['draws'],mean_sequence_labels=r['labels']/r['draws']))
-        return dict(schema='declarative-quality-allocation-v1',update=record['update'],eligible_pool=self.pool,
+        return dict(schema='declarative-quality-allocation-v2',quality_partition=self.quartiles,
+            update=record['update'],eligible_pool=self.pool,
             allocation=rows,terminal_attempts=self.attempts,sil_minibatches=len(record['ppo']['success']['selected_ids']),
             sil_coefficient=self.learner.config['success']['coefficient'])

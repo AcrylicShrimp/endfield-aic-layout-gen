@@ -80,23 +80,24 @@ def paired(candidate,baseline,strata,seed=714600000,resamples=10000):
     return dict(mean_delta_pp=candidate['mean']-baseline['mean'],by_stratum_delta_pp={
         s:statistics.mean(v) for s,v in groups.items()},geometry_outcomes=dict(outcomes),
         interval_95_pp=[draws[int(.025*resamples)],draws[min(resamples-1,int(.975*resamples))]],
-        resamples=resamples,seed=seed,scope='Whole geometries stratified by size; both action/training replicates attached. Conditional on one parent.')
+        resamples=resamples,seed=seed,scope='Whole geometries stratified by size; both action/training replicates attached. Conditional on the two observed random initializations.')
 
 
 def allocation(records):
-    groups={};attempts=defaultdict(list);pools=defaultdict(list)
+    groups={};attempts=defaultdict(list);pools=defaultdict(list);grid=set()
     additive=('draws','native_gain_mass','labels','positive_labels','zero_labels','stage_weight_mass',
         'positive_stage_weight','zero_stage_weight','corrected_positive_stage_weight','corrected_zero_stage_weight',
         'raw_sil_contribution','corrected_sil_contribution','positive_advantage_mass')
     for record in records:
         observed=record['quality_allocation']
+        grid.update((g,b) for g,v in observed.get('quality_partition',{}).items() for b in v.get('labels',[]))
         for row in observed['allocation']:
             key=(row['group'],row['quality_bin']);total=groups.setdefault(key,{k:0 for k in additive})
             for k in additive:total[k]+=row[k]
         for row in observed['eligible_pool']:pools[(row['group'],row['quality_bin'])].append(row)
         for row in observed['terminal_attempts']:attempts[(row['group'],row['quality_bin'])].append(row)
     result=[]
-    for key in sorted(set(groups)|set(pools)|set(attempts)):
+    for key in sorted(grid|set(groups)|set(pools)|set(attempts)):
         r=groups.get(key,{k:0 for k in additive});pool=pools[key];terminal=attempts[key]
         entries=sum(x['entries'] for x in pool)
         result.append(dict(group=key[0],quality_bin=key[1],**r,

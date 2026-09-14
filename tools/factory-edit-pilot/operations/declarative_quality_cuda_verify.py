@@ -9,7 +9,7 @@ import time
 
 sys.path[:0]=[str(Path(__file__).resolve().parent),str(Path(__file__).resolve().parents[1])]
 from declarative_quality_branch import PROFILES,profile_success,source_binding
-from declarative_quality_observer import Observer,quartiles
+from declarative_quality_observer import Observer,fixed_bins
 from blueprint_ppo_store import sha,write
 from blueprint_ppo_update import digest,require
 
@@ -47,7 +47,7 @@ def verify(output,library):
             require(next(learner.model.parameters()).device==torch.device('cuda:0'),'quality-study.cuda-proof: wrong learner device')
             require(digest(learner.checkpoint([]))==digest(checkpoint),'quality-study.cuda-proof: initial restore differs')
             current=MemoryEvidence();current.chunks=deepcopy(before_source)
-            observer=Observer(learner,quartiles(checkpoint['buffer']['entries'],selected['strata'])) if kind=='restored-observed' else None
+            observer=Observer(learner,fixed_bins(selected['strata'])) if kind=='restored-observed' else None
             if observer:observer.begin()
             supplied=deepcopy(payload);require(digest(supplied)==payload_hash,'quality-study.cuda-proof: different full update inputs')
             record=learner.update(supplied,current)

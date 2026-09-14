@@ -12,16 +12,15 @@ def inode(path):
 
 
 class Budget:
-    """Charge each new file version once, even after deletion; ignore old hardlinks.
+    """Charge owned file versions; release successful last-link removals only.
 
-    Publication hooks supply exact paths. Fresh-slot directories are visited only
-    at their first actual access. Whole-tree reconciliation occurs between arms.
-    The conservative cumulative bound deliberately does not reclaim deleted bytes.
+    Reconcile at command entry and arm boundaries, never per training update.
+    Shared or unobserved deleted versions remain conservatively charged.
     """
     def __init__(self,path,limit=None,excluded=()):
         self.path=Path(path)
         if self.path.exists():self.value=read(self.path)
-        else:self.value=dict(schema='declarative-quality-storage-v1',limit=limit,bytes=0,
+        else:self.value=dict(schema='declarative-quality-storage-v2',limit=limit,bytes=0,
             excluded=sorted(set(excluded)),versions={},controls={})
         self.excluded=set(self.value['excluded'])
     def observe(self,path,control=False):
@@ -35,6 +34,14 @@ class Budget:
         old=ledger.get(key,0);ledger[key]=max(old,size)
         self.value['bytes']+=max(0,size-old)
         require(self.value['bytes']<self.value['limit'],'quality-study.storage: 12 GiB conservative added-byte ceiling reached')
+    def removing(self,path):
+        path=Path(path);key,size=inode(path)
+        return key,size,path.stat().st_nlink
+    def removed(self,captured):
+        key,size,links=captured
+        if links==1 and key in self.value['versions']:
+            charged=self.value['versions'].pop(key)
+            self.value['bytes']-=charged
     def scan(self,folder):
         for path in Path(folder).rglob('*'):
             self.observe(path,control=path.name in ('state.json','console.log','progress.json') or path==self.path)
@@ -80,14 +87,20 @@ def sync_fresh(branch,shared,first_slot,guard):
     return rows
 
 
-def run_budgeted(branch,environment,budget_path):
+def run_budgeted(branch,environment,budget_path,*,execute=None):
     import declarative_learning_run as runner
     import declarative_learning_runtime as runtime
-    budget=Budget(budget_path);launch=read(Path(branch)/'launch.json')
+    budget=Budget(budget_path);budget.scan(Path(budget_path).parent);budget.save()
+    launch=read(Path(branch)/'launch.json')
     bank=Path(launch['config']['training_input']['directory']).resolve();seen=set()
+    original_remove=runtime.account_remove
     original_account=runtime.account_write;original_register=runner.register_inputs;original_retain=runner.retain
     def account(job,path):
         original_account(job,path);budget.observe(path)
+    def remove(job,path):
+        captured=budget.removing(path)
+        original_remove(job,path)
+        budget.removed(captured)
     def register(payload,job):
         original_register(payload,job)
         for before in payload['native_before']:
@@ -101,7 +114,8 @@ def run_budgeted(branch,environment,budget_path):
         budget.observe(owner/'state.json',control=True)
     try:
         with patch.object(runtime,'account_write',account),patch.object(runner,'account_write',account),\
+             patch.object(runtime,'account_remove',remove),patch.object(runner,'account_remove',remove),\
              patch.object(runner,'register_inputs',register),patch.object(runner,'retain',retain):
-            return run_observed(branch,environment)
+            return (execute or run_observed)(branch,environment)
     finally:
         budget.save()

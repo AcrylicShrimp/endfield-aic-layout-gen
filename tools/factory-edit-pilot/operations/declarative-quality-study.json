@@ -1,21 +1,197 @@
 {
-  "schema": "declarative-quality-study-v1",
-  "profiles": ["baseline-8", "uniform-16", "uniform-32", "gain-8", "score-8", "geometry-8", "priority-8", "protected-score-8"],
-  "development_updates": 32,
-  "confirmation_updates": 96,
+  "schema": "declarative-cold-quality-study-v1",
+  "profiles": [
+    "baseline-8",
+    "uniform-16",
+    "uniform-32",
+    "gain-8",
+    "score-8",
+    "geometry-8",
+    "priority-8",
+    "protected-score-8"
+  ],
+  "development_updates": 128,
+  "confirmation_updates": 128,
   "training_replicates": 2,
   "action_replicates": 2,
   "factories_per_stratum": 16,
   "max_generated_per_panel": 128,
-  "development_generation_seed": 714200000,
-  "development_action_seed": 714300000,
-  "confirmation_generation_seed": 715200000,
-  "confirmation_action_seed": 715300000,
-  "second_action_seed": 714400029,
-  "second_shuffle_seed": 714500029,
-  "bootstrap_seed": 714600000,
+  "development_generation_seed": 716200000,
+  "development_action_seed": 716300000,
+  "confirmation_generation_seed": 717200000,
+  "confirmation_action_seed": 717300000,
+  "bootstrap_seed": 716600000,
   "bootstrap_resamples": 10000,
-  "max_updates": 736,
-  "max_seconds": 14400,
-  "max_added_bytes": 12884901888
+  "max_updates": 1408,
+  "max_seconds": 21600,
+  "max_added_bytes": 12884901888,
+  "initialization_seeds": [
+    71,
+    113
+  ],
+  "training_generation_seed": 716900000,
+  "readiness_generation_seed": 716400000,
+  "readiness_action_seed": 716500000,
+  "numerical_base": {
+    "schema": "declarative-learning-v2",
+    "chunk_schema": "declarative-learning-chunk-v2",
+    "purpose": "declarative-cold-quality-study",
+    "probe_spec": "tools/factory-edit-pilot/blueprint-edit-probe.json",
+    "seeds": [
+      71
+    ],
+    "device": "cuda:0",
+    "starts": [
+      {
+        "name": "fresh-random",
+        "prefix": []
+      }
+    ],
+    "actions": {
+      "translation_steps": [
+        -2,
+        -1,
+        1,
+        2
+      ],
+      "band_counts": [
+        1,
+        2
+      ]
+    },
+    "native": {
+      "schema": "declarative-edit-v1",
+      "max_actions": 64,
+      "elapsed_ms": 300000,
+      "route_expansions": 50000,
+      "max_total_route_expansions": 3200000,
+      "search_padding": 4
+    },
+    "training": {
+      "updates": 128,
+      "streams": 32,
+      "chunk_actions": 32,
+      "episode_actions": 64,
+      "elapsed_ms": 300000,
+      "first_update": 0
+    },
+    "training_input": {
+      "schema": "blueprint-training-input-v1",
+      "kind": "fresh-random",
+      "spec": "tools/factory-edit-pilot/random-factory-routing-50k.json",
+      "directory": "@run",
+      "seed_base": 716900000,
+      "max_attempts": 8,
+      "episode_setup_seconds": 180,
+      "canonical_streams": 1
+    },
+    "ppo": {
+      "width": 40,
+      "message_rounds": 2,
+      "learning_rate": 0.0003,
+      "gamma": 1.0,
+      "gae_lambda": 0.95,
+      "clip_epsilon": 0.2,
+      "epochs": 4,
+      "minibatch_size": 64,
+      "target_kl": 0.02,
+      "entropy_coefficient": 0.001,
+      "gradient_clip": 0.5,
+      "advantage_normalization": "center"
+    },
+    "success": {
+      "sampler": "balanced_available",
+      "coefficient": 0.05,
+      "max_sequences": 4096,
+      "max_labels": 262144,
+      "retention": {
+        "schema": "declarative-replay-utility-v1",
+        "ema_alpha": 0.5,
+        "minimum_draws": 8,
+        "minimum_updates": 2,
+        "stale_updates": 64
+      }
+    },
+    "strata": {
+      "large": [
+        "food",
+        "medical"
+      ],
+      "small": [
+        "watered-grass",
+        "copper-liquid"
+      ]
+    },
+    "evaluation": {
+      "at": [
+        0
+      ],
+      "replicates": 2,
+      "max_actions": 64,
+      "elapsed_ms": 10000,
+      "action_milestones": [
+        8,
+        32,
+        64
+      ],
+      "interval_updates": 32
+    },
+    "panel": {
+      "seed_base": 716200000,
+      "strata": {
+        "small": 16,
+        "large": 16
+      },
+      "max_generated": 128,
+      "action_seed_base": 716300000
+    },
+    "retention": {
+      "checkpoints": [
+        0,
+        128
+      ],
+      "evaluation_traces": [],
+      "recovery_updates": 2,
+      "training_traces": []
+    },
+    "readiness": {
+      "seed_base": 716400000,
+      "warmups": 1,
+      "repetitions": 3,
+      "cycle_updates": 4,
+      "seconds": 600
+    },
+    "limits": {
+      "arm_seconds": 21600,
+      "matrix_seconds": 21600,
+      "matrix_rss_bytes": 51539607552,
+      "min_free_bytes": 17179869184,
+      "arm_output_bytes": 12884901888
+    },
+    "tracking": {
+      "backend": "wandb",
+      "mode": "disabled",
+      "group": "cold-quality-study-20260914"
+    },
+    "start_curriculum": {
+      "schema": "declarative-best-starts-v1",
+      "percentages": [
+        80,
+        10,
+        10
+      ],
+      "selection_seed": 613500000,
+      "donors": "strict-area-improvement"
+    },
+    "execution": "logical-stream-pool-v1",
+    "duration": {
+      "schema": "declarative-duration-v1",
+      "seconds": 21300,
+      "finish_grace_seconds": 300
+    },
+    "execution_options": {
+      "workers": 16,
+      "behavior_device": "cuda:0"
+    }
+  }
 }

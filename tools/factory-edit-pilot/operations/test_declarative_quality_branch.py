@@ -14,7 +14,7 @@ import torch
 from blueprint_execution_update import imitation,prepare_minibatch,summarize_imitation
 from blueprint_ppo_update import digest
 from declarative_quality_branch import PROFILES,assert_contract,prepare,profile_success,transition_saved
-from declarative_quality_observer import Observer,quartiles
+from declarative_quality_observer import Observer,quartiles,fixed_bins
 from declarative_replay_sampling import probabilities
 from test_declarative_replay_retention import CONFIG
 
@@ -152,7 +152,7 @@ class NativeQualityTests(unittest.TestCase):
             for enabled in (False,True):
                 learner=Learner(17,selected,'sampling-test',saved)
                 source=MemoryEvidence();source.chunks=deepcopy(evidence.chunks)
-                observer=Observer(learner,quartiles(saved['buffer']['entries'],selected['strata'])) if enabled else None
+                observer=Observer(learner,fixed_bins(selected['strata'])) if enabled else None
                 with patch.object(policy,'predict',wraps=policy.predict) as predict:
                     records=[]
                     for chunk in chunks:
