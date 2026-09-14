@@ -1,6 +1,6 @@
 # Cold-start quality replay comparison
 
-Status: corrected execution running. The first attempt is invalidated; no final winner.
+Status: incomplete. Both cold attempts stopped; no comparison or final winner.
 
 ## Question and registered comparison
 
@@ -25,7 +25,7 @@ reused. The cold configuration is registered in
 Both initializations pair actual fresh generated files by canonical slot, while
 inherited starts come from each arm's own previous wave. Development and
 confirmation each use 32 new geometries, 16 per size stratum, and two action seeds
-per geometry. The replacement will exclude all five prior panels and reserve both new panels
+per geometry. The replacement excluded all five prior panels and reserved both new panels
 before training admission. Policies apply from update 1 with no shared learned warmup.
 
 Selection uses actual native development area reduction at update 128. It has no
@@ -57,7 +57,7 @@ readiness or study writes. No learned state or old input bank is imported.
 
 ## Verified execution path
 
-Initial cold implementation: `992cf74`. The input-separation correction passed
+Initial cold implementation: `992cf74`; input-reservation correction: `65e2b6b`. The correction passed
 its second independent proposal review (overall round 4), PASS_WITH_NOTES. The cold launch validates a registered configuration family and source
 receipt, publishes a complete empty initializer atomically, and rejects warm
 receipts or banks. Normal packed CUDA training, persistent workers, compact
@@ -81,12 +81,32 @@ The CUDA receipt authenticates its unchanged execution/observer core. The cold
 readiness receipt separately binds the complete current orchestration source,
 native binary, numerical base and physical worker allocation.
 
-## Results
+## Results and second stop
 
-The corrected execution has started from zero. Development ranking, confirmation estimates,
-learning curves, quality allocation and mechanism activity will be reported only
-from completed bound outputs. Missing data or an exhausted hard budget produces
-incomplete evidence and no final winner.
+The corrected baseline stopped at update 86 after 994.839 seconds. Before wave 44,
+stream 5 could begin its inherited episode, the new guard detected that its
+parent's improved layout matched development panel geometry. This was the
+watered-grass case generated with evaluation seed 718200768. The fresh root had
+area 105, while its improved inherited layout had area 98. The current protocol
+requires unchanged donor eligibility and therefore fails closed on this collision.
+No policy action was performed on the rejected inherited input.
+
+All 1,376 committed input slots are disjoint from the development and confirmation
+panels. Fresh generation rejected 36 reserved candidates across 1,200 attempts for
+1,146 admitted fresh slots. This verifies the new exclusion mechanism, but it does
+not complete the requested eight-method scientific comparison.
+
+No replacement arm reached update 128, no candidate selection was written and no
+confirmation evaluation occurred. The baseline's partial development means were
+28.70% at update 32 and 32.06% at update 64; these are incomplete learning-curve
+observations, not endpoint comparisons or evidence favoring a replay method. The
+buffer reached capacity around update 50 and recorded 5,130 evictions by update 86.
+
+Total cold scientific work was **214 updates**: 128 from the invalidated first
+attempt and 86 from the incomplete replacement. The checkpoint and input/plan
+collision evidence are retained. Excluding reserved inherited donors would change
+the currently fixed donor eligibility contract and requires a new design decision;
+no automatic further retry is authorized by this registered protocol.
 
 ## Runtime and retained evidence
 
@@ -113,3 +133,10 @@ Local readiness and CUDA receipts are retained under
 `artifacts/cold-quality-study-r2-20260914/` and the original
 `artifacts/cold-quality-study-20260914/`. Regenerable artifacts are ignored rather
 than committed; these local/server directories are not backups.
+
+Closeout verified all training workers exited and main remained paused with
+unchanged monitor hashes. Both cold roots retained 2,316,387,958 actual unique
+artifact bytes at measurement. The replacement's
+`artifacts/study/inherited-stop-closeout.json` records the collision, zero committed
+input overlap and retained update-86 checkpoint
+`7ad05885b146926b2dbf7a5e11e2e9029a19b4fc5038b3df26de54f583f68cad`.

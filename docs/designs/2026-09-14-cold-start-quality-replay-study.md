@@ -248,3 +248,14 @@ following another scientific failure. Use a new frozen source/output directory.
 Test expired and shortened absolute deadlines and persistence of prior owned-byte
 charges through child budget reloads. The correction above supersedes the original
 attempt allocation; it does not create a second six-hour allowance.
+
+## Corrected execution disposition
+
+The corrected baseline stopped at update 86 when the actual inherited-input guard
+found a reserved development geometry. This was a required fail-closed outcome;
+there was no committed training-input overlap. All workers exited and main stayed
+paused. The requested comparison remains incomplete. Its retained evidence and
+214-update cumulative cold accounting are documented in the
+[study report](../reports/2026-09-14-cold-start-quality-replay-study.md).
+Changing reserved-donor eligibility is a pending design decision, not an authorized
+extension or automatic restart under this protocol.
