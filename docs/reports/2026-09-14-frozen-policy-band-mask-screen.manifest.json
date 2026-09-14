@@ -1,0 +1,324 @@
+{
+  "schema": "band-mask-frozen-screen-manifest-v1",
+  "status": "complete",
+  "training_updates": 0,
+  "protocol": {
+    "path": "artifacts/band-mask-screen-20260914/protocol.json",
+    "sha256": "c0c989db5b7d017bef910801a62b506c037283c78068dec112ea77cf28d9980b"
+  },
+  "result": {
+    "path": "artifacts/band-mask-screen-20260914/result.json",
+    "sha256": "9b564d2f833a25dd497dcaecc4ce92f11cafea94a0f29a90aeb0b199c916db42"
+  },
+  "panel": {
+    "path": "/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914/artifacts/study/confirmation-panel/panel.json",
+    "sha256": "1170b24934cd6f5b8d3c0ecf0e8dfb01e92c42d076e471f1ae5a76d7236e1579"
+  },
+  "models": {
+    "71": {
+      "launch_binding": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-baseline-8/launch.json",
+        "sha256": "1e304611ca4cd0fe3ede2058303aab306367b97be62b1c09bd477635d84951e5"
+      },
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-baseline-8/seed-71/checkpoints/0128.pt.gz",
+        "sha256": "edf670bd067d2f8eb210a21c4b30296c0c4d82130bb3b80bb049689321735ce8"
+      },
+      "model_sha256": "0ee045ca1cb728a31c67da59cd7204d70106dded14fa1403cee98c13b9ed0687"
+    },
+    "113": {
+      "launch_binding": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-baseline-8/launch.json",
+        "sha256": "9300da2c17bd34493c1abcda55d10bb5683f7df34e9461f485cbc30d64c8cd36"
+      },
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-baseline-8/seed-113/checkpoints/0128.pt.gz",
+        "sha256": "8aa4eed36fec22a0a1af00d3affd1fcb9aa673bd360ad9f7cb7b660de92d5cb9"
+      },
+      "model_sha256": "0d0c95de6e1c7080c84ed1e6c450b2c0c4b2a32b712ea32731f3c8f42574e297"
+    }
+  },
+  "scripts": [
+    {
+      "path": "/home/ashrimp/Srv/aic-band-mask-screen-20260914/tools/factory-edit-pilot/operations/band_mask_policy.py",
+      "sha256": "5b521e967054a97bfeaec10588752791a0b9e85ac51b9f608a2f20c1fbfbccc4"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-band-mask-screen-20260914/tools/factory-edit-pilot/operations/band_mask_worker.py",
+      "sha256": "c7d3607a9b5261f33e4751506fffbc5b6a85b5ce841c549a45c34342331a262e"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-band-mask-screen-20260914/tools/factory-edit-pilot/operations/band_mask_experiment.py",
+      "sha256": "e723a207c830d36ae324c8fd8ecc923f38f663ae26f63f721b02da49004ba79f"
+    },
+    {
+      "path": "/home/ashrimp/Srv/aic-band-mask-screen-20260914/tools/factory-edit-pilot/operations/test_band_mask_policy.py",
+      "sha256": "99f043a3418155a64d6551c3a354735f27e605729669a52c53cd7080a8a53a58"
+    }
+  ],
+  "comparison": {
+    "mean_delta_pp": 3.9113778689306713,
+    "by_stratum_delta_pp": {
+      "large": 5.333154806404437,
+      "small": 2.4896009314569136
+    },
+    "geometry_outcomes": {
+      "win": 23,
+      "loss": 7,
+      "tie": 2
+    },
+    "interval_95_pp": [
+      2.31821066262306,
+      5.492335451251999
+    ],
+    "resamples": 10000,
+    "seed": 714600000,
+    "scope": "Paired geometries, stratified by size, with both frozen training seeds and all action replicates attached. Exploratory reuse of the earlier confirmation panel; no training-effect claim."
+  },
+  "by_seed": {
+    "71": {
+      "mean_delta_pp": 3.772981254607103,
+      "by_stratum_delta_pp": {
+        "large": 6.114776913734814,
+        "small": 1.4311855954793877
+      },
+      "geometry_outcomes": {
+        "win": 23,
+        "loss": 7,
+        "tie": 2
+      },
+      "interval_95_pp": [
+        1.7013134303151092,
+        5.963926410961644
+      ],
+      "resamples": 10000,
+      "seed": 714600000,
+      "scope": "Paired geometries conditional on this frozen model and four action draws."
+    },
+    "113": {
+      "mean_delta_pp": 4.049774483254254,
+      "by_stratum_delta_pp": {
+        "large": 4.55153269907406,
+        "small": 3.5480162674344413
+      },
+      "geometry_outcomes": {
+        "loss": 8,
+        "win": 21,
+        "tie": 3
+      },
+      "interval_95_pp": [
+        2.0174338152803712,
+        6.183510971711857
+      ],
+      "resamples": 10000,
+      "seed": 714600000,
+      "scope": "Paired geometries conditional on this frozen model and four action draws."
+    }
+  },
+  "quality": {
+    "original": {
+      "mean": 24.32771590407154,
+      "by_stratum": {
+        "large": 19.14031891941426,
+        "small": 29.515112888728815
+      }
+    },
+    "masked": {
+      "mean": 28.23909377300221,
+      "by_stratum": {
+        "large": 24.473473725818696,
+        "small": 32.00471382018573
+      }
+    }
+  },
+  "behavior": {
+    "original": {
+      "episodes": 256,
+      "mean_counts": {
+        "kind/delete_band": 43.7734375,
+        "status/rejected": 32.58984375,
+        "actions_with_pending": 28.77734375,
+        "actions_with_overlap": 15.89453125,
+        "status/improved": 8.67578125,
+        "kind/place": 18.72265625,
+        "status/validated": 4.08984375,
+        "status/draft_accepted": 18.50390625,
+        "kind/insert_band": 1.50390625,
+        "status/unchanged": 0.140625
+      },
+      "diagnostics": {
+        "declarative.band-cuts-body": 6968,
+        "declarative.band-removes-anchor": 357,
+        "declarative.routing-pending": 4437,
+        "declarative.band-cuts-component": 830,
+        "declarative.port-coordinate": 188,
+        "declarative.native-validation": 135
+      },
+      "impossible_band_actions": 8155,
+      "unfinished": 183,
+      "guards": {
+        "actions": 256
+      },
+      "mean_seconds": {
+        "admission_seconds": 0.005863452801179392,
+        "inference_seconds": 0.656235793847145
+      },
+      "mean_mask_seconds": {
+        "prepare_seconds": 0.3534736166637913,
+        "mask_seconds": 0.0,
+        "mask_apply_seconds": 0.0
+      }
+    },
+    "masked": {
+      "episodes": 256,
+      "mean_counts": {
+        "kind/delete_band": 23.421875,
+        "status/improved": 11.125,
+        "actions_with_pending": 44.96875,
+        "actions_with_overlap": 32.98828125,
+        "status/validated": 5.953125,
+        "status/draft_accepted": 45.2421875,
+        "kind/place": 38.1171875,
+        "status/rejected": 1.1328125,
+        "kind/insert_band": 2.4609375,
+        "status/unchanged": 0.546875
+      },
+      "diagnostics": {
+        "declarative.routing-pending": 11127,
+        "declarative.port-coordinate": 290,
+        "declarative.native-validation": 192
+      },
+      "impossible_band_actions": 0,
+      "unfinished": 235,
+      "guards": {
+        "actions": 256
+      },
+      "mean_seconds": {
+        "admission_seconds": 0.006101188277341407,
+        "inference_seconds": 0.6965804552190775
+      },
+      "mean_mask_seconds": {
+        "prepare_seconds": 0.33312897086375415,
+        "mask_seconds": 0.011501381490290896,
+        "mask_apply_seconds": 0.0011756639961504334
+      }
+    }
+  },
+  "blocks": [
+    {
+      "seed": 71,
+      "variant": "original",
+      "seconds": 12.427289905012003,
+      "worker_cpu_seconds": 84.612179203,
+      "report": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-screen-20260914/artifacts/screen/seed-71/original/report.json",
+        "sha256": "7ed7205c0319b0bb8b59c585dfc5dfef251b97a7661fb81f7d538cec2afa674a"
+      }
+    },
+    {
+      "seed": 71,
+      "variant": "masked",
+      "seconds": 13.488058282004204,
+      "worker_cpu_seconds": 89.14976955200001,
+      "report": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-screen-20260914/artifacts/screen/seed-71/masked/report.json",
+        "sha256": "9456bb5e7a53f5149b6bcad7eec5d6ef95388b0aefe5aaee8d1f577e20a8889b"
+      }
+    },
+    {
+      "seed": 113,
+      "variant": "masked",
+      "seconds": 13.870229998006835,
+      "worker_cpu_seconds": 91.93515669499999,
+      "report": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-screen-20260914/artifacts/screen/seed-113/masked/report.json",
+        "sha256": "7174eeac2012a06b28d39ec6ac17c2b9f98d58de5c5d4d788934fe408ef39a5f"
+      }
+    },
+    {
+      "seed": 113,
+      "variant": "original",
+      "seconds": 12.733831052013556,
+      "worker_cpu_seconds": 86.33900210300004,
+      "report": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-screen-20260914/artifacts/screen/seed-113/original/report.json",
+        "sha256": "f54d5c0cb18d536b972a3a516d76101b5bad29e774c66f84029952836cc940d9"
+      }
+    }
+  ],
+  "seconds": 59.512672294004005,
+  "retained_snapshot_bytes": 288715553,
+  "resource": {
+    "processes": 17,
+    "rss": 17896398848,
+    "peak_rss": 17922912256,
+    "free_bytes": 79395450880,
+    "elapsed_seconds": 58.60463372099912
+  },
+  "continuity": [
+    {
+      "seed": 71,
+      "checked": 64,
+      "mismatches": []
+    },
+    {
+      "seed": 113,
+      "checked": 64,
+      "mismatches": [
+        {
+          "generation_seed": 719200280,
+          "sample": 0,
+          "fields": [
+            "counts",
+            "work"
+          ],
+          "before": [
+            2940,
+            328,
+            76
+          ],
+          "after": [
+            2940,
+            328,
+            76
+          ]
+        },
+        {
+          "generation_seed": 719200808,
+          "sample": 1,
+          "fields": [
+            "counts",
+            "work"
+          ],
+          "before": [
+            378,
+            54,
+            13
+          ],
+          "after": [
+            378,
+            54,
+            13
+          ]
+        }
+      ]
+    }
+  ],
+  "closeout": {
+    "status": "complete",
+    "closed_at": "2026-09-14T09:53:21.453015+00:00",
+    "result_sha256": "9b564d2f833a25dd497dcaecc4ce92f11cafea94a0f29a90aeb0b199c916db42",
+    "workers_still_alive": [],
+    "main": {
+      "matrix": "paused",
+      "job": "paused",
+      "update": 1908
+    }
+  },
+  "action_pair_sensitivity": {
+    "original_0_1": 23.777362639828468,
+    "masked_0_1": 28.206444454013397,
+    "original_2_3": 24.878069168314607,
+    "masked_2_3": 28.271743091991027
+  }
+}
