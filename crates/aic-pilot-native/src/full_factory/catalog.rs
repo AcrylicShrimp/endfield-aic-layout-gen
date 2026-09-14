@@ -1,6 +1,7 @@
 use aic_data::facilities::{FacilityDefinition, FacilityPortDirection, FacilityPortEdge};
 use aic_data::layouts::{FacilityPlacement, FactoryEditCatalogs};
-use aic_data::logistics::TransportKind;
+use aic_data::logistics::{CardinalDirection, TransportKind};
+use indexmap::IndexMap;
 use serde::Serialize;
 
 use super::types::*;
@@ -23,7 +24,14 @@ pub fn edge_index(edge: FacilityPortEdge) -> usize {
         FacilityPortEdge::North => 3,
     }
 }
-
+pub fn cardinal_index(edge: CardinalDirection) -> usize {
+    match edge {
+        CardinalDirection::East => 0,
+        CardinalDirection::South => 1,
+        CardinalDirection::West => 2,
+        CardinalDirection::North => 3,
+    }
+}
 pub fn rotate(spec: &FacilityDefinition, rotation: i64, origin: Point) -> (i64, i64, Vec<Port>) {
     let mut width = spec.footprint.width;
     let mut height = spec.footprint.height;
@@ -72,4 +80,10 @@ pub fn placement_ports(p: &FacilityPlacement, catalogs: &FactoryEditCatalogs) ->
         )
     })?;
     Ok(rotate(spec, p.rotation, Point { x: p.x, y: p.y }).2)
+}
+pub fn project(w: &Witness, catalogs: &FactoryEditCatalogs) -> Result<IndexMap<String, Vec<Port>>> {
+    w.placements
+        .iter()
+        .map(|p| Ok((p.instance.clone(), placement_ports(p, catalogs)?)))
+        .collect()
 }

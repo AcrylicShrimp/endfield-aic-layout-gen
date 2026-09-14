@@ -14,6 +14,83 @@ pub struct Model {
     weights: Tensors,
 }
 impl Model {
+    /// Cold initialization follows the existing Linear layer order and uniform
+    /// fan-in bounds. It runs once, before workers; training uses owned RNGs.
+    pub fn initial_state(config: &ModelConfig, seed: u64) -> Result<(Vec<String>, Tensors)> {
+        ensure!(
+            seed <= i64::MAX as u64
+                && config.width > 0
+                && config.width <= 4096
+                && config.message_rounds <= 32,
+            "aic-learning.model-initialization: invalid seed or dimensions"
+        );
+        aic_torch::tch::manual_seed(seed as i64);
+        let w = config.width;
+        let mut layers = vec![
+            ("nodes.0".to_owned(), config.node_features, w),
+            ("edges.0".into(), config.edge_features, w),
+            ("paths.0".into(), 2, w),
+        ];
+        for i in 0..config.message_rounds {
+            layers.push((format!("messages.{i}"), w * 3, w));
+        }
+        for i in 0..config.message_rounds {
+            layers.push((format!("updates.{i}"), w * 2, w));
+        }
+        layers.extend([
+            ("context.0".into(), w + config.global_features, w),
+            ("actor.0".into(), w * 3 + config.action_features, w),
+            ("actor.2".into(), w, 1),
+            ("critic.0".into(), w, w),
+            ("critic.2".into(), w, 1),
+            (
+                "port_actor.0".into(),
+                w * 3 + config.action_features + config.port_features * 2,
+                w,
+            ),
+            ("port_actor.2".into(), w, 1),
+        ]);
+        let mut order = vec![];
+        let mut tensors = Tensors::new();
+        for (layer, input, output) in layers {
+            ensure!(
+                input > 0 && output > 0,
+                "aic-learning.model-initialization: invalid fan-in for {layer}"
+            );
+            let bound = 1. / (input as f64).sqrt();
+            for (suffix, shape) in [("weight", vec![output, input]), ("bias", vec![output])] {
+                let name = format!("{layer}.{suffix}");
+                let parameter =
+                    Tensor::empty(&shape, (Kind::Float, Device::Cpu)).uniform_(-bound, bound);
+                tensors.insert(format!("model.{name}"), parameter);
+                let group = if name.starts_with("critic.") {
+                    "critic"
+                } else {
+                    "actor"
+                };
+                tensors.insert(
+                    format!("adam.{group}.{name}.step"),
+                    Tensor::from_slice(&[0i64]),
+                );
+                order.push(name);
+            }
+        }
+        for (name, base) in [
+            ("sampler", 1_000_000),
+            ("shuffle", 2_000_000),
+            ("replay", 5_000_000),
+            ("replay_order", 6_000_000),
+        ] {
+            let seed = seed.checked_add(base).ok_or_else(|| {
+                anyhow::anyhow!("aic-learning.model-initialization: seed overflow")
+            })?;
+            tensors.insert(
+                format!("rng.{name}"),
+                aic_torch::Generator::new(seed)?.state()?,
+            );
+        }
+        Ok((order, tensors))
+    }
     pub fn load(
         config: &ModelConfig,
         order: &[String],

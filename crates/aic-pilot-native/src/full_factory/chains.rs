@@ -33,6 +33,9 @@ impl Chain {
     pub fn end(&self) -> Point {
         *self.cells.last().expect("chains contain at least one cell")
     }
+    pub fn tag(&self, p: Point) -> LayerPoint {
+        (layer(self.transport), p)
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -43,6 +46,7 @@ pub struct Pair {
 }
 pub struct Decomposition {
     pub chains: Vec<Chain>,
+    pub anchors: [IndexSet<Point>; 2],
 }
 
 pub fn detachable_pairs(w: &Witness) -> IndexMap<LayerPoint, Pair> {
@@ -232,5 +236,80 @@ pub fn extract(w: &Witness, released: &IndexSet<LayerPoint>) -> Result<Decomposi
         }
         anchors[tr].extend(local);
     }
-    Ok(Decomposition { chains })
+    Ok(Decomposition { chains, anchors })
+}
+
+fn terminal_counts(
+    w: &Witness,
+) -> (
+    IndexMap<LayerPoint, usize>,
+    IndexMap<&str, usize>,
+    IndexSet<LayerPoint>,
+) {
+    let mut slots = IndexMap::<LayerPoint, usize>::new();
+    let mut ids = IndexMap::<&str, usize>::new();
+    for n in &w.transport_networks {
+        for t in &n.terminals {
+            *slots
+                .entry((layer(n.transport), Point::from(&t.position)))
+                .or_default() += 1;
+            *ids.entry(&t.id).or_default() += 1;
+        }
+    }
+    let components = w
+        .logistics_components
+        .iter()
+        .map(|c| (layer(c.transport), Point::from(&c.position)))
+        .collect();
+    (slots, ids, components)
+}
+fn incident_counts(chains: &[Chain]) -> IndexMap<LayerPoint, usize> {
+    let mut incident = IndexMap::<LayerPoint, usize>::new();
+    for c in chains {
+        for p in [c.start(), c.end()] {
+            *incident.entry(c.tag(p)).or_default() += 1;
+        }
+    }
+    incident
+}
+pub fn flexible_terminals(w: &Witness, chains: &[Chain]) -> IndexSet<LayerPoint> {
+    let (slots, _, components) = terminal_counts(w);
+    let incident = incident_counts(chains);
+    slots
+        .into_iter()
+        .filter(|(k, n)| *n == 1 && incident.get(k) == Some(&1) && !components.contains(k))
+        .map(|(k, _)| k)
+        .collect()
+}
+pub fn joinable_chains(w: &Witness, chains: &[Chain]) -> Vec<usize> {
+    let (slots, ids, components) = terminal_counts(w);
+    let incident = incident_counts(chains);
+    chains
+        .iter()
+        .filter(|c| {
+            if c.zero_length
+                || c.cells.len() < 2
+                || c.start_terminals.len() != 1
+                || c.end_terminals.len() != 1
+            {
+                return false;
+            }
+            let a = &c.start_terminals[0];
+            let b = &c.end_terminals[0];
+            a.direction == FacilityPortDirection::Output
+                && b.direction == FacilityPortDirection::Input
+                && [a, b].iter().all(|t| {
+                    let tag = c.tag(Point::from(&t.position));
+                    matches!(t.endpoint, TransportNetworkEndpoint::Facility { .. })
+                        && ids[t.id.as_str()] == 1
+                        && slots.get(&tag) == Some(&1)
+                        && incident.get(&tag) == Some(&1)
+                        && !components.contains(&tag)
+                        && positive_rate(t.rate)
+                        && positive_rate(c.rate)
+                        && equal_rate(t.rate, c.rate)
+                })
+        })
+        .map(|c| c.id)
+        .collect()
 }

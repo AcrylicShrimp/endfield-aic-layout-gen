@@ -40,14 +40,14 @@ pub fn read<T: DeserializeOwned>(root: &Path, path: &Path) -> Result<T, String> 
     Ok(value)
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct CatalogPaths {
-    facilities: PathBuf,
-    recipes: PathBuf,
-    items: PathBuf,
-    transports: PathBuf,
-    components: PathBuf,
+    pub facilities: PathBuf,
+    pub recipes: PathBuf,
+    pub items: PathBuf,
+    pub transports: PathBuf,
+    pub components: PathBuf,
 }
 
 pub fn load_catalogs(root: &Path, paths: &CatalogPaths) -> Result<Arc<Catalogs>, String> {
@@ -80,7 +80,7 @@ pub fn hash(bytes: &[u8]) -> String {
 
 /// Catalog validation and identity are shared by every session in the pool.
 pub struct Catalogs {
-    pub data: FactoryEditCatalogs,
+    pub data: Arc<FactoryEditCatalogs>,
     pub identity: String,
 }
 impl Catalogs {
@@ -92,6 +92,9 @@ impl Catalogs {
             format!("{:?}", data.transports.catalog()),
             format!("{:?}", data.components.catalog()),
         ]);
-        Self { data, identity }
+        Self {
+            data: Arc::new(data),
+            identity,
+        }
     }
 }

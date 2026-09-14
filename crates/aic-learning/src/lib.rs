@@ -10,3 +10,5 @@ pub mod update;
 
 #[cfg(feature = "libtorch")]
 pub mod collection;
+#[cfg(feature = "libtorch")]
+pub mod training;

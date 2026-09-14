@@ -1,0 +1,196 @@
+{
+  "schema": "aic-complete-training-evidence-v1",
+  "runtime": "Rust CLI with LibTorch, no Python execution",
+  "server_root": "/home/ashrimp/Srv/aic-rust-learning-20260915",
+  "source_tree_sha256": "c31afde76bfbb25a29ea3dbb46bf7c0f9c4e6b23f700b35024619662ce227916",
+  "source_tree_definition": "Sorted git ls-files -co --exclude-standard Cargo.toml Cargo.lock crates tools/native-training, existing files excluding README.md and prepare-cached.mjs; each record path + NUL + SHA256(file) + LF.",
+  "verification": {
+    "workspace_with_learning_feature": {
+      "passed": 569,
+      "failed": 0,
+      "ignored": 5
+    },
+    "retained_actual_cuda_minibatch_regression": "passed separately",
+    "nonempty_learner_roundtrip_and_next_update": "exact on CPU and CUDA",
+    "balanced_panel": {
+      "cases": 32,
+      "per_stratum": 16,
+      "output": "artifacts/native-training-panel-balanced"
+    },
+    "separate_process_resume": {
+      "initial_target": 1,
+      "resumed_target": 4,
+      "worker_counts": [
+        2,
+        1
+      ],
+      "best_model_retained": true
+    },
+    "stop_command": {
+      "requested_target": 20,
+      "resumed_from": 4,
+      "stopped_at": 6,
+      "complete_wave": true
+    },
+    "focused_training_tests_after_final_delta": {
+      "passed": 10,
+      "failed": 0
+    },
+    "final_cli_resume": {
+      "previous_update": 6,
+      "completed_update": 7,
+      "workers": 1,
+      "native_actions_in_wave": 32
+    }
+  },
+  "measurements": {
+    "fresh": {
+      "output": "artifacts/native-training-fresh-final",
+      "report": {
+        "admission_seconds": 15.342496613,
+        "best_evaluation": null,
+        "checkpoint_seconds": 0.118455261,
+        "collection_seconds": 6.124286618999999,
+        "completed_updates": 4,
+        "evaluation_seconds": 0.0,
+        "latest_checkpoint": "checkpoints/00000004",
+        "new_samples": 16384,
+        "optimization_seconds": 23.944747955,
+        "output_bytes": 29203847,
+        "peak_rss_bytes": 14128193536,
+        "previous_update": 0,
+        "replay": {
+          "active_streams": 0,
+          "admissions": 178,
+          "bytes": 22697784,
+          "duplicates": 0,
+          "evictions": 0,
+          "labels": 694,
+          "positive_improvements": 178,
+          "selected_uses": 640,
+          "sequences": 178
+        },
+        "resumed": false,
+        "samples_per_minute": 20585.16863805487,
+        "schema": "aic-training-report-v1",
+        "status": "completed",
+        "streams": 128,
+        "total_samples": 16384,
+        "total_seconds": 47.754770305,
+        "workers": 16
+      },
+      "epochs": [
+        {
+          "update": 1,
+          "new_samples": 4096,
+          "minibatch_updates": 64,
+          "actor_epochs": 4,
+          "critic_epochs": 4,
+          "replay_sequences": 0
+        },
+        {
+          "update": 2,
+          "new_samples": 4096,
+          "minibatch_updates": 64,
+          "actor_epochs": 4,
+          "critic_epochs": 4,
+          "replay_sequences": 84
+        },
+        {
+          "update": 3,
+          "new_samples": 4096,
+          "minibatch_updates": 64,
+          "actor_epochs": 1,
+          "critic_epochs": 4,
+          "replay_sequences": 84
+        },
+        {
+          "update": 4,
+          "new_samples": 4096,
+          "minibatch_updates": 64,
+          "actor_epochs": 4,
+          "critic_epochs": 4,
+          "replay_sequences": 178
+        }
+      ]
+    },
+    "cached": {
+      "output": "artifacts/native-training-cached-release",
+      "report": {
+        "admission_seconds": 0.295117704,
+        "best_evaluation": null,
+        "checkpoint_seconds": 0.052063491,
+        "collection_seconds": 3.278295437,
+        "completed_updates": 4,
+        "evaluation_seconds": 0.0,
+        "latest_checkpoint": "checkpoints/00000004",
+        "new_samples": 8192,
+        "optimization_seconds": 10.14055737,
+        "output_bytes": 29192076,
+        "peak_rss_bytes": 7946694656,
+        "previous_update": 2,
+        "replay": {
+          "active_streams": 0,
+          "admissions": 178,
+          "bytes": 22697784,
+          "duplicates": 0,
+          "evictions": 0,
+          "labels": 694,
+          "positive_improvements": 178,
+          "selected_uses": 640,
+          "sequences": 178
+        },
+        "resumed": true,
+        "samples_per_minute": 32572.56667590283,
+        "schema": "aic-training-report-v1",
+        "status": "completed",
+        "streams": 128,
+        "total_samples": 16384,
+        "total_seconds": 15.089999044,
+        "workers": 16
+      },
+      "epochs": [
+        {
+          "update": 3,
+          "new_samples": 4096,
+          "minibatch_updates": 64,
+          "actor_epochs": 1,
+          "critic_epochs": 4,
+          "replay_sequences": 84
+        },
+        {
+          "update": 4,
+          "new_samples": 4096,
+          "minibatch_updates": 64,
+          "actor_epochs": 4,
+          "critic_epochs": 4,
+          "replay_sequences": 178
+        }
+      ]
+    }
+  },
+  "historical_python_reference": {
+    "report": "docs/reports/2026-09-15-response-restoration-throughput.md",
+    "samples": 8192,
+    "seconds": 20.202,
+    "samples_per_minute": 24330,
+    "actor_epochs": [
+      1,
+      2
+    ],
+    "critic_epochs": [
+      4,
+      4
+    ]
+  },
+  "comparison_limits": [
+    "Single bounded runs on different generated inputs, not a statistical speed or mature-policy quality claim.",
+    "Cached Rust measurement includes checkpoint restoration and initialization; historical Python timing starts after warmup.",
+    "Rust measured actor epochs 1 and 4 versus Python 1 and 2; both preserve the configured four full critic epochs.",
+    "Whole-trajectory byte identity is not a recovery contract; actual checkpoint state and immediate continuation are tested directly."
+  ],
+  "measurement_binary_sha256": "02a50d26d4364744ee9d04699b8621868767381ad54bda6b9e9cc9ee07e51daa",
+  "validated_final_binary_sha256": "320243a4125c2e492175e69262203b60fea8d54f6043bff359013cb0ca4071fb",
+  "final_delta_after_measurement": "Cold checkpoint sample/slot ownership validation and its regression test; final binary exercised by separate-process resume from update 6 to 7. Collection and optimization kernels unchanged.",
+  "source_tree_scope": "Final repository source, including the final cold validation delta."
+}

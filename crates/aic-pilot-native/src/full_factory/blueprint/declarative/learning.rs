@@ -47,7 +47,7 @@ struct Facility {
     groups: Vec<Group>,
 }
 
-#[derive(Default, Serialize)]
+#[derive(Default, Clone, Serialize, Deserialize)]
 pub struct Input {
     pub pending: usize,
     pub conflicts: usize,

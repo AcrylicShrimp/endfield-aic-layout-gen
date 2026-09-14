@@ -1,9 +1,6 @@
 //! Central batched heads with the established logical-stream/depth RNG order.
 use super::batch;
-use crate::{
-    input::Packed,
-    model::{Model, distribution},
-};
+use crate::model::{Model, distribution};
 use aic_pilot_native::learning::Observation;
 use aic_torch::{
     Generator,
@@ -27,6 +24,21 @@ pub fn sample(
     sampler: &mut Generator,
     device: Device,
 ) -> Result<Vec<Choice>> {
+    sample_with(
+        model,
+        rows,
+        |_, probabilities| sampler.categorical(probabilities),
+        device,
+    )
+}
+
+/// Evaluation can give each case its own RNG without losing head batching.
+pub fn sample_with(
+    model: &Model,
+    rows: &[&Observation],
+    mut categorical: impl FnMut(usize, &Tensor) -> Result<Tensor>,
+    device: Device,
+) -> Result<Vec<Choice>> {
     no_grad(|| {
         let packed = batch::graph(rows, device)?;
         let prediction = model.roots(&packed);
@@ -38,7 +50,7 @@ pub fn sample(
         for (i, row) in rows.iter().enumerate() {
             let count = row.input.root_meta.len() as i64;
             let probabilities = root_logp.narrow(0, offset, count).exp();
-            let selected = i64::try_from(sampler.categorical(&probabilities)?)?;
+            let selected = i64::try_from(categorical(i, &probabilities)?)?;
             choices.push(Choice {
                 root: selected as usize,
                 ports: vec![],
@@ -77,7 +89,7 @@ pub fn sample(
             for (i, branch) in branches.iter().enumerate() {
                 let n = branch.keep.len() as i64;
                 let selected =
-                    i64::try_from(sampler.categorical(&logp.narrow(0, offset, n).exp())?)?;
+                    i64::try_from(categorical(branch.owner, &logp.narrow(0, offset, n).exp())?)?;
                 let choice = &mut choices[branch.owner];
                 choice.ports.push(branch.keep[selected as usize]);
                 choice.old_logp += logp.double_value(&[offset + selected]);
@@ -94,34 +106,4 @@ pub fn sample(
         );
         Ok(choices)
     })
-}
-pub fn recorded(rows: &[&Observation], choices: &[&Choice], device: Device) -> Result<Packed> {
-    ensure!(
-        rows.len() == choices.len(),
-        "aic-learning.collection-labels: mismatched rows"
-    );
-    let mut packed = batch::graph(rows, device)?;
-    let offsets = batch::offsets(rows);
-    let (mut roots, mut selected, mut branches) = (vec![], vec![], vec![]);
-    let (mut offset, mut total) = (0, 0);
-    for (owner, (row, choice)) in rows.iter().zip(choices).enumerate() {
-        roots.push(offset + choice.root as i64);
-        offset += row.input.root_meta.len() as i64;
-        for (depth, &port) in choice.ports.iter().enumerate() {
-            let b = batch::branch(row, owner, choice.root, &choice.ports, depth)?;
-            let index = b.keep.iter().position(|p| *p == port).ok_or_else(|| {
-                anyhow::anyhow!("aic-learning.port-choice: excluded selected port")
-            })?;
-            selected.push(total + index as i64);
-            total += b.keep.len() as i64;
-            branches.push(b);
-        }
-    }
-    packed.roots = Tensor::from_slice(&roots).to_device(device);
-    packed.selected = Tensor::from_slice(&selected).to_device(device);
-    packed.factors = branches.len() as i64;
-    if !branches.is_empty() {
-        packed.branches = Some(batch::branches(&branches, &offsets, device));
-    }
-    Ok(packed)
 }

@@ -2,3 +2,4 @@
 mod full_factory;
 pub mod input;
 pub mod learning;
+pub use full_factory::generation;

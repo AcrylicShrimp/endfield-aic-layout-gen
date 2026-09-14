@@ -1,15 +1,13 @@
 use super::{
-    batch,
-    config::Config,
-    credit,
+    batch, credit,
     policy::{self, Choice},
 };
-use crate::{input::PpoBatch, update::Learner};
+use crate::update::Learner;
 use aic_pilot_native::learning::{
     Observation,
     pool::{Command, Pool, Reply},
 };
-use aic_torch::tch::{Device, Tensor, no_grad};
+use aic_torch::tch::{Device, no_grad};
 use anyhow::{Result, ensure};
 use serde_json::{Value, json};
 use std::time::Instant;
@@ -21,6 +19,16 @@ pub struct Sample {
     pub reward: f64,
     pub terminal: bool,
     pub outcome: Value,
+}
+pub struct Settings {
+    pub episode_ids: Vec<String>,
+    pub episode_actions: u64,
+    pub chunk_actions: usize,
+    pub minibatch_size: usize,
+    pub gamma: f64,
+    pub gae_lambda: f64,
+    pub advantage_normalization: String,
+    pub max_observation_bytes: u64,
 }
 #[derive(Default)]
 pub struct Rollout {
@@ -64,11 +72,12 @@ fn bytes(o: &Observation) -> u64 {
 pub fn collect(
     pool: &mut Pool,
     learner: &mut Learner,
-    config: &Config,
+    config: &Settings,
     retained: &mut Rollout,
+    mut guard: impl FnMut() -> Result<()>,
 ) -> Result<()> {
     *retained = Rollout::default();
-    let streams = config.episodes.len();
+    let streams = config.episode_ids.len();
     let started = Instant::now();
     retained.current = observations(
         pool.exchange(
@@ -90,8 +99,7 @@ pub fn collect(
         retained
             .current
             .iter()
-            .all(|o| !o.done
-                && o.attempts + config.chunk_actions as u64 <= config.limits.max_actions),
+            .all(|o| !o.done && o.attempts + config.chunk_actions as u64 <= config.episode_actions),
         "aic-learning.collection-horizon: chunk would cross terminal"
     );
     retained.samples = Vec::with_capacity(
@@ -99,6 +107,7 @@ pub fn collect(
             .min(config.max_observation_bytes as usize / std::mem::size_of::<Sample>()),
     );
     for step in 0..config.chunk_actions {
+        guard()?;
         retained.choices = policy::sample(
             &learner.model,
             &retained.current.iter().collect::<Vec<_>>(),
@@ -133,7 +142,7 @@ pub fn collect(
                 anyhow::bail!("aic-learning.collection-protocol: expected step");
             };
             let outcome = &result["outcome"];
-            let terminal = first[*stream] + step as u64 + 1 == config.limits.max_actions;
+            let terminal = first[*stream] + step as u64 + 1 == config.episode_actions;
             ensure!(
                 outcome["charged"] == true
                     && after.attempts == first[*stream] + step as u64 + 1
@@ -223,35 +232,9 @@ pub fn collect(
         .drain(..)
         .map(|(stream, r)| {
             let Reply::Data(data) = r else { unreachable!() };
-            json!({"stream":stream,"episode_id":config.episodes[stream].id,"rows":data})
+            json!({"stream":stream,"episode_id":config.episode_ids[stream],"rows":data})
         })
         .collect();
     retained.seconds = started.elapsed().as_secs_f64();
     Ok(())
-}
-
-pub fn minibatch(rollout: &Rollout, config: &Config, device: Device) -> Result<PpoBatch> {
-    // One actual minibatch; full epoch/KL scheduling remains a separate stage.
-    let n = config.minibatch_size;
-    let rows = &rollout.samples[..n];
-    let packed = policy::recorded(
-        &rows.iter().map(|r| &r.observation).collect::<Vec<_>>(),
-        &rows.iter().map(|r| &r.choice).collect::<Vec<_>>(),
-        device,
-    )?;
-    let raw = Tensor::from_slice(&rollout.raw);
-    Ok(PpoBatch {
-        packed,
-        advantages: credit::normalize(&raw, &config.advantage_normalization)?
-            .narrow(0, 0, n as i64)
-            .to_device(device),
-        targets: Tensor::from_slice(&rollout.targets[..n]).to_device(device),
-        old_logp: Tensor::from_slice(
-            &rows
-                .iter()
-                .map(|r| r.choice.old_logp as f32)
-                .collect::<Vec<_>>(),
-        )
-        .to_device(device),
-    })
 }

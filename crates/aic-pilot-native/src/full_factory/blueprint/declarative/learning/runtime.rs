@@ -31,6 +31,9 @@ fn diagnostic(d: Diagnostic) -> String {
     serde_json::to_string(&d).unwrap_or(d.message)
 }
 impl Runtime {
+    pub fn replaceable(&self) -> bool {
+        self.session.done() && self.chunk.is_none()
+    }
     fn from_session(session: Session, options: Options) -> std::result::Result<Self, String> {
         let learning = Learning::new(&session, options).map_err(diagnostic)?;
         let domain = Arc::new(Domain {

@@ -2,8 +2,6 @@
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
 
-pub const INPUT_SCHEMA: &str = "aic-learner-seed-v1";
-
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
 pub struct ModelConfig {
@@ -64,21 +62,6 @@ impl UpdateConfig {
 pub struct Archive {
     pub path: String,
     pub sha256: String,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct SeedManifest {
-    pub schema: String,
-    pub source: serde_json::Value,
-    pub state: Archive,
-    pub replay: Archive,
-    pub max_tensor_bytes: u64,
-    pub model: ModelConfig,
-    pub update: UpdateConfig,
-    pub parameter_order: Vec<String>,
-    pub sil_graphs: i64,
-    pub sil_factors: i64,
 }
 
 #[cfg(test)]

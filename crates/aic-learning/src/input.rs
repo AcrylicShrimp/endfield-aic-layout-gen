@@ -1,10 +1,12 @@
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
 mod validation;
-// Initial learner/replay seed. External tensors are validated once on admission.
-use crate::schema::{INPUT_SCHEMA, SeedManifest};
-use aic_torch::tch::{Device, Kind, Tensor};
-use anyhow::{Context, Result, ensure};
+// Native numerical batches; retained interchange validation is test-only.
+use aic_torch::tch::{Device, Tensor};
+#[cfg(test)]
+use anyhow::ensure;
+use anyhow::{Context, Result};
 use sha2::{Digest, Sha256};
 use std::{collections::BTreeMap, fs, io::Read, path::Path};
 
@@ -38,6 +40,22 @@ pub struct Packed {
     pub factors: i64,
 }
 impl Packed {
+    pub fn to_device(&self, device: Device) -> Self {
+        let copy = |rows: &Tensors| {
+            rows.iter()
+                .map(|(n, t)| (n.clone(), t.to_device(device)))
+                .collect()
+        };
+        Self {
+            graph: copy(&self.graph),
+            branches: self.branches.as_ref().map(copy),
+            roots: self.roots.to_device(device),
+            selected: self.selected.to_device(device),
+            graphs: self.graphs,
+            factors: self.factors,
+        }
+    }
+    #[cfg(test)]
     fn load(
         values: &Tensors,
         prefix: &str,
@@ -79,83 +97,6 @@ impl Packed {
     }
 }
 
-pub struct Seed {
-    pub manifest: SeedManifest,
-    pub identity: String,
-    directory: std::path::PathBuf,
-    pub replay: ReplayBatch,
-}
-impl Seed {
-    pub fn load(path: &Path, device: Device) -> Result<Self> {
-        let mut bytes = Vec::new();
-        fs::File::open(path)
-            .with_context(|| format!("aic-learning.manifest: {}", path.display()))?
-            .take(1024 * 1024 + 1)
-            .read_to_end(&mut bytes)?;
-        ensure!(
-            bytes.len() <= 1024 * 1024,
-            "aic-learning.manifest-size: {}",
-            path.display()
-        );
-        let manifest: SeedManifest = serde_json::from_slice(&bytes)?;
-        ensure!(
-            manifest.schema == INPUT_SCHEMA,
-            "aic-learning.input-schema: {}",
-            manifest.schema
-        );
-        ensure!(
-            manifest.max_tensor_bytes > 0 && manifest.max_tensor_bytes <= 2 * 1024 * 1024 * 1024,
-            "aic-learning.input-budget: invalid tensor byte bound"
-        );
-        let directory = path.parent().unwrap_or(Path::new(".")).to_path_buf();
-        let tensors = archive(&directory, &manifest.replay, manifest.max_tensor_bytes)?;
-        let sil = Packed::load(
-            &tensors,
-            "sil",
-            manifest.sil_graphs,
-            manifest.sil_factors,
-            device,
-            &manifest.model,
-        )?;
-        let mut targets = Tensors::new();
-        for (name, size) in [
-            ("sil.returns", manifest.sil_graphs),
-            ("sil.weights", manifest.sil_graphs),
-        ] {
-            let t = tensor(&tensors, name)?;
-            ensure!(
-                t.kind() == Kind::Float
-                    && t.size() == [size]
-                    && bool::try_from(t.isfinite().all())?,
-                "aic-learning.input-target: {name}"
-            );
-            targets.insert(name.into(), t.to_device(device));
-        }
-        // Bind the checkpoint to the exact validated manifest, including archive hash.
-        let identity = Sha256::digest(&bytes)
-            .iter()
-            .map(|b| format!("{b:02x}"))
-            .collect();
-        Ok(Self {
-            manifest,
-            identity,
-            directory,
-            replay: ReplayBatch {
-                packed: sil,
-                returns: targets.remove("sil.returns").unwrap(),
-                weights: targets.remove("sil.weights").unwrap(),
-            },
-        })
-    }
-    pub fn initial_state(&self) -> Result<Tensors> {
-        archive(
-            &self.directory,
-            &self.manifest.state,
-            self.manifest.max_tensor_bytes,
-        )
-    }
-}
-
 /// Frozen actual behavior rows. Constructed directly by the rollout owner.
 pub struct PpoBatch {
     pub packed: Packed,
@@ -168,30 +109,22 @@ pub struct ReplayBatch {
     pub returns: Tensor,
     pub weights: Tensor,
 }
-
-fn archive(
-    directory: &Path,
-    reference: &crate::schema::Archive,
-    max_bytes: u64,
-) -> Result<Tensors> {
-    let relative = Path::new(&reference.path);
-    ensure!(
-        relative.components().count() == 1 && relative.file_name().is_some(),
-        "aic-learning.input-path: expected a sibling tensor file"
-    );
-    let archive = directory.join(relative);
-    ensure!(
-        fs::metadata(&archive)?.len() <= max_bytes,
-        "aic-learning.input-budget: {}",
-        archive.display()
-    );
-    ensure!(
-        sha256(&archive)? == reference.sha256,
-        "aic-learning.input-hash: {}",
-        archive.display()
-    );
-    let rows = Tensor::read_safetensors(&archive)
-        .with_context(|| format!("aic-learning.input-archive: {}", archive.display()))?;
-    let tensors = rows.into_iter().collect();
-    Ok(tensors)
+impl PpoBatch {
+    pub fn to_device(&self, device: Device) -> Self {
+        Self {
+            packed: self.packed.to_device(device),
+            old_logp: self.old_logp.to_device(device),
+            advantages: self.advantages.to_device(device),
+            targets: self.targets.to_device(device),
+        }
+    }
+}
+impl ReplayBatch {
+    pub fn to_device(&self, device: Device) -> Self {
+        Self {
+            packed: self.packed.to_device(device),
+            returns: self.returns.to_device(device),
+            weights: self.weights.to_device(device),
+        }
+    }
 }

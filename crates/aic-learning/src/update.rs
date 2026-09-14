@@ -107,6 +107,7 @@ impl Learner {
             device,
         })
     }
+    #[cfg(test)]
     pub fn apply(
         &mut self,
         ppo: &PpoBatch,
@@ -119,32 +120,63 @@ impl Learner {
         );
         let order = self.shuffle.permutation(ppo.packed.graphs)?;
         let order = order.to_device(self.device);
+        self.apply_ordered(ppo, Some(replay), &order, actor_updated, false)
+            .map(|(report, _)| report)
+    }
+    /// The training scheduler already shuffled rows over the complete rollout.
+    /// Do not consume a second shuffle or silently omit an empty replay buffer.
+    pub fn apply_minibatch(
+        &mut self,
+        ppo: &PpoBatch,
+        replay: Option<&ReplayBatch>,
+        actor_updated: bool,
+    ) -> Result<(UpdateReport, Option<Tensor>)> {
+        let order = Tensor::arange(ppo.packed.graphs, (Kind::Int64, self.device));
+        self.apply_ordered(ppo, replay, &order, actor_updated, true)
+    }
+    fn apply_ordered(
+        &mut self,
+        ppo: &PpoBatch,
+        replay: Option<&ReplayBatch>,
+        order: &Tensor,
+        actor_updated: bool,
+        observe_replay: bool,
+    ) -> Result<(UpdateReport, Option<Tensor>)> {
+        ensure!(
+            self.completed_steps < u64::MAX,
+            "aic-learning.update-counter: exhausted counter"
+        );
         self.actor.zero_grad()?;
         self.critic.zero_grad()?;
         self.actor.freeze(!actor_updated);
         // Always restore trainability on a recoverable error.
-        let result = self.compute(ppo, replay, &order, actor_updated);
+        let result = self.compute(ppo, replay, order, actor_updated, observe_replay);
         self.actor.freeze(false);
-        let (loss, value_loss, imitation_loss, positive, actor_norm, critic_norm) = result?;
+        let (loss, value_loss, imitation_loss, positive, actor_norm, critic_norm, utility) =
+            result?;
         self.completed_steps += 1;
-        Ok(UpdateReport {
-            step: self.completed_steps,
-            actor_updated,
-            loss,
-            value_loss,
-            imitation_loss,
-            actor_gradient_norm: actor_norm,
-            critic_gradient_norm: critic_norm,
-            positive_replay_labels: positive,
-        })
+        Ok((
+            UpdateReport {
+                step: self.completed_steps,
+                actor_updated,
+                loss,
+                value_loss,
+                imitation_loss,
+                actor_gradient_norm: actor_norm,
+                critic_gradient_norm: critic_norm,
+                positive_replay_labels: positive,
+            },
+            utility,
+        ))
     }
     fn compute(
         &mut self,
         ppo: &PpoBatch,
-        replay: &ReplayBatch,
+        replay: Option<&ReplayBatch>,
         order: &Tensor,
         actor_updated: bool,
-    ) -> Result<(f64, f64, f64, i64, f64, f64)> {
+        observe_replay: bool,
+    ) -> Result<(f64, f64, f64, i64, f64, f64, Option<Tensor>)> {
         let predicted = self.model.predict(&ppo.packed)?;
         let target = ppo.targets.index_select(0, order);
         let value_loss = (predicted.values.index_select(0, order) - target)
@@ -154,6 +186,7 @@ impl Learner {
         let mut loss = value_loss.shallow_clone();
         let mut teacher = Tensor::zeros([], (Kind::Float, self.device));
         let mut positive = 0;
+        let mut utility = None;
         if actor_updated {
             let old = ppo.old_logp.index_select(0, order);
             let advantages = ppo.advantages.index_select(0, order);
@@ -165,13 +198,17 @@ impl Learner {
                     .mean(Kind::Float)
                 - self.config.entropy_coefficient
                     * predicted.entropy.index_select(0, order).mean(Kind::Float);
-            if self.config.imitation_coefficient > 0. {
+            if let Some(replay) = replay.filter(|_| self.config.imitation_coefficient > 0.) {
                 let sil = self.model.predict(&replay.packed)?;
                 let returns = &replay.returns;
                 let weights = &replay.weights;
                 let advantage = (returns - sil.values.detach()).clamp_min(0.);
                 positive = i64::try_from(advantage.gt(0).sum(Kind::Int64))?;
-                teacher = (-sil.logp * advantage * weights).sum(Kind::Float);
+                let contributions = -sil.logp * advantage;
+                if observe_replay {
+                    utility = Some(contributions.detach());
+                }
+                teacher = (contributions * weights).sum(Kind::Float);
                 loss += self.config.imitation_coefficient * &teacher;
             }
         }
@@ -198,6 +235,7 @@ impl Learner {
             positive,
             actor_norm,
             critic_norm,
+            utility,
         ))
     }
     pub fn snapshot(&mut self) -> Result<Tensors> {

@@ -12,6 +12,21 @@ use std::{
 
 type Result<T> = std::result::Result<T, String>;
 pub enum Command {
+    /// Install a fresh/inherited start after the previous episode was drained.
+    Next {
+        request: FactoryEditRequest,
+        original: WitnessProbeInput,
+        limits: Limits,
+        options: Options,
+    },
+    /// Construct/randomize a canonical fresh slot on this persistent worker.
+    Generate {
+        source: Arc<crate::generation::source::Source>,
+        slot: u64,
+        directory: std::path::PathBuf,
+        limits: Limits,
+        options: Options,
+    },
     Open {
         request: FactoryEditRequest,
         original: WitnessProbeInput,
@@ -25,6 +40,8 @@ pub enum Command {
     Begin {
         actions: usize,
     },
+    /// Observe without collecting training evidence (held-out inference).
+    Observe,
     Step {
         handle: u64,
         root: usize,
@@ -182,6 +199,47 @@ fn execute(
     catalogs: &Arc<crate::input::Catalogs>,
 ) -> Result<Reply> {
     match command {
+        Command::Next {
+            request,
+            original,
+            limits,
+            options,
+        } => {
+            if sessions.get(&id).is_some_and(|s| !s.replaceable()) {
+                return Err(
+                    "declarative.pool-admission: unfinished episode cannot be replaced".into(),
+                );
+            }
+            let session = Runtime::open(request, original, catalogs.clone(), limits, options)?;
+            sessions.insert(id, session);
+            Ok(Reply::Ready)
+        }
+        Command::Generate {
+            source,
+            slot,
+            directory,
+            limits,
+            options,
+        } => {
+            if sessions.get(&id).is_some_and(|s| !s.replaceable()) {
+                return Err(
+                    "declarative.pool-admission: generation would replace unfinished episode"
+                        .into(),
+                );
+            }
+            let generated = source.generate(slot, &directory)?;
+            let session = Runtime::open(
+                generated.request.clone(),
+                generated.original.clone(),
+                catalogs.clone(),
+                limits,
+                options,
+            )?;
+            sessions.insert(id, session);
+            Ok(Reply::Data(
+                serde_json::to_value(generated).map_err(|e| e.to_string())?,
+            ))
+        }
         Command::Open {
             request,
             original,
@@ -213,6 +271,7 @@ fn execute(
                 .get_mut(&id)
                 .ok_or("declarative.pool-admission: unknown session")?;
             match command {
+                Command::Observe => Ok(Reply::Observation(session.observe())),
                 Command::Begin { actions } => {
                     session.begin_chunk(actions)?;
                     Ok(Reply::Observation(session.observe()))

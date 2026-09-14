@@ -6,26 +6,46 @@ use std::path::PathBuf;
 
 #[derive(Debug, Subcommand)]
 pub enum LearningCommand {
-    /// Collect native rollouts and apply one PPO/SIL minibatch per chunk.
-    Collect {
+    /// Ask an active training run to save and stop at its next complete wave.
+    Stop {
+        #[arg(long)]
+        output: PathBuf,
+    },
+    /// Train the native policy through full PPO epochs, replay and evaluation.
+    Train {
         #[arg(long)]
         config: PathBuf,
-        #[arg(long)]
-        seed: PathBuf,
         #[arg(long)]
         output: PathBuf,
         #[arg(long, default_value = "cuda:0")]
         device: String,
-        #[arg(long, default_value_t = 1)]
-        chunks: usize,
+        /// Total completed update target; otherwise stop at the configured duration.
         #[arg(long)]
-        resume: Option<PathBuf>,
+        updates: Option<u64>,
+        /// Restore this output's latest completed training checkpoint.
+        #[arg(long)]
+        resume: bool,
         #[arg(long)]
         workers: Option<usize>,
     },
+    /// Generate an immutable held-out panel with a separate seed namespace.
+    PreparePanel {
+        #[arg(long)]
+        config: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long)]
+        cases: usize,
+        #[arg(long)]
+        seed: u64,
+    },
 }
 pub fn run(command: LearningCommand) -> Result<()> {
-    let LearningCommand::Collect { config, .. } = &command;
+    let config = match &command {
+        LearningCommand::Stop { output: config }
+        | LearningCommand::Train { config, .. }
+        | LearningCommand::PreparePanel { config, .. } => config,
+    };
     let entity = config.display().to_string();
     let report = execute(command).map_err(|error| {
         let message = format!("{error:#}");
@@ -34,29 +54,44 @@ pub fn run(command: LearningCommand) -> Result<()> {
             let prefix = text.split(':').next()?;
             (prefix.starts_with("aic-learning.") || prefix.starts_with("aic-torch.")).then(|| prefix.to_owned())
         }).unwrap_or_else(|| "aic-learning.failure".into());
-        anyhow::anyhow!(serde_json::json!({"code":code,"severity":"error","stage":"native-collection","message":message,"entity":entity}).to_string())
+        anyhow::anyhow!(serde_json::json!({"code":code,"severity":"error","stage":"native-learning","message":message,"entity":entity}).to_string())
     })?;
     println!("{}", serde_json::to_string_pretty(&report)?);
     Ok(())
 }
 fn execute(command: LearningCommand) -> Result<serde_json::Value> {
     match command {
-        LearningCommand::Collect {
+        LearningCommand::Stop { output } => {
+            anyhow::ensure!(
+                output.is_dir(),
+                "aic-learning.stop-output: missing {}",
+                output.display()
+            );
+            std::fs::write(output.join("STOP"), b"requested\n")?;
+            Ok(
+                serde_json::json!({"schema":"aic-training-stop-v1","status":"requested","output":output}),
+            )
+        }
+        LearningCommand::Train {
             config,
-            seed,
             output,
             device,
-            chunks,
+            updates,
             resume,
             workers,
-        } => aic_learning::collection::run::run(
+        } => aic_learning::training::run::run(
             &config,
-            &seed,
             &output,
             update::parse_device(&device)?,
-            chunks,
-            resume.as_deref(),
+            updates,
+            resume,
             workers,
         ),
+        LearningCommand::PreparePanel {
+            config,
+            output,
+            cases,
+            seed,
+        } => aic_learning::training::evaluation::prepare(&config, &output, cases, seed),
     }
 }

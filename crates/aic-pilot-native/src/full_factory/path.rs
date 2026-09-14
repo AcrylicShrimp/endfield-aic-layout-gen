@@ -3,10 +3,14 @@
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 
+use aic_data::layouts::FactoryEditCatalogs;
 use aic_data::logistics::{LogisticsComponentKind, TransportKind};
+use aic_data::recipes::Rate;
 use indexmap::{IndexMap, IndexSet};
 use serde::Serialize;
 
+use super::catalog::cardinal_index;
+use super::chains::Chain;
 use super::types::*;
 
 mod reachability;
@@ -25,6 +29,87 @@ pub struct Crossing {
     pub carrier_network: usize,
 }
 pub type Crossings = IndexMap<(Point, usize), Crossing>;
+
+pub fn crossing_options(
+    carriers: &[Chain],
+    job: &Chain,
+    catalogs: &FactoryEditCatalogs,
+    excluded: &IndexSet<Point>,
+) -> Crossings {
+    let mut visits = IndexMap::<Point, Vec<(&Chain, usize)>>::new();
+    for c in carriers.iter().filter(|c| c.transport == job.transport) {
+        for (i, p) in c.cells.iter().enumerate() {
+            visits.entry(*p).or_default().push((c, i));
+        }
+    }
+    let sufficient = |quantity: i64, duration: i64, rate: Rate| {
+        i128::from(quantity) * 1000 * i128::from(rate.denominator)
+            >= i128::from(rate.numerator) * i128::from(duration)
+    };
+    let poses: Vec<_> = catalogs
+        .components
+        .catalog()
+        .components
+        .iter()
+        .filter(|c| {
+            c.kind == LogisticsComponentKind::Bridge
+                && c.transport == job.transport
+                && c.footprint.width == 1
+                && c.footprint.height == 1
+                && sufficient(c.capacity.quantity, c.capacity.duration_ms, job.rate)
+        })
+        .flat_map(|c| {
+            c.allowed_rotations
+                .iter()
+                .map(move |&rotation| (c, rotation))
+        })
+        .collect();
+    let mut options = IndexMap::new();
+    for (p, xs) in visits {
+        if xs.len() != 1 || excluded.contains(&p) {
+            continue;
+        }
+        let (c, i) = xs[0];
+        if c.id == job.id || i == 0 || i + 1 == c.cells.len() {
+            continue;
+        }
+        let Some(d) = direction(c.cells[i - 1], p) else {
+            continue;
+        };
+        if direction(p, c.cells[i + 1]) != Some(d) {
+            continue;
+        }
+        for next in [(d + 1) % 4, (d + 3) % 4] {
+            let pose = poses.iter().find(|&&(def, rotation)| {
+                sufficient(def.capacity.quantity, def.capacity.duration_ms, c.rate)
+                    && [d, next].iter().all(|&axis| {
+                        def.input_directions.iter().any(|&e| {
+                            (cardinal_index(e) + rotation as usize / 90) % 4 == (axis + 2) % 4
+                        }) && def
+                            .output_directions
+                            .iter()
+                            .any(|&e| (cardinal_index(e) + rotation as usize / 90) % 4 == axis)
+                    })
+            });
+            if let Some(&(def, rotation)) = pose {
+                options.insert(
+                    (p, next),
+                    Crossing {
+                        position: p,
+                        direction: next,
+                        component: def.id.clone(),
+                        rotation,
+                        transport: job.transport,
+                        kind: LogisticsComponentKind::Bridge,
+                        carrier_chain: c.id,
+                        carrier_network: c.network,
+                    },
+                );
+            }
+        }
+    }
+    options
+}
 
 pub struct PathOptions<'a> {
     pub first: Option<usize>,

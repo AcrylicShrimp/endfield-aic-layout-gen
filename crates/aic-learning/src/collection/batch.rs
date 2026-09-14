@@ -5,6 +5,13 @@ use aic_torch::tch::{Device, Kind, Tensor};
 use anyhow::{Result, ensure};
 
 pub fn graph(rows: &[&Observation], device: Device) -> Result<Packed> {
+    graph_inputs(
+        &rows.iter().map(|r| r.input.as_ref()).collect::<Vec<_>>(),
+        device,
+    )
+}
+
+pub fn graph_inputs(rows: &[&aic_pilot_native::learning::Input], device: Device) -> Result<Packed> {
     ensure!(
         !rows.is_empty(),
         "aic-learning.collection-batch: empty input"
@@ -13,9 +20,9 @@ pub fn graph(rows: &[&Observation], device: Device) -> Result<Packed> {
     macro_rules! matrix {
         ($name:ident, $n:expr) => {{
             let mut data =
-                Vec::with_capacity(rows.iter().map(|o| o.input.$name.len() * $n as usize).sum());
+                Vec::with_capacity(rows.iter().map(|o| o.$name.len() * $n as usize).sum());
             for o in rows {
-                data.extend_from_slice(o.input.$name.as_flattened());
+                data.extend_from_slice(o.$name.as_flattened());
             }
             let length = data.len() as i64 / $n;
             g.insert(
@@ -38,7 +45,7 @@ pub fn graph(rows: &[&Observation], device: Device) -> Result<Packed> {
     let (mut globals, mut logs, mut masks) = (vec![], vec![], vec![]);
     let (mut no, mut eo) = (0i64, 0i64);
     for (id, row) in rows.iter().enumerate() {
-        let v = &row.input;
+        let v = row;
         for [s, t] in &v.edge_index {
             edge_index[0].push(s + no);
             edge_index[1].push(t + no);
@@ -107,6 +114,7 @@ pub fn graph(rows: &[&Observation], device: Device) -> Result<Packed> {
 }
 
 /// A selected prefix's compatible alternatives, in original port order.
+#[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct Branch {
     pub features: Vec<[f32; 12]>,
     pub history: [f32; 12],
