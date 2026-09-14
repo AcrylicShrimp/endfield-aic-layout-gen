@@ -51,6 +51,8 @@ use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
 use serde::Serialize;
 
+#[cfg(feature = "learning")]
+mod learning;
 mod research;
 
 use research::ResearchCommand;
@@ -72,6 +74,12 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
+    /// Native learning diagnostics (requires the learning build feature).
+    #[cfg(feature = "learning")]
+    Learning {
+        #[command(subcommand)]
+        command: learning::LearningCommand,
+    },
     /// Check whether the external data directory can be read.
     CheckData,
     /// Work with facility catalog data.
@@ -709,6 +717,11 @@ fn run() -> Result<CommandStatus> {
     let cli = Cli::parse();
 
     match cli.command {
+        #[cfg(feature = "learning")]
+        Command::Learning { command } => {
+            learning::run(command)?;
+            Ok(CommandStatus::Success)
+        }
         Command::CheckData => check_data(cli.data_dir).map(|()| CommandStatus::Success),
         Command::Facilities { command } => match command {
             FacilitiesCommand::Validate { file } => validate_facilities(file),

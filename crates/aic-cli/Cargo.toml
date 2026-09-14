@@ -6,8 +6,12 @@ license.workspace = true
 rust-version.workspace = true
 publish = false
 
+[features]
+learning = ["dep:aic-learning", "aic-learning/libtorch"]
+
 [dependencies]
 aic-data.workspace = true
+aic-learning = { workspace = true, optional = true }
 anyhow.workspace = true
 clap.workspace = true
 serde.workspace = true

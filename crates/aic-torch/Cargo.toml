@@ -1,0 +1,21 @@
+[package]
+name = "aic-torch"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[features]
+libtorch = ["dep:tch", "dep:cc", "dep:anyhow"]
+
+[dependencies]
+anyhow = { workspace = true, optional = true }
+tch = { workspace = true, optional = true }
+
+[build-dependencies]
+cc = { workspace = true, optional = true }
+
+# FFI is confined to bridge.rs; the rest of this crate denies unsafe code.
+[lints.rust]
+unsafe_code = "deny"

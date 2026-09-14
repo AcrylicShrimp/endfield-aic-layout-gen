@@ -1,0 +1,12 @@
+optimizer.cpp adapts the noncapturable foreach and fused Adam operation order
+from PyTorch 2.13.0, torch/optim/adam.py, and the foreach L2 clipping order from
+torch/nn/utils/clip_grad.py. The implementation owns named FP32 state and calls
+existing ATen kernels. Unsupported modes are intentionally rejected.
+
+Upstream: https://github.com/pytorch/pytorch
+Installed oracle: 2.13.0+cu130
+Upstream build commit: cf30153c4c131c8164ee7798e5022d810682e2cb
+The upstream copyright notices and license are retained in PYTORCH-LICENSE.
+
+Upgrade gate: rerun diagnostics/rust_learner_compare.py against the same Torch
+version used by tch, including both optimizer modes and process recovery.

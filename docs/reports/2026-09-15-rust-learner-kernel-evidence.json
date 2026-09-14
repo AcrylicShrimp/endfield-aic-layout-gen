@@ -1,0 +1,353 @@
+{
+  "rejections": [
+    {
+      "case": "root-index",
+      "code": "aic-learning.input-index",
+      "rejected": true
+    },
+    {
+      "case": "factor-owner",
+      "code": "aic-learning.input-owner",
+      "rejected": true
+    },
+    {
+      "case": "missing-adam",
+      "code": "aic-learning.tensor-missing",
+      "rejected": true
+    },
+    {
+      "case": "negative-adam",
+      "code": "aic-torch.backend",
+      "rejected": true
+    },
+    {
+      "case": "rng-state",
+      "code": "aic-torch.backend",
+      "rejected": true
+    },
+    {
+      "case": "input-hash",
+      "code": "aic-learning.input-hash",
+      "rejected": true
+    }
+  ],
+  "schema": "aic-rust-learner-comparison-v1",
+  "status": "passed",
+  "results": [
+    {
+      "device": "cpu",
+      "adam_backend": "foreach",
+      "steps": 16,
+      "comparisons": {
+        "forward.safetensors": {
+          "fields": 3,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        },
+        "first-gradients.safetensors": {
+          "fields": 28,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        },
+        "final-forward.safetensors": {
+          "fields": 3,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        },
+        "state": {
+          "fields": 116,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        }
+      },
+      "recovery": {
+        "completed_steps": 16,
+        "exact": true,
+        "left": "artifacts/kernel-gate-final/cpu-foreach/continuous/checkpoint",
+        "right": "artifacts/kernel-gate-final/cpu-foreach/resumed/checkpoint",
+        "schema": "aic-rust-learner-recovery-v1",
+        "status": "passed",
+        "tensor_fields": 116
+      },
+      "rust": {
+        "load_seconds": 0.003293553,
+        "update_seconds": 0.265619125,
+        "checkpoint_seconds": 0.024963683,
+        "total_seconds": 0.307980895
+      },
+      "python": {
+        "load_seconds": 0.003607057995395735,
+        "update_seconds": 0.3192106120113749,
+        "tensor_save_seconds": 0.0013415839930530638,
+        "total_seconds": 0.33074728699284606
+      },
+      "warmup_steps": 4,
+      "rust_warm_mean_seconds": 0.00649552275,
+      "python_warm_mean_seconds": 0.00677579208422685,
+      "checkpoint_bytes": 430225
+    },
+    {
+      "device": "cuda:0",
+      "adam_backend": "foreach",
+      "steps": 16,
+      "comparisons": {
+        "forward.safetensors": {
+          "fields": 3,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        },
+        "first-gradients.safetensors": {
+          "fields": 28,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        },
+        "final-forward.safetensors": {
+          "fields": 3,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        },
+        "state": {
+          "fields": 116,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        }
+      },
+      "recovery": {
+        "completed_steps": 16,
+        "exact": true,
+        "left": "artifacts/kernel-gate-final/cuda-0-foreach/continuous/checkpoint",
+        "right": "artifacts/kernel-gate-final/cuda-0-foreach/resumed/checkpoint",
+        "schema": "aic-rust-learner-recovery-v1",
+        "status": "passed",
+        "tensor_fields": 116
+      },
+      "rust": {
+        "load_seconds": 0.125727327,
+        "update_seconds": 0.325211175,
+        "checkpoint_seconds": 0.020663445,
+        "total_seconds": 0.815882891
+      },
+      "python": {
+        "load_seconds": 0.011997846988379024,
+        "update_seconds": 0.37321901398536284,
+        "tensor_save_seconds": 0.0020356629975140095,
+        "total_seconds": 0.7284462949901354
+      },
+      "warmup_steps": 4,
+      "rust_warm_mean_seconds": 0.0070150554166666665,
+      "python_warm_mean_seconds": 0.007136720665585017,
+      "checkpoint_bytes": 430228
+    },
+    {
+      "device": "cuda:0",
+      "adam_backend": "fused",
+      "steps": 16,
+      "comparisons": {
+        "forward.safetensors": {
+          "fields": 3,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        },
+        "first-gradients.safetensors": {
+          "fields": 28,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        },
+        "final-forward.safetensors": {
+          "fields": 3,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        },
+        "state": {
+          "fields": 116,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        }
+      },
+      "recovery": {
+        "completed_steps": 16,
+        "exact": true,
+        "left": "artifacts/kernel-gate-final/cuda-0-fused/continuous/checkpoint",
+        "right": "artifacts/kernel-gate-final/cuda-0-fused/resumed/checkpoint",
+        "schema": "aic-rust-learner-recovery-v1",
+        "status": "passed",
+        "tensor_fields": 116
+      },
+      "rust": {
+        "load_seconds": 0.1235493,
+        "update_seconds": 0.271422226,
+        "checkpoint_seconds": 0.019141936,
+        "total_seconds": 0.758563108
+      },
+      "python": {
+        "load_seconds": 0.004645565990358591,
+        "update_seconds": 0.11731578099715989,
+        "tensor_save_seconds": 0.0022765140020055696,
+        "total_seconds": 0.1280953009991208
+      },
+      "warmup_steps": 4,
+      "rust_warm_mean_seconds": 0.006945580416666666,
+      "python_warm_mean_seconds": 0.007088027333035522,
+      "checkpoint_bytes": 430226
+    }
+  ],
+  "torch_version": "2.13.0+cu130",
+  "input_manifest_sha256": "dcda0b586729923d865e0fc4645b30a5508584c3a38f727ba643d19883a901f1",
+  "production_cutover": false,
+  "source": {
+    "directory": "/home/ashrimp/Srv/aic-response-opt-20260915/artifacts/shared-normal/seed-149",
+    "checkpoint": "/home/ashrimp/Srv/aic-response-opt-20260915/artifacts/shared-normal/seed-149/checkpoints/0004.pt.gz",
+    "checkpoint_sha256": "3fd948217e3f5f04f24d0c91fb0ef9dcbc2461f3f4ed8dad2b52e85f25566048",
+    "launch_sha256": "caec6f5f5025727477643efb3379258446dcb2519f9c64dcca3b4fd26a787e9e",
+    "source_update": 4,
+    "export_torch_version": "2.13.0+cu130",
+    "native_library_sha256": "c3a9bb58c8ad69ce79261f7b45109194667cbb5bbc5b88fa1f00ccc2f8f6468d",
+    "sequence_ids": [
+      "11442b1b24f9337aa7de1da9e5ff6389df4d5f72c5d503c8ae044900ee23c7e0",
+      "15607866b2524c430d34890697b4b3a21066b411d5fb3757caee35abf417a8ac",
+      "41ebe47c584e8fd41109d32dc01b7ca2f63d0ed713af2fc7806931261ace0bca",
+      "498c7b90ed9e9cb8e162f89f499c92a69dce40bde645f3cacc1c9d81112fd412",
+      "6638cb89a80ead4483e0497df1c8139bd706fd581939f6b8595b74679b7acd23",
+      "6f9e13d76ad9ca165abfc7dca4a5b0c70b6afa7fca7656dd52228cccb86ba3ab",
+      "716324934f6a4eb62f0c0c587fc1e19eedf4500d7ccbff76d6b15cae4951388e",
+      "8b5db01a40d9dd286acd4258c2e61a8af93d3e39b2b6a3f33bafd999be7e096c"
+    ],
+    "references": [
+      [
+        3,
+        1134
+      ],
+      [
+        3,
+        1262
+      ],
+      [
+        1,
+        12
+      ],
+      [
+        1,
+        140
+      ],
+      [
+        1,
+        232
+      ],
+      [
+        1,
+        488
+      ],
+      [
+        1,
+        106
+      ],
+      [
+        1,
+        234
+      ],
+      [
+        3,
+        88
+      ],
+      [
+        3,
+        216
+      ],
+      [
+        1,
+        61
+      ],
+      [
+        1,
+        189
+      ],
+      [
+        1,
+        247
+      ],
+      [
+        1,
+        503
+      ],
+      [
+        3,
+        1093
+      ],
+      [
+        3,
+        1221
+      ]
+    ],
+    "stage_counts": {
+      "place": 8,
+      "delete_band": 7,
+      "insert_band": 1
+    },
+    "positive_replay_labels": 16,
+    "ppo_target_contract": "Frozen recorded-success terminal returns for numerical comparison, not a new on-policy rollout"
+  },
+  "input_tensors_sha256": "193ff893b3fd2f725714d92a3f0534237a30d7986e6598fe6dadfe3d6324d800",
+  "retained_remote": "/home/ashrimp/Srv/aic-rust-learning-20260915/artifacts/kernel-gate-final",
+  "retained_local": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/rust-learner-foundation-20260915/artifacts",
+  "implementation_base_commit": "6be95f46a534e4922d46c762f08a948b28b00810",
+  "implementation_files": {
+    "Cargo.lock": "fa993b5fc073924a0200f3cf378b9dc2724f932154ee6eebe27e76019dbe1618",
+    "Cargo.toml": "138acfd9f58f3463d268d502b053c9c61cfb63f11f8f4424f401261261d5cdbb",
+    "crates/aic-cli/Cargo.toml": "336189e9112c6cba24bca6adb7c2a676205f2090b72a28e630bd175130c0a6c2",
+    "crates/aic-cli/src/learning.rs": "a6a5db6f6ca53de9c8b17d9dfcc021b1e00570036d8c04e6b129c2b7a618b374",
+    "crates/aic-cli/src/main.rs": "4b5bc8041de863609d5b0d4f90d7e82e57408cc6c8194f676a487028d225ed48",
+    "crates/aic-learning/Cargo.toml": "f8afc11295e4c8a36175c4ec82b82045b9f6e7374512737a6aa44695fff0c759",
+    "crates/aic-learning/src/checkpoint.rs": "f297f3cc06fdc8fad300d2b472bee44d92f6314476d39ec60da509000e6cd775",
+    "crates/aic-learning/src/input/validation.rs": "52282923bbe06c0492241854a80a798372916de183dfcd15231df5c19e2d48b9",
+    "crates/aic-learning/src/input.rs": "4da33d6509e9fd2a04f77055ce26fed8934a606472365545fe004c4fac0d9b7d",
+    "crates/aic-learning/src/lib.rs": "0e2ea908a2ae01ffd5cfa1f1487d596ce4a20ed29dffa41664f5f719543d837b",
+    "crates/aic-learning/src/model.rs": "bade23c55cca3e12f11bae28e5f2bd268dd690b3fb173b03c19265b2b8eaacb0",
+    "crates/aic-learning/src/schema.rs": "196d2aec6cfeeadd78d3570162bd1943d4481a04edf45598ed49716ccc4317e1",
+    "crates/aic-learning/src/update.rs": "3a8f90e7fcdd20598a014fb4b62abc3eddeb56270b5ddd9df2f9f77cac0ac780",
+    "crates/aic-learning/src/verify.rs": "0271ba7d4ec9b3872d18973580dee3cbdb20dfcf6ec94d5341921103fe8be1af",
+    "crates/aic-torch/Cargo.toml": "7d1dd2aa9b1a457377cbb50c7cbb3b30e951ddc0c107f9499f25d47f978e6487",
+    "crates/aic-torch/build.rs": "f60ce3479cb157195c65aa77ec6733f42a17c931bc25bdaf40c7399f4be81250",
+    "crates/aic-torch/native/NOTICE": "e02575f0c69bcb17bc5e1bd9e694d36231be745cf423f137216a87a153f7b0bf",
+    "crates/aic-torch/native/PYTORCH-LICENSE": "bd018feef8825e88181c84eb7e3aa4eafb8f08a20d9fd6ef948569610c4a3e43",
+    "crates/aic-torch/native/bridge.cpp": "a69933f3b5aa5269bfaaa6977a746ec4f45214bc8a18801f6c38d508b24c8a4e",
+    "crates/aic-torch/native/optimizer.cpp": "de2ebf1fe8cc90d0dfde80524c2fdaa99ba84d7feda6d83d0e4203c0b33bc7a1",
+    "crates/aic-torch/native/optimizer.h": "015cbe9dd1dab8f1a0b627c2abf40d9cb71d49b06852705c8710ee64506886ea",
+    "crates/aic-torch/src/bridge.rs": "d59665284dcaa543d3345c08e16fa6d54e088dc994bde4f70cc31e32fb2620e2",
+    "crates/aic-torch/src/lib.rs": "51d1e667a463f74662ad2785261d2b63afc3dac106ab62e53edf17fe6e617a35",
+    "crates/aic-torch/src/optimizer.rs": "b219c52c509abec29e607f339065730ff97a32c29e79258a4cb3ff3105fdf135",
+    "crates/aic-torch/src/rng.rs": "ae17518dbcd6d47974c3ff5f536ba55c99f70cd05ff5bfd82973bb219156bbed",
+    "crates/aic-torch/tests/state.rs": "d3b601c1e20be359c21502bb074824d8891a01c9c0fc7a3bccd885cb2126774c",
+    "tools/factory-edit-pilot/diagnostics/rust_learner_compare.py": "c03b9e7524761dfb230384c662468e8ac2b68c845692e28f146dff5a59a23bbf",
+    "tools/factory-edit-pilot/diagnostics/rust_learner_export.py": "99879fe3352ea470e650384421153d4a5a6e722b95d9a5dafb47286d804350f8"
+  },
+  "hardware": "ashrimp-arch / NVIDIA GeForce RTX 5090",
+  "verification": {
+    "local": "cargo check --workspace; cargo test --workspace",
+    "server": "cargo check --workspace --release --features aic-cli/learning; cargo test --workspace --release --features aic-cli/learning",
+    "matrix_steps_per_mode": 16
+  }
+}
