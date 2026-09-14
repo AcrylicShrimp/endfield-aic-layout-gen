@@ -32,7 +32,7 @@ def validate(config):
     traces=config['retention'].get('training_traces',[])
     require(isinstance(traces,list) and all(type(n) is int and n>0 for n in traces) and len(traces)==len(set(traces)),
         'declarative explicit retained diagnostic trace updates')
-    require(training['streams'] in (8,32) and 0<training['chunk_actions']<training['episode_actions'] and
+    require(type(training['streams']) is int and training['streams']>0 and 0<training['chunk_actions']<training['episode_actions'] and
         training['episode_actions']%training['chunk_actions']==0 and
         training['updates']%(training['episode_actions']//training['chunk_actions'])==0, 'declarative complete persistent horizon')
     require(config['native']['schema']=='declarative-edit-v1' and
@@ -60,7 +60,7 @@ def validate(config):
         validate_retention(config['success']['retention'])
         require(config['success']['max_sequences']>0 and config['success']['max_labels']>=training['episode_actions'],
             'declarative replay must fit an entire successful episode')
-    require(training['streams']==8 or config.get('execution')=='logical-stream-pool-v1', 'declarative 32 streams require logical worker execution')
+    require(training['streams']==8 or config.get('execution')=='logical-stream-pool-v1', 'declarative variable stream counts require logical worker execution')
     require(config['seeds'] and len(config['seeds'])==len(set(config['seeds'])), 'declarative unique learner seeds')
 
 

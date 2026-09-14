@@ -13,7 +13,7 @@ import declarative_learning_policy as policy
 class MultiplexPool(BlueprintPool):
     def __init__(self, config, library, cores, output, guard, saved=None):
         count=config['training']['streams'];physical=len(cores)
-        require(count in (8,32) and 1<=physical<=count, 'declarative.batch-pool: physical workers must fit the logical stream count')
+        require(type(count) is int and count>0 and 1<=physical<=count, 'declarative.batch-pool: physical workers must fit the positive logical stream count')
         if saved is not None:require([s['index'] for s in saved]==list(range(count)),'declarative.batch-pool: exact logical restore coverage')
         transport=deepcopy(config);transport['training']['streams']=physical;transport['logical_configuration']=config
         grouped=None if saved is None else [dict(index=i,streams=saved[i::physical]) for i in range(physical)]

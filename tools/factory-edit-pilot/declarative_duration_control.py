@@ -10,8 +10,9 @@ def validate(config):
     duration=config['duration'];training=config['training']
     require(duration['schema']=='declarative-duration-v1' and duration['seconds']>0 and duration['finish_grace_seconds']>0,
         'declarative.duration: positive duration and finalization allowance required')
-    require(len(config['seeds'])==1 and training['streams']==32 and training['chunk_actions']==32 and training['episode_actions']==64,
-        'declarative.duration: one learner, batch 1024 and complete 64-action episodes required')
+    require(len(config['seeds'])==1 and type(training['streams']) is int and training['streams']>0 and
+        training['chunk_actions']==32 and training['episode_actions']==64,
+        'declarative.duration: one learner, positive stream count and complete 64-action episodes required')
     require(config['evaluation']['interval_updates']>0 and config['evaluation']['interval_updates']%2==0,
         'declarative.duration: evaluate at complete episode boundaries')
     require(config['limits']['arm_seconds']==duration['seconds']+duration['finish_grace_seconds'],

@@ -20,6 +20,16 @@ def config():return read(ROOT/'tools/factory-edit-pilot/declarative-four-hour.js
 
 
 class DurationTests(unittest.TestCase):
+    def test_variable_stream_counts_keep_wave_and_execution_contracts(self):
+        for count in (32,64,128,256):
+            c=config();c['training']['streams']=count;c['execution']='logical-stream-pool-v1'
+            validate(c)
+            self.assertIsNone(stop_reason(c,33,15000,True))
+            self.assertEqual(stop_reason(c,34,15000,True),'requested_stop')
+        for count in (0,-1,True,32.5):
+            c=config();c['training']['streams']=count
+            with self.assertRaises(ValueError):validate(c)
+
     def test_registered_config_and_complete_wave_duration_or_requested_stop(self):
         c=config();validate(c)
         self.assertIsNone(stop_reason(c,33,15000,True))

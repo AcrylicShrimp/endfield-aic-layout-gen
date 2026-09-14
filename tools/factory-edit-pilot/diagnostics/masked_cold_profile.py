@@ -18,6 +18,10 @@ from masked_long_training import run
 
 
 def child(args):
+    if args.compile_model:
+        require(not args.profile,'masked-cold-profile.mode: compilation and function profiling are separate probes')
+        from masked_compiled_probe import compiled_run
+        return compiled_run(args.output,args.environment,args.measurement)
     if not args.profile:return run(args.output,args.environment,args.stop_after)
     from blueprint_execution_pool import BlueprintPool
     original=BlueprintPool.__init__
@@ -36,6 +40,7 @@ def main():
     parser.add_argument('--output',type=Path,required=True);parser.add_argument('--environment',type=Path,required=True)
     parser.add_argument('--measurement',type=Path,required=True);parser.add_argument('--stop-after',type=int)
     parser.add_argument('--profile',action='store_true');parser.add_argument('--child',action='store_true')
+    parser.add_argument('--compile-model',action='store_true')
     args=parser.parse_args()
     launch=read(args.output/'launch.json')
     require(launch['masked_long']['probe'],'masked-cold-profile.scope: readiness runs only')

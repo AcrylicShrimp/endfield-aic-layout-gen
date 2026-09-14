@@ -48,9 +48,11 @@ def source_binding(config, library):
     source['code_sha256']=digest(source['files_sha256']);return source
 
 
-def prepare(output, panel, reservation, library, *, probe=False, verification=None, shared=None):
+def prepare(output, panel, reservation, library, *, probe=False, verification=None, shared=None, probe_config=None):
     output=output.resolve();require(not output.exists(),f'masked-long.output: fresh output required: {output}')
-    config=configuration(reservation,probe=probe);source=source_binding(config,library)
+    require(probe or probe_config is None,'masked-long.config: custom configuration is restricted to probes')
+    config=configuration(reservation,probe=probe) if probe_config is None else deepcopy(probe_config)
+    validate(config);source=source_binding(config,library)
     allocation=cpu_allocation(config['execution_options']['workers'])
     p=read(panel)
     require(p['status']=='complete' and len(p['cases'])==32 and
@@ -65,7 +67,8 @@ def prepare(output, panel, reservation, library, *, probe=False, verification=No
             'masked-long.readiness: source/config/panel/allocation differs from completed verification')
     output.mkdir(parents=True)
     if shared:relocate_inputs(shared,output/'training-inputs',config)
-    config['training_input']['directory']=str(output/'training-inputs')
+    if config['training_input']['directory']=='@run' or shared:
+        config['training_input']['directory']=str(output/'training-inputs')
     launch=dict(schema='declarative-learning-launch-v1',config=config,source=source,allocation=allocation,
         panel=bound(panel),verification=bound(FIXED if probe else verification),batch_experiment=True,
         masked_long=dict(protocol=bound(FIXED),probe=probe),created_unix_seconds=time.time())
