@@ -17,11 +17,13 @@ class Budget:
     Reconcile at command entry and arm boundaries, never per training update.
     Shared or unobserved deleted versions remain conservatively charged.
     """
-    def __init__(self,path,limit=None,excluded=()):
+    def __init__(self,path,limit=None,excluded=(),prior_bytes=0):
         self.path=Path(path)
         if self.path.exists():self.value=read(self.path)
-        else:self.value=dict(schema='declarative-quality-storage-v2',limit=limit,bytes=0,
-            excluded=sorted(set(excluded)),versions={},controls={})
+        else:
+            require(type(prior_bytes) is int and 0<=prior_bytes<limit,'quality-study.storage: invalid prior-byte charge')
+            self.value=dict(schema='declarative-quality-storage-v2',limit=limit,bytes=prior_bytes,
+                prior_bytes=prior_bytes,excluded=sorted(set(excluded)),versions={},controls={})
         self.excluded=set(self.value['excluded'])
     def observe(self,path,control=False):
         path=Path(path)

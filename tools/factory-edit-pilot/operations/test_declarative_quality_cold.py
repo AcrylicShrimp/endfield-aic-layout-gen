@@ -8,7 +8,7 @@ from contextlib import nullcontext
 import unittest
 
 sys.path[:0]=[str(Path(__file__).resolve().parents[1]),str(Path(__file__).resolve().parent)]
-from declarative_quality_cold import config_for,zero_proof,prepare,protocol,require_readiness,FIELDS
+from declarative_quality_cold import config_for,zero_proof,prepare,protocol,require_readiness,FIELDS,reservation,bound,remaining_seconds
 from declarative_quality_branch import PROFILES,digest,read,write
 from declarative_quality_observer import fixed_bins,Observer
 from declarative_quality_analysis import allocation
@@ -47,22 +47,52 @@ class ColdTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp);output=root/'arm';panel=root/'panel.json';bank=root/'bank';f=protocol()
             write(panel,dict(schema='declarative-learning-panel-v1',status='complete',cases=[
-                dict(action_seed=f['readiness_action_seed']+i*100,generation_seed=f['readiness_generation_seed']+i*8) for i in range(32)]))
+                dict(action_seed=f['readiness_action_seed']+i*100,generation_seed=f['readiness_generation_seed']+i*8,geometry_identity=f'{i:064x}') for i in range(32)]))
             write(bank/'manifest.json',{'seed_base':f['readiness_generation_seed']});write(bank/'catalogs.json',{})
             with patch('declarative_quality_cold.source_binding',return_value={'code_sha256':'code'}),\
                  patch('declarative_quality_cold.cpu_allocation',return_value={}),\
                  patch('declarative_quality_cold.bank_contract',return_value=({'seed_base':f['readiness_generation_seed']},{})),\
                  patch('declarative_execution_migrate.relocate_inputs',side_effect=OSError('injected publication failure')):
                 with self.assertRaisesRegex(OSError,'publication failure'):
-                    prepare(output,seed=71,profile='score-8',stage='readiness',panel=panel,library='fixture',shared=bank,seconds=600)
+                    prepare(output,seed=71,profile='score-8',stage='readiness',panel=panel,library='fixture',shared=bank,seconds=600,reservation_panels={'readiness':bound(panel)})
             self.assertFalse(output.exists());self.assertFalse(output.with_name('arm.staging').exists())
             write(bank/'manifest.json',{'seed_base':613900000})
             with patch('declarative_quality_cold.source_binding',return_value={'code_sha256':'code'}),\
                  patch('declarative_quality_cold.cpu_allocation',return_value={}),\
                  patch('declarative_quality_cold.bank_contract',return_value=({'seed_base':f['readiness_generation_seed']},{})):
                 with self.assertRaisesRegex(ValueError,'old banks'):
-                    prepare(output,seed=71,profile='score-8',stage='readiness',panel=panel,library='fixture',shared=bank,seconds=600)
+                    prepare(output,seed=71,profile='score-8',stage='readiness',panel=panel,library='fixture',shared=bank,seconds=600,reservation_panels={'readiness':bound(panel)})
             self.assertFalse(output.exists())
+    def test_reservation_requires_both_bound_panels_and_registered_stage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            refs={};f=protocol()
+            for stage,offset in [('development',0),('confirmation',32)]:
+                path=Path(tmp)/(stage+'.json')
+                write(path,dict(schema='declarative-learning-panel-v1',status='complete',cases=[dict(
+                    action_seed=f[stage+'_action_seed']+i*100,generation_seed=f[stage+'_generation_seed']+i*8,
+                    geometry_identity=f'{offset+i:064x}') for i in range(32)]))
+                refs[stage]=bound(path)
+            self.assertEqual(len(reservation(refs)['geometry_sha256']),64)
+            with self.assertRaisesRegex(ValueError,'both scientific'):reservation({'development':refs['development']})
+            path=Path(refs['confirmation']['path']);value=read(path);value['cases'][0]['geometry_identity']='0'*64
+            write(path,value)
+            with self.assertRaisesRegex(ValueError,'changed'):reservation(refs)
+            refs['confirmation']=bound(path)
+            with self.assertRaisesRegex(ValueError,'duplicate'):reservation(refs)
+    def test_original_deadline_and_prior_charges_survive_reload_and_removal(self):
+        f=protocol();deadline=f['wall_deadline_unix_seconds']
+        self.assertEqual(remaining_seconds(f,now=deadline-20000),18000)
+        self.assertEqual(remaining_seconds(f,now=deadline-37),37)
+        self.assertEqual(remaining_seconds(f,now=deadline-20000,cap=600),600)
+        with self.assertRaisesRegex(ValueError,'expired'):remaining_seconds(f,now=deadline)
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp);path=root/'budget.json';budget=Budget(path,1000,prior_bytes=700)
+            file=root/'new';file.write_bytes(b'x'*200);budget.observe(file);budget.save()
+            child=Budget(path);self.assertEqual(child.value['bytes'],900)
+            captured=child.removing(file);file.unlink();child.removed(captured);child.save()
+            self.assertEqual(Budget(path).value['bytes'],700)
+            file.write_bytes(b'x'*301)
+            with self.assertRaisesRegex(ValueError,'ceiling'):Budget(path).observe(file)
     def test_warm_receipt_cannot_authorize_cold_family(self):
         with tempfile.TemporaryDirectory() as tmp:
             path=Path(tmp)/'receipt.json';write(path,dict(schema='declarative-quality-readiness-v1',status='passed'))

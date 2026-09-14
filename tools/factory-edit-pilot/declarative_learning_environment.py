@@ -6,7 +6,7 @@ import time
 
 from blueprint_ppo_store import ROOT, read
 from blueprint_ppo_update import digest, require
-from blueprint_training_input import FreshInputs, validate_input
+from blueprint_training_input import FreshInputs, validate_input, reserved_geometries
 from declarative_learning_input import Catalog, prepare
 from native import load_native
 import declarative_learning_curriculum as curriculum
@@ -23,6 +23,7 @@ class Runtime:
     def __init__(self, config, library):
         validate_input(config)
         self.config = config
+        self.reserved = reserved_geometries(config['training_input'])
         self.module = load_native(library)
         self.catalogs = read(ROOT/config['probe_spec'])['catalogs']
         self.catalog = Catalog(read(ROOT/self.catalogs['facilities']))
@@ -57,6 +58,8 @@ class Runtime:
         else:
             payload, metadata = self.inputs.load(saved['reference'],index,episode)
             if start is not None:metadata=curriculum.annotate(metadata,start,[start['root']['area']])
+        require(metadata['geometry_sha256'] not in self.reserved,
+                'declarative.input-reservation: actual episode geometry is reserved for evaluation')
         if saved is not None:
             require(metadata == saved, 'declarative restored input provenance differs')
         result.original, result.request = payload['original'], payload['request']

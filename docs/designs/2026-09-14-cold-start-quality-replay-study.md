@@ -1,6 +1,6 @@
 # From-scratch quality-weighted replay comparison
 
-Status: accepted after independent proposal review (round 2, PASS_WITH_NOTES). The user explicitly replaced the
+Status: input-separation correction accepted after independent review (correction round 2, PASS_WITH_NOTES). The first implementation stopped on verified leakage. The user explicitly replaced the
 trained-checkpoint transition experiment with training from scratch.
 
 ## Estimand and excluded evidence
@@ -99,15 +99,15 @@ not require success saturation or a minimum cohort count.
 ## Inputs and evaluation separation
 
 Use a newly initialized append-only fresh bank with training generation seed base
-**716900000**, keeping the existing canonical slot mapping and generation contract.
+**718900000**, keeping the existing canonical slot mapping and generation contract.
 Profiles and initialization seeds pair actual fresh files by global slot. Import
 and synchronize only immutable generated files, reject conflicting content and
 preserve each arm's own inherited starts. Do not reuse any historical training
 bank as the new bank's source.
 
 Generate two new 32-factory panels, 16 per size stratum, with two action replicates
-per geometry. Development generation/action seed bases are **716200000/716300000**;
-confirmation uses **717200000/717300000**. Each panel allows 128 generation attempts
+per geometry. Development generation/action seed bases are **718200000/718300000**;
+confirmation uses **719200000/719300000**. Each panel allows 128 generation attempts
 and admits first distinct native-valid geometries, without an edit-outcome filter.
 Exclude all prior panel geometries, including both withdrawn warm-study panels,
 and reject overlap with actual new training or the other panel. Prior panel files
@@ -141,7 +141,7 @@ Average action replicates within geometry, geometries within stratum, the two
 strata equally, and the two initialization endpoints. Rank actual confirmation
 mean area reduction. Report each initialization and stratum, paired differences,
 win/tie/loss counts, native validity/guards, learning curves and real costs.
-Use 10,000 whole-geometry stratified bootstrap resamples, seed **716600000**, with
+Use 10,000 whole-geometry stratified bootstrap resamples, seed **718600000**, with
 both action/model endpoints attached to each geometry. These intervals describe
 panel variability conditional on two observed initializations; they do not
 estimate broad initialization variance. Development used seed 71, so separately
@@ -167,13 +167,13 @@ automatic adoption, main restart or extension after observing results.
 
 Before the scientific run, use a **five-update / 600-second** isolated cold-start
 readiness check: four updates from zero and a one-update same-arm live restore.
-Its generation namespace is separate (**716400000**); its learned state and input
+Its generation namespace is separate (**718400000**); its learned state and input
 bank cannot initialize the study. Reuse existing contract tests and exact-input
 CUDA proof where unchanged. Run the smallest affected proof for the diagnostic
 bin/schema changes. Do not require equal future trajectories under unequal elapsed
 policy inputs or add exact historical replay to normal recovery.
 
-The new scientific run has hard limits of **21,600 seconds (six hours)** including
+The original attempt (superseded by the correction below) had hard limits of **21,600 seconds (six hours)** including
 setup/evaluation/finalization, **1,408 updates**, **12 GiB added artifacts**, unchanged
 **48 GiB process-tree RSS** and **16 GiB disk reserve**. This is a new registered
 budget for a new initialization experiment, not an extension of the stopped warm
@@ -188,3 +188,63 @@ arms and report final actual unique owned bytes. Do not scan trees or save the
 ledger per update; keep state saves at normal checkpoint cadence and ledger saves
 at arm boundaries. This avoids exhausting a storage budget on already deleted
 files while preserving the real limit.
+
+## Input-separation correction after the first cold attempt
+
+The first cold attempt stopped at baseline update 128: four development geometries
+(five training slots) and eight confirmation geometries (22 slots) overlapped
+actual fresh training inputs. Different generation seeds can create identical
+physical geometry; rate differences do not change the existing geometry identity.
+All its quality outcomes are invalid as held-out evidence and excluded from
+selection. Preserve its checkpoint and leakage closeout; no learned state, input
+bank, rankings or panels initialize the replacement. Panels now exclude all five
+prior panels (original, warm development/confirmation, failed cold development/
+confirmation). Only engineering cost and identity evidence may be reused.
+
+Before creating a training bank, derive a canonical reservation containing the
+sorted union of the new development and confirmation geometry hashes, bound to
+both complete panel files. Training input configuration carries this reservation
+under `geometry_reservation` with schema `blueprint-geometry-reservation-v1`.
+Diagnostic readiness reserves its own panel. The normal input generator validates
+this optional contract once and constructs an in-memory set. Existing users with
+no reservation retain their behavior. Every bank manifest includes the reservation
+when supplied; incompatible unreserved or differently reserved banks are rejected.
+
+After a native-valid generation and before blueprint editing, admission or any
+policy action, reject reserved geometry and continue the existing attempt loop.
+Do not increase the eight-attempt or 180-second slot allowance. Keep the original
+generation status and evidence, adding an explicit reservation rejection flag to
+each attempt. Loader validation checks the flag against the bound set, permits
+accepted prefixes only when reserved, and rejects any reserved final admission.
+The canonical slot/seed mapping and paired immutable input reuse remain unchanged.
+Inherited starts can change geometry because they materialize their own parent's
+edited best layout. `Runtime.episode_runtime` therefore checks the already-computed
+actual metadata geometry against a cached reserved set before opening/restoring
+any episode or returning its input. A reserved inherited start fails closed with
+an explicit diagnostic, retaining partial evidence and no winner. Do not change
+donor eligibility, quotas, sampling or fallback behavior. Include the restore
+path and a fixture with an unreserved root but reserved edited parent. Keep the
+existing actual-input overlap check at closeout.
+Count reservation rejection costs from existing attempt metadata at arm boundaries;
+no extra hot-loop journal, scans, hashes, model calls or learning changes.
+
+Readiness must demonstrate actual reserved-input rejection before training, no
+reserved final input, paired reuse and valid live restore/followup. Its panel and
+training namespace intentionally coincide, making first-attempt reservations
+observable without adding training updates. Retain five diagnostic updates and
+600 seconds; source-bind a new receipt. Reuse unchanged CUDA kernel proof.
+
+The replacement still allocates 1,408 updates to the same profiles, endpoints and
+selection rule. Record the failed 128 separately: at most **1,536 total cold
+scientific updates**, of which 128 are discarded. Preserve the original absolute
+six-hour deadline: **1789374130.8190546 Unix seconds**, derived from the first
+attempt start 1789352530.8190546 + 21600. Replacement wall allowance is the lesser
+of 18,000 seconds and time remaining until that deadline, including its setup,
+evaluation and finalization. The original 12 GiB added-artifact cap includes both
+cold attempts and the replacement readiness; carry prior owned bytes as a fixed
+initial charge. RSS/disk reserve caps remain unchanged. No retry or extension
+following another scientific failure. Use a new frozen source/output directory.
+
+Test expired and shortened absolute deadlines and persistence of prior owned-byte
+charges through child budget reloads. The correction above supersedes the original
+attempt allocation; it does not create a second six-hour allowance.

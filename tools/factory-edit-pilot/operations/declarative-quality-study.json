@@ -1,5 +1,5 @@
 {
-  "schema": "declarative-cold-quality-study-v1",
+  "schema": "declarative-cold-quality-study-v2",
   "profiles": [
     "baseline-8",
     "uniform-16",
@@ -16,22 +16,22 @@
   "action_replicates": 2,
   "factories_per_stratum": 16,
   "max_generated_per_panel": 128,
-  "development_generation_seed": 716200000,
-  "development_action_seed": 716300000,
-  "confirmation_generation_seed": 717200000,
-  "confirmation_action_seed": 717300000,
-  "bootstrap_seed": 716600000,
+  "development_generation_seed": 718200000,
+  "development_action_seed": 718300000,
+  "confirmation_generation_seed": 719200000,
+  "confirmation_action_seed": 719300000,
+  "bootstrap_seed": 718600000,
   "bootstrap_resamples": 10000,
   "max_updates": 1408,
-  "max_seconds": 21600,
+  "max_seconds": 18000,
   "max_added_bytes": 12884901888,
   "initialization_seeds": [
     71,
     113
   ],
-  "training_generation_seed": 716900000,
-  "readiness_generation_seed": 716400000,
-  "readiness_action_seed": 716500000,
+  "training_generation_seed": 718900000,
+  "readiness_generation_seed": 718400000,
+  "readiness_action_seed": 718500000,
   "numerical_base": {
     "schema": "declarative-learning-v2",
     "chunk_schema": "declarative-learning-chunk-v2",
@@ -80,7 +80,7 @@
       "kind": "fresh-random",
       "spec": "tools/factory-edit-pilot/random-factory-routing-50k.json",
       "directory": "@run",
-      "seed_base": 716900000,
+      "seed_base": 718900000,
       "max_attempts": 8,
       "episode_setup_seconds": 180,
       "canonical_streams": 1
@@ -137,13 +137,13 @@
       "interval_updates": 32
     },
     "panel": {
-      "seed_base": 716200000,
+      "seed_base": 718200000,
       "strata": {
         "small": 16,
         "large": 16
       },
       "max_generated": 128,
-      "action_seed_base": 716300000
+      "action_seed_base": 718300000
     },
     "retention": {
       "checkpoints": [
@@ -155,7 +155,7 @@
       "training_traces": []
     },
     "readiness": {
-      "seed_base": 716400000,
+      "seed_base": 718400000,
       "warmups": 1,
       "repetitions": 3,
       "cycle_updates": 4,
@@ -192,6 +192,20 @@
     "execution_options": {
       "workers": 16,
       "behavior_device": "cuda:0"
+    }
+  },
+  "total_cold_updates": 1536,
+  "wall_deadline_unix_seconds": 1789374130.8190546,
+  "previous_attempt": {
+    "executed_updates": 128,
+    "owned_bytes": 1315338556,
+    "study": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-start-20260914/artifacts/study/study.json",
+      "sha256": "d85e342e649634f2c0184e50e994560662c7829e78cb159bcaeb258e63e5a536"
+    },
+    "closeout": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-start-20260914/artifacts/study/leakage-closeout.json",
+      "sha256": "14d2400a788359d127a7219e0a29812e2624970df8c40f1ad1c5a6387b79caae"
     }
   }
 }

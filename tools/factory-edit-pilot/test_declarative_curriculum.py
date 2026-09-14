@@ -4,6 +4,7 @@ from pathlib import Path
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from blueprint_ppo_store import ROOT, read
 from blueprint_ppo_update import digest
@@ -87,6 +88,16 @@ class NativeCurriculumTests(unittest.TestCase):
             saved=stream.snapshot();restored=Stream.restore(runtime,saved)
             self.assertEqual(restored.metadata,saved['metadata'])
             self.assertEqual(json.loads(restored.session.observation_json())['initial_metrics'],observation['initial_metrics'])
+            edited_geometry=geometry_identity(row['result']['best'])
+            self.assertNotEqual(metadata['geometry_sha256'],edited_geometry)
+            runtime.reserved=frozenset([edited_geometry])
+            with patch.object(type(runtime),'open',side_effect=AssertionError('opened reserved episode')), \
+                 patch.object(type(runtime),'restore',side_effect=AssertionError('restored reserved episode')):
+                rejected=Stream(runtime,0);rejected.episode=9;rejected.next_start=slot
+                with self.assertRaisesRegex(ValueError,'input-reservation'):rejected.observe()
+                self.assertIsNone(rejected.session);self.assertEqual(rejected.policy_actions,0)
+                with self.assertRaisesRegex(ValueError,'input-reservation'):Stream.restore(runtime,saved)
+            runtime.reserved=frozenset()
             # The second depth retains the same root and the exact new best.
             second=deepcopy(payload);second['completed'][0].update(episode=9,training_input=stream.metadata['training_input'])
             second['completed'][0]['initial_score']=[observation['initial_metrics']['score'][0]+1]

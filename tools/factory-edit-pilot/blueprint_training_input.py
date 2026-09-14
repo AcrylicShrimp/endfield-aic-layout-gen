@@ -16,11 +16,27 @@ GENERATOR_SOURCES = (
 )
 
 
+def reserved_geometries(options):
+    value = options.get('geometry_reservation')
+    if value is None:
+        return frozenset()
+    require(isinstance(value, dict) and set(value) == {'schema', 'geometry_sha256'}
+            and value['schema'] == 'blueprint-geometry-reservation-v1',
+            'blueprint.training-input.reservation: invalid reservation schema')
+    hashes = value['geometry_sha256']
+    require(isinstance(hashes, list) and bool(hashes)
+            and all(isinstance(h, str) and len(h) == 64 and all(c in '0123456789abcdef' for c in h) for h in hashes)
+            and hashes == sorted(set(hashes)),
+            'blueprint.training-input.reservation: canonical unique geometry hashes required')
+    return frozenset(hashes)
+
+
 def validate_input(config):
     value = config.get('training_input', {})
     require(value.get('schema') == SCHEMA, 'blueprint.training-input.schema: declare an explicit training input')
     require(value.get('kind') in ('fresh-random', 'fixed-fixture-diagnostic'),
             'blueprint.training-input.kind: fresh-random or fixed-fixture-diagnostic required')
+    reserved_geometries(value)
     if value['kind'] == 'fixed-fixture-diagnostic':
         require('diagnostic' in config['purpose'] or 'readiness' in config['purpose'],
                 'blueprint.training-input.fixture: fixed inputs are restricted to explicit diagnostics')
@@ -60,6 +76,7 @@ class FreshInputs:
         self.config, self.module, self.blueprint_spec = config, module, blueprint_spec
         self.editor = module.BlueprintEditSession if editor is None else editor
         self.options = config['training_input']
+        self.reserved = reserved_geometries(self.options)
         require(self.options['directory'] != '@run',
                 'blueprint.training-input.directory: prepare the run before opening its private input store')
         self.root = (ROOT / self.options['directory']).resolve()
@@ -77,6 +94,8 @@ class FreshInputs:
             sources={str(p.resolve().relative_to(ROOT)): sha(p) for p in source_paths(config)})
         if 'namespace' in self.options:
             self.contract['namespace'] = deepcopy(self.options['namespace'])
+        if 'geometry_reservation' in self.options:
+            self.contract['geometry_reservation'] = deepcopy(self.options['geometry_reservation'])
         self.native = None
 
     def identity(self, stream, episode):
@@ -109,9 +128,18 @@ class FreshInputs:
             require(attempt['seed'] == record['identity']['first_seed'] + index == generation['generation_seed']
                     and attempt['status'] == generation['status'],
                     'blueprint.training-input.attempts: generation identity/status mismatch')
+            rejected = generation.get('geometry_sha256') in self.reserved
+            if self.reserved:
+                require(type(attempt.get('reservation_rejected')) is bool
+                        and attempt['reservation_rejected'] == rejected,
+                        'blueprint.training-input.reservation: attempt rejection differs from reserved geometry')
+            require(index == len(record['attempts']) - 1 or generation['status'] != 'accepted' or rejected,
+                    'blueprint.training-input.attempts: unreserved accepted prefix')
         require(record['generation_seed'] == record['attempts'][-1]['seed']
                 and record['attempts'][-1]['status'] == 'accepted' and generation['draw'] == record['draw'],
                 'blueprint.training-input.attempts: accepted draw mismatch')
+        require(record['geometry_sha256'] == generation['geometry_sha256'] and not rejected,
+                'blueprint.training-input.reservation: reserved or mismatched final geometry')
         payload = read(checked(record['files']['input'], self.root))
         require(digest(payload) == record['input_sha256'], 'blueprint.training-input.hash: episode payload changed')
         return payload, dict(reference=deepcopy(ref), identity=record['identity'],
@@ -163,7 +191,10 @@ class FreshInputs:
                     case, generation = generate(self.native, self.spec, generation_seed, directory / f'attempt-{attempt}', guard)
                     attempts.append(dict(seed=generation_seed, status=generation['status'],
                         generation=reference(directory / f'attempt-{attempt}/generation.json', self.root)))
-                    if case is None:
+                    rejected = generation.get('geometry_sha256') in self.reserved
+                    if self.reserved:
+                        attempts[-1]['reservation_rejected'] = rejected
+                    if case is None or rejected:
                         continue
                     # Freeze the new blueprint only after randomized complete
                     # factory generation. Setup may change the original wiring;

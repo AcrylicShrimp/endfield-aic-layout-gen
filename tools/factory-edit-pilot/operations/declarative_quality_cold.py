@@ -28,13 +28,52 @@ def check_bound(ref):
 
 def protocol():
     f=read(FIXED)
-    require(f['schema']=='declarative-cold-quality-study-v1' and tuple(f['profiles'])==PROFILES and
-        f['initialization_seeds']==[71,113] and f['max_updates']==1408 and f['max_seconds']==21600 and
+    require(f['schema']=='declarative-cold-quality-study-v2' and tuple(f['profiles'])==PROFILES and
+        f['initialization_seeds']==[71,113] and f['max_updates']==1408 and f['max_seconds']==18000 and
+        f['total_cold_updates']==1536 and f['previous_attempt']['executed_updates']==128 and
+        f['wall_deadline_unix_seconds']==1789374130.8190546 and
         f['development_updates']==f['confirmation_updates']==128,'quality-cold.protocol: unregistered protocol')
     return f
 
 
-def config_for(seed,profile,stage,output,seconds):
+def remaining_seconds(f,*,now=None,cap=None):
+    seconds=min(f['max_seconds'],f['wall_deadline_unix_seconds']-(time.time() if now is None else now))
+    if cap is not None:seconds=min(seconds,cap)
+    require(seconds>0,'quality-cold.deadline: original absolute deadline expired')
+    return seconds
+
+
+def prior_cost(f):
+    value=f['previous_attempt'];study=read(check_bound(value['study']));closeout=read(check_bound(value['closeout']))
+    require(study['status']==closeout['status']=='incomplete' and
+        study['executed_updates']==closeout['executed_updates']==value['executed_updates']==128 and
+        study['began_unix']+21600==f['wall_deadline_unix_seconds'] and
+        type(value['owned_bytes']) is int and 0<value['owned_bytes']<f['max_added_bytes'],
+        'quality-cold.prior: discarded attempt accounting differs')
+    return value['owned_bytes']
+
+
+def reservation(panels):
+    f=protocol();require(set(panels) in ({'readiness'},{'development','confirmation'}),
+        'quality-cold.reservation: both scientific panels or the diagnostic panel required')
+    hashes=[]
+    for stage,ref in panels.items():
+        p=read(check_bound(ref))
+        require(p['schema']=='declarative-learning-panel-v1' and p['status']=='complete' and len(p['cases'])==32,
+            'quality-cold.reservation: complete 32-factory panel required')
+        require(all(c['action_seed']==f[stage+'_action_seed']+i*100 and
+            f[stage+'_generation_seed']<=c['generation_seed']<f[stage+'_generation_seed']+
+            ((f['max_generated_per_panel']+7)//8)*f['numerical_base']['training']['streams']*
+            f['numerical_base']['training_input']['max_attempts'] for i,c in enumerate(p['cases'])),
+            'quality-cold.reservation: registered stage identities required')
+        hashes.extend(c['geometry_identity'] for c in p['cases'])
+    require(len(set(hashes))==len(hashes),'quality-cold.reservation: duplicate panel geometries')
+    result=dict(schema='blueprint-geometry-reservation-v1',geometry_sha256=sorted(hashes))
+    from blueprint_training_input import reserved_geometries
+    reserved_geometries(dict(geometry_reservation=result));return result
+
+
+def config_for(seed,profile,stage,output,seconds,geometry_reservation=None):
     f=protocol();diagnostic=stage=='readiness'
     require((diagnostic and seed==71 and profile=='score-8') or
         (stage=='development' and seed==71 and profile in PROFILES) or
@@ -44,6 +83,7 @@ def config_for(seed,profile,stage,output,seconds):
     c['training'].update(first_update=0,updates=4 if diagnostic else 128)
     c['training_input'].update(directory=str(Path(output).resolve()/'training-inputs'),
         seed_base=f['readiness_generation_seed'] if diagnostic else f['training_generation_seed'])
+    if geometry_reservation is not None:c['training_input']['geometry_reservation']=deepcopy(geometry_reservation)
     c['panel'].update(seed_base=f[stage+'_generation_seed'],action_seed_base=f[stage+'_action_seed'])
     c['retention'].update(checkpoints=[0,1,2,4] if diagnostic else [0,128],training_traces=[],evaluation_traces=[])
     grace=min(300.,seconds/3);c['duration'].update(seconds=seconds-grace,finish_grace_seconds=grace)
@@ -70,7 +110,9 @@ def require_readiness(path,source,allocation):
     require(v['schema']=='declarative-cold-quality-readiness-v1' and v['status']=='passed' and
         v['protocol']==bound(FIXED) and v['numerical_base_sha256']==digest(f['numerical_base']) and
         v['source']==source and v['allocation']['workers']==allocation['workers'] and
-        v['executed_updates']==5 and v['seconds']<=600 and v['continuity_closed'],
+        v['executed_updates']==5 and v['seconds']<=600 and v['continuity_closed'] and
+        v['reservation_cost']['rejected_attempts']>0 and
+        v['wall_deadline_unix_seconds']==f['wall_deadline_unix_seconds'],
         'quality-cold.readiness: stale or unregistered cold family receipt')
     check_bound(v['cuda_proof']);return v
 
@@ -97,9 +139,11 @@ def zero_proof(saved,job):
     return {k:digest(saved[k]) for k in FIELDS}
 
 
-def prepare(output,*,seed,profile,stage,panel,library,shared,seconds,readiness=None,selection=None):
+def prepare(output,*,seed,profile,stage,panel,library,shared,seconds,reservation_panels,readiness=None,selection=None):
     output=Path(output).resolve();require(not output.exists(),f'quality-cold.output: fresh directory required {output}')
-    config=config_for(seed,profile,stage,output,seconds);diagnostic=stage=='readiness'
+    reserved=reservation(reservation_panels)
+    require(reservation_panels.get(stage)==bound(panel),'quality-cold.reservation: active panel binding differs')
+    config=config_for(seed,profile,stage,output,seconds,reserved);diagnostic=stage=='readiness'
     source=source_binding(config,library);allocation=cpu_allocation(config['execution_options']['workers'])
     if not diagnostic:require_readiness(readiness,source,allocation)
     if stage=='confirmation':
@@ -124,7 +168,8 @@ def prepare(output,*,seed,profile,stage,panel,library,shared,seconds,readiness=N
         relocate_inputs(shared,staging/'training-inputs',config)
         launch=dict(schema='declarative-learning-launch-v1',config=config,source=source,allocation=allocation,
             panel=bound(panel),verification=bound(FIXED if diagnostic else readiness),batch_experiment=True,
-            cold_origin=dict(directory=str(output),seed=seed,profile=profile,stage=stage,protocol=bound(FIXED)),
+            cold_origin=dict(directory=str(output),seed=seed,profile=profile,stage=stage,protocol=bound(FIXED),
+                reservation_panels=deepcopy(reservation_panels)),
             created_unix_seconds=time.time())
         write(staging/'launch.json',launch);identity=sha(staging/'launch.json')
         learner=Learner(seed,config,identity);saved=learner.checkpoint(None)

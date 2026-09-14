@@ -5,7 +5,7 @@ from pathlib import Path
 import time
 
 from declarative_quality_cold import (BASE,ROOT,FIXED,FIELDS,bound,check_bound,config_for,endpoint,monitor,
-    new_bank,prepare,protocol,source_check)
+    new_bank,prepare,protocol,source_check,reservation,remaining_seconds,prior_cost)
 from declarative_quality_branch import PROFILES,checked,digest,load,read,require,source_binding,write
 from declarative_quality_storage import Budget
 from blueprint_execution_resources import ResourceGuard,cpu_allocation
@@ -14,8 +14,9 @@ from blueprint_execution_resources import ResourceGuard,cpu_allocation
 def verify(args):
     from declarative_quality_study import panel,child
     began=time.monotonic();f=protocol();output=args.output.resolve()
+    allowance=remaining_seconds(f,cap=600);prior_bytes=prior_cost(f)
     require(not output.exists(),'quality-cold.readiness: fresh diagnostic directory required')
-    main=monitor(args.monitor_main);config=config_for(71,'score-8','readiness',output/'uninterrupted',600)
+    main=monitor(args.monitor_main);config=config_for(71,'score-8','readiness',output/'uninterrupted',allowance)
     source=source_binding(config,args.library);cuda=read(args.cuda_proof)
     require(cuda['schema']=='declarative-quality-cuda-proof-v1' and cuda['status']=='passed' and
         [r['profile'] for r in cuda['rows']]==list(PROFILES) and all(r['device']=='cuda:0' and r['nonempty_adam'] for r in cuda['rows']),
@@ -29,13 +30,15 @@ def verify(args):
         require(cuda['source']['files_sha256']['tools/factory-edit-pilot/'+name]==sha(BASE/name),
             f'quality-cold.readiness: CUDA-verified execution core changed: {name}')
     require(cuda['source']['native_sha256']==source['native_sha256'],'quality-cold.readiness: CUDA native changed')
-    output.mkdir();guard=ResourceGuard(output,600,config['limits']['matrix_rss_bytes'],config['limits']['min_free_bytes'])
-    guard.began=began;budget=Budget(output/'storage-budget.json',f['max_added_bytes'])
+    output.mkdir();guard=ResourceGuard(output,allowance,config['limits']['matrix_rss_bytes'],config['limits']['min_free_bytes'])
+    guard.began=began;budget=Budget(output/'storage-budget.json',f['max_added_bytes'],prior_bytes=prior_bytes)
     try:
         diagnostic_panel=panel(config,args.library,output/'panel','readiness',f,set(),guard)
+        panel_refs={'readiness':diagnostic_panel};reserved=reservation(panel_refs)
+        config=config_for(71,'score-8','readiness',output/'uninterrupted',allowance,reserved)
         shared=output/'fresh-bank';new_bank(shared,config,args.library)
         proof=prepare(output/'uninterrupted',seed=71,profile='score-8',stage='readiness',panel=diagnostic_panel['path'],
-            library=args.library,shared=shared,seconds=600-(time.monotonic()-began))
+            library=args.library,shared=shared,seconds=allowance-(time.monotonic()-began),reservation_panels=panel_refs)
         budget.scan(output);budget.save();child(output/'uninterrupted',args.environment,budget,guard)
         left=endpoint(output/'uninterrupted');right_before=endpoint(output/'restored',complete=False)
         recovery=read(output/'restored/diagnostic-recovery.json')
@@ -44,7 +47,7 @@ def verify(args):
             'quality-cold.readiness: exact saved checkpoint identity differs')
         from declarative_learning_environment import Runtime,Stream
         from declarative_learning_verify_curriculum import compare_restore
-        runtime=Runtime(config,args.library);snapshots=[]
+        runtime=Runtime(left['launch']['config'],args.library);snapshots=[]
         for state in right_before['saved']['streams']:
             guard();require(state['native'] is not None and state['policy_actions']==32,'quality-cold.readiness: expected live checkpoint')
             restored=Stream.restore(runtime,state);snapshot=restored.snapshot();a,b=deepcopy(state),deepcopy(snapshot)
@@ -82,6 +85,10 @@ def verify(args):
                 require(indices<=chunk['samples'].keys(),'quality-cold.readiness: missing required replay/live rows')
             coverage.append(dict(branch=v['directory'].name,sources=len(needed),rows=sum(map(len,needed.values()))))
         require(monitor(args.monitor_main)==main,'quality-cold.main: paused main changed')
+        from declarative_quality_study import disjoint,reservation_cost
+        disjoint([read(diagnostic_panel['path'])],left['job']['inputs'])
+        rejected=reservation_cost(left)
+        require(rejected['rejected_attempts']>0,'quality-cold.readiness: no actual pre-admission reservation rejection exercised')
         budget.scan(output);budget.save();guard()
         result=dict(schema='declarative-cold-quality-readiness-v1',status='passed',continuity_closed=True,
             protocol=bound(FIXED),numerical_base_sha256=digest(f['numerical_base']),source=source,
@@ -90,6 +97,8 @@ def verify(args):
             initial_proof=bound(output/'uninterrupted/quality-branch.json'),live_streams_restored=len(snapshots),
             exact_saved_state_sha256=recovery['saved_state_sha256'],unchanged_native_limits=True,
             future_trajectory_equality_required=False,resource=guard.last,actual_added=budget.actual(output),
+            reservation=reserved,reservation_cost=rejected,prior_owned_bytes=prior_bytes,
+            charged_total_bytes=budget.value['bytes'],wall_deadline_unix_seconds=f['wall_deadline_unix_seconds'],
             scope='Registered cold family only. Diagnostic 0→4 plus exact same-origin live 1→2; no inherited scientific state.')
         write(output/'readiness.json',result);return result
     except BaseException as error:

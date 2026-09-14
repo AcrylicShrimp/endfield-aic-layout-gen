@@ -118,6 +118,15 @@ def child(branch,environment,budget,guard):
     budget.value=read(budget.path)
 
 
+def reservation_cost(value):
+    bank=Path(value['launch']['config']['training_input']['directory']);slots=attempts=rejected=0;seconds=0.
+    for row in value['job']['inputs'].values():
+        if row.get('start_curriculum',{}).get('depth',0)!=0:continue
+        record=read(checked(row['reference'],bank));slots+=1;attempts+=len(record['attempts'])
+        rejected+=sum(a.get('reservation_rejected',False) for a in record['attempts']);seconds+=record['setup_seconds']
+    return dict(fresh_slots=slots,generation_attempts=attempts,rejected_attempts=rejected,setup_seconds=seconds)
+
+
 def summarize(branch,panels,first_slot,shared,guard):
     value=endpoint(branch);disjoint(panels,value['job']['inputs']);normal=report(branch)
     require(normal['evaluation']['geometry_disjoint']==len(panels[0]['cases']),
@@ -143,24 +152,30 @@ def summarize(branch,panels,first_slot,shared,guard):
         read(checked(ref,owner))['rows'],panel_value,config['strata'])],config['strata'])) for ref in job['evaluation']]
     result['mechanism_activity']=dict(buffer_entries=[r['buffer']['own_entries'] for r in records],
         evictions=sum(e['kind']=='evicted' for r in records for e in r['events']))
+    result['reservation_cost']=reservation_cost(value)
     write(Path(branch)/'quality-summary.json',result);return result
 
 
 def run(args):
-    from declarative_quality_cold import protocol,config_for,monitor,new_bank,require_readiness,pure_evaluate
+    from declarative_quality_cold import protocol,config_for,monitor,new_bank,require_readiness,pure_evaluate,reservation,remaining_seconds,prior_cost
     began=time.monotonic();fixed=protocol();config=deepcopy(fixed['numerical_base'])
+    allowance=remaining_seconds(fixed);prior_bytes=prior_cost(fixed)
     output=args.output.resolve();require(not output.exists(),'quality-cold.output: fresh study directory required')
     main=monitor(args.monitor_main);source=source_binding(config,args.library)
     readiness=require_readiness(args.readiness,source,cpu_allocation(config['execution_options']['workers']))
     require(readiness['main']==main,'quality-cold.main: changed paused main after readiness')
-    output.mkdir();guard=ResourceGuard(output,fixed['max_seconds'],config['limits']['matrix_rss_bytes'],config['limits']['min_free_bytes'])
-    guard.began=began;guard();budget=Budget(output/'storage-budget.json',fixed['max_added_bytes'])
+    require(readiness['prior_owned_bytes']==prior_bytes,'quality-cold.prior: readiness omitted prior owned bytes')
+    output.mkdir();guard=ResourceGuard(output,allowance,config['limits']['matrix_rss_bytes'],config['limits']['min_free_bytes'])
+    guard.began=began;guard();budget=Budget(output/'storage-budget.json',fixed['max_added_bytes'],
+        prior_bytes=readiness['charged_total_bytes'])
     prior_paths=args.prior_panel
-    require(len(prior_paths)>=3,'quality-cold.panel: original and both withdrawn study panels required')
+    require(len(prior_paths)>=5,'quality-cold.panel: original and both warm/failed-cold panel pairs required')
     prior=[read(p) for p in prior_paths];excluded={c['geometry_identity'] for p in prior for c in p['cases']}
     receipt=dict(schema=fixed['schema'],status='running',config=bound(FIXED),source=source,main=main,
         readiness=bound(args.readiness),prior_panels=[bound(p) for p in prior_paths],began_unix=time.time(),
-        arms=[],executed_updates=0,main_resumed=False)
+        arms=[],executed_updates=0,discarded_updates=128,total_cold_updates=128,main_resumed=False,
+        prior_owned_bytes=prior_bytes,readiness_added=readiness['actual_added'],wall_allowance_seconds=allowance,
+        wall_deadline_unix_seconds=fixed['wall_deadline_unix_seconds'])
     write(output/'study.json',receipt)
     try:
         panels={}
@@ -169,14 +184,15 @@ def run(args):
             excluded.update(c['geometry_identity'] for c in read(panels[stage]['path'])['cases'])
             budget.scan(output/(stage+'-panel'));budget.save();guard()
         receipt['panels']=panels;write(output/'study.json',receipt)
-        shared=output/'fresh-bank';new_bank(shared,config_for(71,'baseline-8','development',output/'bank-owner',21600),args.library)
+        reserved=reservation(panels)
+        shared=output/'fresh-bank';new_bank(shared,config_for(71,'baseline-8','development',output/'bank-owner',allowance,reserved),args.library)
         panel_values=[read(panels[s]['path']) for s in panels];disjoint(panel_values,{})
         development={};initial_dev=None;initial_confirm=None;initial_models={}
         def arm(profile,stage,seed,cached=None):
             guard();directory=output/f'{stage}-seed{seed}-{profile}'
             if stage=='confirmation':check_bound(receipt['selection'])
             proof=prepare(directory,seed=seed,profile=profile,stage=stage,panel=check_bound(panels[stage]),
-                library=args.library,shared=shared,seconds=fixed['max_seconds']-(time.monotonic()-began),readiness=args.readiness,
+                library=args.library,shared=shared,seconds=allowance-(time.monotonic()-began),readiness=args.readiness,reservation_panels=panels,
                 selection=check_bound(receipt['selection']) if stage=='confirmation' else None)
             model=proof['preserved']['model']
             require(seed not in initial_models or initial_models[seed]==model,'quality-cold.initial: paired initial models differ')
@@ -190,6 +206,7 @@ def run(args):
             summary=summarize(directory,panel_values,0,shared,guard);summary['initialization_seed']=seed
             write(directory/'quality-summary.json',summary)
             receipt['executed_updates']+=summary['updates'];require(receipt['executed_updates']<=1408,'quality-cold.updates: ceiling exceeded')
+            receipt['total_cold_updates']=128+receipt['executed_updates']
             receipt.pop('active_arm');receipt['arms'].append(dict(stage=stage,profile=profile,seed=seed,summary=bound(directory/'quality-summary.json')))
             budget.scan(directory);budget.scan(shared);budget.save();guard()
             receipt.update(seconds=time.monotonic()-began,conservative_added_bytes=budget.value['bytes'],initial_models=initial_models)
@@ -213,7 +230,7 @@ def run(args):
             branch=development[profile][0];destination=output/f'confirmation-seed71-{profile}'
             command_child(branch/'confirmation-console.log',['evaluate','--branch',str(branch),'--panel',str(check_bound(panels['confirmation'])),
                 '--selection',str(selection_path),'--output',str(destination),'--budget',str(budget.path),
-                '--seconds',str(fixed['max_seconds']-(time.monotonic()-began))],guard)
+                '--seconds',str(allowance-(time.monotonic()-began))],guard)
             pure=read(destination/'pure-evaluation.json');ev=read(check_bound(pure['evaluation']))
             first_confirmation[profile]=geometry_outcomes(ev['rows'],panel_values[1],config['strata'])
             receipt.setdefault('pure_confirmation',{})[profile]=bound(destination/'pure-evaluation.json')
@@ -231,6 +248,7 @@ def run(args):
             conclusion='Bounded early learning across two observed random initializations with paired fresh inputs; not convergence.')
         budget.scan(output);budget.save();guard()
         receipt.update(seconds=time.monotonic()-began,conservative_added_bytes=budget.value['bytes'],actual_added=budget.actual(output),resource=guard.last)
+        receipt['cumulative_actual_added_bytes']=prior_bytes+readiness['actual_added']['bytes']+receipt['actual_added']['bytes']
         write(output/'study.json',receipt);return receipt
     except BaseException as error:
         active=receipt.get('active_arm')
@@ -239,6 +257,7 @@ def run(args):
             if job_path.exists():
                 job=read(job_path);receipt['partial_arm']=dict(active,completed_update=job['update'],checkpoint=job['latest_checkpoint'])
                 receipt['executed_updates']+=job['update']
+        receipt['total_cold_updates']=128+receipt['executed_updates']
         receipt.update(status='incomplete',seconds=time.monotonic()-began,diagnostic=dict(code='quality-cold.failed',
             severity='error',stage='study',message=str(error),entity=str(output)),ranking=None)
         write(output/'study.json',receipt);raise
