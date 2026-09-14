@@ -300,5 +300,27 @@
     }
   ],
   "artifact_tree_contract": "SHA-256 of compact sorted-key JSON list in lexicographic path order, each entry contains path, bytes, sha256",
-  "comparison_limit": "Same actual inputs, initial numerical state, replay, native dimensions and actions; different actual timing observations. Cost reduction includes intentionally removed porting outputs. Not full training throughput."
+  "comparison_limit": "Same actual inputs, initial numerical state, replay, native dimensions and actions; different actual timing observations. Cost reduction includes intentionally removed porting outputs. Not full training throughput.",
+  "throughput": {
+    "new_samples": 8192,
+    "formula": "new_samples * 60 / elapsed_seconds",
+    "collection_only": {
+      "seconds": 3.3198752030000005,
+      "samples_per_minute": 148053.75803157862
+    },
+    "current_cli": {
+      "seconds": 4.622367904,
+      "samples_per_minute": 106335.11010117987
+    },
+    "external_process_measurement": {
+      "seconds": 5.576712269001291,
+      "samples_per_minute": 88137.9523078791
+    },
+    "python_last_full_workflow": {
+      "samples_per_minute": 24330.100779146254,
+      "source": "2026-09-15-response-restoration-evidence.json#/normal",
+      "scope": "Warmed committed-record interval: collection, full PPO and ordinary publication"
+    },
+    "comparison": "Rust CLI currently applies one minibatch per chunk; its throughput is not comparable to full Python training throughput. Existing completed measurement reused without rerunning the same workload."
+  }
 }

@@ -44,6 +44,27 @@ trajectories. A retained-array regression separately proves the unchanged update
 math exactly. An intermediate cleanup run without buffered JSON took 13.064 s
 inside the CLI, exposing how much per-token writes still cost.
 
+## Samples per minute
+
+Normalize the retained completed cleanup measurement as
+`new transitions * 60 / elapsed seconds`. Each leg contains 8,192 new transitions;
+replay labels and repeated PPO uses do not increase the sample count. The existing
+measurement is sufficient for this conversion, so the workload was not rerun.
+
+| Measured scope | New samples/min |
+| --- | ---: |
+| Rust collection only | 148,054 |
+| Current Rust CLI, including admission, two minibatches and persistence | 106,335 |
+| Rust external measurement, including startup/exit and monitor polling | 88,138 |
+| Last Python full workflow, warmed committed-record interval | 24,330 |
+
+The Python figure is confirmed by
+[the prior normal-run report](2026-09-15-response-restoration-throughput.md).
+It includes full PPO scheduling and ordinary publication. The Rust command still
+performs only one minibatch per chunk; neither its CLI nor collection-only rate
+establishes a whole-training speedup over Python. A comparable Rust full-workflow
+samples/min figure remains unavailable until the remaining training stages exist.
+
 ## Verification
 
 - Default workspace check/tests: 552 passed, three explicitly ignored. Release
