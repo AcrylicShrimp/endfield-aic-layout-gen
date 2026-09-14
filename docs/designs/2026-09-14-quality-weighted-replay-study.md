@@ -1,7 +1,10 @@
 # Quality-weighted successful-experience learning study
 
-Status: accepted; learning protocol passed round 2 and the time-aware readiness
-correction passed independent round 3 review after actual execution evidence.
+Status: superseded by the user's request for a from-scratch comparison. The
+trained-checkpoint study was stopped after 348 updates; its scientific outcomes
+are withdrawn from the new comparison. The protocol below is a historical record.
+It previously passed round 2 and its time-aware readiness correction passed
+independent round 3 review.
 
 ## Purpose and discarded evidence
 

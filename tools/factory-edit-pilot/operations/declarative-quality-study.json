@@ -1,0 +1,21 @@
+{
+  "schema": "declarative-quality-study-v1",
+  "profiles": ["baseline-8", "uniform-16", "uniform-32", "gain-8", "score-8", "geometry-8", "priority-8", "protected-score-8"],
+  "development_updates": 32,
+  "confirmation_updates": 96,
+  "training_replicates": 2,
+  "action_replicates": 2,
+  "factories_per_stratum": 16,
+  "max_generated_per_panel": 128,
+  "development_generation_seed": 714200000,
+  "development_action_seed": 714300000,
+  "confirmation_generation_seed": 715200000,
+  "confirmation_action_seed": 715300000,
+  "second_action_seed": 714400029,
+  "second_shuffle_seed": 714500029,
+  "bootstrap_seed": 714600000,
+  "bootstrap_resamples": 10000,
+  "max_updates": 736,
+  "max_seconds": 14400,
+  "max_added_bytes": 12884901888
+}
