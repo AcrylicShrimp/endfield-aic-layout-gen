@@ -1,0 +1,1373 @@
+{
+  "schema": "cold-quality-posthoc-regression-manifest-v1",
+  "analysis": {
+    "schema": "cold-quality-posthoc-regression-v1",
+    "arms": [
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "baseline-8",
+        "curve": {
+          "0": {
+            "mean": 2.584875828819537,
+            "by_stratum": {
+              "small": 4.495417371468924,
+              "large": 0.6743342861701496
+            }
+          },
+          "32": {
+            "mean": 28.698237954602867,
+            "by_stratum": {
+              "small": 43.22100464734024,
+              "large": 14.1754712618655
+            }
+          },
+          "64": {
+            "mean": 32.06083650546484,
+            "by_stratum": {
+              "small": 48.53209677649397,
+              "large": 15.58957623443571
+            }
+          },
+          "96": {
+            "mean": 31.935774373851476,
+            "by_stratum": {
+              "small": 47.67207087892667,
+              "large": 16.199477868776285
+            }
+          },
+          "128": {
+            "mean": 33.00343595512858,
+            "by_stratum": {
+              "small": 48.99029519995035,
+              "large": 17.01657671030681
+            }
+          }
+        },
+        "comparisons": {
+          "64-128": {
+            "mean_delta_pp": 0.9425994496637387,
+            "by_stratum_delta_pp": {
+              "small": 0.4581984234563822,
+              "large": 1.4270004758711012
+            },
+            "geometry_outcomes": {
+              "win": 16,
+              "loss": 12,
+              "tie": 4
+            },
+            "interval_95_pp": [
+              -1.6669082018652845,
+              3.484378179338782
+            ],
+            "gross_loss_pp": 2.50186372685995,
+            "gross_gain_pp": 3.444463176523692,
+            "top_five_gross_loss_share": 0.691648581223873,
+            "both_actions_decline": 5,
+            "by_product_delta_pp": {
+              "copper-liquid": -0.03327847776255877,
+              "food": 4.838191081228036,
+              "medical": -1.9841901294858337,
+              "watered-grass": 0.9496753246753231
+            }
+          },
+          "96-128": {
+            "mean_delta_pp": 1.067661581277104,
+            "by_stratum_delta_pp": {
+              "small": 1.3182243210236908,
+              "large": 0.817098841530526
+            },
+            "geometry_outcomes": {
+              "win": 17,
+              "tie": 4,
+              "loss": 11
+            },
+            "interval_95_pp": [
+              -1.634810563558403,
+              3.608311975049446
+            ],
+            "gross_loss_pp": 2.136219649402505,
+            "gross_gain_pp": 3.203881230679613,
+            "top_five_gross_loss_share": 0.8575338606837607,
+            "both_actions_decline": 2,
+            "by_product_delta_pp": {
+              "copper-liquid": -3.5902347559722223,
+              "food": 2.6837307708116924,
+              "medical": -1.0495330877506404,
+              "watered-grass": 6.226683398019604
+            }
+          }
+        }
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "priority-8",
+        "curve": {
+          "0": {
+            "mean": 2.584875828819537,
+            "by_stratum": {
+              "small": 4.495417371468924,
+              "large": 0.6743342861701496
+            }
+          },
+          "32": {
+            "mean": 26.995620678085864,
+            "by_stratum": {
+              "small": 43.259792433776106,
+              "large": 10.731448922395625
+            }
+          },
+          "64": {
+            "mean": 29.498573079330633,
+            "by_stratum": {
+              "small": 41.012414007987196,
+              "large": 17.984732150674066
+            }
+          },
+          "96": {
+            "mean": 30.932369609889918,
+            "by_stratum": {
+              "small": 46.142182896725124,
+              "large": 15.722556323054707
+            }
+          },
+          "128": {
+            "mean": 33.934036035192484,
+            "by_stratum": {
+              "small": 49.73672579218843,
+              "large": 18.13134627819654
+            }
+          }
+        },
+        "comparisons": {
+          "64-128": {
+            "mean_delta_pp": 4.435462955861851,
+            "by_stratum_delta_pp": {
+              "small": 8.72431178420124,
+              "large": 0.1466141275224736
+            },
+            "geometry_outcomes": {
+              "win": 21,
+              "loss": 6,
+              "tie": 5
+            },
+            "interval_95_pp": [
+              2.2879113698908182,
+              6.617839050924562
+            ],
+            "gross_loss_pp": 0.912465373388321,
+            "gross_gain_pp": 5.347928329250177,
+            "top_five_gross_loss_share": 0.9704759698744765,
+            "both_actions_decline": 1,
+            "by_product_delta_pp": {
+              "copper-liquid": 9.649568405584997,
+              "food": 0.1491179016122449,
+              "medical": 0.1441103534327023,
+              "watered-grass": 7.79905516281748
+            }
+          },
+          "96-128": {
+            "mean_delta_pp": 3.0016664253025667,
+            "by_stratum_delta_pp": {
+              "small": 3.594542895463311,
+              "large": 2.4087899551418324
+            },
+            "geometry_outcomes": {
+              "win": 18,
+              "loss": 8,
+              "tie": 6
+            },
+            "interval_95_pp": [
+              1.2504935526247676,
+              4.897282215490665
+            ],
+            "gross_loss_pp": 0.5971580299735604,
+            "gross_gain_pp": 3.5988244552761324,
+            "top_five_gross_loss_share": 0.8139377370912119,
+            "both_actions_decline": 1,
+            "by_product_delta_pp": {
+              "copper-liquid": 3.0521865824449024,
+              "food": 2.8005565874203135,
+              "medical": 2.017023322863351,
+              "watered-grass": 4.13689920848172
+            }
+          }
+        }
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "uniform-16",
+        "curve": {
+          "0": {
+            "mean": 2.584875828819537,
+            "by_stratum": {
+              "small": 4.495417371468924,
+              "large": 0.6743342861701496
+            }
+          },
+          "32": {
+            "mean": 27.82272441437987,
+            "by_stratum": {
+              "small": 40.95208414288196,
+              "large": 14.693364685877778
+            }
+          },
+          "64": {
+            "mean": 32.89078279936883,
+            "by_stratum": {
+              "small": 48.42862480795235,
+              "large": 17.352940790785304
+            }
+          },
+          "96": {
+            "mean": 31.74088641587948,
+            "by_stratum": {
+              "small": 45.342507901308004,
+              "large": 18.139264930450953
+            }
+          },
+          "128": {
+            "mean": 32.36575111184965,
+            "by_stratum": {
+              "small": 45.26036476039601,
+              "large": 19.47113746330328
+            }
+          }
+        },
+        "comparisons": {
+          "64-128": {
+            "mean_delta_pp": -0.5250316875191814,
+            "by_stratum_delta_pp": {
+              "small": -3.1682600475563483,
+              "large": 2.118196672517976
+            },
+            "geometry_outcomes": {
+              "win": 12,
+              "loss": 13,
+              "tie": 7
+            },
+            "interval_95_pp": [
+              -3.319075309126222,
+              2.40578784038213
+            ],
+            "gross_loss_pp": 3.4498957740235965,
+            "gross_gain_pp": 2.92486408650441,
+            "top_five_gross_loss_share": 0.63497823841016,
+            "both_actions_decline": 4,
+            "by_product_delta_pp": {
+              "copper-liquid": -4.278365981847746,
+              "food": 4.585833879350118,
+              "medical": -0.3494405343141658,
+              "watered-grass": -2.058154113264951
+            }
+          },
+          "96-128": {
+            "mean_delta_pp": 0.6248646959701674,
+            "by_stratum_delta_pp": {
+              "small": -0.08214314091199626,
+              "large": 1.331872532852326
+            },
+            "geometry_outcomes": {
+              "win": 12,
+              "loss": 10,
+              "tie": 10
+            },
+            "interval_95_pp": [
+              -1.3825542421666424,
+              2.665756015259574
+            ],
+            "gross_loss_pp": 1.8060650875704352,
+            "gross_gain_pp": 2.4309297835406,
+            "top_five_gross_loss_share": 0.786047027519759,
+            "both_actions_decline": 2,
+            "by_product_delta_pp": {
+              "copper-liquid": -2.504600934330763,
+              "food": 2.9391754554441576,
+              "medical": -0.2754303897395054,
+              "watered-grass": 2.34031465250677
+            }
+          }
+        }
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "baseline-8",
+        "curve": {
+          "0": {
+            "mean": 1.8624887107545482,
+            "by_stratum": {
+              "small": 3.2498504219603843,
+              "large": 0.4751269995487122
+            }
+          },
+          "32": {
+            "mean": 11.691418743165702,
+            "by_stratum": {
+              "small": 18.05893226724847,
+              "large": 5.323905219082933
+            }
+          },
+          "64": {
+            "mean": 22.984635234604333,
+            "by_stratum": {
+              "small": 27.33872084375785,
+              "large": 18.63054962545082
+            }
+          },
+          "96": {
+            "mean": 23.6381365250188,
+            "by_stratum": {
+              "small": 28.945815343738865,
+              "large": 18.330457706298734
+            }
+          },
+          "128": {
+            "mean": 20.28673279587362,
+            "by_stratum": {
+              "small": 24.287768358286453,
+              "large": 16.285697233460787
+            }
+          }
+        },
+        "comparisons": {
+          "64-128": {
+            "mean_delta_pp": -2.697902438730715,
+            "by_stratum_delta_pp": {
+              "small": -3.0509524854713996,
+              "large": -2.3448523919900284
+            },
+            "geometry_outcomes": {
+              "loss": 17,
+              "tie": 8,
+              "win": 7
+            },
+            "interval_95_pp": [
+              -5.7144406518852815,
+              0.23947712453960068
+            ],
+            "gross_loss_pp": 4.5165111226457055,
+            "gross_gain_pp": 1.8186086839149915,
+            "top_five_gross_loss_share": 0.5692827608977944,
+            "both_actions_decline": 9,
+            "by_product_delta_pp": {
+              "copper-liquid": -3.682630498968218,
+              "food": -4.374244959917189,
+              "medical": 0.26436662391632143,
+              "watered-grass": -2.238795039546919
+            }
+          },
+          "96-128": {
+            "mean_delta_pp": -3.351403729145183,
+            "by_stratum_delta_pp": {
+              "small": -4.658046985452414,
+              "large": -2.044760472837945
+            },
+            "geometry_outcomes": {
+              "win": 5,
+              "tie": 10,
+              "loss": 17
+            },
+            "interval_95_pp": [
+              -5.725728827946572,
+              -0.9410129757513366
+            ],
+            "gross_loss_pp": 4.445534873061406,
+            "gross_gain_pp": 1.0941311439162271,
+            "top_five_gross_loss_share": 0.514909221621528,
+            "both_actions_decline": 6,
+            "by_product_delta_pp": {
+              "copper-liquid": -7.4754864815171835,
+              "food": -0.9857202915233391,
+              "medical": -3.4063835630995807,
+              "watered-grass": -1.0356247762262798
+            },
+            "top_five_losses": [
+              {
+                "generation_seed": 719200808,
+                "product": "copper-liquid",
+                "stratum": "small",
+                "before": 25.0,
+                "after": 5.357142857142858,
+                "delta_pp": -19.642857142857142,
+                "action_delta_pp": [
+                  -7.142857142857143,
+                  -32.142857142857146
+                ],
+                "both_actions_decline": true
+              },
+              {
+                "generation_seed": 719200768,
+                "product": "medical",
+                "stratum": "large",
+                "before": 29.010163499779054,
+                "after": 14.748121961997349,
+                "delta_pp": -14.262041537781705,
+                "action_delta_pp": [
+                  -28.524083075563407,
+                  0.0
+                ],
+                "both_actions_decline": false
+              },
+              {
+                "generation_seed": 719200544,
+                "product": "copper-liquid",
+                "stratum": "small",
+                "before": 62.152777777777786,
+                "after": 48.66898148148148,
+                "delta_pp": -13.483796296296305,
+                "action_delta_pp": [
+                  -11.805555555555557,
+                  -15.162037037037045
+                ],
+                "both_actions_decline": true
+              },
+              {
+                "generation_seed": 719200312,
+                "product": "copper-liquid",
+                "stratum": "small",
+                "before": 25.457875457875456,
+                "after": 12.454212454212454,
+                "delta_pp": -13.003663003663002,
+                "action_delta_pp": [
+                  -13.919413919413918,
+                  -12.087912087912086
+                ],
+                "both_actions_decline": true
+              },
+              {
+                "generation_seed": 719200792,
+                "product": "watered-grass",
+                "stratum": "small",
+                "before": 20.0,
+                "after": 7.142857142857143,
+                "delta_pp": -12.857142857142858,
+                "action_delta_pp": [
+                  -25.714285714285715,
+                  0.0
+                ],
+                "both_actions_decline": false
+              }
+            ]
+          }
+        }
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "priority-8",
+        "curve": {
+          "0": {
+            "mean": 1.8624887107545482,
+            "by_stratum": {
+              "small": 3.2498504219603843,
+              "large": 0.4751269995487122
+            }
+          },
+          "32": {
+            "mean": 21.63634601216898,
+            "by_stratum": {
+              "small": 27.02188735433713,
+              "large": 16.25080467000082
+            }
+          },
+          "64": {
+            "mean": 24.17733548326746,
+            "by_stratum": {
+              "small": 29.17145887618456,
+              "large": 19.18321209035036
+            }
+          },
+          "96": {
+            "mean": 24.900621181123103,
+            "by_stratum": {
+              "small": 30.491230054765357,
+              "large": 19.31001230748085
+            }
+          },
+          "128": {
+            "mean": 22.712760480336367,
+            "by_stratum": {
+              "small": 25.511093786469726,
+              "large": 19.91442717420301
+            }
+          }
+        },
+        "comparisons": {
+          "64-128": {
+            "mean_delta_pp": -1.4645750029310918,
+            "by_stratum_delta_pp": {
+              "small": -3.6603650897148317,
+              "large": 0.73121508385265
+            },
+            "geometry_outcomes": {
+              "loss": 13,
+              "win": 15,
+              "tie": 4
+            },
+            "interval_95_pp": [
+              -5.54566556084273,
+              2.187348073526056
+            ],
+            "gross_loss_pp": 4.663815109199163,
+            "gross_gain_pp": 3.1992401062680726,
+            "top_five_gross_loss_share": 0.6772759417962003,
+            "both_actions_decline": 6,
+            "by_product_delta_pp": {
+              "copper-liquid": -0.9356846171017015,
+              "food": -2.5208626696353993,
+              "medical": 4.912457909765856,
+              "watered-grass": -7.163525697360284
+            }
+          },
+          "96-128": {
+            "mean_delta_pp": -2.187860700786736,
+            "by_stratum_delta_pp": {
+              "small": -4.980136268295632,
+              "large": 0.604414866722158
+            },
+            "geometry_outcomes": {
+              "win": 10,
+              "loss": 17,
+              "tie": 5
+            },
+            "interval_95_pp": [
+              -5.0155811059973034,
+              0.8876597266720903
+            ],
+            "gross_loss_pp": 4.461336654636832,
+            "gross_gain_pp": 2.2734759538500953,
+            "top_five_gross_loss_share": 0.5522441293024881,
+            "both_actions_decline": 4,
+            "by_product_delta_pp": {
+              "copper-liquid": -3.164289240900039,
+              "food": 0.7364535770507628,
+              "medical": 0.4346508105853806,
+              "watered-grass": -7.314796732089966
+            },
+            "top_five_losses": [
+              {
+                "generation_seed": 719200816,
+                "product": "copper-liquid",
+                "stratum": "small",
+                "before": 49.08854166666667,
+                "after": 29.6875,
+                "delta_pp": -19.40104166666667,
+                "action_delta_pp": [
+                  -18.75,
+                  -20.052083333333336
+                ],
+                "both_actions_decline": true
+              },
+              {
+                "generation_seed": 719200312,
+                "product": "copper-liquid",
+                "stratum": "small",
+                "before": 33.6996336996337,
+                "after": 16.483516483516482,
+                "delta_pp": -17.21611721611722,
+                "action_delta_pp": [
+                  -8.058608058608062,
+                  -26.373626373626372
+                ],
+                "both_actions_decline": true
+              },
+              {
+                "generation_seed": 719200304,
+                "product": "watered-grass",
+                "stratum": "small",
+                "before": 19.523809523809526,
+                "after": 4.285714285714286,
+                "delta_pp": -15.23809523809524,
+                "action_delta_pp": [
+                  -30.47619047619048,
+                  0.0
+                ],
+                "both_actions_decline": false
+              },
+              {
+                "generation_seed": 719200776,
+                "product": "copper-liquid",
+                "stratum": "small",
+                "before": 55.921052631578945,
+                "after": 42.26973684210526,
+                "delta_pp": -13.651315789473685,
+                "action_delta_pp": [
+                  -14.967105263157897,
+                  -12.33552631578948
+                ],
+                "both_actions_decline": true
+              },
+              {
+                "generation_seed": 719200792,
+                "product": "watered-grass",
+                "stratum": "small",
+                "before": 25.0,
+                "after": 11.666666666666668,
+                "delta_pp": -13.333333333333332,
+                "action_delta_pp": [
+                  6.666666666666668,
+                  -33.333333333333336
+                ],
+                "both_actions_decline": false
+              }
+            ]
+          }
+        }
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "uniform-16",
+        "curve": {
+          "0": {
+            "mean": 1.8624887107545482,
+            "by_stratum": {
+              "small": 3.2498504219603843,
+              "large": 0.4751269995487122
+            }
+          },
+          "32": {
+            "mean": 19.750456422074585,
+            "by_stratum": {
+              "small": 25.957592885687045,
+              "large": 13.543319958462122
+            }
+          },
+          "64": {
+            "mean": 25.60343316792217,
+            "by_stratum": {
+              "small": 34.07532347163897,
+              "large": 17.131542864205375
+            }
+          },
+          "96": {
+            "mean": 24.970993161994116,
+            "by_stratum": {
+              "small": 33.56363400527522,
+              "large": 16.37835231871301
+            }
+          },
+          "128": {
+            "mean": 23.52914071196377,
+            "by_stratum": {
+              "small": 32.414150910560394,
+              "large": 14.644130513367147
+            }
+          }
+        },
+        "comparisons": {
+          "64-128": {
+            "mean_delta_pp": -2.0742924559583997,
+            "by_stratum_delta_pp": {
+              "small": -1.6611725610785757,
+              "large": -2.487412350838228
+            },
+            "geometry_outcomes": {
+              "win": 11,
+              "loss": 15,
+              "tie": 6
+            },
+            "interval_95_pp": [
+              -4.947787877540119,
+              0.7382014003397718
+            ],
+            "gross_loss_pp": 4.347301407662211,
+            "gross_gain_pp": 2.273008951703809,
+            "top_five_gross_loss_share": 0.5434586904515686,
+            "both_actions_decline": 6,
+            "by_product_delta_pp": {
+              "copper-liquid": 0.4739327629887368,
+              "food": -1.9794114848620254,
+              "medical": -3.140556321379061,
+              "watered-grass": -4.406307977736549
+            }
+          },
+          "96-128": {
+            "mean_delta_pp": -1.4418524500303462,
+            "by_stratum_delta_pp": {
+              "small": -1.1494830947148258,
+              "large": -1.7342218053458645
+            },
+            "geometry_outcomes": {
+              "loss": 14,
+              "win": 10,
+              "tie": 8
+            },
+            "interval_95_pp": [
+              -4.626845667615633,
+              1.217678997862851
+            ],
+            "gross_loss_pp": 3.196360451219537,
+            "gross_gain_pp": 1.7545080011891923,
+            "top_five_gross_loss_share": 0.7077402849922223,
+            "both_actions_decline": 5,
+            "by_product_delta_pp": {
+              "copper-liquid": 3.406716264315994,
+              "food": -0.9406250597980276,
+              "medical": -2.754560478193083,
+              "watered-grass": -7.0074536991830225
+            },
+            "top_five_losses": [
+              {
+                "generation_seed": 719200304,
+                "product": "watered-grass",
+                "stratum": "small",
+                "before": 40.95238095238095,
+                "after": 4.0476190476190474,
+                "delta_pp": -36.9047619047619,
+                "action_delta_pp": [
+                  -30.476190476190474,
+                  -43.33333333333333
+                ],
+                "both_actions_decline": true
+              },
+              {
+                "generation_seed": 719200048,
+                "product": "medical",
+                "stratum": "large",
+                "before": 26.049527048570518,
+                "after": 15.07599107237751,
+                "delta_pp": -10.973535976193007,
+                "action_delta_pp": [
+                  -21.14996280157296,
+                  -0.7971091508130534
+                ],
+                "both_actions_decline": true
+              },
+              {
+                "generation_seed": 719200784,
+                "product": "watered-grass",
+                "stratum": "small",
+                "before": 30.0,
+                "after": 20.0,
+                "delta_pp": -10.0,
+                "action_delta_pp": [
+                  -20.0,
+                  0.0
+                ],
+                "both_actions_decline": false
+              },
+              {
+                "generation_seed": 719200040,
+                "product": "food",
+                "stratum": "large",
+                "before": 14.114832535885167,
+                "after": 6.363636363636363,
+                "delta_pp": -7.751196172248804,
+                "action_delta_pp": [
+                  0.0,
+                  -15.502392344497606
+                ],
+                "both_actions_decline": false
+              },
+              {
+                "generation_seed": 719200512,
+                "product": "medical",
+                "stratum": "large",
+                "before": 18.427350427350426,
+                "after": 11.666666666666666,
+                "delta_pp": -6.76068376068376,
+                "action_delta_pp": [
+                  -13.521367521367521,
+                  0.0
+                ],
+                "both_actions_decline": false
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "confirmation_common_losses": [
+      719200040,
+      719200048,
+      719200264,
+      719200776
+    ],
+    "reports": [
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "baseline-8",
+        "update": 0,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-baseline-8/seed-71/evaluation/0000/report.json",
+        "sha256": "ba0a9e4e52cf34d87b4cc1c6ae5748b3b30538ce590bf555709fa3e59f3bc0ea"
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "baseline-8",
+        "update": 32,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-baseline-8/seed-71/evaluation/0032/report.json",
+        "sha256": "2767d98f9c1ffb561ced367619d6397200db1426c5756250969f7e028ecbbc7b"
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "baseline-8",
+        "update": 64,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-baseline-8/seed-71/evaluation/0064/report.json",
+        "sha256": "6ae8295f9107960004d077fe7061595e96f169bbaa9ea07b4864a948c69e765e"
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "baseline-8",
+        "update": 96,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-baseline-8/seed-71/evaluation/0096/report.json",
+        "sha256": "b01d330fcbf27b9b50b527dd80d7e677fd7a726b727e25a54b3af94c3cef03fd"
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "baseline-8",
+        "update": 128,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-baseline-8/seed-71/evaluation/0128/report.json",
+        "sha256": "a4e4f6b57a0d5fcc7a3c980ec97e41e46ccca147a9e4a6a9fce6d5cd4055d663"
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "priority-8",
+        "update": 0,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-priority-8/seed-71/evaluation/0000/report.json",
+        "sha256": "ba0a9e4e52cf34d87b4cc1c6ae5748b3b30538ce590bf555709fa3e59f3bc0ea"
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "priority-8",
+        "update": 32,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-priority-8/seed-71/evaluation/0032/report.json",
+        "sha256": "971fed32ea5163c7d5893e3a4c05c4977a36a3c96fd6ea54f81d59aaa6cdc73f"
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "priority-8",
+        "update": 64,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-priority-8/seed-71/evaluation/0064/report.json",
+        "sha256": "0ae2ad48e1f1b67435436dd133a130975fefd35f94779af6fa961cc578bb84f8"
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "priority-8",
+        "update": 96,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-priority-8/seed-71/evaluation/0096/report.json",
+        "sha256": "fac435cbb955920fd67f238ab52f2889c95bc2de508d32a6c4f4d5a4e317d935"
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "priority-8",
+        "update": 128,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-priority-8/seed-71/evaluation/0128/report.json",
+        "sha256": "a6ff21791d1fc37c2435fa792a6a8128bd00b37abe9aa9bb972066fb1f1a0dea"
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "uniform-16",
+        "update": 0,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-uniform-16/seed-71/evaluation/0000/report.json",
+        "sha256": "ba0a9e4e52cf34d87b4cc1c6ae5748b3b30538ce590bf555709fa3e59f3bc0ea"
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "uniform-16",
+        "update": 32,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-uniform-16/seed-71/evaluation/0032/report.json",
+        "sha256": "f012541ccbe852566f4dd2101dd3daf093ae8669a310a80dca5cdaca3498c6a8"
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "uniform-16",
+        "update": 64,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-uniform-16/seed-71/evaluation/0064/report.json",
+        "sha256": "a5045b421d3fda66e9234a53f6d70ec89227945dda927d7e24814bff6c7f8fd6"
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "uniform-16",
+        "update": 96,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-uniform-16/seed-71/evaluation/0096/report.json",
+        "sha256": "864fc36e66647874d042a2fabdaf8d4ee2a9d0f6fb369bb3534f08bd7fa002f2"
+      },
+      {
+        "seed": 71,
+        "phase": "development",
+        "profile": "uniform-16",
+        "update": 128,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/development-seed71-uniform-16/seed-71/evaluation/0128/report.json",
+        "sha256": "6b32a841b19be4ff2fb9dc46e25026bbf9bfe90812b218d967477ef13857c8a5"
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "baseline-8",
+        "update": 0,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-baseline-8/seed-113/evaluation/0000/report.json",
+        "sha256": "8927f206e82de71ced9b935f593dc05b38b57f088d9af76b3e6f83deba9fbda5"
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "baseline-8",
+        "update": 32,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-baseline-8/seed-113/evaluation/0032/report.json",
+        "sha256": "2c4500e9461bf5d273e52942346040a2363ae881f1877e1f31bc923cb9f002e7"
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "baseline-8",
+        "update": 64,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-baseline-8/seed-113/evaluation/0064/report.json",
+        "sha256": "2e1bd6b993b2d2e3350e3bf5ea5e0c63985ac4cd3489ad5b65d9054842221ca5"
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "baseline-8",
+        "update": 96,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-baseline-8/seed-113/evaluation/0096/report.json",
+        "sha256": "a1c64d8b962551874f1f51c2ac57cc3d1948b2c6fe394206532fa34df864796a"
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "baseline-8",
+        "update": 128,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-baseline-8/seed-113/evaluation/0128/report.json",
+        "sha256": "ed8ee49b18f03d73aa7b78870f163167417b2fc4194f5588db9bdb0c91dbcc87"
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "priority-8",
+        "update": 0,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-priority-8/seed-113/evaluation/0000/report.json",
+        "sha256": "8927f206e82de71ced9b935f593dc05b38b57f088d9af76b3e6f83deba9fbda5"
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "priority-8",
+        "update": 32,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-priority-8/seed-113/evaluation/0032/report.json",
+        "sha256": "3a5a28f88dfa9e5e4d6e39b1e1f4c63109b0579565532f153be2ee3a587b319b"
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "priority-8",
+        "update": 64,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-priority-8/seed-113/evaluation/0064/report.json",
+        "sha256": "e05324facd36a498e433a41c5062db5158664cdd4cbe33f0d1cac08e5f0c1b89"
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "priority-8",
+        "update": 96,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-priority-8/seed-113/evaluation/0096/report.json",
+        "sha256": "9c6a573fb6c958ae3f035126b9acc3352196682a82db26d20f56811a6202df64"
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "priority-8",
+        "update": 128,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-priority-8/seed-113/evaluation/0128/report.json",
+        "sha256": "d9a24cd266c2a84c137bb70ed4cdc490f3f106962895a25cdc37d226836a29a5"
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "uniform-16",
+        "update": 0,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-uniform-16/seed-113/evaluation/0000/report.json",
+        "sha256": "8927f206e82de71ced9b935f593dc05b38b57f088d9af76b3e6f83deba9fbda5"
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "uniform-16",
+        "update": 32,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-uniform-16/seed-113/evaluation/0032/report.json",
+        "sha256": "71d6b022730f6dd68a7dbcf5e2afb8476ca3cfe5aed07d250d77fb353843dfa9"
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "uniform-16",
+        "update": 64,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-uniform-16/seed-113/evaluation/0064/report.json",
+        "sha256": "71063d385e9605b41ecd31ea2de87e334920f53f4fbdd6309cdd496ca325ef68"
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "uniform-16",
+        "update": 96,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-uniform-16/seed-113/evaluation/0096/report.json",
+        "sha256": "426d645e645e14550c44b503519e6e959d4693069dce33c4948dfd0e4bf7b554"
+      },
+      {
+        "seed": 113,
+        "phase": "confirmation",
+        "profile": "uniform-16",
+        "update": 128,
+        "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-uniform-16/seed-113/evaluation/0128/report.json",
+        "sha256": "ec318b549a618c0cd13cddeca9a40decff01a80ad7e3de47d64296434ddaa53a"
+      }
+    ],
+    "bootstrap": {
+      "resamples": 10000,
+      "seed": 714600000,
+      "scope": "Post-hoc, stratified whole geometries conditional on one training seed and two fixed action replicates; excludes checkpoint-selection and action-sampling uncertainty."
+    }
+  },
+  "trace_aggregates": [
+    {
+      "profile": "baseline-8",
+      "update": 128,
+      "episodes": 64,
+      "charged_actions": 4096,
+      "diagnostics": {
+        "declarative.band-cuts-body": 1532,
+        "declarative.band-removes-anchor": 68,
+        "declarative.routing-pending": 1288,
+        "declarative.port-coordinate": 63,
+        "declarative.band-cuts-component": 196,
+        "declarative.native-validation": 50
+      },
+      "joint": {
+        "delete_band/rejected": 1781,
+        "delete_band/improved": 437,
+        "place/validated": 327,
+        "place/draft_accepted": 1135,
+        "place/rejected": 61,
+        "delete_band/draft_accepted": 224,
+        "delete_band/validated": 63,
+        "insert_band/rejected": 17,
+        "insert_band/validated": 8,
+        "place/improved": 28,
+        "place/unchanged": 6,
+        "insert_band/draft_accepted": 9
+      }
+    },
+    {
+      "profile": "priority-8",
+      "update": 128,
+      "episodes": 64,
+      "charged_actions": 4096,
+      "diagnostics": {
+        "declarative.band-cuts-body": 1970,
+        "declarative.band-cuts-component": 216,
+        "declarative.routing-pending": 935,
+        "declarative.band-removes-anchor": 97,
+        "declarative.port-coordinate": 37,
+        "declarative.native-validation": 26
+      },
+      "joint": {
+        "delete_band/rejected": 2099,
+        "insert_band/rejected": 185,
+        "delete_band/improved": 526,
+        "insert_band/validated": 76,
+        "delete_band/validated": 84,
+        "place/validated": 72,
+        "place/draft_accepted": 647,
+        "insert_band/draft_accepted": 106,
+        "place/rejected": 36,
+        "delete_band/draft_accepted": 242,
+        "place/improved": 14,
+        "delete_band/unchanged": 6,
+        "place/unchanged": 2,
+        "insert_band/unchanged": 1
+      }
+    },
+    {
+      "profile": "uniform-16",
+      "update": 128,
+      "episodes": 64,
+      "charged_actions": 4096,
+      "diagnostics": {
+        "declarative.band-cuts-body": 1428,
+        "declarative.band-cuts-component": 154,
+        "declarative.routing-pending": 1620,
+        "declarative.band-removes-anchor": 89,
+        "declarative.port-coordinate": 39,
+        "declarative.native-validation": 20
+      },
+      "joint": {
+        "delete_band/rejected": 1604,
+        "delete_band/improved": 470,
+        "delete_band/validated": 71,
+        "insert_band/rejected": 67,
+        "place/draft_accepted": 1477,
+        "place/validated": 63,
+        "delete_band/draft_accepted": 184,
+        "insert_band/validated": 51,
+        "place/rejected": 39,
+        "insert_band/draft_accepted": 32,
+        "delete_band/unchanged": 6,
+        "place/improved": 25,
+        "insert_band/unchanged": 1,
+        "place/unchanged": 6
+      }
+    }
+  ],
+  "selected_traces": [
+    {
+      "profile": "baseline-8",
+      "update": 128,
+      "generation_seed": 719200808,
+      "sample": 0,
+      "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-baseline-8/seed-113/evaluation/0128/factory-719200808-0.pt.gz",
+      "sha256": "f99155b7dc88f5c799dc9cdaafb36a85328751a4ea7d58c4616c43329f1db42f",
+      "diagnostics": {
+        "declarative.routing-pending": 4,
+        "declarative.band-removes-anchor": 4,
+        "declarative.band-cuts-body": 23,
+        "declarative.native-validation": 23
+      },
+      "joint": {
+        "delete_band/improved": 2,
+        "place/draft_accepted": 19,
+        "delete_band/rejected": 27,
+        "place/validated": 5,
+        "delete_band/validated": 2,
+        "place/improved": 1,
+        "delete_band/draft_accepted": 8
+      },
+      "area_gain_steps": [
+        {
+          "n": 1,
+          "area": 378
+        },
+        {
+          "n": 22,
+          "area": 364
+        }
+      ]
+    },
+    {
+      "profile": "baseline-8",
+      "update": 128,
+      "generation_seed": 719200808,
+      "sample": 1,
+      "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-baseline-8/seed-113/evaluation/0128/factory-719200808-1.pt.gz",
+      "sha256": "61891355f5aa58c654e7755c3d0519ef33e61144bfc739078aa7c4cf66983628",
+      "diagnostics": {
+        "declarative.band-cuts-body": 15,
+        "declarative.routing-pending": 37,
+        "declarative.port-coordinate": 1,
+        "declarative.native-validation": 9
+      },
+      "joint": {
+        "place/validated": 1,
+        "delete_band/improved": 1,
+        "delete_band/rejected": 15,
+        "delete_band/draft_accepted": 10,
+        "place/draft_accepted": 36,
+        "place/rejected": 1
+      },
+      "area_gain_steps": [
+        {
+          "n": 2,
+          "area": 378
+        }
+      ]
+    },
+    {
+      "profile": "priority-8",
+      "update": 128,
+      "generation_seed": 719200816,
+      "sample": 0,
+      "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-priority-8/seed-113/evaluation/0128/factory-719200816-0.pt.gz",
+      "sha256": "5cf870e2f23fec33ba47a79e61a0d7b15b0ec2ad381a6535fe60d6d0d3eb07ad",
+      "diagnostics": {
+        "declarative.band-cuts-body": 17,
+        "declarative.band-removes-anchor": 1,
+        "declarative.routing-pending": 28,
+        "declarative.port-coordinate": 5
+      },
+      "joint": {
+        "delete_band/rejected": 11,
+        "delete_band/improved": 5,
+        "insert_band/rejected": 7,
+        "place/validated": 6,
+        "delete_band/validated": 1,
+        "place/improved": 1,
+        "delete_band/draft_accepted": 5,
+        "place/draft_accepted": 20,
+        "place/rejected": 5,
+        "insert_band/draft_accepted": 3
+      },
+      "area_gain_steps": [
+        {
+          "n": 2,
+          "area": 360
+        },
+        {
+          "n": 5,
+          "area": 348
+        },
+        {
+          "n": 6,
+          "area": 324
+        },
+        {
+          "n": 10,
+          "area": 312
+        },
+        {
+          "n": 13,
+          "area": 288
+        },
+        {
+          "n": 23,
+          "area": 276
+        }
+      ]
+    },
+    {
+      "profile": "priority-8",
+      "update": 128,
+      "generation_seed": 719200816,
+      "sample": 1,
+      "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-priority-8/seed-113/evaluation/0128/factory-719200816-1.pt.gz",
+      "sha256": "ff9057792bc5ca15f6d89519aa2932536f90f9a71b8a026bf9795496e982d70f",
+      "diagnostics": {
+        "declarative.band-cuts-body": 26,
+        "declarative.band-removes-anchor": 1,
+        "declarative.routing-pending": 22,
+        "declarative.port-coordinate": 1
+      },
+      "joint": {
+        "delete_band/rejected": 21,
+        "delete_band/improved": 5,
+        "place/validated": 3,
+        "delete_band/validated": 3,
+        "place/improved": 1,
+        "insert_band/rejected": 6,
+        "insert_band/validated": 1,
+        "delete_band/draft_accepted": 2,
+        "place/draft_accepted": 15,
+        "insert_band/draft_accepted": 5,
+        "delete_band/unchanged": 1,
+        "place/rejected": 1
+      },
+      "area_gain_steps": [
+        {
+          "n": 3,
+          "area": 372
+        },
+        {
+          "n": 5,
+          "area": 348
+        },
+        {
+          "n": 6,
+          "area": 324
+        },
+        {
+          "n": 7,
+          "area": 312
+        },
+        {
+          "n": 11,
+          "area": 286
+        },
+        {
+          "n": 12,
+          "area": 264
+        }
+      ]
+    },
+    {
+      "profile": "uniform-16",
+      "update": 128,
+      "generation_seed": 719200304,
+      "sample": 0,
+      "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-uniform-16/seed-113/evaluation/0128/factory-719200304-0.pt.gz",
+      "sha256": "abd1b408001ebca22a8b6079b6bad29d6b1b0049d68f0336f2dde44f794d5c00",
+      "diagnostics": {
+        "declarative.band-cuts-body": 8,
+        "declarative.band-removes-anchor": 3,
+        "declarative.routing-pending": 43,
+        "declarative.native-validation": 2
+      },
+      "joint": {
+        "delete_band/rejected": 11,
+        "place/validated": 2,
+        "delete_band/improved": 1,
+        "place/draft_accepted": 46,
+        "insert_band/draft_accepted": 2,
+        "place/unchanged": 1,
+        "delete_band/draft_accepted": 1
+      },
+      "area_gain_steps": [
+        {
+          "n": 10,
+          "area": 208
+        }
+      ]
+    },
+    {
+      "profile": "uniform-16",
+      "update": 128,
+      "generation_seed": 719200304,
+      "sample": 1,
+      "path": "/home/ashrimp/Srv/aic-quality-cold-continue-20260914/artifacts/study/confirmation-seed113-uniform-16/seed-113/evaluation/0128/factory-719200304-1.pt.gz",
+      "sha256": "dd53ddd770485e837f93366ed542701b11574bf6ac07bc553904663cdbd6ebe8",
+      "diagnostics": {
+        "declarative.band-cuts-body": 5,
+        "declarative.routing-pending": 47,
+        "declarative.band-removes-anchor": 3
+      },
+      "joint": {
+        "delete_band/rejected": 7,
+        "place/draft_accepted": 50,
+        "delete_band/draft_accepted": 1,
+        "place/improved": 1,
+        "place/validated": 2,
+        "delete_band/validated": 1,
+        "insert_band/rejected": 1,
+        "delete_band/unchanged": 1
+      },
+      "area_gain_steps": [
+        {
+          "n": 6,
+          "area": 195
+        }
+      ]
+    }
+  ],
+  "local_evidence": [
+    {
+      "path": "artifacts/cold-quality-regression-20260914/evaluation-bundle.json",
+      "sha256": "7719a314322ea831c53b5cd9dddb74a286033d36572daf4531f1a4ead5f2e7a9"
+    },
+    {
+      "path": "artifacts/cold-quality-regression-20260914/analysis.json",
+      "sha256": "491e11de80787a1be8bf1537ff3446119db7240c9f24c225374ccbab228a8240"
+    },
+    {
+      "path": "artifacts/cold-quality-regression-20260914/traces.json",
+      "sha256": "82394d021ca5b18eddf7e6f50fa2be16acb5724571982103e103f655e24f3a84"
+    },
+    {
+      "path": "artifacts/cold-quality-continuation-20260914/final-evidence.json",
+      "sha256": "22111dc1301a8573276eb6ecec4a85f42a8f3c22419132364f4d307e6513c6ec"
+    }
+  ]
+}
