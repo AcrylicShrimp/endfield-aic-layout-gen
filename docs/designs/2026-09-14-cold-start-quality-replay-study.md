@@ -334,3 +334,52 @@ it does not authorize model transfer, automatic adoption or restarting main.
 
 Verify original launch, job and checkpoint hashes are unchanged after amendment
 success/failure and actual continuation; do not copy old console/worker/W&B files.
+
+## User-authorized one-hour clock extension
+
+On 2026-09-14 the user explicitly authorized up to one additional hour to complete
+the full comparison. The new hard deadline is **1789377730.8190546 Unix seconds**
+(18:22:10.819 KST), exactly 3,600 seconds after the previous deadline. Scientific
+updates, profiles, selection, initializations, panels, native limits and storage/RSS/
+reserve caps stay fixed. This supersedes only the previous wall-clock ceiling.
+
+Use an operational completion command, `operations/finish_cold_quality_study.py`,
+to finish the remaining two seed-113 confirmation arms. Keep the frozen learner,
+original protocol and readiness source intact. Bind this additional controller
+separately in an immutable clock-extension receipt, alongside the unchanged source
+and original receipt. It imports the existing cold preparation, child execution,
+summary, allocation, pairing, resource accounting and statistical analysis functions.
+No learner, launch or checkpoint amendment is needed.
+
+After the first seed-113 baseline starts, suspend only the study coordinator; its
+child keeps training with its original guard. Wait for its native-valid update-128
+completion and child exit, then terminate the suspended coordinator. Preserve its
+last study receipt before publishing the extension receipt. The completion command
+requires exactly eight completed development arms, their immutable selection, all
+three read-only seed-71 confirmation receipts, and the completed seed-113 baseline.
+It summarizes that baseline once and adds its 128 updates exactly once. It then
+creates priority-8 and uniform-16 through the original empty initializer and shared
+fresh bank, reusing the baseline initial confirmation evaluation as before.
+
+The controller continues the same storage ledger and output directory. Its wall
+guard uses time remaining to the new absolute deadline; each new branch receives
+that bounded remainder. Normal source/family/readiness checks remain active. The
+additional controller authenticates its own file, the original registered source,
+prior receipt, selection and carried endpoints at entry and completion. Errors
+retain partial results with exact accounting and no final winner. The deadline
+change cannot alter an endpoint, choose a new candidate or import learned state.
+
+Continuity checks:
+
+| Existing benefit | Extension approach | Check |
+| --- | --- | --- |
+| Cold paired initialization and fresh inputs | Reuse original prepare/bank/cache | Same seed-113 initial model, empty proof, canonical slots |
+| Optimized CUDA learner and persistent workers | Call unchanged original branch CLI | Original full source/readiness bindings and actual remaining arms |
+| Completed scientific work and immutable selection | Carry complete receipts; summarize finished baseline once | Exactly 1,408 final scientific updates; checkpoint/selection hashes unchanged |
+| Bounded storage and recovery | Continue existing ledger, no duplicate snapshots | Existing removal hooks and one boundary reconciliation |
+| Resource bounds | One explicit additional hour; unchanged other caps | Reject expired/wrong deadline; outer guard includes finalization |
+
+Verify the controller's handoff prerequisites, exact update accounting, initial
+cache/model pairing, immutable bindings and hard-deadline rejection with focused
+checks. Reuse the unchanged CUDA/readiness/Rust evidence; no repeated training or
+new kernel readiness experiment is justified by an orchestration-only time change.
