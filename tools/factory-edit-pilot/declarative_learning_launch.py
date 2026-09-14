@@ -18,6 +18,8 @@ def validate(config):
     require(config['schema']=='declarative-learning-v2' and config['chunk_schema']=='declarative-learning-chunk-v2',
         'declarative training schema')
     validate_input(config)
+    from declarative_band_mask import validate_mode
+    validate_mode(config['actions'])
     from declarative_learning_curriculum import validate as validate_curriculum
     validate_curriculum(config.get('start_curriculum',{}))
     require(config['training_input']['kind']=='fresh-random' and 'fixture_diagnostic' not in config['success'],

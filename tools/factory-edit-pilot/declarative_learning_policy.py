@@ -6,10 +6,33 @@ from blueprint_edit_input import BlueprintActorCritic
 from blueprint_ppo_batch import distribution, pack as pack_graphs, to_device
 from blueprint_ppo_update import require
 from declarative_learning_input import PACKED, PORT_FEATURES, SCHEMA
+from declarative_band_mask import ROOT_MASK_SCHEMA
 
 
 def pack(inputs):
-    return pack_graphs(inputs, schema=SCHEMA, packed_schema=PACKED)
+    result = pack_graphs(inputs, schema=SCHEMA, packed_schema=PACKED)
+    if any('root_invalid' in row or 'root_mask_schema' in row for row in inputs):
+        masks = []
+        for row in inputs:
+            if 'root_invalid' not in row and 'root_mask_schema' not in row:
+                masks.append(torch.zeros(len(row['actions']),dtype=torch.bool))
+                continue
+            mask = row.get('root_invalid')
+            require(row.get('root_mask_schema')==ROOT_MASK_SCHEMA and isinstance(mask,torch.Tensor) and
+                mask.dtype==torch.bool and mask.shape==(len(row['actions']),) and not bool(mask.all()),
+                'declarative.masking.input: bound nonempty boolean root domain required')
+            masks.append(mask)
+        result['root_invalid'] = torch.cat(masks)
+    return result
+
+
+def root_distribution(logits, batch, *, uniform=False):
+    logits = torch.zeros_like(logits) if uniform else logits
+    if 'root_invalid' in batch:
+        # Mask after uniformization, retaining original per-kind count correction.
+        # The finite sentinel keeps the existing entropy kernel finite.
+        logits = logits.masked_fill(batch['root_invalid'], -1e9)
+    return distribution(logits, batch)
 
 
 class ActorCritic(BlueprintActorCritic):
@@ -87,6 +110,8 @@ def offsets(counts):
 
 def action(prepared, decision):
     require(0 <= decision['root'] < len(prepared['actions']), 'declarative root choice range')
+    require('root_invalid' not in prepared or not bool(prepared['root_invalid'][decision['root']]),
+        'declarative.masking.action: selected root is masked')
     value = dict(prepared['actions'][decision['root']])
     groups = prepared['port_groups'][prepared['root_owners'][decision['root']]] if value['kind'] == 'place' else []
     require(len(decision['ports']) == len(groups), 'declarative joint action must assign every terminal')
@@ -106,7 +131,7 @@ def sample(model, inputs, sampler, *, uniform=False):
     device = next(model.parameters()).device
     batch = to_device(pack(inputs), device)
     logits, predicted, nodes, pooled = model.root(batch)
-    logp, entropy = distribution(torch.zeros_like(logits) if uniform else logits, batch)
+    logp, entropy = root_distribution(logits, batch, uniform=uniform)
     # Keep the established CPU categorical RNG and stream/depth draw order.
     # Transfer each head's complete result once, not one GPU scalar per choice.
     logp, entropy, predicted = logp.cpu(), entropy.cpu(), predicted.cpu()
@@ -150,6 +175,8 @@ def prepare_rows(rows):
     require(all(0 <= d['root'] < len(p['actions']) for p,d in zip(inputs,decisions,strict=True)),
             'declarative recorded root choice range')
     roots = torch.tensor([start+d['root'] for start,d in zip(offsets(batch['action_counts']), decisions, strict=True)], dtype=torch.long)
+    require('root_invalid' not in batch or not bool(batch['root_invalid'][roots].any()),
+        'declarative.masking.label: recorded action was masked in its source state')
     branch_rows, owners, selected = [], [], []
     total = 0
     for owner, (prepared, decision) in enumerate(zip(inputs, decisions, strict=True)):
@@ -174,7 +201,7 @@ def device_rows(prepared, device):
 
 def predict(model, prepared):
     logits, values, nodes, pooled = model.root(prepared['batch'])
-    root_logp, entropy = distribution(logits, prepared['batch'])
+    root_logp, entropy = root_distribution(logits, prepared['batch'])
     logp = root_logp[prepared['roots']]
     branches = prepared['branches']
     if branches is not None:

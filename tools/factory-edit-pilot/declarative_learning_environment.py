@@ -8,6 +8,7 @@ from blueprint_ppo_store import ROOT, read
 from blueprint_ppo_update import digest, require
 from blueprint_training_input import FreshInputs, validate_input, reserved_geometries
 from declarative_learning_input import Catalog, prepare
+from declarative_band_mask import BandMask, CODES, ROOT_MASK_SCHEMA, validate_mode
 from native import load_native
 import declarative_learning_curriculum as curriculum
 
@@ -27,6 +28,9 @@ class Runtime:
         self.module = load_native(library)
         self.catalogs = read(ROOT/config['probe_spec'])['catalogs']
         self.catalog = Catalog(read(ROOT/self.catalogs['facilities']))
+        validate_mode(config['actions'])
+        self.mask_catalog = read(ROOT/self.catalogs['components']) if config['actions'].get('masking') else None
+        self.band_mask = BandMask(self.mask_catalog) if self.mask_catalog is not None else None
         self.original = self.request = None
         self.inputs = None
         if config['training_input']['kind'] == 'fresh-random':
@@ -43,6 +47,8 @@ class Runtime:
 
     def episode_runtime(self, index, episode, saved=None, start=None):
         result = copy(self)
+        if self.mask_catalog is not None:
+            result.band_mask = BandMask(self.mask_catalog)
         if self.inputs is None:
             require(saved is None, 'declarative fixture diagnostic cannot restore generated inputs')
             return result, None
@@ -77,11 +83,17 @@ class Runtime:
         return self.module.DeclarativeEditSession.from_checkpoint(str(ROOT),json.dumps(self.catalogs),json.dumps(saved))
 
     def prepare(self, observation):
-        return prepare(observation,self.catalog,self.config['actions'])
+        result = prepare(observation,self.catalog,self.config['actions'])
+        if self.band_mask is not None:
+            result.update(root_mask_schema=ROOT_MASK_SCHEMA, root_invalid=self.band_mask(observation,result['actions']))
+        return result
 
     def step(self, session, observation, action):
-        return json.loads(session.step_json(json.dumps(dict(blueprint_sha256=observation['blueprint_sha256'],
+        result = json.loads(session.step_json(json.dumps(dict(blueprint_sha256=observation['blueprint_sha256'],
             revision=observation['revision'],action=action))))
+        require(self.band_mask is None or not CODES.intersection(d['code'] for d in result['diagnostics']),
+            'declarative.masking.rejection: selected a structurally impossible band')
+        return result
 
     def finish(self, session):
         result = json.loads(session.finish_json())

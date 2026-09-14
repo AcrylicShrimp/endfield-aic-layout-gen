@@ -110,6 +110,7 @@ def run(args):
     source = sources(original, library)
     scripts = [bound(Path(__file__).with_name(name)) for name in
         ('band_mask_policy.py', 'band_mask_worker.py', 'band_mask_experiment.py', 'test_band_mask_policy.py')]
+    scripts.append(bound(Path(__file__).resolve().parents[1] / 'declarative_band_mask.py'))
     protocol = dict(schema='band-mask-frozen-screen-v1', status='registered', panel=bound(args.panel),
         models={str(s): {k: v for k, v in x.items() if k not in ('weights', 'launch')} for s, x in selected.items()},
         source=source, scripts=scripts, evaluation=config['evaluation'], allocation=allocation,
