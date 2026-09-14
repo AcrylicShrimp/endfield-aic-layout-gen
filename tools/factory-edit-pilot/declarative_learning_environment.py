@@ -101,11 +101,17 @@ class Runtime:
         return result
 
     def observe(self, session):
-        from declarative_native_input import prepare as adopt
+        from declarative_native_input import PortMetadata, prepare as adopt
         value = session.observe()
+        # The native session supplies the same immutable descriptor object for
+        # its lifetime. Encode it once at admission, not once per observation.
+        raw=value.pop('port_metadata')['groups']
+        cached=getattr(self,'_learning_metadata',None)
+        if cached is None or cached[0] is not raw:
+            cached=(raw,PortMetadata(raw));self._learning_metadata=cached
         state = {key:value.pop(key) for key in ('attempts','done','pending','conflicts','elapsed_ms')}
         state.update(blueprint_sha256=value['blueprint_sha256'],revision=value['revision'])
-        return state,adopt(value)
+        return state,adopt(value,cached[1])
 
     def step_index(self, session, prepared, decision):
         result = session.step_index(prepared['native_handle'],decision['root'],decision['ports'])

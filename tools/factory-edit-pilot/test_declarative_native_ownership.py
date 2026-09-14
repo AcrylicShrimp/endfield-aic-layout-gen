@@ -156,6 +156,8 @@ class NativeOwnershipTests(unittest.TestCase):
 
     def test_array_lifetime_and_lazy_descriptors_survive_transport(self):
         session,_=self.runtime.open(64,60000);_,prepared=self.runtime.observe(session)
+        _,another=self.runtime.observe(session)
+        self.assertIs(prepared['port_groups'].domain,another['port_groups'].domain)
         expected=deepcopy(prepared);buffers=[]
         packed=dumps(prepared,buffer_callback=buffers.append)
         restored=pickle.loads(packed,buffers=buffers)
