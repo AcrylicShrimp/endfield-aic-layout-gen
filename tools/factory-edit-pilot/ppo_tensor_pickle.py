@@ -21,14 +21,33 @@ class Pickler(pickle.Pickler):
         return NotImplemented
 
 
+def restore_tensor(array, requires_grad):
+    return torch.from_numpy(array).requires_grad_(requires_grad)
+
+
+class StoragePickler(Pickler):
+    """Restore saved tensors on CPU, including uncommon fallback tensor types."""
+    def reducer_override(self, value):
+        if type(value) is torch.Tensor:
+            cpu=value.cpu()
+            if value.layout==torch.strided:
+                try:array=cpu.detach().numpy()
+                except (TypeError,RuntimeError):pass
+                else:return restore_tensor,(array,value.requires_grad)
+            # Unsupported dtypes/layouts still use Torch's representation, but
+            # its embedded storage is already on CPU before it is serialized.
+            return cpu.clone().__reduce_ex__(5) if cpu.numel()==0 else cpu.__reduce_ex__(5)
+        return NotImplemented
+
+
 def dumps(value, *, buffer_callback=None):
     stream = io.BytesIO()
     Pickler(stream, protocol=5, buffer_callback=buffer_callback).dump(value)
     return stream.getvalue()
 
 
-# torch.save accepts a pickle module. Resulting artifacts remain standard Torch
-# archives readable by torch.load(weights_only=False), including old archives.
+# Retained legacy writers can also use this module with torch.save. Normal
+# compressed archives use StoragePickler through blueprint_ppo_store instead.
 dump = pickle.dump
 load = pickle.load
 loads = pickle.loads

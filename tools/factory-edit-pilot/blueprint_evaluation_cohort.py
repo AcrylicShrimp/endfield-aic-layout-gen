@@ -2,7 +2,7 @@
 from copy import copy
 from pathlib import Path
 
-from blueprint_ppo_store import read, sha
+from blueprint_ppo_store import checked, load, read, sha
 from blueprint_ppo_update import require
 from blueprint_ppo_update import digest
 from blueprint_ppo_evaluate import evaluate_case
@@ -42,6 +42,10 @@ def load_cohort(path, expected_count, catalogs):
 def case_runtime(runtime, case):
     result = copy(runtime)
     root = Path(case['directory'])
+    if case['files'].get('input',{}).get('path','').endswith('.pt.gz'):
+        payload=load(checked(case['files']['input'],root))['payload']
+        result.original,result.request=payload['original'],payload['request']
+        return result
     result.original = read(root / case['files']['initial']['path'])
     result.request = read(root / case['files']['request']['path'])
     return result

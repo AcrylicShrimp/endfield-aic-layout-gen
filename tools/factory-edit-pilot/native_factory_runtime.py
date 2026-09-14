@@ -27,6 +27,8 @@ class FactoryRuntime:
             config['vocabulary'] = vocabulary
         if repair is not None:
             config['repair'] = repair
+        if isinstance(case['request'],dict):
+            return self.native.open_episode_json(json.dumps(case['request']),json.dumps(case['initial']),json.dumps(config))
         return self.native.open_episode(case['request'], case['initial'], json.dumps(config))
 
     def close(self):

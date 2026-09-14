@@ -66,11 +66,12 @@ class CurriculumTests(unittest.TestCase):
             def __init__(self):self.last=None;self.loads=[]
             def sample(self,ref):
                 if ref[0]!=self.last:self.loads.append(ref[0]);self.last=ref[0]
-                return dict(input=ref[0],decision=ref)
+                return dict(input=dict(source=ref[0],actions=[dict(kind='delete_band',axis='x',at=0,count=1)],
+                    port_groups=[],root_owners=[-1]),decision=dict(root=0,ports=[]))
         evidence=Evidence();rows=buffer.eligible(evidence,3,{'small':['small']})
         self.assertEqual(evidence.loads,[1,2])
         self.assertEqual([r['id'] for r in rows],['0','1','2'])
-        self.assertEqual([[r['input'] for r in s['rows']] for s in rows],[[2,1],[1,2],[2,1]])
+        self.assertEqual([[r['input']['source'] for r in s['rows']] for s in rows],[[2,1],[1,2],[2,1]])
         buffer.eligible(evidence,4,{'small':['small']});self.assertEqual(evidence.loads,[1,2])
 
 

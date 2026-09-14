@@ -20,15 +20,15 @@ def evaluate(learner, workers, cases, directory, job, guard, *, uniform=False, r
     folder='random' if uniform else 'evaluation'
     output=directory/f'{folder}/{ordinal:04d}'
     began=time.monotonic()
-    rows=workers.evaluate(learner.behavior_copy(),cases,learner.seed,ordinal,output,guard.began+guard.seconds,uniform=uniform)
+    raw=retain_raw or ordinal in learner.config['retention']['evaluation_traces']
+    rows=workers.evaluate(learner.behavior_copy(),cases,learner.seed,ordinal,output,guard.began+guard.seconds,
+        evaluation=dict(learner.config['evaluation'],retain_trace=raw),uniform=uniform)
     record=dict(schema='declarative-learning-evaluation-v1',update=ordinal,rows=rows,seconds=time.monotonic()-began,
-        raw_retained=retain_raw or ordinal in learner.config['retention']['evaluation_traces'])
+        raw_retained=raw)
     # The exact finite list comes from the evaluation cases, not directory scans.
-    for case in cases:
+    for case in cases if raw else []:
         path=output/f'factory-{case["generation_seed"]}-{case["sample"]}.pt.gz'
         account_write(job,path)
-        if not record['raw_retained']:
-            account_remove(job,path)
     path=output/'report.json';write(path,record);account_write(job,path)
     job.setdefault(folder,[]).append(dict(update=ordinal,**reference(path,directory)))
     write(directory/'state.json',job)
@@ -36,7 +36,7 @@ def evaluate(learner, workers, cases, directory, job, guard, *, uniform=False, r
 
 
 def register_inputs(payload, job):
-    inputs=job.setdefault('inputs',{})
+    inputs={}
     for before in payload['native_before']:
         if before['policy_actions']!=0:
             continue
@@ -47,8 +47,10 @@ def register_inputs(payload, job):
             generation_seed=value['generation_seed'],draw=value['draw'],attempts=len(value['attempts']),
             facilities=len(before['native']['original']['placements']),
             input_directory=value.get('input_directory'),start_curriculum=value.get('start_curriculum'))
-        require(key not in inputs or inputs[key]==record, 'declarative changed actual training input slot')
         inputs[key]=record
+    from declarative_input_history import register
+    register(job,inputs)
+    return inputs
 
 
 def run_arm(launch, matrix, seed, state, matrix_guard, requested_stop=lambda:False):
@@ -67,6 +69,8 @@ def run_arm(launch, matrix, seed, state, matrix_guard, requested_stop=lambda:Fal
         initial=directory/'checkpoints/0000.pt.gz';save(initial,learner.checkpoint(None));account_write(job,initial)
         job['latest_checkpoint']=reference(initial,directory);write(directory/'state.json',job)
     previous=job['seconds']
+    from declarative_input_history import initialize
+    initialize(job,directory)
     require(previous<config['limits']['arm_seconds'], 'declarative arm already exhausted its wall allowance')
     resource=ResourceGuard(directory,config['limits']['arm_seconds']-previous,
         config['limits']['matrix_rss_bytes'],config['limits']['min_free_bytes'])
@@ -115,9 +119,12 @@ def run_arm(launch, matrix, seed, state, matrix_guard, requested_stop=lambda:Fal
                 require(all(s['native'] is None for s in workers.snapshot()), 'declarative final update has unfinished episodes')
                 break
             payload=workers.collect(learner.behavior_copy(),learner.sampler)
-            register_inputs(payload,job)
+            inputs=register_inputs(payload,job)
             record=learner.update(payload,evidence)
-            snapshots=workers.snapshot()
+            record['inputs']=inputs
+            # Completed-wave publication assigns next starts before taking its
+            # durable snapshot. A pre-assignment copy is never used.
+            snapshots=None if config.get('start_curriculum') and payload['completed'] else workers.snapshot()
             record.update(input_access_seconds=sum(s['metadata']['input_access_seconds'] for s in payload['native_before'] if s['policy_actions']==0),
                 worker_cpu_seconds=workers.worker_cpu_seconds[:],max_step_concurrency=workers.max_step_concurrency,
                 worker_phase_seconds=dict(workers.phase_seconds),native_seconds=sum(s['outcome']['seconds'] for s in payload['samples']),

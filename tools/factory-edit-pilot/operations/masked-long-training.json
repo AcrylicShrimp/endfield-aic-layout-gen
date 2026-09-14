@@ -1,0 +1,14 @@
+{
+  "schema": "masked-long-training-v1",
+  "numerical_base": "tools/factory-edit-pilot/operations/declarative-mask-training.json",
+  "initialization_seed": 149,
+  "training_generation_seed": 722900000,
+  "duration_seconds": 43200,
+  "finish_grace_seconds": 600,
+  "probe_updates": 8,
+  "evaluation_interval_updates": 128,
+  "workers": 16,
+  "retained_output_bytes": 17179869184,
+  "max_rss_bytes": 51539607552,
+  "min_free_bytes": 17179869184
+}

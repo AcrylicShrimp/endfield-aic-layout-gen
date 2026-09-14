@@ -1,5 +1,6 @@
 """Immutable graph tensors and catalog-derived declarative decision domains."""
 import math
+from collections import Counter
 
 import torch
 
@@ -150,9 +151,15 @@ def prepare(observation, catalog, config):
     global_features += [sum(e['status'] == 'pending' for e in observation['edges'])/max(len(bp['edges']),1),
         sum(c.get('area',1) for c in observation['conflicts'])/max(initial[0],1),
         observation['elapsed_ms']/observation['config']['elapsed_ms'], observation['attempts']/observation['config']['max_actions']]
+    # The immutable domain owns its normalization feature. Prepare it once in
+    # the persistent worker, rather than walking every root again on the
+    # coordinator for behavior, each PPO epoch and every replay draw.
+    kind_counts=Counter(action['kind'] for action in actions)
+    kind_logs={kind:math.log(count) for kind,count in kind_counts.items()}
     return dict(schema=SCHEMA, blueprint_sha256=observation['blueprint_sha256'], revision=observation['revision'],
         node_static=tensor(static,14), node_state=tensor(state,10), edge_index=tensor(links,2,torch.long).T.contiguous(),
         edge_static=tensor(edge_static,10), edge_state=tensor(edge_state,4), path_cells=tensor(path_cells,2),
         path_edges=torch.tensor(path_edges,dtype=torch.long), global_features=torch.tensor(global_features),
         action_features=tensor(features,12), action_references=tensor(references,2,torch.long),
-        actions=actions, root_owners=owners, port_groups=groups)
+        actions=actions, root_owners=owners, port_groups=groups,
+        kind_log_counts=torch.tensor([kind_logs[action['kind']] for action in actions],dtype=torch.float32))

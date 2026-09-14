@@ -46,13 +46,13 @@ class TensorStorageTests(unittest.TestCase):
         self.assertIsInstance(restored['tuple'],tuple)
         self.assertIsInstance(restored['tuple'][1],np.ndarray)
 
-    def test_standard_torch_archive_and_mixed_empty_shared_dtypes(self):
+    def test_direct_tensor_archive_and_legacy_mixed_empty_shared_dtypes(self):
         base=np.arange(16,dtype=np.uint8)
         values=[torch.from_numpy(base[:0].view(dtype)) for dtype in (np.float32,np.float64,np.int64,np.uint8)]
         values += [torch.tensor(3.),torch.arange(8,dtype=torch.bfloat16),torch.ones(2,requires_grad=True)]
         with tempfile.TemporaryDirectory() as temporary:
             path=Path(temporary)/'saved.pt.gz';save(path,values)
-            with gzip.open(path,'rb') as f:restored=torch.load(f,map_location='cpu',weights_only=False)
+            restored=load(path)
             for a,b in zip(values,restored,strict=True):
                 torch.testing.assert_close(a,b,rtol=0,atol=0)
                 self.assertEqual(a.requires_grad,b.requires_grad)
@@ -85,6 +85,20 @@ class TensorStorageTests(unittest.TestCase):
 
 @unittest.skipUnless(os.environ.get('AIC_NATIVE_LIBRARY'),'requires selected release native library')
 class ReplayStorageTests(unittest.TestCase):
+    def test_immutable_recorded_ports_reuse_features_and_changed_decision_rejects(self):
+        from unittest.mock import patch
+        import declarative_learning_policy as policy
+        helper=baseline.NativeLearningTests();helper.setUp()
+        _,observation=helper.observation();prepared=helper.runtime.prepare(observation)
+        action=dict(kind='place',instance='C1',x=26,y=16,rotation=180,ports=[
+            dict(node=6,port='input-belt-2'),dict(node=11,port='input-belt-3'),dict(node=20,port='output-belt-1')])
+        decision=baseline.decision_for(prepared,action,observation);row=dict(input=prepared,decision=decision)
+        expected=policy.prepare_rows([row])
+        with patch.object(policy,'branch',side_effect=AssertionError('recomputed immutable branch')):
+            self.assertEqual(digest(expected),digest(policy.prepare_rows([row])))
+        row['decision']=dict(root=decision['root'],ports=[])
+        with self.assertRaisesRegex(ValueError,'recorded port coverage'):policy.prepare_rows([row])
+
     def test_sparse_storage_preserves_unfinished_credit_and_terminal_replay(self):
         helper=baseline.NativeLearningTests();helper.setUp();chunks=helper.preparation_chunks()
         config=helper.config;expected=Buffer();memory=baseline.MemoryEvidence()
@@ -102,7 +116,12 @@ class ReplayStorageTests(unittest.TestCase):
                 job['records'].append(reference(record,root));job['replay_sources'][str(n)]=ref
                 actual=Buffer(actual.snapshot());evidence=Evidence(root,job)
             self.assertEqual(actual.snapshot(),expected.snapshot())
-            self.assertEqual(digest(actual.eligible(evidence,3,config['strata'])),digest(expected.eligible(memory,3,config['strata'])))
+            import declarative_learning_policy as policy
+            left=actual.eligible(evidence,3,config['strata']);right=expected.eligible(memory,3,config['strata'])
+            self.assertEqual([r['id'] for r in left],[r['id'] for r in right])
+            for a,b in zip(left,right,strict=True):
+                self.assertEqual([r['return_to_terminal'] for r in a['rows']],[r['return_to_terminal'] for r in b['rows']])
+                self.assertEqual(digest(policy.prepare_rows(a['rows'])),digest(policy.prepare_rows(b['rows'])))
             with self.assertRaisesRegex(ValueError,'source sample'):evidence.sample((1,100000))
 
 class MigrationTests(unittest.TestCase):

@@ -37,24 +37,27 @@ class InputContractTests(unittest.TestCase):
             source.options=dict(seed_base=100,max_attempts=2,episode_setup_seconds=180,geometry_reservation=reservation)
             source.reserved=reserved_geometries(source.options)
             source.contract=dict(geometry_reservation=reservation);source.spec={'catalogs':{}}
+            source.contract_sha256=digest(source.contract);source.store_ready=False
             source.native=object();source.blueprint_spec=dict(catalogs={},config={})
             edited=[]
             def edit(*args):
                 edited.append(args)
                 return SimpleNamespace(checkpoint_json=lambda:json.dumps(dict(request={},original={},blueprint_sha256='c'*64)))
             source.editor=SimpleNamespace(open=edit)
-            def generate(native,spec,seed,directory,guard):
+            def generate(native,spec,seed,directory,guard,*,compact):
+                self.assertTrue(compact)
                 directory.mkdir();row=dict(status='accepted',generation_seed=seed,draw={'product':'fixture'},
                     geometry_sha256='a'*64 if seed==100 else 'b'*64)
                 write(directory/'generation.json',row)
-                case={}
-                for key in ('request','initial','original'):
-                    path=directory/(key+'.json');write(path,{});case[key]=str(path)
+                case={key:{} for key in ('request','initial','original')}
                 return case,row
-            with patch('random_factory_generation.generate',side_effect=generate):
+            with patch('random_factory_generation.generate',side_effect=generate), \
+                    patch.object(source,'load',side_effect=AssertionError('reloaded freshly validated input')):
                 payload,metadata=source.acquire(0,0)
             self.assertEqual(len(edited),1);self.assertEqual(metadata['generation_seed'],101)
             self.assertEqual([a['reservation_rejected'] for a in metadata['attempts']],[True,False])
+            self.assertEqual({p.name for p in (source.root/'episode-00000000').iterdir()},
+                {'input.pt.gz','episode.json','attempt-0','attempt-1'})
             with patch('random_factory_generation.generate',side_effect=AssertionError('regenerated paired slot')):
                 self.assertEqual(source.acquire(0,0),(payload,metadata))
             path=source.root/metadata['reference']['path'];original=read(path)
@@ -71,7 +74,7 @@ class InputContractTests(unittest.TestCase):
                     source.load(reference(path,source.root),0,0)
             # A fully reserved slot must exhaust its existing allowance without
             # editing/admitting any candidate or publishing an episode record.
-            source.root=root/'exhausted';source.reserved=frozenset(['a'*64,'b'*64]);edited.clear()
+            source.root=root/'exhausted';source.store_ready=False;source.reserved=frozenset(['a'*64,'b'*64]);edited.clear()
             with patch('random_factory_generation.generate',side_effect=generate):
                 with self.assertRaisesRegex(ValueError,'exhausted'):source.acquire(0,0)
             self.assertFalse(edited);self.assertFalse((source.root/'episode-00000000/episode.json').exists())

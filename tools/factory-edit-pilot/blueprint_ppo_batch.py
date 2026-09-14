@@ -27,14 +27,18 @@ def pack(observations, *, schema='blueprint-edit-graph-v1', packed_schema=SCHEMA
         nodes.append(torch.full((len(observation['node_static']),), index, dtype=torch.long))
         actions.append(torch.full((len(observation['actions']),), index, dtype=torch.long))
         counts.append(len(observation['actions']))
-        kind_counts = Counter(a['kind'] for a in observation['actions'])
-        kinds.extend(math.log(kind_counts[a['kind']]) for a in observation['actions'])
+        kind_log_counts=observation.get('kind_log_counts')
+        if kind_log_counts is None:
+            counts_by_kind=Counter(a['kind'] for a in observation['actions'])
+            logarithms={kind:math.log(count) for kind,count in counts_by_kind.items()}
+            kind_log_counts=torch.tensor([logarithms[a['kind']] for a in observation['actions']],dtype=torch.float32)
+        kinds.append(kind_log_counts)
         node_offset += len(observation['node_static'])
         edge_offset += len(observation['edge_static'])
     result = dict(schema=packed_schema, size=len(observations), action_counts=counts,
                 **{k: torch.cat(v) for k, v in fields.items()}, edge_index=torch.cat(edges, dim=1),
                 node_graph=torch.cat(nodes), action_graph=torch.cat(actions),
-                kind_log_counts=torch.tensor(kinds, dtype=torch.float32))
+                kind_log_counts=torch.cat(kinds))
     # Compute integer segment lengths during CPU preparation, avoiding device
     # synchronization for output-size inference in CUDA bincount.
     result['path_counts'] = torch.bincount(result['path_edges'], minlength=edge_offset).clamp_min(1)

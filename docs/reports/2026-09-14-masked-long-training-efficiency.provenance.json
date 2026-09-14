@@ -1,0 +1,265 @@
+{
+  "schema": "masked-long-efficiency-provenance-v1",
+  "base_commit": "f0b2320",
+  "server_root": "/home/ashrimp/Srv/aic-masked-long-opt-20260914",
+  "launch_sha256": "1cd1882abb89230d30098e57dded3bfe4d7171eb4aeb96f837b95628565fc286",
+  "source_sha256": "6f37ba622979b42611cd65957dd9697cba5ac025aca2de78edc9d070c3dbc870",
+  "native_sha256": "da48d86d9f925adac348c5b616dd0974b3e2e60578f6ab36c15c05b65156f9a2",
+  "protocol": {
+    "path": "/home/ashrimp/Srv/aic-masked-long-opt-20260914/tools/factory-edit-pilot/operations/masked-long-training.json",
+    "sha256": "b41d82647b8ff045ce40720e7d0b1237e9c514461d22d35a91e53b0e034e38db"
+  },
+  "panel": {
+    "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/panels/development/panel.json",
+    "sha256": "57c426cf8833c5f65eeeb6c85a124ca82d3735f68a89d8e533f75db930940026"
+  },
+  "reservation_count": 128,
+  "configuration": {
+    "seed": 149,
+    "generation_seed": 722900000,
+    "duration_seconds": 43200,
+    "finish_grace_seconds": 600,
+    "streams": 32,
+    "physical_workers": 16,
+    "evaluation_interval_updates": 128
+  },
+  "cold_origin": {
+    "schema": "masked-long-cold-origin-v1",
+    "seed": 149,
+    "launch_sha256": "1cd1882abb89230d30098e57dded3bfe4d7171eb4aeb96f837b95628565fc286",
+    "empty_state": {
+      "model": "4f98f164de00f92e825de04d67cbca46504cea636ca725caa974755a73f13078",
+      "actor_optimizer": "7de48e758f78079f4b1e02f68fb123b73ee513bd478ec6c4cc799b309ce27964",
+      "critic_optimizer": "7a059f692c4f8e87bd6b4b8637690e8059427725999f17210dcc89fd30429943",
+      "sampler_rng": "c2b81d4907a533b2174f7e0353f8764f03d64f24c48c776248484ca68cf19eca",
+      "shuffle_rng": "b4e96e6a149b94c7197738e34291b20516c23151f843a60861fceb574e754f49",
+      "buffer": "65f5a3ea6417e28f622e4b8330d11e0da954c4ce59f90242512fb3369ddbd812"
+    },
+    "model_sha256": "4f98f164de00f92e825de04d67cbca46504cea636ca725caa974755a73f13078",
+    "learned_state_imported": false
+  },
+  "process": {
+    "schema": "masked-long-process-v1",
+    "pid": 107932,
+    "started_unix_seconds": 1789391852.5248737,
+    "command": [
+      "/home/ashrimp/Srv/aic-masked-long-opt-20260914/tools/factory-edit-pilot/.venv/bin/python",
+      "/home/ashrimp/Srv/aic-masked-long-opt-20260914/tools/factory-edit-pilot/operations/masked_long_training.py",
+      "run",
+      "--output",
+      "/home/ashrimp/Srv/aic-masked-long-opt-20260914/artifacts/twelve-hour",
+      "--environment",
+      "/home/ashrimp/Srv/aic-declarative-batch-20260913/.tracking.env"
+    ]
+  },
+  "readiness": {
+    "status": "passed",
+    "continuity_closed": true,
+    "pause_resume_boundary": 2,
+    "updates": 8,
+    "input_count": 128
+  },
+  "normal_measurement": {
+    "schema": "masked-normal-throughput-v1",
+    "status": "passed",
+    "profiled": false,
+    "window": {
+      "begin_unix": 1789391524.5391335,
+      "end_unix": 1789391552.479749,
+      "updates": 5,
+      "seconds": 27.94061541557312
+    },
+    "seconds_per_update": 5.588123083114624,
+    "actions_per_second": 183.24578481354035,
+    "cpu_cores": 2.081660847881315,
+    "physical_cpu_percent": 8.673586866172144,
+    "gpu_percent": 30.410714285714285,
+    "cpu_samples": 55,
+    "gpu_samples": 56,
+    "job_seconds": 67.99801981299242,
+    "peak_rss_bytes": 21447974912,
+    "free_disk_bytes": 72978210816,
+    "storage": {
+      "training-inputs": {
+        "files": 490,
+        "bytes": 1464280
+      },
+      "seed-149/replay": {
+        "files": 7,
+        "bytes": 47346181
+      },
+      "seed-149/checkpoints": {
+        "files": 5,
+        "bytes": 2578156
+      },
+      "seed-149/updates": {
+        "files": 8,
+        "bytes": 620435
+      },
+      "seed-149/curriculum": {
+        "files": 22,
+        "bytes": 154105
+      },
+      "seed-149/evaluation": {
+        "files": 131,
+        "bytes": 66291116
+      }
+    }
+  },
+  "storage_comparison": {
+    "schema": "masked-storage-comparison-v1",
+    "status": "passed",
+    "source": {
+      "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-masked/seed-71/replay/0099.pt.gz",
+      "sha256": "86762ac6a3fd34c46abe93651807b3b0c49e9d780d937dcdecbd4d424ae00df5"
+    },
+    "samples": 1003,
+    "rows": [
+      {
+        "encoding": "torch-wrapper",
+        "save_seconds": 4.554615749002551,
+        "load_seconds": 1.7252081839978928,
+        "bytes": 29355465
+      },
+      {
+        "encoding": "direct-full",
+        "save_seconds": 1.9038883290049853,
+        "load_seconds": 1.6532085649960209,
+        "bytes": 29388167
+      },
+      {
+        "encoding": "direct-selected-branches",
+        "save_seconds": 0.6051836109982105,
+        "load_seconds": 0.7608493430016097,
+        "bytes": 19127574
+      }
+    ],
+    "all_recorded_likelihood_inputs_equal": true,
+    "scope": "One unprofiled pass per encoding on identical retained data; disposable archives removed."
+  },
+  "packing_comparison": {
+    "schema": "masked-pack-comparison-v1",
+    "status": "passed",
+    "samples": 1003,
+    "all_tensors_exact": true,
+    "source": {
+      "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-masked/seed-71/replay/0099.pt.gz",
+      "sha256": "86762ac6a3fd34c46abe93651807b3b0c49e9d780d937dcdecbd4d424ae00df5"
+    },
+    "baseline": {
+      "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/tools/factory-edit-pilot/blueprint_ppo_batch.py",
+      "sha256": "e244ecf5160d814f2ce8b54249b870d1ca27a73809225a340b65e72ad9df58b5"
+    },
+    "feature_preparation_seconds": 0.11159773700637743,
+    "rows": [
+      {
+        "kind": "baseline",
+        "seconds": 0.1853872400097316
+      },
+      {
+        "kind": "cached",
+        "seconds": 0.026157122003496625
+      },
+      {
+        "kind": "baseline",
+        "seconds": 0.18287402600981295
+      },
+      {
+        "kind": "cached",
+        "seconds": 0.025960920000215992
+      },
+      {
+        "kind": "baseline",
+        "seconds": 0.18385839799884707
+      },
+      {
+        "kind": "cached",
+        "seconds": 0.026214668003376573
+      }
+    ]
+  },
+  "compilation_comparison": {
+    "status": "passed",
+    "adopted": false,
+    "warmup_seconds": 7.416757360013435,
+    "maximum_output_error": 2.384185791015625e-06,
+    "measurements": [
+      {
+        "kind": "eager",
+        "steps": 30,
+        "seconds": 0.26663888299663085
+      },
+      {
+        "kind": "compiled",
+        "steps": 30,
+        "seconds": 0.2603938740066951
+      },
+      {
+        "kind": "eager",
+        "steps": 30,
+        "seconds": 0.2666199020022759
+      },
+      {
+        "kind": "compiled",
+        "steps": 30,
+        "seconds": 0.260566352008027
+      }
+    ]
+  },
+  "retained_receipts": {
+    "launch.json": {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/masked-long-opt-20260914/launch.json",
+      "sha256": "1cd1882abb89230d30098e57dded3bfe4d7171eb4aeb96f837b95628565fc286"
+    },
+    "cold-origin.json": {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/masked-long-opt-20260914/cold-origin.json",
+      "sha256": "e80f8e75b996c01e3fd87f4c7c48fa0f12cd459218e0bd0b7079cc5bdbcf449f"
+    },
+    "readiness.json": {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/masked-long-opt-20260914/readiness.json",
+      "sha256": "1a8916f13760c1bbfd3cbac537799ceafff1227b061be25f7c151a27e6959d4e"
+    },
+    "server-checks.json": {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/masked-long-opt-20260914/server-checks.json",
+      "sha256": "4c566328d329f3b2ad484bba1150f52eb359adc43b4246b698a7264634191e69"
+    },
+    "normal-throughput.json": {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/masked-long-opt-20260914/normal-throughput.json",
+      "sha256": "76ceabfe4a3e0f83cc718f1f5208c0ebc6062bb931f270ff4fead5aff4fc8219"
+    },
+    "storage-comparison.json": {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/masked-long-opt-20260914/storage-comparison.json",
+      "sha256": "fdb9b7d778ad140ec17289672c288b1c64550191251ea3f30fa452e4cde2d66b"
+    },
+    "pack-comparison.json": {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/masked-long-opt-20260914/pack-comparison.json",
+      "sha256": "577d1cf86047ee993056a432d39b9d2c0ae83f3a824ebfb75aeea6905b1dec34"
+    },
+    "compile-comparison.json": {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/masked-long-opt-20260914/compile-comparison.json",
+      "sha256": "feb1c1020f030e9f614a6db678ba78dfb95b5b95594e74794d2fc55d708021e3"
+    }
+  },
+  "test_logs": {
+    "cargo-check.log": {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/masked-long-opt-20260914/cargo-check.log",
+      "sha256": "5e7f9ecd02b56141d2a72baf3db1d248e67eeaeea78628e94333e2b90183ac38"
+    },
+    "cargo-test.log": {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/masked-long-opt-20260914/cargo-test.log",
+      "sha256": "e77e4b83cf484102d89e86b36003039c65ff243d65750783ceb852d4ddbb251f"
+    },
+    "server-final-declarative.log": {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/masked-long-opt-20260914/server-final-declarative.log",
+      "sha256": "619e3f99ec9d8e3055630e2bf08d0273917272928e767f383472d3982348a039"
+    },
+    "server-final-other-v2.log": {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/masked-long-opt-20260914/server-final-other-v2.log",
+      "sha256": "38dc496d0e943ee08a1c678e48d11c8c4deef2760cd373f981aaa7dfbf9f1b2e"
+    },
+    "server-constructor-final-v2.log": {
+      "path": "/Users/ashrimp/Devel/endfield-aic-layout-gen/artifacts/masked-long-opt-20260914/server-constructor-final-v2.log",
+      "sha256": "65902c9b888f5988f3ddd7589338324c72c02ab7ff0115412a13e2b5971dcf63"
+    }
+  }
+}

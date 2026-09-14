@@ -69,7 +69,7 @@ def draw(spec, seed):
                 setup_seed=rng.getrandbits(63))
 
 
-def generate(runtime, spec, seed, directory, guard):
+def generate(runtime, spec, seed, directory, guard, *, compact=False):
     if 'frozen_starts' in spec:
         from ppo_frozen_starts import applies, materialize
         if applies(spec['frozen_starts'], seed):
@@ -78,11 +78,11 @@ def generate(runtime, spec, seed, directory, guard):
     directory = Path(directory)
     directory.mkdir()
     chosen = draw(spec, seed)
-    write(directory / 'draw.json', dict(schema_version=1, generation_seed=seed, **chosen))
+    if not compact:write(directory / 'draw.json', dict(schema_version=1, generation_seed=seed, **chosen))
     generation = spec['generation']
     guard()
     admission_started = time.monotonic()
-    case, attempt = admit(runtime, spec, chosen, directory / 'admission', guard)
+    case, attempt = admit(runtime, spec, chosen, directory / 'admission', guard,compact=compact)
     record = dict(schema_version=2, backend=runtime.metadata['backend'], generation_seed=seed, draw=chosen,
                   admission_seconds=time.monotonic() - admission_started,
                   admission_status=attempt['status'], original_attempt=attempt)
@@ -111,21 +111,31 @@ def generate(runtime, spec, seed, directory, guard):
             if step['status'] == 'late':
                 raise TimeoutError(f'random-factory.setup-late: {directory}')
     except BaseException:
-        write(directory / 'setup-partial.json', env.summary())
-        write(directory / 'setup-current-partial.json', json.loads(env.export_layout('current')))
-        write(directory / 'setup-best-partial.json', json.loads(env.export_layout('best')))
+        if compact:
+            # A failed setup is not replayable from its seed alone. Preserve
+            # its actual request/current/best once, without normal-step traces.
+            from blueprint_ppo_store import save
+            save(directory/'setup-partial.pt.gz',dict(schema='random-factory-partial-v1',case=case,
+                setup=env.summary(),current=json.loads(env.export_layout('current')),
+                best=json.loads(env.export_layout('best'))))
+        else:
+            write(directory / 'setup-partial.json', env.summary())
+            write(directory / 'setup-current-partial.json', json.loads(env.export_layout('current')))
+            write(directory / 'setup-best-partial.json', json.loads(env.export_layout('best')))
         raise
     setup = env.summary()
-    write(directory / 'setup.json', setup)
+    if not compact:write(directory / 'setup.json', setup)
     current = json.loads(env.export_layout('current'))
     setup_seconds = time.monotonic() - setup_started
     guard()
-    case, check = accept_case(runtime, read(case['request']), read(case['original']), current, f'generated-{seed}',
-                             directory / 'randomized-input', generation['setup_seconds'], spec['selection']['route_work'])
+    request=case['request'] if compact else read(case['request'])
+    graph=case['original'] if compact else read(case['original'])
+    case, check = accept_case(runtime, request, graph, current, f'generated-{seed}',
+        directory / 'randomized-input', generation['setup_seconds'], spec['selection']['route_work'],memory=compact)
     normalized = json.loads(check.export_layout('current'))
     geometry = geometry_identity(normalized)
-    record.update(status='accepted', case=case, request_sha256=sha(case['request']),
-        initial_sha256=sha(case['initial']), geometry_sha256=geometry,
+    record.update(status='accepted', request_sha256=digest(request) if compact else sha(case['request']),
+        initial_sha256=digest(current) if compact else sha(case['initial']), geometry_sha256=geometry,
         constructor_geometry_sha256=constructor_geometry, geometry_changed=geometry != constructor_geometry,
         initial_metrics=check.summary()['initial_metrics'], setup_seconds=setup_seconds,
         setup_selected=env.selected, setup_kinds=dict(Counter(t['action']['kind'] for t in setup['trace'])),
@@ -133,5 +143,7 @@ def generate(runtime, spec, seed, directory, guard):
         actual_start_is_current=digest(normalized) == digest(current), seconds=time.monotonic() - started)
     if not record['actual_start_is_current']:
         raise ValueError(f'random-factory.reset-identity: {directory}')
+    if compact:record['schema_version']=3
+    else:record['case']=case
     write(directory / 'generation.json', record)
     return case, record

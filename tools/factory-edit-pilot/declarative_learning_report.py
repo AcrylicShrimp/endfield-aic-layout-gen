@@ -30,6 +30,8 @@ def report(output):
     require(state['status']=='complete', 'declarative report requires completed registered training')
     config=launch['config'];first_update=config['training'].get('first_update',0)
     jobs={seed:read(root/f'seed-{seed}/state.json') for seed in config['seeds']}
+    from declarative_input_history import materialize
+    for seed,job in jobs.items():job['inputs']=materialize(job,root/f'seed-{seed}')
     expected=next(iter(jobs.values()))['update'] if config.get('duration') else config['training']['updates']
     updates=expected-first_update
     baseline_inputs=jobs[config['seeds'][0]]['inputs']

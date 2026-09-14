@@ -18,7 +18,7 @@ def rejected(row, status, stage, entity, diagnostics=None):
     return None, row
 
 
-def process(binary, arguments, milliseconds, directory, name, *, retain_stdout=True):
+def process(binary, arguments, milliseconds, directory, name, *, retain_stdout=True, retain_details=True):
     began = time.monotonic()
     timed_out = False
     try:
@@ -31,10 +31,10 @@ def process(binary, arguments, milliseconds, directory, name, *, retain_stdout=T
         stderr = stderr.decode() if isinstance(stderr, bytes) else stderr
     if retain_stdout:
         (directory / f'{name}.stdout').write_text(stdout)
-    (directory / f'{name}.stderr').write_text(stderr)
+    if retain_details or stderr:(directory / f'{name}.stderr').write_text(stderr)
     record = dict(code=code, timed_out=timed_out, elapsed_ms=(time.monotonic() - began) * 1000,
-                  binary=binary, argv=arguments)
-    write(directory / f'{name}.json', record)
+                  binary=binary, argv=arguments,stderr_present=bool(stderr))
+    if retain_details or timed_out or code!=0:write(directory / f'{name}.json', record)
     return record, stdout
 
 
@@ -66,7 +66,11 @@ def original_request(wiring):
     return request, graph, nodes
 
 
-def accept_case(runtime, request, graph, witness, case_id, directory, elapsed, work):
+def accept_case(runtime, request, graph, witness, case_id, directory, elapsed, work, *, memory=False):
+    if memory:
+        case=dict(id=case_id,dialect='closure-factory',instances=len(request['instances']),
+            request=request,original=graph,initial=witness)
+        return case,runtime.open_episode(case,1,elapsed,work)
     directory.mkdir(parents=True)
     for name, value in [('request', request), ('original-request', graph), ('initial', witness)]:
         (directory / f'{name}.json').write_text(json.dumps(value, separators=(',', ':'), ensure_ascii=False, allow_nan=False) + '\n')
@@ -82,7 +86,7 @@ def accept_case(runtime, request, graph, witness, case_id, directory, elapsed, w
     return case, episode
 
 
-def admit(runtime, spec, chosen, directory, guard):
+def admit(runtime, spec, chosen, directory, guard, *, compact=False):
     directory.mkdir()
     generation, catalogs = spec['generation'], spec['catalogs']
     source = read(chosen['source'])
@@ -90,7 +94,8 @@ def admit(runtime, spec, chosen, directory, guard):
     plan = directory / 'source-plan.json'
     write(plan, source)
     flow, stdout = process(spec['cli'], ['recipes', 'contextual-instance-wiring', '--file', catalogs['recipes'],
-        '--request', str(plan)], generation['flow_elapsed_ms'], directory, 'flow-process')
+        '--request', str(plan)], generation['flow_elapsed_ms'], directory, 'flow-process',
+        retain_stdout=not compact,retain_details=not compact)
     row = dict(directory=str(directory), status='pending', factory_validated=False, diagnostics=[], flow_ms=flow['elapsed_ms'])
     if flow['timed_out']:
         return rejected(row, 'flow-budget', 'wiring', plan)
@@ -102,7 +107,7 @@ def admit(runtime, spec, chosen, directory, guard):
         wiring = {}
     if flow['code'] != 0 or wiring.get('success') is not True:
         return rejected(row, 'flow-rejected', 'wiring', plan, wiring.get('diagnostics'))
-    write(directory / 'wiring.json', wiring)
+    if not compact:write(directory / 'wiring.json', wiring)
     request, graph, nodes = original_request(wiring)
     row['facilities'] = len(nodes)
     if len(nodes) > generation['max_facilities']:
@@ -119,7 +124,7 @@ def admit(runtime, spec, chosen, directory, guard):
     arguments.extend(['--downstream-closed-growth', '--final-json'])
     guard()
     result, stdout = process(spec['cli'], arguments, c['elapsed_ms'], directory, 'construction-process',
-                             retain_stdout=False)
+                             retain_stdout=False,retain_details=not compact)
     row['construction_ms'] = result['elapsed_ms']
     if result['timed_out']:
         return rejected(row, 'construction-budget', 'construction', plan)
@@ -141,6 +146,11 @@ def admit(runtime, spec, chosen, directory, guard):
                    utilizations={n['id']: n['work_seconds_per_second'] for n in nodes})
     validation_started = time.monotonic()
     case, _ = accept_case(runtime, request, graph, witness, f'random-factory-{chosen["product"]}-rate-0',
-                          directory / 'input', generation['setup_seconds'], spec['selection']['route_work'])
+                          directory / 'input', generation['setup_seconds'], spec['selection']['route_work'],memory=compact)
     row.update(status='accepted', factory_validated=True, validation_ms=(time.monotonic() - validation_started) * 1000)
+    if compact:
+        plan.unlink()
+        # Successful constructors normally have no stderr. Keep an actual
+        # warning file if emitted, without scanning the input bank.
+        if not flow['stderr_present'] and not result['stderr_present']:directory.rmdir()
     return case, row

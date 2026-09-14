@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 from blueprint_execution_worker import Worker as TransportWorker, main
-from blueprint_ppo_store import checked, read
+from blueprint_ppo_store import checked, load, read, reference, write
 from blueprint_ppo_update import require
 from declarative_learning_environment import Runtime, Stream, step_stream, finish_stream
 from declarative_learning_evaluate import evaluate
@@ -28,6 +28,15 @@ class Worker(TransportWorker):
             payload, metadata = self.runtime.inputs.acquire(self.stream.index,command['episode'])
             root = self.runtime.inputs.root
             record = read(checked(metadata['reference'],root))
+            if record['schema']=='blueprint-fresh-episode-v2':
+                # A held-out panel explicitly exports its public input files.
+                # Normal training stores only the compressed actual input.
+                archived=load(checked(record['files']['input'],root))
+                folder=root/'panel-inputs'/f'episode-{metadata["identity"]["slot"]:08d}'
+                files={}
+                for key,value in (('request',payload['request']),('initial',payload['original']),('original',archived['source_graph'])):
+                    path=folder/f'{key}.json';write(path,value);files[key]=reference(path,root)
+            else:files={k:record['files'][k] for k in ('request','initial','original')}
             selected = copy(self.runtime)
             selected.request,selected.original = payload['request'],payload['original']
             session,_ = selected.open(64,60000)
@@ -37,7 +46,7 @@ class Worker(TransportWorker):
             return dict(case=dict(directory=str(root),generation_seed=metadata['generation_seed'],
                 product=metadata['draw']['product'],rate=metadata['draw']['rate'],geometry_identity=metadata['geometry_sha256'],
                 facilities=len(payload['original']['placements']),initial_metrics=observation['initial_metrics'],
-                files={k:record['files'][k] for k in ('request','initial','original')},input=metadata))
+                files=files,input=metadata))
         if operation == 'start':
             require(self.before is None and self.stream.session is None and
                 command['start']['stream']==self.stream.index and command['start']['wave']==self.stream.episode+1,

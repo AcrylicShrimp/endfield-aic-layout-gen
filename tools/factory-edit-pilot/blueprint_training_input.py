@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import time
 
-from blueprint_ppo_store import ROOT, checked, read, reference, sha, write
+from blueprint_ppo_store import ROOT, checked, load, read, reference, save, sha, write
 from blueprint_ppo_update import digest, require
 
 SCHEMA = 'blueprint-training-input-v1'
@@ -86,7 +86,7 @@ class FreshInputs:
         require({k: sha(p) for k, p in self.spec['catalogs'].items()} ==
                 {k: sha(ROOT / p) for k, p in blueprint_spec['catalogs'].items()},
                 'blueprint.training-input.catalogs: generator and blueprint catalogs differ')
-        self.contract = dict(schema='blueprint-fresh-input-store-v1', seed_base=self.options['seed_base'],
+        self.contract = dict(schema='blueprint-fresh-input-store-v2', seed_base=self.options['seed_base'],
             max_attempts=self.options['max_attempts'], streams=config['training']['streams'],
             episode_setup_seconds=self.options['episode_setup_seconds'],
             spec_sha256=sha(ROOT / self.options['spec']), native_sha256=sha(library),
@@ -97,6 +97,8 @@ class FreshInputs:
         if 'geometry_reservation' in self.options:
             self.contract['geometry_reservation'] = deepcopy(self.options['geometry_reservation'])
         self.native = None
+        self.store_ready = False
+        self.contract_sha256 = digest(self.contract)
 
     def identity(self, stream, episode):
         streams = self.config['training']['streams']
@@ -116,11 +118,10 @@ class FreshInputs:
 
     def load(self, ref, stream, episode):
         record = read(checked(ref, self.root))
-        require(record['schema'] == 'blueprint-fresh-episode-v1' and record['identity'] == self.identity(stream, episode),
+        require(record['schema'] in ('blueprint-fresh-episode-v1','blueprint-fresh-episode-v2') and record['identity'] == self.identity(stream, episode),
                 'blueprint.training-input.identity: wrong episode input record')
-        require(record['contract_sha256'] == digest(self.contract), 'blueprint.training-input.contract: changed generation contract')
-        for bound in record['files'].values():
-            checked(bound, self.root)
+        require(record['contract_sha256'] == self.contract_sha256, 'blueprint.training-input.contract: changed generation contract')
+        files={name:checked(bound,self.root) for name,bound in record['files'].items()}
         require(0 < len(record['attempts']) <= self.options['max_attempts'],
                 'blueprint.training-input.attempts: invalid generation attempt coverage')
         for index, attempt in enumerate(record['attempts']):
@@ -140,9 +141,13 @@ class FreshInputs:
                 'blueprint.training-input.attempts: accepted draw mismatch')
         require(record['geometry_sha256'] == generation['geometry_sha256'] and not rejected,
                 'blueprint.training-input.reservation: reserved or mismatched final geometry')
-        payload = read(checked(record['files']['input'], self.root))
+        payload = load(files['input'])['payload'] if record['schema']=='blueprint-fresh-episode-v2' else read(files['input'])
         require(digest(payload) == record['input_sha256'], 'blueprint.training-input.hash: episode payload changed')
-        return payload, dict(reference=deepcopy(ref), identity=record['identity'],
+        return payload,self.metadata(record,ref)
+
+    @staticmethod
+    def metadata(record, ref):
+        return dict(reference=deepcopy(ref), identity=record['identity'],
             generation_seed=record['generation_seed'], draw=record['draw'],
             input_sha256=record['input_sha256'], request_sha256=record['request_sha256'],
             geometry_sha256=record['geometry_sha256'], blueprint_sha256=record['blueprint_sha256'],
@@ -153,6 +158,18 @@ class FreshInputs:
         self.root.mkdir(parents=True, exist_ok=True)
         # Initialize shared metadata briefly; independent slots generate in parallel.
         # A slot lock still publishes exactly one actual input for all paired arms.
+        if not self.store_ready:self.initialize_store()
+        with (self.root / f'.slot-{identity["slot"]:08d}.lock').open('a') as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+            directory = self.root / f'episode-{identity["slot"]:08d}'
+            completed = directory / 'episode.json'
+            if completed.exists():
+                return self.load(reference(completed, self.root), stream, episode)
+            require(not directory.exists(), f'blueprint.training-input.incomplete: preserve interrupted input at {directory}')
+            directory.mkdir()
+            return self.generate(identity,directory,completed)
+
+    def initialize_store(self):
         with (self.root / '.generation.lock').open('a') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
             manifest = self.root / 'manifest.json'
@@ -167,56 +184,53 @@ class FreshInputs:
                 write(catalogs, self.spec['catalogs'])
             else:
                 require(read(catalogs) == self.spec['catalogs'], 'blueprint.training-input.catalogs: store catalog paths changed')
-        with (self.root / f'.slot-{identity["slot"]:08d}.lock').open('a') as lock:
-            fcntl.flock(lock, fcntl.LOCK_EX)
-            directory = self.root / f'episode-{identity["slot"]:08d}'
-            completed = directory / 'episode.json'
-            if completed.exists():
-                return self.load(reference(completed, self.root), stream, episode)
-            require(not directory.exists(), f'blueprint.training-input.incomplete: preserve interrupted input at {directory}')
-            directory.mkdir()
-            began = time.monotonic()
-            def guard():
-                require(time.monotonic() - began < self.options['episode_setup_seconds'],
-                        f'blueprint.training-input.deadline: episode setup exceeded bound at {directory}')
-            attempts = []
-            try:
-                if self.native is None:
-                    from native_factory_runtime import FactoryRuntime
-                    self.native = FactoryRuntime(self.spec['native_library'], self.root / 'catalogs.json')
-                from random_factory_generation import generate
-                for attempt in range(self.options['max_attempts']):
-                    guard()
-                    generation_seed = identity['first_seed'] + attempt
-                    case, generation = generate(self.native, self.spec, generation_seed, directory / f'attempt-{attempt}', guard)
-                    attempts.append(dict(seed=generation_seed, status=generation['status'],
-                        generation=reference(directory / f'attempt-{attempt}/generation.json', self.root)))
-                    rejected = generation.get('geometry_sha256') in self.reserved
-                    if self.reserved:
-                        attempts[-1]['reservation_rejected'] = rejected
-                    if case is None or rejected:
-                        continue
-                    # Freeze the new blueprint only after randomized complete
-                    # factory generation. Setup may change the original wiring;
-                    # policy actions may never change this admitted blueprint.
-                    session = self.editor.open(str(ROOT), json.dumps(self.blueprint_spec['catalogs']),
-                        Path(case['request']).read_text(), Path(case['initial']).read_text(),
-                        json.dumps(self.blueprint_spec['config']))
-                    native = json.loads(session.checkpoint_json())
-                    payload = dict(request=native['request'], original=native['original'])
-                    write(directory / 'input.json', payload)
-                    files = {k: reference(Path(case[k]), self.root) for k in ('request', 'initial', 'original')}
-                    files['input'] = reference(directory / 'input.json', self.root)
-                    row = dict(schema='blueprint-fresh-episode-v1', identity=identity, contract_sha256=digest(self.contract),
-                        generation_seed=generation_seed, draw=generation['draw'], files=files,
-                        input_sha256=digest(payload), request_sha256=digest(native['request']),
-                        geometry_sha256=generation['geometry_sha256'], blueprint_sha256=native['blueprint_sha256'],
-                        attempts=attempts, setup_seconds=time.monotonic() - began)
-                    write(completed, row)
-                    return self.load(reference(completed, self.root), stream, episode)
-                raise ValueError(f'blueprint.training-input.exhausted: {len(attempts)} generation attempts at {directory}')
-            except BaseException as error:
-                write(directory / 'failure.json', dict(status='failed', identity=identity, attempts=attempts,
-                    diagnostic=dict(code='blueprint.training-input.failed', severity='error', stage='training-input',
-                                    entity=str(directory), message=str(error))))
-                raise
+        self.store_ready=True
+
+    def generate(self, identity, directory, completed):
+        began = time.monotonic()
+        def guard():
+            require(time.monotonic() - began < self.options['episode_setup_seconds'],
+                    f'blueprint.training-input.deadline: episode setup exceeded bound at {directory}')
+        attempts = []
+        case=None
+        try:
+            if self.native is None:
+                from native_factory_runtime import FactoryRuntime
+                self.native = FactoryRuntime(self.spec['native_library'], self.root / 'catalogs.json')
+            from random_factory_generation import generate
+            for attempt in range(self.options['max_attempts']):
+                guard()
+                generation_seed = identity['first_seed'] + attempt
+                case, generation = generate(self.native, self.spec, generation_seed, directory / f'attempt-{attempt}', guard,compact=True)
+                attempts.append(dict(seed=generation_seed, status=generation['status'],
+                    generation=reference(directory / f'attempt-{attempt}/generation.json', self.root)))
+                rejected = generation.get('geometry_sha256') in self.reserved
+                if self.reserved:
+                    attempts[-1]['reservation_rejected'] = rejected
+                if case is None or rejected:
+                    continue
+                # Freeze the new blueprint only after randomized complete
+                # factory generation. Setup may change the original wiring;
+                # policy actions may never change this admitted blueprint.
+                session = self.editor.open(str(ROOT), json.dumps(self.blueprint_spec['catalogs']),
+                    json.dumps(case['request']), json.dumps(case['initial']),
+                    json.dumps(self.blueprint_spec['config']))
+                native = json.loads(session.checkpoint_json())
+                payload = dict(request=native['request'], original=native['original'])
+                save(directory / 'input.pt.gz',dict(schema='blueprint-actual-input-v2',payload=payload,source_graph=case['original']))
+                files = dict(input=reference(directory / 'input.pt.gz', self.root))
+                row = dict(schema='blueprint-fresh-episode-v2', identity=identity, contract_sha256=self.contract_sha256,
+                    generation_seed=generation_seed, draw=generation['draw'], files=files,
+                    input_sha256=digest(payload), request_sha256=digest(native['request']),
+                    geometry_sha256=generation['geometry_sha256'], blueprint_sha256=native['blueprint_sha256'],
+                    attempts=attempts, setup_seconds=time.monotonic() - began)
+                write(completed, row)
+                return payload,self.metadata(row,reference(completed,self.root))
+            raise ValueError(f'blueprint.training-input.exhausted: {len(attempts)} generation attempts at {directory}')
+        except BaseException as error:
+            if case is not None and not (directory/'input.pt.gz').exists():
+                save(directory/'failed-input.pt.gz',dict(schema='blueprint-failed-input-v1',case=case))
+            write(directory / 'failure.json', dict(status='failed', identity=identity, attempts=attempts,
+                diagnostic=dict(code='blueprint.training-input.failed', severity='error', stage='training-input',
+                                entity=str(directory), message=str(error))))
+            raise

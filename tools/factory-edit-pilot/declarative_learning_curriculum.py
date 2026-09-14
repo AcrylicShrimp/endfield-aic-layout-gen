@@ -4,7 +4,7 @@ from copy import deepcopy
 from pathlib import Path
 import random
 
-from blueprint_ppo_store import checked, read, reference, write
+from blueprint_ppo_store import checked, load, read, reference, save, write
 from blueprint_ppo_update import digest, require
 from ppo_start_curriculum import quotas
 
@@ -112,12 +112,12 @@ def next_plan(config, seed, directory, payload, chunk_ref, *, legacy=False):
         slot.update(schema=SCHEMA,wave=wave,stream=index)
         parent=slot.pop('parent',None)
         if parent is None:continue
-        value=dict(schema='declarative-inherited-input-v1',request=parent['request'],original=parent['best'],
+        value=dict(schema='declarative-inherited-input-v2',request=parent['request'],original=parent['best'],
             draw=parent['metadata']['draw'],generation_seed=parent['metadata']['generation_seed'],
             expected_metrics=parent['metrics'],best_sha256=digest(parent['best']))
-        path=folder/f'slot-{index}.json'
-        if path.exists():require(read(path)==value, f'declarative.curriculum-collision: {path}')
-        else:write(path,value)
+        path=folder/f'slot-{index}.pt.gz'
+        if path.exists():require(load(path)==value, f'declarative.curriculum-collision: {path}')
+        else:save(path,value)
         slot.update(root=parent['root'],expected_metrics=parent['metrics'],best_sha256=digest(parent['best']),
             input=dict(directory=str(directory.resolve()),**reference(path,directory)),
             parent=dict(seed=seed,wave=parent['wave'],stream=parent['stream'],depth=parent['depth'],
@@ -134,8 +134,9 @@ def inherited(start, index, episode, *, streams=8):
     parent=start['parent']
     require(parent['wave']==episode and parent['depth']==start['depth']-1 and start['root']['wave']==episode+1-start['depth'],
         'declarative.curriculum-lineage: parents must be consecutive waves')
-    value=read(checked(start['input'],Path(start['input']['directory'])))
-    require(value['schema']=='declarative-inherited-input-v1' and value['expected_metrics']==start['expected_metrics'] and
+    path=checked(start['input'],Path(start['input']['directory']))
+    value=load(path) if path.name.endswith('.pt.gz') else read(path)
+    require(value['schema'] in ('declarative-inherited-input-v1','declarative-inherited-input-v2') and value['expected_metrics']==start['expected_metrics'] and
         digest(value['original'])==value['best_sha256']==start['best_sha256'] and
         digest(value['request'])==start['root']['request_sha256'],
         'declarative.curriculum-input: inherited obligations or expected state changed')

@@ -11,6 +11,7 @@ import ppo_tensor_pickle
 from blueprint_ppo_update import digest, learners, require
 
 ROOT = Path(__file__).resolve().parents[2]
+PICKLE_MAGIC = b'AICPKL2\0'
 
 
 def read(path):
@@ -33,7 +34,11 @@ def save(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name(path.name + '.tmp')
     with gzip.open(temporary, 'wb', compresslevel=1) as stream:
-        torch.save(value, stream, pickle_module=ppo_tensor_pickle, pickle_protocol=5)
+        # The tensor reducer already owns CPU ndarray values. A Torch ZIP
+        # wrapper adds a Python persistent_id check for every scalar/container
+        # without supplying tensor storage records. Store this tree directly.
+        stream.write(PICKLE_MAGIC)
+        ppo_tensor_pickle.StoragePickler(stream, protocol=5).dump(value)
     temporary.replace(path)
 
 
@@ -42,6 +47,9 @@ def load(path):
         # Torch's ZIP reader seeks between tensor records. Seeking backwards in
         # gzip repeatedly inflates the same prefix; inflate once before loading.
         with io.BytesIO(stream.read()) as payload:
+            if payload.read(len(PICKLE_MAGIC)) == PICKLE_MAGIC:
+                return ppo_tensor_pickle.load(payload)
+            payload.seek(0)
             return torch.load(payload, map_location='cpu', weights_only=False)
 
 

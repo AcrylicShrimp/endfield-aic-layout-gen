@@ -12,6 +12,7 @@ from declarative_learning_policy import sample as choose
 
 def evaluate(runtime, model, case, command):
     config = command['evaluation']
+    retain_trace=config.get('retain_trace',True)
     sampler = torch.Generator().manual_seed(command['action_seed'])
     session, admission = runtime.open(config['max_actions'],config['elapsed_ms'])
     observation = json.loads(session.observation_json())
@@ -36,16 +37,16 @@ def evaluate(runtime, model, case, command):
         entry = dict(policy_action=decisions,**selected,outcome=outcome,observation=observation,
             best_score=after['best_metrics']['score'],elapsed_ms=after['elapsed_ms'],work=after['work'],
             pending=sum(e['status']=='pending' for e in after['edges']),conflicts=len(after['conflicts']))
-        trace.append(entry)
+        if retain_trace:trace.append(entry)
         if decisions in config['action_milestones'] and outcome['charged']:
             milestones.append({k:entry[k] for k in ('policy_action','elapsed_ms','best_score','work')})
         observation = after
-    checkpoint = json.loads(session.checkpoint_json())
+    checkpoint = json.loads(session.checkpoint_json()) if retain_trace else None
     result = runtime.finish(session)
     output = command['output']
     from pathlib import Path
     name = f'factory-{case["generation_seed"]}-{command["sample"]}'
-    save(Path(output)/f'{name}.pt.gz',dict(initial=initial,trace=trace,result=result,native=checkpoint))
+    if retain_trace:save(Path(output)/f'{name}.pt.gz',dict(initial=initial,trace=trace,result=result,native=checkpoint))
     area = initial['initial_metrics']['score'][0]
     score = result['best_metrics']['score']
     return dict(seed=command['seed'],update=command['update'],start=f'factory-{case["generation_seed"]}',

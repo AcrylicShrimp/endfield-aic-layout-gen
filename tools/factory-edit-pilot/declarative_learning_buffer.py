@@ -37,6 +37,7 @@ class Buffer:
         return result
 
     def hydrate(self, evidence, strata):
+        from declarative_replay_storage import sample_input
         # On restoration many uncached sequences refer to the same source chunk.
         # Load that chunk once, instead of repeatedly inflating it in ID order.
         pending={identity:entry for identity,entry in self.state['entries'].items() if identity not in self.cache}
@@ -48,7 +49,7 @@ class Buffer:
         for ordinal,labels in sorted(by_chunk.items()):
             for identity,index,label in labels:
                 sample=evidence.sample(label['reference'])
-                rows[identity][index]=dict(input=sample['input'],decision=sample['decision'],stage=label['stage'],
+                rows[identity][index]=dict(input=sample_input(sample),decision=sample['decision'],stage=label['stage'],
                     reference=label['reference'],return_to_terminal=label['return_to_terminal'])
         for identity,entry in pending.items():
             product=entry['input']['draw']['product'] if entry['input'] else 'fixture-diagnostic'

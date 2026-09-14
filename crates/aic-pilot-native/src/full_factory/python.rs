@@ -166,6 +166,23 @@ impl PythonRuntime {
             })?;
         Ok(PythonEpisode { episode })
     }
+    fn open_episode_json(
+        &self,
+        py: Python<'_>,
+        request_json: &str,
+        witness_json: &str,
+        config_json: &str,
+    ) -> PyResult<PythonEpisode> {
+        let request =
+            decode(request_json).map_err(|e| error(format!("full-factory.request-json: {e}")))?;
+        let witness =
+            decode(witness_json).map_err(|e| error(format!("full-factory.witness-json: {e}")))?;
+        let config = decode(config_json).map_err(error)?;
+        let episode = py
+            .detach(|| Episode::new(request, witness, self.catalogs.clone(), config))
+            .map_err(diagnostic)?;
+        Ok(PythonEpisode { episode })
+    }
     fn metadata_json(&self) -> PyResult<String> {
         encode(&self.metadata)
     }

@@ -109,6 +109,8 @@ def offsets(counts):
 
 
 def action(prepared, decision):
+    require('recorded_root' not in prepared or decision['root']==prepared['recorded_root'],
+        'declarative.replay-input: persisted input only describes its recorded conditional action')
     require(0 <= decision['root'] < len(prepared['actions']), 'declarative root choice range')
     require('root_invalid' not in prepared or not bool(prepared['root_invalid'][decision['root']]),
         'declarative.masking.action: selected root is masked')
@@ -168,6 +170,25 @@ def values(model, inputs):
     return model.critic(pooled).squeeze(-1).cpu()
 
 
+def recorded_branches(row):
+    prepared,decision=row['input'],row['decision']
+    key=(id(prepared),decision['root'],tuple(decision['ports']))
+    cached=row.get('_recorded_branches')
+    if cached is not None and cached[0]==key:return cached[1]
+    expected=len(prepared['port_groups'][prepared['root_owners'][decision['root']]]) if prepared['actions'][decision['root']]['kind']=='place' else 0
+    require(len(decision['ports'])==expected,'declarative recorded port coverage')
+    result=[]
+    for depth,index in enumerate(decision['ports']):
+        value=branch(prepared,decision,depth)
+        require(index in value['keep'],'declarative recorded port violates prefix mask')
+        result.append((value,value['keep'].index(index)))
+    # These tensors depend only on this immutable input and recorded decision.
+    # Reuse them across PPO epochs and successful replay draws. Compact storage
+    # never writes this disposable cache; buffer eviction releases its owner.
+    row['_recorded_branches']=(key,result)
+    return result
+
+
 def prepare_rows(rows):
     inputs = [r['input'] for r in rows]
     batch = pack(inputs)
@@ -179,16 +200,12 @@ def prepare_rows(rows):
         'declarative.masking.label: recorded action was masked in its source state')
     branch_rows, owners, selected = [], [], []
     total = 0
-    for owner, (prepared, decision) in enumerate(zip(inputs, decisions, strict=True)):
+    for owner, recorded in enumerate(rows):
         # Full recorded choices are the conditioning context; no sampling or
         # candidate regeneration is allowed while recomputing PPO likelihoods.
-        expected = len(prepared['port_groups'][prepared['root_owners'][decision['root']]]) if prepared['actions'][decision['root']]['kind'] == 'place' else 0
-        require(len(decision['ports']) == expected, 'declarative recorded port coverage')
-        for depth, index in enumerate(decision['ports']):
-            row = branch(prepared, decision, depth)
-            require(index in row['keep'], 'declarative recorded port violates prefix mask')
+        for row,index in recorded_branches(recorded):
             branch_rows.append(row); owners.append(owner)
-            selected.append(total+row['keep'].index(index)); total += len(row['keep'])
+            selected.append(total+index); total += len(row['keep'])
     branches = pack_branches(branch_rows, owners, offsets([len(i['node_static']) for i in inputs])) if branch_rows else None
     return dict(batch=batch, roots=roots, branches=branches, selected=torch.tensor(selected,dtype=torch.long))
 
