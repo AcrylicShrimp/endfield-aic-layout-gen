@@ -62,6 +62,30 @@ def annotate(metadata, start, initial_score):
     return result
 
 
+def replace_reserved_selected(plan, reserved, layout_for):
+    """Replace only selected collisions; leave donor RNG and other slots exact."""
+    if not reserved:return []
+    from random_factory_generation import geometry_identity
+    replaced=[]
+    for index,slot in enumerate(plan['slots']):
+        if not slot['depth']:continue
+        layout=layout_for(slot);geometry=geometry_identity(layout)
+        if geometry not in reserved:continue
+        parent=slot['parent'];code='declarative.curriculum-reserved-geometry'
+        replacement={k:slot[k] for k in ('schema','wave','stream','requested_depth') if k in slot}
+        replacement.update(depth=0,fallback=code,rejected_parent=dict(
+            seed=plan['seed'],wave=parent['wave'],stream=parent['stream'],depth=parent['depth'],
+            geometry_sha256=geometry,best_sha256=digest(layout)))
+        plan['slots'][index]=replacement;replaced.append(index)
+        plan['diagnostics'].append(dict(code=code,severity='info',stage='curriculum',
+            entity=f'{plan["seed"]}/{plan["wave"]}/{index}',
+            message='Selected inherited geometry is reserved for evaluation; this slot uses a fresh input.'))
+    if replaced:
+        plan['actual']=dict(Counter(str(s['depth']) for s in plan['slots']))
+        plan['reservation_replacements']=len(replaced)
+    return replaced
+
+
 def next_plan(config, seed, directory, payload, chunk_ref, *, legacy=False):
     finished=payload['completed'];count=config['training']['streams']
     require(len(finished)==count and len({r['episode'] for r in finished})==1,
@@ -80,6 +104,8 @@ def next_plan(config, seed, directory, payload, chunk_ref, *, legacy=False):
             metadata=metadata,best=row['result']['best'],request=before[row['stream']]['native']['request'],
             metrics=row['result']['best_metrics']))
     plan=choose(config['start_curriculum'],seed,wave,count,parents)
+    reserved=frozenset(config.get('training_input',{}).get('geometry_reservation',{}).get('geometry_sha256',[]))
+    replace_reserved_selected(plan,reserved,lambda slot:slot['parent']['best'])
     folder=directory/'curriculum'/f'wave-{wave:06d}-{chunk_ref["sha256"][:16]}'
     folder.mkdir(parents=True,exist_ok=True)
     for index,slot in enumerate(plan['slots']):

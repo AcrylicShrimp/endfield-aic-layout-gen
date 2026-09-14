@@ -1,6 +1,6 @@
 # From-scratch quality-weighted replay comparison
 
-Status: input-separation correction accepted after independent review (correction round 2, PASS_WITH_NOTES). The first implementation stopped on verified leakage. The user explicitly replaced the
+Status: user-authorized collision replacement and own-arm continuation accepted after independent review (PASS_WITH_NOTES). The first implementation stopped on verified leakage. The user explicitly replaced the
 trained-checkpoint transition experiment with training from scratch.
 
 ## Estimand and excluded evidence
@@ -259,3 +259,78 @@ paused. The requested comparison remains incomplete. Its retained evidence and
 [study report](../reports/2026-09-14-cold-start-quality-replay-study.md).
 Changing reserved-donor eligibility is a pending design decision, not an authorized
 extension or automatic restart under this protocol.
+
+## User-authorized collision replacement and own-arm continuation
+
+On 2026-09-14 the user rejected stopping the whole comparison for an occasional
+geometry collision and authorized replacing a colliding input. Geometry equality
+alone is not equivalent to importing learned model state: the current identity
+excludes rates/utilizations. Retain the reserved-start precaution, but resolve
+expected generated/inherited collisions through bounded input replacement.
+
+Keep the existing donor sampling and slot shuffle exactly. After selection, inspect
+only selected improving inherited layouts when a reservation is configured. Replace
+a reserved selected slot with a fresh slot, preserving stream, wave and requested
+depth; record `declarative.curriculum-reserved-geometry` and the rejected parent
+identity. Update actual depth counts while retaining original complete/improving
+parent counts and requested quotas. Do not resample all donors, alter any unreserved
+slot or weaken native validity. Fresh replacements use the existing canonical
+slot bank and eight-attempt/180-second bounds. The actual episode/restore guard
+remains a defensive invariant. With no collision, the plan is identical; with no
+reservation, normal execution performs no additional geometry work.
+
+Continue the same seed-71 baseline from its own valid update-86 checkpoint. It
+started from random initialization; this is ordinary own-arm continuation, not a
+trained initializer for another profile. Reuse its fixed panels, actual fresh files,
+initial evaluation, 0/32/64 evaluations and learning records. Only the first cold
+attempt's 128 updates remain discarded. The study still contains 1,408 scientific
+updates, including the retained 86, and therefore needs **1,322 new updates**.
+No partial quality observation changes a profile, seed, endpoint or selection rule.
+All other ten training arms start from their registered empty state.
+
+The replacement rule is exactly prefix-preserving: previously admitted inherited
+starts were all unreserved, as checked by the existing episode guard and retained
+1,376 actual input rows. Only the pending wave-44 stream-5 slot changes. Confirm
+this once from actual input/plan identities, without native replay. Do not import
+an arbitrary checkpoint or another profile; the protocol binds the specific
+stopped study, launch, origin and update-86 checkpoint.
+
+Use a new source/output root and preserve the previous frozen source and evidence.
+Perform one atomic, explicit own-arm source amendment using existing checkpoint,
+input relocation and immutable hardlink storage. Verify the old source against its
+original root, and permit only the reviewed curriculum/research-orchestration and
+test source changes; native, learner, optimizer, replay, data and numerical settings
+must match. Hardlink only immutable publication/input files listed by their existing ledgers;
+create new mutable controls/logs/tracking state, rebase the ownership ledger,
+and retain immutable original input references. Rewrite only the checkpoint's
+launch identity and the pending changed `next_start`; prove model, Adam, RNG,
+buffer, ordinal and all other stream fields unchanged. Retain the old launch and
+checkpoint bindings in a continuation receipt; preserve the original empty-start
+proof. Publish the complete amended directory atomically, with no partial runnable
+state on failure. Historical zero/evaluation evidence retains its original binding.
+
+Regenerate only the pending plan from its retained selected-slot materializations;
+apply the same replacement helper used by normal planning and write a new plan
+version. Do not replay learning or resample historical donors. Preserve all committed
+input files, plus complete pre-generated future slots. Quarantine/omit only incomplete
+uncommitted generation folders in the new copy, retaining their originals and a
+bounded amendment diagnostic. No committed input is redrawn. Synchronize these
+immutable inputs into the shared canonical bank before subsequent fresh arms.
+
+A new source-bound five-update readiness (0→4 plus live 1→2) validates normal
+execution and recovery. Focused real-native tests exercise selected-parent collision,
+exact preservation of other slots and the amendment's empty native boundary. Reuse
+unchanged CUDA kernel evidence. Validate the amendment before launching its actual
+86→128 continuation; that continuation counts only 42 new training updates.
+
+Keep the original absolute deadline 1789374130.8190546 and remaining resource caps.
+Count the retained 86 once, not as both discarded and replayed work. Charge prior
+actual artifact ownership once; cloned immutable hardlink versions are excluded
+from new charges using identities collected during copying, while rewritten/new
+files are charged normally. No extra tree scan, snapshot journal or per-update
+persistence is introduced. Report previous and new execution costs separately.
+This user-authorized continuation supersedes the earlier no-retry disposition;
+it does not authorize model transfer, automatic adoption or restarting main.
+
+Verify original launch, job and checkpoint hashes are unchanged after amendment
+success/failure and actual continuation; do not copy old console/worker/W&B files.

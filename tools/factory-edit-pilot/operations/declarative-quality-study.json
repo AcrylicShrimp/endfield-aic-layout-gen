@@ -1,5 +1,5 @@
 {
-  "schema": "declarative-cold-quality-study-v2",
+  "schema": "declarative-cold-quality-study-v3",
   "profiles": [
     "baseline-8",
     "uniform-16",
@@ -198,7 +198,7 @@
   "wall_deadline_unix_seconds": 1789374130.8190546,
   "previous_attempt": {
     "executed_updates": 128,
-    "owned_bytes": 1315338556,
+    "owned_bytes": 2316390758,
     "study": {
       "path": "/home/ashrimp/Srv/aic-quality-cold-start-20260914/artifacts/study/study.json",
       "sha256": "d85e342e649634f2c0184e50e994560662c7829e78cb159bcaeb258e63e5a536"
@@ -206,6 +206,26 @@
     "closeout": {
       "path": "/home/ashrimp/Srv/aic-quality-cold-start-20260914/artifacts/study/leakage-closeout.json",
       "sha256": "14d2400a788359d127a7219e0a29812e2624970df8c40f1ad1c5a6387b79caae"
+    }
+  },
+  "new_updates": 1322,
+  "continuation": {
+    "update": 86,
+    "study": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914/artifacts/study/study.json",
+      "sha256": "cb06b80db384eb7c67c48250052659a2f6d58c63d3cd99ca83252b7891ddd15e"
+    },
+    "closeout": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914/artifacts/study/inherited-stop-closeout.json",
+      "sha256": "b132a2fd1235c356ae5f40433244a0c955fcde3be9b599db2af132df99611974"
+    },
+    "launch": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914/artifacts/study/development-seed71-baseline-8/launch.json",
+      "sha256": "1e6554583064efb28edb625cdacb20d811e2fb6b3a8973a9a040ada9a55cbc8f"
+    },
+    "checkpoint": {
+      "path": "/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914/artifacts/study/development-seed71-baseline-8/seed-71/checkpoints/0086.pt.gz",
+      "sha256": "7ad05885b146926b2dbf7a5e11e2e9029a19b4fc5038b3df26de54f583f68cad"
     }
   }
 }

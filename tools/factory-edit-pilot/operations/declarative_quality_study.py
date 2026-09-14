@@ -158,6 +158,7 @@ def summarize(branch,panels,first_slot,shared,guard):
 
 def run(args):
     from declarative_quality_cold import protocol,config_for,monitor,new_bank,require_readiness,pure_evaluate,reservation,remaining_seconds,prior_cost
+    import declarative_quality_continuation as continuation
     began=time.monotonic();fixed=protocol();config=deepcopy(fixed['numerical_base'])
     allowance=remaining_seconds(fixed);prior_bytes=prior_cost(fixed)
     output=args.output.resolve();require(not output.exists(),'quality-cold.output: fresh study directory required')
@@ -168,45 +169,48 @@ def run(args):
     output.mkdir();guard=ResourceGuard(output,allowance,config['limits']['matrix_rss_bytes'],config['limits']['min_free_bytes'])
     guard.began=began;guard();budget=Budget(output/'storage-budget.json',fixed['max_added_bytes'],
         prior_bytes=readiness['charged_total_bytes'])
-    prior_paths=args.prior_panel
-    require(len(prior_paths)>=5,'quality-cold.panel: original and both warm/failed-cold panel pairs required')
-    prior=[read(p) for p in prior_paths];excluded={c['geometry_identity'] for p in prior for c in p['cases']}
+    carried=continuation.prior();prior_paths=[check_bound(r) for r in carried['study']['prior_panels']]
     receipt=dict(schema=fixed['schema'],status='running',config=bound(FIXED),source=source,main=main,
         readiness=bound(args.readiness),prior_panels=[bound(p) for p in prior_paths],began_unix=time.time(),
         arms=[],executed_updates=0,discarded_updates=128,total_cold_updates=128,main_resumed=False,
         prior_owned_bytes=prior_bytes,readiness_added=readiness['actual_added'],wall_allowance_seconds=allowance,
-        wall_deadline_unix_seconds=fixed['wall_deadline_unix_seconds'])
+        wall_deadline_unix_seconds=fixed['wall_deadline_unix_seconds'],carried_updates=86,new_updates=0,
+        continuation=carried['bindings'])
     write(output/'study.json',receipt)
     try:
-        panels={}
-        for stage in ('development','confirmation'):
-            panels[stage]=panel(config,args.library,output/(stage+'-panel'),stage,fixed,excluded,guard)
-            excluded.update(c['geometry_identity'] for c in read(panels[stage]['path'])['cases'])
-            budget.scan(output/(stage+'-panel'));budget.save();guard()
+        panels=carried['study']['panels']
+        for ref in panels.values():check_bound(ref)
         receipt['panels']=panels;write(output/'study.json',receipt)
         reserved=reservation(panels)
-        shared=output/'fresh-bank';new_bank(shared,config_for(71,'baseline-8','development',output/'bank-owner',allowance,reserved),args.library)
+        shared=output/'fresh-bank';continuation.import_bank(carried,shared,
+            config_for(71,'baseline-8','development',output/'bank-owner',allowance,reserved),args.library,budget)
         panel_values=[read(panels[s]['path']) for s in panels];disjoint(panel_values,{})
         development={};initial_dev=None;initial_confirm=None;initial_models={}
         def arm(profile,stage,seed,cached=None):
             guard();directory=output/f'{stage}-seed{seed}-{profile}'
             if stage=='confirmation':check_bound(receipt['selection'])
-            proof=prepare(directory,seed=seed,profile=profile,stage=stage,panel=check_bound(panels[stage]),
-                library=args.library,shared=shared,seconds=allowance-(time.monotonic()-began),readiness=args.readiness,reservation_panels=panels,
-                selection=check_bound(receipt['selection']) if stage=='confirmation' else None)
+            if stage=='development' and profile=='baseline-8':
+                proof=continuation.prepare(carried,directory,shared,args.library,
+                    allowance-(time.monotonic()-began),args.readiness,budget)
+            else:
+                proof=prepare(directory,seed=seed,profile=profile,stage=stage,panel=check_bound(panels[stage]),
+                    library=args.library,shared=shared,seconds=allowance-(time.monotonic()-began),readiness=args.readiness,reservation_panels=panels,
+                    selection=check_bound(receipt['selection']) if stage=='confirmation' else None)
             model=proof['preserved']['model']
             require(seed not in initial_models or initial_models[seed]==model,'quality-cold.initial: paired initial models differ')
             require(all(k==seed or h!=model for k,h in initial_models.items()),'quality-cold.initial: distinct seeds have identical models')
             initial_models[seed]=model;install_initial(directory,cached)
             budget.scan(directory);budget.scan(shared);budget.save()
-            receipt['active_arm']=dict(directory=str(directory),seed=seed,first_update=0,endpoint=128)
+            resumed=86 if proof.get('continuation') else 0
+            receipt['active_arm']=dict(directory=str(directory),seed=seed,first_update=0,endpoint=128,resumed_update=resumed)
             write(output/'study.json',receipt)
-            print(dict(stage=stage,profile=profile,seed=seed,status='training',updates=128),flush=True)
+            print(dict(stage=stage,profile=profile,seed=seed,status='training',updates=128-resumed,resumed_update=resumed),flush=True)
             child(directory,args.environment,budget,guard)
             summary=summarize(directory,panel_values,0,shared,guard);summary['initialization_seed']=seed
             write(directory/'quality-summary.json',summary)
             receipt['executed_updates']+=summary['updates'];require(receipt['executed_updates']<=1408,'quality-cold.updates: ceiling exceeded')
             receipt['total_cold_updates']=128+receipt['executed_updates']
+            receipt['new_updates']=receipt['executed_updates']-86
             receipt.pop('active_arm');receipt['arms'].append(dict(stage=stage,profile=profile,seed=seed,summary=bound(directory/'quality-summary.json')))
             budget.scan(directory);budget.scan(shared);budget.save();guard()
             receipt.update(seconds=time.monotonic()-began,conservative_added_bytes=budget.value['bytes'],initial_models=initial_models)
@@ -241,6 +245,7 @@ def run(args):
             confirmation[profile]=aggregate([first_confirmation[profile],{
                 k:v['training_replicates'][0] for k,v in two['quality']['geometries'].items()}],config['strata'])
         check_bound(receipt['selection']);require(monitor(args.monitor_main)==main,'quality-cold.main: paused main changed')
+        for ref in carried['bindings'].values():check_bound(ref)
         require(receipt['executed_updates']==1408,'quality-cold.updates: incomplete study')
         receipt.update(status='complete',confirmation=confirmation,ranking=ranked({p:v['mean'] for p,v in confirmation.items()}),
             comparisons={p:paired(v,confirmation['baseline-8'],config['strata'],fixed['bootstrap_seed'],fixed['bootstrap_resamples'])
@@ -258,6 +263,7 @@ def run(args):
                 job=read(job_path);receipt['partial_arm']=dict(active,completed_update=job['update'],checkpoint=job['latest_checkpoint'])
                 receipt['executed_updates']+=job['update']
         receipt['total_cold_updates']=128+receipt['executed_updates']
+        receipt['new_updates']=max(0,receipt['executed_updates']-86)
         receipt.update(status='incomplete',seconds=time.monotonic()-began,diagnostic=dict(code='quality-cold.failed',
             severity='error',stage='study',message=str(error),entity=str(output)),ranking=None)
         write(output/'study.json',receipt);raise
@@ -285,7 +291,6 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__);sub=parser.add_subparsers(dest='command',required=True)
     run_parser=sub.add_parser('run')
     for name in ('readiness','output','environment','library','monitor-main'):run_parser.add_argument('--'+name,type=Path,required=True)
-    run_parser.add_argument('--prior-panel',type=Path,action='append',default=[])
     branch=sub.add_parser('branch')
     for name in ('output','environment','budget'):branch.add_argument('--'+name,type=Path,required=True)
     evaluate=sub.add_parser('evaluate')

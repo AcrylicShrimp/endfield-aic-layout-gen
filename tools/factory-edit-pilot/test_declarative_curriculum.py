@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from blueprint_ppo_store import ROOT, read
 from blueprint_ppo_update import digest
-from declarative_learning_curriculum import choose, next_plan, inherited
+from declarative_learning_curriculum import choose, next_plan, inherited, replace_reserved_selected
 from declarative_learning_environment import Stream
 from declarative_learning_buffer import Buffer
 import test_declarative_learning as learning_tests
@@ -41,6 +41,21 @@ class CurriculumTests(unittest.TestCase):
         self.assertTrue(plan['diagnostics'])
         rows[2]['complete']=False
         with self.assertRaisesRegex(ValueError,'incomplete'):choose(CONFIG,17,3,8,rows)
+
+    def test_selected_replacement_preserves_other_slots_and_no_reservation_fast_path(self):
+        rows=parents(3);plan=choose(CONFIG,17,3,8,rows);before=deepcopy(plan)
+        with patch('random_factory_generation.geometry_identity',side_effect=AssertionError('hashed without reservation')):
+            self.assertEqual(replace_reserved_selected(plan,set(),lambda _:self.fail('loaded without reservation')),[])
+        self.assertEqual(plan,before)
+        inherited_indices=[i for i,s in enumerate(plan['slots']) if s['depth']]
+        selected=inherited_indices[0]
+        with patch('random_factory_generation.geometry_identity',side_effect=lambda value:value):
+            replaced=replace_reserved_selected(plan,{'reserved'},lambda s:'reserved' if s is plan['slots'][selected] else 'other')
+        self.assertEqual(replaced,[selected]);self.assertEqual(plan['slots'][selected]['depth'],0)
+        self.assertEqual(plan['slots'][selected]['requested_depth'],before['slots'][selected]['depth'])
+        for i in range(8):
+            if i!=selected:self.assertEqual(plan['slots'][i],before['slots'][i])
+        for key in ('requested','complete_parents','improving_parents'):self.assertEqual(plan[key],before[key])
 
     def test_restored_replay_hydrates_each_chunk_once_in_identity_order(self):
         buffer=Buffer()
@@ -78,6 +93,16 @@ class NativeCurriculumTests(unittest.TestCase):
             slot=plan['slots'][0];self.assertEqual(slot['depth'],1)
             value,_=inherited(slot,0,9)
             self.assertEqual(value['original'],row['result']['best'])
+            reserved_config=deepcopy(config)
+            reserved_config['training_input']['geometry_reservation']=dict(
+                schema='blueprint-geometry-reservation-v1',geometry_sha256=[geometry_identity(row['result']['best'])])
+            replaced,_=next_plan(reserved_config,17,directory/'reserved',payload,dict(path='chunk.pt.gz',sha256='1'*64),legacy=True)
+            self.assertEqual(replaced['slots'][0]['depth'],0)
+            self.assertEqual(replaced['slots'][0]['requested_depth'],1)
+            self.assertEqual(replaced['slots'][0]['fallback'],'declarative.curriculum-reserved-geometry')
+            self.assertNotIn('input',replaced['slots'][0]);self.assertNotIn('root',replaced['slots'][0])
+            self.assertEqual(replaced['complete_parents'],plan['complete_parents'])
+            self.assertEqual(replaced['improving_parents'],plan['improving_parents'])
             # Use the real native admission and restoration code, with explicit
             # fixture inputs; this diagnostic never creates a training factory.
             runtime=helper.runtime;runtime.config=config;runtime.inputs=object()

@@ -28,10 +28,11 @@ def check_bound(ref):
 
 def protocol():
     f=read(FIXED)
-    require(f['schema']=='declarative-cold-quality-study-v2' and tuple(f['profiles'])==PROFILES and
+    require(f['schema']=='declarative-cold-quality-study-v3' and tuple(f['profiles'])==PROFILES and
         f['initialization_seeds']==[71,113] and f['max_updates']==1408 and f['max_seconds']==18000 and
         f['total_cold_updates']==1536 and f['previous_attempt']['executed_updates']==128 and
         f['wall_deadline_unix_seconds']==1789374130.8190546 and
+        f['continuation']['update']==86 and f['new_updates']==1322 and
         f['development_updates']==f['confirmation_updates']==128,'quality-cold.protocol: unregistered protocol')
     return f
 

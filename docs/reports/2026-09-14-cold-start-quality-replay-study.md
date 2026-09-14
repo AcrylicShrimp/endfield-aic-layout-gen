@@ -1,6 +1,6 @@
 # Cold-start quality replay comparison
 
-Status: incomplete. Both cold attempts stopped; no comparison or final winner.
+Status: own-arm continuation running after user-authorized collision replacement; no final winner yet.
 
 ## Question and registered comparison
 
@@ -12,8 +12,9 @@ registers eight profiles, 128 updates each under initialization seed 71, selecti
 of the two best nonbaseline development endpoints, and confirmation of those two
 plus baseline. Confirmation combines read-only evaluation of their seed-71
 128-update endpoints with three newly initialized seed-113 128-update runs.
-The replacement allocates 1,408 scientific updates. An invalidated first cold
-attempt consumed 128 additional updates, for a total ceiling of 1,536. The main
+The comparison allocates 1,408 scientific updates, including the 86 valid updates
+retained from the second attempt. Continuation needs 1,322 new updates. The first
+cold attempt consumed 128 discarded updates, for a total ceiling of 1,536. The main
 update-1908 run stays paused.
 
 The former warm study is withdrawn as evidence for this question. None of its
@@ -108,17 +109,48 @@ collision evidence are retained. Excluding reserved inherited donors would chang
 the currently fixed donor eligibility contract and requires a new design decision;
 no automatic further retry is authorized by this registered protocol.
 
+## User-authorized replacement and continuation
+
+The user rejected treating an occasional matching geometry as a reason to halt the
+whole comparison and authorized replacing the colliding input. Geometry identity
+alone is not equivalent to importing learned model state; it excludes rates and
+utilizations. The earlier no-retry/donor-freeze disposition is superseded by this
+explicit decision.
+
+Keep donor sampling and slot shuffling unchanged. Only a selected inherited slot
+whose actual geometry is reserved becomes a fresh slot, preserving its requested
+depth and recording the rejected parent. Other slots remain unchanged; fresh
+replacement uses the existing bounded canonical input generator.
+
+The same baseline resumes its own valid update-86 checkpoint. Its model, both Adam
+states, RNGs, replay buffer and historical records are preserved, with only the
+pending stream-5 start and launch identity amended. All 1,376 committed inputs
+were disjoint; the new rule cannot change that earlier prefix. Both original panels
+and 1,172 complete generated input folders remain paired across methods. Other
+profiles still begin from random weights and empty learned state.
+
+A fresh proposal review passed with notes. Local and server affected checks passed
+(33 quality plus five curriculum), as did workspace check/tests. New integrated
+readiness passed in 76.160 seconds with five updates and 32 live stream restores.
+The actual continuation advanced successfully from 86 through 88, while original
+launch/job/checkpoint/origin/study/closeout hashes stayed unchanged. Immutable files
+use hardlinks; mutable controls, logs and tracking state are separate.
+
 ## Runtime and retained evidence
 
 The replacement is bounded by 18,000 seconds and the original six-hour absolute
 deadline (Unix 1789374130.8190546), including setup, evaluation and finalization.
 Its limits are 1,408 new updates, 12 GiB cumulative cold artifacts, 48 GiB
 process-tree RSS and 16 GiB disk reserve. The 128 discarded updates and prior
-artifact ownership are reported separately and retained in cumulative accounting. Successful last-link deletion releases owned storage charges. Command
+artifact ownership are reported separately; the retained 86 are counted once.
+Current readiness and continuation storage carry prior ownership charges and
+exclude already-charged immutable hardlink versions from new charges. Successful last-link deletion releases owned storage charges. Command
 entry and arm boundaries reconcile the ownership ledger; normal updates do not
 scan the study tree or save an extra ledger.
 
-Current frozen server root: `/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914`.
+Current frozen server root: `/home/ashrimp/Srv/aic-quality-cold-continue-20260914`.
+The source and stopped update-86 evidence remain under
+`/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914`.
 Original invalidated root: `/home/ashrimp/Srv/aic-quality-cold-start-20260914`.
 Its `artifacts/study/leakage-closeout.json` records the overlap and checkpoint.
 
@@ -130,6 +162,7 @@ Its `artifacts/study/leakage-closeout.json` records the overlap and checkpoint.
   initialization, measured outcomes/allocation and retained checkpoints.
 
 Local readiness and CUDA receipts are retained under
+`artifacts/cold-quality-continuation-20260914/`,
 `artifacts/cold-quality-study-r2-20260914/` and the original
 `artifacts/cold-quality-study-20260914/`. Regenerable artifacts are ignored rather
 than committed; these local/server directories are not backups.
