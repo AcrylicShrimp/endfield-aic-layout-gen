@@ -1,6 +1,8 @@
 # Cold masked PPO comparison
 
-Status: implementation and readiness passed; scientific comparison authorized.
+Status: complete. All four cold arms reached update 128 and all 1,024 final
+cross-evaluation episodes completed. Results and provenance are recorded in
+`../reports/2026-09-14-cold-masked-ppo-comparison.md` and its companion manifest.
 The user authorizes training
 original and masked policies from random initialization after the favorable
 frozen-policy masking screen. No old learned model, optimizer, successful replay

@@ -1,0 +1,1306 @@
+{
+  "schema": "cold-masked-ppo-comparison-manifest-v1",
+  "status": "complete",
+  "implementation_commit": "05c01ff",
+  "host_root": "/home/ashrimp/Srv/aic-band-mask-training-20260914",
+  "artifacts": {
+    "result.json": {
+      "path": "artifacts/cold-mask-training-20260914/result.json",
+      "sha256": "3d741bac74758a7f4160e4f76fbda6e88d27f3b6c53f8325c85c4a8b9a1e0e24"
+    },
+    "study.json": {
+      "path": "artifacts/cold-mask-training-20260914/study.json",
+      "sha256": "532c3ab456576f69e585957da8ccad8a34240179deb37fef3822a5f97edf39c8"
+    },
+    "readiness.json": {
+      "path": "artifacts/cold-mask-training-20260914/readiness.json",
+      "sha256": "96ee7c947b923e24e9bec423e9a78518dba2b28859b2b48ba1bedaaa94140f95"
+    },
+    "closeout.json": {
+      "path": "artifacts/cold-mask-training-20260914/closeout.json",
+      "sha256": "9fec6bf3341f66546a7150b79c5b02c0505cf3565fc7d42dfd61e24caecfa660"
+    },
+    "closeout.py": {
+      "path": "artifacts/cold-mask-training-20260914/closeout.py",
+      "sha256": "12dfe87772e02f62f46af21d63d59345cc266f12282ec83b94fa4f091708315b"
+    },
+    "frozen-compatibility-tests.log": {
+      "path": "artifacts/cold-mask-training-20260914/frozen-compatibility-tests.log",
+      "sha256": "97e89fcc8af6f6713500639b369e69f6f572ba1c53a45b15051a445755f4e682"
+    },
+    "cargo-test.log": {
+      "path": "artifacts/cold-mask-training-20260914/cargo-test.log",
+      "sha256": "e9919df87a412314846bcc98b1c11b4943f8a034f8e78f8428f1d7beb9e28284"
+    }
+  },
+  "protocol": {
+    "path": "tools/factory-edit-pilot/operations/declarative-mask-training.json",
+    "sha256": "43ff2df0407dcfeb46af6ad3179bb00ee77fa7df0ed9da48d0f4743b2a2f9110"
+  },
+  "source": {
+    "code_sha256": "9fa956c3c6fc28d2c053b3b1b1cf8572bc48aa223c59554ad4e7cbc8e599205e",
+    "native_library": "/home/ashrimp/Srv/aic-band-mask-training-20260914/target/release/libaic_pilot_native.so",
+    "native_sha256": "dc84066c78d07c60911193e8e32b0d996db4c33ccd9b24378e86fd80cd797226",
+    "native_build": {
+      "extension_module": true,
+      "profile": "release",
+      "rustc": "rustc 1.98.1 (48a229cea 2026-09-01)",
+      "schema_version": 1,
+      "target": "x86_64-unknown-linux-gnu"
+    },
+    "full_source_binding": {
+      "path": "artifacts/cold-mask-training-20260914/closeout.json",
+      "sha256": "9fec6bf3341f66546a7150b79c5b02c0505cf3565fc7d42dfd61e24caecfa660"
+    },
+    "supplementary_operations_source_sha256": {
+      "tools/factory-edit-pilot/operations/test_extend_declarative_duration.py": "5be4257a82bcc7a9b718ccd9d2638dd2a5454fdbe1884987ad472fbab757267c",
+      "tools/factory-edit-pilot/operations/declarative_quality_closeout.py": "d2b932d6e2e712275b54097049d4e88eaa68abdcce774ee6dffcdc394dbc5a12",
+      "tools/factory-edit-pilot/operations/declarative_quality_study.py": "110f275f24c1d64debf683b5e90ab87f6fd87205835366ec767033070437cc52",
+      "tools/factory-edit-pilot/operations/declarative_quality_cold_readiness.py": "66df5d9c7242e9067250e4588f77cb78d4dc69abc7ef46d82a6e3aa265743b39",
+      "tools/factory-edit-pilot/operations/test_declarative_quality_branch.py": "69d38f556d474f1bfc5af97c899bd1ba874deeb744f999f06075bdc0676243c0",
+      "tools/factory-edit-pilot/operations/verify_construction_output.py": "2f03f357fe9fe90ead0b5b42a74da153c18851911205d7dbe026a4bccb4629e5",
+      "tools/factory-edit-pilot/operations/prune_construction_outputs.py": "16de53808cbd6fa7222e51692bd3ee9cea87a00de9c46dbebad69314dfb2e742",
+      "tools/factory-edit-pilot/operations/test_prune_construction_outputs.py": "12c8fe44be6b5b6dbd827388f62a1a2be7f4c9a653bb9cd7db24087374b82c6b",
+      "tools/factory-edit-pilot/operations/test_band_mask_policy.py": "99f043a3418155a64d6551c3a354735f27e605729669a52c53cd7080a8a53a58",
+      "tools/factory-edit-pilot/operations/declarative_quality_cuda_verify.py": "99c47402c52ac4c3c7a4812e7eda03465276b8a487050478ff82d3e9ba7e676e",
+      "tools/factory-edit-pilot/operations/cold_mask_study.py": "a4008d1f3cd8ce9f86b8fa789d5c779e2ebb4a27373d4078d3cad1437cf5b0f8",
+      "tools/factory-edit-pilot/operations/declarative_quality_branch.py": "800bbe048c9a7fae58ca5d185e2f04adf76a3a9835f44c73bdfedc47f81aa15a",
+      "tools/factory-edit-pilot/operations/test_declarative_quality_continuation.py": "ab2511dc67b8703a898e527d9857dd63dbf9a1ca1315ba8e30578d0267c13e18",
+      "tools/factory-edit-pilot/operations/cold_mask_arm.py": "811e455e08da9ad9476df1aa05cc3b65d89f8c101dabf27f1529d438bdb8a1f0",
+      "tools/factory-edit-pilot/operations/test_finish_cold_quality_study.py": "6313df4c881799fabc39d4af6ba206d0101cbf43c128216867e2029b59d71dc7",
+      "tools/factory-edit-pilot/operations/declarative_quality_readiness.py": "7a8476d9006286fc267e1529c9cdb928776f78e6a3fcd9a025f651993ab43a19",
+      "tools/factory-edit-pilot/operations/cold_quality_regression.py": "259a9e935d8e58b5ba96d184df260b58f662401dbc12b88b7f793c0787b000f9",
+      "tools/factory-edit-pilot/operations/declarative_quality_continuation.py": "5f35b674c3ac84e32550673fe0b1711ab73cc08884821b7de602fb0f922cf1f2",
+      "tools/factory-edit-pilot/operations/band_mask_experiment.py": "6898332a5bb87c642b4a93b8fa16893ccb15c33afbdbcbdbb4687d00da387d43",
+      "tools/factory-edit-pilot/operations/declarative_quality_cold.py": "30d4a62c2c736e0e2d88a329978035211a37e9d5cace5b24fe8d24e3aa2b57b9",
+      "tools/factory-edit-pilot/operations/test_declarative_quality_study.py": "0576a39fa0318507bf1dd73be2b28caceff381e01c0ee3234de79a2d3164a300",
+      "tools/factory-edit-pilot/operations/test_switch_construction_output.py": "323e3b9cc7ebf4aa5628c5963e0579223a27c6e7b930c0c688c957364ef4198b",
+      "tools/factory-edit-pilot/operations/band_mask_worker.py": "c7d3607a9b5261f33e4751506fffbc5b6a85b5ce841c549a45c34342331a262e",
+      "tools/factory-edit-pilot/operations/finish_cold_quality_study.py": "7126328ce2b29dc616db523e38cc1a398b4449f11bfbaafaa91f0edd9f103af4",
+      "tools/factory-edit-pilot/operations/cold_mask_evaluate.py": "8becc414af1f015a9e200b19140faab2f8460c8aeded70cb9e88cc94d714c4b0",
+      "tools/factory-edit-pilot/operations/switch_construction_output.py": "914c19e1d7434c14096d740c46696adb8ef4cd38536732ff68ee436cc8d1f206",
+      "tools/factory-edit-pilot/operations/test_declarative_quality_cold.py": "06b288ebd1b051a2dabcbb5c151def9054058dc20096370cd9aa0d4b063ca058",
+      "tools/factory-edit-pilot/operations/declarative_quality_storage.py": "32c644287a8ae0e4250f426efbef5e58cec6cf578249e123f9697add80e580cc",
+      "tools/factory-edit-pilot/operations/declarative_quality_observer.py": "3444e18fe1558d7a7b1a06323b5a5753940b9539ea6ccb48f1ec7300400b60c4",
+      "tools/factory-edit-pilot/operations/band_mask_policy.py": "201e679a2ff57f31f5ea42b7721b07b53392dcd0a153b2c609a077698dd10f29",
+      "tools/factory-edit-pilot/operations/declarative_quality_analysis.py": "03efa02f98b5d1cdfa9f803ae797905e6e6648b88605fca61b627cecdaf3149e",
+      "tools/factory-edit-pilot/operations/extend_declarative_duration.py": "591496cfebe24fb337833540a0e40035e6f7dbd912fc2ba94b4ba9c2f849b219"
+    },
+    "all_32_operations_files_match_local_commit": true
+  },
+  "allocation": {
+    "seeds": [
+      71,
+      113
+    ],
+    "updates_per_arm": 128,
+    "decisions_per_arm": 131072,
+    "completed_training_episodes": 8192,
+    "confirmation_geometries": 32,
+    "confirmation_draws": 4,
+    "confirmation_episodes": 1024,
+    "within_seed_empty_state_equal": true,
+    "initial_states": {
+      "71": {
+        "model": "b90bc9bea06073a35aea2f6d90b19a12b4c61f6f8bb7d0ef74439d26a093756c",
+        "actor_optimizer": "7de48e758f78079f4b1e02f68fb123b73ee513bd478ec6c4cc799b309ce27964",
+        "critic_optimizer": "7a059f692c4f8e87bd6b4b8637690e8059427725999f17210dcc89fd30429943",
+        "sampler_rng": "502d937695e54e474098286e68b08941f553c39eb118fed8d45de1a0363fc4aa",
+        "shuffle_rng": "8d14195983550d1f80937438a74d86fd8dc12ed06cebafce3eea356c446723ad",
+        "buffer": "65f5a3ea6417e28f622e4b8330d11e0da954c4ce59f90242512fb3369ddbd812"
+      },
+      "113": {
+        "model": "e356b99d8fa141355390aa89f50883ed2dfcb1cfac66cb1fd1e3d233b6b6fede",
+        "actor_optimizer": "7de48e758f78079f4b1e02f68fb123b73ee513bd478ec6c4cc799b309ce27964",
+        "critic_optimizer": "7a059f692c4f8e87bd6b4b8637690e8059427725999f17210dcc89fd30429943",
+        "sampler_rng": "18abfbacea82e670df049a2ed23a807b31ff33ec427079ce81cb20c79c4d43f8",
+        "shuffle_rng": "b2e599ae001c5693d0bab1d18a12a4dba42732b71db982a095850276147f4d22",
+        "buffer": "65f5a3ea6417e28f622e4b8330d11e0da954c4ce59f90242512fb3369ddbd812"
+      }
+    }
+  },
+  "quality": {
+    "original/original": {
+      "mean": 27.93721151404906,
+      "by_stratum": {
+        "large": 22.029971395405433,
+        "small": 33.84445163269269
+      },
+      "by_seed": {
+        "71": 27.38993331882791,
+        "113": 28.48448970927021
+      }
+    },
+    "original/masked": {
+      "mean": 29.583946662134746,
+      "by_stratum": {
+        "large": 23.307928755260924,
+        "small": 35.85996456900857
+      },
+      "by_seed": {
+        "71": 28.895705030970316,
+        "113": 30.272188293299177
+      }
+    },
+    "masked/original": {
+      "mean": 28.362582502723654,
+      "by_stratum": {
+        "large": 18.168587081449804,
+        "small": 38.5565779239975
+      },
+      "by_seed": {
+        "71": 27.173294941541002,
+        "113": 29.551870063906307
+      }
+    },
+    "masked/masked": {
+      "mean": 32.2852419074498,
+      "by_stratum": {
+        "large": 22.979573102580993,
+        "small": 41.59091071231861
+      },
+      "by_seed": {
+        "71": 31.814742873987665,
+        "113": 32.755740940911934
+      }
+    }
+  },
+  "comparisons": {
+    "pipeline": {
+      "mean_delta_pp": 4.348030393400741,
+      "by_stratum_delta_pp": {
+        "large": 0.9496017071755583,
+        "small": 7.746459079625918
+      },
+      "geometry_outcomes": {
+        "win": 23,
+        "loss": 7,
+        "tie": 2
+      },
+      "interval_95_pp": [
+        2.2630903065654175,
+        6.4798822697723155
+      ],
+      "resamples": 10000,
+      "seed": 714600000,
+      "scope": "Whole geometries stratified by size; both action/training replicates attached. Conditional on the two observed random initializations."
+    },
+    "learning_with_same_mask": {
+      "mean_delta_pp": 2.7012952453150554,
+      "by_stratum_delta_pp": {
+        "large": -0.32835565267993255,
+        "small": 5.730946143310038
+      },
+      "geometry_outcomes": {
+        "win": 22,
+        "loss": 9,
+        "tie": 1
+      },
+      "interval_95_pp": [
+        1.3651281151681287,
+        4.095367284444438
+      ],
+      "resamples": 10000,
+      "seed": 714600000,
+      "scope": "Whole geometries stratified by size; both action/training replicates attached. Conditional on the two observed random initializations."
+    },
+    "execution_mask_only": {
+      "mean_delta_pp": 1.6467351480856856,
+      "by_stratum_delta_pp": {
+        "large": 1.2779573598554907,
+        "small": 2.01551293631588
+      },
+      "geometry_outcomes": {
+        "win": 18,
+        "loss": 13,
+        "tie": 1
+      },
+      "interval_95_pp": [
+        -0.33955560070496094,
+        3.639538937285617
+      ],
+      "resamples": 10000,
+      "seed": 714600000,
+      "scope": "Whole geometries stratified by size; both action/training replicates attached. Conditional on the two observed random initializations."
+    }
+  },
+  "by_seed": {
+    "pipeline": {
+      "71": {
+        "mean_delta_pp": 4.424809555159751,
+        "by_stratum_delta_pp": {
+          "large": 0.6038044303729685,
+          "small": 8.245814679946536
+        },
+        "geometry_outcomes": {
+          "win": 22,
+          "loss": 8,
+          "tie": 2
+        },
+        "interval_95_pp": [
+          1.887230291149167,
+          6.914572077038927
+        ],
+        "resamples": 10000,
+        "seed": 714600000,
+        "scope": "Whole geometries stratified by size; four action draws attached. Conditional on the single observed initialization 71."
+      },
+      "113": {
+        "mean_delta_pp": 4.271251231641724,
+        "by_stratum_delta_pp": {
+          "large": 1.295398983978148,
+          "small": 7.247103479305298
+        },
+        "geometry_outcomes": {
+          "win": 22,
+          "loss": 9,
+          "tie": 1
+        },
+        "interval_95_pp": [
+          2.1507783301981016,
+          6.466913465273141
+        ],
+        "resamples": 10000,
+        "seed": 714600000,
+        "scope": "Whole geometries stratified by size; four action draws attached. Conditional on the single observed initialization 113."
+      }
+    },
+    "learning_with_same_mask": {
+      "71": {
+        "mean_delta_pp": 2.919037843017346,
+        "by_stratum_delta_pp": {
+          "large": -0.8415469050295361,
+          "small": 6.6796225910642315
+        },
+        "geometry_outcomes": {
+          "win": 20,
+          "loss": 10,
+          "tie": 2
+        },
+        "interval_95_pp": [
+          0.9295604609830153,
+          5.050121135668277
+        ],
+        "resamples": 10000,
+        "seed": 714600000,
+        "scope": "Whole geometries stratified by size; four action draws attached. Conditional on the single observed initialization 71."
+      },
+      "113": {
+        "mean_delta_pp": 2.4835526476127576,
+        "by_stratum_delta_pp": {
+          "large": 0.184835599669672,
+          "small": 4.7822696955558435
+        },
+        "geometry_outcomes": {
+          "win": 19,
+          "tie": 5,
+          "loss": 8
+        },
+        "interval_95_pp": [
+          0.7018569474511689,
+          4.373117995223522
+        ],
+        "resamples": 10000,
+        "seed": 714600000,
+        "scope": "Whole geometries stratified by size; four action draws attached. Conditional on the single observed initialization 113."
+      }
+    },
+    "execution_mask_only": {
+      "71": {
+        "mean_delta_pp": 1.5057717121424048,
+        "by_stratum_delta_pp": {
+          "large": 1.4453513354025047,
+          "small": 1.5661920888823044
+        },
+        "geometry_outcomes": {
+          "win": 18,
+          "loss": 11,
+          "tie": 3
+        },
+        "interval_95_pp": [
+          -0.6642528072045806,
+          3.6013878927753735
+        ],
+        "resamples": 10000,
+        "seed": 714600000,
+        "scope": "Whole geometries stratified by size; four action draws attached. Conditional on the single observed initialization 71."
+      },
+      "113": {
+        "mean_delta_pp": 1.7876985840289663,
+        "by_stratum_delta_pp": {
+          "large": 1.110563384308476,
+          "small": 2.4648337837494547
+        },
+        "geometry_outcomes": {
+          "win": 17,
+          "loss": 14,
+          "tie": 1
+        },
+        "interval_95_pp": [
+          -0.7369501152361347,
+          4.432356158912956
+        ],
+        "resamples": 10000,
+        "seed": 714600000,
+        "scope": "Whole geometries stratified by size; four action draws attached. Conditional on the single observed initialization 113."
+      }
+    }
+  },
+  "behavior": {
+    "original/original": {
+      "episodes": 256,
+      "mean_counts": {
+        "kind/delete_band": 45.65234375,
+        "status/improved": 9.89453125,
+        "actions_with_pending": 26.734375,
+        "actions_with_overlap": 16.33984375,
+        "status/rejected": 33.73046875,
+        "status/draft_accepted": 17.8046875,
+        "kind/insert_band": 2.125,
+        "status/validated": 2.4375,
+        "kind/place": 16.22265625,
+        "status/unchanged": 0.1328125
+      },
+      "diagnostics": {
+        "declarative.band-cuts-body": 7047,
+        "declarative.band-removes-anchor": 380,
+        "declarative.band-cuts-component": 1018,
+        "declarative.routing-pending": 4316,
+        "declarative.port-coordinate": 190,
+        "declarative.native-validation": 78
+      },
+      "impossible_band_actions": 8445,
+      "unfinished": 185,
+      "guards": {
+        "actions": 256
+      },
+      "mean_seconds": {
+        "admission_seconds": 0.005550387667994983,
+        "inference_seconds": 0.6453313626445834
+      },
+      "mean_mask_seconds": {
+        "prepare_seconds": 0.3471848409702716,
+        "mask_seconds": 0.0,
+        "mask_apply_seconds": 0.0
+      }
+    },
+    "original/masked": {
+      "episodes": 256,
+      "mean_counts": {
+        "kind/delete_band": 22.23828125,
+        "status/improved": 10.546875,
+        "actions_with_pending": 48.984375,
+        "actions_with_overlap": 38.15625,
+        "status/draft_accepted": 48.53125,
+        "kind/place": 38.62109375,
+        "kind/insert_band": 3.140625,
+        "status/validated": 3.0,
+        "status/unchanged": 0.37109375,
+        "status/rejected": 1.55078125
+      },
+      "diagnostics": {
+        "declarative.routing-pending": 12107,
+        "declarative.port-coordinate": 397,
+        "declarative.native-validation": 78
+      },
+      "impossible_band_actions": 0,
+      "unfinished": 250,
+      "guards": {
+        "actions": 256
+      },
+      "mean_seconds": {
+        "admission_seconds": 0.006162152284957756,
+        "inference_seconds": 0.6771093197223763
+      },
+      "mean_mask_seconds": {
+        "prepare_seconds": 0.3264420251748561,
+        "mask_seconds": 0.011484288892290806,
+        "mask_apply_seconds": 0.0012072959316355991
+      }
+    },
+    "masked/original": {
+      "episodes": 256,
+      "mean_counts": {
+        "kind/delete_band": 43.41015625,
+        "status/improved": 9.0625,
+        "actions_with_pending": 30.23828125,
+        "actions_with_overlap": 22.84765625,
+        "status/rejected": 33.4375,
+        "status/draft_accepted": 20.10546875,
+        "kind/place": 15.93359375,
+        "kind/insert_band": 4.65625,
+        "status/validated": 1.21875,
+        "status/unchanged": 0.17578125
+      },
+      "diagnostics": {
+        "declarative.band-cuts-body": 7095,
+        "declarative.band-removes-anchor": 425,
+        "declarative.band-cuts-component": 841,
+        "declarative.routing-pending": 5045,
+        "declarative.port-coordinate": 199,
+        "declarative.native-validation": 31
+      },
+      "impossible_band_actions": 8361,
+      "unfinished": 241,
+      "guards": {
+        "actions": 256
+      },
+      "mean_seconds": {
+        "admission_seconds": 0.0060711566173949905,
+        "inference_seconds": 0.6366989261092613
+      },
+      "mean_mask_seconds": {
+        "prepare_seconds": 0.3375551645904693,
+        "mask_seconds": 0.0,
+        "mask_apply_seconds": 0.0
+      }
+    },
+    "masked/masked": {
+      "episodes": 256,
+      "mean_counts": {
+        "kind/delete_band": 20.15625,
+        "status/improved": 10.84765625,
+        "actions_with_pending": 50.50390625,
+        "actions_with_overlap": 43.125,
+        "status/draft_accepted": 49.890625,
+        "status/rejected": 1.3671875,
+        "kind/place": 37.890625,
+        "status/unchanged": 0.4375,
+        "kind/insert_band": 5.953125,
+        "status/validated": 1.45703125
+      },
+      "diagnostics": {
+        "declarative.routing-pending": 12496,
+        "declarative.port-coordinate": 350,
+        "declarative.native-validation": 75
+      },
+      "impossible_band_actions": 0,
+      "unfinished": 255,
+      "guards": {
+        "actions": 256
+      },
+      "mean_seconds": {
+        "admission_seconds": 0.006090779999908591,
+        "inference_seconds": 0.6366696823632196
+      },
+      "mean_mask_seconds": {
+        "prepare_seconds": 0.30618271745532866,
+        "mask_seconds": 0.01097796597599654,
+        "mask_apply_seconds": 0.0011842462417348543
+      }
+    }
+  },
+  "training": [
+    {
+      "name": "seed-71-original",
+      "seed": 71,
+      "variant": "original",
+      "updates": 128,
+      "seconds": 1490.283319383001,
+      "retained_bytes": 682900299,
+      "mean_collection_seconds": 5.297388894742198,
+      "mean_learner_seconds": 3.9025173718981705,
+      "mean_publication_seconds": 1.6828095401874634,
+      "replay_labels": 91819,
+      "cuda_peak_allocated_bytes": 321346048,
+      "resource": {
+        "processes": 17,
+        "rss": 25893335040,
+        "peak_rss": 26254790656,
+        "free_bytes": 77582581760,
+        "elapsed_seconds": 1490.1063624410017
+      },
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-original/seed-71/checkpoints/0128.pt.gz",
+        "sha256": "21052adb77bb00d6f01632b16da5ffea0e46b5d9495c76dc76c50acd71e8f92d"
+      },
+      "evaluation": [
+        {
+          "update": 0,
+          "path": "evaluation/0000/report.json",
+          "sha256": "207904c57daa040d202c884cf1dae14d1880f064b21b60ff83700ceeaa76081c"
+        },
+        {
+          "update": 32,
+          "path": "evaluation/0032/report.json",
+          "sha256": "55b4cfb27bef942b00239c4b76ba456fcb74e8fb2821159433ab2ac737e99581"
+        },
+        {
+          "update": 64,
+          "path": "evaluation/0064/report.json",
+          "sha256": "97fdac7c45662614c13b40d9c86cf606ead8353ef12d0aaeef96763884c7aed5"
+        },
+        {
+          "update": 96,
+          "path": "evaluation/0096/report.json",
+          "sha256": "07032f99431458f105009d13314d01c4c7da9640f07b6341b9ee0e55e8f46ef2"
+        },
+        {
+          "update": 128,
+          "path": "evaluation/0128/report.json",
+          "sha256": "e91021fa7876409b542311789fbb53970eb5189cb6a5a26ca586c3b63871eca1"
+        }
+      ]
+    },
+    {
+      "name": "seed-71-masked",
+      "seed": 71,
+      "variant": "masked",
+      "updates": 128,
+      "seconds": 1471.9464807879995,
+      "retained_bytes": 1252954023,
+      "mean_collection_seconds": 4.339134372038302,
+      "mean_learner_seconds": 3.511500344805313,
+      "mean_publication_seconds": 2.9231675388128906,
+      "replay_labels": 91270,
+      "cuda_peak_allocated_bytes": 317729792,
+      "resource": {
+        "processes": 17,
+        "rss": 27236855808,
+        "peak_rss": 27601149952,
+        "free_bytes": 76240609280,
+        "elapsed_seconds": 1471.7941271089949
+      },
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-masked/seed-71/checkpoints/0128.pt.gz",
+        "sha256": "b59ae83f1093911779b1dfd32eb65a13bfb77371550a5e303f019a8f3aa016e3"
+      },
+      "evaluation": [
+        {
+          "update": 0,
+          "path": "evaluation/0000/report.json",
+          "sha256": "78ac26821f5da0a642c385aaa943525cc783742e7d6983a3f51ecd47a146f2c6"
+        },
+        {
+          "update": 32,
+          "path": "evaluation/0032/report.json",
+          "sha256": "6943534336d74c5c5566564bad35180c3e1a1cfb4be9fb7e6c549f48072ebac9"
+        },
+        {
+          "update": 64,
+          "path": "evaluation/0064/report.json",
+          "sha256": "917c9d60e09ed4df18110e01e7371ab82b756573870f0371374771ee93f6b2d1"
+        },
+        {
+          "update": 96,
+          "path": "evaluation/0096/report.json",
+          "sha256": "502ae75b7ba506b2f7851d854ee703903fecee21e3a1903fbd82e035e811b04a"
+        },
+        {
+          "update": 128,
+          "path": "evaluation/0128/report.json",
+          "sha256": "77fad77dd21b5912a0fbf4aeb85086532fd6cfc72c9f206801bb5e90da049821"
+        }
+      ]
+    },
+    {
+      "name": "seed-113-masked",
+      "seed": 113,
+      "variant": "masked",
+      "updates": 128,
+      "seconds": 1511.4690781420068,
+      "retained_bytes": 837261591,
+      "mean_collection_seconds": 4.688523519945306,
+      "mean_learner_seconds": 3.479988651633448,
+      "mean_publication_seconds": 2.913308608827492,
+      "replay_labels": 88419,
+      "cuda_peak_allocated_bytes": 317052928,
+      "resource": {
+        "processes": 17,
+        "rss": 27344683008,
+        "peak_rss": 27802738688,
+        "free_bytes": 75239202816,
+        "elapsed_seconds": 1511.154847220998
+      },
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-masked/seed-113/checkpoints/0128.pt.gz",
+        "sha256": "b085268fb8738f8835abb0b7eaffc8f164222444ca8c02ca408b151ecc37bb05"
+      },
+      "evaluation": [
+        {
+          "update": 0,
+          "path": "evaluation/0000/report.json",
+          "sha256": "d2088ff9969eddbc1a247463131b5aa8a9016ce603a3b0a55423da5a7c58cd5c"
+        },
+        {
+          "update": 32,
+          "path": "evaluation/0032/report.json",
+          "sha256": "98b3e6c650b69749c6da8e5b0596ca9bb51412f02d1a6f2d127270e24a5dcdbe"
+        },
+        {
+          "update": 64,
+          "path": "evaluation/0064/report.json",
+          "sha256": "8e144408711d05c0f1fe07b38422460263d0b059cdccd5c7dbe0379b9c8a71ae"
+        },
+        {
+          "update": 96,
+          "path": "evaluation/0096/report.json",
+          "sha256": "ea49c29eeb749d985bef347be099ef0a44aebc6eb3245284283945f1db23fcdb"
+        },
+        {
+          "update": 128,
+          "path": "evaluation/0128/report.json",
+          "sha256": "c84ad3e03f8db102e9dcaed45e5cfd982b125219a094e5a84da4b315e3fb5e45"
+        }
+      ]
+    },
+    {
+      "name": "seed-113-original",
+      "seed": 113,
+      "variant": "original",
+      "updates": 128,
+      "seconds": 1306.218829489997,
+      "retained_bytes": 466305433,
+      "mean_collection_seconds": 4.24521393992211,
+      "mean_learner_seconds": 3.7220718739772565,
+      "mean_publication_seconds": 1.5430673997028634,
+      "replay_labels": 92396,
+      "cuda_peak_allocated_bytes": 323891200,
+      "resource": {
+        "processes": 17,
+        "rss": 25896206336,
+        "peak_rss": 26204647424,
+        "free_bytes": 74714460160,
+        "elapsed_seconds": 1305.9354177649948
+      },
+      "checkpoint": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-original/seed-113/checkpoints/0128.pt.gz",
+        "sha256": "e7de1910afd831fba007bdc91a0d4ae19f22cbd977b9c756d0792b939ad516f8"
+      },
+      "evaluation": [
+        {
+          "update": 0,
+          "path": "evaluation/0000/report.json",
+          "sha256": "d525b5edf1401b3af6c00221582a3d4a791c73ecdcb736deeea3d3ee1de06953"
+        },
+        {
+          "update": 32,
+          "path": "evaluation/0032/report.json",
+          "sha256": "fb99c8d444aedd39b2aac3167923c30f9d027a1af8f51e9bc264a8201183c81d"
+        },
+        {
+          "update": 64,
+          "path": "evaluation/0064/report.json",
+          "sha256": "0ad7dd56188dd6017a4bf54f3736a0066954db8630f516655357998a2e62d0c4"
+        },
+        {
+          "update": 96,
+          "path": "evaluation/0096/report.json",
+          "sha256": "a37b6431b11ef4a837cfd981298ae874a9659423ed4a77f8e285bfbf1f2f83b7"
+        },
+        {
+          "update": 128,
+          "path": "evaluation/0128/report.json",
+          "sha256": "1fbbf47f344f884de9451505cfe1980c85b654ec97733aa5f53bf463a88f9d28"
+        }
+      ]
+    }
+  ],
+  "arms": {
+    "seed-71-original": {
+      "launch": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-original/launch.json",
+        "sha256": "9ba5b9a383228f392b1bfb6c44538f8542c59e0b270076add86d0aa4c7e771ac"
+      },
+      "origin": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-original/cold-origin.json",
+        "sha256": "8ac5b7e2136810d38d6714ccf716b217c9cf74d6d1e7e9bf29b0ae9a76bc1d84"
+      },
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-original/seed-71/state.json",
+        "sha256": "5aac6ded7733142ff423f3de450fe9036e6640dcc3d1d78e7e1feece7a698eff"
+      },
+      "endpoint": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-original/seed-71/checkpoints/0128.pt.gz",
+        "sha256": "21052adb77bb00d6f01632b16da5ffea0e46b5d9495c76dc76c50acd71e8f92d"
+      },
+      "actions": 131072,
+      "completed_episodes": 2048,
+      "accepted": 2048,
+      "attempted": 2048,
+      "input_rows": 2048,
+      "fresh_slots": 1713,
+      "requested_depth_counts": {
+        "0": 1643,
+        "1": 204,
+        "2": 201
+      },
+      "actual_depth_counts": {
+        "0": 1713,
+        "1": 201,
+        "2": 134
+      },
+      "development": [
+        {
+          "update": 0,
+          "mean_area_reduction_percent": 4.048919364297043,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-original/seed-71/evaluation/0000/report.json",
+            "sha256": "207904c57daa040d202c884cf1dae14d1880f064b21b60ff83700ceeaa76081c"
+          }
+        },
+        {
+          "update": 32,
+          "mean_area_reduction_percent": 31.253869883846626,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-original/seed-71/evaluation/0032/report.json",
+            "sha256": "55b4cfb27bef942b00239c4b76ba456fcb74e8fb2821159433ab2ac737e99581"
+          }
+        },
+        {
+          "update": 64,
+          "mean_area_reduction_percent": 36.061967672913106,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-original/seed-71/evaluation/0064/report.json",
+            "sha256": "97fdac7c45662614c13b40d9c86cf606ead8353ef12d0aaeef96763884c7aed5"
+          }
+        },
+        {
+          "update": 96,
+          "mean_area_reduction_percent": 36.003854957289455,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-original/seed-71/evaluation/0096/report.json",
+            "sha256": "07032f99431458f105009d13314d01c4c7da9640f07b6341b9ee0e55e8f46ef2"
+          }
+        },
+        {
+          "update": 128,
+          "mean_area_reduction_percent": 33.92032662318501,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-original/seed-71/evaluation/0128/report.json",
+            "sha256": "e91021fa7876409b542311789fbb53970eb5189cb6a5a26ca586c3b63871eca1"
+          }
+        }
+      ]
+    },
+    "seed-71-masked": {
+      "launch": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-masked/launch.json",
+        "sha256": "ce13801afdeb8a2bc555482af450af027f36e572e8f536559904ca2032540954"
+      },
+      "origin": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-masked/cold-origin.json",
+        "sha256": "177bef7e8bfb66f833819881c9f721cbdfdf1d9e8b44a30366eb64ae10d28b33"
+      },
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-masked/seed-71/state.json",
+        "sha256": "6444d53761f7b63ddb844f935edad00c215c3220ddbc59f9b7f444e810bc6bfb"
+      },
+      "endpoint": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-masked/seed-71/checkpoints/0128.pt.gz",
+        "sha256": "b59ae83f1093911779b1dfd32eb65a13bfb77371550a5e303f019a8f3aa016e3"
+      },
+      "actions": 131072,
+      "completed_episodes": 2048,
+      "accepted": 2048,
+      "attempted": 2048,
+      "input_rows": 2048,
+      "fresh_slots": 1705,
+      "requested_depth_counts": {
+        "0": 1643,
+        "1": 204,
+        "2": 201
+      },
+      "actual_depth_counts": {
+        "0": 1705,
+        "1": 201,
+        "2": 142
+      },
+      "development": [
+        {
+          "update": 0,
+          "mean_area_reduction_percent": 4.319867111330392,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-masked/seed-71/evaluation/0000/report.json",
+            "sha256": "78ac26821f5da0a642c385aaa943525cc783742e7d6983a3f51ecd47a146f2c6"
+          }
+        },
+        {
+          "update": 32,
+          "mean_area_reduction_percent": 30.9692873312575,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-masked/seed-71/evaluation/0032/report.json",
+            "sha256": "6943534336d74c5c5566564bad35180c3e1a1cfb4be9fb7e6c549f48072ebac9"
+          }
+        },
+        {
+          "update": 64,
+          "mean_area_reduction_percent": 37.65169219401407,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-masked/seed-71/evaluation/0064/report.json",
+            "sha256": "917c9d60e09ed4df18110e01e7371ab82b756573870f0371374771ee93f6b2d1"
+          }
+        },
+        {
+          "update": 96,
+          "mean_area_reduction_percent": 38.691873949583176,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-masked/seed-71/evaluation/0096/report.json",
+            "sha256": "502ae75b7ba506b2f7851d854ee703903fecee21e3a1903fbd82e035e811b04a"
+          }
+        },
+        {
+          "update": 128,
+          "mean_area_reduction_percent": 37.47617246597931,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-masked/seed-71/evaluation/0128/report.json",
+            "sha256": "77fad77dd21b5912a0fbf4aeb85086532fd6cfc72c9f206801bb5e90da049821"
+          }
+        }
+      ]
+    },
+    "seed-113-masked": {
+      "launch": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-masked/launch.json",
+        "sha256": "49e53e06725f00a999df65e5bf7e00bcd61aada348125050770bdf447cc560da"
+      },
+      "origin": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-masked/cold-origin.json",
+        "sha256": "ae639a7db07789a02a41bf49c9f7aa95e3a43ed433b1d1a366080c9d8fd2e241"
+      },
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-masked/seed-113/state.json",
+        "sha256": "7246e1472834b5ffb5303f97a9cb3dc28b6891953af84ae6ac0564b85e35db19"
+      },
+      "endpoint": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-masked/seed-113/checkpoints/0128.pt.gz",
+        "sha256": "b085268fb8738f8835abb0b7eaffc8f164222444ca8c02ca408b151ecc37bb05"
+      },
+      "actions": 131072,
+      "completed_episodes": 2048,
+      "accepted": 2048,
+      "attempted": 2048,
+      "input_rows": 2048,
+      "fresh_slots": 1724,
+      "requested_depth_counts": {
+        "0": 1643,
+        "1": 204,
+        "2": 201
+      },
+      "actual_depth_counts": {
+        "0": 1724,
+        "1": 197,
+        "2": 127
+      },
+      "development": [
+        {
+          "update": 0,
+          "mean_area_reduction_percent": 3.831319649210576,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-masked/seed-113/evaluation/0000/report.json",
+            "sha256": "d2088ff9969eddbc1a247463131b5aa8a9016ce603a3b0a55423da5a7c58cd5c"
+          }
+        },
+        {
+          "update": 32,
+          "mean_area_reduction_percent": 33.373736452222104,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-masked/seed-113/evaluation/0032/report.json",
+            "sha256": "98b3e6c650b69749c6da8e5b0596ca9bb51412f02d1a6f2d127270e24a5dcdbe"
+          }
+        },
+        {
+          "update": 64,
+          "mean_area_reduction_percent": 39.53593926876993,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-masked/seed-113/evaluation/0064/report.json",
+            "sha256": "8e144408711d05c0f1fe07b38422460263d0b059cdccd5c7dbe0379b9c8a71ae"
+          }
+        },
+        {
+          "update": 96,
+          "mean_area_reduction_percent": 40.802711874420666,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-masked/seed-113/evaluation/0096/report.json",
+            "sha256": "ea49c29eeb749d985bef347be099ef0a44aebc6eb3245284283945f1db23fcdb"
+          }
+        },
+        {
+          "update": 128,
+          "mean_area_reduction_percent": 42.46049410695177,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-masked/seed-113/evaluation/0128/report.json",
+            "sha256": "c84ad3e03f8db102e9dcaed45e5cfd982b125219a094e5a84da4b315e3fb5e45"
+          }
+        }
+      ]
+    },
+    "seed-113-original": {
+      "launch": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-original/launch.json",
+        "sha256": "637094d48da6f4e99d7ef41b7d591152fb370eb877f51a63a4f7f0f5f9aea4f9"
+      },
+      "origin": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-original/cold-origin.json",
+        "sha256": "ce4055f553c455f28eb5937452e8797509077483180e31b4c3444b9cfa1ab07c"
+      },
+      "state": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-original/seed-113/state.json",
+        "sha256": "7a4ead09c184519382b710ed79c2cab6778bb9b99b6c04ffb76a6a29c3d1c344"
+      },
+      "endpoint": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-original/seed-113/checkpoints/0128.pt.gz",
+        "sha256": "e7de1910afd831fba007bdc91a0d4ae19f22cbd977b9c756d0792b939ad516f8"
+      },
+      "actions": 131072,
+      "completed_episodes": 2048,
+      "accepted": 2048,
+      "attempted": 2048,
+      "input_rows": 2048,
+      "fresh_slots": 1714,
+      "requested_depth_counts": {
+        "0": 1643,
+        "1": 204,
+        "2": 201
+      },
+      "actual_depth_counts": {
+        "0": 1714,
+        "1": 201,
+        "2": 133
+      },
+      "development": [
+        {
+          "update": 0,
+          "mean_area_reduction_percent": 2.6818465096079356,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-original/seed-113/evaluation/0000/report.json",
+            "sha256": "d525b5edf1401b3af6c00221582a3d4a791c73ecdcb736deeea3d3ee1de06953"
+          }
+        },
+        {
+          "update": 32,
+          "mean_area_reduction_percent": 20.833976339030077,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-original/seed-113/evaluation/0032/report.json",
+            "sha256": "fb99c8d444aedd39b2aac3167923c30f9d027a1af8f51e9bc264a8201183c81d"
+          }
+        },
+        {
+          "update": 64,
+          "mean_area_reduction_percent": 25.850574145463554,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-original/seed-113/evaluation/0064/report.json",
+            "sha256": "0ad7dd56188dd6017a4bf54f3736a0066954db8630f516655357998a2e62d0c4"
+          }
+        },
+        {
+          "update": 96,
+          "mean_area_reduction_percent": 35.05215927188809,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-original/seed-113/evaluation/0096/report.json",
+            "sha256": "a37b6431b11ef4a837cfd981298ae874a9659423ed4a77f8e285bfbf1f2f83b7"
+          }
+        },
+        {
+          "update": 128,
+          "mean_area_reduction_percent": 35.16484106050837,
+          "report": {
+            "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-original/seed-113/evaluation/0128/report.json",
+            "sha256": "1fbbf47f344f884de9451505cfe1980c85b654ec97733aa5f53bf463a88f9d28"
+          }
+        }
+      ]
+    }
+  },
+  "panels": {
+    "schema": "cold-mask-panels-v1",
+    "status": "complete",
+    "protocol": {
+      "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/tools/factory-edit-pilot/operations/declarative-mask-training.json",
+      "sha256": "43ff2df0407dcfeb46af6ad3179bb00ee77fa7df0ed9da48d0f4743b2a2f9110"
+    },
+    "panels": {
+      "development": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/panels/development/panel.json",
+        "sha256": "57c426cf8833c5f65eeeb6c85a124ca82d3735f68a89d8e533f75db930940026"
+      },
+      "confirmation": {
+        "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/panels/confirmation/panel.json",
+        "sha256": "a1e4950f8fe8716bf51d2a7f6c9706240fe7b3580f3350da224230c42def6954"
+      }
+    },
+    "excluded_prior": [
+      {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914/artifacts/study/development-panel/panel.json",
+        "sha256": "d3320d6a5aeb112557bb5de5e228edfcb4ab518a69be40289d6109eefa9db7d0"
+      },
+      {
+        "path": "/home/ashrimp/Srv/aic-quality-cold-start-r2-20260914/artifacts/study/confirmation-panel/panel.json",
+        "sha256": "1170b24934cd6f5b8d3c0ecf0e8dfb01e92c42d076e471f1ae5a76d7236e1579"
+      }
+    ]
+  },
+  "input_audit": {
+    "distinct_reserved_geometries": 128,
+    "training_reserved_intersection": 0,
+    "fresh_pairs": [
+      {
+        "left": "seed-71-original",
+        "right": "seed-71-masked",
+        "shared_fresh_slots": 1683,
+        "identical": true
+      },
+      {
+        "left": "seed-71-original",
+        "right": "seed-113-masked",
+        "shared_fresh_slots": 1440,
+        "identical": true
+      },
+      {
+        "left": "seed-71-original",
+        "right": "seed-113-original",
+        "shared_fresh_slots": 1432,
+        "identical": true
+      },
+      {
+        "left": "seed-71-masked",
+        "right": "seed-113-masked",
+        "shared_fresh_slots": 1433,
+        "identical": true
+      },
+      {
+        "left": "seed-71-masked",
+        "right": "seed-113-original",
+        "shared_fresh_slots": 1423,
+        "identical": true
+      },
+      {
+        "left": "seed-113-masked",
+        "right": "seed-113-original",
+        "shared_fresh_slots": 1691,
+        "identical": true
+      }
+    ]
+  },
+  "execution": {
+    "study_seconds": 5888.919028520584,
+    "actual_distinct_artifact_bytes": 4909225274,
+    "confirmation_parallel_block_seconds": 76.3634392140084,
+    "confirmation_worker_cpu_seconds": 675.9787168189999,
+    "confirmation_blocks": [
+      {
+        "seed": 71,
+        "trained": "original",
+        "mode": "original",
+        "seconds": 9.43697953200899,
+        "worker_cpu_seconds": 83.616961125,
+        "checkpoint": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-original/seed-71/checkpoints/0128.pt.gz",
+          "sha256": "21052adb77bb00d6f01632b16da5ffea0e46b5d9495c76dc76c50acd71e8f92d"
+        },
+        "panel": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/panels/confirmation/panel.json",
+          "sha256": "a1e4950f8fe8716bf51d2a7f6c9706240fe7b3580f3350da224230c42def6954"
+        }
+      },
+      {
+        "seed": 71,
+        "trained": "original",
+        "mode": "masked",
+        "seconds": 9.879049652008689,
+        "worker_cpu_seconds": 86.58547629,
+        "checkpoint": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-original/seed-71/checkpoints/0128.pt.gz",
+          "sha256": "21052adb77bb00d6f01632b16da5ffea0e46b5d9495c76dc76c50acd71e8f92d"
+        },
+        "panel": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/panels/confirmation/panel.json",
+          "sha256": "a1e4950f8fe8716bf51d2a7f6c9706240fe7b3580f3350da224230c42def6954"
+        }
+      },
+      {
+        "seed": 71,
+        "trained": "masked",
+        "mode": "original",
+        "seconds": 9.352031300004455,
+        "worker_cpu_seconds": 81.52542081300001,
+        "checkpoint": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-masked/seed-71/checkpoints/0128.pt.gz",
+          "sha256": "b59ae83f1093911779b1dfd32eb65a13bfb77371550a5e303f019a8f3aa016e3"
+        },
+        "panel": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/panels/confirmation/panel.json",
+          "sha256": "a1e4950f8fe8716bf51d2a7f6c9706240fe7b3580f3350da224230c42def6954"
+        }
+      },
+      {
+        "seed": 71,
+        "trained": "masked",
+        "mode": "masked",
+        "seconds": 9.196537820011145,
+        "worker_cpu_seconds": 81.46361500900002,
+        "checkpoint": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-71-masked/seed-71/checkpoints/0128.pt.gz",
+          "sha256": "b59ae83f1093911779b1dfd32eb65a13bfb77371550a5e303f019a8f3aa016e3"
+        },
+        "panel": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/panels/confirmation/panel.json",
+          "sha256": "a1e4950f8fe8716bf51d2a7f6c9706240fe7b3580f3350da224230c42def6954"
+        }
+      },
+      {
+        "seed": 113,
+        "trained": "masked",
+        "mode": "masked",
+        "seconds": 9.526758808991872,
+        "worker_cpu_seconds": 84.33289475499993,
+        "checkpoint": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-masked/seed-113/checkpoints/0128.pt.gz",
+          "sha256": "b085268fb8738f8835abb0b7eaffc8f164222444ca8c02ca408b151ecc37bb05"
+        },
+        "panel": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/panels/confirmation/panel.json",
+          "sha256": "a1e4950f8fe8716bf51d2a7f6c9706240fe7b3580f3350da224230c42def6954"
+        }
+      },
+      {
+        "seed": 113,
+        "trained": "masked",
+        "mode": "original",
+        "seconds": 9.438932870994904,
+        "worker_cpu_seconds": 84.30651151299998,
+        "checkpoint": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-masked/seed-113/checkpoints/0128.pt.gz",
+          "sha256": "b085268fb8738f8835abb0b7eaffc8f164222444ca8c02ca408b151ecc37bb05"
+        },
+        "panel": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/panels/confirmation/panel.json",
+          "sha256": "a1e4950f8fe8716bf51d2a7f6c9706240fe7b3580f3350da224230c42def6954"
+        }
+      },
+      {
+        "seed": 113,
+        "trained": "original",
+        "mode": "masked",
+        "seconds": 10.067651838995516,
+        "worker_cpu_seconds": 89.58704759399996,
+        "checkpoint": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-original/seed-113/checkpoints/0128.pt.gz",
+          "sha256": "e7de1910afd831fba007bdc91a0d4ae19f22cbd977b9c756d0792b939ad516f8"
+        },
+        "panel": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/panels/confirmation/panel.json",
+          "sha256": "a1e4950f8fe8716bf51d2a7f6c9706240fe7b3580f3350da224230c42def6954"
+        }
+      },
+      {
+        "seed": 113,
+        "trained": "original",
+        "mode": "original",
+        "seconds": 9.465497390992823,
+        "worker_cpu_seconds": 84.56078972,
+        "checkpoint": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/study/seed-113-original/seed-113/checkpoints/0128.pt.gz",
+          "sha256": "e7de1910afd831fba007bdc91a0d4ae19f22cbd977b9c756d0792b939ad516f8"
+        },
+        "panel": {
+          "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/panels/confirmation/panel.json",
+          "sha256": "a1e4950f8fe8716bf51d2a7f6c9706240fe7b3580f3350da224230c42def6954"
+        }
+      }
+    ],
+    "scientific_worker_pids": [
+      94385,
+      94386,
+      94387,
+      94388,
+      94389,
+      94390,
+      94391,
+      94392,
+      94393,
+      94394,
+      94395,
+      94396,
+      94397,
+      94398,
+      94399,
+      94400,
+      98692,
+      98693,
+      98694,
+      98695,
+      98696,
+      98697,
+      98698,
+      98699,
+      98700,
+      98701,
+      98702,
+      98703,
+      98704,
+      98705,
+      98706,
+      98707,
+      99353,
+      99354,
+      99355,
+      99356,
+      99357,
+      99358,
+      99359,
+      99360,
+      99361,
+      99362,
+      99363,
+      99364,
+      99365,
+      99366,
+      99367,
+      99368,
+      100521,
+      100522,
+      100523,
+      100524,
+      100525,
+      100526,
+      100527,
+      100528,
+      100529,
+      100530,
+      100531,
+      100532,
+      100533,
+      100534,
+      100535,
+      100536,
+      101050,
+      101051,
+      101052,
+      101053,
+      101054,
+      101055,
+      101056,
+      101057,
+      101058,
+      101059,
+      101060,
+      101061,
+      101062,
+      101063,
+      101064,
+      101065
+    ],
+    "live_scientific_worker_pids": [],
+    "main": {
+      "directory": "/home/ashrimp/Srv/aic-declarative-efficiency-20260913/artifacts/resumed-four-hour",
+      "matrix_status": "paused",
+      "job_status": "paused",
+      "update": 1908
+    }
+  },
+  "verification": {
+    "readiness_status": "passed",
+    "readiness_seconds": 137.71484163399145,
+    "live_streams_restored": 64,
+    "normal_masked_resume": [
+      2,
+      4
+    ],
+    "masked_native_cuda_tests": 10,
+    "shared_frozen_mask_tests": 5,
+    "cargo_check_workspace": "passed",
+    "cargo_test_workspace": "passed",
+    "metadata_audit_seconds": 0.4447766819939716
+  }
+}
