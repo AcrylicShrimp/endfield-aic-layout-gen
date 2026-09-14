@@ -2,6 +2,7 @@
 
 pub(crate) mod declarative;
 mod geometry;
+#[cfg(feature = "python")]
 pub(crate) mod python;
 mod session;
 #[cfg(test)]

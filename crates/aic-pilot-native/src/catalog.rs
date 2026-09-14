@@ -6,7 +6,6 @@ use std::path::{Path, PathBuf};
 use num_rational::BigRational;
 use num_traits::{One, Zero};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use sha2::{Digest, Sha256};
 
 use crate::diagnostic::{Diagnostic, Result, require};
 use crate::state::{Binding, Point, Pose};
@@ -152,12 +151,7 @@ pub struct Catalog {
     pub terminal_ids: BTreeMap<String, usize>,
 }
 
-pub fn hash(bytes: &[u8]) -> String {
-    Sha256::digest(bytes)
-        .iter()
-        .map(|byte| format!("{byte:02x}"))
-        .collect()
-}
+pub use crate::input::hash;
 
 fn read<T: DeserializeOwned>(path: &Path) -> Result<(T, String)> {
     let entity = path.to_string_lossy();

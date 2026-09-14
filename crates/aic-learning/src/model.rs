@@ -163,7 +163,7 @@ impl Model {
             .tanh();
         (nodes, pooled)
     }
-    pub fn predict(&self, prepared: &Packed) -> Result<Prediction> {
+    pub fn roots(&self, prepared: &Packed) -> RootPrediction {
         let b = &prepared.graph;
         let (nodes, pooled) = self.encode(b, prepared.graphs);
         let refs = &b["action_references"];
@@ -187,29 +187,49 @@ impl Model {
         let values = self
             .linear("critic.2", &self.linear("critic.0", &pooled).tanh())
             .squeeze_dim(-1);
-        let (root_logp, mut entropy) = distribution(&logits, b, prepared.graphs);
+        let (root_logp, entropy) = distribution(&logits, b, prepared.graphs);
+        RootPrediction {
+            nodes,
+            pooled,
+            root_logp,
+            entropy,
+            values,
+        }
+    }
+    pub fn ports(&self, nodes: &Tensor, pooled: &Tensor, branches: &Tensors) -> Tensor {
+        let count = branches["features"].size()[0];
+        let refs = nodes
+            .index(&[Some(&branches["references"])])
+            .view([count, -1]);
+        let port_features = Tensor::cat(
+            &[
+                refs,
+                pooled.index(&[Some(&branches["owner"])]),
+                branches["root_features"].shallow_clone(),
+                branches["features"].shallow_clone(),
+                branches["history"].shallow_clone(),
+            ],
+            -1,
+        );
+        let port_logits = self
+            .linear(
+                "port_actor.2",
+                &self.linear("port_actor.0", &port_features).tanh(),
+            )
+            .squeeze_dim(-1);
+        port_logits
+    }
+    pub fn predict(&self, prepared: &Packed) -> Result<Prediction> {
+        let RootPrediction {
+            nodes,
+            pooled,
+            root_logp,
+            mut entropy,
+            values,
+        } = self.roots(prepared);
         let mut logp = root_logp.index(&[Some(&prepared.roots)]);
         if let Some(branches) = &prepared.branches {
-            let count = branches["features"].size()[0];
-            let refs = nodes
-                .index(&[Some(&branches["references"])])
-                .view([count, -1]);
-            let port_features = Tensor::cat(
-                &[
-                    refs,
-                    pooled.index(&[Some(&branches["owner"])]),
-                    branches["root_features"].shallow_clone(),
-                    branches["features"].shallow_clone(),
-                    branches["history"].shallow_clone(),
-                ],
-                -1,
-            );
-            let port_logits = self
-                .linear(
-                    "port_actor.2",
-                    &self.linear("port_actor.0", &port_features).tanh(),
-                )
-                .squeeze_dim(-1);
+            let port_logits = self.ports(&nodes, &pooled, branches);
             let (conditional, port_entropy) =
                 distribution(&port_logits, branches, prepared.factors);
             logp = logp.index_add(
@@ -237,6 +257,14 @@ impl Model {
     }
 }
 
+pub struct RootPrediction {
+    pub nodes: Tensor,
+    pub pooled: Tensor,
+    pub root_logp: Tensor,
+    pub entropy: Tensor,
+    pub values: Tensor,
+}
+
 pub struct Prediction {
     pub logp: Tensor,
     pub entropy: Tensor,
@@ -244,7 +272,7 @@ pub struct Prediction {
     pub root_logp: Tensor,
 }
 
-fn distribution(logits: &Tensor, b: &Tensors, count: i64) -> (Tensor, Tensor) {
+pub(crate) fn distribution(logits: &Tensor, b: &Tensors, count: i64) -> (Tensor, Tensor) {
     let adjusted = logits - &b["kind_log_counts"];
     let graph = &b["action_graph"];
     let maximum = Tensor::full([count], f64::NEG_INFINITY, (logits.kind(), logits.device()))

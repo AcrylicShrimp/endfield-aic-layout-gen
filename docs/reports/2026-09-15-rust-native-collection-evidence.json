@@ -1,0 +1,548 @@
+{
+  "schema": "aic-rust-native-collection-evidence-v1",
+  "status": "passed",
+  "production_cutover": false,
+  "source_base_commit": "73b0b47",
+  "remote_root": "/home/ashrimp/Srv/aic-rust-learning-20260915",
+  "report": {
+    "admission_seconds": 0.224138656,
+    "all_retained_best_valid": true,
+    "checkpoint_seconds": 0.816034146,
+    "completed_chunks": 2,
+    "production_cutover": false,
+    "records": [
+      {
+        "chunk": 0,
+        "collection_seconds": 2.270973011,
+        "observation_bytes": 883582816,
+        "samples": 4096,
+        "true_terminals": 0,
+        "update": {
+          "actor_gradient_norm": 0.025076689198613167,
+          "actor_updated": true,
+          "critic_gradient_norm": 0.048484571278095245,
+          "imitation_loss": 0.8066701889038086,
+          "loss": 0.01234942115843296,
+          "positive_replay_labels": 16,
+          "step": 1,
+          "value_loss": 0.001854214700870216
+        },
+        "update_seconds": 0.318033012
+      },
+      {
+        "chunk": 1,
+        "collection_seconds": 1.142498531,
+        "observation_bytes": 804838064,
+        "samples": 4096,
+        "true_terminals": 128,
+        "update": {
+          "actor_gradient_norm": 0.008783156983554363,
+          "actor_updated": true,
+          "critic_gradient_norm": 0.016880592331290245,
+          "imitation_loss": 0.7631486654281616,
+          "loss": 0.029330072924494743,
+          "positive_replay_labels": 16,
+          "step": 2,
+          "value_loss": 0.00026508013252168894
+        },
+        "update_seconds": 0.108312051
+      }
+    ],
+    "resumed": false,
+    "schema": "aic-native-collection-report-v1",
+    "status": "completed",
+    "streams": 128,
+    "total_seconds": 17.177609723,
+    "workers": 16
+  },
+  "measurement": {
+    "schema": "aic-native-collection-measurement-v1",
+    "command": [
+      "target/release/aic-cli",
+      "learning",
+      "verify-collection",
+      "--config",
+      "artifacts/native-collection-input-128/manifest.json",
+      "--kernel-input",
+      "artifacts/kernel-input-multistage/manifest.json",
+      "--output",
+      "artifacts/native-collection-complete-128",
+      "--chunks",
+      "2"
+    ],
+    "exit_code": 0,
+    "wall_seconds": 18.139194713992765,
+    "maximum_rss_bytes": 5953642496,
+    "user_seconds": 17.403698,
+    "system_seconds": 13.164659,
+    "guard_last": {
+      "processes": 1,
+      "rss": 0,
+      "peak_rss": 5953642496,
+      "free_bytes": 60639895552,
+      "elapsed_seconds": 17.628261364996433
+    },
+    "measurement_only": true
+  },
+  "oracle": {
+    "schema": "aic-native-collection-oracle-v1",
+    "status": "passed",
+    "results": [
+      {
+        "chunk": 0,
+        "samples": 4096,
+        "first_wave_choices": 128,
+        "first_wave_rng_exact": true,
+        "credit_exact": true,
+        "model_adam_shuffle": {
+          "fields": 113,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        },
+        "gradients": {
+          "fields": 28,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        }
+      },
+      {
+        "chunk": 1,
+        "samples": 4096,
+        "first_wave_choices": 128,
+        "first_wave_rng_exact": true,
+        "credit_exact": true,
+        "model_adam_shuffle": {
+          "fields": 113,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        },
+        "gradients": {
+          "fields": 28,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        }
+      }
+    ],
+    "torch_version": "2.13.0+cu130",
+    "device": "cuda:0"
+  },
+  "recovery": {
+    "schema": "aic-native-collection-recovery-check-v1",
+    "status": "passed",
+    "restored_tensor_fields_exact": 116,
+    "resumed_workers": 2,
+    "resumed_streams": 8,
+    "resumed_terminals": 8,
+    "failure_sample_inputs": 8,
+    "failure_current_inputs": 8,
+    "rejections": [
+      {
+        "case": "reserved",
+        "code": "aic-learning.collection-reservation",
+        "passed": true
+      },
+      {
+        "case": "input-hash",
+        "code": "aic-learning.collection-input-hash",
+        "passed": true
+      },
+      {
+        "case": "checkpoint-hash",
+        "code": "aic-learning.collection-checkpoint-hash",
+        "passed": true
+      },
+      {
+        "case": "memory",
+        "code": "aic-learning.collection-memory",
+        "passed": true
+      }
+    ]
+  },
+  "resumed_oracle": {
+    "schema": "aic-native-collection-oracle-v1",
+    "status": "passed",
+    "results": [
+      {
+        "chunk": 1,
+        "samples": 256,
+        "first_wave_choices": 8,
+        "first_wave_rng_exact": true,
+        "credit_exact": true,
+        "model_adam_shuffle": {
+          "fields": 113,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        },
+        "gradients": {
+          "fields": 28,
+          "maximum_absolute_error": 0.0,
+          "worst_field": null,
+          "atol": 2e-06,
+          "rtol": 2e-05
+        }
+      }
+    ],
+    "torch_version": "2.13.0+cu130",
+    "device": "cuda:0"
+  },
+  "kernel_regression": {
+    "rejections": [
+      {
+        "case": "root-index",
+        "code": "aic-learning.input-index",
+        "rejected": true
+      },
+      {
+        "case": "factor-owner",
+        "code": "aic-learning.input-owner",
+        "rejected": true
+      },
+      {
+        "case": "missing-adam",
+        "code": "aic-learning.tensor-missing",
+        "rejected": true
+      },
+      {
+        "case": "negative-adam",
+        "code": "aic-torch.backend",
+        "rejected": true
+      },
+      {
+        "case": "rng-state",
+        "code": "aic-torch.backend",
+        "rejected": true
+      },
+      {
+        "case": "input-hash",
+        "code": "aic-learning.input-hash",
+        "rejected": true
+      }
+    ],
+    "schema": "aic-rust-learner-comparison-v1",
+    "status": "passed",
+    "results": [
+      {
+        "device": "cpu",
+        "adam_backend": "foreach",
+        "steps": 16,
+        "comparisons": {
+          "forward.safetensors": {
+            "fields": 3,
+            "maximum_absolute_error": 0.0,
+            "worst_field": null,
+            "atol": 2e-06,
+            "rtol": 2e-05
+          },
+          "first-gradients.safetensors": {
+            "fields": 28,
+            "maximum_absolute_error": 0.0,
+            "worst_field": null,
+            "atol": 2e-06,
+            "rtol": 2e-05
+          },
+          "final-forward.safetensors": {
+            "fields": 3,
+            "maximum_absolute_error": 0.0,
+            "worst_field": null,
+            "atol": 2e-06,
+            "rtol": 2e-05
+          },
+          "state": {
+            "fields": 116,
+            "maximum_absolute_error": 0.0,
+            "worst_field": null,
+            "atol": 2e-06,
+            "rtol": 2e-05
+          }
+        },
+        "recovery": {
+          "completed_steps": 16,
+          "exact": true,
+          "left": "artifacts/native-collection-kernel-regression/cpu-foreach/continuous/checkpoint",
+          "right": "artifacts/native-collection-kernel-regression/cpu-foreach/resumed/checkpoint",
+          "schema": "aic-rust-learner-recovery-v1",
+          "status": "passed",
+          "tensor_fields": 116
+        },
+        "rust": {
+          "load_seconds": 0.003301445,
+          "update_seconds": 0.257660348,
+          "checkpoint_seconds": 0.012502676,
+          "total_seconds": 0.28761149
+        },
+        "python": {
+          "load_seconds": 0.003484618995571509,
+          "update_seconds": 0.3210134199762251,
+          "tensor_save_seconds": 0.0013328280037967488,
+          "total_seconds": 0.33251813700189814
+        },
+        "warmup_steps": 4,
+        "rust_warm_mean_seconds": 0.006121579083333333,
+        "python_warm_mean_seconds": 0.006934809247468365,
+        "checkpoint_bytes": 430225
+      },
+      {
+        "device": "cuda:0",
+        "adam_backend": "foreach",
+        "steps": 16,
+        "comparisons": {
+          "forward.safetensors": {
+            "fields": 3,
+            "maximum_absolute_error": 0.0,
+            "worst_field": null,
+            "atol": 2e-06,
+            "rtol": 2e-05
+          },
+          "first-gradients.safetensors": {
+            "fields": 28,
+            "maximum_absolute_error": 0.0,
+            "worst_field": null,
+            "atol": 2e-06,
+            "rtol": 2e-05
+          },
+          "final-forward.safetensors": {
+            "fields": 3,
+            "maximum_absolute_error": 0.0,
+            "worst_field": null,
+            "atol": 2e-06,
+            "rtol": 2e-05
+          },
+          "state": {
+            "fields": 116,
+            "maximum_absolute_error": 0.0,
+            "worst_field": null,
+            "atol": 2e-06,
+            "rtol": 2e-05
+          }
+        },
+        "recovery": {
+          "completed_steps": 16,
+          "exact": true,
+          "left": "artifacts/native-collection-kernel-regression/cuda-0-foreach/continuous/checkpoint",
+          "right": "artifacts/native-collection-kernel-regression/cuda-0-foreach/resumed/checkpoint",
+          "schema": "aic-rust-learner-recovery-v1",
+          "status": "passed",
+          "tensor_fields": 116
+        },
+        "rust": {
+          "load_seconds": 0.124492319,
+          "update_seconds": 0.32187553500000005,
+          "checkpoint_seconds": 0.018950227,
+          "total_seconds": 0.808959297
+        },
+        "python": {
+          "load_seconds": 0.01187714199477341,
+          "update_seconds": 0.37229255196871236,
+          "tensor_save_seconds": 0.002034035001997836,
+          "total_seconds": 0.7273701749945758
+        },
+        "warmup_steps": 4,
+        "rust_warm_mean_seconds": 0.0069981234166666675,
+        "python_warm_mean_seconds": 0.00711244691410684,
+        "checkpoint_bytes": 430228
+      },
+      {
+        "device": "cuda:0",
+        "adam_backend": "fused",
+        "steps": 16,
+        "comparisons": {
+          "forward.safetensors": {
+            "fields": 3,
+            "maximum_absolute_error": 0.0,
+            "worst_field": null,
+            "atol": 2e-06,
+            "rtol": 2e-05
+          },
+          "first-gradients.safetensors": {
+            "fields": 28,
+            "maximum_absolute_error": 0.0,
+            "worst_field": null,
+            "atol": 2e-06,
+            "rtol": 2e-05
+          },
+          "final-forward.safetensors": {
+            "fields": 3,
+            "maximum_absolute_error": 0.0,
+            "worst_field": null,
+            "atol": 2e-06,
+            "rtol": 2e-05
+          },
+          "state": {
+            "fields": 116,
+            "maximum_absolute_error": 0.0,
+            "worst_field": null,
+            "atol": 2e-06,
+            "rtol": 2e-05
+          }
+        },
+        "recovery": {
+          "completed_steps": 16,
+          "exact": true,
+          "left": "artifacts/native-collection-kernel-regression/cuda-0-fused/continuous/checkpoint",
+          "right": "artifacts/native-collection-kernel-regression/cuda-0-fused/resumed/checkpoint",
+          "schema": "aic-rust-learner-recovery-v1",
+          "status": "passed",
+          "tensor_fields": 116
+        },
+        "rust": {
+          "load_seconds": 0.122766845,
+          "update_seconds": 0.270431803,
+          "checkpoint_seconds": 0.019008026,
+          "total_seconds": 0.756343701
+        },
+        "python": {
+          "load_seconds": 0.00459164498897735,
+          "update_seconds": 0.11751805696985684,
+          "tensor_save_seconds": 0.002268973010359332,
+          "total_seconds": 0.1282927369902609
+        },
+        "warmup_steps": 4,
+        "rust_warm_mean_seconds": 0.006965552583333333,
+        "python_warm_mean_seconds": 0.007097304997538838,
+        "checkpoint_bytes": 430226
+      }
+    ],
+    "torch_version": "2.13.0+cu130",
+    "input_manifest_sha256": "dcda0b586729923d865e0fc4645b30a5508584c3a38f727ba643d19883a901f1",
+    "production_cutover": false
+  },
+  "verification": {
+    "remote_workspace_check": "passed with aic-cli/learning",
+    "remote_workspace_tests": {
+      "passed": 580,
+      "failed": 0,
+      "ignored": 5
+    },
+    "native_without_python": {
+      "passed": 32,
+      "failed": 0,
+      "ignored": 3
+    },
+    "python_declarative_tests": {
+      "passed": 81,
+      "failed": 0
+    },
+    "native_runtime_python_dependencies": false,
+    "local_workspace_check": "passed",
+    "local_workspace_tests": {
+      "passed": 575,
+      "failed": 0,
+      "ignored": 5
+    },
+    "local_artifact_tree_and_remote_source_hashes": "exact"
+  },
+  "executable_sha256": "514fda0b64ffca9b8dbde3f3ae821980bcda8b8b42ea44878aaa19a21923131d",
+  "source_sha256": {
+    "Cargo.lock": "689767f06239c29272d82cd4ef5347126451401dd10cafe10a7a935c4834b8e2",
+    "Cargo.toml": "63a9197702771b3c9bf17bd926f6240d7292d2e05b35f422a415a6cda97248ed",
+    "crates/aic-cli/src/learning.rs": "d656ad71bb393a15d1080921e264e186c73431ff4b76f983a268df8fcfedf223",
+    "crates/aic-learning/Cargo.toml": "5a47851d728d93eb88f7f66e084d80c680e0371f8a6a1361a9ac6b2dd1b99a18",
+    "crates/aic-learning/src/collection.rs": "ee9143f2755dff894c73b9805d57bb9783b3c3addeb0cd4393b337a78f9bb556",
+    "crates/aic-learning/src/collection/batch.rs": "eeb0cbdbb1e44d95925014e30506f9c455d2fafaf4217c28763c9a30e0b13e16",
+    "crates/aic-learning/src/collection/config.rs": "c77f81cf50fcfd66dfcbaef53aca6455d1af4dbeda747d8189f1cad7afd86271",
+    "crates/aic-learning/src/collection/credit.rs": "ddc03c4d8a658cf872fec27406342ff160e34d515d4b225ba68a5eaa3a2eb0f9",
+    "crates/aic-learning/src/collection/policy.rs": "b3c9f6134a9dbc4ee4a40b8e5101e23bb25d07904df8c34c4e82ccbc15b4928f",
+    "crates/aic-learning/src/collection/rollout.rs": "095d3b0cea2f3f9ed0be6d7f7d2bd812a4dd6e7cfbe88dd45ebee7234e6dee44",
+    "crates/aic-learning/src/collection/storage.rs": "ffca6e2c3b781dc19c39501a554fe8d45f71fcf8547a41895434b75fce7875e0",
+    "crates/aic-learning/src/collection/verify.rs": "a4c29a779ed5ae1eb5dde5514c5221afda6e08b3059de35612bb0f166669d61f",
+    "crates/aic-learning/src/lib.rs": "f413fb36bbed39e2af86cd21ebb749e12e5c64a6bf71bffec04c06d1a0f3ad22",
+    "crates/aic-learning/src/model.rs": "8335540fb809819c714dffcb1b0c1e135bdf5d3867c4a9b1d436211b428e1fa4",
+    "crates/aic-learning/src/update.rs": "27c959dcbaf0b131dc1ca011a3d4470d56fb2d26771dd750fdc0ed850a84c2e5",
+    "crates/aic-pilot-native/Cargo.toml": "03d19ec3e65e695d6bbe95841790f5a0d447f0aa3d076d76a448287cf7d9ea27",
+    "crates/aic-pilot-native/src/catalog.rs": "f3ecdb06143736e4474bd7cfcaaa29a65fccd6b9b1ff23910886a29863281708",
+    "crates/aic-pilot-native/src/full_factory.rs": "2e4c63ae6ece75f9db65c4e4560115f0356284488bdb0a95fb2e2e3ef2ea209d",
+    "crates/aic-pilot-native/src/full_factory/blueprint.rs": "8861c2e5c92f50d471a9c47d1e9d492b007a33ee1c0ae17a6d5f3e7d79787bc9",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative.rs": "318b28b9cbf121aadfd81f1d659f3d4c4795b98b500a13caff34b655fe7c76da",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/checkpoint.rs": "7c53843a894b0a615416ba0b64279e3e15d34edd0a93ff3fb36d35c93baf06d0",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning.rs": "618d9cfc8b3d7c9e54b6d551765fef5291253e59a520b243a551130514e7d557",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/runtime.rs": "f73ff73023fd34713983b086ad87f0ebf25916a99150c45bd6a8c922df12da30",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/tests.rs": "22891af02d13b734a664701def5c977f2c988becb5d3139e60324d2a355296d0",
+    "crates/aic-pilot-native/src/full_factory/blueprint/session.rs": "146217e869e27046c6e63723ede0a32a4c164544c0d549d73f380d7a15c18b6a",
+    "crates/aic-pilot-native/src/full_factory/blueprint/session/checkpoint.rs": "77e1c1c22d664c40d2b446423bd84d2e45b30def5f23216733c7131bc5c8cdbc",
+    "crates/aic-pilot-native/src/full_factory/identity.rs": "9a36d3bc126a5c20d797c62967bb0aa1be6f4ef258034bdbd7efaee117e911a1",
+    "crates/aic-pilot-native/src/input.rs": "698250e12ca7b6005cc956f3fd6197a78cc56a786ef16e79e3cc8d1df64cb73e",
+    "crates/aic-pilot-native/src/learning.rs": "1d0f14bc8aa2a1d28ed6bfa7a23c21e3dad403cfcaf96eb9bfcc96f47778a348",
+    "crates/aic-pilot-native/src/learning/pool.rs": "f14cdd858a1a29175dd4e01e07aac00131d4a5f8eabf65dbe3cdd6d16dfdbab9",
+    "crates/aic-pilot-native/src/lib.rs": "1eb0148550d4b552bd16642e7cb233b3ed8078c90a7315934df85c763af1a715",
+    "crates/aic-pilot-native/src/observation.rs": "1339c3e0a2fa8380c734a555a6d21a84bac7e5dd2f497f5b34c5f63700267221",
+    "crates/aic-pilot-native/src/observation/entities.rs": "48da8a8f1b6b6a96edf049aa127f6c82ad6dc5e99405909ecdbfe0d2868f1de3",
+    "crates/aic-pilot-native/src/python_factory.rs": "8b137400b73edb6b772b6e4119b19b9448beb564c7d32f2cd410ec57f50e0a3c",
+    "tools/factory-edit-pilot/diagnostics/rust_collection_compare.py": "350c5d20d03d0ac2178ec2ceb6941b92c42bc53bb9ce87c51fdb85136af154a4",
+    "tools/factory-edit-pilot/diagnostics/rust_collection_export.py": "d64b3a93b6e38fda2f8a9eceb654a806c0d4be034527592265ecae3f906a3339",
+    "tools/factory-edit-pilot/diagnostics/rust_collection_measure.py": "db9648184652194aa885c6ce774df3afa4b5ae33e3897f085429bca0bbe4284f",
+    "tools/factory-edit-pilot/diagnostics/rust_collection_recovery.py": "f14af7e125e3dc40337a4a0861ad91e125a5e7c4feabb66fe956759f6a025e84"
+  },
+  "artifacts": [
+    {
+      "path": "artifacts/native-collection-input-8",
+      "files": 18,
+      "bytes": 1441467,
+      "tree_sha256": "15f069d05093f59ba10ff3f1a5db3187f1b884ca4f72132498b3f290c6cd586f"
+    },
+    {
+      "path": "artifacts/native-collection-input-128",
+      "files": 258,
+      "bytes": 17940266,
+      "tree_sha256": "561d2ed775036230c26c70304bcedd7db288a8d2bf521b31bd5cc022ea8eae15"
+    },
+    {
+      "path": "artifacts/native-collection-prefix",
+      "files": 15,
+      "bytes": 50941114,
+      "tree_sha256": "4bdb8369cbd1814d5069e51fe6e32dd8093af386e791d7660b5f76e4716cd9f4"
+    },
+    {
+      "path": "artifacts/native-collection-resumed",
+      "files": 15,
+      "bytes": 47181020,
+      "tree_sha256": "4d30138b5fe626e0b09839c5fab6750ef96593e045144519c722b4d2f203410d"
+    },
+    {
+      "path": "artifacts/native-collection-oracle-resumed",
+      "files": 6,
+      "bytes": 575059,
+      "tree_sha256": "1c143c3611c8bc20939d4d3431a3f8b4acc77475f0091f3d82a7b76cc6318c49"
+    },
+    {
+      "path": "artifacts/native-collection-recovery-final",
+      "files": 5,
+      "bytes": 6618575,
+      "tree_sha256": "684341269ff3596715bc6e9fac35735b88c90e5067642fed33da66b68f434cf3"
+    },
+    {
+      "path": "artifacts/native-collection-kernel-regression",
+      "files": 70,
+      "bytes": 6530772,
+      "tree_sha256": "37c0280f77bba285974e1ad6a142b368bd1195a788722787b05fed7c0dcc6429"
+    },
+    {
+      "path": "artifacts/native-collection-complete-128",
+      "files": 25,
+      "bytes": 276806057,
+      "tree_sha256": "4962d90faf2d4e2f2a1459b97d5777801e257443852698d152f7272d5f21e70d"
+    },
+    {
+      "path": "artifacts/native-collection-measure-complete",
+      "files": 2,
+      "bytes": 9692,
+      "tree_sha256": "3fa557b3dce2d15dd3e0d3b3dafaa0f539e209d387740e539925a35c9406839a"
+    },
+    {
+      "path": "artifacts/native-collection-oracle-complete-128",
+      "files": 11,
+      "bytes": 1149967,
+      "tree_sha256": "ff5b640bfed9aab5d5d13d162a5c44b449ef241203a85e259974708df2b30a75"
+    }
+  ],
+  "artifact_tree_contract": "SHA-256 of compact sorted-key JSON list in lexicographic relative path order, each entry has path, bytes, sha256"
+}

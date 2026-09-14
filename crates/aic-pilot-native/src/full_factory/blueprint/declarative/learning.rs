@@ -1,7 +1,9 @@
 //! Retained declarative candidates and typed numerical learning inputs.
 
 mod input;
+#[cfg(feature = "python")]
 pub(super) mod python;
+pub(crate) mod runtime;
 pub(super) mod trace;
 
 use std::collections::BTreeSet;
@@ -14,12 +16,12 @@ use super::*;
 
 static NEXT_HANDLE: AtomicU64 = AtomicU64::new(1);
 
-#[derive(Clone, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-pub(super) struct Options {
-    translation_steps: Vec<i64>,
-    band_counts: Vec<i64>,
-    masking: Option<String>,
+pub struct Options {
+    pub translation_steps: Vec<i64>,
+    pub band_counts: Vec<i64>,
+    pub masking: Option<String>,
 }
 
 #[derive(Clone)]
@@ -47,24 +49,24 @@ struct Facility {
     groups: Vec<Group>,
 }
 
-#[derive(Default)]
-pub(super) struct Input {
-    pending: usize,
-    conflicts: usize,
-    node_static: Vec<[f32; 14]>,
-    node_state: Vec<[f32; 10]>,
-    edge_index: Vec<[i64; 2]>,
-    edge_static: Vec<[f32; 10]>,
-    edge_state: Vec<[f32; 4]>,
-    path_cells: Vec<[f32; 2]>,
-    path_edges: Vec<i64>,
-    global_features: Vec<f32>,
-    action_features: Vec<[f32; 12]>,
-    action_references: Vec<[i64; 2]>,
-    root_meta: Vec<[i64; 3]>,
-    kind_log_counts: Vec<f32>,
-    root_invalid: Vec<bool>,
-    port_features: Vec<[f32; 12]>,
+#[derive(Default, Serialize)]
+pub struct Input {
+    pub pending: usize,
+    pub conflicts: usize,
+    pub node_static: Vec<[f32; 14]>,
+    pub node_state: Vec<[f32; 10]>,
+    pub edge_index: Vec<[i64; 2]>,
+    pub edge_static: Vec<[f32; 10]>,
+    pub edge_state: Vec<[f32; 4]>,
+    pub path_cells: Vec<[f32; 2]>,
+    pub path_edges: Vec<i64>,
+    pub global_features: Vec<f32>,
+    pub action_features: Vec<[f32; 12]>,
+    pub action_references: Vec<[i64; 2]>,
+    pub root_meta: Vec<[i64; 3]>,
+    pub kind_log_counts: Vec<f32>,
+    pub root_invalid: Vec<bool>,
+    pub port_features: Vec<[f32; 12]>,
 }
 
 pub(super) struct Learning {

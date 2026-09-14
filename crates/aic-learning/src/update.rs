@@ -44,7 +44,7 @@ pub struct Learner {
 }
 
 #[derive(Serialize)]
-pub struct StepReport {
+pub struct UpdateReport {
     pub step: u64,
     pub actor_updated: bool,
     pub loss: f64,
@@ -54,10 +54,16 @@ pub struct StepReport {
     pub critic_gradient_norm: f64,
     pub positive_replay_labels: i64,
     pub permutation: Vec<i64>,
+}
+#[derive(Serialize)]
+pub struct StepReport {
+    #[serde(flatten)]
+    pub update: UpdateReport,
     pub sample_root: i64,
     pub replay_draws: Vec<i64>,
     pub replay_order: Vec<i64>,
 }
+
 impl Learner {
     pub fn load(
         model_config: &ModelConfig,
@@ -110,22 +116,13 @@ impl Learner {
             device,
         })
     }
+    /// Actual minibatch update; diagnostic sampler/replay draws stay in step().
+    pub fn apply(&mut self, input: &Input, actor_updated: bool) -> Result<UpdateReport> {
+        self.apply_inner(input, actor_updated)
+            .map(|(report, _)| report)
+    }
     pub fn step(&mut self, input: &Input, actor_updated: bool) -> Result<StepReport> {
-        ensure!(
-            self.config == input.manifest.update && self.model.config == input.manifest.model,
-            "aic-learning.update-binding: incompatible input configuration"
-        );
-        let order = self.shuffle.permutation(input.manifest.ppo_graphs)?;
-        let permutation = Vec::<i64>::try_from(&order)?;
-        let order = order.to_device(self.device);
-        self.actor.zero_grad()?;
-        self.critic.zero_grad()?;
-        self.actor.freeze(!actor_updated);
-        // Always restore trainability on a recoverable error.
-        let result = self.compute(input, &order, actor_updated);
-        self.actor.freeze(false);
-        let (loss, value_loss, imitation_loss, positive, actor_norm, critic_norm, root_logp) =
-            result?;
+        let (update, root_logp) = self.apply_inner(input, actor_updated)?;
         // These diagnostic draws verify independent streams without replacing
         // the recorded conditional choices used by PPO/SIL likelihood.
         let first_root_count =
@@ -141,21 +138,52 @@ impl Learner {
         let replay_draws =
             Vec::<i64>::try_from(self.replay.integers(input.manifest.sil_graphs, 8)?)?;
         let replay_order = Vec::<i64>::try_from(self.replay_order.permutation(8)?)?;
-        self.completed_steps += 1;
         Ok(StepReport {
-            step: self.completed_steps,
-            actor_updated,
-            loss,
-            value_loss,
-            imitation_loss,
-            actor_gradient_norm: actor_norm,
-            critic_gradient_norm: critic_norm,
-            positive_replay_labels: positive,
-            permutation,
+            update,
             sample_root,
             replay_draws,
             replay_order,
         })
+    }
+    fn apply_inner(
+        &mut self,
+        input: &Input,
+        actor_updated: bool,
+    ) -> Result<(UpdateReport, Tensor)> {
+        ensure!(
+            self.completed_steps < u64::MAX,
+            "aic-learning.update-counter: exhausted counter"
+        );
+        ensure!(
+            self.config == input.manifest.update && self.model.config == input.manifest.model,
+            "aic-learning.update-binding: incompatible input configuration"
+        );
+        let order = self.shuffle.permutation(input.manifest.ppo_graphs)?;
+        let permutation = Vec::<i64>::try_from(&order)?;
+        let order = order.to_device(self.device);
+        self.actor.zero_grad()?;
+        self.critic.zero_grad()?;
+        self.actor.freeze(!actor_updated);
+        // Always restore trainability on a recoverable error.
+        let result = self.compute(input, &order, actor_updated);
+        self.actor.freeze(false);
+        let (loss, value_loss, imitation_loss, positive, actor_norm, critic_norm, root_logp) =
+            result?;
+        self.completed_steps += 1;
+        Ok((
+            UpdateReport {
+                step: self.completed_steps,
+                actor_updated,
+                loss,
+                value_loss,
+                imitation_loss,
+                actor_gradient_norm: actor_norm,
+                critic_gradient_norm: critic_norm,
+                positive_replay_labels: positive,
+                permutation,
+            },
+            root_logp,
+        ))
     }
     fn compute(
         &mut self,

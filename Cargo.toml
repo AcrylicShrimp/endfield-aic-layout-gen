@@ -11,6 +11,7 @@ rust-version = "1.95"
 aic-data = { path = "crates/aic-data" }
 aic-torch = { path = "crates/aic-torch" }
 aic-learning = { path = "crates/aic-learning" }
+aic-pilot-native = { path = "crates/aic-pilot-native", default-features = false }
 anyhow = "1"
 cc = "1"
 clap = { version = "4", features = ["derive"] }
@@ -20,6 +21,7 @@ indexmap = "2"
 pumpkin-solver = "0.5"
 pyo3 = "0.29"
 numpy = "0.29"
+ndarray = "0.17"
 num-rational = "0.4"
 num-traits = "0.2"
 serde = { version = "1", features = ["derive"] }

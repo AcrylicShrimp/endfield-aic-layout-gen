@@ -15,7 +15,8 @@ use super::*;
 
 mod checkpoint;
 mod edit;
-mod learning;
+pub(crate) mod learning;
+#[cfg(feature = "python")]
 pub(crate) mod python;
 #[cfg(test)]
 mod tests;
@@ -428,7 +429,7 @@ impl Session {
     pub fn step_json(&mut self, input: &str) -> Value {
         self.step(
             || {
-                crate::python_factory::decode::<Decision>(input)
+                crate::input::decode::<Decision>(input)
                     .map_err(|e| error("action-schema", e, "action"))
             },
             None,
@@ -519,6 +520,10 @@ impl Session {
 
     pub fn finish(&mut self) -> Value {
         self.closed = true;
+        self.retained_result()
+    }
+
+    fn retained_result(&self) -> Value {
         json!({"schema": "declarative-edit-result-v1", "blueprint_sha256": self.blueprint_sha256,
             "factory_validated": true, "best": self.best, "best_metrics": self.best_metrics,
             "initial_metrics": self.initial_metrics, "attempts": self.attempts, "revision": self.revision,

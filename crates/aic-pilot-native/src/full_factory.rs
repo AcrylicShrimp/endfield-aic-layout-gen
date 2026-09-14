@@ -12,6 +12,7 @@ mod movement;
 mod observation;
 mod path;
 mod poses;
+#[cfg(feature = "python")]
 pub(crate) mod python;
 mod routing;
 mod selection;

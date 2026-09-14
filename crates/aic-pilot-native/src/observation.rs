@@ -6,7 +6,7 @@ mod entities;
 use std::collections::BTreeMap;
 use std::time::Instant;
 
-use numpy::ndarray::{Array1, Array2, Array3};
+use ndarray::{Array1, Array2, Array3};
 use serde_json::{Value, json};
 
 use crate::cache::Cache;

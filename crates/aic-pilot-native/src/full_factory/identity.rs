@@ -40,7 +40,7 @@ fn canonical(value: Value) -> Value {
     }
 }
 pub fn digest(value: &impl Serialize) -> String {
-    crate::catalog::hash(
+    crate::input::hash(
         ascii_json(&serde_json::to_value(value).expect("typed finite DTO")).as_bytes(),
     )
 }
@@ -53,8 +53,8 @@ impl Identity {
     pub fn new(w: &Witness) -> Self {
         let value = serde_json::to_value(w).expect("typed witness DTO");
         Self {
-            ordered: crate::catalog::hash(ascii_json(&value).as_bytes()),
-            physical: crate::catalog::hash(ascii_json(&canonical(value)).as_bytes()),
+            ordered: crate::input::hash(ascii_json(&value).as_bytes()),
+            physical: crate::input::hash(ascii_json(&canonical(value)).as_bytes()),
         }
     }
 }
@@ -84,5 +84,5 @@ pub fn action_key(a: &Action, domain: &Domain, w: &Witness, best_key: &str) -> S
         }
         _ => {}
     }
-    crate::catalog::hash(ascii_json(&value).as_bytes())
+    crate::input::hash(ascii_json(&value).as_bytes())
 }

@@ -1,7 +1,7 @@
 //! Fixed semantic entity templates and immutable typed relationships.
 
+use ndarray::{Array1, Array2};
 use num_traits::ToPrimitive;
-use numpy::ndarray::{Array1, Array2};
 
 use crate::catalog::Catalog;
 use crate::diagnostic::Result;

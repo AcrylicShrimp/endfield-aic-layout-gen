@@ -1,8 +1,9 @@
 # Rust learner foundation
 
-Status: first numerical/recovery slice implemented and verified; native-worker
-integration remains the next implementation boundary. The user authorized starting the Rust
-transition and required systematic code placement with crate boundaries. This
+Status: first numerical/recovery slice implemented and verified. The subsequent
+native collection gate is now verified too; see the linked follow-on design below.
+The user authorized starting the Rust transition and required systematic code
+placement with crate boundaries. This
 first executable slice establishes the existing model, numerical PPO/SIL update,
 independent Torch RNGs and complete learner-state recovery. It is not adoption of
 a replacement long-run harness.
@@ -108,10 +109,18 @@ and exact recovery results, measured costs, build commands and limitations.
 The checkpoint is explicitly bound to one diagnostic input, model, optimizer
 backend and device. It is not yet the normal training checkpoint format.
 
-The next implementation boundary is native persistent worker collection and
-batched inference, followed by actual rollout freezing/GAE and PPO epoch/KL
+The implementation sequence after this foundation is native persistent worker
+collection and batched inference, actual rollout freezing/GAE, then PPO epoch/KL
 scheduling, success-buffer sampling/publication, full-wave persistence and
 integrated CLI launch/resume. Reuse existing native pool, masking, packed feature
 and storage designs. This slice does not remove the working Python harness or
 restart training. Preserve its useful-work throughput and recovery contracts
 before adopting the complete Rust path.
+
+
+The following [native collection integration gate](2026-09-15-rust-native-collection.md)
+now implements persistent native workers, batched inference, actual rollout/GAE
+and boundary resume. Its [report](../reports/2026-09-15-rust-native-collection.md)
+records parity and bounded costs. Full PPO scheduling, global success-buffer
+ownership, curriculum/evaluation and normal wave publication remain the adoption
+boundary described above.

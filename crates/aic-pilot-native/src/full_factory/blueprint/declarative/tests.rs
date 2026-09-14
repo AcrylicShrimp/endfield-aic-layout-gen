@@ -207,3 +207,161 @@ fn exhausted_routing_budget_retains_edited_draft_and_valid_best() {
     let witness = serde_json::from_value(result["best"].clone()).unwrap();
     assert!(validate_factory_layout(&s.request, &witness, &s.catalogs).factory_validated);
 }
+
+#[test]
+fn typed_worker_pool_preserves_ownership_inputs_and_cold_restore() {
+    use crate::learning::{
+        Options,
+        pool::{Command, Pool, Reply},
+    };
+    let base = session();
+    let options: Options = serde_json::from_value(
+        json!({"translation_steps":[-1,1],"band_counts":[1],"masking":"structural-bands-v1"}),
+    )
+    .unwrap();
+    let mut pool = Pool::new(base.catalogs.clone(), 2, 2).unwrap();
+    let opened = pool
+        .exchange(
+            (0..2)
+                .rev()
+                .map(|i| {
+                    (
+                        i,
+                        Command::Open {
+                            request: base.request.clone(),
+                            original: base.original.clone(),
+                            limits: base.config.clone(),
+                            options: options.clone(),
+                        },
+                    )
+                })
+                .collect(),
+        )
+        .unwrap();
+    assert_eq!(opened.iter().map(|r| r.0).collect::<Vec<_>>(), vec![0, 1]);
+    assert!(
+        pool.exchange(vec![(0, Command::Snapshot), (0, Command::Snapshot)])
+            .is_err()
+    );
+    let observations: Vec<_> = pool
+        .exchange((0..2).map(|i| (i, Command::Begin { actions: 2 })).collect())
+        .unwrap()
+        .into_iter()
+        .map(|(_, r)| {
+            let Reply::Observation(o) = r else {
+                panic!("observation")
+            };
+            o
+        })
+        .collect();
+    let retained = serde_json::to_value(observations[0].input.as_ref()).unwrap();
+    let commands = observations
+        .iter()
+        .enumerate()
+        .map(|(i, o)| {
+            let root = o
+                .input
+                .root_meta
+                .iter()
+                .enumerate()
+                .find(|(i, r)| r[0] == 1 && !o.input.root_invalid[*i])
+                .unwrap()
+                .0;
+            (
+                i,
+                Command::Step {
+                    handle: o.handle,
+                    root,
+                    ports: vec![],
+                },
+            )
+        })
+        .collect();
+    let after = pool.exchange(commands).unwrap();
+    assert_eq!(
+        serde_json::to_value(observations[0].input.as_ref()).unwrap(),
+        retained
+    );
+    let Reply::Step { next, result } = &after[0].1 else {
+        panic!("step")
+    };
+    assert!(Arc::ptr_eq(&observations[0].domain, &next.domain));
+    assert!(!Arc::ptr_eq(&observations[0].input, &next.input));
+    assert_eq!(result["outcome"]["charged"], true);
+    assert!(
+        pool.exchange(vec![
+            (1, Command::Snapshot),
+            (
+                0,
+                Command::Step {
+                    handle: observations[0].handle,
+                    root: 0,
+                    ports: vec![]
+                }
+            )
+        ])
+        .is_err()
+    );
+    let partial = pool.take_failed_replies();
+    assert_eq!(partial.len(), 1);
+    assert_eq!(partial[0].0, 1);
+    assert!(pool.take_failed_replies().is_empty());
+    let snapshots = pool
+        .exchange((0..2).map(|i| (i, Command::Snapshot)).collect())
+        .unwrap();
+    let evidence = pool
+        .exchange((0..2).map(|i| (i, Command::Drain)).collect())
+        .unwrap();
+    for (_, r) in evidence {
+        let Reply::Data(rows) = r else {
+            panic!("evidence")
+        };
+        assert_eq!(rows.as_array().unwrap().len(), 1);
+    }
+    drop(pool);
+    let mut restored = Pool::new(base.catalogs, 1, 2).unwrap();
+    let restored = restored
+        .exchange(
+            snapshots
+                .into_iter()
+                .map(|(i, r)| {
+                    let Reply::Data(saved) = r else {
+                        panic!("snapshot")
+                    };
+                    assert_eq!(saved["attempts"], 1);
+                    (
+                        i,
+                        Command::Restore {
+                            checkpoint: saved.to_string(),
+                            options: options.clone(),
+                        },
+                    )
+                })
+                .collect(),
+        )
+        .unwrap();
+    for ((_, new), (_, old)) in restored.iter().zip(&after) {
+        let Reply::Observation(new) = new else {
+            panic!("restore")
+        };
+        let Reply::Step { next: old, .. } = old else {
+            panic!("step")
+        };
+        assert_eq!(new.input.node_state, old.input.node_state);
+        assert_eq!(new.input.action_features, old.input.action_features);
+        assert_eq!(new.input.root_meta, old.input.root_meta);
+        assert_eq!(new.attempts, old.attempts);
+        assert_eq!(new.revision, old.revision);
+        for (i, (a, b)) in new
+            .input
+            .global_features
+            .iter()
+            .zip(&old.input.global_features)
+            .enumerate()
+        {
+            if i != new.input.global_features.len() - 2 {
+                assert_eq!(a, b);
+            } // Actual elapsed-time feature advances.
+        }
+    }
+}

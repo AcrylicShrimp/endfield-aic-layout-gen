@@ -57,6 +57,7 @@ dependencies = [
 name = "aic-learning"
 version = "0.1.0"
 dependencies = [
+ "aic-pilot-native",
  "aic-torch",
  "anyhow",
  "serde",
@@ -69,7 +70,9 @@ name = "aic-pilot-native"
 version = "0.1.0"
 dependencies = [
  "aic-data",
+ "crossbeam-channel",
  "indexmap",
+ "ndarray 0.17.2",
  "num-rational",
  "num-traits",
  "numpy",

@@ -294,7 +294,7 @@ impl Session {
         } else {
             self.attempts += 1;
             charged = true;
-            crate::python_factory::decode::<Envelope>(input)
+            crate::input::decode::<Envelope>(input)
                 .map_err(|e| fail("action-schema", e, "action"))
                 .and_then(|envelope| {
                     if envelope.blueprint_sha256 != self.blueprint_sha256

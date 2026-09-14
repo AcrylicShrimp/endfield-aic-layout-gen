@@ -11,3 +11,6 @@ pub mod schema;
 pub mod update;
 #[cfg(feature = "libtorch")]
 pub mod verify;
+
+#[cfg(feature = "libtorch")]
+pub mod collection;

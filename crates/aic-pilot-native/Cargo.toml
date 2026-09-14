@@ -10,13 +10,17 @@ name = "aic_pilot_native"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-extension-module = ["pyo3/extension-module"]
+default = ["python"]
+python = ["dep:pyo3", "dep:numpy"]
+extension-module = ["python", "pyo3/extension-module"]
 
 [dependencies]
 aic-data.workspace = true
 indexmap.workspace = true
-pyo3.workspace = true
-numpy.workspace = true
+pyo3 = { workspace = true, optional = true }
+numpy = { workspace = true, optional = true }
+ndarray.workspace = true
+crossbeam-channel.workspace = true
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true, features = ["float_roundtrip"] }
 sha2.workspace = true

@@ -7,9 +7,10 @@ rust-version.workspace = true
 publish = false
 
 [features]
-libtorch = ["dep:aic-torch", "aic-torch/libtorch"]
+libtorch = ["dep:aic-torch", "aic-torch/libtorch", "dep:aic-pilot-native"]
 
 [dependencies]
+aic-pilot-native = { workspace = true, optional = true }
 aic-torch = { workspace = true, optional = true }
 anyhow.workspace = true
 serde.workspace = true

@@ -67,8 +67,8 @@ impl Session {
     }
 
     pub fn from_checkpoint(input: &str, catalogs: Arc<FactoryEditCatalogs>) -> Result<Self> {
-        let saved: Checkpoint = crate::python_factory::decode(input)
-            .map_err(|e| error("checkpoint-schema", e, "checkpoint"))?;
+        let saved: Checkpoint =
+            crate::input::decode(input).map_err(|e| error("checkpoint-schema", e, "checkpoint"))?;
         if saved.schema != "declarative-edit-checkpoint-v1"
             || saved.attempts > saved.config.max_actions
             || saved.revision > saved.attempts
