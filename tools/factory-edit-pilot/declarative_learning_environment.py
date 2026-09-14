@@ -26,8 +26,10 @@ class Runtime:
         self.config = config
         self.reserved = reserved_geometries(config['training_input'])
         self.module = load_native(library)
+        require(hasattr(self.module.DeclarativeEditSession,'observe') and hasattr(self.module.DeclarativeEditSession,'step_index'),
+            'declarative.native-learning: rebuild the native library with retained numerical observation/selection support')
         self.catalogs = read(ROOT/config['probe_spec'])['catalogs']
-        self.catalog = Catalog(read(ROOT/self.catalogs['facilities']))
+        self.reference_catalog = None
         validate_mode(config['actions'])
         self.mask_catalog = read(ROOT/self.catalogs['components']) if config['actions'].get('masking') else None
         self.band_mask = BandMask(self.mask_catalog) if self.mask_catalog is not None else None
@@ -77,15 +79,38 @@ class Runtime:
         native = dict(self.config['native'], max_actions=actions, elapsed_ms=elapsed_ms)
         session = self.module.DeclarativeEditSession.open(str(ROOT),json.dumps(self.catalogs),json.dumps(self.request),
             json.dumps(self.original),json.dumps(native))
+        session.prepare_learning(json.dumps(self.config['actions']))
         return session, time.perf_counter()-began
 
     def restore(self, saved):
-        return self.module.DeclarativeEditSession.from_checkpoint(str(ROOT),json.dumps(self.catalogs),json.dumps(saved))
+        session = self.module.DeclarativeEditSession.from_checkpoint(str(ROOT),json.dumps(self.catalogs),json.dumps(saved))
+        session.prepare_learning(json.dumps(self.config['actions']))
+        return session
+
+    @property
+    def catalog(self):
+        # Only explicit reference/diagnostic preparation needs a Python catalog.
+        if self.reference_catalog is None:self.reference_catalog=Catalog(read(ROOT/self.catalogs['facilities']))
+        return self.reference_catalog
 
     def prepare(self, observation):
+        """Python reference oracle; normal workers/evaluation use observe()."""
         result = prepare(observation,self.catalog,self.config['actions'])
         if self.band_mask is not None:
             result.update(root_mask_schema=ROOT_MASK_SCHEMA, root_invalid=self.band_mask(observation,result['actions']))
+        return result
+
+    def observe(self, session):
+        from declarative_native_input import prepare as adopt
+        value = session.observe()
+        state = {key:value.pop(key) for key in ('attempts','done','pending','conflicts','elapsed_ms')}
+        state.update(blueprint_sha256=value['blueprint_sha256'],revision=value['revision'])
+        return state,adopt(value)
+
+    def step_index(self, session, prepared, decision):
+        result = session.step_index(prepared['native_handle'],decision['root'],decision['ports'])
+        require(not self.config['actions'].get('masking') or not CODES.intersection(d['code'] for d in result['outcome']['diagnostics']),
+            'declarative.masking.rejection: selected a structurally impossible band')
         return result
 
     def step(self, session, observation, action):
@@ -193,6 +218,29 @@ def step_stream(stream, observation, prepared, command):
         after_pending=sum(e['status']=='pending' for e in after['edges']),after_conflicts=len(after['conflicts']),
         validated_witness=witness)
     return sample, after
+
+
+def native_step_stream(stream, observation, prepared, command):
+    """Indices enter Rust; only selected metadata and numerical inputs return."""
+    selected=stream.runtime.step_index(stream.session,prepared,command['decision'])
+    action,outcome=selected['action'],selected['outcome']
+    stream.policy_actions+=1
+    after,next_input=stream.runtime.observe(stream.session)
+    terminal=stream.policy_actions==stream.runtime.config['training']['episode_actions']
+    require(after['done']==terminal and outcome['charged'], 'declarative native guard interrupted training horizon')
+    require(not any(d['code'] in ('declarative.elapsed','declarative.budget-exhausted') for d in outcome['diagnostics']),
+        'declarative training step exceeded resource allowance')
+    stream.counts[f'kind/{action["kind"]}']+=1
+    stream.counts[f'status/{outcome["status"]}']+=1
+    stream.counts['area_reward']+=outcome['reward']
+    stream.counts['actions_with_pending']+=after['pending']>0
+    stream.counts['actions_with_overlap']+=after['conflicts']>0
+    sample=dict(stream=stream.index,episode=stream.episode,start=stream.metadata['start'],policy_action=stream.policy_actions,
+        input=prepared,decision=command['decision'],action=action,old_logp=command['old_logp'],old_value=command['old_value'],
+        entropy=command['entropy'],reward=outcome['reward'],terminal=terminal,observation=observation,outcome=outcome,
+        state_changed=after['revision']!=observation['revision'],after_pending=after['pending'],after_conflicts=after['conflicts'],
+        validated_witness=None)
+    return sample,after,next_input
 
 
 def finish_stream(stream, observation, prepared, value):

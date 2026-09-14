@@ -15,6 +15,7 @@ use super::*;
 
 mod checkpoint;
 mod edit;
+mod learning;
 pub(crate) mod python;
 #[cfg(test)]
 mod tests;
@@ -48,7 +49,7 @@ struct State {
     components: Vec<WorldGridPosition>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct Decision {
     blueprint_sha256: String,
@@ -56,7 +57,7 @@ struct Decision {
     action: Edit,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 enum Edit {
     Place {
@@ -78,14 +79,14 @@ enum Edit {
     },
 }
 
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 enum Axis {
     X,
     Y,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct PortChoice {
     node: usize,
@@ -425,6 +426,20 @@ impl Session {
     }
 
     pub fn step_json(&mut self, input: &str) -> Value {
+        self.step(
+            || {
+                crate::python_factory::decode::<Decision>(input)
+                    .map_err(|e| error("action-schema", e, "action"))
+            },
+            None,
+        )
+    }
+
+    fn step(
+        &mut self,
+        decision: impl FnOnce() -> Result<Decision>,
+        previous: Option<&mut Option<State>>,
+    ) -> Value {
         let began = Instant::now();
         let before_work = self.work.clone();
         let mut details = json!({"routes": []});
@@ -440,50 +455,52 @@ impl Session {
             ))
         } else {
             self.attempts += 1;
-            crate::python_factory::decode::<Decision>(input)
-                .map_err(|e| error("action-schema", e, "action"))
-                .and_then(|decision| {
-                    if decision.blueprint_sha256 != self.blueprint_sha256
-                        || decision.revision != self.revision
-                    {
-                        return Err(error(
-                            "stale-envelope",
-                            "Action must bind original blueprint and current revision",
-                            "action",
-                        ));
+            decision().and_then(|decision| {
+                if decision.blueprint_sha256 != self.blueprint_sha256
+                    || decision.revision != self.revision
+                {
+                    return Err(error(
+                        "stale-envelope",
+                        "Action must bind original blueprint and current revision",
+                        "action",
+                    ));
+                }
+                let mut next = self.state.clone();
+                self.edit(&mut next, decision.action)?;
+                if next == self.state {
+                    status = "unchanged";
+                    return Ok(());
+                }
+                self.detach(&mut next)?;
+                let accepted = self.automatic(&mut next, &mut details, &mut diagnostics)?;
+                if self.expired() {
+                    return Err(error(
+                        "elapsed",
+                        "Edit finished after deadline; preceding draft and best retained",
+                        "session",
+                    ));
+                }
+                status = "draft_accepted";
+                self.validated = accepted.is_some();
+                if let Some((witness, metrics)) = accepted {
+                    status = "validated";
+                    if metrics.score < self.best_metrics.score {
+                        reward = (self.best_metrics.score[0] - metrics.score[0]) as f64
+                            / self.initial_metrics.score[0] as f64;
+                        self.best = witness;
+                        self.best_metrics = metrics;
+                        self.best_state = next.clone();
+                        status = "improved";
                     }
-                    let mut next = self.state.clone();
-                    self.edit(&mut next, decision.action)?;
-                    if next == self.state {
-                        status = "unchanged";
-                        return Ok(());
-                    }
-                    self.detach(&mut next)?;
-                    let accepted = self.automatic(&mut next, &mut details, &mut diagnostics)?;
-                    if self.expired() {
-                        return Err(error(
-                            "elapsed",
-                            "Edit finished after deadline; preceding draft and best retained",
-                            "session",
-                        ));
-                    }
-                    status = "draft_accepted";
-                    self.validated = accepted.is_some();
-                    if let Some((witness, metrics)) = accepted {
-                        status = "validated";
-                        if metrics.score < self.best_metrics.score {
-                            reward = (self.best_metrics.score[0] - metrics.score[0]) as f64
-                                / self.initial_metrics.score[0] as f64;
-                            self.best = witness;
-                            self.best_metrics = metrics;
-                            self.best_state = next.clone();
-                            status = "improved";
-                        }
-                    }
+                }
+                if let Some(previous) = previous {
+                    *previous = Some(std::mem::replace(&mut self.state, next));
+                } else {
                     self.state = next;
-                    self.revision += 1;
-                    Ok(())
-                })
+                }
+                self.revision += 1;
+                Ok(())
+            })
         };
         if let Err(d) = result {
             diagnostics.push(d);

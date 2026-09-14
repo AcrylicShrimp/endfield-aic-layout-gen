@@ -109,6 +109,7 @@ def offsets(counts):
 
 
 def action(prepared, decision):
+    require(not prepared.get('native_domain'), 'declarative.native-domain: submit selected indices to the native session')
     require('recorded_root' not in prepared or decision['root']==prepared['recorded_root'],
         'declarative.replay-input: persisted input only describes its recorded conditional action')
     require(0 <= decision['root'] < len(prepared['actions']), 'declarative root choice range')
@@ -160,7 +161,7 @@ def sample(model, inputs, sampler, *, uniform=False):
             decisions[owner]['ports'].append(row['keep'][index])
             total_logp[owner] += float(conditional[start+index]); total_entropy[owner] += float(ent)
         depth += 1
-    return [dict(decision=d, action=action(value,d), old_logp=lp, old_value=float(v), entropy=ent)
+    return [dict(decision=d, **({} if value.get('native_domain') else dict(action=action(value,d))), old_logp=lp, old_value=float(v), entropy=ent)
         for value, d, lp, v, ent in zip(inputs, decisions, total_logp, predicted, total_entropy, strict=True)]
 
 

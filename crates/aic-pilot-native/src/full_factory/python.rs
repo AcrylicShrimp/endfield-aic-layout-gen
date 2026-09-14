@@ -45,7 +45,7 @@ pub struct PythonHandle {
     handle: Handle,
 }
 
-fn value<'py>(py: Python<'py>, v: &Value) -> PyResult<Bound<'py, PyAny>> {
+pub(crate) fn value<'py>(py: Python<'py>, v: &Value) -> PyResult<Bound<'py, PyAny>> {
     Ok(match v {
         Value::Null => py.None().into_bound(py),
         Value::Bool(b) => b.into_pyobject(py)?.to_owned().into_any(),

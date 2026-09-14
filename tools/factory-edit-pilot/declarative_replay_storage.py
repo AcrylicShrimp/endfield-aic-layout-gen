@@ -7,7 +7,7 @@ from declarative_learning_buffer import physical
 SCHEMA = 'declarative-replay-chunk-v2'
 
 
-def replay_input(prepared, decision):
+def replay_input(prepared, decision, selected_action=None):
     """Keep the full root likelihood domain and only the recorded port branch.
 
     Numerical tensors, kind counts, ordering and structural masks are unchanged.
@@ -20,8 +20,14 @@ def replay_input(prepared, decision):
         return prepared
     result=dict(prepared)
     kinds={kind:dict(kind=kind) for kind in ('place','insert_band','delete_band')}
-    actions=[kinds[action['kind']] for action in prepared['actions']]
-    root=decision['root'];selected=prepared['actions'][root]
+    native=bool(prepared.get('native_domain'))
+    actions=[kinds[kind] for kind in prepared['actions'].kinds()] if native else [kinds[action['kind']] for action in prepared['actions']]
+    root=decision['root'];selected=selected_action if native else prepared['actions'][root]
+    require(selected is not None and selected['kind']==actions[root]['kind'],
+        'declarative.replay-input: native selected action metadata is required')
+    if native:
+        result.pop('native_domain');result.pop('native_handle')
+        result['root_owners']=prepared['root_owners'].clone()
     actions[root]=selected
     result.update(actions=actions,recorded_root=root)
     groups=[[] for _ in prepared['port_groups']]
@@ -35,7 +41,7 @@ def replay_input(prepared, decision):
 
 def sample_input(sample):
     if '_replay_input' not in sample:
-        sample['_replay_input']=replay_input(sample['input'],sample['decision'])
+        sample['_replay_input']=replay_input(sample['input'],sample['decision'],sample.get('action'))
     return sample['_replay_input']
 
 

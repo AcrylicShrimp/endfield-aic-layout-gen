@@ -15,32 +15,37 @@ def evaluate(runtime, model, case, command):
     retain_trace=config.get('retain_trace',True)
     sampler = torch.Generator().manual_seed(command['action_seed'])
     session, admission = runtime.open(config['max_actions'],config['elapsed_ms'])
-    observation = json.loads(session.observation_json())
-    initial = observation
+    initial = json.loads(session.observation_json())
     require(initial['initial_metrics']['score']==case['initial_metrics']['score'], 'declarative evaluation original score')
     trace, counts, milestones = [], Counter(), []
     decisions = 0
     began = time.perf_counter()
+    if retain_trace:session.begin_learning_chunk(config['max_actions'],True)
+    observation,prepared=runtime.observe(session)
     while not observation['done']:
         require(time.monotonic()<command['deadline'], 'declarative evaluation command deadline')
-        prepared = runtime.prepare(observation)
         with torch.no_grad():
             selected = choose(model,[prepared],sampler,uniform=command.get('uniform',False))[0]
-        outcome = runtime.step(session,observation,selected['action'])
-        after = json.loads(session.observation_json())
+        result=runtime.step_index(session,prepared,selected['decision'])
+        outcome=result['outcome'];selected['action']=result['action']
+        after,next_input=runtime.observe(session)
         if outcome['charged']:
             decisions += 1
             counts[f'kind/{selected["action"]["kind"]}'] += 1
             counts[f'status/{outcome["status"]}'] += 1
-            counts['actions_with_pending'] += any(e['status']=='pending' for e in after['edges'])
-            counts['actions_with_overlap'] += bool(after['conflicts'])
-        entry = dict(policy_action=decisions,**selected,outcome=outcome,observation=observation,
-            best_score=after['best_metrics']['score'],elapsed_ms=after['elapsed_ms'],work=after['work'],
-            pending=sum(e['status']=='pending' for e in after['edges']),conflicts=len(after['conflicts']))
+            counts['actions_with_pending'] += after['pending']>0
+            counts['actions_with_overlap'] += after['conflicts']>0
+        entry = dict(policy_action=decisions,**selected,outcome=outcome,
+            best_score=outcome['best_metrics']['score'],elapsed_ms=after['elapsed_ms'],work=result['work'],
+            pending=after['pending'],conflicts=after['conflicts'])
         if retain_trace:trace.append(entry)
         if decisions in config['action_milestones'] and outcome['charged']:
             milestones.append({k:entry[k] for k in ('policy_action','elapsed_ms','best_score','work')})
-        observation = after
+        observation,prepared = after,next_input
+    if retain_trace:
+        observations=session.take_learning_chunk()
+        require(len(observations)==len(trace),'declarative.native-evaluation: complete trace coverage')
+        for row,native in zip(trace,observations,strict=True):row['observation']=native['observation']
     checkpoint = json.loads(session.checkpoint_json()) if retain_trace else None
     result = runtime.finish(session)
     output = command['output']

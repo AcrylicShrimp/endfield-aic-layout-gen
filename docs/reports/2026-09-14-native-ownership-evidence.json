@@ -1,0 +1,336 @@
+{
+  "schema": "declarative-native-ownership-evidence-v1",
+  "status": "passed",
+  "base_commit": "801161423da8e4c703e35a2b1a269d615edb448c",
+  "server_root": "/home/ashrimp/Srv/aic-native-learning-20260914",
+  "native_library": {
+    "path": "/home/ashrimp/Srv/aic-native-learning-20260914/target/release/libaic_pilot_native.so",
+    "sha256": "c3a9bb58c8ad69ce79261f7b45109194667cbb5bbc5b88fa1f00ccc2f8f6468d"
+  },
+  "implementation_sha256": {
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative.rs": "da806c6f077af017d2e29fa4f2df120ffe63bf91b43b8317fb12ac90194ee05a",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/python.rs": "557417a136418cc162db4efb9700910fbabf38f95439706912316c44af1c2074",
+    "crates/aic-pilot-native/src/full_factory/python.rs": "182e21ebcfec4d3739425775b2a509bb5cfdc263518d3d2c474390560f838238",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning.rs": "f45d9f3a420918e2d8e294509720904c5f824c0bc0cc1cb92b9d9a45d35bf99a",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/input.rs": "021868a7fa1dcc0e8a176ec6014c7f62698b5762dff8e13cada8bcea0cbd5131",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/trace.rs": "609d751286417438f72daa82f86a5d71b0a7d589dfdb80f065e1d3e3cf450295",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/python.rs": "4e118b5dac82d99a442473db8fc2604372e11cebdf324cbc70a244877a65d15d",
+    "tools/factory-edit-pilot/declarative_learning_environment.py": "34d37ef0479f148683d68ea08e0dd857c6a65bdb7bf349ac303865c2aea1546f",
+    "tools/factory-edit-pilot/declarative_learning_worker.py": "6c062ff1347f23fafa0e9fbd08169cf9eb3ce69faf19110884d0fa047f190f47",
+    "tools/factory-edit-pilot/declarative_learning_evaluate.py": "fb9694dc80ec6c5a9e394f74fb5fbb104d435c80ed9bb8e6df622fc6b917fe0c",
+    "tools/factory-edit-pilot/declarative_learning_policy.py": "18ce8941a570eeb770fb2606b66f3a4ad74b58890d8003d18bbb122d99698107",
+    "tools/factory-edit-pilot/declarative_replay_storage.py": "d403e9366f27e62200742754888481e5e32b9806fbfdfbd8d9593f946280cd4c",
+    "tools/factory-edit-pilot/declarative_native_input.py": "48d107fe65c30d316ef08e5b1ecc9d1c36a35cc209e6a9d0cef75612d1ebdfd8"
+  },
+  "configuration": {
+    "actions": {
+      "translation_steps": [
+        -2,
+        -1,
+        1,
+        2
+      ],
+      "band_counts": [
+        1,
+        2
+      ],
+      "masking": "structural-bands-v1"
+    },
+    "training": {
+      "updates": 4,
+      "streams": 128,
+      "chunk_actions": 32,
+      "episode_actions": 64,
+      "elapsed_ms": 300000,
+      "first_update": 0
+    },
+    "ppo": {
+      "width": 40,
+      "message_rounds": 2,
+      "learning_rate": 0.0003,
+      "gamma": 1.0,
+      "gae_lambda": 0.95,
+      "clip_epsilon": 0.2,
+      "epochs": 4,
+      "minibatch_size": 256,
+      "target_kl": 0.02,
+      "entropy_coefficient": 0.001,
+      "gradient_clip": 0.5,
+      "advantage_normalization": "center"
+    }
+  },
+  "panel": {
+    "path": "/home/ashrimp/Srv/aic-band-mask-training-20260914/artifacts/panels/development/panel.json",
+    "sha256": "57c426cf8833c5f65eeeb6c85a124ca82d3735f68a89d8e533f75db930940026"
+  },
+  "actual_input_comparison": {
+    "prefix": 256,
+    "all_identical": true,
+    "fields": [
+      "input_sha256",
+      "request_sha256",
+      "geometry_sha256",
+      "generation_seed"
+    ],
+    "ordered_identity_sha256": "c5301e86701e74052af3f75d3179681c5cd53b54fe5eb1f1d917bcc3852357ad"
+  },
+  "evidence": {
+    "fresh-normal-summary.json": {
+      "path": "/home/ashrimp/Srv/aic-native-learning-20260914/artifacts/fresh-normal-summary.json",
+      "sha256": "835c5139c7f68d7eb8da30ad78642591b7e76d42b3b05ced24d9367b868f4f04"
+    },
+    "cached-steady-summary.json": {
+      "path": "/home/ashrimp/Srv/aic-native-learning-20260914/artifacts/cached-steady-summary.json",
+      "sha256": "226f44df8bd4d525a0f1cc0fca066a1446582a0e4b2e43e57172fa746bac613c"
+    },
+    "native-real-parity.json": {
+      "path": "/home/ashrimp/Srv/aic-native-learning-20260914/artifacts/native-real-parity.json",
+      "sha256": "52f1df0f75ac8a87551bea4a093508fa2de28f4a1d75ce0fa9e4eac93e858904"
+    },
+    "cli-pause-receipt.json": {
+      "path": "/home/ashrimp/Srv/aic-native-learning-20260914/artifacts/cli-pause-receipt.json",
+      "sha256": "97a24f473f9f5f119b5b99907c03b2b6035a13920c9e7776aef8e04d8e0890f2"
+    },
+    "after-profile-summary.json": {
+      "path": "/home/ashrimp/Srv/aic-native-learning-20260914/artifacts/after-profile-summary.json",
+      "sha256": "c3691bc82e64367a5838c90b809d3e6b83698346163f9dd99dece6b324b234b8"
+    },
+    "after-profile-telemetry/collection-profile.json": {
+      "path": "/home/ashrimp/Srv/aic-native-learning-20260914/artifacts/after-profile-telemetry/collection-profile.json",
+      "sha256": "7daffe0c5921eebc46a2716ec7dbc80b1eb121deb74883f5f41f9303c18e7b67"
+    },
+    "after-profile-telemetry/coordinator-profile.json": {
+      "path": "/home/ashrimp/Srv/aic-native-learning-20260914/artifacts/after-profile-telemetry/coordinator-profile.json",
+      "sha256": "4af973174eb18ce8a836510807ddc522fdb0dc000d9c1ef359b8653e03322fbb"
+    },
+    "after-profile-telemetry/worker-profile.json": {
+      "path": "/home/ashrimp/Srv/aic-native-learning-20260914/artifacts/after-profile-telemetry/worker-profile.json",
+      "sha256": "e47b1353a1d8dbf54aa2f7273d9cb9f838615d6e4aa0157561f6906b4a1e370d"
+    }
+  },
+  "launches": {
+    "fresh-normal": {
+      "path": "/home/ashrimp/Srv/aic-native-learning-20260914/artifacts/fresh-normal/launch.json",
+      "sha256": "e8d3f6c96a84449c17edf7b1de5dbaa074cbcd2efd5136dabf66c96482e0b8ac"
+    },
+    "cached-steady": {
+      "path": "/home/ashrimp/Srv/aic-native-learning-20260914/artifacts/cached-steady/launch.json",
+      "sha256": "7619049a024b2bd8e9e8040892165309e701cb2f84a552be6061d500e00950ba"
+    },
+    "cached-normal": {
+      "path": "/home/ashrimp/Srv/aic-native-learning-20260914/artifacts/cached-normal/launch.json",
+      "sha256": "4b46eb870df04e5c2c781eacae017be8532ffa4df045ad0ba804f3aeaac6c922"
+    },
+    "after-profile": {
+      "path": "/home/ashrimp/Srv/aic-native-learning-20260914/artifacts/after-profile/launch.json",
+      "sha256": "fc7a70be0c83dcd05e2611abd30231a5826a5209bada4f29bfc49dfc74112aa8"
+    }
+  },
+  "baseline": {
+    "fresh": {
+      "path": "/home/ashrimp/Srv/aic-batch-scale-20260914/artifacts/scale/results.json",
+      "sha256": "abf771cef9c7cc63ef78a163a1f7a686667b702ca2441b8d781deb673a443934"
+    },
+    "cached": {
+      "path": "/home/ashrimp/Srv/aic-batch-scale-20260914/artifacts/scale/compilation-pair.json",
+      "sha256": "d2b714c1f43600b15c8e11034990702f1eb59fdae4786d1c727aa534049d8dc8"
+    },
+    "fresh_samples_per_minute": 12210.49662273192,
+    "cached_samples_per_minute": 14323.316766835116
+  },
+  "verification": {
+    "local_declarative": {
+      "total": 79,
+      "passed": 77,
+      "skipped": 2
+    },
+    "linux_release_declarative": {
+      "total": 79,
+      "passed": 79
+    },
+    "rust_workspace": {
+      "passed": 573,
+      "ignored": 5
+    },
+    "real_input_observations": 212,
+    "complete_wave_cli_resume": true
+  },
+  "fresh": {
+    "status": "complete",
+    "streams": 128,
+    "minibatch_size": 256,
+    "measured_new_samples": 8192,
+    "measurement_seconds": 33.11092209815979,
+    "new_samples_per_minute": 14844.648498246363,
+    "seconds_per_update": 16.555461049079895,
+    "cpu_cores": 2.074567565671853,
+    "cpu_percent": 8.644031523632721,
+    "gpu_percent": 22.59090909090909,
+    "gpu_peak_mib": 2920.0,
+    "peak_rss_bytes": 25339887616,
+    "all_in_new_samples_per_minute": 12797.395051412437,
+    "job_seconds": 76.8156328729965,
+    "retained_bytes": 125913128,
+    "rows": [
+      {
+        "update": 1,
+        "collection_seconds": 12.342711724995752,
+        "publication_seconds": 3.7836757430050056,
+        "optimization_seconds": 8.867232977005187,
+        "preparation_seconds": 0.9838836269918829,
+        "actor_epochs": 4,
+        "mean_root_candidates": 1266.548828125,
+        "eligible": 0
+      },
+      {
+        "update": 2,
+        "collection_seconds": 4.935010786997736,
+        "publication_seconds": 0.17382259800797328,
+        "optimization_seconds": 7.457093441000325,
+        "preparation_seconds": 0.9570073860231787,
+        "actor_epochs": 4,
+        "mean_root_candidates": 1168.33203125,
+        "eligible": 0
+      },
+      {
+        "update": 3,
+        "collection_seconds": 12.21142267799587,
+        "publication_seconds": 2.2472474399983184,
+        "optimization_seconds": 4.822077254008036,
+        "preparation_seconds": 1.0089330769551452,
+        "actor_epochs": 1,
+        "mean_root_candidates": 1149.333984375,
+        "eligible": 73
+      },
+      {
+        "update": 4,
+        "collection_seconds": 7.2567569950042525,
+        "publication_seconds": 0.16017740000097547,
+        "optimization_seconds": 5.772987214004388,
+        "preparation_seconds": 0.9904422839317704,
+        "actor_epochs": 3,
+        "mean_root_candidates": 1069.564453125,
+        "eligible": 73
+      }
+    ],
+    "cpu_samples": 66,
+    "gpu_samples": 66,
+    "all_final_factories_valid": true
+  },
+  "cached": {
+    "status": "complete",
+    "streams": 128,
+    "minibatch_size": 256,
+    "measured_new_samples": 8192,
+    "measurement_seconds": 26.449032306671143,
+    "new_samples_per_minute": 18583.666665038087,
+    "seconds_per_update": 13.224516153335571,
+    "cpu_cores": 1.777515560029111,
+    "cpu_percent": 7.406314833454629,
+    "gpu_percent": 21.39622641509434,
+    "gpu_peak_mib": 2922.0,
+    "peak_rss_bytes": 25295650816,
+    "all_in_new_samples_per_minute": 15681.124631529114,
+    "job_seconds": 62.689381221003714,
+    "retained_bytes": 126244580,
+    "rows": [
+      {
+        "update": 1,
+        "collection_seconds": 4.845344676999957,
+        "publication_seconds": 3.8263308049936313,
+        "optimization_seconds": 8.909820336004486,
+        "preparation_seconds": 0.9813438390701776,
+        "actor_epochs": 4,
+        "mean_root_candidates": 1266.548828125,
+        "eligible": 0
+      },
+      {
+        "update": 2,
+        "collection_seconds": 5.329194856007234,
+        "publication_seconds": 0.17352835900965147,
+        "optimization_seconds": 7.322821451991331,
+        "preparation_seconds": 0.9553024599736091,
+        "actor_epochs": 4,
+        "mean_root_candidates": 1168.33203125,
+        "eligible": 0
+      },
+      {
+        "update": 3,
+        "collection_seconds": 6.04539165100141,
+        "publication_seconds": 2.271915662000538,
+        "optimization_seconds": 3.131013713995344,
+        "preparation_seconds": 1.0053354080300778,
+        "actor_epochs": 1,
+        "mean_root_candidates": 1157.1494140625,
+        "eligible": 73
+      },
+      {
+        "update": 4,
+        "collection_seconds": 5.555267297997489,
+        "publication_seconds": 0.1611768349976046,
+        "optimization_seconds": 6.763175575004425,
+        "preparation_seconds": 0.9674760959896958,
+        "actor_epochs": 2,
+        "mean_root_candidates": 1071.55859375,
+        "eligible": 73
+      }
+    ],
+    "cpu_samples": 52,
+    "gpu_samples": 53,
+    "all_final_factories_valid": true
+  },
+  "after_profile": {
+    "collection_seconds": 12.124743488006061,
+    "stages": {
+      "command_encode_send": {
+        "seconds": 0.01504063603351824,
+        "calls": 1088,
+        "percent": 0.12404910708747457
+      },
+      "selector_wait": {
+        "seconds": 1.0810549297893886,
+        "calls": 1756,
+        "percent": 8.916105572532572
+      },
+      "response_receive": {
+        "seconds": 0.07251568447099999,
+        "calls": 5132,
+        "percent": 0.5980801535532142
+      },
+      "response_decode": {
+        "seconds": 8.48802932574472,
+        "calls": 5132,
+        "percent": 70.00584659082627
+      },
+      "exchange_begin": {
+        "seconds": 0.22121337699354626,
+        "calls": 2,
+        "percent": 1.8244788206230766
+      },
+      "policy_sample": {
+        "seconds": 2.017557764876983,
+        "calls": 64,
+        "percent": 16.640003698822785
+      },
+      "exchange_step": {
+        "seconds": 6.980809343949659,
+        "calls": 64,
+        "percent": 57.57490334418338
+      },
+      "policy_values": {
+        "seconds": 0.020293663008487783,
+        "calls": 2,
+        "percent": 0.16737395746609002
+      },
+      "exchange_finish": {
+        "seconds": 2.832714072006638,
+        "calls": 2,
+        "percent": 23.36308454532496
+      }
+    }
+  },
+  "archive_metadata_sha256": {
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/._python.rs": "df3b6effdc0d324d0b89757430f09f1fe99523d71d497945c11e5d27324d0921",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/._input.rs": "df3b6effdc0d324d0b89757430f09f1fe99523d71d497945c11e5d27324d0921"
+  }
+}

@@ -23,6 +23,8 @@ def child(args):
         from masked_compiled_probe import compiled_run
         return compiled_run(args.output,args.environment,args.measurement)
     if not args.profile:return run(args.output,args.environment,args.stop_after)
+    from masked_collection_profile import install
+    install(args.measurement)
     from blueprint_execution_pool import BlueprintPool
     original=BlueprintPool.__init__
     def instrument(self,*a,**kw):

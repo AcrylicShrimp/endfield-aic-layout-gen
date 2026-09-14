@@ -2,11 +2,12 @@
 from copy import copy
 import os
 from pathlib import Path
+import torch
 
 from blueprint_execution_worker import Worker as TransportWorker, main
 from blueprint_ppo_store import checked, load, read, reference, write
 from blueprint_ppo_update import require
-from declarative_learning_environment import Runtime, Stream, step_stream, finish_stream
+from declarative_learning_environment import Runtime, Stream, native_step_stream, finish_stream
 from declarative_learning_evaluate import evaluate
 from declarative_learning_policy import ActorCritic
 
@@ -15,6 +16,7 @@ class Worker(TransportWorker):
     def __init__(self):
         super().__init__()
         self.case_cache = {}
+        self.native_chunk = False
 
     def execute(self, command):
         operation = command['operation']
@@ -57,17 +59,23 @@ class Worker(TransportWorker):
             require(self.before is None, 'declarative worker has a partial chunk')
             self.observation = self.stream.observe()
             self.before, self.samples = self.stream.snapshot(), []
-            self.prepared = self.runtime.prepare(self.observation)
+            self.stream.session.begin_learning_chunk(self.runtime.config['training']['chunk_actions'],
+                bool(self.runtime.config['retention'].get('training_traces')))
+            self.native_chunk = True
+            self.observation,self.prepared = self.stream.runtime.observe(self.stream.session)
             return dict(input=self.prepared)
         if operation == 'step':
             require(self.before is not None and not self.observation['done'], 'declarative worker needs a live chunk')
             require(len(self.samples)<self.runtime.config['training']['chunk_actions'], 'declarative chunk overflow')
-            sample, self.observation = step_stream(self.stream,self.observation,self.prepared,command)
+            sample, self.observation, self.prepared = native_step_stream(self.stream,self.observation,self.prepared,command)
             self.samples.append(sample)
-            self.prepared = self.runtime.prepare(self.observation)
             return dict(input=self.prepared)
         if operation == 'finish':
             require(len(self.samples)==self.runtime.config['training']['chunk_actions'], 'declarative chunk coverage')
+            rows=self.stream.session.take_learning_chunk();self.native_chunk=False
+            require(len(rows)==len(self.samples),'declarative.native-chunk: complete native evidence coverage')
+            for sample,row in zip(self.samples,rows,strict=True):sample.update(row)
+            self.observation=self.stream.observation()
             frontier, completed = finish_stream(self.stream,self.observation,self.prepared,command['value'])
             # The coordinator already owns the exact inputs used to select
             # these actions. Do not transmit the entire tensor/domain batch a
@@ -98,6 +106,17 @@ class Worker(TransportWorker):
             selected.request, selected.original = self.case_cache[identity]
             return dict(row=evaluate(selected,self.model,case,command))
         raise ValueError(f'unknown declarative worker operation: {operation}')
+
+    def preserve(self, directory, error):
+        # Preserve native evidence even if a charged step failed its Python
+        # guard before its sample was appended. It is never a completed chunk.
+        rows=self.stream.session.take_learning_chunk() if self.native_chunk else []
+        self.native_chunk=False
+        for sample,row in zip(self.samples,rows):sample.update(row)
+        directory.mkdir(parents=True,exist_ok=True)
+        torch.save(dict(schema='blueprint-worker-partial-v1',error=str(error),
+            stream=self.stream.snapshot() if self.stream is not None else None,
+            native_before=self.before,samples=self.samples,native_evidence=rows),directory/f'worker-{os.getpid()}.pt')
 
 
 if __name__ == '__main__':
