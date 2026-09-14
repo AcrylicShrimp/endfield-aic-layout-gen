@@ -1,6 +1,7 @@
 # Quality-weighted successful-experience learning study
 
-Status: accepted replacement protocol; independent proposal review passed in round 2.
+Status: accepted; learning protocol passed round 2 and the time-aware readiness
+correction passed independent round 3 review after actual execution evidence.
 
 ## Purpose and discarded evidence
 
@@ -151,7 +152,7 @@ No diagnostic observer or audit becomes part of ordinary main training.
 | True terminal credit and semantic identity | Existing Buffer admission/observer and retained labels | Hand-controlled terminal and duplicate tests; unchanged identity/returns at fork |
 | Cached compact replay and batched source loads | One boundary backfill; reuse source chunks and packed cache | Load counts and measured setup cost; no historical rollout replay |
 | Packed CUDA PPO/SIL and persistent workers | Normal run/learner/pool | Actual CLI progress and phase timings for every arm |
-| Exact live-draft recovery | Normal checkpoints and own-arm one-update restore check | Model/Adam/RNG/events/buffer/native state equality excluding elapsed bookkeeping |
+| Exact saved-state live-draft recovery | Normal checkpoints and own-arm one-update restore check | Exact restored model/Adam/RNG/buffer/native/input state, monotonic elapsed allowance and valid followup; separate identical-input CUDA learner replay |
 | Input and curriculum continuity | Actual immutable fresh slot files/private inherited plans | Binding/overlap tests and actual ledger audit |
 | Bounded storage without trajectory dumps | Normal publication/retention plus compact quality aggregates | Actual added bytes, required roots and source pruning checks |
 
@@ -162,3 +163,13 @@ and finalization in the study wall cap. Native limits are unchanged. Stop cleanl
 and retain the latest checkpoint at a hard limit; do not claim completion for
 partial arms or extend runs after inspecting outcomes. Report discarded historical
 results separately from all newly generated scientific evidence.
+
+The live elapsed fraction is an existing policy input, not merely diagnostic
+bookkeeping. Restoring a live checkpoint preserves its state and remaining native
+allowance; subsequent wall-clock observations can differ from uninterrupted
+execution. Do not require identical future trajectories under unequal actual
+inputs, or change the time feature to manufacture equality. Reuse the five
+executed readiness updates, preserve the original failed equality receipt, and
+check exact saved-state restoration plus valid followup and exact CUDA transitions
+on identical recorded native fixture inputs. This corrects readiness evidence
+without changing any of the eight scientific arms or their allocation.

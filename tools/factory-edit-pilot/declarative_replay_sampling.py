@@ -21,7 +21,7 @@ def validate(config):
         'declarative.replay-sampling.config: unknown schema, kind or count')
     if kind=='score_mixture':
         fields|={'mixture','score_profile'}
-        require(config.get('mixture')==.5 and config.get('score_profile') in ('rare_3pp','rare_3pp_exterior_capped'),
+        require(config.get('mixture')==.5 and config.get('score_profile') in ('gain_only','rare_3pp','rare_3pp_exterior_capped'),
             'declarative.replay-sampling.profile: unsupported score mixture')
     if kind=='positive_advantage':
         fields|={'alpha','beta','epsilon'}
@@ -81,7 +81,8 @@ def probabilities(rows,config):
         weights=[]
         for row in rows:
             feature=row['retention_features_v1']
-            score=feature['gain']+.03*(1-fraction)*feature['has_place']
+            score=feature['gain']
+            if config['score_profile']!='gain_only':score+=.03*(1-fraction)*feature['has_place']
             if config['score_profile']=='rare_3pp_exterior_capped':score+=min(feature['exterior_release'],feature['gain'])
             weights.append(1+min(7,score/.03))
         total=math.fsum(weights);mix=config['mixture']

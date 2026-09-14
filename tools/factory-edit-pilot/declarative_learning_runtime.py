@@ -23,6 +23,7 @@ class Learner:
         self.shuffle = torch.Generator().manual_seed(2_000_000+seed)
         self.ordinal, self.streams = 0,None
         self.buffer = Buffer()
+        self.replay_observer = None
         if saved is not None:
             require(saved['schema']==CHECKPOINT and saved['protocol_sha256']==protocol_hash and saved['seed']==seed,
                 'declarative checkpoint schema/launch/seed mismatch')
@@ -71,7 +72,8 @@ class Learner:
         result = update_packed(self.model,self.actor,self.critic,self.shuffle,payload['samples'],payload['frontiers'],
             self.config['ppo'],sequences,success['coefficient'],success['sampler'],self.seed,ordinal,ordinal,
             self.device,likelihood=policy,measure_replay_utility=bool(success.get('retention')),
-            replay_sampling=success.get('sampling'))
+            replay_sampling=success.get('sampling'),
+            **({'replay_observer':self.replay_observer} if self.replay_observer is not None else {}))
         self.buffer.mark_used(result['success']['selected_ids'])
         if success.get('retention'):
             from declarative_replay_retention import observe
