@@ -1,7 +1,7 @@
 //! Fixed native workers with bounded queues; one ordered batch per worker/round.
 //! Workers retain logical sessions. Observations move by Arc, with no serializer.
 use super::{Limits, Observation, Options, Runtime};
-use aic_data::layouts::{FactoryEditCatalogs, FactoryEditRequest, WitnessProbeInput};
+use aic_data::layouts::{FactoryEditRequest, WitnessProbeInput};
 use crossbeam_channel::{Receiver, Sender, bounded};
 use serde_json::Value;
 use std::{
@@ -32,10 +32,10 @@ pub enum Command {
     },
     Drain,
     Snapshot,
-    Finish,
-    ValidateBest,
+    Result,
 }
 pub enum Reply {
+    Ready,
     Observation(Observation),
     Step { result: Value, next: Observation },
     Data(Value),
@@ -54,7 +54,11 @@ pub struct Pool {
     failed: bool,
 }
 impl Pool {
-    pub fn new(catalogs: Arc<FactoryEditCatalogs>, workers: usize, streams: usize) -> Result<Self> {
+    pub fn new(
+        catalogs: Arc<crate::input::Catalogs>,
+        workers: usize,
+        streams: usize,
+    ) -> Result<Self> {
         if workers == 0 || workers > streams {
             return Err("declarative.pool-size: require 1 <= workers <= streams".into());
         }
@@ -175,7 +179,7 @@ fn execute(
     sessions: &mut BTreeMap<usize, Runtime>,
     id: usize,
     command: Command,
-    catalogs: &Arc<FactoryEditCatalogs>,
+    catalogs: &Arc<crate::input::Catalogs>,
 ) -> Result<Reply> {
     match command {
         Command::Open {
@@ -187,10 +191,9 @@ fn execute(
             if sessions.contains_key(&id) {
                 return Err("declarative.pool-admission: stream already has an episode".into());
             }
-            let mut session = Runtime::open(request, original, catalogs.clone(), limits, options)?;
-            let observation = session.observe();
+            let session = Runtime::open(request, original, catalogs.clone(), limits, options)?;
             sessions.insert(id, session);
-            Ok(Reply::Observation(observation))
+            Ok(Reply::Ready)
         }
         Command::Restore {
             checkpoint,
@@ -201,10 +204,9 @@ fn execute(
                     "declarative.pool-admission: restore would replace live episode".into(),
                 );
             }
-            let mut session = Runtime::restore(&checkpoint, catalogs.clone(), options)?;
-            let observation = session.observe();
+            let session = Runtime::restore(&checkpoint, catalogs.clone(), options)?;
             sessions.insert(id, session);
-            Ok(Reply::Observation(observation))
+            Ok(Reply::Ready)
         }
         command => {
             let session = sessions
@@ -228,8 +230,7 @@ fn execute(
                 }
                 Command::Drain => session.take_chunk().map(Reply::Data),
                 Command::Snapshot => Ok(Reply::Data(session.checkpoint())),
-                Command::Finish => Ok(Reply::Data(session.finish())),
-                Command::ValidateBest => session.validate_best().map(Reply::Data),
+                Command::Result => Ok(Reply::Data(session.result())),
                 _ => unreachable!(),
             }
         }

@@ -2,8 +2,7 @@
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
 
-pub const INPUT_SCHEMA: &str = "aic-rust-learner-input-v1";
-pub const CHECKPOINT_SCHEMA: &str = "aic-rust-learner-checkpoint-v1";
+pub const INPUT_SCHEMA: &str = "aic-learner-seed-v1";
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 #[serde(deny_unknown_fields)]
@@ -62,32 +61,24 @@ impl UpdateConfig {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct InputManifest {
-    pub schema: String,
-    pub source: serde_json::Value,
-    pub tensors: String,
-    pub tensors_sha256: String,
-    pub max_tensor_bytes: u64,
-    pub model: ModelConfig,
-    pub update: UpdateConfig,
-    pub parameter_order: Vec<String>,
-    pub ppo_graphs: i64,
-    pub sil_graphs: i64,
-    pub ppo_factors: i64,
-    pub sil_factors: i64,
+pub struct Archive {
+    pub path: String,
+    pub sha256: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct CheckpointManifest {
+pub struct SeedManifest {
     pub schema: String,
-    pub input_sha256: String,
-    pub tensors_sha256: String,
+    pub source: serde_json::Value,
+    pub state: Archive,
+    pub replay: Archive,
+    pub max_tensor_bytes: u64,
     pub model: ModelConfig,
     pub update: UpdateConfig,
     pub parameter_order: Vec<String>,
-    pub completed_steps: u64,
-    pub device: String,
+    pub sil_graphs: i64,
+    pub sil_factors: i64,
 }
 
 #[cfg(test)]

@@ -252,7 +252,6 @@ impl Model {
             logp,
             entropy,
             values,
-            root_logp,
         })
     }
 }
@@ -269,7 +268,6 @@ pub struct Prediction {
     pub logp: Tensor,
     pub entropy: Tensor,
     pub values: Tensor,
-    pub root_logp: Tensor,
 }
 
 pub(crate) fn distribution(logits: &Tensor, b: &Tensors, count: i64) -> (Tensor, Tensor) {

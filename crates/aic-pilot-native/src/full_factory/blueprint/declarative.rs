@@ -5,8 +5,8 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use aic_data::layouts::{
-    FactoryEditCatalogs, FactoryEditRequest, FactoryLayoutMetrics, TransportNetworkEndpoint,
-    WorldGridPosition, validate_factory_layout,
+    FactoryEditRequest, FactoryLayoutMetrics, TransportNetworkEndpoint, WorldGridPosition,
+    validate_factory_layout,
 };
 use serde_json::json;
 
@@ -16,8 +16,6 @@ use super::*;
 mod checkpoint;
 mod edit;
 pub(crate) mod learning;
-#[cfg(feature = "python")]
-pub(crate) mod python;
 #[cfg(test)]
 mod tests;
 
@@ -104,7 +102,7 @@ struct Work {
 }
 
 pub struct Session {
-    catalogs: Arc<FactoryEditCatalogs>,
+    catalogs: Arc<crate::input::Catalogs>,
     request: FactoryEditRequest,
     original: Witness,
     blueprint: Blueprint,
@@ -120,7 +118,6 @@ pub struct Session {
     revision: u64,
     work: Work,
     validated: bool,
-    closed: bool,
     started: Instant,
     elapsed_before: Duration,
 }
@@ -129,7 +126,7 @@ impl Session {
     pub fn new(
         request: FactoryEditRequest,
         original: Witness,
-        catalogs: Arc<FactoryEditCatalogs>,
+        catalogs: Arc<crate::input::Catalogs>,
         config: Limits,
     ) -> Result<Self> {
         if config.schema != SCHEMA
@@ -145,7 +142,7 @@ impl Session {
                 "config",
             ));
         }
-        let accepted = validate_factory_layout(&request, &original, &catalogs);
+        let accepted = validate_factory_layout(&request, &original, &catalogs.data);
         if !accepted.factory_validated {
             return Err(error(
                 "initial-invalid",
@@ -173,13 +170,7 @@ impl Session {
                 .collect(),
         };
         let blueprint_sha256 = identity::digest(&blueprint);
-        let catalog_sha256 = identity::digest(&[
-            format!("{:?}", catalogs.facilities.catalog()),
-            format!("{:?}", catalogs.recipes.recipe_book()),
-            format!("{:?}", catalogs.items.catalog()),
-            format!("{:?}", catalogs.transports.catalog()),
-            format!("{:?}", catalogs.components.catalog()),
-        ]);
+        let catalog_sha256 = catalogs.identity.clone();
         let session = Self {
             catalogs,
             request,
@@ -197,7 +188,6 @@ impl Session {
             revision: 0,
             work: Work::default(),
             validated: true,
-            closed: false,
             started: Instant::now(),
             elapsed_before: Duration::ZERO,
         };
@@ -212,8 +202,7 @@ impl Session {
         self.elapsed() >= Duration::from_millis(self.config.elapsed_ms)
     }
     fn done(&self) -> bool {
-        self.closed
-            || self.expired()
+        self.expired()
             || self.attempts >= self.config.max_actions
             || self.work.route_expansions >= self.config.max_total_route_expansions
     }
@@ -249,7 +238,8 @@ impl Session {
                     _ => None,
                 });
             if original_port != state.ports[node.id].as_ref() {
-                node.initial_position = topology::position(node, &state.geometry, &self.catalogs)?;
+                node.initial_position =
+                    topology::position(node, &state.geometry, &self.catalogs.data)?;
                 node.terminal = None;
                 for edge in &mut bp.edges {
                     if edge.source == node.id {
@@ -266,8 +256,12 @@ impl Session {
 
     fn witness(&self, state: &State) -> Result<Witness> {
         let bp = self.blueprint_at(state);
-        let mut witness =
-            topology::rebuild(&self.original, &bp, &state.geometry, Some(&self.catalogs))?;
+        let mut witness = topology::rebuild(
+            &self.original,
+            &bp,
+            &state.geometry,
+            Some(&self.catalogs.data),
+        )?;
         witness.logistics_components = bp.components;
         for node in &bp.nodes {
             if let Some(t) = &node.terminal {
@@ -280,56 +274,6 @@ impl Session {
             }
         }
         Ok(witness)
-    }
-
-    pub fn observation(&self) -> Result<Value> {
-        let bp = self.blueprint_at(&self.state);
-        let nodes: Vec<_> = bp
-            .nodes
-            .iter()
-            .map(|n| {
-                Ok(json!({"id": n.id,
-            "position": topology::position(n, &self.state.geometry, &self.catalogs)?,
-            "components": n.components}))
-            })
-            .collect::<Result<_>>()?;
-        let options: Vec<_> = bp.nodes.iter().filter_map(|n| n.terminal.as_ref().map(|t| (n, t)))
-            .filter_map(|(n,t)| match &t.endpoint { TransportNetworkEndpoint::Facility { instance, .. } => Some((n,t,instance)), _ => None })
-            .map(|(n,t,instance)| {
-                let p = self.state.geometry.placements.iter().find(|p| &p.instance == instance).unwrap();
-                let definition = self.catalogs.facilities.facility(&p.facility).unwrap();
-                json!({"node": n.id, "instance": instance, "ports": definition.ports.iter()
-                    .filter(|p| p.direction == t.direction && json!(p.transport) == bp.networks[n.network]["transport"])
-                    .map(|p| &p.id).collect::<Vec<_>>()})
-            }).collect();
-        let rotations: BTreeMap<_, _> = self
-            .state
-            .geometry
-            .placements
-            .iter()
-            .map(|p| {
-                (
-                    &p.instance,
-                    &self
-                        .catalogs
-                        .facilities
-                        .facility(&p.facility)
-                        .unwrap()
-                        .allowed_rotations,
-                )
-            })
-            .collect();
-        Ok(
-            json!({"schema": "declarative-edit-observation-v1", "blueprint": self.blueprint,
-            "blueprint_sha256": self.blueprint_sha256, "revision": self.revision, "attempts": self.attempts,
-            "facilities": self.state.geometry.placements, "port_assignments": self.state.ports,
-            "port_options": options, "allowed_rotations": rotations, "nodes": nodes, "components": bp.components,
-            "edges": bp.edges.iter().map(|e| json!({"id": e.id, "path": self.state.geometry.paths[e.id],
-                "status": if self.state.geometry.paths[e.id].is_some() {"routed"} else {"pending"}})).collect::<Vec<_>>(),
-            "conflicts": geometry::conflicts(&bp, &self.state.geometry), "draft_factory_validated": self.validated,
-            "best_metrics": self.best_metrics, "initial_metrics": self.initial_metrics,
-            "config": self.config, "work": self.work, "elapsed_ms": self.elapsed().as_secs_f64() * 1000., "done": self.done()}),
-        )
     }
 
     fn automatic(
@@ -363,7 +307,7 @@ impl Session {
             let result = geometry::repair(
                 &bp,
                 &candidate,
-                &self.catalogs,
+                &self.catalogs.data,
                 edge,
                 remaining,
                 self.config.search_padding,
@@ -394,7 +338,8 @@ impl Session {
                 repaired = false;
                 break;
             };
-            if let Err(d) = geometry::check_path(&bp, &candidate, &self.catalogs, edge, &cells) {
+            if let Err(d) = geometry::check_path(&bp, &candidate, &self.catalogs.data, edge, &cells)
+            {
                 diagnostics.push(d);
                 repaired = false;
                 break;
@@ -412,7 +357,7 @@ impl Session {
         }
         let witness = self.witness(state)?;
         self.work.validations += 1;
-        let accepted = validate_factory_layout(&self.request, &witness, &self.catalogs);
+        let accepted = validate_factory_layout(&self.request, &witness, &self.catalogs.data);
         if !accepted.factory_validated {
             diagnostics.push(error(
                 "native-validation",
@@ -424,16 +369,6 @@ impl Session {
         let metrics = accepted.metrics.unwrap();
         details["native_acceptance"] = json!({"factory_validated": true, "metrics": metrics});
         Ok(Some((witness, metrics)))
-    }
-
-    pub fn step_json(&mut self, input: &str) -> Value {
-        self.step(
-            || {
-                crate::input::decode::<Decision>(input)
-                    .map_err(|e| error("action-schema", e, "action"))
-            },
-            None,
-        )
     }
 
     fn step(
@@ -518,26 +453,10 @@ impl Session {
             "done": self.done(), "seconds": began.elapsed().as_secs_f64()})
     }
 
-    pub fn finish(&mut self) -> Value {
-        self.closed = true;
-        self.retained_result()
-    }
-
     fn retained_result(&self) -> Value {
         json!({"schema": "declarative-edit-result-v1", "blueprint_sha256": self.blueprint_sha256,
             "factory_validated": true, "best": self.best, "best_metrics": self.best_metrics,
             "initial_metrics": self.initial_metrics, "attempts": self.attempts, "revision": self.revision,
             "unfinished_draft": !self.validated, "work": self.work, "elapsed_ms": self.elapsed().as_secs_f64() * 1000.})
-    }
-
-    pub fn validated_draft(&self) -> Result<Value> {
-        if !self.validated {
-            return Err(error(
-                "draft-unvalidated",
-                "Only a fully validated draft can be exported",
-                "draft",
-            ));
-        }
-        Ok(json!(self.witness(&self.state)?))
     }
 }

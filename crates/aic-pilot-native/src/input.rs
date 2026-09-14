@@ -9,8 +9,7 @@ use aic_data::logistics::{
     ValidatedItemCatalog, ValidatedLogisticsComponentCatalog, ValidatedTransportCatalog,
 };
 use aic_data::recipes::ValidatedRecipeBook;
-use serde::{Deserialize, de::DeserializeOwned};
-use serde_json::{Value, json};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
 const MAX_JSON_BYTES: usize = 16 * 1024 * 1024;
 
@@ -25,11 +24,7 @@ pub fn decode<T: DeserializeOwned>(value: &str) -> std::result::Result<T, String
     serde_json::from_str(value).map_err(|e| e.to_string())
 }
 
-pub fn read<T: DeserializeOwned>(
-    root: &Path,
-    path: &Path,
-    provenance: &mut Vec<Value>,
-) -> Result<T, String> {
+pub fn read<T: DeserializeOwned>(root: &Path, path: &Path) -> Result<T, String> {
     let path = root.join(path);
     let file = std::fs::File::open(&path).map_err(|e| error(format!("{}: {e}", path.display())))?;
     let mut bytes = Vec::new();
@@ -42,13 +37,12 @@ pub fn read<T: DeserializeOwned>(
     }
     let value =
         serde_json::from_slice(&bytes).map_err(|e| error(format!("{}: {e}", path.display())))?;
-    provenance.push(json!({"path": path, "sha256": hash(&bytes)}));
     Ok(value)
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-struct Paths {
+pub struct CatalogPaths {
     facilities: PathBuf,
     recipes: PathBuf,
     items: PathBuf,
@@ -56,48 +50,48 @@ struct Paths {
     components: PathBuf,
 }
 
-pub fn load_catalogs(
-    root: &Path,
-    catalog_paths_json: &str,
-) -> Result<(Arc<FactoryEditCatalogs>, Vec<Value>), String> {
-    let paths: Paths = decode(catalog_paths_json).map_err(error)?;
-    let mut provenance = Vec::new();
+pub fn load_catalogs(root: &Path, paths: &CatalogPaths) -> Result<Arc<Catalogs>, String> {
     let catalogs = FactoryEditCatalogs {
-        facilities: ValidatedFacilityCatalog::try_from_catalog(read(
-            root,
-            &paths.facilities,
-            &mut provenance,
-        )?)
-        .map_err(|e| error(format!("{}: {e:?}", paths.facilities.display())))?,
-        recipes: ValidatedRecipeBook::try_from_recipe_book(read(
-            root,
-            &paths.recipes,
-            &mut provenance,
-        )?)
-        .map_err(|e| error(format!("{}: {e:?}", paths.recipes.display())))?,
-        items: ValidatedItemCatalog::try_from_catalog(read(root, &paths.items, &mut provenance)?)
+        facilities: ValidatedFacilityCatalog::try_from_catalog(read(root, &paths.facilities)?)
+            .map_err(|e| error(format!("{}: {e:?}", paths.facilities.display())))?,
+        recipes: ValidatedRecipeBook::try_from_recipe_book(read(root, &paths.recipes)?)
+            .map_err(|e| error(format!("{}: {e:?}", paths.recipes.display())))?,
+        items: ValidatedItemCatalog::try_from_catalog(read(root, &paths.items)?)
             .map_err(|e| error(format!("{}: {e:?}", paths.items.display())))?,
-        transports: ValidatedTransportCatalog::try_from_catalog(read(
-            root,
-            &paths.transports,
-            &mut provenance,
-        )?)
-        .map_err(|e| error(format!("{}: {e:?}", paths.transports.display())))?,
+        transports: ValidatedTransportCatalog::try_from_catalog(read(root, &paths.transports)?)
+            .map_err(|e| error(format!("{}: {e:?}", paths.transports.display())))?,
         components: ValidatedLogisticsComponentCatalog::try_from_catalog(read(
             root,
             &paths.components,
-            &mut provenance,
         )?)
         .map_err(|e| error(format!("{}: {e:?}", paths.components.display())))?,
     };
-    Ok((Arc::new(catalogs), provenance))
+    Ok(Arc::new(Catalogs::new(catalogs)))
 }
 
-/// Shared source-identity encoding; used by both native and Python entry points.
+/// Source identity for external data and native checkpoints.
 pub fn hash(bytes: &[u8]) -> String {
     use sha2::{Digest, Sha256};
     Sha256::digest(bytes)
         .iter()
         .map(|b| format!("{b:02x}"))
         .collect()
+}
+
+/// Catalog validation and identity are shared by every session in the pool.
+pub struct Catalogs {
+    pub data: FactoryEditCatalogs,
+    pub identity: String,
+}
+impl Catalogs {
+    pub fn new(data: FactoryEditCatalogs) -> Self {
+        let identity = crate::full_factory::identity::digest(&[
+            format!("{:?}", data.facilities.catalog()),
+            format!("{:?}", data.recipes.recipe_book()),
+            format!("{:?}", data.items.catalog()),
+            format!("{:?}", data.transports.catalog()),
+            format!("{:?}", data.components.catalog()),
+        ]);
+        Self { data, identity }
+    }
 }

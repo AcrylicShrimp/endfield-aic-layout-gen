@@ -6,7 +6,7 @@ fn session() -> Session {
     Session::new(
         fixture_request(&w),
         w,
-        Arc::new(catalogs),
+        Arc::new(crate::input::Catalogs::new(catalogs)),
         Limits {
             schema: SCHEMA.into(),
             max_actions: 256,
@@ -33,59 +33,28 @@ fn place(s: &Session, instance: &str, x: i64, y: i64, rotation: i64) -> Value {
     json!({"kind":"place","instance":instance,"x":x,"y":y,"rotation":rotation,"ports":ports})
 }
 fn step(s: &mut Session, action: Value) -> Value {
-    s.step_json(
-        &json!({"blueprint_sha256":s.blueprint_sha256,"revision":s.revision,"action":action})
-            .to_string(),
+    let decision = serde_json::from_value(
+        json!({"blueprint_sha256":s.blueprint_sha256,"revision":s.revision,"action":action}),
     )
+    .map_err(|e| error("action-schema", e.to_string(), "action"));
+    s.step(|| decision, None)
 }
-fn old_step(s: &mut super::super::Session, action: Value) -> Value {
-    let o = s.observation().unwrap();
-    s.step_json(
-        &json!({"blueprint_sha256":o["blueprint_sha256"],"revision":o["revision"],"action":action})
-            .to_string(),
-    )
-}
-
 #[test]
-fn automatic_common_matches_explicit_orchestration_and_saves_known_improvement() {
+fn automatic_edits_save_known_improvement() {
     let mut s = session();
-    let mut old = super::super::Session::new(
-        s.request.clone(),
-        s.original.clone(),
-        s.catalogs.clone(),
-        Config {
-            schema: CONTRACT.into(),
-            max_actions: 768,
-            elapsed_ms: 60_000,
-            route_expansions: 100_000,
-            search_padding: 4,
-        },
-    )
-    .unwrap();
     for (instance, x, y) in [("C1", 27, 13), ("A0", 2, 7), ("A1", 2, 11), ("A0", 3, 2)] {
         let action = place(&s, instance, x, y, 90);
-        let new = step(&mut s, action);
-        old_step(
-            &mut old,
-            json!({"kind":"pose","instance":instance,"x":x,"y":y,"rotation":90}),
-        );
-        old_step(&mut old, json!({"kind":"repair_all"}));
-        old_step(&mut old, json!({"kind":"commit"}));
-        let a = s.observation().unwrap();
-        let b = old.observation().unwrap();
-        for key in ["facilities", "edges", "best_metrics", "conflicts"] {
-            assert_eq!(a[key], b[key], "{key}: {new}");
-        }
+        step(&mut s, action);
     }
     assert!(s.best_metrics.score < s.initial_metrics.score);
     assert_eq!(s.attempts, 4);
-    assert_eq!(old.observation().unwrap()["attempts"], 12);
 }
 
 #[test]
 fn incomplete_draft_survives_restore_and_later_clearance_without_commit() {
     let mut s = session();
-    let initial = s.observation().unwrap();
+    let blueprint = serde_json::to_value(&s.blueprint).unwrap();
+    let best_metrics = serde_json::to_value(&s.best_metrics).unwrap();
     let action = place(&s, "A0", 2, 7, 90);
     assert_eq!(step(&mut s, action)["status"], "draft_accepted");
     let saved = s.checkpoint();
@@ -101,12 +70,12 @@ fn incomplete_draft_survives_restore_and_later_clearance_without_commit() {
     }
     assert!(restored.validated);
     assert_eq!(
-        restored.observation().unwrap()["blueprint"],
-        initial["blueprint"]
+        serde_json::to_value(&restored.blueprint).unwrap(),
+        blueprint
     );
-    let result = s.finish();
+    let result = s.retained_result();
     assert_eq!(result["unfinished_draft"], true);
-    assert_eq!(result["best_metrics"], initial["best_metrics"]);
+    assert_eq!(result["best_metrics"], best_metrics);
 }
 
 #[test]
@@ -121,7 +90,7 @@ fn grid_translation_preserves_branches_bridge_and_ports_and_can_be_reversed() {
         assert_eq!(outcome["status"], "validated", "{outcome}");
         assert_eq!(outcome["details"]["route_calls"], 0);
         let moved = s.witness(&s.state).unwrap();
-        assert!(validate_factory_layout(&s.request, &moved, &s.catalogs).factory_validated);
+        assert!(validate_factory_layout(&s.request, &moved, &s.catalogs.data).factory_validated);
         let outcome = step(
             &mut s,
             json!({"kind":"delete_band","axis":axis,"at":0,"count":3}),
@@ -177,7 +146,7 @@ fn unchanged_decisions_skip_routing_and_validation_and_horizon_is_explicit() {
         assert_eq!(outcome["done"], false);
     }
     assert_eq!(s.attempts, 40);
-    s.finish();
+    s.config.max_actions = s.attempts;
     let before = s.state.clone();
     let action = place(&s, "A0", 2, 7, 90);
     assert_eq!(step(&mut s, action)["charged"], false);
@@ -203,9 +172,9 @@ fn exhausted_routing_budget_retains_edited_draft_and_valid_best() {
     assert!(s.state.geometry.paths.iter().any(Option::is_none));
     assert_eq!(s.best_metrics.score, s.initial_metrics.score);
     assert!(s.work.route_expansions <= 1);
-    let result = s.finish();
+    let result = s.retained_result();
     let witness = serde_json::from_value(result["best"].clone()).unwrap();
-    assert!(validate_factory_layout(&s.request, &witness, &s.catalogs).factory_validated);
+    assert!(validate_factory_layout(&s.request, &witness, &s.catalogs.data).factory_validated);
 }
 
 #[test]
@@ -320,7 +289,7 @@ fn typed_worker_pool_preserves_ownership_inputs_and_cold_restore() {
     }
     drop(pool);
     let mut restored = Pool::new(base.catalogs, 1, 2).unwrap();
-    let restored = restored
+    restored
         .exchange(
             snapshots
                 .into_iter()
@@ -339,6 +308,9 @@ fn typed_worker_pool_preserves_ownership_inputs_and_cold_restore() {
                 })
                 .collect(),
         )
+        .unwrap();
+    let restored = restored
+        .exchange((0..2).map(|i| (i, Command::Begin { actions: 2 })).collect())
         .unwrap();
     for ((_, new), (_, old)) in restored.iter().zip(&after) {
         let Reply::Observation(new) = new else {

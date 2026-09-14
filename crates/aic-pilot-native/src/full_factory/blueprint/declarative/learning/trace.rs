@@ -6,18 +6,16 @@ struct Entry {
     revision: u64,
     state: Option<State>,
     best_metrics: FactoryLayoutMetrics,
-    full: Option<Value>,
     witness: Option<Witness>,
 }
 
 pub(crate) struct Chunk {
     entries: Vec<Entry>,
     limit: usize,
-    full: bool,
 }
 
 impl Chunk {
-    pub(crate) fn new(limit: usize, full: bool) -> Result<Self> {
+    pub(crate) fn new(limit: usize) -> Result<Self> {
         if limit == 0 {
             return Err(error(
                 "learning-chunk",
@@ -28,7 +26,6 @@ impl Chunk {
         Ok(Self {
             entries: vec![],
             limit,
-            full,
         })
     }
 
@@ -42,13 +39,6 @@ impl Chunk {
         }
         let revision = session.revision;
         let best_metrics = session.best_metrics.clone();
-        // Full observations are an explicit diagnostic option. Normal replay
-        // needs only changed physical states, exported once after the chunk.
-        let full = if self.full {
-            Some(session.observation()?)
-        } else {
-            None
-        };
         let mut previous = None;
         let outcome = session.step(|| Ok(decision), Some(&mut previous));
         let witness = (outcome["reward"].as_f64().unwrap() > 0.).then(|| session.best.clone());
@@ -56,7 +46,6 @@ impl Chunk {
             revision,
             state: previous,
             best_metrics,
-            full,
             witness,
         });
         Ok(outcome)
@@ -66,9 +55,7 @@ impl Chunk {
         self.entries
             .into_iter()
             .map(|entry| {
-                let observation = if let Some(full) = entry.full {
-                    full
-                } else if let Some(state) = entry.state {
+                let observation = if let Some(state) = entry.state {
                     physical(session, &state, entry.revision, &entry.best_metrics)?
                 } else {
                     json!({"blueprint_sha256":session.blueprint_sha256,"revision":entry.revision})
@@ -88,7 +75,7 @@ fn physical(
 ) -> Result<Value> {
     let bp = session.blueprint_at(state);
     let nodes = bp.nodes.iter().map(|node| Ok(json!({"id":node.id,
-        "position":topology::position(node,&state.geometry,&session.catalogs)?,"components":node.components})))
+        "position":topology::position(node,&state.geometry,&session.catalogs.data)?,"components":node.components})))
         .collect::<Result<Vec<_>>>()?;
     Ok(
         json!({"blueprint_sha256":session.blueprint_sha256,"revision":revision,

@@ -72,7 +72,7 @@ impl Session {
                     p.instance.clone(),
                 ));
             }
-            let definition = self.catalogs.facilities.facility(&p.facility).unwrap();
+            let definition = self.catalogs.data.facilities.facility(&p.facility).unwrap();
             if !definition.allowed_rotations.contains(&p.rotation)
                 || !bounded(Point { x: p.x, y: p.y })
             {
@@ -171,7 +171,7 @@ impl Session {
         let bp = self.routing_blueprint(state)?;
         for edge in &bp.edges {
             if let Some(cells) = &state.geometry.paths[edge.id] {
-                geometry::check_path(&bp, &state.geometry, &self.catalogs, edge, cells)?;
+                geometry::check_path(&bp, &state.geometry, &self.catalogs.data, edge, cells)?;
             }
         }
         Ok(())
@@ -184,7 +184,8 @@ impl Session {
             .iter()
             .filter(|e| {
                 state.geometry.paths[e.id].as_ref().is_some_and(|cells| {
-                    geometry::check_path(&bp, &state.geometry, &self.catalogs, e, cells).is_err()
+                    geometry::check_path(&bp, &state.geometry, &self.catalogs.data, e, cells)
+                        .is_err()
                 })
             })
             .map(|e| e.id)
@@ -223,7 +224,7 @@ impl Session {
                     .ok_or_else(|| {
                         error("facility", "Unknown original facility ID", instance.clone())
                     })?;
-                let definition = self.catalogs.facilities.facility(&p.facility).unwrap();
+                let definition = self.catalogs.data.facilities.facility(&p.facility).unwrap();
                 // Reject before rotation arithmetic; arbitrary integers are not catalog data.
                 if !definition.allowed_rotations.contains(&rotation)
                     || !(0..=GUARD).contains(&x)
@@ -280,7 +281,12 @@ impl Session {
             }
         }
         for (c, position) in self.blueprint.components.iter().zip(&state.components) {
-            let definition = self.catalogs.components.component(&c.component).unwrap();
+            let definition = self
+                .catalogs
+                .data
+                .components
+                .component(&c.component)
+                .unwrap();
             let (w, h) = if c.rotation % 180 == 0 {
                 (definition.footprint.width, definition.footprint.height)
             } else {

@@ -59,7 +59,7 @@ impl Runtime {
     pub fn open(
         request: FactoryEditRequest,
         original: Witness,
-        catalogs: Arc<FactoryEditCatalogs>,
+        catalogs: Arc<crate::input::Catalogs>,
         limits: Limits,
         options: Options,
     ) -> std::result::Result<Self, String> {
@@ -70,7 +70,7 @@ impl Runtime {
     }
     pub fn restore(
         checkpoint: &str,
-        catalogs: Arc<FactoryEditCatalogs>,
+        catalogs: Arc<crate::input::Catalogs>,
         options: Options,
     ) -> std::result::Result<Self, String> {
         Self::from_session(
@@ -94,7 +94,7 @@ impl Runtime {
         if self.chunk.is_some() {
             return Err("declarative.learning-chunk: drain the existing chunk first".into());
         }
-        self.chunk = Some(trace::Chunk::new(limit, false).map_err(diagnostic)?);
+        self.chunk = Some(trace::Chunk::new(limit).map_err(diagnostic)?);
         Ok(())
     }
     pub fn step(
@@ -129,21 +129,7 @@ impl Runtime {
     pub fn checkpoint(&self) -> Value {
         self.session.checkpoint()
     }
-    pub fn validate_best(&self) -> std::result::Result<Value, String> {
-        let validation = validate_factory_layout(
-            &self.session.request,
-            &self.session.best,
-            &self.session.catalogs,
-        );
-        if !validation.factory_validated {
-            return Err(format!(
-                "declarative.retained-best-invalid: {:?}",
-                validation.diagnostics
-            ));
-        }
-        Ok(self.session.retained_result())
-    }
-    pub fn finish(&mut self) -> Value {
-        self.session.finish()
+    pub fn result(&self) -> Value {
+        self.session.retained_result()
     }
 }

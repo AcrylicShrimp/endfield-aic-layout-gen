@@ -1,8 +1,6 @@
 //! Retained declarative candidates and typed numerical learning inputs.
 
 mod input;
-#[cfg(feature = "python")]
-pub(super) mod python;
 pub(crate) mod runtime;
 pub(super) mod trace;
 
@@ -112,6 +110,7 @@ impl Learning {
             names.insert(placement.recipe.clone());
             let definition = session
                 .catalogs
+                .data
                 .facilities
                 .facility(&placement.facility)
                 .unwrap();
@@ -184,13 +183,6 @@ impl Learning {
             revision: 0,
             attempts: 0,
         })
-    }
-
-    pub(super) fn metadata(&self, session: &Session) -> Value {
-        json!({"schema":"declarative-native-domain-v1", "groups":self.facilities.iter().map(|facility|
-            facility.groups.iter().map(|group| json!({"node":group.node,
-                "graph_node":session.blueprint.facilities.len()+group.node,
-                "ports":group.ports,"features":group.features})).collect::<Vec<_>>()).collect::<Vec<_>>()})
     }
 
     fn position(&self, session: &Session, node: &Node) -> Point {
@@ -317,18 +309,4 @@ impl Learning {
     }
 
     // Explicit diagnostic export only; normal collection retains these in Rust.
-    pub(super) fn diagnostic_roots(&self, session: &Session) -> Value {
-        json!(self.roots.iter().map(|root| if root.kind == 0 {
-            json!({"kind":"place", "instance":session.blueprint.facilities[root.owner].instance,
-                "x":root.x,"y":root.y,"rotation":root.rotation})
-        } else {
-            json!({"kind":if root.kind == 1 {"insert_band"} else {"delete_band"},
-                "axis":root.axis,"at":root.at,"count":root.count})
-        }).collect::<Vec<_>>())
-    }
-
-    #[cfg(test)]
-    fn root_count(&self) -> usize {
-        self.roots.len()
-    }
 }

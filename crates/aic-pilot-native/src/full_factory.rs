@@ -1,24 +1,9 @@
-//! Retained complete-factory environment. The physical authority remains aic-data.
-
+//! Declarative factory geometry, topology and bounded routing.
 pub(crate) mod blueprint;
-mod candidates;
 mod catalog;
 mod chains;
-mod changes;
-mod engine;
-mod groups;
-mod identity;
-mod movement;
-mod observation;
+pub(crate) mod identity;
 mod path;
-mod poses;
-#[cfg(feature = "python")]
-pub(crate) mod python;
-mod routing;
-mod selection;
-mod spatial;
-mod strips;
-mod types;
-
 #[cfg(test)]
 mod tests;
+mod types;

@@ -18,14 +18,13 @@ struct Checkpoint {
     revision: u64,
     work: Work,
     validated: bool,
-    closed: bool,
     elapsed_ns: u64,
 }
 
 impl Session {
     pub fn checkpoint(&self) -> Value {
         json!(Checkpoint {
-            schema: "declarative-edit-checkpoint-v1".into(),
+            schema: "declarative-edit-checkpoint-v2".into(),
             blueprint_sha256: self.blueprint_sha256.clone(),
             catalog_sha256: self.catalog_sha256.clone(),
             input_sha256: identity::digest(
@@ -40,7 +39,6 @@ impl Session {
             revision: self.revision,
             work: self.work.clone(),
             validated: self.validated,
-            closed: self.closed,
             elapsed_ns: u64::try_from(self.elapsed().as_nanos()).unwrap_or(u64::MAX),
         })
     }
@@ -55,7 +53,7 @@ impl Session {
             ));
         }
         let witness = self.witness(state)?;
-        let validation = validate_factory_layout(&self.request, &witness, &self.catalogs);
+        let validation = validate_factory_layout(&self.request, &witness, &self.catalogs.data);
         if !validation.factory_validated {
             return Err(error(
                 "checkpoint-invalid-witness",
@@ -66,10 +64,10 @@ impl Session {
         Ok((witness, validation.metrics.unwrap()))
     }
 
-    pub fn from_checkpoint(input: &str, catalogs: Arc<FactoryEditCatalogs>) -> Result<Self> {
+    pub fn from_checkpoint(input: &str, catalogs: Arc<crate::input::Catalogs>) -> Result<Self> {
         let saved: Checkpoint =
             crate::input::decode(input).map_err(|e| error("checkpoint-schema", e, "checkpoint"))?;
-        if saved.schema != "declarative-edit-checkpoint-v1"
+        if saved.schema != "declarative-edit-checkpoint-v2"
             || saved.attempts > saved.config.max_actions
             || saved.revision > saved.attempts
             || saved.work.route_expansions > saved.config.max_total_route_expansions
@@ -100,8 +98,13 @@ impl Session {
                 "checkpoint",
             ));
         }
-        session.check_state(&saved.state)?;
-        let (best, metrics) = session.validate_state(&saved.best_state)?;
+        // Admission already validated the initial state. Reuse validation when
+        // current/best/initial snapshots identify the same state.
+        let (best, metrics) = if saved.best_state == session.state {
+            (session.best.clone(), session.best_metrics.clone())
+        } else {
+            session.validate_state(&saved.best_state)?
+        };
         if metrics.score > session.initial_metrics.score {
             return Err(error(
                 "checkpoint-best",
@@ -109,8 +112,12 @@ impl Session {
                 "checkpoint",
             ));
         }
-        if saved.validated {
-            session.validate_state(&saved.state)?;
+        if saved.state != saved.best_state && saved.state != session.state {
+            if saved.validated {
+                session.validate_state(&saved.state)?;
+            } else {
+                session.check_state(&saved.state)?;
+            }
         }
         session.state = saved.state;
         session.best_state = saved.best_state;
@@ -120,7 +127,6 @@ impl Session {
         session.revision = saved.revision;
         session.work = saved.work;
         session.validated = saved.validated;
-        session.closed = saved.closed;
         session.elapsed_before = Duration::from_nanos(saved.elapsed_ns);
         session.started = Instant::now();
         Ok(session)

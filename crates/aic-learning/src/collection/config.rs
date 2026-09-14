@@ -28,7 +28,7 @@ pub struct Episode {
 pub struct Config {
     pub schema: String,
     pub catalog_root: PathBuf,
-    pub catalogs: Value,
+    pub catalogs: aic_pilot_native::input::CatalogPaths,
     pub episodes: Vec<Episode>,
     pub reserved_geometry: Vec<String>,
     pub options: Options,

@@ -4,5 +4,5 @@ mod config;
 pub mod credit;
 pub mod policy;
 mod rollout;
+pub mod run;
 mod storage;
-pub mod verify;

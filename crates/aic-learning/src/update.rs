@@ -1,7 +1,7 @@
 //! Numerical PPO/SIL minibatch kernel. Epoch scheduling and native collection
 //! remain separate; this kernel consumes already-frozen targets and branches.
 use crate::{
-    input::{Input, Tensors, tensor},
+    input::{PpoBatch, ReplayBatch, Tensors, tensor},
     model::Model,
     schema::{ModelConfig, UpdateConfig},
 };
@@ -53,15 +53,6 @@ pub struct UpdateReport {
     pub actor_gradient_norm: f64,
     pub critic_gradient_norm: f64,
     pub positive_replay_labels: i64,
-    pub permutation: Vec<i64>,
-}
-#[derive(Serialize)]
-pub struct StepReport {
-    #[serde(flatten)]
-    pub update: UpdateReport,
-    pub sample_root: i64,
-    pub replay_draws: Vec<i64>,
-    pub replay_order: Vec<i64>,
 }
 
 impl Learner {
@@ -116,83 +107,46 @@ impl Learner {
             device,
         })
     }
-    /// Actual minibatch update; diagnostic sampler/replay draws stay in step().
-    pub fn apply(&mut self, input: &Input, actor_updated: bool) -> Result<UpdateReport> {
-        self.apply_inner(input, actor_updated)
-            .map(|(report, _)| report)
-    }
-    pub fn step(&mut self, input: &Input, actor_updated: bool) -> Result<StepReport> {
-        let (update, root_logp) = self.apply_inner(input, actor_updated)?;
-        // These diagnostic draws verify independent streams without replacing
-        // the recorded conditional choices used by PPO/SIL likelihood.
-        let first_root_count =
-            i64::try_from(input.ppo.graph["action_graph"].eq(0).sum(Kind::Int64))?;
-        let sample_root = i64::try_from(
-            self.sampler.categorical(
-                &root_logp
-                    .narrow(0, 0, first_root_count)
-                    .exp()
-                    .to_device(Device::Cpu),
-            )?,
-        )?;
-        let replay_draws =
-            Vec::<i64>::try_from(self.replay.integers(input.manifest.sil_graphs, 8)?)?;
-        let replay_order = Vec::<i64>::try_from(self.replay_order.permutation(8)?)?;
-        Ok(StepReport {
-            update,
-            sample_root,
-            replay_draws,
-            replay_order,
-        })
-    }
-    fn apply_inner(
+    pub fn apply(
         &mut self,
-        input: &Input,
+        ppo: &PpoBatch,
+        replay: &ReplayBatch,
         actor_updated: bool,
-    ) -> Result<(UpdateReport, Tensor)> {
+    ) -> Result<UpdateReport> {
         ensure!(
             self.completed_steps < u64::MAX,
             "aic-learning.update-counter: exhausted counter"
         );
-        ensure!(
-            self.config == input.manifest.update && self.model.config == input.manifest.model,
-            "aic-learning.update-binding: incompatible input configuration"
-        );
-        let order = self.shuffle.permutation(input.manifest.ppo_graphs)?;
-        let permutation = Vec::<i64>::try_from(&order)?;
+        let order = self.shuffle.permutation(ppo.packed.graphs)?;
         let order = order.to_device(self.device);
         self.actor.zero_grad()?;
         self.critic.zero_grad()?;
         self.actor.freeze(!actor_updated);
         // Always restore trainability on a recoverable error.
-        let result = self.compute(input, &order, actor_updated);
+        let result = self.compute(ppo, replay, &order, actor_updated);
         self.actor.freeze(false);
-        let (loss, value_loss, imitation_loss, positive, actor_norm, critic_norm, root_logp) =
-            result?;
+        let (loss, value_loss, imitation_loss, positive, actor_norm, critic_norm) = result?;
         self.completed_steps += 1;
-        Ok((
-            UpdateReport {
-                step: self.completed_steps,
-                actor_updated,
-                loss,
-                value_loss,
-                imitation_loss,
-                actor_gradient_norm: actor_norm,
-                critic_gradient_norm: critic_norm,
-                positive_replay_labels: positive,
-                permutation,
-            },
-            root_logp,
-        ))
+        Ok(UpdateReport {
+            step: self.completed_steps,
+            actor_updated,
+            loss,
+            value_loss,
+            imitation_loss,
+            actor_gradient_norm: actor_norm,
+            critic_gradient_norm: critic_norm,
+            positive_replay_labels: positive,
+        })
     }
     fn compute(
         &mut self,
-        input: &Input,
+        ppo: &PpoBatch,
+        replay: &ReplayBatch,
         order: &Tensor,
         actor_updated: bool,
-    ) -> Result<(f64, f64, f64, i64, f64, f64, Tensor)> {
-        let predicted = self.model.predict(&input.ppo)?;
-        let target = tensor(&input.targets, "ppo.targets")?.index_select(0, order);
+    ) -> Result<(f64, f64, f64, i64, f64, f64)> {
+        let predicted = self.model.predict(&ppo.packed)?;
+        let target = ppo.targets.index_select(0, order);
         let value_loss = (predicted.values.index_select(0, order) - target)
             .square()
             .mean(Kind::Float)
@@ -201,8 +155,8 @@ impl Learner {
         let mut teacher = Tensor::zeros([], (Kind::Float, self.device));
         let mut positive = 0;
         if actor_updated {
-            let old = tensor(&input.targets, "ppo.old_logp")?.index_select(0, order);
-            let advantages = tensor(&input.targets, "ppo.advantages")?.index_select(0, order);
+            let old = ppo.old_logp.index_select(0, order);
+            let advantages = ppo.advantages.index_select(0, order);
             let ratio = (predicted.logp.index_select(0, order) - old).exp();
             let clipped = ratio.clamp(1. - self.config.clip_epsilon, 1. + self.config.clip_epsilon);
             loss = loss
@@ -212,9 +166,9 @@ impl Learner {
                 - self.config.entropy_coefficient
                     * predicted.entropy.index_select(0, order).mean(Kind::Float);
             if self.config.imitation_coefficient > 0. {
-                let sil = self.model.predict(&input.sil)?;
-                let returns = tensor(&input.targets, "sil.returns")?;
-                let weights = tensor(&input.targets, "sil.weights")?;
+                let sil = self.model.predict(&replay.packed)?;
+                let returns = &replay.returns;
+                let weights = &replay.weights;
                 let advantage = (returns - sil.values.detach()).clamp_min(0.);
                 positive = i64::try_from(advantage.gt(0).sum(Kind::Int64))?;
                 teacher = (-sil.logp * advantage * weights).sum(Kind::Float);
@@ -244,7 +198,6 @@ impl Learner {
             positive,
             actor_norm,
             critic_norm,
-            predicted.root_logp.detach(),
         ))
     }
     pub fn snapshot(&mut self) -> Result<Tensors> {
@@ -328,4 +281,12 @@ fn restore_adam(
         }
     }
     Ok(())
+}
+
+pub fn device_name(device: Device) -> Result<String> {
+    match device {
+        Device::Cpu => Ok("cpu".into()),
+        Device::Cuda(n) => Ok(format!("cuda:{n}")),
+        _ => anyhow::bail!("aic-learning.device: CPU/CUDA required"),
+    }
 }

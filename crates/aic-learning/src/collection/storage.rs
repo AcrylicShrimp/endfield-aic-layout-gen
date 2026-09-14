@@ -1,7 +1,7 @@
 //! One complete boundary checkpoint; diagnostic exports are separate artifacts.
 use super::{config::Config, policy::Choice, rollout::Rollout};
 use crate::{
-    input::{Input, sha256},
+    input::{Seed, sha256},
     update::Learner,
 };
 use aic_pilot_native::learning::pool::{Command, Pool, Reply};
@@ -16,7 +16,7 @@ use std::{fs, io::Write, path::Path};
 pub struct Manifest {
     schema: String,
     config_sha256: String,
-    kernel_sha256: String,
+    seed_sha256: String,
     pub completed_chunks: usize,
     pub completed_steps: u64,
     pub device: String,
@@ -24,9 +24,10 @@ pub struct Manifest {
     sessions_sha256: String,
 }
 pub fn write(path: &Path, value: &impl Serialize) -> Result<()> {
-    let mut file = fs::File::create(path)?;
+    let mut file = std::io::BufWriter::new(fs::File::create(path)?);
     serde_json::to_writer(&mut file, value)?;
     file.write_all(b"\n")?;
+    file.flush()?;
     Ok(())
 }
 pub fn data(replies: Vec<(usize, Reply)>) -> Result<Vec<Value>> {
@@ -42,7 +43,7 @@ pub fn save(
     path: &Path,
     pool: &mut Pool,
     learner: &mut Learner,
-    input: &Input,
+    input: &Seed,
     config: &Config,
     config_hash: &str,
     chunks: usize,
@@ -69,12 +70,12 @@ pub fn save(
             stage.join("learner.safetensors"),
         )?;
         let manifest = Manifest {
-            schema: "aic-native-collection-checkpoint-v1".into(),
+            schema: "aic-native-collection-checkpoint-v2".into(),
             config_sha256: config_hash.into(),
-            kernel_sha256: input.identity.clone(),
+            seed_sha256: input.identity.clone(),
             completed_chunks: chunks,
             completed_steps: learner.completed_steps,
-            device: crate::checkpoint::device_name(learner.device)?,
+            device: crate::update::device_name(learner.device)?,
             tensors_sha256: sha256(&stage.join("learner.safetensors"))?,
             sessions_sha256: sha256(&stage.join("sessions.json"))?,
         };
@@ -94,7 +95,7 @@ pub fn save(
 }
 pub fn restore(
     path: &Path,
-    input: &Input,
+    input: &Seed,
     config: &Config,
     hash: &str,
     device: Device,
@@ -105,10 +106,10 @@ pub fn restore(
     );
     let m: Manifest = serde_json::from_slice(&fs::read(path.join("manifest.json"))?)?;
     ensure!(
-        m.schema == "aic-native-collection-checkpoint-v1"
+        m.schema == "aic-native-collection-checkpoint-v2"
             && m.config_sha256 == hash
-            && m.kernel_sha256 == input.identity
-            && m.device == crate::checkpoint::device_name(device)?
+            && m.seed_sha256 == input.identity
+            && m.device == crate::update::device_name(device)?
             && m.completed_chunks as u64 <= config.limits.max_actions / config.chunk_actions as u64,
         "aic-learning.collection-checkpoint-binding: {}",
         path.display()
@@ -199,6 +200,7 @@ pub fn failure(
     let failed_replies = pool.take_failed_replies();
     for (stream, reply) in rollout.replies.iter().chain(&failed_replies) {
         match reply {
+            Reply::Ready => {}
             Reply::Step { result, next } => {
                 partial_row(&mut rows, "reply", *stream, next, None, Some(result))?
             }

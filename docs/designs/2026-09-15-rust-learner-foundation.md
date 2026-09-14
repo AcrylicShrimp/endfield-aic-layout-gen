@@ -1,5 +1,10 @@
 # Rust learner foundation
 
+Update: the user-authorized [Rust runtime cutover](2026-09-15-rust-runtime-cleanup.md)
+removes the Python extension and porting CLI/exports described below. The numerical
+and collection evidence remains historical; use the new design for current commands,
+seed/checkpoint formats and execution behavior.
+
 Status: first numerical/recovery slice implemented and verified. The subsequent
 native collection gate is now verified too; see the linked follow-on design below.
 The user authorized starting the Rust transition and required systematic code

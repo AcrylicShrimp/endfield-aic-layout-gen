@@ -74,7 +74,7 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Command {
-    /// Native learning diagnostics (requires the learning build feature).
+    /// Native rollout collection and learner updates (requires the learning build feature).
     #[cfg(feature = "learning")]
     Learning {
         #[command(subcommand)]

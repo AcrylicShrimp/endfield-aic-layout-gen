@@ -4,7 +4,7 @@ use super::{
     credit,
     policy::{self, Choice},
 };
-use crate::{input::Input, update::Learner};
+use crate::{input::PpoBatch, update::Learner};
 use aic_pilot_native::learning::{
     Observation,
     pool::{Command, Pool, Reply},
@@ -24,7 +24,6 @@ pub struct Sample {
 }
 #[derive(Default)]
 pub struct Rollout {
-    pub first_sampler: Option<Tensor>,
     pub current: Vec<Observation>,
     pub choices: Vec<Choice>,
     pub replies: Vec<(usize, Reply)>,
@@ -106,9 +105,6 @@ pub fn collect(
             &mut learner.sampler,
             learner.device,
         )?;
-        if step == 0 {
-            retained.first_sampler = Some(learner.sampler.state()?);
-        }
         let commands = retained
             .current
             .iter()
@@ -222,26 +218,6 @@ pub fn collect(
     retained.replies = pool
         .exchange((0..streams).map(|i| (i, Command::Drain)).collect())
         .map_err(anyhow::Error::msg)?;
-    for (stream, reply) in &retained.replies {
-        let Reply::Data(data) = reply else {
-            anyhow::bail!("aic-learning.collection-protocol: expected chunk");
-        };
-        let rows = data
-            .as_array()
-            .ok_or_else(|| anyhow::anyhow!("aic-learning.collection-evidence: invalid rows"))?;
-        ensure!(
-            rows.len() == config.chunk_actions,
-            "aic-learning.collection-evidence: incomplete stream {stream}"
-        );
-        for (step, row) in rows.iter().enumerate() {
-            let original = &retained.samples[step * streams + stream].observation;
-            ensure!(
-                row["observation"]["revision"].as_u64() == Some(original.revision)
-                    && row["observation"]["blueprint_sha256"] == original.blueprint_sha256,
-                "aic-learning.collection-ownership: changed historical input for stream {stream}"
-            );
-        }
-    }
     retained.evidence = retained
         .replies
         .drain(..)
@@ -254,41 +230,28 @@ pub fn collect(
     Ok(())
 }
 
-pub fn minibatch(
-    input: &mut Input,
-    rollout: &Rollout,
-    config: &Config,
-    device: Device,
-) -> Result<()> {
-    // This gate performs one explicitly selected minibatch, not an epoch/KL
-    // scheduler. Normalize over the complete frozen rollout, then select rows.
+pub fn minibatch(rollout: &Rollout, config: &Config, device: Device) -> Result<PpoBatch> {
+    // One actual minibatch; full epoch/KL scheduling remains a separate stage.
     let n = config.minibatch_size;
     let rows = &rollout.samples[..n];
-    input.ppo = policy::recorded(
+    let packed = policy::recorded(
         &rows.iter().map(|r| &r.observation).collect::<Vec<_>>(),
         &rows.iter().map(|r| &r.choice).collect::<Vec<_>>(),
         device,
     )?;
-    input.manifest.ppo_graphs = n as i64;
-    input.manifest.ppo_factors = input.ppo.factors;
     let raw = Tensor::from_slice(&rollout.raw);
-    let advantages = credit::normalize(&raw, &config.advantage_normalization)?
-        .narrow(0, 0, n as i64)
-        .to_device(device);
-    input.targets.insert("ppo.advantages".into(), advantages);
-    input.targets.insert(
-        "ppo.targets".into(),
-        Tensor::from_slice(&rollout.targets[..n]).to_device(device),
-    );
-    input.targets.insert(
-        "ppo.old_logp".into(),
-        Tensor::from_slice(
+    Ok(PpoBatch {
+        packed,
+        advantages: credit::normalize(&raw, &config.advantage_normalization)?
+            .narrow(0, 0, n as i64)
+            .to_device(device),
+        targets: Tensor::from_slice(&rollout.targets[..n]).to_device(device),
+        old_logp: Tensor::from_slice(
             &rows
                 .iter()
                 .map(|r| r.choice.old_logp as f32)
                 .collect::<Vec<_>>(),
         )
         .to_device(device),
-    );
-    Ok(())
+    })
 }

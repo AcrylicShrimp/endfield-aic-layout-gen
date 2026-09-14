@@ -84,53 +84,6 @@ impl Bounds {
         p.x >= self.min_x && p.x <= self.max_x && p.y >= self.min_y && p.y <= self.max_y
     }
 }
-pub fn extent(w: &Witness) -> Result<Bounds> {
-    let points = w
-        .placements
-        .iter()
-        .flat_map(|p| {
-            [
-                Point { x: p.x, y: p.y },
-                Point {
-                    x: p.x + p.width - 1,
-                    y: p.y + p.height - 1,
-                },
-            ]
-        })
-        .chain(
-            w.transport_networks
-                .iter()
-                .flat_map(|n| n.cells.iter().map(Point::from)),
-        )
-        .chain(
-            w.logistics_components
-                .iter()
-                .map(|c| Point::from(&c.position)),
-        );
-    let mut bounds = None::<Bounds>;
-    for p in points {
-        if let Some(b) = &mut bounds {
-            b.min_x = b.min_x.min(p.x);
-            b.max_x = b.max_x.max(p.x);
-            b.min_y = b.min_y.min(p.y);
-            b.max_y = b.max_y.max(p.y);
-        } else {
-            bounds = Some(Bounds {
-                min_x: p.x,
-                max_x: p.x,
-                min_y: p.y,
-                max_y: p.y,
-            });
-        }
-    }
-    bounds.ok_or_else(|| {
-        Diagnostic::new(
-            "factory-empty-geometry",
-            "Cannot measure an empty witness",
-            Value::Null,
-        )
-    })
-}
 
 #[derive(Clone, Debug, Serialize)]
 pub struct Diagnostic {

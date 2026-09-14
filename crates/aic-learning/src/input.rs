@@ -1,6 +1,8 @@
+#[cfg(test)]
+mod tests;
 mod validation;
-// Cold diagnostic interchange. Validation runs once; updates reuse tensors.
-use crate::schema::{INPUT_SCHEMA, InputManifest};
+// Initial learner/replay seed. External tensors are validated once on admission.
+use crate::schema::{INPUT_SCHEMA, SeedManifest};
 use aic_torch::tch::{Device, Kind, Tensor};
 use anyhow::{Context, Result, ensure};
 use sha2::{Digest, Sha256};
@@ -66,17 +68,6 @@ impl Packed {
         };
         let roots = tensor(values, &format!("{prefix}.roots"))?.to_device(device);
         let selected = tensor(values, &format!("{prefix}.selected"))?.to_device(device);
-        ensure!(
-            roots.kind() == Kind::Int64
-                && roots.size() == [graphs]
-                && selected.kind() == Kind::Int64
-                && selected.size() == [factors],
-            "aic-learning.input-labels: {prefix}"
-        );
-        ensure!(
-            tensor(&graph, "global_features")?.size()[0] == graphs,
-            "aic-learning.input-graphs: {prefix}"
-        );
         Ok(Self {
             graph,
             branches,
@@ -88,79 +79,36 @@ impl Packed {
     }
 }
 
-pub struct Input {
-    pub manifest: InputManifest,
+pub struct Seed {
+    pub manifest: SeedManifest,
     pub identity: String,
-    pub tensors: Tensors,
-    pub ppo: Packed,
-    pub sil: Packed,
-    pub targets: Tensors,
+    directory: std::path::PathBuf,
+    pub replay: ReplayBatch,
 }
-impl Input {
+impl Seed {
     pub fn load(path: &Path, device: Device) -> Result<Self> {
-        ensure!(
-            fs::metadata(path)?.len() <= 1024 * 1024,
-            "aic-learning.manifest-size: {}",
-            path.display()
-        );
-        let bytes =
-            fs::read(path).with_context(|| format!("aic-learning.manifest: {}", path.display()))?;
+        let mut bytes = Vec::new();
+        fs::File::open(path)
+            .with_context(|| format!("aic-learning.manifest: {}", path.display()))?
+            .take(1024 * 1024 + 1)
+            .read_to_end(&mut bytes)?;
         ensure!(
             bytes.len() <= 1024 * 1024,
             "aic-learning.manifest-size: {}",
             path.display()
         );
-        let manifest: InputManifest = serde_json::from_slice(&bytes)?;
+        let manifest: SeedManifest = serde_json::from_slice(&bytes)?;
         ensure!(
             manifest.schema == INPUT_SCHEMA,
             "aic-learning.input-schema: {}",
             manifest.schema
         );
-        manifest.update.validate()?;
         ensure!(
             manifest.max_tensor_bytes > 0 && manifest.max_tensor_bytes <= 2 * 1024 * 1024 * 1024,
             "aic-learning.input-budget: invalid tensor byte bound"
         );
-        let relative = Path::new(&manifest.tensors);
-        ensure!(
-            relative.components().count() == 1 && relative.file_name().is_some(),
-            "aic-learning.input-path: expected a sibling tensor file"
-        );
-        let archive = path.parent().unwrap_or(Path::new(".")).join(relative);
-        ensure!(
-            fs::metadata(&archive)?.len() <= manifest.max_tensor_bytes,
-            "aic-learning.input-budget: {}",
-            archive.display()
-        );
-        ensure!(
-            sha256(&archive)? == manifest.tensors_sha256,
-            "aic-learning.input-hash: {}",
-            archive.display()
-        );
-        let rows = Tensor::read_safetensors(&archive)
-            .with_context(|| format!("aic-learning.input-archive: {}", archive.display()))?;
-        let length = rows.len();
-        let tensors: Tensors = rows.into_iter().collect();
-        ensure!(
-            tensors.len() == length,
-            "aic-learning.input-duplicate: tensor names"
-        );
-        let decoded_bytes: usize = tensors
-            .values()
-            .map(|t| t.numel() * t.kind().elt_size_in_bytes())
-            .sum();
-        ensure!(
-            decoded_bytes as u64 <= manifest.max_tensor_bytes,
-            "aic-learning.input-budget: decoded tensors"
-        );
-        let ppo = Packed::load(
-            &tensors,
-            "ppo",
-            manifest.ppo_graphs,
-            manifest.ppo_factors,
-            device,
-            &manifest.model,
-        )?;
+        let directory = path.parent().unwrap_or(Path::new(".")).to_path_buf();
+        let tensors = archive(&directory, &manifest.replay, manifest.max_tensor_bytes)?;
         let sil = Packed::load(
             &tensors,
             "sil",
@@ -171,9 +119,6 @@ impl Input {
         )?;
         let mut targets = Tensors::new();
         for (name, size) in [
-            ("ppo.old_logp", manifest.ppo_graphs),
-            ("ppo.advantages", manifest.ppo_graphs),
-            ("ppo.targets", manifest.ppo_graphs),
             ("sil.returns", manifest.sil_graphs),
             ("sil.weights", manifest.sil_graphs),
         ] {
@@ -194,10 +139,59 @@ impl Input {
         Ok(Self {
             manifest,
             identity,
-            tensors,
-            ppo,
-            sil,
-            targets,
+            directory,
+            replay: ReplayBatch {
+                packed: sil,
+                returns: targets.remove("sil.returns").unwrap(),
+                weights: targets.remove("sil.weights").unwrap(),
+            },
         })
     }
+    pub fn initial_state(&self) -> Result<Tensors> {
+        archive(
+            &self.directory,
+            &self.manifest.state,
+            self.manifest.max_tensor_bytes,
+        )
+    }
+}
+
+/// Frozen actual behavior rows. Constructed directly by the rollout owner.
+pub struct PpoBatch {
+    pub packed: Packed,
+    pub old_logp: Tensor,
+    pub advantages: Tensor,
+    pub targets: Tensor,
+}
+pub struct ReplayBatch {
+    pub packed: Packed,
+    pub returns: Tensor,
+    pub weights: Tensor,
+}
+
+fn archive(
+    directory: &Path,
+    reference: &crate::schema::Archive,
+    max_bytes: u64,
+) -> Result<Tensors> {
+    let relative = Path::new(&reference.path);
+    ensure!(
+        relative.components().count() == 1 && relative.file_name().is_some(),
+        "aic-learning.input-path: expected a sibling tensor file"
+    );
+    let archive = directory.join(relative);
+    ensure!(
+        fs::metadata(&archive)?.len() <= max_bytes,
+        "aic-learning.input-budget: {}",
+        archive.display()
+    );
+    ensure!(
+        sha256(&archive)? == reference.sha256,
+        "aic-learning.input-hash: {}",
+        archive.display()
+    );
+    let rows = Tensor::read_safetensors(&archive)
+        .with_context(|| format!("aic-learning.input-archive: {}", archive.display()))?;
+    let tensors = rows.into_iter().collect();
+    Ok(tensors)
 }

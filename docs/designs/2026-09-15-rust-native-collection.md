@@ -1,5 +1,10 @@
 # Rust native collection and rollout integration
 
+Update: the user-authorized [Rust runtime cutover](2026-09-15-rust-runtime-cleanup.md)
+removes the Python extension and porting CLI/exports described below. The numerical
+and collection evidence remains historical; use the new design for current commands,
+seed/checkpoint formats and execution behavior.
+
 Status: implemented and verified as a bounded integration diagnostic after the
 numerical learner gate. The user requested continuing the Rust transition. This work connects retained native
 sessions to central batched inference and actual rollout credit. It does not

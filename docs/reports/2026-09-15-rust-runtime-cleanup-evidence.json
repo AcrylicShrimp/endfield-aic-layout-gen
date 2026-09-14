@@ -1,0 +1,304 @@
+{
+  "schema": "aic-rust-runtime-cleanup-evidence-v1",
+  "base_commit": "cd6d7fc",
+  "status": "passed",
+  "python_source_changes": 0,
+  "before": {
+    "report": {
+      "admission_seconds": 0.224138656,
+      "all_retained_best_valid": true,
+      "checkpoint_seconds": 0.816034146,
+      "completed_chunks": 2,
+      "production_cutover": false,
+      "records": [
+        {
+          "chunk": 0,
+          "collection_seconds": 2.270973011,
+          "observation_bytes": 883582816,
+          "samples": 4096,
+          "true_terminals": 0,
+          "update": {
+            "actor_gradient_norm": 0.025076689198613167,
+            "actor_updated": true,
+            "critic_gradient_norm": 0.048484571278095245,
+            "imitation_loss": 0.8066701889038086,
+            "loss": 0.01234942115843296,
+            "positive_replay_labels": 16,
+            "step": 1,
+            "value_loss": 0.001854214700870216
+          },
+          "update_seconds": 0.318033012
+        },
+        {
+          "chunk": 1,
+          "collection_seconds": 1.142498531,
+          "observation_bytes": 804838064,
+          "samples": 4096,
+          "true_terminals": 128,
+          "update": {
+            "actor_gradient_norm": 0.008783156983554363,
+            "actor_updated": true,
+            "critic_gradient_norm": 0.016880592331290245,
+            "imitation_loss": 0.7631486654281616,
+            "loss": 0.029330072924494743,
+            "positive_replay_labels": 16,
+            "step": 2,
+            "value_loss": 0.00026508013252168894
+          },
+          "update_seconds": 0.108312051
+        }
+      ],
+      "resumed": false,
+      "schema": "aic-native-collection-report-v1",
+      "status": "completed",
+      "streams": 128,
+      "total_seconds": 17.177609723,
+      "workers": 16
+    },
+    "measurement": {
+      "schema": "aic-native-collection-measurement-v1",
+      "command": [
+        "target/release/aic-cli",
+        "learning",
+        "verify-collection",
+        "--config",
+        "artifacts/native-collection-input-128/manifest.json",
+        "--kernel-input",
+        "artifacts/kernel-input-multistage/manifest.json",
+        "--output",
+        "artifacts/native-collection-complete-128",
+        "--chunks",
+        "2"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 18.139194713992765,
+      "maximum_rss_bytes": 5953642496,
+      "user_seconds": 17.403698,
+      "system_seconds": 13.164659,
+      "guard_last": {
+        "processes": 1,
+        "rss": 0,
+        "peak_rss": 5953642496,
+        "free_bytes": 60639895552,
+        "elapsed_seconds": 17.628261364996433
+      },
+      "measurement_only": true
+    }
+  },
+  "after": {
+    "report": {
+      "admission_seconds": 0.224940189,
+      "all_retained_best_valid": true,
+      "checkpoint_seconds": 0.178945122,
+      "completed_chunks": 2,
+      "production_cutover": false,
+      "records": [
+        {
+          "chunk": 0,
+          "collection_seconds": 2.2248050360000002,
+          "observation_bytes": 883582816,
+          "samples": 4096,
+          "true_terminals": 0,
+          "update": {
+            "actor_gradient_norm": 0.025076836347579956,
+            "actor_updated": true,
+            "critic_gradient_norm": 0.04848490655422211,
+            "imitation_loss": 0.8066701889038086,
+            "loss": 0.012349151074886322,
+            "positive_replay_labels": 16,
+            "step": 1,
+            "value_loss": 0.0018542219186201692
+          },
+          "update_seconds": 0.316075671
+        },
+        {
+          "chunk": 1,
+          "collection_seconds": 1.095070167,
+          "observation_bytes": 804838064,
+          "samples": 4096,
+          "true_terminals": 128,
+          "update": {
+            "actor_gradient_norm": 0.008715150877833366,
+            "actor_updated": true,
+            "critic_gradient_norm": 0.016729911789298058,
+            "imitation_loss": 0.7631484270095825,
+            "loss": 0.02919488027691841,
+            "positive_replay_labels": 16,
+            "step": 2,
+            "value_loss": 0.0002640915918163955
+          },
+          "update_seconds": 0.112943399
+        }
+      ],
+      "resumed": false,
+      "schema": "aic-native-collection-report-v2",
+      "status": "completed",
+      "streams": 128,
+      "total_seconds": 4.622367904,
+      "workers": 16
+    },
+    "measurement": {
+      "schema": "aic-native-collection-measurement-v1",
+      "command": [
+        "target/release/aic-cli",
+        "learning",
+        "collect",
+        "--config",
+        "artifacts/native-collection-input-128/manifest.json",
+        "--seed",
+        "artifacts/native-cleanup-seed/manifest.json",
+        "--output",
+        "artifacts/native-cleanup-final-128",
+        "--chunks",
+        "2"
+      ],
+      "exit_code": 0,
+      "wall_seconds": 5.576712269001291,
+      "maximum_rss_bytes": 5665640448,
+      "user_seconds": 14.983962,
+      "system_seconds": 2.429919,
+      "guard_last": {
+        "processes": 1,
+        "rss": 5434912768,
+        "peak_rss": 5664460800,
+        "free_bytes": 59892666368,
+        "elapsed_seconds": 5.067048787997919
+      },
+      "measurement_only": true
+    }
+  },
+  "verification": {
+    "local_workspace": {
+      "passed": 552,
+      "failed": 0,
+      "ignored": 3
+    },
+    "release_workspace": {
+      "passed": 557,
+      "failed": 0,
+      "ignored": 5
+    },
+    "retained_numerical_regression": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0
+    },
+    "cli_lifecycle": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0
+    },
+    "explicit_physical_audit": {
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0
+    },
+    "source_hashes_match_remote": true
+  },
+  "source_sha256": {
+    "Cargo.lock": "b1a79a112a847fbf0643a81173df9cf04e4940ff12a735506cbd789baaaef7ee",
+    "Cargo.toml": "b4d2dc9dde4cb5bf97450fa959c5e8b08d252cd67f0d2b116ade41d9198f2f13",
+    "crates/aic-cli/src/learning.rs": "fc91612b27c769669dfbed60a6ff6b237df1a571256b8d320e2e2a5081d25a6e",
+    "crates/aic-cli/src/main.rs": "3fc7cf91cd9c7bffceff341a6e81d30f7875f0460193e1192ea1f5ccd95ec68a",
+    "crates/aic-cli/tests/learning.rs": "95eef3c0c8518514cfebee1741fc55d0aea5ec892a93e17d5db5e01024f8d310",
+    "crates/aic-learning/src/collection.rs": "d70bedb394c7efe04eb0028146c5e6498f873f9b0efbad41f381e01bf2c7e964",
+    "crates/aic-learning/src/collection/config.rs": "bb84e65d2f922207c4628792d1e01e0154cd8831e29d85ac18a15289619b968b",
+    "crates/aic-learning/src/collection/rollout.rs": "3e167192e31365b0cb0fe4ee78f124c13b2a8f07258b5b54e39036e8515b166f",
+    "crates/aic-learning/src/collection/run.rs": "e84c4a8b11b196667a999fc881b90735b5ce7b8dd6d5c04015fad06ec006ba49",
+    "crates/aic-learning/src/collection/storage.rs": "d85dbd47ba0cca015206a6b1855e94e87a097574932f45a80901c290d3acc7c1",
+    "crates/aic-learning/src/input.rs": "1db04b286a1cdb53b2e90e23690a837cf1b00f623764276103be27b040b5baa6",
+    "crates/aic-learning/src/input/tests.rs": "fa65f7846c6189c1811678b03bf0364e13f58d6d664c6e0a0bafeb955d187f61",
+    "crates/aic-learning/src/lib.rs": "2b63e7bcbe26a911357a30055237065f9981e9665e8ade3b416e72f37055e16c",
+    "crates/aic-learning/src/model.rs": "65cccc5dcee16f931e856ae59e1cb0bd256ee2162fcfd8f2caa66caa7a6555b9",
+    "crates/aic-learning/src/schema.rs": "1831276564abf4ee0bcc058a290822a610bca2810774ff1b9f5eff2d760cbf25",
+    "crates/aic-learning/src/update.rs": "8fd08b91980789831851ae7004a985f1824884dc92953c64e577779cb6aa4040",
+    "crates/aic-pilot-native/Cargo.toml": "f5390821832f5907c4741b64880d0cf31dcc5e47b0aa11c635dc5fef106b7421",
+    "crates/aic-pilot-native/src/full_factory.rs": "21941897f894ffaf5956c52556b9890174876449f27c171448bd8f80874ce6f2",
+    "crates/aic-pilot-native/src/full_factory/blueprint.rs": "fbab276bd3f1baf410c33c8a491f68274d221540158833e29f534d922994e645",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative.rs": "4461c1db775e4a88d0eb181eef0b030d8cafaca203a958867c2a3b9ca2d1c9d3",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/checkpoint.rs": "b60815d1f4b734380a872daeed615f44fd4902660a887dcca9fc04acead336ff",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/edit.rs": "08aa9dd87477e1eab9c0cf543e8b1f57b2936df52e23d87cd752f80a77bc784c",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning.rs": "90077d94d590756e48265e75267b32789ae38b23feffdb2a1b9e8c0e0f412ebd",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/input.rs": "51ddf78c3238a16d5110e8a78480df431b445266936901272c0a64f250ca3165",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/runtime.rs": "e33f0db937f4a3b2bb8793f325d14e639f5ae82b5767329d5d296ce27b041d84",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/trace.rs": "a853393075350384be2b492a3a8e5a89d5e6f7bce3621aaec1a4d37140aadc97",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/tests.rs": "440582a7b51a40310ca5c62112ddb5b7b02df0dd7161e05d15e9934eae015ec1",
+    "crates/aic-pilot-native/src/full_factory/blueprint/geometry.rs": "dc1ecbf6da24292c4402946dc71c993de59ce53035cec5fbdd19c72c8ddbfa56",
+    "crates/aic-pilot-native/src/full_factory/catalog.rs": "b78c0f4735bae9450b92e519262b20512fb605bc2191cedf9bead3bae2a0e7f6",
+    "crates/aic-pilot-native/src/full_factory/chains.rs": "5ef9cb7705404a07acb38958ad3e966690584e825fa74b355d84ec5146031b70",
+    "crates/aic-pilot-native/src/full_factory/identity.rs": "b21743730d09de0cfebc66007b3d1e1d5d41ec4415e162d7ba684c8a761986b7",
+    "crates/aic-pilot-native/src/full_factory/path.rs": "8b6a7c95a80d9b0b3d971bee684e157883e53d76a4acd7cf6fcc8fb4e7c20b42",
+    "crates/aic-pilot-native/src/full_factory/tests.rs": "f213e524a21385ee794f7566c56d4d77ff0ec7b3c5ef3653e46b803b405c2a10",
+    "crates/aic-pilot-native/src/full_factory/types.rs": "94b2bef90126edfb3fe1f8d772c04a576cef4074b561b4402571c5589364af63",
+    "crates/aic-pilot-native/src/input.rs": "097475823fa34624d3046e90e8e4c7dfbf4d696c6fad2b9c38edf1ff95efbeb3",
+    "crates/aic-pilot-native/src/learning/pool.rs": "29a0eddecaa62dd46f09152d29154ea4896f7926cdf2d4382ac2f56e7c90b3f0",
+    "crates/aic-pilot-native/src/lib.rs": "bbf8f1273feeb690546ca28ed7d8fcecbe646c9f9eeb951ab681276375a8983d"
+  },
+  "deleted_source_files": [
+    "crates/aic-learning/src/checkpoint.rs",
+    "crates/aic-learning/src/collection/verify.rs",
+    "crates/aic-learning/src/verify.rs",
+    "crates/aic-pilot-native/build.rs",
+    "crates/aic-pilot-native/src/acceptance.rs",
+    "crates/aic-pilot-native/src/cache.rs",
+    "crates/aic-pilot-native/src/candidates.rs",
+    "crates/aic-pilot-native/src/catalog.rs",
+    "crates/aic-pilot-native/src/command.rs",
+    "crates/aic-pilot-native/src/diagnostic.rs",
+    "crates/aic-pilot-native/src/edits.rs",
+    "crates/aic-pilot-native/src/engine.rs",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/python.rs",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/python.rs",
+    "crates/aic-pilot-native/src/full_factory/blueprint/python.rs",
+    "crates/aic-pilot-native/src/full_factory/blueprint/session.rs",
+    "crates/aic-pilot-native/src/full_factory/blueprint/session/checkpoint.rs",
+    "crates/aic-pilot-native/src/full_factory/blueprint/tests.rs",
+    "crates/aic-pilot-native/src/full_factory/blueprint/tests/checkpoint.rs",
+    "crates/aic-pilot-native/src/full_factory/blueprint/tests/guards.rs",
+    "crates/aic-pilot-native/src/full_factory/candidates.rs",
+    "crates/aic-pilot-native/src/full_factory/candidates/components.rs",
+    "crates/aic-pilot-native/src/full_factory/changes.rs",
+    "crates/aic-pilot-native/src/full_factory/engine.rs",
+    "crates/aic-pilot-native/src/full_factory/groups.rs",
+    "crates/aic-pilot-native/src/full_factory/movement.rs",
+    "crates/aic-pilot-native/src/full_factory/observation.rs",
+    "crates/aic-pilot-native/src/full_factory/poses.rs",
+    "crates/aic-pilot-native/src/full_factory/python.rs",
+    "crates/aic-pilot-native/src/full_factory/routing.rs",
+    "crates/aic-pilot-native/src/full_factory/routing/region.rs",
+    "crates/aic-pilot-native/src/full_factory/selection.rs",
+    "crates/aic-pilot-native/src/full_factory/spatial.rs",
+    "crates/aic-pilot-native/src/full_factory/strips.rs",
+    "crates/aic-pilot-native/src/full_factory/tests/granularity.rs",
+    "crates/aic-pilot-native/src/full_factory/tests/region.rs",
+    "crates/aic-pilot-native/src/observation.rs",
+    "crates/aic-pilot-native/src/observation/candidates.rs",
+    "crates/aic-pilot-native/src/observation/entities.rs",
+    "crates/aic-pilot-native/src/python_engine.rs",
+    "crates/aic-pilot-native/src/python_factory.rs",
+    "crates/aic-pilot-native/src/state.rs",
+    "crates/aic-pilot-native/src/transition.rs"
+  ],
+  "artifacts": [
+    {
+      "path": "artifacts/native-cleanup-final-128",
+      "files": 7,
+      "bytes": 128670013,
+      "tree_sha256": "d3bf3379bf5bf7d688334487fbef92f7229865fc2e5585eb97d6ea71abcf5c14"
+    },
+    {
+      "path": "artifacts/native-cleanup-measure-final",
+      "files": 2,
+      "bytes": 2145,
+      "tree_sha256": "cc6efac78f15e5fb55aec2ad9148e94d7d67a813c4cf35b2fb25c3bab7323af4"
+    },
+    {
+      "path": "artifacts/native-cleanup-seed",
+      "files": 3,
+      "bytes": 900758,
+      "tree_sha256": "590d9dd56fc29be3aeb098323deb68b8795c28a3527f5e814641a2b2d069054f"
+    }
+  ],
+  "artifact_tree_contract": "SHA-256 of compact sorted-key JSON list in lexicographic path order, each entry contains path, bytes, sha256",
+  "comparison_limit": "Same actual inputs, initial numerical state, replay, native dimensions and actions; different actual timing observations. Cost reduction includes intentionally removed porting outputs. Not full training throughput."
+}

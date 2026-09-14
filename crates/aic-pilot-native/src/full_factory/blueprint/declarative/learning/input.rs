@@ -206,7 +206,12 @@ impl Learning {
                 destinations.extend([(f.x + step, f.y), (f.x, f.y + step)]);
             }
             destinations.extend(placements.iter().map(|other| (other.x, other.y)));
-            let definition = session.catalogs.facilities.facility(&f.facility).unwrap();
+            let definition = session
+                .catalogs
+                .data
+                .facilities
+                .facility(&f.facility)
+                .unwrap();
             for (x, y) in destinations {
                 if x.min(y) < 0 {
                     continue;
@@ -255,6 +260,7 @@ impl Learning {
         for (definition, position) in bp.components.iter().zip(&session.state.components) {
             let component = session
                 .catalogs
+                .data
                 .components
                 .component(&definition.component)
                 .unwrap();

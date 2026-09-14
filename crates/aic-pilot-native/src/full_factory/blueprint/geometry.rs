@@ -4,7 +4,7 @@ use aic_data::layouts::FactoryEditCatalogs;
 use indexmap::{IndexMap, IndexSet};
 use serde_json::json;
 
-use super::super::{catalog, path};
+use super::super::path;
 use super::*;
 
 const COORDINATE_GUARD: i64 = 1_000_000;
@@ -32,65 +32,6 @@ pub(super) fn conflicts(bp: &Blueprint, draft: &Draft) -> Vec<Value> {
         }
     }
     conflicts
-}
-
-pub(super) fn pose(
-    bp: &Blueprint,
-    draft: &mut Draft,
-    catalogs: &FactoryEditCatalogs,
-    instance: &str,
-    x: i64,
-    y: i64,
-    rotation: i64,
-) -> Result<Vec<usize>> {
-    let p = draft
-        .placements
-        .iter_mut()
-        .find(|p| p.instance == instance)
-        .ok_or_else(|| fail("pose", "Unknown original facility", instance))?;
-    let definition = catalogs.facilities.facility(&p.facility).unwrap();
-    if !definition.allowed_rotations.contains(&rotation)
-        || !(0..=COORDINATE_GUARD).contains(&x)
-        || !(0..=COORDINATE_GUARD).contains(&y)
-    {
-        return Err(fail(
-            "pose",
-            "Pose exceeds the coordinate work guard or allowed catalog rotations",
-            instance,
-        ));
-    }
-    let (width, height, ports) = catalog::rotate(definition, rotation, Point { x, y });
-    if x + width > COORDINATE_GUARD
-        || y + height > COORDINATE_GUARD
-        || ports
-            .iter()
-            .any(|p| p.connection.x < 0 || p.connection.y < 0)
-    {
-        return Err(fail(
-            "pose",
-            "Facility body or original port leaves the coordinate work guard",
-            instance,
-        ));
-    }
-    p.x = x;
-    p.y = y;
-    p.rotation = rotation;
-    p.width = width;
-    p.height = height;
-    let mut detached = Vec::new();
-    // Check endpoints as well as newly obstructed paths. Remove all invalid paths
-    // simultaneously so the outcome does not depend on edge traversal order.
-    for edge in &bp.edges {
-        if let Some(cells) = &draft.paths[edge.id]
-            && check_path(bp, draft, catalogs, edge, cells).is_err()
-        {
-            detached.push(edge.id);
-        }
-    }
-    for &id in &detached {
-        draft.paths[id] = None;
-    }
-    Ok(detached)
 }
 
 pub(super) fn blocked(
