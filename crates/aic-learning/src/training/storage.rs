@@ -12,7 +12,11 @@ use crate::{
     schema::Archive,
     update::{Learner, device_name},
 };
-use aic_pilot_native::learning::pool::{Command, Pool};
+use aic_pilot_native::learning::{
+    LearningContract, current_contract,
+    pool::{Command, Pool},
+    validate_envelope,
+};
 use aic_torch::tch::{Device, Tensor};
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
@@ -29,6 +33,7 @@ use std::{
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
     pub schema: String,
+    pub contract: LearningContract,
     pub binding: String,
     pub device: String,
     pub completed_steps: u64,
@@ -153,7 +158,8 @@ impl Store {
             })
             .collect::<Result<_>>()?;
         let manifest = Manifest {
-            schema: "aic-training-checkpoint-v1".into(),
+            schema: "aic-training-checkpoint-v2".into(),
+            contract: current_contract(),
             binding: binding.into(),
             device: device_name(learner.device)?,
             completed_steps: learner.completed_steps,
@@ -267,11 +273,9 @@ pub fn restore(
         path.parent() == Some(root.join("checkpoints").as_path()),
         "aic-learning.resume-location: resume checkpoint must belong to this output"
     );
-    let manifest: Manifest = read(&path.join("manifest.json"), 4 * 1024 * 1024)?;
+    let manifest = read_manifest(&path.join("manifest.json"))?;
     ensure!(
-        manifest.schema == "aic-training-checkpoint-v1"
-            && manifest.binding == binding
-            && manifest.device == device_name(device)?,
+        manifest.binding == binding && manifest.device == device_name(device)?,
         "aic-learning.checkpoint-binding: {}",
         path.display()
     );
@@ -393,7 +397,7 @@ pub fn restore(
                 n <= state.update,
                 "aic-learning.resume-stale: newer checkpoint exists; use latest.json"
             );
-            let m: Manifest = read(&entry.path().join("manifest.json"), 4 * 1024 * 1024)?;
+            let m = read_manifest(&entry.path().join("manifest.json"))?;
             for (n, a) in &m.replay {
                 store.chunks.entry(*n).or_insert_with(|| a.clone());
             }
@@ -466,6 +470,13 @@ pub fn read<T: serde::de::DeserializeOwned>(path: &Path, limit: u64) -> Result<T
         .map_err(|e| anyhow::anyhow!("aic-learning.input-json: {}: {e}", path.display()))
 }
 
+/// One bounded header read, shared by restore and retention discovery.
+fn read_manifest(path: &Path) -> Result<Manifest> {
+    let header: Value = read(path, 4 * 1024 * 1024)?;
+    validate_envelope(&header, "aic-training-checkpoint-v2", path).map_err(anyhow::Error::msg)?;
+    Ok(serde_json::from_value(header)?)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -511,6 +522,44 @@ mod tests {
         assert!(root.join("inputs/00000001/0001/manifest.json").exists());
         assert!(!root.join("replay/00000003.bin").exists());
         assert!(saved.join("checkpoints/00000003.pending").exists());
+        fs::remove_dir_all(root)?;
+        Ok(())
+    }
+
+    #[test]
+    fn restore_rejects_semantics_before_touching_missing_payloads() -> Result<()> {
+        let root = std::env::temp_dir().join(format!("aic-contract-{}", std::process::id()));
+        let path = root.join("checkpoints/00000001");
+        fs::create_dir_all(&path)?;
+        let config: Config =
+            serde_json::from_str(include_str!("../../../../tools/native-training/smoke.json"))?;
+        let valid = serde_json::json!({"schema":"aic-training-checkpoint-v2", "contract":current_contract(),
+            "binding":"test", "device":"cpu", "completed_steps":1, "parameter_order":[], "files":{}, "replay":{}});
+        for component in [None, Some("observation"), Some("family_prior")] {
+            let mut value = valid.clone();
+            if let Some(key) = component {
+                value["contract"][key] = "other-v1".into();
+            } else {
+                value.as_object_mut().unwrap().remove("contract");
+            }
+            write(&path.join("manifest.json"), &value)?;
+            let error = restore(&root, &path, "test", &config, Device::Cpu)
+                .err()
+                .expect("must reject");
+            let text = error.to_string();
+            assert!(text.starts_with("aic-learning.io-contract:"), "{text}");
+            assert!(text.contains(&path.display().to_string()));
+            assert!(!root.join("latest.json").exists());
+        }
+        write(&path.join("manifest.json"), &valid)?;
+        let error = restore(&root, &path, "test", &config, Device::Cpu)
+            .err()
+            .expect("missing payloads");
+        assert!(
+            error
+                .to_string()
+                .starts_with("aic-learning.checkpoint-files:")
+        );
         fs::remove_dir_all(root)?;
         Ok(())
     }

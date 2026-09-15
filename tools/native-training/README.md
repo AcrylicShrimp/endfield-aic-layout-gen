@@ -82,9 +82,23 @@ replay, optimizer or curriculum. Incomplete evaluation cannot replace the best.
 
 ## Migration and bounded comparison
 
+Training configurations use `aic-training-v2`; checkpoint manifests use
+`aic-training-checkpoint-v2`. Both carry the native `LearningContract`: observation,
+execution, candidates, mask, action-family prior, port prefix, reward and frozen
+row semantic IDs. The manifest covers learner/model, Adam, RNG, best model and
+replay inputs. Matching tensor dimensions alone do not establish compatibility.
+Missing or different IDs are rejected with `aic-learning.io-contract` before
+learned payload loading, including the artifact path and expected/actual values.
+Use the current example config for fresh training. Do not add current IDs to an
+old checkpoint: continue old learned state only with its historical build.
+Native physical snapshots retain their independent schema and admission checks.
+Failure evidence carries the current contract but is never a resumable checkpoint.
+There is no independent production model or replay import entry point.
+
+
 The temporary `learning collect` command, collection checkpoint format and
 external learner/replay seed import have been removed. They did not provide a
-complete training schedule. Start a new `aic-training-v1` run; those diagnostic
+complete training schedule. Start a new `aic-training-v2` run; those diagnostic
 checkpoints are not resumable training checkpoints. Retained tensor comparisons
 remain explicit Rust tests, outside the executable. Existing Python source is
 unchanged.

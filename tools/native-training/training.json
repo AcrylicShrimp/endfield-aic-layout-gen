@@ -1,5 +1,15 @@
 {
-  "schema": "aic-training-v1",
+  "schema": "aic-training-v2",
+  "contract": {
+    "observation": "absolute-origin-graph-v1",
+    "execution": "declarative-edit-v1",
+    "candidates": "absolute-origin-candidates-v1",
+    "mask": "structural-bands-v1",
+    "family_prior": "all-root-count-v1",
+    "port_prefix": "mean-port-features-v1",
+    "reward": "canonical-area-delta-v1",
+    "frozen_rows": "owned-graph-row-v1"
+  },
   "purpose": "training",
   "catalog_root": "../..",
   "catalogs": {

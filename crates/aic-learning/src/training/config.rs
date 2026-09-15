@@ -7,7 +7,7 @@ use crate::{
 use aic_pilot_native::{
     generation::source,
     input::CatalogPaths,
-    learning::{Limits, Options},
+    learning::{LearningContract, Limits, Options, current_contract, validate_envelope},
 };
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
@@ -36,6 +36,7 @@ pub struct Resources {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub schema: String,
+    pub contract: LearningContract,
     pub purpose: String,
     pub catalog_root: PathBuf,
     pub catalogs: CatalogPaths,
@@ -69,7 +70,9 @@ impl Config {
             "aic-learning.training-config: oversized {}",
             path.display()
         );
-        let mut config: Self = serde_json::from_slice(&fs::read(path)?)?;
+        let header: serde_json::Value = serde_json::from_slice(&fs::read(path)?)?;
+        validate_envelope(&header, "aic-training-v2", path).map_err(anyhow::Error::msg)?;
+        let mut config: Self = serde_json::from_value(header)?;
         config.validate()?;
         let root = path.parent().unwrap_or(Path::new("."));
         config.catalog_root = root.join(&config.catalog_root).canonicalize()?;
@@ -78,7 +81,13 @@ impl Config {
     }
     pub fn validate(&self) -> Result<()> {
         ensure!(
-            self.schema == "aic-training-v1"
+            self.contract == current_contract(),
+            "aic-learning.io-contract: in-memory config: expected {:?}; actual {:?}",
+            current_contract(),
+            self.contract
+        );
+        ensure!(
+            self.schema == "aic-training-v2"
                 && matches!(self.purpose.as_str(), "training" | "bounded-comparison")
                 && (1..=4096).contains(&self.streams)
                 && self.workers > 0

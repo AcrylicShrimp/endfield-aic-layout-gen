@@ -1,6 +1,7 @@
 // Explicit bounded benchmark preparation; normal training generates fresh slots.
 import { readFile, mkdir, cp, access, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 
 const [sourceArg, outputArg, checkpointArg = '2'] = process.argv.slice(2);
 if (!sourceArg || !outputArg || !/^\d+$/.test(checkpointArg)) {
@@ -18,8 +19,12 @@ if (!Number.isSafeInteger(ordinal) || ordinal <= 0) throw new Error('Invalid che
 const checkpoint = `checkpoints/${String(ordinal).padStart(8, '0')}`;
 const read = async file => JSON.parse(await readFile(file, 'utf8'));
 const manifest = await read(path.join(source, checkpoint, 'manifest.json'));
+const current = await read(new URL('./training.json', import.meta.url));
+if (manifest.schema !== 'aic-training-checkpoint-v2' || !isDeepStrictEqual(manifest.contract, current.contract)) {
+  throw new Error(`aic-learning.io-contract: ${path.join(source, checkpoint, 'manifest.json')}: expected schema=aic-training-checkpoint-v2 contract=${JSON.stringify(current.contract)}; actual schema=${manifest.schema} contract=${JSON.stringify(manifest.contract)}`);
+}
 const state = await read(path.join(source, checkpoint, 'state.json'));
-if (manifest.schema !== 'aic-training-checkpoint-v1' || state.update !== ordinal || !state.next) {
+if (state.update !== ordinal || !state.next) {
   throw new Error('A completed native training wave and its actual next plan are required');
 }
 const slots = state.next.slots.filter(slot => !slot.inherited).map(slot =>
