@@ -52,6 +52,15 @@
 
 ## Verification And Git
 
+- Keep verification minimal and tied to a credible critical failure. Add or run
+  only the smallest check needed to protect correctness, prevent costly data
+  corruption, or validate the user-visible workflow changed by the work.
+- Do not build exhaustive test matrices, duplicate established coverage, or test
+  every validation and resource-limit branch by default. Prefer one bounded real
+  workflow check when it exercises the same contract more directly.
+- Reversible, noncritical defects may be corrected when they appear in actual use.
+  Preserve useful failure evidence, but do not delay delivery to anticipate every
+  such case.
 - Keep verification proportional to the concrete failure mode and change impact. For CLI-visible changes, run the relevant command and inspect its output.
 - After Rust edits, run `cargo fmt --all`. Before completing code changes, run `cargo check --workspace`; run `cargo test --workspace` when behavior changes or tests exist.
 - After artifact or documentation changes, run `node docs/maintenance/check-tracked-files.mjs --worktree`. After staging and before committing, run `node docs/maintenance/check-tracked-files.mjs --index`.
