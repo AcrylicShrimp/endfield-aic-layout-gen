@@ -110,6 +110,31 @@
       "path": "artifacts/rust-masked-reference-opt/cargo-feature-test-default-stack.log",
       "bytes": 6387,
       "sha256": "9ef05f09052819c56f0c89ef5e9f3fb0a10585f2fb0469c95c9835c7b7b8eb0c"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/fresh-after/report.json",
+      "sha256": "88047aa88320bd443ea1e26617f954a1a9cbca4d242cb03439e8fd701e02a34b",
+      "bytes": 715
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/fresh-after/updates/00000001.json",
+      "sha256": "8f8507a3c9be04154079b422fdb49b5dbba0fab4cfe86ad54c2f0958197d16b9",
+      "bytes": 1509
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/fresh-after/updates/00000002.json",
+      "sha256": "88bbd7014b2c4158fa7c95ce4ff1e61ad854e5c5271bead6fac5df9715daf973",
+      "bytes": 10269
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/fresh-after/updates/00000003.json",
+      "sha256": "c06063cd9efb84a5ae453e59786e9136b473ce8ccbff17353c46348cdb52cb40",
+      "bytes": 1538
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/fresh-after/updates/00000004.json",
+      "sha256": "fb49d9422c14d48cc6483a29e47841301648756a50a6a5a29c2827c2c1b4ee65",
+      "bytes": 11320
     }
   ],
   "before": {
@@ -297,5 +322,72 @@
     "default_stack_failure": "Existing CLI parser test parses_cumulative_facility_coordinate_partition stack overflow; rerun with larger test-worker stack passed.",
     "retained_cuda_oracle": "Exact model/Adam/RNG equality passed on both actual chunks",
     "focused_masked_references": "Exact CPU/CUDA forward, node/context backward, and repeated executions passed"
-  }
+  },
+  "fresh_after": {
+    "report": {
+      "admission_seconds": 15.472130855,
+      "best_evaluation": null,
+      "checkpoint_seconds": 0.111452467,
+      "collection_seconds": 6.1086861589999994,
+      "completed_updates": 4,
+      "evaluation_seconds": 0.0,
+      "latest_checkpoint": "checkpoints/00000004",
+      "new_samples": 16384,
+      "optimization_seconds": 5.1186313850000005,
+      "output_bytes": 29204254,
+      "peak_rss_bytes": 15551860736,
+      "previous_update": 0,
+      "replay": {
+        "active_streams": 0,
+        "admissions": 178,
+        "bytes": 22697784,
+        "duplicates": 0,
+        "evictions": 0,
+        "labels": 694,
+        "positive_improvements": 178,
+        "selected_uses": 640,
+        "sequences": 178
+      },
+      "resumed": false,
+      "samples_per_minute": 33845.806835845215,
+      "schema": "aic-training-report-v1",
+      "status": "completed",
+      "streams": 128,
+      "total_samples": 16384,
+      "total_seconds": 29.044661419,
+      "workers": 16
+    },
+    "epochs": [
+      {
+        "update": 1,
+        "samples": 4096,
+        "actor_epochs": 4,
+        "critic_epochs": 4,
+        "minibatch_updates": 64
+      },
+      {
+        "update": 2,
+        "samples": 4096,
+        "actor_epochs": 4,
+        "critic_epochs": 4,
+        "minibatch_updates": 64
+      },
+      {
+        "update": 3,
+        "samples": 4096,
+        "actor_epochs": 1,
+        "critic_epochs": 4,
+        "minibatch_updates": 64
+      },
+      {
+        "update": 4,
+        "samples": 4096,
+        "actor_epochs": 4,
+        "critic_epochs": 4,
+        "minibatch_updates": 64
+      }
+    ],
+    "scope": "Actual fresh initialization and two generated factory waves; four full updates, no cached preparation, no profiler. Periodic evaluation not reached. This rate includes factory generation, unlike the cached-input comparison."
+  },
+  "fresh_before_provenance": "docs/reports/2026-09-15-rust-complete-training-evidence.json: measurements.fresh"
 }

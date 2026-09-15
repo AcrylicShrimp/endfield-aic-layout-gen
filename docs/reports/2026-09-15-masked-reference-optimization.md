@@ -47,7 +47,7 @@ the tensor's device and introduces no host synchronization or per-item work.
 | Full PPO/SIL coverage, masks and actor-safe tails | All 64 minibatches per update, four critic epochs, the same one/four actor epochs and replay counts |
 | Sparse storage, resource limits and recovery | Existing runtime/checkpoint path; measured publication cost and retained output size |
 
-## Measured integrated result
+## Measured cached-input result
 
 Release runs use the same RTX 5090, actual checkpoint 2 and cached next-wave
 inputs, 128 streams, 16 workers, width 40, 256-row minibatches and four PPO epochs.
@@ -67,7 +67,7 @@ intermediate runtime/storage revisions into the comparison.
 
 PPO time falls **72.6%** and bounded overall throughput increases **98.0%**.
 The second, fully actor-active update falls from about 7.30 s to 1.44 s of PPO.
-Both full runs select one then four actor epochs, keep all four critic epochs,
+Both cached runs select one then four actor epochs, keep all four critic epochs,
 and finish with 178 replay sequences and 694 labels. The optimized run retains
 29.2 MB of output; peak observed process-tree RSS is 7.245 GB. These are bounded
 measurements, not a statistical throughput or learned-quality claim.
@@ -76,6 +76,47 @@ The comparison includes restore, collection, complete PPO, replay work and
 checkpoint publication. Fresh factory construction and scheduled held-out
 evaluation are outside these two cached-input updates. The separate fresh-input
 preparation cost identified in the prior report is unaffected by this change.
+
+## Fresh-input end-to-end measurement
+
+A subsequent actual fresh run measured the cost omitted by the cached benchmark.
+It uses the same optimized binary, configuration, 128 streams and 16 workers,
+but starts from initialization and constructs both factory waves. It completes
+four updates and counts **16,384 new transitions**. All 256 minibatches execute;
+actor epochs are 4/4/1/4 and critic epochs are 4/4/4/4, matching the retained
+pre-optimization fresh run. No profiler is enabled.
+
+| Fresh-input metric | Before, retained run | After |
+| --- | ---: | ---: |
+| Complete invocation | 47.755 s | **29.045 s** |
+| Factory generation/admission | 15.342 s | **15.472 s** |
+| Collection | 6.124 s | 6.109 s |
+| PPO | 23.945 s | 5.119 s |
+| Checkpoint publication | 0.118 s | 0.111 s |
+| New samples/minute | 20,585 | **33,846** |
+
+The fresh workflow improves 64.4% in samples/minute over the retained fresh
+baseline. Its measured rate is about 53% of the optimized cached-input rate.
+The 64,326 samples/minute cached result therefore does not describe ordinary
+training with fresh factory generation. Factory generation/admission now takes
+53.3% of the measured invocation and is the next overall bottleneck. Its internal
+construction/randomization breakdown remains unmeasured.
+
+The run includes initialization, fresh construction, collection, complete PPO,
+replay work and normal checkpoint publication; the remaining 2.234 s outside the
+listed phases includes initialization and coordinator/replay work. It retains
+29.2 MB of output and finishes with 178 replay sequences and 694 labels. The
+128-update evaluation interval is not reached in this short run. This is a
+bounded fresh-workflow measurement, not a long-run rate including periodic
+evaluation or a learned-quality result.
+
+Reproduction uses a new output without cached preparation or `--resume`:
+
+```sh
+target/release/aic-cli learning train \
+  --config tools/native-training/training.json \
+  --output artifacts/rust-masked-reference-opt/fresh-after --updates 4
+```
 
 ## GPU confirmation
 
