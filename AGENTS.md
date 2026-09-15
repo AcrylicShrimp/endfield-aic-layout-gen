@@ -9,8 +9,16 @@
 
 ## Reuse Existing Work And Preserve Its Benefits
 
+- Choose the smallest complete design that fits the current need. Do not create a
+  new framework, abstraction layer, storage protocol, or generalized extension
+  point when an established module or a direct addition already solves the task.
 - Before building a new component, harness, or replacement, inspect the existing implementation and its relevant designs, configuration, tests, and performance findings. Identify what can be reused and which solved problems must stay solved.
 - Reuse compatible code and infrastructure as much as practical. If a different implementation is needed, carry forward the existing benefits: correctness, features, performance optimizations, resource controls, observability, and recovery behavior. A new architecture is not permission to restart from a slower or less capable baseline.
+- Carry forward applicable optimization techniques even when direct code reuse is
+  impossible. Avoid predictable design-level regressions such as repeated setup,
+  per-item initialization, unnecessary copies, unbounded queues, redundant
+  serialization, or rescanning stable data; these should be prevented before the
+  first integrated run rather than discovered through a long benchmark campaign.
 - In particular, preserve applicable batching, caching, persistent workers, compact data representations, and efficient serialization, storage, and validation. Do not replace an optimized path with naive per-item work, repeated initialization, full-state copies, or repeated disk I/O without a demonstrated need.
 - For substantial replacements, record a short continuity checklist in the relevant design or task record: existing benefit, reuse or replacement approach, and how it will be checked. Investigate uncertain applicability instead of silently dropping an item.
 - Verify the actual integrated workflow before adopting the replacement or launching expensive downstream work. Reuse retained evidence and make a bounded, comparable runtime measurement when performance is affected, including storage and validation costs. A successful build or correct final example alone does not establish continuity.
@@ -18,6 +26,10 @@
 
 ## Keep Normal Execution Efficient
 
+- Keep runtime validation at stable input and publication boundaries, cache or
+  reuse successful results while identity is unchanged, and keep checks out of
+  hot loops. A normal run should emit compact summaries and required recovery
+  state, not exhaustive traces, repeated snapshots, or large diagnostic bundles.
 - Keep training and other normal workloads focused on useful work. Give added persistence, validation, and diagnostics a concrete purpose and a frequency proportional to that purpose.
 - Simplify state saving, recovery, and validation by default. Save only the state needed for the required resume behavior, reuse existing checkpoint mechanisms, and prefer a direct restore path. Avoid duplicate snapshots, redundant journals, and extra recovery layers.
 - Do not impose exact historical replay, exhaustive provenance, or full revalidation on routine recovery unless an explicit contract requires it. Choose checkpoint frequency for the required recovery needs and measured I/O cost, not maximum possible durability.
