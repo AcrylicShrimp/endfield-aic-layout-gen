@@ -150,6 +150,25 @@ fn combined_budget_rejects_after_structural_projection_has_completed() {
 }
 
 #[test]
+fn cancellation_never_certifies_an_identity() {
+    let mut checks = 0;
+    let failure = identities_until(
+        &rated(true),
+        &Limits {
+            max_individualization_nodes: 100_000,
+        },
+        "fixture/cancelled",
+        || {
+            checks += 1;
+            checks > 1
+        },
+    )
+    .unwrap_err();
+    assert_eq!(failure.code, "aic-learning.physical-identity-interrupted");
+    assert_eq!(failure.work_used, 1);
+}
+
+#[test]
 fn commodity_equality_partition_is_a_relation_not_a_name() {
     let mut graph = Graph::default();
     for _ in 0..4 {

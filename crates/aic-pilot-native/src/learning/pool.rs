@@ -1,14 +1,10 @@
 //! Fixed native workers with bounded queues; one ordered batch per worker/round.
 //! Workers retain logical sessions. Observations move by Arc, with no serializer.
 use super::{Limits, Observation, Options, Runtime};
+use crate::worker_pool::FixedWorkerPool;
 use aic_data::layouts::{FactoryEditRequest, WitnessProbeInput};
-use crossbeam_channel::{Receiver, Sender, bounded};
 use serde_json::Value;
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    sync::Arc,
-    thread::{self, JoinHandle},
-};
+use std::{collections::BTreeMap, sync::Arc};
 
 type Result<T> = std::result::Result<T, String>;
 pub enum Command {
@@ -57,18 +53,9 @@ pub enum Reply {
     Step { result: Value, next: Observation },
     Data(Value),
 }
-type Work = Vec<(usize, Command)>;
 type Replies = Vec<(usize, Reply)>;
-struct Worker {
-    sender: Sender<Option<Work>>,
-    thread: Option<JoinHandle<()>>,
-}
 pub struct Pool {
-    workers: Vec<Worker>,
-    replies: Receiver<(usize, Replies, Option<String>)>,
-    failed_replies: Replies,
-    streams: usize,
-    failed: bool,
+    inner: FixedWorkerPool<Command, Reply>,
 }
 impl Pool {
     pub fn new(
@@ -76,120 +63,26 @@ impl Pool {
         workers: usize,
         streams: usize,
     ) -> Result<Self> {
-        if workers == 0 || workers > streams {
-            return Err("declarative.pool-size: require 1 <= workers <= streams".into());
-        }
-        let (send, replies) = bounded(workers);
-        let mut pool = Self {
-            workers: Vec::new(),
-            replies,
+        let state_catalogs = catalogs.clone();
+        let inner = FixedWorkerPool::new(
+            workers,
             streams,
-            failed: false,
-            failed_replies: Vec::new(),
-        };
-        for index in 0..workers {
-            let (sender, receiver) = bounded::<Option<Work>>(1);
-            let catalogs = catalogs.clone();
-            let send = send.clone();
-            let thread = thread::Builder::new()
-                .name(format!("aic-native-{index}"))
-                .spawn(move || {
-                    let mut sessions = BTreeMap::new();
-                    while let Ok(Some(work)) = receiver.recv() {
-                        let mut completed = Vec::with_capacity(work.len());
-                        let error = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                            for (id, command) in work {
-                                completed
-                                    .push((id, execute(&mut sessions, id, command, &catalogs)?));
-                            }
-                            Ok::<(), String>(())
-                        }))
-                        .unwrap_or_else(|_| Err(format!("declarative.pool-panic: worker {index}")))
-                        .err();
-                        if send.send((index, completed, error)).is_err() {
-                            break;
-                        }
-                    }
-                })
-                .map_err(|e| format!("declarative.pool-spawn: {e}"))?;
-            pool.workers.push(Worker {
-                sender,
-                thread: Some(thread),
-            });
-        }
-        Ok(pool)
+            move |_| Ok((BTreeMap::new(), state_catalogs.clone())),
+            |state, id, command| execute(&mut state.0, id, command, &state.1),
+            |command| matches!(command, Command::Drain | Command::Snapshot),
+            "declarative.pool",
+            "only failure evidence and snapshots may be recovered",
+            "aic-native",
+        )?;
+        Ok(Self { inner })
     }
-    pub fn exchange(&mut self, commands: Work) -> Result<Replies> {
-        if self.failed
-            && commands
-                .iter()
-                .any(|(_, c)| !matches!(c, Command::Drain | Command::Snapshot))
-        {
-            return Err(
-                "declarative.pool-failed: only failure evidence and snapshots may be recovered"
-                    .into(),
-            );
-        }
-        let mut ids = BTreeSet::new();
-        for (id, _) in &commands {
-            if *id >= self.streams || !ids.insert(*id) {
-                return Err("declarative.pool-ownership: unknown or duplicate stream".into());
-            }
-        }
-        let mut batches: Vec<Work> = (0..self.workers.len()).map(|_| Vec::new()).collect();
-        for (id, c) in commands {
-            batches[id % self.workers.len()].push((id, c));
-        }
-        let mut waiting = BTreeSet::new();
-        for (worker, work) in batches.into_iter().enumerate() {
-            if work.is_empty() {
-                continue;
-            }
-            self.workers[worker]
-                .sender
-                .send(Some(work))
-                .map_err(|_| "declarative.pool-disconnected: submit")?;
-            waiting.insert(worker);
-        }
-        let mut output = Vec::new();
-        let mut error = None;
-        while !waiting.is_empty() {
-            let (worker, mut rows, failure) = self
-                .replies
-                .recv()
-                .map_err(|_| "declarative.pool-disconnected: receive")?;
-            if !waiting.remove(&worker) {
-                return Err("declarative.pool-protocol: duplicate worker response".into());
-            }
-            output.append(&mut rows);
-            if let Some(e) = failure {
-                self.failed = true;
-                error = Some(e);
-            }
-        }
-        if let Some(e) = error {
-            self.failed_replies.append(&mut output);
-            return Err(e);
-        }
-        output.sort_by_key(|(id, _)| *id);
-        Ok(output)
+    pub fn exchange(&mut self, commands: Vec<(usize, Command)>) -> Result<Replies> {
+        self.inner.exchange(commands)
     }
     /// Available replies from an incomplete exchange, including workers that
     /// succeeded before another failed. Consume only for cold failure evidence.
     pub fn take_failed_replies(&mut self) -> Replies {
-        std::mem::take(&mut self.failed_replies)
-    }
-}
-impl Drop for Pool {
-    fn drop(&mut self) {
-        for w in &self.workers {
-            let _ = w.sender.send(None);
-        }
-        for w in &mut self.workers {
-            if let Some(t) = w.thread.take() {
-                let _ = t.join();
-            }
-        }
+        self.inner.take_failed_replies()
     }
 }
 fn execute(

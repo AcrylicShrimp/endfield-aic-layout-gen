@@ -51,7 +51,7 @@ use anyhow::{Context, Result, bail, ensure};
 use clap::{Parser, Subcommand};
 use serde::Serialize;
 
-#[cfg(feature = "learning")]
+#[cfg(any(feature = "learning", feature = "outcomes"))]
 mod learning;
 mod research;
 
@@ -75,7 +75,7 @@ struct Cli {
 #[derive(Debug, Subcommand)]
 enum Command {
     /// Native rollout collection and learner updates (requires the learning build feature).
-    #[cfg(feature = "learning")]
+    #[cfg(any(feature = "learning", feature = "outcomes"))]
     Learning {
         #[command(subcommand)]
         command: learning::LearningCommand,
@@ -717,7 +717,7 @@ fn run() -> Result<CommandStatus> {
     let cli = Cli::parse();
 
     match cli.command {
-        #[cfg(feature = "learning")]
+        #[cfg(any(feature = "learning", feature = "outcomes"))]
         Command::Learning { command } => {
             learning::run(command)?;
             Ok(CommandStatus::Success)

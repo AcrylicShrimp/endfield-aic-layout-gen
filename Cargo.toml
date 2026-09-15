@@ -9,6 +9,7 @@ rust-version = "1.95"
 
 [workspace.dependencies]
 aic-layout = { path = "crates/aic-layout" }
+aic-layout-gen = { path = "crates/aic-layout-gen" }
 aic-routing = { path = "crates/aic-routing" }
 aic-data = { path = "crates/aic-data" }
 aic-torch = { path = "crates/aic-torch" }

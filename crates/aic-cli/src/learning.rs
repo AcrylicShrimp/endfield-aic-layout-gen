@@ -1,4 +1,5 @@
 //! Argument parsing only; implementation lives in the learning/backend crates.
+#[cfg(feature = "learning")]
 use aic_learning::update;
 use anyhow::Result;
 use clap::Subcommand;
@@ -6,7 +7,23 @@ use std::path::PathBuf;
 
 #[derive(Debug, Subcommand)]
 pub enum LearningCommand {
+    /// Collect the fixed bounded procedural physical-action outcome dataset.
+    CollectOutcomes {
+        #[arg(long)]
+        config: PathBuf,
+        /// Directory containing normalized facilities, transports and logistics components.
+        #[arg(long)]
+        catalog_root: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+    },
+    /// Explicitly reload and verify a published physical-action outcome dataset.
+    ValidateOutcomes {
+        #[arg(long)]
+        dataset: PathBuf,
+    },
     /// Recompute physical reservations from verified v1 panel payloads into a new directory.
+    #[cfg(feature = "learning")]
     MigratePanel {
         #[arg(long)]
         input: PathBuf,
@@ -20,11 +37,13 @@ pub enum LearningCommand {
         catalog_root: PathBuf,
     },
     /// Ask an active training run to save and stop at its next complete wave.
+    #[cfg(feature = "learning")]
     Stop {
         #[arg(long)]
         output: PathBuf,
     },
     /// Train the native policy through full PPO epochs, replay and evaluation.
+    #[cfg(feature = "learning")]
     Train {
         #[arg(long)]
         config: PathBuf,
@@ -42,6 +61,7 @@ pub enum LearningCommand {
         workers: Option<usize>,
     },
     /// Generate an immutable held-out panel with a separate seed namespace.
+    #[cfg(feature = "learning")]
     PreparePanel {
         #[arg(long)]
         config: PathBuf,
@@ -55,10 +75,16 @@ pub enum LearningCommand {
 }
 pub fn run(command: LearningCommand) -> Result<()> {
     let config = match &command {
-        LearningCommand::MigratePanel { input: config, .. }
-        | LearningCommand::Stop { output: config }
-        | LearningCommand::Train { config, .. }
-        | LearningCommand::PreparePanel { config, .. } => config,
+        LearningCommand::CollectOutcomes { config, .. } => config,
+        LearningCommand::ValidateOutcomes { dataset } => dataset,
+        #[cfg(feature = "learning")]
+        LearningCommand::MigratePanel { input: config, .. } => config,
+        #[cfg(feature = "learning")]
+        LearningCommand::Stop { output: config } => config,
+        #[cfg(feature = "learning")]
+        LearningCommand::Train { config, .. } => config,
+        #[cfg(feature = "learning")]
+        LearningCommand::PreparePanel { config, .. } => config,
     };
     let entity = config.display().to_string();
     let report = execute(command).map_err(|error| {
@@ -82,6 +108,13 @@ pub fn run(command: LearningCommand) -> Result<()> {
 }
 fn execute(command: LearningCommand) -> Result<serde_json::Value> {
     match command {
+        LearningCommand::CollectOutcomes {
+            config,
+            catalog_root,
+            output,
+        } => aic_learning::outcomes::collect(&config, &catalog_root, &output),
+        LearningCommand::ValidateOutcomes { dataset } => aic_learning::outcomes::validate(&dataset),
+        #[cfg(feature = "learning")]
         LearningCommand::MigratePanel {
             input,
             output,
@@ -93,6 +126,7 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             &identity_limits,
             &catalog_root,
         ),
+        #[cfg(feature = "learning")]
         LearningCommand::Stop { output } => {
             anyhow::ensure!(
                 output.is_dir(),
@@ -104,6 +138,7 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
                 serde_json::json!({"schema":"aic-training-stop-v1","status":"requested","output":output}),
             )
         }
+        #[cfg(feature = "learning")]
         LearningCommand::Train {
             config,
             output,
@@ -119,6 +154,7 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             resume,
             workers,
         ),
+        #[cfg(feature = "learning")]
         LearningCommand::PreparePanel {
             config,
             output,

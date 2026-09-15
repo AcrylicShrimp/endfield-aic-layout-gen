@@ -931,6 +931,16 @@ pub fn compiled_identity(
     draft: &PhysicalDraftV1,
     limits: &crate::physical_identity::Limits,
 ) -> Result<CompiledIdentity, Box<dyn std::error::Error + Send + Sync>> {
+    compiled_identity_until(problem, draft, limits, || false).map(|(identity, _)| identity)
+}
+
+/// Compute the compiled identity and charged canonicalization visits with cancellation.
+pub fn compiled_identity_until(
+    problem: &CompiledProblemV1,
+    draft: &PhysicalDraftV1,
+    limits: &crate::physical_identity::Limits,
+    mut cancelled: impl FnMut() -> bool,
+) -> Result<(CompiledIdentity, u64), Box<dyn std::error::Error + Send + Sync>> {
     validate_compiled(problem, draft)?;
     use crate::physical_identity::{Graph, Kind, Relation};
     let mut graph = Graph::default();
@@ -1081,7 +1091,12 @@ pub fn compiled_identity(
         graph.relation(segment, Relation::SegmentFrom, nodes[edge.source]);
         graph.relation(segment, Relation::SegmentTo, nodes[edge.target]);
     }
-    let (physical, _) = crate::physical_identity::identities(&graph, limits, "compiled-problem")?;
+    let (physical, identity_work) = crate::physical_identity::identities_until(
+        &graph,
+        limits,
+        "compiled-problem",
+        &mut cancelled,
+    )?;
     let selected_ports: Vec<_> = problem
         .nodes
         .iter()
@@ -1118,10 +1133,13 @@ pub fn compiled_identity(
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect();
-    Ok(CompiledIdentity {
-        physical,
-        draft_sha256,
-    })
+    Ok((
+        CompiledIdentity {
+            physical,
+            draft_sha256,
+        },
+        identity_work,
+    ))
 }
 
 fn facilities(problem: &CompiledProblemV1) -> BTreeMap<&str, &FacilityDefinition> {

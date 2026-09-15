@@ -82,6 +82,8 @@ dependencies = [
 name = "aic-learning"
 version = "0.1.0"
 dependencies = [
+ "aic-layout",
+ "aic-layout-gen",
  "aic-pilot-native",
  "aic-torch",
  "anyhow",

@@ -97,6 +97,7 @@ struct Work<'a> {
     limit: u64,
     used: u64,
     entity: &'a str,
+    cancelled: &'a mut dyn FnMut() -> bool,
 }
 impl Work<'_> {
     fn error(&self, code: &'static str, message: &'static str) -> Diagnostic {
@@ -110,6 +111,12 @@ impl Work<'_> {
         }
     }
     fn visit(&mut self) -> Result<(), Diagnostic> {
+        if (self.cancelled)() {
+            return Err(self.error(
+                "aic-learning.physical-identity-interrupted",
+                "Physical identity canonicalization was interrupted before separation was certified",
+            ));
+        }
         if self.used >= self.limit {
             return Err(self.error("aic-learning.physical-identity-budget",
                 "Combined structural/exact canonicalization budget exhausted; retain input and retry with a larger identity limit"));
@@ -125,10 +132,21 @@ pub fn identities(
     limits: &Limits,
     entity: &str,
 ) -> Result<(PhysicalIdentity, u64), Diagnostic> {
+    identities_until(graph, limits, entity, || false)
+}
+
+/// Returns keys and charged visits only when both searches complete before cancellation.
+pub fn identities_until(
+    graph: &Graph,
+    limits: &Limits,
+    entity: &str,
+    mut cancelled: impl FnMut() -> bool,
+) -> Result<(PhysicalIdentity, u64), Diagnostic> {
     let mut work = Work {
         limit: limits.max_individualization_nodes,
         used: 0,
         entity,
+        cancelled: &mut cancelled,
     };
     if graph.vertices.is_empty()
         || graph

@@ -12,7 +12,7 @@ use aic_layout::{
         PhysicalPose, UsedDefinitionCatalog, validate_compiled,
     },
     geometry::{Point, direction},
-    physical::{Layout, Route, SCHEMA, Solution},
+    physical::{Layout, Metrics, Route, SCHEMA, Solution},
     validation,
 };
 use serde::{Deserialize, Serialize};
@@ -20,6 +20,7 @@ use serde::{Deserialize, Serialize};
 mod candidates;
 mod core;
 pub mod learning;
+pub mod pool;
 mod session;
 pub use candidates::{
     PhysicalActionDomain, PhysicalActionRoot, PhysicalCandidateAuthority, PhysicalCandidateOptions,
@@ -129,10 +130,11 @@ pub struct ProceduralSourceOwner {
     source_nodes: Vec<(usize, usize)>,
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct ProceduralAdmission {
     pub problem: Arc<CompiledProblemV1>,
     pub draft: PhysicalDraftV1,
+    pub initial_metrics: Metrics,
     pub owner: ProceduralSourceOwner,
 }
 
@@ -153,7 +155,7 @@ impl ProceduralAdmission {
                 format!("cannot decode procedural layout: {failure}"),
             )
         })?;
-        validation::validate(&original, catalogs).map_err(|failure| {
+        let initial_metrics = validation::validate(&original, catalogs).map_err(|failure| {
             error(
                 "source-validation",
                 failure.entity.to_string(),
@@ -161,11 +163,12 @@ impl ProceduralAdmission {
             )
         })?;
         let source_sha256 = crate::input::hash(source);
-        Self::from_validated(original, source_sha256, catalogs)
+        Self::from_validated(original, initial_metrics, source_sha256, catalogs)
     }
 
     fn from_validated(
         original: Layout,
+        initial_metrics: Metrics,
         source_sha256: String,
         catalogs: &validation::Catalogs,
     ) -> Result<Self> {
@@ -505,6 +508,7 @@ impl ProceduralAdmission {
         let admission = Self {
             problem: Arc::new(problem),
             draft,
+            initial_metrics,
             owner,
         };
         admission.export(catalogs)?;

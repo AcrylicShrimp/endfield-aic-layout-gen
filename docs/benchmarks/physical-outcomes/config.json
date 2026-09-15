@@ -1,0 +1,834 @@
+{
+  "schema": "aic-physical-outcome-collection-v1",
+  "roots": [
+    {
+      "root_id": "b08-train-00",
+      "ancestry": "root-b08-train-00",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910000,
+      "action_seed": 920000
+    },
+    {
+      "root_id": "b08-train-01",
+      "ancestry": "root-b08-train-01",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910001,
+      "action_seed": 920001
+    },
+    {
+      "root_id": "b08-train-02",
+      "ancestry": "root-b08-train-02",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910002,
+      "action_seed": 920002
+    },
+    {
+      "root_id": "b08-train-03",
+      "ancestry": "root-b08-train-03",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910003,
+      "action_seed": 920003
+    },
+    {
+      "root_id": "b08-train-04",
+      "ancestry": "root-b08-train-04",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910004,
+      "action_seed": 920004
+    },
+    {
+      "root_id": "b08-train-05",
+      "ancestry": "root-b08-train-05",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910005,
+      "action_seed": 920005
+    },
+    {
+      "root_id": "b08-train-06",
+      "ancestry": "root-b08-train-06",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910006,
+      "action_seed": 920006
+    },
+    {
+      "root_id": "b08-train-07",
+      "ancestry": "root-b08-train-07",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910007,
+      "action_seed": 920007
+    },
+    {
+      "root_id": "b08-train-08",
+      "ancestry": "root-b08-train-08",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910008,
+      "action_seed": 920008
+    },
+    {
+      "root_id": "b08-train-09",
+      "ancestry": "root-b08-train-09",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910009,
+      "action_seed": 920009
+    },
+    {
+      "root_id": "b08-train-10",
+      "ancestry": "root-b08-train-10",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910010,
+      "action_seed": 920010
+    },
+    {
+      "root_id": "b08-train-11",
+      "ancestry": "root-b08-train-11",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910011,
+      "action_seed": 920011
+    },
+    {
+      "root_id": "b08-train-12",
+      "ancestry": "root-b08-train-12",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910012,
+      "action_seed": 920012
+    },
+    {
+      "root_id": "b08-train-13",
+      "ancestry": "root-b08-train-13",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910013,
+      "action_seed": 920013
+    },
+    {
+      "root_id": "b08-train-14",
+      "ancestry": "root-b08-train-14",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910014,
+      "action_seed": 920014
+    },
+    {
+      "root_id": "b08-train-15",
+      "ancestry": "root-b08-train-15",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910015,
+      "action_seed": 920015
+    },
+    {
+      "root_id": "b08-train-16",
+      "ancestry": "root-b08-train-16",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910016,
+      "action_seed": 920016
+    },
+    {
+      "root_id": "b08-train-17",
+      "ancestry": "root-b08-train-17",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910017,
+      "action_seed": 920017
+    },
+    {
+      "root_id": "b08-train-18",
+      "ancestry": "root-b08-train-18",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910018,
+      "action_seed": 920018
+    },
+    {
+      "root_id": "b08-train-19",
+      "ancestry": "root-b08-train-19",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910019,
+      "action_seed": 920019
+    },
+    {
+      "root_id": "b08-train-20",
+      "ancestry": "root-b08-train-20",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910020,
+      "action_seed": 920020
+    },
+    {
+      "root_id": "b08-train-21",
+      "ancestry": "root-b08-train-21",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910021,
+      "action_seed": 920021
+    },
+    {
+      "root_id": "b08-train-22",
+      "ancestry": "root-b08-train-22",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910022,
+      "action_seed": 920022
+    },
+    {
+      "root_id": "b08-train-23",
+      "ancestry": "root-b08-train-23",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910023,
+      "action_seed": 920023
+    },
+    {
+      "root_id": "b08-train-24",
+      "ancestry": "root-b08-train-24",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910024,
+      "action_seed": 920024
+    },
+    {
+      "root_id": "b08-train-25",
+      "ancestry": "root-b08-train-25",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910025,
+      "action_seed": 920025
+    },
+    {
+      "root_id": "b08-train-26",
+      "ancestry": "root-b08-train-26",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910026,
+      "action_seed": 920026
+    },
+    {
+      "root_id": "b08-train-27",
+      "ancestry": "root-b08-train-27",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910027,
+      "action_seed": 920027
+    },
+    {
+      "root_id": "b08-train-28",
+      "ancestry": "root-b08-train-28",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910028,
+      "action_seed": 920028
+    },
+    {
+      "root_id": "b08-train-29",
+      "ancestry": "root-b08-train-29",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910029,
+      "action_seed": 920029
+    },
+    {
+      "root_id": "b08-train-30",
+      "ancestry": "root-b08-train-30",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910030,
+      "action_seed": 920030
+    },
+    {
+      "root_id": "b08-train-31",
+      "ancestry": "root-b08-train-31",
+      "split": "training",
+      "blocks": 8,
+      "generation_seed": 910031,
+      "action_seed": 920031
+    },
+    {
+      "root_id": "b08-dev-00",
+      "ancestry": "root-b08-dev-00",
+      "split": "development",
+      "blocks": 8,
+      "generation_seed": 910032,
+      "action_seed": 920032
+    },
+    {
+      "root_id": "b08-dev-01",
+      "ancestry": "root-b08-dev-01",
+      "split": "development",
+      "blocks": 8,
+      "generation_seed": 910033,
+      "action_seed": 920033
+    },
+    {
+      "root_id": "b08-dev-02",
+      "ancestry": "root-b08-dev-02",
+      "split": "development",
+      "blocks": 8,
+      "generation_seed": 910034,
+      "action_seed": 920034
+    },
+    {
+      "root_id": "b08-dev-03",
+      "ancestry": "root-b08-dev-03",
+      "split": "development",
+      "blocks": 8,
+      "generation_seed": 910035,
+      "action_seed": 920035
+    },
+    {
+      "root_id": "b08-dev-04",
+      "ancestry": "root-b08-dev-04",
+      "split": "development",
+      "blocks": 8,
+      "generation_seed": 910036,
+      "action_seed": 920036
+    },
+    {
+      "root_id": "b08-dev-05",
+      "ancestry": "root-b08-dev-05",
+      "split": "development",
+      "blocks": 8,
+      "generation_seed": 910037,
+      "action_seed": 920037
+    },
+    {
+      "root_id": "b08-dev-06",
+      "ancestry": "root-b08-dev-06",
+      "split": "development",
+      "blocks": 8,
+      "generation_seed": 910038,
+      "action_seed": 920038
+    },
+    {
+      "root_id": "b08-dev-07",
+      "ancestry": "root-b08-dev-07",
+      "split": "development",
+      "blocks": 8,
+      "generation_seed": 910039,
+      "action_seed": 920039
+    },
+    {
+      "root_id": "b08-confirm-00",
+      "ancestry": "root-b08-confirm-00",
+      "split": "confirmation",
+      "blocks": 8,
+      "generation_seed": 910040,
+      "action_seed": 920040
+    },
+    {
+      "root_id": "b08-confirm-01",
+      "ancestry": "root-b08-confirm-01",
+      "split": "confirmation",
+      "blocks": 8,
+      "generation_seed": 910041,
+      "action_seed": 920041
+    },
+    {
+      "root_id": "b08-confirm-02",
+      "ancestry": "root-b08-confirm-02",
+      "split": "confirmation",
+      "blocks": 8,
+      "generation_seed": 910042,
+      "action_seed": 920042
+    },
+    {
+      "root_id": "b08-confirm-03",
+      "ancestry": "root-b08-confirm-03",
+      "split": "confirmation",
+      "blocks": 8,
+      "generation_seed": 910043,
+      "action_seed": 920043
+    },
+    {
+      "root_id": "b08-confirm-04",
+      "ancestry": "root-b08-confirm-04",
+      "split": "confirmation",
+      "blocks": 8,
+      "generation_seed": 910044,
+      "action_seed": 920044
+    },
+    {
+      "root_id": "b08-confirm-05",
+      "ancestry": "root-b08-confirm-05",
+      "split": "confirmation",
+      "blocks": 8,
+      "generation_seed": 910045,
+      "action_seed": 920045
+    },
+    {
+      "root_id": "b08-confirm-06",
+      "ancestry": "root-b08-confirm-06",
+      "split": "confirmation",
+      "blocks": 8,
+      "generation_seed": 910046,
+      "action_seed": 920046
+    },
+    {
+      "root_id": "b08-confirm-07",
+      "ancestry": "root-b08-confirm-07",
+      "split": "confirmation",
+      "blocks": 8,
+      "generation_seed": 910047,
+      "action_seed": 920047
+    },
+    {
+      "root_id": "b16-train-00",
+      "ancestry": "root-b16-train-00",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910048,
+      "action_seed": 920048
+    },
+    {
+      "root_id": "b16-train-01",
+      "ancestry": "root-b16-train-01",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910049,
+      "action_seed": 920049
+    },
+    {
+      "root_id": "b16-train-02",
+      "ancestry": "root-b16-train-02",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910050,
+      "action_seed": 920050
+    },
+    {
+      "root_id": "b16-train-03",
+      "ancestry": "root-b16-train-03",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910051,
+      "action_seed": 920051
+    },
+    {
+      "root_id": "b16-train-04",
+      "ancestry": "root-b16-train-04",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910052,
+      "action_seed": 920052
+    },
+    {
+      "root_id": "b16-train-05",
+      "ancestry": "root-b16-train-05",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910053,
+      "action_seed": 920053
+    },
+    {
+      "root_id": "b16-train-06",
+      "ancestry": "root-b16-train-06",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910054,
+      "action_seed": 920054
+    },
+    {
+      "root_id": "b16-train-07",
+      "ancestry": "root-b16-train-07",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910055,
+      "action_seed": 920055
+    },
+    {
+      "root_id": "b16-train-08",
+      "ancestry": "root-b16-train-08",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910056,
+      "action_seed": 920056
+    },
+    {
+      "root_id": "b16-train-09",
+      "ancestry": "root-b16-train-09",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910057,
+      "action_seed": 920057
+    },
+    {
+      "root_id": "b16-train-10",
+      "ancestry": "root-b16-train-10",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910058,
+      "action_seed": 920058
+    },
+    {
+      "root_id": "b16-train-11",
+      "ancestry": "root-b16-train-11",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910059,
+      "action_seed": 920059
+    },
+    {
+      "root_id": "b16-train-12",
+      "ancestry": "root-b16-train-12",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910060,
+      "action_seed": 920060
+    },
+    {
+      "root_id": "b16-train-13",
+      "ancestry": "root-b16-train-13",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910061,
+      "action_seed": 920061
+    },
+    {
+      "root_id": "b16-train-14",
+      "ancestry": "root-b16-train-14",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910062,
+      "action_seed": 920062
+    },
+    {
+      "root_id": "b16-train-15",
+      "ancestry": "root-b16-train-15",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910063,
+      "action_seed": 920063
+    },
+    {
+      "root_id": "b16-train-16",
+      "ancestry": "root-b16-train-16",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910064,
+      "action_seed": 920064
+    },
+    {
+      "root_id": "b16-train-17",
+      "ancestry": "root-b16-train-17",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910065,
+      "action_seed": 920065
+    },
+    {
+      "root_id": "b16-train-18",
+      "ancestry": "root-b16-train-18",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910066,
+      "action_seed": 920066
+    },
+    {
+      "root_id": "b16-train-19",
+      "ancestry": "root-b16-train-19",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910067,
+      "action_seed": 920067
+    },
+    {
+      "root_id": "b16-train-20",
+      "ancestry": "root-b16-train-20",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910068,
+      "action_seed": 920068
+    },
+    {
+      "root_id": "b16-train-21",
+      "ancestry": "root-b16-train-21",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910069,
+      "action_seed": 920069
+    },
+    {
+      "root_id": "b16-train-22",
+      "ancestry": "root-b16-train-22",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910070,
+      "action_seed": 920070
+    },
+    {
+      "root_id": "b16-train-23",
+      "ancestry": "root-b16-train-23",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910071,
+      "action_seed": 920071
+    },
+    {
+      "root_id": "b16-train-24",
+      "ancestry": "root-b16-train-24",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910072,
+      "action_seed": 920072
+    },
+    {
+      "root_id": "b16-train-25",
+      "ancestry": "root-b16-train-25",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910073,
+      "action_seed": 920073
+    },
+    {
+      "root_id": "b16-train-26",
+      "ancestry": "root-b16-train-26",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910074,
+      "action_seed": 920074
+    },
+    {
+      "root_id": "b16-train-27",
+      "ancestry": "root-b16-train-27",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910075,
+      "action_seed": 920075
+    },
+    {
+      "root_id": "b16-train-28",
+      "ancestry": "root-b16-train-28",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910076,
+      "action_seed": 920076
+    },
+    {
+      "root_id": "b16-train-29",
+      "ancestry": "root-b16-train-29",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910077,
+      "action_seed": 920077
+    },
+    {
+      "root_id": "b16-train-30",
+      "ancestry": "root-b16-train-30",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910078,
+      "action_seed": 920078
+    },
+    {
+      "root_id": "b16-train-31",
+      "ancestry": "root-b16-train-31",
+      "split": "training",
+      "blocks": 16,
+      "generation_seed": 910079,
+      "action_seed": 920079
+    },
+    {
+      "root_id": "b16-dev-00",
+      "ancestry": "root-b16-dev-00",
+      "split": "development",
+      "blocks": 16,
+      "generation_seed": 910080,
+      "action_seed": 920080
+    },
+    {
+      "root_id": "b16-dev-01",
+      "ancestry": "root-b16-dev-01",
+      "split": "development",
+      "blocks": 16,
+      "generation_seed": 910081,
+      "action_seed": 920081
+    },
+    {
+      "root_id": "b16-dev-02",
+      "ancestry": "root-b16-dev-02",
+      "split": "development",
+      "blocks": 16,
+      "generation_seed": 910082,
+      "action_seed": 920082
+    },
+    {
+      "root_id": "b16-dev-03",
+      "ancestry": "root-b16-dev-03",
+      "split": "development",
+      "blocks": 16,
+      "generation_seed": 910083,
+      "action_seed": 920083
+    },
+    {
+      "root_id": "b16-dev-04",
+      "ancestry": "root-b16-dev-04",
+      "split": "development",
+      "blocks": 16,
+      "generation_seed": 910084,
+      "action_seed": 920084
+    },
+    {
+      "root_id": "b16-dev-05",
+      "ancestry": "root-b16-dev-05",
+      "split": "development",
+      "blocks": 16,
+      "generation_seed": 910085,
+      "action_seed": 920085
+    },
+    {
+      "root_id": "b16-dev-06",
+      "ancestry": "root-b16-dev-06",
+      "split": "development",
+      "blocks": 16,
+      "generation_seed": 910086,
+      "action_seed": 920086
+    },
+    {
+      "root_id": "b16-dev-07",
+      "ancestry": "root-b16-dev-07",
+      "split": "development",
+      "blocks": 16,
+      "generation_seed": 910087,
+      "action_seed": 920087
+    },
+    {
+      "root_id": "b16-confirm-00",
+      "ancestry": "root-b16-confirm-00",
+      "split": "confirmation",
+      "blocks": 16,
+      "generation_seed": 910088,
+      "action_seed": 920088
+    },
+    {
+      "root_id": "b16-confirm-01",
+      "ancestry": "root-b16-confirm-01",
+      "split": "confirmation",
+      "blocks": 16,
+      "generation_seed": 910089,
+      "action_seed": 920089
+    },
+    {
+      "root_id": "b16-confirm-02",
+      "ancestry": "root-b16-confirm-02",
+      "split": "confirmation",
+      "blocks": 16,
+      "generation_seed": 910090,
+      "action_seed": 920090
+    },
+    {
+      "root_id": "b16-confirm-03",
+      "ancestry": "root-b16-confirm-03",
+      "split": "confirmation",
+      "blocks": 16,
+      "generation_seed": 910091,
+      "action_seed": 920091
+    },
+    {
+      "root_id": "b16-confirm-04",
+      "ancestry": "root-b16-confirm-04",
+      "split": "confirmation",
+      "blocks": 16,
+      "generation_seed": 910092,
+      "action_seed": 920092
+    },
+    {
+      "root_id": "b16-confirm-05",
+      "ancestry": "root-b16-confirm-05",
+      "split": "confirmation",
+      "blocks": 16,
+      "generation_seed": 910093,
+      "action_seed": 920093
+    },
+    {
+      "root_id": "b16-confirm-06",
+      "ancestry": "root-b16-confirm-06",
+      "split": "confirmation",
+      "blocks": 16,
+      "generation_seed": 910094,
+      "action_seed": 920094
+    },
+    {
+      "root_id": "b16-confirm-07",
+      "ancestry": "root-b16-confirm-07",
+      "split": "confirmation",
+      "blocks": 16,
+      "generation_seed": 910095,
+      "action_seed": 920095
+    }
+  ],
+  "generator": {
+    "schema": "aic-layout-generator-v1",
+    "blocks": [
+      12,
+      20
+    ],
+    "edges_per_block": [
+      1.25,
+      1.5
+    ],
+    "gap": [
+      1,
+      5
+    ],
+    "margin": 6,
+    "max_cells": 65536,
+    "max_attempts": 12,
+    "max_pair_trials": 512,
+    "ports_per_pair": 8,
+    "route_work_per_call": 12000,
+    "route_work_per_attempt": 600000,
+    "max_bridges_per_route": 4,
+    "max_degree": 5,
+    "long_link_fraction": 0.4,
+    "min_branch_blocks": 1,
+    "min_merge_blocks": 1,
+    "min_connections": {},
+    "transports": [
+      "belt",
+      "pipe"
+    ],
+    "facility_ids": [],
+    "acyclic": false
+  },
+  "candidates": {
+    "translation_steps": [
+      -2,
+      -1,
+      1,
+      2
+    ],
+    "band_counts": [
+      1,
+      2
+    ],
+    "structural_band_mask": true
+  },
+  "session": {
+    "max_actions": 32,
+    "elapsed_ms": 900000,
+    "route_expansions": 50000,
+    "max_total_route_expansions": 1600000,
+    "search_padding": 4
+  },
+  "identity": {
+    "max_individualization_nodes": 100000
+  },
+  "workers": 4,
+  "max_elapsed_ms": 900000,
+  "max_output_bytes": 4294967296,
+  "metadata_reserve_bytes": 16777216
+}

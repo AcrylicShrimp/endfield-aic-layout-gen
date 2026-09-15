@@ -4,3 +4,4 @@ pub mod input;
 pub mod learning;
 pub mod physical_editor;
 pub use full_factory::generation;
+mod worker_pool;

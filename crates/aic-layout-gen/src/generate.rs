@@ -70,10 +70,22 @@ impl<'a> Generator<'a> {
     /// Return a fully routed, independently validated layout or explicit exhaustion.
     /// Retry seeds and all unsuccessful attempt summaries are retained.
     pub fn generate(&self, seed: u64) -> Result<Generated, Failure> {
+        self.generate_until(seed, || false)
+    }
+
+    /// Generate while checking cancellation between bounded construction units.
+    pub fn generate_until(
+        &self,
+        seed: u64,
+        mut cancelled: impl FnMut() -> bool,
+    ) -> Result<Generated, Failure> {
         let started = Instant::now();
         let mut seeds = Rng::new(seed);
         let mut attempts = vec![];
         for ordinal in 0..self.config.max_attempts {
+            if cancelled() {
+                return Err(interrupted(seed, attempts));
+            }
             let attempt_seed = seeds.next_u64();
             let mut rng = Rng::new(attempt_seed);
             let n = self.config.blocks[0]
@@ -108,10 +120,21 @@ impl<'a> Generator<'a> {
                     continue;
                 }
             };
-            let result = self.connect(&packing, target, &mut rng, &mut attempt);
+            if cancelled() {
+                attempt.status = "interrupted".into();
+                attempt.elapsed_ms = clock.elapsed().as_secs_f64() * 1000.0;
+                attempts.push(attempt);
+                return Err(interrupted(seed, attempts));
+            }
+            let result = self.connect(&packing, target, &mut rng, &mut attempt, &mut cancelled);
             attempt.elapsed_ms = clock.elapsed().as_secs_f64() * 1000.0;
             match result {
                 Ok(Some(layout)) => {
+                    if cancelled() {
+                        attempt.status = "interrupted".into();
+                        attempts.push(attempt);
+                        return Err(interrupted(seed, attempts));
+                    }
                     let before = Instant::now();
                     let metrics = match validate(&layout, self.catalogs) {
                         Ok(v) => v,
@@ -126,6 +149,11 @@ impl<'a> Generator<'a> {
                         }
                     };
                     let validation_ms = before.elapsed().as_secs_f64() * 1000.0;
+                    if cancelled() {
+                        attempt.status = "interrupted".into();
+                        attempts.push(attempt);
+                        return Err(interrupted(seed, attempts));
+                    }
                     if metrics.branch_blocks < self.config.min_branch_blocks
                         || metrics.merge_blocks < self.config.min_merge_blocks
                     {
@@ -174,6 +202,7 @@ impl<'a> Generator<'a> {
         target: usize,
         rng: &mut Rng,
         attempt: &mut Attempt,
+        cancelled: &mut dyn FnMut() -> bool,
     ) -> Result<Option<Layout>, Diagnostic> {
         let c = &self.config;
         let n = packing.blocks.len();
@@ -239,6 +268,10 @@ impl<'a> Generator<'a> {
             max_y: packing.height - 1,
         };
         for _ in 0..c.max_pair_trials {
+            if cancelled() {
+                attempt.status = "interrupted".into();
+                return Ok(None);
+            }
             if connections.len() >= target {
                 attempt.status = "graph-target-missed".into();
                 break;
@@ -295,6 +328,10 @@ impl<'a> Generator<'a> {
             }
             rng.shuffle(&mut port_pairs);
             for (sp, tp) in port_pairs.into_iter().take(c.ports_per_pair) {
+                if cancelled() {
+                    attempt.status = "interrupted".into();
+                    return Ok(None);
+                }
                 tried.insert((s, sp, t, tp));
                 let (a, b) = (&packing.ports[s][sp], &packing.ports[t][tp]);
                 let tr = layer(a.transport);
@@ -367,6 +404,10 @@ impl<'a> Generator<'a> {
                     .routing_statuses
                     .entry(result.status.into())
                     .or_default() += 1;
+                if cancelled() {
+                    attempt.status = "interrupted".into();
+                    return Ok(None);
+                }
                 if result.status != "found" {
                     continue;
                 }
@@ -437,6 +478,18 @@ impl<'a> Generator<'a> {
             attempt.status = "pair-trials-exhausted".into();
         }
         Ok(None)
+    }
+}
+
+fn interrupted(seed: u64, attempts: Vec<Attempt>) -> Failure {
+    Failure {
+        seed,
+        diagnostic: failure(
+            "generation-interrupted",
+            seed,
+            "Generation was interrupted before a complete source was admitted",
+        ),
+        attempts,
     }
 }
 

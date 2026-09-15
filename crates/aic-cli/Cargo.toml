@@ -7,7 +7,8 @@ rust-version.workspace = true
 publish = false
 
 [features]
-learning = ["dep:aic-learning", "aic-learning/libtorch"]
+outcomes = ["dep:aic-learning", "aic-learning/outcomes"]
+learning = ["outcomes", "aic-learning/libtorch"]
 
 [dependencies]
 aic-data.workspace = true

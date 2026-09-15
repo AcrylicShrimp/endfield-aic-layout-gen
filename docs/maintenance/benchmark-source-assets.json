@@ -67,6 +67,7 @@
     "layout-rl/visual-comparison.json",
     "layout-sequential/plan.json",
     "layout-sequential/train.json",
+    "physical-outcomes/config.json",
     "user-layout-reconstruction/citron-powder-03.json",
     "user-layout-reconstruction/completion-envelope.json",
     "user-layout-reconstruction/enriched-iron-01.json",

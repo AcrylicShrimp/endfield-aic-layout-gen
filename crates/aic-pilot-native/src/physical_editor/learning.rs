@@ -63,6 +63,7 @@ pub struct Domain {
 pub struct Observation {
     pub input: Arc<Input>,
     pub domain: Arc<Domain>,
+    pub current_ports: Arc<Vec<Option<String>>>,
     pub handle: u64,
     pub source_sha256: String,
     pub revision: u64,
@@ -280,9 +281,14 @@ impl Learning {
     ) -> Result<Observation> {
         let prepared = self.prepare_domain(draft, revision, context.attempts, options)?;
         let input = self.build(draft, revision, context, options)?;
+        let mut current_ports = vec![None; input.node_static.len()];
+        for (compiled, selected) in draft.selected_ports.iter().enumerate() {
+            current_ports[self.tables.nodes[compiled]] = selected.clone();
+        }
         Ok(Observation {
             input,
             domain: prepared.prefix,
+            current_ports: Arc::new(current_ports),
             handle: prepared.actions.handle,
             source_sha256: context.source_sha256.to_owned(),
             revision,

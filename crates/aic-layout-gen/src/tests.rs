@@ -84,6 +84,18 @@ fn complete_generation_is_deterministic_and_satisfies_requested_graph_quality() 
 }
 
 #[test]
+fn cancellation_retains_an_explicit_generation_failure() {
+    let loaded = catalogs();
+    let generator = Generator::new(&loaded.catalogs, Config::default()).unwrap();
+    let failure = generator.generate_until(1000, || true).unwrap_err();
+    assert_eq!(
+        failure.diagnostic.code,
+        "aic-layout-gen.generation-interrupted"
+    );
+    assert!(failure.attempts.is_empty());
+}
+
+#[test]
 fn independent_validation_rejects_corrupted_obligations_ports_capacity_and_bridges() {
     let loaded = catalogs();
     let good = Generator::new(&loaded.catalogs, Config::default())

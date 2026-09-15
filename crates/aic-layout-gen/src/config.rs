@@ -2,7 +2,7 @@ use aic_layout::{geometry::Diagnostic, logistics::TransportKind, validation::Cat
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub schema: String,

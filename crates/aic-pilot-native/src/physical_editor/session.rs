@@ -59,6 +59,9 @@ pub struct PhysicalSessionOutcome {
     pub done: bool,
     pub work: EditWork,
     pub best_metrics: Metrics,
+    pub current_pending: Option<usize>,
+    pub current_conflicts: Option<usize>,
+    pub current_metrics: Option<Metrics>,
     pub diagnostics: Vec<super::PhysicalEditorDiagnostic>,
 }
 
@@ -102,16 +105,16 @@ impl ProceduralSession {
         catalogs: &validation::Catalogs,
         limits: PhysicalSessionLimits,
     ) -> Result<Self> {
-        limits.validate()?;
         let admission = ProceduralAdmission::compile(source, catalogs)?;
-        let metrics =
-            validation::validate(&admission.owner.original, catalogs).map_err(|failure| {
-                error(
-                    "source-validation",
-                    failure.entity.to_string(),
-                    failure.message,
-                )
-            })?;
+        Self::from_admission(admission, limits)
+    }
+
+    pub fn from_admission(
+        admission: ProceduralAdmission,
+        limits: PhysicalSessionLimits,
+    ) -> Result<Self> {
+        limits.validate()?;
+        let metrics = admission.initial_metrics.clone();
         let learning = super::learning::Learning::new(admission.problem.clone(), &admission.draft)?;
         Ok(Self {
             current: admission.draft.clone(),
@@ -220,6 +223,9 @@ impl ProceduralSession {
                     done: self.done(),
                     work: EditWork::default(),
                     best_metrics: self.best_metrics.clone(),
+                    current_pending: None,
+                    current_conflicts: None,
+                    current_metrics: None,
                     diagnostics: vec![failure],
                 }
             }
@@ -254,6 +260,9 @@ impl ProceduralSession {
         let mut status = "rejected";
         let mut diagnostics = Vec::new();
         let mut step_work = EditWork::default();
+        let mut current_pending = None;
+        let mut current_conflicts = None;
+        let mut current_metrics = None;
         if !charged {
             diagnostics.push(error(
                 "budget-exhausted",
@@ -298,6 +307,13 @@ impl ProceduralSession {
                                 diagnostics.push(failure);
                                 if !elapsed {
                                     status = "draft_accepted";
+                                    current_pending = Some(
+                                        next.paths.iter().filter(|path| path.is_none()).count(),
+                                    );
+                                    current_conflicts = Some(super::conflicts_validated(
+                                        &self.admission.problem,
+                                        &next,
+                                    ));
                                     self.current = next;
                                     self.revision += 1;
                                 }
@@ -325,6 +341,7 @@ impl ProceduralSession {
                                                     &layout, catalogs,
                                                 )
                                                 .expect("export performs the same validation");
+                                                current_metrics = Some(metrics.clone());
                                                 status = "validated";
                                                 if metric_key(&metrics)
                                                     < metric_key(&self.best_metrics)
@@ -337,6 +354,13 @@ impl ProceduralSession {
                                             Err(failure) => diagnostics.push(failure),
                                         }
                                     }
+                                    current_pending = Some(
+                                        next.paths.iter().filter(|path| path.is_none()).count(),
+                                    );
+                                    current_conflicts = Some(super::conflicts_validated(
+                                        &self.admission.problem,
+                                        &next,
+                                    ));
                                     self.current = next;
                                     self.revision += 1;
                                 }
@@ -355,6 +379,9 @@ impl ProceduralSession {
             done: self.done(),
             work: step_work,
             best_metrics: self.best_metrics.clone(),
+            current_pending,
+            current_conflicts,
+            current_metrics,
             diagnostics,
         }
     }
