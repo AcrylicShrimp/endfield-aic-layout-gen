@@ -14,7 +14,7 @@ procedural seed cannot permanently block resume or overlap another root.
 
 The registered configuration is
 [`tools/native-training/physical-outcome-online-8h.json`](../../tools/native-training/physical-outcome-online-8h.json).
-It alternates 8-block and 16-block roots. Training and development use disjoint
+It alternates 12-block and 20-block roots. Training and development use disjoint
 generation and action seed namespaces. Every 100 updates, the runner generates
 16 separate development roots, evaluates them once, and discards them.
 
