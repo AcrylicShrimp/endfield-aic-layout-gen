@@ -5,7 +5,7 @@ mod changes;
 mod groups;
 mod movement;
 mod poses;
-pub mod rng;
+pub use aic_layout::rng;
 mod routing;
 mod selection;
 pub mod source;

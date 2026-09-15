@@ -31,21 +31,21 @@ const STAGE: &str = "item-catalog-validation";
 
 pub const SUPPORTED_ITEM_CATALOG_SCHEMA_VERSION: u32 = 1;
 
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[serde(rename_all = "kebab-case")]
 pub enum TransportKind {
     Belt,
     Pipe,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ItemCatalog {
     pub schema_version: u32,
     pub items: Vec<ItemDefinition>,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct ItemDefinition {
     pub id: String,

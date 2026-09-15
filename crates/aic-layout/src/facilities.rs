@@ -18,7 +18,7 @@ const STAGE: &str = "facility-catalog-validation";
 
 pub const SUPPORTED_FACILITY_CATALOG_SCHEMA_VERSION: u32 = 3;
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct FacilityCatalog {
     pub schema_version: u32,
@@ -31,7 +31,7 @@ impl FacilityCatalog {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct FacilityDefinition {
     pub id: String,
@@ -81,7 +81,7 @@ pub enum FacilityPortEdge {
 }
 
 impl FacilityPortEdge {
-    pub(crate) fn rotated_clockwise(self, rotation: i64) -> Self {
+    pub fn rotated_clockwise(self, rotation: i64) -> Self {
         let quarter_turns = match rotation {
             0 => 0,
             90 => 1,

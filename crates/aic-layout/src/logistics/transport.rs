@@ -13,14 +13,14 @@ const STAGE: &str = "transport-catalog-validation";
 
 pub const SUPPORTED_TRANSPORT_CATALOG_SCHEMA_VERSION: u32 = 1;
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct TransportCatalog {
     pub schema_version: u32,
     pub transports: Vec<TransportDefinition>,
 }
 
-#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(deny_unknown_fields)]
 pub struct TransportDefinition {
     pub kind: TransportKind,

@@ -1,9 +1,9 @@
-mod stable_id;
+use aic_layout::stable_id;
 
-pub mod facilities;
+pub use aic_layout::facilities;
 pub mod layouts;
 pub mod localization;
-pub mod logistics;
+pub use aic_layout::logistics;
 pub mod recipes;
 pub mod research;
 pub mod work_control;

@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/aic-cli", "crates/aic-data", "crates/aic-pilot-native", "crates/aic-torch", "crates/aic-learning"]
+members = ["crates/aic-cli", "crates/aic-data", "crates/aic-pilot-native", "crates/aic-torch", "crates/aic-learning", "crates/aic-layout", "crates/aic-routing", "crates/aic-layout-gen"]
 resolver = "3"
 
 [workspace.package]
@@ -8,6 +8,8 @@ license = "MIT OR Apache-2.0"
 rust-version = "1.95"
 
 [workspace.dependencies]
+aic-layout = { path = "crates/aic-layout" }
+aic-routing = { path = "crates/aic-routing" }
 aic-data = { path = "crates/aic-data" }
 aic-torch = { path = "crates/aic-torch" }
 aic-learning = { path = "crates/aic-learning" }

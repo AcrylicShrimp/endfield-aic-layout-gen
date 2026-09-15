@@ -10,7 +10,7 @@ use std::collections::VecDeque;
 use indexmap::IndexSet;
 
 use super::PathOptions;
-use crate::full_factory::types::{Bounds, Point};
+use aic_layout::geometry::{Bounds, Point};
 
 pub(super) struct Probe {
     pub status: &'static str,

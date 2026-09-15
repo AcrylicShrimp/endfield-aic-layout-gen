@@ -1,6 +1,6 @@
 use std::collections::BTreeSet;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::facilities::{
     FacilityPortDirection, FacilityPortEdge, FacilityPortPosition, ValidatedFacilityCatalog,
@@ -33,11 +33,7 @@ pub struct PlacedFacilityPort {
     pub connection: WorldGridPosition,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-pub struct WorldGridPosition {
-    pub x: i64,
-    pub y: i64,
-}
+pub use aic_layout::geometry::Point as WorldGridPosition;
 
 #[derive(Debug, Clone, Serialize, PartialEq, Eq)]
 pub struct FacilityPortProjectionDiagnostic {

@@ -2,6 +2,57 @@ use std::collections::{HashSet, VecDeque};
 
 use super::*;
 
+/// Explicit extraction/performance check; never part of normal routing or tests.
+#[test]
+#[ignore]
+fn route_kernel_timing() {
+    let bounds = Bounds {
+        min_x: 0,
+        min_y: 0,
+        max_x: 63,
+        max_y: 63,
+    };
+    let blocked: IndexSet<_> = (8..56)
+        .step_by(8)
+        .flat_map(|x| {
+            (0..64)
+                .filter(move |y| *y != (x * 3) % 59 && *y != 62)
+                .map(move |y| Point { x, y })
+        })
+        .collect();
+    let crossings = Crossings::new();
+    let start = std::time::Instant::now();
+    let mut expanded = 0;
+    let mut steps = 0;
+    for i in 0..200 {
+        let result = shortest_path(
+            Point { x: 2, y: i % 61 },
+            Point {
+                x: 61,
+                y: (i * 7) % 61,
+            },
+            &blocked,
+            bounds,
+            PathOptions {
+                first: None,
+                last: None,
+                work_budget: 100_000,
+                crossings: &crossings,
+                crossing_limit: 0,
+                allow_zero_length: false,
+            },
+        )
+        .unwrap();
+        assert_eq!(result.status, "found");
+        expanded += result.expanded;
+        steps += result.steps.unwrap();
+    }
+    eprintln!(
+        "route_kernel_timing queries=200 expanded={expanded} steps={steps} elapsed_ms={:.3}",
+        start.elapsed().as_secs_f64() * 1000.0
+    );
+}
+
 // Independent forward exploration of the finite crossing-count walk graph.
 // This is intentionally stronger than a simple-path witness: a negative
 // preflight must not discard even a reachable walk in the actual bounded graph.

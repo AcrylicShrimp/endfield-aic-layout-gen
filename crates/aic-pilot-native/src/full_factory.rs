@@ -4,7 +4,7 @@ mod catalog;
 mod chains;
 pub mod generation;
 pub(crate) mod identity;
-mod path;
+use aic_routing as path;
 #[cfg(test)]
 mod tests;
 mod types;

@@ -3,15 +3,30 @@
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 
-use aic_data::layouts::FactoryEditCatalogs;
-use aic_data::logistics::{LogisticsComponentKind, TransportKind};
-use aic_data::recipes::Rate;
+use aic_layout::logistics::{LogisticsComponentKind, TransportKind};
+use aic_layout::rate::Rate;
 use indexmap::{IndexMap, IndexSet};
 use serde::Serialize;
 
-use super::catalog::cardinal_index;
-use super::chains::Chain;
-use super::types::*;
+use aic_layout::geometry::*;
+use aic_layout::logistics::ValidatedLogisticsComponentCatalog;
+use aic_layout::projection::cardinal_index;
+type Result<T> = std::result::Result<T, Diagnostic>;
+
+/// Borrowed routed geometry; routing has no dependency on factory recipes.
+pub struct Carrier<'a> {
+    pub id: usize,
+    pub network: usize,
+    pub transport: TransportKind,
+    pub rate: Rate,
+    pub cells: &'a [Point],
+}
+
+pub struct RouteJob {
+    pub id: usize,
+    pub transport: TransportKind,
+    pub rate: Rate,
+}
 
 mod reachability;
 #[cfg(test)]
@@ -31,23 +46,21 @@ pub struct Crossing {
 pub type Crossings = IndexMap<(Point, usize), Crossing>;
 
 pub fn crossing_options(
-    carriers: &[Chain],
-    job: &Chain,
-    catalogs: &FactoryEditCatalogs,
+    carriers: &[Carrier<'_>],
+    job: &RouteJob,
+    catalogs: &ValidatedLogisticsComponentCatalog,
     excluded: &IndexSet<Point>,
 ) -> Crossings {
-    let mut visits = IndexMap::<Point, Vec<(&Chain, usize)>>::new();
+    let mut visits = IndexMap::<Point, Vec<(&Carrier<'_>, usize)>>::new();
     for c in carriers.iter().filter(|c| c.transport == job.transport) {
         for (i, p) in c.cells.iter().enumerate() {
             visits.entry(*p).or_default().push((c, i));
         }
     }
     let sufficient = |quantity: i64, duration: i64, rate: Rate| {
-        i128::from(quantity) * 1000 * i128::from(rate.denominator)
-            >= i128::from(rate.numerator) * i128::from(duration)
+        aic_layout::validation::within_capacity(rate, quantity, duration)
     };
     let poses: Vec<_> = catalogs
-        .components
         .catalog()
         .components
         .iter()

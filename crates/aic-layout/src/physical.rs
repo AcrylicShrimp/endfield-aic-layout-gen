@@ -1,0 +1,101 @@
+//! Recipe-independent physical problems and their routed solutions.
+//!
+//! A connection's node identities, material label and rate belong to the problem;
+//! selected physical ports and paths belong to the solution. Catalogs are loaded
+//! separately and can be shared by every layout in a batch.
+
+use serde::{Deserialize, Serialize};
+
+use crate::{geometry::Point, logistics::TransportKind, rate::Rate};
+
+pub const SCHEMA: &str = "aic-physical-layout-v1";
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Layout {
+    pub schema: String,
+    pub catalog_sha256: String,
+    pub problem: Problem,
+    pub solution: Solution,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Problem {
+    pub blocks: Vec<Block>,
+    pub connections: Vec<Connection>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Block {
+    pub id: String,
+    pub facility: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Connection {
+    pub id: String,
+    pub source: String,
+    pub target: String,
+    /// An opaque flow-equivalence label, not a recipe or catalog item embedding.
+    pub commodity: String,
+    pub transport: TransportKind,
+    pub rate: Rate,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Solution {
+    pub poses: Vec<Pose>,
+    pub routes: Vec<Route>,
+    pub bridges: Vec<Bridge>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Pose {
+    pub block: String,
+    pub position: Point,
+    pub rotation: i64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Route {
+    pub connection: String,
+    pub source_port: String,
+    pub target_port: String,
+    pub cells: Vec<Point>,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(deny_unknown_fields)]
+pub struct Bridge {
+    pub id: String,
+    pub component: String,
+    pub position: Point,
+    pub rotation: i64,
+    pub connections: [String; 2],
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct Metrics {
+    pub width: i64,
+    pub height: i64,
+    pub area: u64,
+    pub body_cells: u64,
+    pub transport_cells: u64,
+    pub turns: u64,
+    pub occupancy: f64,
+    pub weak_components: usize,
+    pub branch_blocks: usize,
+    pub merge_blocks: usize,
+    pub max_degree: usize,
+    pub mean_port_distance: f64,
+    pub mean_detour: f64,
+    pub belt_connections: usize,
+    pub pipe_connections: usize,
+    pub bridges: usize,
+}

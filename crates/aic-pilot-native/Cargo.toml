@@ -10,6 +10,8 @@ name = "aic_pilot_native"
 crate-type = ["rlib"]
 
 [dependencies]
+aic-layout.workspace = true
+aic-routing.workspace = true
 aic-data.workspace = true
 indexmap.workspace = true
 crossbeam-channel.workspace = true

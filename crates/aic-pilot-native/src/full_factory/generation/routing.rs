@@ -421,7 +421,22 @@ fn attempt(
         } else {
             vec![]
         };
-        let sites = path::crossing_options(&carriers, c, catalogs, &excluded);
+        let views: Vec<_> = carriers
+            .iter()
+            .map(|c| path::Carrier {
+                id: c.id,
+                network: c.network,
+                transport: c.transport,
+                rate: c.rate,
+                cells: &c.cells,
+            })
+            .collect();
+        let route_job = path::RouteJob {
+            id: c.id,
+            transport: c.transport,
+            rate: c.rate,
+        };
+        let sites = path::crossing_options(&views, &route_job, &catalogs.components, &excluded);
         let remaining = work_budget.saturating_sub(expansions);
         let result = if remaining == 0 {
             path::PathResult::stopped("work-budget", 0)

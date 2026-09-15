@@ -45,10 +45,33 @@ dependencies = [
 name = "aic-data"
 version = "0.1.0"
 dependencies = [
+ "aic-layout",
  "crossbeam-channel",
  "good_lp",
  "microlp",
  "pumpkin-solver",
+ "serde",
+ "serde_json",
+ "sha2 0.11.0",
+]
+
+[[package]]
+name = "aic-layout"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "aic-layout-gen"
+version = "0.1.0"
+dependencies = [
+ "aic-layout",
+ "aic-routing",
+ "anyhow",
+ "clap",
+ "indexmap",
  "serde",
  "serde_json",
  "sha2 0.11.0",
@@ -72,11 +95,23 @@ name = "aic-pilot-native"
 version = "0.1.0"
 dependencies = [
  "aic-data",
+ "aic-layout",
+ "aic-routing",
  "crossbeam-channel",
  "indexmap",
  "serde",
  "serde_json",
  "sha2 0.11.0",
+]
+
+[[package]]
+name = "aic-routing"
+version = "0.1.0"
+dependencies = [
+ "aic-layout",
+ "indexmap",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
