@@ -1,0 +1,83 @@
+{
+  "schema": "aic-physical-outcome-online-pretraining-v1",
+  "model": {
+    "width": 40,
+    "message_rounds": 2,
+    "node_features": 41,
+    "edge_features": 37,
+    "global_features": 15,
+    "action_features": 12,
+    "port_features": 11
+  },
+  "initialization_seed": 950000,
+  "generator": {
+    "schema": "aic-layout-generator-v1",
+    "blocks": [12, 20],
+    "edges_per_block": [1.25, 1.5],
+    "gap": [1, 5],
+    "margin": 6,
+    "max_cells": 65536,
+    "max_attempts": 12,
+    "max_pair_trials": 512,
+    "ports_per_pair": 8,
+    "route_work_per_call": 12000,
+    "route_work_per_attempt": 600000,
+    "max_bridges_per_route": 4,
+    "max_degree": 5,
+    "long_link_fraction": 0.4,
+    "min_branch_blocks": 1,
+    "min_merge_blocks": 1,
+    "min_connections": {},
+    "transports": ["belt", "pipe"],
+    "facility_ids": [],
+    "acyclic": false
+  },
+  "candidates": {
+    "translation_steps": [-2, -1, 1, 2],
+    "band_counts": [1, 2],
+    "structural_band_mask": true
+  },
+  "session": {
+    "max_actions": 32,
+    "elapsed_ms": 900000,
+    "route_expansions": 50000,
+    "max_total_route_expansions": 1600000,
+    "search_padding": 4
+  },
+  "workers": 16,
+  "roots_per_update": 16,
+  "roots_per_minibatch": 4,
+  "development_roots": 16,
+  "development_interval_updates": 100,
+  "checkpoint_interval_updates": 10,
+  "duration_seconds": 43200,
+  "train_generation_seed": 1000000000000,
+  "train_action_seed": 2000000000000,
+  "development_generation_seed": 3000000000000,
+  "development_action_seed": 4000000000000,
+  "optimizer": {
+    "learning_rate": 0.0003,
+    "beta1": 0.9,
+    "beta2": 0.999,
+    "epsilon": 1e-8,
+    "gradient_clip": 1.0
+  },
+  "count_scale": 64.0,
+  "losses": {
+    "completion": 1.0,
+    "changed": 0.25,
+    "pending_flag": 0.25,
+    "conflict_flag": 0.25,
+    "unchanged": 0.25,
+    "rejected": 0.25,
+    "pending_count": 0.25,
+    "conflict_count": 0.25,
+    "area": 0.5,
+    "transport": 0.25,
+    "turns": 0.25,
+    "route_budget": 0.25
+  },
+  "max_rss_bytes": 8589934592,
+  "max_output_bytes": 536870912,
+  "min_free_bytes": 2147483648
+}

@@ -34,6 +34,27 @@ pub enum LearningCommand {
         #[arg(long, default_value = "cuda:0")]
         device: String,
     },
+    /// Train the physical outcome encoder from disposable live-generated roots.
+    #[cfg(feature = "learning")]
+    PretrainOutcomesOnline {
+        #[arg(long)]
+        config: PathBuf,
+        /// Directory containing normalized facilities, transports and logistics components.
+        #[arg(long)]
+        catalog_root: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long, default_value = "cuda:0")]
+        device: String,
+        /// Stop after this total completed update count; useful for readiness runs.
+        #[arg(long)]
+        updates: Option<u64>,
+        /// Restore the latest committed update from this output directory.
+        #[arg(long)]
+        resume: bool,
+        #[arg(long)]
+        workers: Option<usize>,
+    },
     /// Recompute physical reservations from verified v1 panel payloads into a new directory.
     #[cfg(feature = "learning")]
     MigratePanel {
@@ -92,6 +113,8 @@ pub fn run(command: LearningCommand) -> Result<()> {
         #[cfg(feature = "learning")]
         LearningCommand::PretrainOutcomes { config, .. } => config,
         #[cfg(feature = "learning")]
+        LearningCommand::PretrainOutcomesOnline { config, .. } => config,
+        #[cfg(feature = "learning")]
         LearningCommand::MigratePanel { input: config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::Stop { output: config } => config,
@@ -139,6 +162,24 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             &dataset,
             &output,
             update::parse_device(&device)?,
+        ),
+        #[cfg(feature = "learning")]
+        LearningCommand::PretrainOutcomesOnline {
+            config,
+            catalog_root,
+            output,
+            device,
+            updates,
+            resume,
+            workers,
+        } => aic_learning::pretraining::run_online(
+            &config,
+            &catalog_root,
+            &output,
+            update::parse_device(&device)?,
+            updates,
+            resume,
+            workers,
         ),
         #[cfg(feature = "learning")]
         LearningCommand::MigratePanel {

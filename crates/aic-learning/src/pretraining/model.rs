@@ -6,7 +6,7 @@ use crate::{
     outcomes::storage::Row,
 };
 use aic_torch::{
-    Adam, AdamBackend, Generator,
+    Adam, AdamBackend, AdamState, Generator,
     tch::{Device, Kind, Tensor, no_grad},
 };
 use anyhow::{Result, ensure};
@@ -126,9 +126,25 @@ pub struct StepReport {
 
 impl Predictor {
     pub fn new(config: &Config, seed: u64, device: Device) -> Result<Self> {
-        let (order, values) = Model::initial_state(&config.model, seed)?;
-        let shared = Model::load(&config.model, &order, &values, device)?;
-        let input = config.model.width * 4 + config.model.action_features + 1;
+        Self::new_parts(
+            &config.model,
+            &config.optimizer,
+            &config.losses,
+            seed,
+            device,
+        )
+    }
+
+    pub fn new_parts(
+        model: &crate::schema::ModelConfig,
+        optimizer: &super::config::Optimizer,
+        losses: &super::config::Losses,
+        seed: u64,
+        device: Device,
+    ) -> Result<Self> {
+        let (order, values) = Model::initial_state(model, seed)?;
+        let shared = Model::load(model, &order, &values, device)?;
+        let input = model.width * 4 + model.action_features + 1;
         let bound = 1.0 / (input as f64).sqrt();
         let heads: Vec<(String, Tensor)> = vec![
             (
@@ -153,20 +169,21 @@ impl Predictor {
                     .map(|(name, value)| (name.clone(), value.shallow_clone())),
             )
             .collect();
+        let gradient_clip = optimizer.gradient_clip;
         let optimizer = Adam::new(
             parameters,
-            config.optimizer.learning_rate,
-            config.optimizer.beta1,
-            config.optimizer.beta2,
-            config.optimizer.epsilon,
+            optimizer.learning_rate,
+            optimizer.beta1,
+            optimizer.beta2,
+            optimizer.epsilon,
             AdamBackend::Foreach,
         )?;
         Ok(Self {
             shared,
             heads,
             optimizer,
-            weights: config.losses.values(),
-            gradient_clip: config.optimizer.gradient_clip,
+            weights: losses.values(),
+            gradient_clip,
             device,
         })
     }
@@ -258,6 +275,12 @@ impl Predictor {
     }
 
     pub fn checkpoint_snapshot(&mut self, shuffle: &mut Generator) -> Result<Tensors> {
+        let mut values = self.training_snapshot()?;
+        values.insert("rng.shuffle".into(), shuffle.state()?);
+        Ok(values)
+    }
+
+    pub fn training_snapshot(&mut self) -> Result<Tensors> {
         let mut values = self.parameter_snapshot();
         for (name, state) in self.optimizer.snapshot()? {
             let prefix = format!("adam.{name}");
@@ -273,7 +296,6 @@ impl Predictor {
                 );
             }
         }
-        values.insert("rng.shuffle".into(), shuffle.state()?);
         Ok(values)
     }
 
@@ -297,6 +319,39 @@ impl Predictor {
             }
             Ok(())
         })
+    }
+
+    pub fn restore_checkpoint(&mut self, values: &Tensors) -> Result<()> {
+        self.restore_parameters(values)?;
+        for index in 0..self.optimizer.named_parameters().len() {
+            let name = self.optimizer.named_parameters()[index].0.clone();
+            let prefix = format!("adam.{name}");
+            let step = values.get(&format!("{prefix}.step")).ok_or_else(|| {
+                anyhow::anyhow!("aic-learning.pretraining-checkpoint: missing Adam step for {name}")
+            })?;
+            let step = i64::try_from(step)?;
+            if step > 0 {
+                let mean = values.get(&format!("{prefix}.mean")).ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "aic-learning.pretraining-checkpoint: missing Adam mean for {name}"
+                    )
+                })?;
+                let square = values.get(&format!("{prefix}.square")).ok_or_else(|| {
+                    anyhow::anyhow!(
+                        "aic-learning.pretraining-checkpoint: missing Adam square for {name}"
+                    )
+                })?;
+                self.optimizer.restore_parameter(
+                    index,
+                    &AdamState {
+                        step,
+                        mean: mean.to_device(self.device),
+                        square: square.to_device(self.device),
+                    },
+                )?;
+            }
+        }
+        Ok(())
     }
 
     #[cfg(test)]
