@@ -1,4 +1,4 @@
-//! Cold restoration validates state and bound inputs; no legacy adapters.
+//! Direct current snapshots and one-time conversion of bound physical v2 snapshots.
 
 use super::*;
 
@@ -24,7 +24,7 @@ struct Checkpoint {
 impl Session {
     pub fn checkpoint(&self) -> Value {
         json!(Checkpoint {
-            schema: "declarative-edit-checkpoint-v2".into(),
+            schema: "declarative-edit-checkpoint-v3".into(),
             blueprint_sha256: self.blueprint_sha256.clone(),
             catalog_sha256: self.catalog_sha256.clone(),
             input_sha256: identity::digest(
@@ -65,10 +65,17 @@ impl Session {
     }
 
     pub fn from_checkpoint(input: &str, catalogs: Arc<crate::input::Catalogs>) -> Result<Self> {
-        let saved: Checkpoint =
+        let mut saved: Checkpoint =
             crate::input::decode(input).map_err(|e| error("checkpoint-schema", e, "checkpoint"))?;
-        if saved.schema != "declarative-edit-checkpoint-v2"
-            || saved.attempts > saved.config.max_actions
+        let legacy = saved.schema == "declarative-edit-checkpoint-v2";
+        if !legacy && saved.schema != "declarative-edit-checkpoint-v3" {
+            return Err(error(
+                "checkpoint-schema",
+                "Expected physical checkpoint v2 or v3",
+                saved.schema,
+            ));
+        }
+        if saved.attempts > saved.config.max_actions
             || saved.revision > saved.attempts
             || saved.work.route_expansions > saved.config.max_total_route_expansions
             || saved.work.preflight_expansions > saved.work.route_expansions
@@ -88,8 +95,50 @@ impl Session {
                 "checkpoint",
             ));
         }
+        if legacy {
+            if saved.config.schema != "declarative-edit-v1" {
+                return Err(error(
+                    "checkpoint-schema",
+                    "Physical v2 snapshot requires its original limits schema",
+                    "checkpoint",
+                ));
+            }
+            // V2 used only bounded nonnegative geometry. Check that before any
+            // original-coordinate chain arithmetic, then verify its recorded hash.
+            legacy_geometry(
+                &saved.original.placements,
+                saved
+                    .original
+                    .transport_networks
+                    .iter()
+                    .flat_map(|n| {
+                        n.cells
+                            .iter()
+                            .chain(n.segments.iter().flat_map(|s| [&s.from, &s.to]))
+                            .chain(n.terminals.iter().map(|t| &t.position))
+                    })
+                    .map(Point::from)
+                    .chain(
+                        saved
+                            .original
+                            .logistics_components
+                            .iter()
+                            .map(|c| Point::from(&c.position)),
+                    ),
+            )?;
+            saved.config.schema = SCHEMA.into();
+        }
         let mut session = Self::new(saved.request, saved.original, catalogs, saved.config)?;
-        if saved.blueprint_sha256 != session.blueprint_sha256
+        let legacy_blueprint = if legacy {
+            Some(identity::digest(&topology::compile(&session.original)?.0))
+        } else {
+            None
+        };
+        if saved.blueprint_sha256
+            != legacy_blueprint
+                .as_ref()
+                .unwrap_or(&session.blueprint_sha256)
+                .as_str()
             || saved.catalog_sha256 != session.catalog_sha256
         {
             return Err(error(
@@ -98,9 +147,53 @@ impl Session {
                 "checkpoint",
             ));
         }
+        let converted_best = if legacy {
+            for state in [&saved.state, &saved.best_state] {
+                legacy_geometry(
+                    &state.geometry.placements,
+                    state
+                        .anchors
+                        .iter()
+                        .copied()
+                        .chain(state.components.iter().map(Point::from))
+                        .chain(state.geometry.paths.iter().flatten().flatten().copied()),
+                )?;
+            }
+            // Validate the actual saved physical states before conversion.
+            let (_, metrics) = session.validate_state(&saved.best_state)?;
+            if saved.state != saved.best_state {
+                if saved.validated {
+                    session.validate_state(&saved.state)?;
+                } else {
+                    session.check_state(&saved.state)?;
+                }
+            }
+            frame::canonicalize(&session.blueprint, &mut saved.state, &session.catalogs.data)?;
+            frame::canonicalize(
+                &session.blueprint,
+                &mut saved.best_state,
+                &session.catalogs.data,
+            )?;
+            Some((session.witness(&saved.best_state)?, metrics))
+        } else {
+            for state in [&saved.state, &saved.best_state] {
+                if frame::from_state(&session.blueprint, state, &session.catalogs.data)?.origin
+                    != [0, 0]
+                {
+                    return Err(error(
+                        "checkpoint-frame",
+                        "Current physical snapshot must use canonical occupied coordinates",
+                        "checkpoint",
+                    ));
+                }
+            }
+            None
+        };
         // Admission already validated the initial state. Reuse validation when
         // current/best/initial snapshots identify the same state.
-        let (best, metrics) = if saved.best_state == session.state {
+        let (best, metrics) = if let Some(converted) = converted_best {
+            converted
+        } else if saved.best_state == session.state {
             (session.best.clone(), session.best_metrics.clone())
         } else {
             session.validate_state(&saved.best_state)?
@@ -112,7 +205,7 @@ impl Session {
                 "checkpoint",
             ));
         }
-        if saved.state != saved.best_state && saved.state != session.state {
+        if !legacy && saved.state != saved.best_state && saved.state != session.state {
             if saved.validated {
                 session.validate_state(&saved.state)?;
             } else {
@@ -131,4 +224,27 @@ impl Session {
         session.started = Instant::now();
         Ok(session)
     }
+}
+
+fn legacy_geometry(
+    placements: &[aic_data::layouts::FacilityPlacement],
+    points: impl IntoIterator<Item = Point>,
+) -> Result<()> {
+    let bounded = |x: i128| (0..=i128::from(GUARD)).contains(&x);
+    if placements.iter().any(|p| {
+        !bounded(p.x.into())
+            || !bounded(p.y.into())
+            || !bounded(i128::from(p.x) + i128::from(p.width))
+            || !bounded(i128::from(p.y) + i128::from(p.height))
+    }) || points
+        .into_iter()
+        .any(|p| !bounded(p.x.into()) || !bounded(p.y.into()))
+    {
+        return Err(error(
+            "checkpoint-coordinate",
+            "Legacy snapshot exceeds its recorded coordinate guard",
+            "checkpoint",
+        ));
+    }
+    Ok(())
 }

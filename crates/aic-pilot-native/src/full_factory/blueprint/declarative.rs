@@ -15,11 +15,14 @@ use super::*;
 
 mod checkpoint;
 mod edit;
+pub(super) mod frame;
+#[cfg(test)]
+mod frame_tests;
 pub(crate) mod learning;
 #[cfg(test)]
 mod tests;
 
-pub const SCHEMA: &str = "declarative-edit-v1";
+pub const SCHEMA: &str = "declarative-edit-v2";
 const GUARD: i64 = 1_000_000;
 
 fn error(code: &str, message: impl Into<String>, entity: impl Into<Value>) -> Diagnostic {
@@ -48,9 +51,16 @@ struct State {
     components: Vec<WorldGridPosition>,
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+enum DecisionSchema {
+    #[serde(rename = "declarative-edit-v2")]
+    Local,
+}
+
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct Decision {
+    schema: DecisionSchema,
     blueprint_sha256: String,
     revision: u64,
     action: Edit,
@@ -151,7 +161,8 @@ impl Session {
             ));
         }
         let metrics = accepted.metrics.unwrap();
-        let (blueprint, geometry) = topology::compile(&original)?;
+        let working = frame::working_witness(&original, &catalogs.data)?;
+        let (blueprint, geometry) = topology::compile(&working)?;
         let state = State {
             geometry,
             ports: blueprint
@@ -180,7 +191,7 @@ impl Session {
             catalog_sha256,
             best_state: state.clone(),
             state,
-            best: original,
+            best: working,
             best_metrics: metrics.clone(),
             initial_metrics: metrics,
             config,
@@ -349,6 +360,8 @@ impl Session {
         if repaired {
             state.geometry = candidate;
         }
+        frame::canonicalize(&self.blueprint, state, &self.catalogs.data)?;
+        let bp = self.blueprint_at(state);
         details["repair_batch_applied"] = json!(repaired);
         if !geometry::conflicts(&bp, &state.geometry).is_empty()
             || state.geometry.paths.iter().any(Option::is_none)
@@ -403,7 +416,16 @@ impl Session {
                 }
                 let mut next = self.state.clone();
                 self.edit(&mut next, decision.action)?;
-                if next == self.state {
+                if next.geometry == self.state.geometry
+                    && next.ports == self.state.ports
+                    && next.components == self.state.components
+                    && self.blueprint.nodes.iter().all(|n| {
+                        matches!(
+                            n.terminal.as_ref().map(|t| &t.endpoint),
+                            Some(TransportNetworkEndpoint::Facility { .. })
+                        ) || next.anchors[n.id] == self.state.anchors[n.id]
+                    })
+                {
                     status = "unchanged";
                     return Ok(());
                 }

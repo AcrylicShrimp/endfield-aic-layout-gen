@@ -46,6 +46,22 @@ For training, prepare a larger panel, for example 32 cases (16 per stratum).
 The panel path is an external configuration field; creating a replacement panel
 requires a new training run because checkpoint identity binds its actual inputs.
 
+## Physical coordinates
+
+The native limits/decision schema is `declarative-edit-v2`. Working geometry is
+normalized to its occupied minimum; outputs use that local frame while original
+source inputs retain their exact identity. Move destinations may be negative
+before the whole draft is rebased, and routing uses symmetric signed padding.
+Occupied-span, path-length, search-area and work limits still apply. Translating
+an entire factory does not create an improvement or a new physical state.
+
+Native physical snapshots use `declarative-edit-checkpoint-v3`. The v2 physical
+reader verifies its old bindings and saved state, then converts current/best
+geometry once without regenerating paths or losing pending obligations. This is
+separate from learned checkpoint continuation. The temporary graph schema has
+10 global fields: the previous seven plus occupied width, height and inverse
+coordinate scale. The following observation-plan cutover replaces that schema.
+
 ## Outputs and recovery
 
 Progress lines on stderr report new transitions, never repeated PPO/replay uses.
@@ -83,7 +99,7 @@ replay, optimizer or curriculum. Incomplete evaluation cannot replace the best.
 ## Migration and bounded comparison
 
 Training configurations use `aic-training-v1`. Checkpoint manifests use
-`aic-training-checkpoint-v3`; this is the single learned-state format version.
+`aic-training-checkpoint-v4`; this is the single learned-state format version.
 When model input, action or replay meaning changes, increment that version even
 if tensor shapes stay the same. Existing config binding covers runtime settings.
 Restore checks the manifest version before loading learner, Adam, RNG, best-model

@@ -7,7 +7,7 @@ use serde_json::json;
 use super::super::path;
 use super::*;
 
-const COORDINATE_GUARD: i64 = 1_000_000;
+use super::declarative::frame::PhysicalFrame;
 
 pub(super) fn conflicts(bp: &Blueprint, draft: &Draft) -> Vec<Value> {
     let mut conflicts = Vec::new();
@@ -95,18 +95,14 @@ pub(super) fn check_path(
     edge: &Edge,
     cells: &[Point],
 ) -> Result<()> {
-    if cells.is_empty()
-        || cells.len() > 250_000
-        || cells.iter().any(|p| {
-            !(0..=COORDINATE_GUARD).contains(&p.x) || !(0..=COORDINATE_GUARD).contains(&p.y)
-        })
-    {
+    if cells.is_empty() || cells.len() > 250_000 {
         return Err(fail(
             "route-geometry",
-            "Route is empty or exceeds the path/coordinate work guard",
+            "Route is empty or exceeds the path work guard",
             edge.id,
         ));
     }
+    PhysicalFrame::from_points(cells.iter().copied())?;
     let start = topology::position(&bp.nodes[edge.source], draft, catalogs)?;
     let end = topology::position(&bp.nodes[edge.target], draft, catalogs)?;
     if cells[0] != start || cells[cells.len() - 1] != end {
@@ -175,12 +171,13 @@ pub(super) fn repair(
             },
         ]
     }));
-    let bounds = Bounds {
-        min_x: (points.iter().map(|p| p.x).min().unwrap() - padding).max(0),
-        min_y: (points.iter().map(|p| p.y).min().unwrap() - padding).max(0),
-        max_x: (points.iter().map(|p| p.x).max().unwrap() + padding).min(COORDINATE_GUARD),
-        max_y: (points.iter().map(|p| p.y).max().unwrap() + padding).min(COORDINATE_GUARD),
-    };
+    points.extend(bp.components.iter().map(|c| Point::from(&c.position)));
+    let bounds = PhysicalFrame::from_points(
+        points
+            .into_iter()
+            .chain(draft.paths.iter().flatten().flatten().copied()),
+    )?
+    .padded(padding)?;
     if i128::from(bounds.width()) * i128::from(bounds.height()) > 250_000 {
         return Err(fail(
             "routing-area-guard",

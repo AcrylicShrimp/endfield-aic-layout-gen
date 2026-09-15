@@ -18,7 +18,7 @@ if (!Number.isSafeInteger(ordinal) || ordinal <= 0) throw new Error('Invalid che
 const checkpoint = `checkpoints/${String(ordinal).padStart(8, '0')}`;
 const read = async file => JSON.parse(await readFile(file, 'utf8'));
 const manifest = await read(path.join(source, checkpoint, 'manifest.json'));
-const expectedSchema = 'aic-training-checkpoint-v3';
+const expectedSchema = 'aic-training-checkpoint-v4';
 if (manifest.schema !== expectedSchema) {
   throw new Error(`aic-learning.checkpoint-version: ${path.join(source, checkpoint, 'manifest.json')}: expected ${expectedSchema}; actual ${JSON.stringify(manifest.schema ?? null)}`);
 }

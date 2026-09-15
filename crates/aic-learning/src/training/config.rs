@@ -108,7 +108,7 @@ impl Config {
         ensure!(
             self.model.node_features == 24
                 && self.model.edge_features == 14
-                && self.model.global_features == 7
+                && self.model.global_features == aic_pilot_native::learning::GLOBAL_FEATURES as i64
                 && self.model.action_features == 12
                 && self.model.port_features == 12,
             "aic-learning.model-schema: model dimensions differ from native graph feature schema"

@@ -46,16 +46,7 @@ impl Session {
                 "state",
             ));
         }
-        let bounded = |p: Point| (0..=GUARD).contains(&p.x) && (0..=GUARD).contains(&p.y);
-        if state.anchors.iter().any(|p| !bounded(*p))
-            || state.components.iter().any(|p| !bounded(Point::from(p)))
-        {
-            return Err(error(
-                "coordinate-guard",
-                "Anchor or component exceeds the coordinate work guard",
-                "state",
-            ));
-        }
+        frame::from_state(&self.blueprint, state, &self.catalogs.data)?;
         let mut used = IndexSet::new();
         for (p, original) in state
             .geometry
@@ -73,9 +64,7 @@ impl Session {
                 ));
             }
             let definition = self.catalogs.data.facilities.facility(&p.facility).unwrap();
-            if !definition.allowed_rotations.contains(&p.rotation)
-                || !bounded(Point { x: p.x, y: p.y })
-            {
+            if !definition.allowed_rotations.contains(&p.rotation) {
                 return Err(error(
                     "pose",
                     "Position or rotation exceeds the runtime catalog/coordinate domain",
@@ -83,7 +72,7 @@ impl Session {
                 ));
             }
             let (w, h, ports) = catalog::rotate(definition, p.rotation, Point { x: p.x, y: p.y });
-            if p.width != w || p.height != h || p.x + w > GUARD || p.y + h > GUARD {
+            if p.width != w || p.height != h {
                 return Err(error(
                     "pose",
                     "Body dimensions or extent disagree with the catalog/coordinate guard",
@@ -123,13 +112,6 @@ impl Session {
                     return Err(error(
                         "port-reused",
                         "Distinct original terminals cannot share one physical port",
-                        id,
-                    ));
-                }
-                if !bounded(port.connection) {
-                    return Err(error(
-                        "port-coordinate",
-                        "Selected port connection leaves the coordinate work guard",
                         id,
                     ));
                 }
@@ -226,17 +208,14 @@ impl Session {
                     })?;
                 let definition = self.catalogs.data.facilities.facility(&p.facility).unwrap();
                 // Reject before rotation arithmetic; arbitrary integers are not catalog data.
-                if !definition.allowed_rotations.contains(&rotation)
-                    || !(0..=GUARD).contains(&x)
-                    || !(0..=GUARD).contains(&y)
-                {
+                if !definition.allowed_rotations.contains(&rotation) {
                     return Err(error(
                         "pose",
                         "Position or rotation exceeds the catalog/coordinate domain",
                         instance,
                     ));
                 }
-                let (w, h, _) = catalog::rotate(definition, rotation, Point { x, y });
+                let (w, h, _) = catalog::rotate(definition, rotation, Point::default());
                 p.x = x;
                 p.y = y;
                 p.width = w;
@@ -249,11 +228,12 @@ impl Session {
             Edit::InsertBand { axis, at, count } => self.band(state, axis, at, count, false)?,
             Edit::DeleteBand { axis, at, count } => self.band(state, axis, at, count, true)?,
         }
+        frame::canonicalize(&self.blueprint, state, &self.catalogs.data)?;
         self.check_entities(state)
     }
 
     fn band(&self, state: &mut State, axis: Axis, at: i64, count: i64, delete: bool) -> Result<()> {
-        if !(0..=GUARD).contains(&at) || !(1..=GUARD).contains(&count) || at + count > GUARD {
+        if !(1..=GUARD).contains(&count) || at.checked_add(count).is_none() {
             return Err(error(
                 "band",
                 "Band coordinate/count exceeds the coordinate work guard",
@@ -319,36 +299,52 @@ impl Session {
                 }
             }
         }
-        let transform = |mut p: Point| {
+        let transform = |mut p: Point| -> Result<Option<Point>> {
             let v = axis.get(p);
             if delete && (at..at + count).contains(&v) {
-                return None;
+                return Ok(None);
             }
             if v >= at {
-                axis.set(&mut p, v + if delete { -count } else { count });
+                let value = v
+                    .checked_add(if delete { -count } else { count })
+                    .ok_or_else(|| {
+                        error(
+                            "coordinate-overflow",
+                            "Band translation exceeds integer representation",
+                            "band",
+                        )
+                    })?;
+                axis.set(&mut p, value);
             }
-            Some(p)
+            Ok(Some(p))
         };
         for p in &mut state.geometry.placements {
-            let point = transform(Point { x: p.x, y: p.y }).unwrap();
+            let point = transform(Point { x: p.x, y: p.y })?.unwrap();
             p.x = point.x;
             p.y = point.y;
         }
         for point in &mut state.anchors {
             // Facility reference anchors are not physical obligations; their current
             // connection positions are derived from the selected catalog port.
-            *point = transform(*point).unwrap_or_else(|| {
+            *point = transform(*point)?.unwrap_or_else(|| {
                 let mut p = *point;
                 axis.set(&mut p, at);
                 p
             });
         }
         for p in &mut state.components {
-            *p = transform(Point::from(&*p)).unwrap().into();
+            *p = transform(Point::from(&*p))?.unwrap().into();
         }
         for path in &mut state.geometry.paths {
             if let Some(cells) = path {
-                *cells = cells.iter().copied().filter_map(transform).collect();
+                let mut write = 0;
+                for read in 0..cells.len() {
+                    if let Some(point) = transform(cells[read])? {
+                        cells[write] = point;
+                        write += 1;
+                    }
+                }
+                cells.truncate(write);
                 if cells.is_empty() {
                     *path = None;
                 }

@@ -12,6 +12,9 @@ use sha2::{Digest, Sha256};
 
 use super::*;
 
+pub const GLOBAL_FEATURES: usize = 10;
+pub const ELAPSED_FEATURE: usize = 5;
+
 static NEXT_HANDLE: AtomicU64 = AtomicU64::new(1);
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -89,7 +92,11 @@ fn angle(rotation: i64) -> (f64, f64) {
 
 impl Learning {
     pub(super) fn new(session: &Session, options: Options) -> Result<Self> {
-        if options.band_counts.iter().any(|n| *n <= 0)
+        if options.band_counts.iter().any(|n| !(1..=GUARD).contains(n))
+            || options
+                .translation_steps
+                .iter()
+                .any(|n| !(-GUARD..=GUARD).contains(n))
             || !matches!(
                 options.masking.as_deref(),
                 None | Some("structural-bands-v1")
@@ -302,6 +309,7 @@ impl Learning {
             }
         };
         Ok(Decision {
+            schema: DecisionSchema::Local,
             blueprint_sha256: session.blueprint_sha256.clone(),
             revision: session.revision,
             action,

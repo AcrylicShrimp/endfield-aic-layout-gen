@@ -23,9 +23,16 @@ impl Learning {
                 ys.push(point.y);
             }
         }
-        let scale = 1
-            .max(xs.iter().max().unwrap() + 1)
-            .max(ys.iter().max().unwrap() + 1) as f64;
+        for component in &session.state.components {
+            xs.push(component.x);
+            ys.push(component.y);
+        }
+        let frame =
+            frame::PhysicalFrame::from_points(xs.iter().zip(&ys).map(|(&x, &y)| Point { x, y }))
+                .expect("admitted canonical physical extent");
+        let scale = frame.scale();
+        let local_x = |x: i64| (i128::from(x) - frame.origin[0]) as f64 / scale;
+        let local_y = |y: i64| (i128::from(y) - frame.origin[1]) as f64 / scale;
         let mut collision_counts = vec![0.; placements.len()];
         let mut conflict_area = 0.;
         let mut conflicts = 0;
@@ -80,8 +87,8 @@ impl Learning {
             ]));
             let (sin, cos) = angle(f.rotation);
             value.node_state.push(floats([
-                f.x as f64 / scale,
-                f.y as f64 / scale,
+                local_x(f.x),
+                local_y(f.y),
                 f.width as f64 / scale,
                 f.height as f64 / scale,
                 sin,
@@ -135,8 +142,8 @@ impl Learning {
             }
             let p = positions[node.id];
             value.node_state.push(floats([
-                p.x as f64 / scale,
-                p.y as f64 / scale,
+                local_x(p.x),
+                local_y(p.y),
                 0.,
                 0.,
                 direction.x as f64,
@@ -179,7 +186,7 @@ impl Learning {
                 for point in path {
                     value
                         .path_cells
-                        .push(floats([point.x as f64 / scale, point.y as f64 / scale]));
+                        .push(floats([local_x(point.x), local_y(point.y)]));
                     value.path_edges.push(edge.id as i64);
                 }
             }
@@ -203,7 +210,12 @@ impl Learning {
         for (owner, f) in placements.iter().enumerate() {
             let mut destinations = BTreeSet::from([(f.x, f.y)]);
             for &step in &self.options.translation_steps {
-                destinations.extend([(f.x + step, f.y), (f.x, f.y + step)]);
+                if let Some(x) = f.x.checked_add(step) {
+                    destinations.insert((x, f.y));
+                }
+                if let Some(y) = f.y.checked_add(step) {
+                    destinations.insert((f.x, y));
+                }
             }
             destinations.extend(placements.iter().map(|other| (other.x, other.y)));
             let definition = session
@@ -213,9 +225,6 @@ impl Learning {
                 .facility(&f.facility)
                 .unwrap();
             for (x, y) in destinations {
-                if x.min(y) < 0 {
-                    continue;
-                }
                 for &rotation in &self.facilities[owner].rotations {
                     let (mut w, mut h) = (definition.footprint.width, definition.footprint.height);
                     if rotation % 180 != 0 {
@@ -321,7 +330,11 @@ impl Learning {
                             0.,
                             0.,
                             coordinate as f64,
-                            at as f64 / scale,
+                            if coordinate == 0 {
+                                local_x(at)
+                            } else {
+                                local_y(at)
+                            },
                             count as f64 / scale,
                         ]));
                         value.action_references.push([-1; 2]);
@@ -382,6 +395,12 @@ impl Learning {
             (session.elapsed().as_secs_f64() * 1000. / session.config.elapsed_ms as f64) as f32,
             (session.attempts as f64 / session.config.max_actions as f64) as f32,
         ]);
+        value.global_features.extend([
+            frame.width as f32,
+            frame.height as f32,
+            (1. / scale) as f32,
+        ]);
+        debug_assert_eq!(value.global_features.len(), GLOBAL_FEATURES);
         value
     }
 }

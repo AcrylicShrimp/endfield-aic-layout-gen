@@ -22,7 +22,7 @@ fn observation(attempts: u64) -> Observation {
         input: Arc::new(Input {
             node_static: vec![[0.1; 14]],
             node_state: vec![[0.; 10]],
-            global_features: vec![0.; 7],
+            global_features: vec![0.; aic_pilot_native::learning::GLOBAL_FEATURES],
             action_features: vec![[0.; 12], [0.5; 12]],
             action_references: vec![[0, -1]; 2],
             root_meta: vec![[1, 0, 0]; 2],
@@ -44,7 +44,7 @@ fn learner() -> Result<Learner> {
         message_rounds: 1,
         node_features: 24,
         edge_features: 14,
-        global_features: 7,
+        global_features: aic_pilot_native::learning::GLOBAL_FEATURES as i64,
         action_features: 12,
         port_features: 12,
     };

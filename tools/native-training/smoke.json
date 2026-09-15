@@ -15,7 +15,7 @@
     "message_rounds": 2,
     "node_features": 24,
     "edge_features": 14,
-    "global_features": 7,
+    "global_features": 10,
     "action_features": 12,
     "port_features": 12
   },
@@ -39,7 +39,7 @@
   "chunk_actions": 32,
   "minibatch_size": 64,
   "native": {
-    "schema": "declarative-edit-v1",
+    "schema": "declarative-edit-v2",
     "max_actions": 64,
     "elapsed_ms": 300000,
     "route_expansions": 50000,

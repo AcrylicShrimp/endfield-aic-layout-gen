@@ -187,3 +187,15 @@ factory and procedural set, before pretraining collection:
 These are adoption checks, not audits to run inside every normal step. No new
 training run, replacement implementation, or performance benefit is claimed by
 this document. The pending extraction measurement remains separate paused work.
+
+## Implementation updates
+
+- The user subsequently simplified artifact admission to the existing single
+  learned-checkpoint format version and settings binding. There are no separate
+  component semantic-ID fields or runtime semantic inference. See plan 00.
+- Plan 01 implements the full translation correction: canonical native working
+  geometry, signed proposals/padding, checked span arithmetic, actual physical
+  snapshot conversion and translation-equivalence tests. Its execution record
+  owns measured evidence. The remaining observation, prefix, prior and evaluation
+  findings above are still pending their corresponding plans; this historical
+  audit is not a claim that all corrections have been implemented.

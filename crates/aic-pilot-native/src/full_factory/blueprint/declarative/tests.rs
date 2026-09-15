@@ -1,7 +1,7 @@
 use super::super::super::tests::{fixture, fixture_request};
 use super::*;
 
-fn session() -> Session {
+pub(super) fn session() -> Session {
     let (w, catalogs, _) = fixture();
     Session::new(
         fixture_request(&w),
@@ -19,7 +19,7 @@ fn session() -> Session {
     .unwrap()
 }
 
-fn place(s: &Session, instance: &str, x: i64, y: i64, rotation: i64) -> Value {
+pub(super) fn place(s: &Session, instance: &str, x: i64, y: i64, rotation: i64) -> Value {
     let ports: Vec<_> = s
         .blueprint
         .nodes
@@ -32,9 +32,9 @@ fn place(s: &Session, instance: &str, x: i64, y: i64, rotation: i64) -> Value {
         .collect();
     json!({"kind":"place","instance":instance,"x":x,"y":y,"rotation":rotation,"ports":ports})
 }
-fn step(s: &mut Session, action: Value) -> Value {
+pub(super) fn step(s: &mut Session, action: Value) -> Value {
     let decision = serde_json::from_value(
-        json!({"blueprint_sha256":s.blueprint_sha256,"revision":s.revision,"action":action}),
+        json!({"schema":SCHEMA,"blueprint_sha256":s.blueprint_sha256,"revision":s.revision,"action":action}),
     )
     .map_err(|e| error("action-schema", e.to_string(), "action"));
     s.step(|| decision, None)
@@ -79,7 +79,7 @@ fn incomplete_draft_survives_restore_and_later_clearance_without_commit() {
 }
 
 #[test]
-fn grid_translation_preserves_branches_bridge_and_ports_and_can_be_reversed() {
+fn global_translation_is_unchanged_and_preserves_branches_bridge_and_ports() {
     let mut s = session();
     let original = s.state.clone();
     for axis in ["x", "y"] {
@@ -87,15 +87,11 @@ fn grid_translation_preserves_branches_bridge_and_ports_and_can_be_reversed() {
             &mut s,
             json!({"kind":"insert_band","axis":axis,"at":0,"count":3}),
         );
-        assert_eq!(outcome["status"], "validated", "{outcome}");
+        assert_eq!(outcome["status"], "unchanged", "{outcome}");
         assert_eq!(outcome["details"]["route_calls"], 0);
+        assert_eq!(outcome["details"]["validations"], 0);
         let moved = s.witness(&s.state).unwrap();
         assert!(validate_factory_layout(&s.request, &moved, &s.catalogs.data).factory_validated);
-        let outcome = step(
-            &mut s,
-            json!({"kind":"delete_band","axis":axis,"at":0,"count":3}),
-        );
-        assert_eq!(outcome["status"], "validated", "{outcome}");
         assert_eq!(s.state, original);
     }
     let outcome = step(
@@ -138,7 +134,14 @@ fn row_deletion_cannot_remove_obligations_and_joint_port_edits_are_atomic() {
 fn unchanged_decisions_skip_routing_and_validation_and_horizon_is_explicit() {
     let mut s = session();
     for _ in 0..40 {
-        let action = place(&s, "A0", 2, 2, 90);
+        let p = s
+            .state
+            .geometry
+            .placements
+            .iter()
+            .find(|p| p.instance == "A0")
+            .unwrap();
+        let action = place(&s, "A0", p.x, p.y, p.rotation);
         let outcome = step(&mut s, action);
         assert_eq!(outcome["status"], "unchanged");
         assert_eq!(outcome["details"]["route_calls"], 0);
@@ -331,9 +334,121 @@ fn typed_worker_pool_preserves_ownership_inputs_and_cold_restore() {
             .zip(&old.input.global_features)
             .enumerate()
         {
-            if i != new.input.global_features.len() - 2 {
+            if i != learning::ELAPSED_FEATURE {
                 assert_eq!(a, b);
             } // Actual elapsed-time feature advances.
         }
     }
+}
+
+/// Explicit continuity probe; never part of a normal training run.
+#[test]
+#[ignore]
+fn extraction_reference() {
+    let Some(output) = std::env::var_os("AIC_EDIT_REFERENCE") else {
+        return;
+    };
+    let output = std::path::PathBuf::from(output);
+    std::fs::create_dir_all(&output).unwrap();
+    let started = Instant::now();
+    let mut rows = vec![];
+    let mut numerical_bytes = 0usize;
+    for _ in 0..16 {
+        let mut s = session();
+        let options = serde_json::from_value(json!({"translation_steps":[-2,-1,1,2],"band_counts":[1,2],"masking":"structural-bands-v1"})).unwrap();
+        let mut learning = learning::Learning::new(&s, options).unwrap();
+        // Reuse the historical script's physical destinations in its source
+        // coordinate system. One external anchor tracks that diagnostic frame;
+        // it is never fed to the model or retained in production state.
+        let original_bp = topology::compile(&s.original).unwrap().0;
+        let anchor = original_bp
+            .nodes
+            .iter()
+            .find(|n| {
+                matches!(
+                    n.terminal.as_ref().map(|t| &t.endpoint),
+                    Some(TransportNetworkEndpoint::External { .. })
+                )
+            })
+            .unwrap()
+            .id;
+        let mut world_anchor = original_bp.nodes[anchor].initial_position;
+        for round in 0..4 {
+            let actions = [
+                place(&s, "C1", 27, 13, 90),
+                place(&s, "A0", 2, 7, 90),
+                place(&s, "A1", 2, 11, 90),
+                place(&s, "A0", 3, 2, 90),
+                json!({"kind":"insert_band","axis":"x","at":0,"count":3}),
+                json!({"kind":"delete_band","axis":"x","at":0,"count":3}),
+                json!({"kind":"delete_band","axis":"x","at":3,"count":1}),
+                json!({"kind":"delete_band","axis":"x","at":24,"count":1}),
+            ];
+            for (i, action) in actions.into_iter().enumerate() {
+                let mut input = learning.observe(&s);
+                let elapsed = learning::ELAPSED_FEATURE;
+                input.global_features[elapsed] = 0.; // Compare all deterministic features only.
+                macro_rules! size { ($($field:ident),*) => { $(numerical_bytes += std::mem::size_of_val(input.$field.as_slice());)* }; }
+                size!(
+                    node_static,
+                    node_state,
+                    edge_index,
+                    edge_static,
+                    edge_state,
+                    path_cells,
+                    path_edges,
+                    global_features,
+                    action_features,
+                    action_references,
+                    root_meta,
+                    kind_log_counts,
+                    root_invalid,
+                    port_features
+                );
+                let origin = [
+                    world_anchor.x - s.state.anchors[anchor].x,
+                    world_anchor.y - s.state.anchors[anchor].y,
+                ];
+                let mut local = action.clone();
+                if action["kind"] == "place" {
+                    local["x"] = json!(action["x"].as_i64().unwrap() - origin[0]);
+                    local["y"] = json!(action["y"].as_i64().unwrap() - origin[1]);
+                } else {
+                    let axis = usize::from(action["axis"] == "y");
+                    local["at"] = json!(action["at"].as_i64().unwrap() - origin[axis]);
+                }
+                let mut outcome = step(&mut s, local);
+                if outcome["status"] != "rejected" && action["kind"] != "place" {
+                    let coordinate = if action["axis"] == "x" {
+                        &mut world_anchor.x
+                    } else {
+                        &mut world_anchor.y
+                    };
+                    if *coordinate >= action["at"].as_i64().unwrap() {
+                        *coordinate += action["count"].as_i64().unwrap()
+                            * if action["kind"] == "insert_band" {
+                                1
+                            } else {
+                                -1
+                            };
+                    }
+                }
+                outcome.as_object_mut().unwrap().remove("seconds");
+                rows.push(json!({"input":identity::digest(&input),"outcome":outcome,"state":identity::digest(&s.state),"best":identity::digest(&s.best)}));
+                if rows.len() == 2 && round == 0 && i == 1 {
+                    std::fs::write(
+                        output.join("legacy-checkpoint.json"),
+                        serde_json::to_vec_pretty(&s.checkpoint()).unwrap(),
+                    )
+                    .unwrap();
+                }
+            }
+        }
+    }
+    let elapsed = started.elapsed().as_secs_f64();
+    std::fs::write(output.join("rows.json"), serde_json::to_vec(&rows).unwrap()).unwrap();
+    println!(
+        "{}",
+        json!({"seconds":elapsed,"steps":rows.len(),"rows_sha256":identity::digest(&rows),"native_numerical_payload_bytes":numerical_bytes,"mean_payload_bytes":numerical_bytes/rows.len()})
+    );
 }

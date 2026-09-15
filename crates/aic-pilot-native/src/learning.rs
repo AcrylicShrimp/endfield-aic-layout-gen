@@ -4,4 +4,6 @@ pub use crate::full_factory::blueprint::declarative::Limits;
 pub use crate::full_factory::blueprint::declarative::learning::runtime::{
     Domain, Observation, PortGroup, Runtime,
 };
-pub use crate::full_factory::blueprint::declarative::learning::{Input, Options};
+pub use crate::full_factory::blueprint::declarative::learning::{
+    ELAPSED_FEATURE, GLOBAL_FEATURES, Input, Options,
+};
