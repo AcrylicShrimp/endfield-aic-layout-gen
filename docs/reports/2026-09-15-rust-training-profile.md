@@ -1,5 +1,9 @@
 # Rust training profile: indexed feature backward dominates
 
+Follow-up: the [masked-reference optimization](2026-09-15-masked-reference-optimization.md)
+resolved the dominant concentration and reduced indexed backward from 7.712 s to
+0.310 s while preserving the exact numerical regression.
+
 The largest remaining cost is LibTorch's backward accumulation for gathered
 node features. Rust removed coordinator/collection overhead, but this GPU work
 still uses the same eager ATen algorithms. Optimizing general Rust dispatch,

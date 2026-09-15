@@ -8,6 +8,9 @@ use aic_torch::tch::{Device, Kind, Tensor};
 use anyhow::{Result, ensure};
 use std::collections::BTreeSet;
 
+#[cfg(test)]
+mod tests;
+
 pub struct Model {
     pub config: ModelConfig,
     pub parameters: Vec<(String, Tensor)>,
@@ -245,8 +248,7 @@ impl Model {
         let (nodes, pooled) = self.encode(b, prepared.graphs);
         let refs = &b["action_references"];
         let context = pooled.index(&[Some(&b["action_graph"])]);
-        let selected = nodes.index(&[Some(&refs.clamp_min(0))]);
-        let selected = selected.where_self(&refs.ge(0).unsqueeze(-1), &context.unsqueeze(1));
+        let selected = masked_references(&nodes, refs, &context);
         let features = Tensor::cat(
             &[
                 selected.flatten(1, -1),
@@ -331,6 +333,21 @@ impl Model {
             values,
         })
     }
+}
+
+/// Missing references use graph context, so their node gradient is zero.
+/// Spread these masked destinations across the node bank: clamping them all to
+/// zero makes deterministic indexed backward serially accumulate huge runs of
+/// zeros at node 0. Valid references and their accumulation order stay intact.
+fn masked_references(nodes: &Tensor, refs: &Tensor, context: &Tensor) -> Tensor {
+    let valid = refs.ge(0);
+    let placeholders = Tensor::arange(refs.numel() as i64, (refs.kind(), refs.device()))
+        .remainder(nodes.size()[0])
+        .view(refs.size().as_slice());
+    let indices = refs.where_self(&valid, &placeholders);
+    nodes
+        .index(&[Some(&indices)])
+        .where_self(&valid.unsqueeze(-1), &context.unsqueeze(1))
 }
 
 pub struct RootPrediction {

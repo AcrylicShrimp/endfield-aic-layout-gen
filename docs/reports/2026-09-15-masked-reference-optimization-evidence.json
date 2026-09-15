@@ -1,0 +1,301 @@
+{
+  "schema": "aic-masked-reference-optimization-evidence-v1",
+  "parent_commit": "4252371",
+  "host": "ashrimp-arch",
+  "remote_root": "/home/ashrimp/Srv/aic-rust-learning-20260915",
+  "torch": "2.13.0+cu130",
+  "gpu": "NVIDIA GeForce RTX 5090",
+  "files": [
+    {
+      "path": "target/release/aic-cli",
+      "bytes": 19355704,
+      "sha256": "0349464b925afe60b24e75e66257b71bb4dcee583a30a8978f02ee60f89f744c"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/aic-cli-before",
+      "bytes": 19353552,
+      "sha256": "320243a4125c2e492175e69262203b60fea8d54f6043bff359013cb0ca4071fb"
+    },
+    {
+      "path": "crates/aic-learning/src/model.rs",
+      "bytes": 14006,
+      "sha256": "c7883f0dadf5d9ab05fe9362facf310ffd63c190a99bd54f8a49de5cd75e5514"
+    },
+    {
+      "path": "crates/aic-learning/src/model/tests.rs",
+      "bytes": 2763,
+      "sha256": "b1685b8f23db321aa8414c6c899cbf3d34cc6b2dde0d98530199a0f66025596b"
+    },
+    {
+      "path": "tools/native-training/training.json",
+      "bytes": 4037,
+      "sha256": "f2906909ed48f435dfcb5b97e18b6b9ad866bfbbf6cc0d7ee2f866ed6a6d174f"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/after-trace.json",
+      "bytes": 1032724662,
+      "sha256": "91b135631842faa8ec8496c673aab74a4cd6a698a2731537467b261cc1753c09"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/after-summary.json",
+      "bytes": 28305,
+      "sha256": "8bc42dcfabdb03da454de49f7a6e7c400d8ebac41d277dcdfc312e78b9a3c76f"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/masked-tests.log",
+      "bytes": 519,
+      "sha256": "910a05a76bd89019c18e5daa468849505aa85566b5cbc4eaa42d581077e30050"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/retained-oracle.log",
+      "bytes": 328,
+      "sha256": "edc5a567e57a124acea8daaa9759fa9c998e331957a8a086e2b564bb45929d74"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/cargo-feature-check.log",
+      "bytes": 262,
+      "sha256": "31b354a648d037e65295b04c468695a99600519c4f1d56bd7ef6c863e0a72244"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/cargo-feature-test.log",
+      "bytes": 71278,
+      "sha256": "224797530bd45e07e11dda703dfeebdbf2f61160f453f649d7dee83340adfa3e"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/cached-after/report.json",
+      "bytes": 710,
+      "sha256": "a74db98e256cc41b763790d6f713f397f7644c889114d026d6fe7d058f441cbf"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/cached-after/updates/00000003.json",
+      "bytes": 1561,
+      "sha256": "8e81870d64e36a74cd706488b099247f8a172be9136df96632dac969016fe879"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/cached-after/updates/00000004.json",
+      "bytes": 11323,
+      "sha256": "16e2cb48113a8dd25f75f47d602e291dd8c22fe99970dc37647ddbd7b65244df"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/profile-after/report.json",
+      "bytes": 711,
+      "sha256": "e8404d3313f51b41d2e5046fbe8b14a04ee632eceb3708bd2a607c01570118a9"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/profile-after/updates/00000003.json",
+      "bytes": 1562,
+      "sha256": "5dae8625614e79392644a6c0e67c5bd6b3270dc2e9bd4bb40e31b58ad07e0ce5"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/profile-after/updates/00000004.json",
+      "bytes": 11318,
+      "sha256": "28391541bffc230ebefb3d2d6a92786046adf74ff842bd1b9b800eaf8fa9c7c2"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/cached-before/report.json",
+      "bytes": 714,
+      "sha256": "473fc7acd569b6d950e737e18a3632ad90efa5fe74d8a4ee87c8bec58fce1e80"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/cached-before/updates/00000003.json",
+      "bytes": 1560,
+      "sha256": "49aea023fcb1fd9f6846ad8b476e6c026fdcbf427a6557cb8ebaff2197d64ef3"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/cached-before/updates/00000004.json",
+      "bytes": 11321,
+      "sha256": "3ec0b6b6b5a9bd6f9ab78ec69a687e115b2f9dd711a5f560350a8cc2dfe81493"
+    },
+    {
+      "path": "artifacts/rust-masked-reference-opt/cargo-feature-test-default-stack.log",
+      "bytes": 6387,
+      "sha256": "9ef05f09052819c56f0c89ef5e9f3fb0a10585f2fb0469c95c9835c7b7b8eb0c"
+    }
+  ],
+  "before": {
+    "admission_seconds": 0.298343548,
+    "best_evaluation": null,
+    "checkpoint_seconds": 0.060957735000000006,
+    "collection_seconds": 3.2762955910000002,
+    "completed_updates": 4,
+    "evaluation_seconds": 0.0,
+    "latest_checkpoint": "checkpoints/00000004",
+    "new_samples": 8192,
+    "optimization_seconds": 10.178437108,
+    "output_bytes": 29192085,
+    "peak_rss_bytes": 8007024640,
+    "previous_update": 2,
+    "replay": {
+      "active_streams": 0,
+      "admissions": 178,
+      "bytes": 22697784,
+      "duplicates": 0,
+      "evictions": 0,
+      "labels": 694,
+      "positive_improvements": 178,
+      "selected_uses": 640,
+      "sequences": 178
+    },
+    "resumed": true,
+    "samples_per_minute": 32484.174181984265,
+    "schema": "aic-training-report-v1",
+    "status": "completed",
+    "streams": 128,
+    "total_samples": 16384,
+    "total_seconds": 15.131060351,
+    "workers": 16
+  },
+  "after": {
+    "admission_seconds": 0.30264874599999997,
+    "best_evaluation": null,
+    "checkpoint_seconds": 0.056445819,
+    "collection_seconds": 3.2012698559999997,
+    "completed_updates": 4,
+    "evaluation_seconds": 0.0,
+    "latest_checkpoint": "checkpoints/00000004",
+    "new_samples": 8192,
+    "optimization_seconds": 2.792637859,
+    "output_bytes": 29192078,
+    "peak_rss_bytes": 7244517376,
+    "previous_update": 2,
+    "replay": {
+      "active_streams": 0,
+      "admissions": 178,
+      "bytes": 22697784,
+      "duplicates": 0,
+      "evictions": 0,
+      "labels": 694,
+      "positive_improvements": 178,
+      "selected_uses": 640,
+      "sequences": 178
+    },
+    "resumed": true,
+    "samples_per_minute": 64325.86567241088,
+    "schema": "aic-training-report-v1",
+    "status": "completed",
+    "streams": 128,
+    "total_samples": 16384,
+    "total_seconds": 7.641094214,
+    "workers": 16
+  },
+  "kernels_before": {
+    "kernel_count": 260792,
+    "kernel_busy_seconds": 8.795903038085937,
+    "indexing_kernel_ancestry": [
+      {
+        "name": "autograd::engine::evaluate_function: IndexBackward0 > IndexBackward0 > aten::_index_put_impl_",
+        "calls": 9165,
+        "seconds": 7.711750717000076,
+        "mean_us": 841.4348845608375
+      },
+      {
+        "name": "aten::index_add_ > aten::index_put_ > aten::_index_put_impl_",
+        "calls": 16059,
+        "seconds": 0.25863248799999894,
+        "mean_us": 16.105142785976646
+      },
+      {
+        "name": "autograd::engine::evaluate_function: ScatterReduceBackward0 > ScatterReduceBackward0 > aten::scatter_add > aten::index_put_ > aten::_index_put_impl_",
+        "calls": 948,
+        "seconds": 0.034143608000000096,
+        "mean_us": 36.016464135021195
+      },
+      {
+        "name": "aten::index_add > aten::index_put_ > aten::_index_put_impl_",
+        "calls": 1320,
+        "seconds": 0.0030764890000000112,
+        "mean_us": 2.3306734848484933
+      },
+      {
+        "name": "autograd::engine::evaluate_function: IndexSelectBackward0 > IndexSelectBackward0 > aten::index_select_backward > aten::index_add_ > aten::index_put_ > aten::_index_put_impl_",
+        "calls": 576,
+        "seconds": 0.0013350149999999954,
+        "mean_us": 2.3177343749999917
+      }
+    ]
+  },
+  "kernels_after": {
+    "kernel_count": 263204,
+    "kernel_busy_seconds": 1.39850690234375,
+    "indexing_kernel_ancestry": [
+      {
+        "name": "autograd::engine::evaluate_function: IndexBackward0 > IndexBackward0 > aten::_index_put_impl_",
+        "calls": 9165,
+        "seconds": 0.3102215320000044,
+        "mean_us": 33.84850321876753
+      },
+      {
+        "name": "aten::index_add_ > aten::index_put_ > aten::_index_put_impl_",
+        "calls": 16059,
+        "seconds": 0.25863415199999934,
+        "mean_us": 16.10524640388563
+      },
+      {
+        "name": "autograd::engine::evaluate_function: ScatterReduceBackward0 > ScatterReduceBackward0 > aten::scatter_add > aten::index_put_ > aten::_index_put_impl_",
+        "calls": 948,
+        "seconds": 0.03422903000000003,
+        "mean_us": 36.106571729957835
+      },
+      {
+        "name": "aten::index_add > aten::index_put_ > aten::_index_put_impl_",
+        "calls": 1320,
+        "seconds": 0.0030781840000000107,
+        "mean_us": 2.331957575757584
+      },
+      {
+        "name": "autograd::engine::evaluate_function: IndexSelectBackward0 > IndexSelectBackward0 > aten::index_select_backward > aten::index_add_ > aten::index_put_ > aten::_index_put_impl_",
+        "calls": 576,
+        "seconds": 0.0013342399999999959,
+        "mean_us": 2.316388888888882
+      }
+    ]
+  },
+  "baseline_provenance": "docs/reports/2026-09-15-rust-complete-training-evidence.json and 2026-09-15-rust-training-profile-evidence.json",
+  "scope": "Unprofiled actual cached two-update training; separate Kineto confirmation. No determinism, mask, objective, epoch, minibatch or checkpoint change.",
+  "before_source": "Saved unchanged 625f3e2 release binary, rerun with actual cached checkpoint 2 and next-wave slots; both before/after timings include normal sparse storage and cold validation.",
+  "epochs": {
+    "cached-before": [
+      {
+        "samples": 4096,
+        "actor_epochs": 1,
+        "critic_epochs": 4,
+        "minibatch_updates": 64,
+        "update_seconds": 2.878485637
+      },
+      {
+        "samples": 4096,
+        "actor_epochs": 4,
+        "critic_epochs": 4,
+        "minibatch_updates": 64,
+        "update_seconds": 7.299951471
+      }
+    ],
+    "cached-after": [
+      {
+        "samples": 4096,
+        "actor_epochs": 1,
+        "critic_epochs": 4,
+        "minibatch_updates": 64,
+        "update_seconds": 1.3566037770000001
+      },
+      {
+        "samples": 4096,
+        "actor_epochs": 4,
+        "critic_epochs": 4,
+        "minibatch_updates": 64,
+        "update_seconds": 1.436034082
+      }
+    ]
+  },
+  "verification": {
+    "feature_tests": {
+      "passed": 572,
+      "failed": 0,
+      "ignored": 5
+    },
+    "test_worker_stack_bytes": 16777216,
+    "default_stack_failure": "Existing CLI parser test parses_cumulative_facility_coordinate_partition stack overflow; rerun with larger test-worker stack passed.",
+    "retained_cuda_oracle": "Exact model/Adam/RNG equality passed on both actual chunks",
+    "focused_masked_references": "Exact CPU/CUDA forward, node/context backward, and repeated executions passed"
+  }
+}
