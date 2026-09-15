@@ -196,7 +196,7 @@ this document. The pending extraction measurement remains separate paused work.
 - Plan 01 implements the full translation correction: canonical native working
   geometry, signed proposals/padding, checked span arithmetic, actual physical
   snapshot conversion and translation-equivalence tests. Its execution record
-  owns measured evidence. The remaining prior and evaluation
+  owns measured evidence. The remaining evaluation
   findings above are still pending their corresponding plans; this historical
   audit is not a claim that all corrections have been implemented.
 
@@ -212,5 +212,10 @@ this document. The pending extraction measurement remains separate paused work.
   Physical admission order removes opaque-label ordering. Its execution record
   covers complete action distributions with equivalent labels, online/frozen
   CPU/CUDA likelihoods and gradients, actual sparse publication/restore and the
-  next optimizer update. Plans 04–06 still own prior correction, evaluation
-  reservations and measured learning readiness.
+  next optimizer update. Plans 05–06 still own evaluation reservations and measured learning readiness.
+
+- Plan 04 normalizes by unmasked family counts, assigns exact zero mass to masked
+  roots and keeps entropy finite. Native indices/structural rules and conditional
+  port normalization remain. Explicit equal-logit, reference-gradient and actual
+  masked native-input checks validate this probability contract; it does not by
+  itself demonstrate better learning.

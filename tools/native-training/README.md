@@ -112,6 +112,23 @@ banks; model features and parameters remain float. No train-time embeddings or
 repeated copies of growing histories are saved. See [plan 03](../../docs/plans/2026-09-15.03-terminal-bound-port-prefix.md)
 for the binding, ownership and restore checks.
 
+## Available action-family prior
+
+Root probabilities are proportional to `exp(logit) / available_family_count`.
+Equal valid logits therefore give equal mass to each nonempty family (placement,
+insert band, delete band), with uniform probability within that family. A family
+with no available roots receives zero mass. This sets the reference prior; learned
+logits can favor a family. Structural band masks and root indices are preserved.
+
+Excluded roots have exactly zero probability. Their entropy multiplier is zeroed
+before multiplication, avoiding `0 * -infinity`. Root probability/entropy sums use
+double accumulation to preserve the reference for thousands of unequal candidates;
+model logits remain float, and conditional port normalization is unchanged.
+An empty whole domain fails at native construction or packed-input admission with
+case context. Counts are accumulated while constructing candidates/masks, without
+an additional candidate scan. Each update's existing JSON diagnostics includes
+`action_families` draw counts; there is no extra per-action file output.
+
 ## Outputs and recovery
 
 Progress lines on stderr report new transitions, never repeated PPO/replay uses.
@@ -149,7 +166,7 @@ replay, optimizer or curriculum. Incomplete evaluation cannot replace the best.
 ## Migration and bounded comparison
 
 Training configurations use `aic-training-v1`. Checkpoint manifests use
-`aic-training-checkpoint-v6`; this is the single learned-state format version.
+`aic-training-checkpoint-v7`; this is the single learned-state format version.
 When model input, action or replay meaning changes, increment that version even
 if tensor shapes stay the same. Existing config binding covers runtime settings.
 Restore checks the manifest version before loading learner, Adam, RNG, best-model

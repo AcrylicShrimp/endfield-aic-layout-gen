@@ -25,7 +25,7 @@ use std::{
     sync::Arc,
 };
 
-const CHECKPOINT_SCHEMA: &str = "aic-training-checkpoint-v6";
+const CHECKPOINT_SCHEMA: &str = "aic-training-checkpoint-v7";
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -544,6 +544,7 @@ mod tests {
             Some("aic-training-checkpoint-v3"),
             Some("aic-training-checkpoint-v4"),
             Some("aic-training-checkpoint-v5"),
+            Some("aic-training-checkpoint-v6"),
         ] {
             let mut value = valid.clone();
             if let Some(version) = version {

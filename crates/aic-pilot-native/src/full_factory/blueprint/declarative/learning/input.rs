@@ -73,6 +73,7 @@ impl Learning {
         let mut value = self.physical(session, &positions, frame, &collision_counts, conflicts)?;
 
         self.roots.clear();
+        let mut counts = [0usize; 3];
         for (owner, f) in placements.iter().enumerate() {
             let mut destinations = BTreeSet::from([(f.x, f.y)]);
             for &step in &self.options.translation_steps {
@@ -97,6 +98,7 @@ impl Learning {
                         std::mem::swap(&mut w, &mut h)
                     }
                     let (sin, cos) = angle(rotation);
+                    counts[0] += 1;
                     self.roots.push(Root {
                         kind: 0,
                         invalid: false,
@@ -176,6 +178,7 @@ impl Learning {
                                     let n = if coordinate == 0 { p.x } else { p.y };
                                     at <= n && n < at + count
                                 }));
+                        counts[kind] += usize::from(!invalid);
                         self.roots.push(Root {
                             kind,
                             invalid,
@@ -242,12 +245,19 @@ impl Learning {
                 }
             }
         }
-        let mut counts = [0usize; 3];
-        for root in &self.roots {
-            counts[root.kind] += 1
+        if counts.iter().all(|&n| n == 0) {
+            return Err(error(
+                "learning-empty-actions",
+                "No unmasked root action is available",
+                session.blueprint_sha256.clone(),
+            ));
         }
-        let logs = counts.map(|count| (count as f64).ln() as f32);
-        value.kind_log_counts = self.roots.iter().map(|root| logs[root.kind]).collect();
+        let logs = counts.map(|count| (count.max(1) as f64).ln() as f32);
+        value.kind_log_counts = self
+            .roots
+            .iter()
+            .map(|root| if root.invalid { 0. } else { logs[root.kind] })
+            .collect();
         refresh_globals(&mut value, session, frame, conflict_area);
         let input = Arc::new(value);
         self.cached = Some((
@@ -303,4 +313,71 @@ fn refresh_globals(
         (1. / frame.scale()) as f32,
     ]);
     debug_assert_eq!(value.global_features.len(), GLOBAL_FEATURES);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn available_family_counts_preserve_indices_and_neutralize_masked_roots() {
+        let session = super::super::super::tests::session();
+        let options = Options {
+            translation_steps: vec![-1, 1],
+            band_counts: vec![1],
+            masking: None,
+        };
+        let mut unmasked = Learning::new(&session, options.clone()).unwrap();
+        let all = unmasked.observe(&session).unwrap();
+        let mut masked = Learning::new(
+            &session,
+            Options {
+                masking: Some("structural-bands-v1".into()),
+                ..options.clone()
+            },
+        )
+        .unwrap();
+        let input = masked.observe(&session).unwrap();
+        assert_eq!(all.root_meta, input.root_meta);
+        assert_eq!(all.action_features, input.action_features);
+        assert_eq!(all.action_references, input.action_references);
+        assert_eq!(all.port_features, input.port_features);
+        let mut counts = [0usize; 3];
+        for (meta, &invalid) in input.root_meta.iter().zip(&input.root_invalid) {
+            counts[meta[0] as usize] += usize::from(!invalid);
+        }
+        assert!(counts.iter().all(|&n| n > 0));
+        assert!(input.root_invalid.iter().any(|&v| v));
+        for ((meta, &invalid), &correction) in input
+            .root_meta
+            .iter()
+            .zip(&input.root_invalid)
+            .zip(&input.kind_log_counts)
+        {
+            assert_eq!(
+                correction,
+                if invalid {
+                    0.
+                } else {
+                    (counts[meta[0] as usize] as f64).ln() as f32
+                }
+            );
+            assert!(correction.is_finite());
+        }
+        let mut only_place = Learning::new(
+            &session,
+            Options {
+                band_counts: vec![],
+                ..options
+            },
+        )
+        .unwrap();
+        let input = only_place.observe(&session).unwrap();
+        assert!(input.root_meta.iter().all(|m| m[0] == 0));
+        assert!(
+            input
+                .kind_log_counts
+                .iter()
+                .all(|&v| v == (input.root_meta.len() as f64).ln() as f32)
+        );
+    }
 }

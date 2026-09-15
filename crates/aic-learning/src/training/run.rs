@@ -293,7 +293,8 @@ pub fn run(
             let save_seconds = save.elapsed().as_secs_f64();
             checkpoint_seconds += save_seconds;
             let record = json!({"schema":"aic-training-update-v1","update":ordinal,"wave":state.wave,"actions_in_wave":state.actions,"samples":collected.samples.len(),"total_samples":state.samples,
-                "admission_seconds":admission_seconds,"collection_seconds":collected.seconds,"ppo":ppo,"replay":buffer.summary(),"replay_events":events,"quality":quality,"evaluation":evaluation,
+                "admission_seconds":admission_seconds,"collection_seconds":collected.seconds,
+                "action_families":{"place":collected.family_draws[0],"insert_band":collected.family_draws[1],"delete_band":collected.family_draws[2]},"ppo":ppo,"replay":buffer.summary(),"replay_events":events,"quality":quality,"evaluation":evaluation,
                 "checkpoint_seconds":save_seconds,"checkpoint_update":last_saved,"peak_rss_bytes":guard.peak_rss(),"output_bytes":store.ledger.bytes});
             let path = output.join(format!("updates/{ordinal:08}.json"));
             write(&path, &record)?;

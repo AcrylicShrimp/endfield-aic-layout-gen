@@ -9,6 +9,14 @@ pub fn graph(rows: &[&Observation], device: Device) -> Result<Packed> {
         &rows.iter().map(|r| r.input.as_ref()).collect::<Vec<_>>(),
         device,
     )
+    .map_err(|e| {
+        anyhow::anyhow!(
+            "{e}; cases {:?}",
+            rows.iter()
+                .map(|r| r.blueprint_sha256.as_str())
+                .collect::<Vec<_>>()
+        )
+    })
 }
 
 pub fn graph_inputs(rows: &[&aic_pilot_native::learning::Input], device: Device) -> Result<Packed> {
@@ -66,7 +74,15 @@ pub fn graph_inputs(rows: &[&aic_pilot_native::learning::Input], device: Device)
         path_counts.extend(counts.into_iter().map(|n| n.max(1)));
         globals.extend_from_slice(&v.global_features);
         logs.extend_from_slice(&v.kind_log_counts);
-        masks.extend_from_slice(&v.root_invalid);
+        let mut available = 0;
+        for &invalid in &v.root_invalid {
+            masks.push(invalid);
+            available += usize::from(!invalid);
+        }
+        ensure!(
+            available > 0,
+            "aic-learning.empty-actions: graph {id} has no available root"
+        );
         no += v.node_static.len() as i64;
         eo += v.edge_index.len() as i64;
     }

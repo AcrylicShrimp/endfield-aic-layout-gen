@@ -42,6 +42,7 @@ pub struct Rollout {
     pub evidence: Vec<Value>,
     pub seconds: f64,
     pub observation_bytes: u64,
+    pub family_draws: [u64; 3],
 }
 pub fn observations(replies: Vec<(usize, Reply)>) -> Result<Vec<Observation>> {
     replies
@@ -183,6 +184,7 @@ pub fn collect(
             else {
                 unreachable!()
             };
+            retained.family_draws[observation.input.root_meta[choice.root][0] as usize] += 1;
             retained.samples.push(Sample {
                 stream,
                 observation,

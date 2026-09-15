@@ -10,6 +10,8 @@ use anyhow::{Result, ensure};
 use std::collections::BTreeSet;
 
 #[cfg(test)]
+mod prior_tests;
+#[cfg(test)]
 mod tests;
 
 #[cfg(test)]
@@ -269,12 +271,9 @@ impl Model {
             ],
             -1,
         );
-        let mut logits = self
+        let logits = self
             .linear("actor.2", &self.linear("actor.0", &features).tanh())
             .squeeze_dim(-1);
-        if let Some(mask) = b.get("root_invalid") {
-            logits = logits.masked_fill(&mask.to_kind(Kind::Bool), -1e9);
-        }
         let values = self
             .linear("critic.2", &self.linear("critic.0", &pooled).tanh())
             .squeeze_dim(-1);
@@ -415,13 +414,37 @@ pub struct Prediction {
 }
 
 pub(crate) fn distribution(logits: &Tensor, b: &Tensors, count: i64) -> (Tensor, Tensor) {
-    let adjusted = logits - &b["kind_log_counts"];
+    let mut adjusted = logits - &b["kind_log_counts"];
+    if let Some(mask) = b.get("root_invalid") {
+        adjusted = adjusted.masked_fill(mask, f64::NEG_INFINITY);
+    }
     let graph = &b["action_graph"];
     let maximum = Tensor::full([count], f64::NEG_INFINITY, (logits.kind(), logits.device()))
         .internal_scatter_reduce(0, graph, &adjusted, "amax", true);
     let shifted = &adjusted - maximum.index(&[Some(graph)]);
-    let denominator = Tensor::zeros_like(&maximum).index_add_(0, graph, &shifted.exp());
-    let logp = shifted - denominator.log().index(&[Some(graph)]);
-    let entropy = Tensor::zeros_like(&maximum).index_add_(0, graph, &(-logp.exp() * &logp));
+    // Thousands of roots with unequal family sizes can lose the equal-mass
+    // reference under float index_add. Accumulate root reductions in double;
+    // conditional port normalization retains its established float path.
+    let accumulation = if b.contains_key("root_invalid") {
+        Kind::Double
+    } else {
+        logits.kind()
+    };
+    let denominator = Tensor::zeros([count], (accumulation, logits.device())).index_add_(
+        0,
+        graph,
+        &shifted.exp().to_kind(accumulation),
+    );
+    let logp = shifted
+        - denominator
+            .log()
+            .to_kind(logits.kind())
+            .index(&[Some(graph)]);
+    // An excluded root has logp=-inf and exact zero mass. Replace only its
+    // entropy multiplier before multiplication so both value and gradients stay finite.
+    let safe_logp = logp.masked_fill(&logp.isneginf(), 0.);
+    let entropy = Tensor::zeros([count], (accumulation, logits.device()))
+        .index_add_(0, graph, &(-logp.exp() * safe_logp).to_kind(accumulation))
+        .to_kind(logits.kind());
     (logp, entropy)
 }
