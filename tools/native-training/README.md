@@ -263,7 +263,13 @@ physical/root separation before accepting a quality comparison. Owned children
 are terminated on failure and actual partial evidence is retained.
 
 The [2026-09-15 gate result](../../docs/reports/2026-09-15-integrated-io-readiness.md)
-records passing small native/recovery checks and a storage-preflight blocker.
-The checked-in configuration retains the approved 4 GiB ceiling; the four cold
-arms have not run. Paths and binary hashes refer to the registered research host.
-Use a new output and a reviewed allocation before attempting another gate.
+records passing native/recovery checks and a completed four-arm cold comparison
+under the authorized 24 GiB ceiling. Its negative quality screen does not clear
+expanded training. Paths and binary hashes refer to the registered research host.
+Use a new output and a newly reviewed allocation for any reproduction.
+
+`io-readiness-recover.mjs` narrowly resumes a registered partial gate after a
+removable host-space blocker. It requires the original config, incomplete result,
+owned-process closeout and expected latest update; it carries forward the original
+clock, invocations and resource peaks. It refuses a complete or unrelated result
+and does not grant extra time, storage or scientific work.

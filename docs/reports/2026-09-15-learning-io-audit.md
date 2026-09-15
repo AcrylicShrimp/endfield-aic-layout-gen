@@ -204,15 +204,15 @@ this document. The pending extraction measurement remains separate paused work.
   current/baseline route restrictions, full port/component relations, directed
   path cells and explicit finite budgets/units. Its execution record contains
   native invariance tests, CPU/CUDA packing/gradient checks, actual replay restore,
-  small/large byte measurements and bounded CLI evidence. Learning-quality effects
-  remain unmeasured until the integrated readiness comparison.
+  small/large byte measurements and bounded CLI evidence. Plan 06 subsequently
+  measures the bounded learning-quality effect.
 
 - Plan 03 replaces the unassociated prefix mean with a terminal-bound nonlinear
   pair encoder, one owned assignment bank and incremental used-port membership.
   Physical admission order removes opaque-label ordering. Its execution record
   covers complete action distributions with equivalent labels, online/frozen
   CPU/CUDA likelihoods and gradients, actual sparse publication/restore and the
-  next optimizer update. Plan 06 still owns measured learning readiness.
+  next optimizer update. Plan 06 records the completed readiness verdict.
 
 - Plan 04 normalizes by unmasked family counts, assigns exact zero mass to masked
   roots and keeps entropy finite. Native indices/structural rules and conditional
@@ -245,8 +245,10 @@ terminal-bound prefixes, available-family priors, native checkpoint v3/local edi
 v2, learned checkpoint v8 and canonical structural/root reservations. The
 pretraining design now names these authorities instead of the superseded profile.
 
-The four cold learning arms have not started. Mid-wave checkpoint retention's
-measured size blocks their approved 4 GiB preflight. Learning benefit and comparable
-end-to-end throughput remain unmeasured, and neither long training nor pretraining
-is cleared. The report preserves this allocation finding separately from I/O
-correctness; it is not evidence that any repair harmed or improved learning.
+The subsequently authorized 24 GiB gate completed all four cold arms. Every arm
+retains and audits 512 actual starts with zero panel overlap, and both seeds have
+strictly matched fresh slots. Corrected-minus-baseline quality is -1.129 pp and
+corrected 32-stream throughput is 16.95% lower in this diagnostic configuration.
+The I/O contracts remain verified, but neither long training nor pretraining is
+cleared. The linked report records the per-seed, stratum, phase, recovery and
+resource evidence.

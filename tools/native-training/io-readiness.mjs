@@ -21,22 +21,48 @@ export async function bytes(root) {
   }
   return total;
 }
+export async function publishResult(output, result, setupBytes, limits) {
+  const resultPath = path.join(output, 'result.json');
+  for (let attempt = 0; attempt < 8; attempt++) {
+    await write(resultPath, result);
+    const scientificBytes = await bytes(output);
+    const combinedBytes = setupBytes + scientificBytes;
+    if (result.resources.scientific_root_bytes === scientificBytes
+      && result.resources.combined_retained_bytes === combinedBytes) return;
+    result.resources.scientific_root_bytes = scientificBytes;
+    result.resources.combined_retained_bytes = combinedBytes;
+    result.resources.peak_scientific_root_bytes = Math.max(
+      result.resources.peak_scientific_root_bytes, scientificBytes);
+    result.resources.combined_peak_output_bytes = Math.max(
+      result.resources.combined_peak_output_bytes, combinedBytes);
+    if (combinedBytes > limits.output_bytes) {
+      result.status = 'incomplete';
+      result.error ??= 'aic-io-readiness.budget-output-closeout';
+    }
+  }
+  throw Error('aic-io-readiness.result-size-did-not-settle');
+}
 function processes() {
   return execFileSync('ps', ['-eo', 'pid=,ppid=,pgid=,rss=,stat='], { encoding: 'utf8' }).trim().split('\n').map(s => s.trim().split(/\s+/)).filter(r => !r[4].startsWith('Z')).map(r => r.slice(0,4).map(Number));
 }
 export class Gate {
-  constructor(output, limits, setup = null) {
-    this.output = output; this.limits = limits; this.setup = setup;
-    this.started = performance.now() - (setup ? Date.now() - setup.started_at_ms : 0);
-    this.groups = new Set(); this.invocations = []; this.peakRss = 0; this.peakBytes = 0;
+  constructor(output, limits, setupRoots = []) {
+    this.output = output; this.limits = limits; this.setupRoots = setupRoots;
+    this.started = performance.now();
+    this.groups = new Set(); this.invocations = []; this.peakRss = 0;
+    this.peakSetupBytes = 0; this.peakScientificBytes = 0; this.peakCombinedBytes = 0;
   }
   async enforce() {
     check((performance.now() - this.started) / 1000 < this.limits.seconds, 'budget-time');
     const rss = processes().filter(([pid, , group]) => pid === process.pid || this.groups.has(group)).reduce((s, r) => s + r[3] * 1024, 0);
     this.peakRss = Math.max(this.peakRss, rss);
     check(rss <= this.limits.rss_bytes, 'budget-rss');
-    this.peakBytes = Math.max(this.peakBytes, await bytes(this.output) + (this.setup ? await bytes(this.setup.root) : 0));
-    check(this.peakBytes <= this.limits.output_bytes, 'budget-output');
+    const setupBytes = (await Promise.all(this.setupRoots.map(bytes))).reduce((sum, value) => sum + value, 0);
+    const scientificBytes = await bytes(this.output);
+    this.peakSetupBytes = Math.max(this.peakSetupBytes, setupBytes);
+    this.peakScientificBytes = Math.max(this.peakScientificBytes, scientificBytes);
+    this.peakCombinedBytes = Math.max(this.peakCombinedBytes, setupBytes + scientificBytes);
+    check(this.peakCombinedBytes <= this.limits.output_bytes, 'budget-output');
     const disk = await fs.statfs(this.output);
     check(disk.bavail * disk.bsize >= this.limits.min_free_bytes, 'budget-free-space');
   }
@@ -145,12 +171,12 @@ export function splitAudit(starts, identities, panel) {
   }
   return { complete: true, starts: starts.length, fresh: starts.filter(s => s.depth === 0).length, roots: roots.size, overlaps, valid: overlaps.length === 0 };
 }
-async function trainConfig(source, seed, panel, root, streams = 32) {
+async function trainConfig(source, seed, panel, root, maxOutputBytes, streams = 32) {
   const c = structuredClone(source);
   Object.assign(c, { purpose: 'bounded-comparison', catalog_root: root, initialization_seed: seed, streams, workers: 16, chunk_actions: 32, duration_seconds: 1800, finish_grace_seconds: 1 });
   Object.assign(c.evaluation, { panel, interval_updates: 32, replicates: 2, max_actions: 64 });
   Object.assign(c.retention, { checkpoint_interval_updates: 1, keep_updates: [...Array.from({ length: 16 }, (_, i) => 2 * i + 1), 32] });
-  c.resources.max_output_bytes = 4 * 1024 ** 3;
+  c.resources.max_output_bytes = maxOutputBytes;
   return c;
 }
 export function retentionProjection(measuredBytes) {
@@ -161,7 +187,7 @@ export function retentionProjection(measuredBytes) {
 export async function main(configPath, output) {
   const config = await read(configPath);
   check(config.schema === 'aic-io-readiness-v1', 'config-schema');
-  check(config.limits.seconds === 1800 && config.limits.output_bytes === 4 * 1024 ** 3 && config.limits.rss_bytes === 48 * 1024 ** 3, 'fixed-allocation');
+  check(config.limits.seconds === 1800 && config.limits.output_bytes === 24 * 1024 ** 3 && config.limits.rss_bytes === 48 * 1024 ** 3, 'fixed-allocation');
   check(path.resolve(output).startsWith(path.join(config.final.root, 'artifacts/learning-io-readiness')), 'output-root');
   for (const arm of [config.baseline, config.final]) {
     check(path.isAbsolute(arm.root) && path.isAbsolute(arm.binary), 'absolute-paths');
@@ -183,23 +209,31 @@ export async function main(configPath, output) {
   check(hash(await fs.readFile(config.native_tests)) === config.native_tests_sha256, 'native-test-binding');
   for (const [p, sha] of Object.entries(config.helper_sources)) check(hash(await fs.readFile(path.join(config.final.root,p))) === sha, `helper-binding: ${p}`);
   await fs.mkdir(output); // Existing output is never resumed by this gate.
-  const gate = new Gate(output, config.limits, config.setup);
+  const setupRoots = config.setup?.roots?.map(entry => entry.root) ?? [];
+  const gate = new Gate(output, config.limits, setupRoots);
   const result = { schema: 'aic-io-readiness-result-v1', status: 'incomplete', config_sha256: hash(await fs.readFile(configPath)), arms: [], config };
   await write(path.join(output, 'registered.json'), config);
   const invoke = (name, label, args, env) => gate.run(name, config[label].binary, args, config[label].root, { ...config.environment, ...env });
   const nativeTest = (name, filter, env) => gate.run(name, config.native_tests, [filter, '--ignored', '--exact', '--nocapture'], config.final.root, { ...config.environment, ...env });
   try {
     if (config.setup) {
-      const prior = config.setup.root;
-      check(path.isAbsolute(prior) && prior !== output && Number.isFinite(config.setup.started_at_ms) && config.setup.started_at_ms <= (await fs.stat(path.join(prior, 'registered.json'))).mtimeMs, 'setup-origin');
-      check(hash(await fs.readFile(path.join(prior, 'registered.json'))) === config.setup.registered_sha256, 'setup-binding');
-      check(!(await fs.readdir(prior)).some(p => /^(baseline|final)-/.test(p) || p === 'small'), 'setup-already-trained');
-      for (const [name, sha] of Object.entries(config.setup.files)) check(hash(await fs.readFile(path.join(prior, name))) === sha, `setup-file: ${name}`);
-      for (const name of ['matrix.json', 'panel-v1', 'panel-v2']) await fs.cp(path.join(prior, name), path.join(output,name), {recursive:true,errorOnExist:true,force:false});
-      result.setup_reused = {root:prior,started_at_ms:config.setup.started_at_ms, prior: await read(path.join(prior,'result.json'))};
+      check(config.setup.roots.length >= 1 && new Set(setupRoots).size === setupRoots.length, 'setup-roots');
+      for (const entry of config.setup.roots) {
+        check(path.isAbsolute(entry.root) && entry.root !== output, `setup-origin: ${entry.root}`);
+        check(hash(await fs.readFile(path.join(entry.root, 'registered.json'))) === entry.registered_sha256, `setup-binding: ${entry.root}`);
+        check(!(await fs.readdir(entry.root)).some(p => /^(baseline|final)-\d+$/.test(p)), `setup-already-trained: ${entry.root}`);
+        for (const [name, sha] of Object.entries(entry.files)) {
+          check(hash(await fs.readFile(path.join(entry.root, name))) === sha, `setup-file: ${entry.root}/${name}`);
+        }
+      }
+      check(setupRoots.includes(config.setup.source_root), 'setup-source-root');
+      for (const name of ['matrix.json', 'panel-v1', 'panel-v2']) {
+        await fs.cp(path.join(config.setup.source_root, name), path.join(output, name), { recursive: true, errorOnExist: true, force: false });
+      }
+      result.setup_reused = { roots: setupRoots, source_root: config.setup.source_root };
     } else {
       await nativeTest('matrix', 'full_factory::blueprint::declarative::learning::runtime::readiness::integrated_io_readiness_matrix', { AIC_IO_MATRIX_REPORT: path.join(output, 'matrix.json') });
-      const panelConfig = await trainConfig(sources.baseline, 71, path.join(output, 'unused-panel.json'), config.baseline.root);
+      const panelConfig = await trainConfig(sources.baseline, 71, path.join(output, 'unused-panel.json'), config.baseline.root, config.limits.output_bytes);
       await write(path.join(output, 'panel-config.json'), panelConfig);
       await invoke('prepare-panel', 'baseline', ['learning', 'prepare-panel', '--config', path.join(output, 'panel-config.json'), '--output', path.join(output, 'panel-v1'), '--cases', '16', '--seed', '9015071']);
       await invoke('migrate-panel', 'final', ['learning', 'migrate-panel', '--input', path.join(output, 'panel-v1/panel.json'), '--output', path.join(output, 'panel-v2'), '--identity-limits', path.join(config.final.root, 'tools/native-training/identity-limits.json'), '--catalog-root', path.join(config.final.root, 'data/game/normalized')]);
@@ -211,30 +245,59 @@ export async function main(configPath, output) {
     const oldPanel = await read(path.join(output, 'panel-v1/panel.json'));
     check(panel.cases.length === 16 && panel.cases.filter(c => c.stratum === 'small').length === 8 && panel.cases.filter(c => c.stratum === 'large').length === 8, 'panel-strata');
     check(panel.cases.every((c, i) => c.input.sha256 === oldPanel.cases[i].input.sha256 && c.action_seed === oldPanel.cases[i].action_seed), 'panel-payloads');
+    for (const [manifest, directory] of [[oldPanel, 'panel-v1'], [panel, 'panel-v2']]) {
+      for (const item of manifest.cases) {
+        check(!path.isAbsolute(item.input.path) && !item.input.path.split('/').includes('..'), `panel-input-path: ${item.input.path}`);
+        check(hash(await fs.readFile(path.join(output, directory, item.input.path))) === item.input.sha256,
+          `panel-input-hash: ${directory}/${item.input.path}`);
+      }
+    }
     result.panel = { sha256: hash(await fs.readFile(path.join(output, 'panel-v2/panel.json'))), cases: panel.cases };
     // Two waves prove ordinary pruning and complete actual-input recovery first.
-    const small = await trainConfig(sources.final, 71, path.join(output, 'panel-v2/panel.json'), config.final.root, 2);
-    small.workers = 2;
-    small.minibatch_size = 64;
-    await write(path.join(output, 'small.json'), small);
-    await invoke('small', 'final', ['learning', 'train', '--config', path.join(output, 'small.json'), '--output', path.join(output, 'small'), '--updates', '4', '--device', 'cuda:0']);
-    const recovered = await admissions(path.join(output, 'small'), 2, 2, path.join(output, 'small-starts'));
-    check(recovered.length === 4, 'small-coverage');
-    check(!(await fs.readdir(path.join(output, 'small/inputs'))).includes('00000000'), 'small-pruning');
-    await fs.rename(path.join(output, 'small/checkpoints/00000001'), path.join(output, 'small/checkpoints/missing-test'));
-    try {
-      let rejected = false;
-      try { await admissions(path.join(output, 'small'), 2, 2, path.join(output, 'missing-evidence')); } catch (e) { rejected = e.message.includes('incomplete-evidence'); }
-      check(rejected, 'missing-evidence-test');
-    } finally { await fs.rename(path.join(output, 'small/checkpoints/missing-test'), path.join(output, 'small/checkpoints/00000001')); }
-    result.small_gate = { actual_starts: 4, old_inputs_pruned: true, missing_checkpoint_rejected: true, retained_bytes: await bytes(path.join(output, 'small')) };
+    if (config.setup) {
+      const prior = config.setup.source_root;
+      const priorResult = await read(path.join(prior, 'result.json'));
+      const smallReport = await read(path.join(prior, 'small/report.json'));
+      check(priorResult.arms.length === 0 && priorResult.small_gate.actual_starts === 4
+        && priorResult.small_gate.old_inputs_pruned === true && priorResult.small_gate.missing_checkpoint_rejected === true,
+      'setup-small-result');
+      check(smallReport.completed_updates === 4 && smallReport.new_samples === 256 && smallReport.streams === 2
+        && smallReport.replay.positive_improvements > 0 && smallReport.replay.selected_uses > 0, 'setup-small-report');
+      const recovered = await admissions(path.join(prior, 'small'), 2, 2, path.join(output, 'setup-small-starts'));
+      check(recovered.length === 4 && !(await fs.readdir(path.join(prior, 'small/inputs'))).includes('00000000'), 'setup-small-coverage');
+      const recorded = await read(path.join(prior, 'small-admissions.json'));
+      check(recorded.length === 4 && recorded.every((row, i) => row.id === recovered[i].id
+        && row.wave === recovered[i].wave && row.stream === recovered[i].stream
+        && row.depth === recovered[i].depth && digest(row.root) === digest(recovered[i].root)
+        && digest(row.admission) === digest(recovered[i].admission)), 'setup-small-admissions');
+      const audit = splitAudit(recovered, await read(path.join(prior, 'small-identities.json')), panel);
+      check(digest(audit) === digest(await read(path.join(prior, 'small-split-audit.json'))) && audit.valid, 'setup-small-split-audit');
+      result.small_gate = { ...priorResult.small_gate, report: smallReport, split_audit: audit };
+    } else {
+      const small = await trainConfig(sources.final, 71, path.join(output, 'panel-v2/panel.json'), config.final.root, config.limits.output_bytes, 2);
+      small.workers = 2;
+      small.minibatch_size = 64;
+      await write(path.join(output, 'small.json'), small);
+      await invoke('small', 'final', ['learning', 'train', '--config', path.join(output, 'small.json'), '--output', path.join(output, 'small'), '--updates', '4', '--device', 'cuda:0']);
+      const recovered = await admissions(path.join(output, 'small'), 2, 2, path.join(output, 'small-starts'));
+      check(recovered.length === 4, 'small-coverage');
+      check(!(await fs.readdir(path.join(output, 'small/inputs'))).includes('00000000'), 'small-pruning');
+      await fs.rename(path.join(output, 'small/checkpoints/00000001'), path.join(output, 'small/checkpoints/missing-test'));
+      try {
+        let rejected = false;
+        try { await admissions(path.join(output, 'small'), 2, 2, path.join(output, 'missing-evidence')); } catch (e) { rejected = e.message.includes('incomplete-evidence'); }
+        check(rejected, 'missing-evidence-test');
+      } finally { await fs.rename(path.join(output, 'small/checkpoints/missing-test'), path.join(output, 'small/checkpoints/00000001')); }
+      result.small_gate = { actual_starts: 4, old_inputs_pruned: true, missing_checkpoint_rejected: true, retained_bytes: await bytes(path.join(output, 'small')) };
+    }
     // 32 streams x 16 waves x four arms; conservative projection before allocation.
     result.retention_projection = retentionProjection(result.small_gate.retained_bytes);
     check(result.retention_projection.estimated_bytes < config.limits.output_bytes, 'retention-projection');
     const allStarts = {};
     for (const seed of [71, 113]) for (const label of ['baseline', 'final']) {
       const name = `${label}-${seed}`, run = path.join(output, name), configFile = `${run}.json`;
-      const c = await trainConfig(sources[label], seed, path.join(output, label === 'baseline' ? 'panel-v1/panel.json' : 'panel-v2/panel.json'), config[label].root);
+      const c = await trainConfig(sources[label], seed, path.join(output, label === 'baseline' ? 'panel-v1/panel.json' : 'panel-v2/panel.json'), config[label].root, config.limits.output_bytes);
+      check(c.resources.max_output_bytes === config.limits.output_bytes, `arm-output-guard: ${name}`);
       await write(configFile, c);
       const reports = [];
       for (const end of label === 'final' && seed === 71 ? [3, 32] : [32]) {
@@ -284,8 +347,21 @@ export async function main(configPath, output) {
     gate.stop();
     result.seconds = (performance.now() - gate.started) / 1000;
     for (let n = 0; n < 20 && gate.remaining().length; n++) await new Promise(resolve => setTimeout(resolve, 50));
-    result.resources = { peak_rss_bytes: gate.peakRss, peak_output_bytes: gate.peakBytes, output_bytes: await bytes(output), remaining_processes: gate.remaining(), invocations: gate.invocations };
-    await write(path.join(output, 'result.json'), result);
+    const retainedSetupBytes = (await Promise.all(setupRoots.map(bytes))).reduce((sum, value) => sum + value, 0);
+    const scientificRootBytes = await bytes(output);
+    result.resources = { peak_rss_bytes: gate.peakRss,
+      retained_setup_bytes: retainedSetupBytes, scientific_root_bytes: scientificRootBytes,
+      combined_retained_bytes: retainedSetupBytes + scientificRootBytes,
+      combined_peak_output_bytes: gate.peakCombinedBytes,
+      peak_retained_setup_bytes: gate.peakSetupBytes,
+      peak_scientific_root_bytes: gate.peakScientificBytes,
+      remaining_processes: gate.remaining(), invocations: gate.invocations };
+    if (result.resources.combined_retained_bytes > config.limits.output_bytes
+      || result.resources.combined_peak_output_bytes > config.limits.output_bytes) {
+      result.status = 'incomplete';
+      result.error ??= 'aic-io-readiness.budget-output-closeout';
+    }
+    await publishResult(output, result, retainedSetupBytes, config.limits);
   }
   console.log(JSON.stringify({ status: result.status, error: result.error, delta_pp: result.delta_pp, seconds: result.seconds }));
   if (result.status !== 'completed') process.exitCode = 1;

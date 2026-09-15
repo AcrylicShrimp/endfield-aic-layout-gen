@@ -17,7 +17,7 @@
   "native_tests": "/home/ashrimp/Srv/aic-learning-io-20260915/target/release/deps/aic_pilot_native-897e398b8bfc8503",
   "limits": {
     "seconds": 1800,
-    "output_bytes": 4294967296,
+    "output_bytes": 25769803776,
     "rss_bytes": 51539607552,
     "min_free_bytes": 17179869184
   },
@@ -35,7 +35,7 @@
     "data/game/normalized/logistics-components.json": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
   },
   "helper_sources": {
-    "tools/native-training/io-readiness.mjs": "19358c100eb59618e7f4f00aebeccf367d49fdbe072ee06f06ba7637a02c6b35",
+    "tools/native-training/io-readiness.mjs": "285342c1bc7ce3e6b8f96e081d126d4ac353a9821c128bee5174cc90c16f89aa",
     "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/runtime/readiness.rs": "eacbcc44a04a73dc3e959d42fcb898b98cc9deb78729e6d138efea6ef40a087d",
     "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/runtime.rs": "f37d0e54322b9301e96047a100f5c6cc26bc0d5584f5667720bcd013ca49a8a9",
     "crates/aic-pilot-native/src/full_factory/generation/physical_identity/tests.rs": "32c3cec9ba93ee5d29711923f1692f4043d8cef258231397c8f6a3a8685ea855"
@@ -96,5 +96,40 @@
     "training_transitions": 131072,
     "small_gate_transitions": 256,
     "small_minibatch_size": 64
+  },
+  "setup": {
+    "source_root": "/home/ashrimp/Srv/aic-learning-io-20260915/artifacts/learning-io-readiness-run",
+    "roots": [
+      {
+        "root": "/home/ashrimp/Srv/aic-learning-io-20260915/artifacts/learning-io-readiness",
+        "registered_sha256": "141528bf0fd7cbc05a8877c8c83d032f98882a1c7d59114e05a9bc3166db9a84",
+        "files": {
+          "registered.json": "141528bf0fd7cbc05a8877c8c83d032f98882a1c7d59114e05a9bc3166db9a84",
+          "result.json": "2379109d35dc1ce7eeec0280531d3e94d1d44fc8b930cae280266d754852ad14",
+          "invocations.json": "ad085830e7cbef90ce0a1119becc1ea74993181c3ae149c05c60b420e534701a"
+        }
+      },
+      {
+        "root": "/home/ashrimp/Srv/aic-learning-io-20260915/artifacts/learning-io-readiness-run",
+        "registered_sha256": "8de10f5c1dc61a79a33714ce772bb836049aa21e935a381161512f72e8c5fc69",
+        "files": {
+          "registered.json": "8de10f5c1dc61a79a33714ce772bb836049aa21e935a381161512f72e8c5fc69",
+          "result.json": "d5a6b670025aa78db5a68464f62a37fb5a165a2c91adf7bb0bd5130b182c5880",
+          "matrix.json": "57c050f924d6917a70fbf81e16b884c168fd2c36708a079f281b3323b8728f3d",
+          "small.json": "49b7ea3f978e9c97e24ffe6081acd2cd78563cbf94d643e649463fcfb6b76c25",
+          "small/report.json": "341943a3a37b880e27ada9f97327cd1125d32c7bd291ba951dcadf93a2bc47a0",
+          "small-admissions.json": "350c1efbbeb31e9413bb74f8eb120bd49df4e6ef76bd30f6be3914aa4707140c",
+          "small-identities.json": "48b8e58af9b2d02fc02367394cbc92682b183b2c52109f4c00400a2d36eaeb09",
+          "small-split-audit.json": "c1cbb6d5e7cb60e79923434dcbbeac3b1578702bbe3742254806ff561894236b",
+          "storage-breakdown.json": "b45ab2047cf1cedc13adf6f286dabf29e97f4d0a625409628d0692464e94697b",
+          "closeout.json": "071791a968ced59046cb47e2dffb10cf7114dc565427411b148f58a0b51de806",
+          "panel-v1/panel.json": "ee3bbff1ce7b66a84e9496c5759cd13931dc4889a945a07efa3b8a91b85e1fa8",
+          "panel-v2/panel.json": "d3b33ee8251b90e9a6574c122f4ec82fedb40530b0ee0333d84167262ec8e637",
+          "small/checkpoints/00000001/manifest.json": "5d23ab34b4bf1492b8b31c2d63d99d747a342341f908542b43be17245d6a1b7e",
+          "small/checkpoints/00000003/manifest.json": "6a796245c38bc39e61579e7d2fb00a74af46de3571742dbd18f1db2afb9e9654",
+          "small/checkpoints/00000004/manifest.json": "3f62e6444bfb2932eedb06637d74350d5172810eb2a3aaabed731b2dfd16cdd4"
+        }
+      }
+    ]
   }
 }

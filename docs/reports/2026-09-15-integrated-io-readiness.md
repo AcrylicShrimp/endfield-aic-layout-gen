@@ -1,166 +1,147 @@
-# Integrated I/O readiness: correctness passes, comparison allocation blocked
+# Integrated I/O readiness: contracts pass, expanded learning not cleared
 
-The corrected I/O contracts and the small native learning/recovery gate pass.
-The four cold comparison arms **have not started**. The diagnostic retention
-preflight blocks their allocation under the approved 4 GiB output ceiling.
-There is no final quality difference or comparable production throughput result.
-Long training and pretraining remain **not cleared**; this does not reverse the
-completed I/O corrections.
+The corrected I/O pipeline passes its integrated correctness, ownership, recovery,
+resource and split checks. The fixed four-arm cold comparison also completed.
+Its corrected-minus-baseline quality delta is **-1.129 percentage points**, so the
+bounded screen does not clear long training or pretraining. This result does not
+restore any known-broken I/O behavior.
 
-## What passed
+## Verdict
 
-Plans 00–05 establish the single learned version boundary, translation-invariant
-working frame, authoritative physical inputs, complete terminal-bound actions,
-available-family priors and canonical physical/root reservations. Their retained
-CPU/CUDA ownership, likelihood, masked-gradient and exact next-update checkpoint
-evidence remains applicable. The complete learning-enabled workspace tests passed
-again with the final native diagnostic helpers, including the nonempty replay,
-Adam and RNG continuation test. Default workspace checks/tests also passed.
-
-The explicit ignored `integrated_io_readiness_matrix` test exercises seven native
-cases and 12 `Runtime::step` calls. It records actual replies once per case;
-there is no normal-training journal or per-action disk output.
-
-| Evidence | Observed |
+| Question | Result |
 | --- | --- |
-| Charged decisions / selection errors / uncharged closed-session reply | 9 / 2 / 1 |
-| Improved / accepted worse / unfinished / unchanged / rejected replies | 1 / 1 / 3 / 3 / 2 |
-| Native route / preflight expansions | 2,611 / 1,820 |
-| Route calls / complete-candidate validations | 9 / 3 |
-| Exact work exhaustion | One expansion consumed; unfinished draft and valid best retained |
-| Wall cancellation | No charged decision; no geometry label |
-| Current versus best | Accepted worse keeps its actual metrics; unfinished states have no current acceptance metrics |
-| True horizon | First decision remains live; second completes the configured two-decision episode |
+| Are the corrected I/O and learning contracts integrated? | **Yes** |
+| Did all four arms finish their fixed 32 updates and 32,768 samples? | **Yes** |
+| Are the actual admitted starts complete and disjoint from evaluation roots? | **Yes**, 512 starts per arm, zero overlaps |
+| Did normal checkpoint resume preserve nonempty learning state? | **Yes** |
+| Did corrected quality beat the immutable baseline in this screen? | **No**, -1.129 pp |
+| Is expanded training cleared? | **No** |
 
-The matrix disables band masking to exercise a native rejected band. Scientific
-arms retain structural masking. Complete-candidate validation failure uses an
-explicit post-admission request fault injection confined to the test. Censored
-resource stops and that fault are distinguished from true episode completion;
-they are not invented policy outcomes or baseline behavior counters.
+The result is a bounded two-initialization screen. It is sufficient to reject an
+automatic expansion, but it does not identify a single causal repair or establish
+long-run learning behavior.
 
-A new 16-root panel (eight small/eight large, seed 9015071) was prepared with the
-immutable baseline and migrated to v2. Both manifests retain identical actual
-input hashes and action seeds. No confirmation case was selected by its score.
+## Cold quality comparison
 
-The actual CUDA small gate completed two waves, two streams and four updates:
-**256 fresh transitions**, four PPO critic epochs per update, two positive replay
-sequences/two labels and 64 replay uses. After ordinary input pruning, kept
-checkpoints 1 and 3 recovered all four actual admitted starts. Removing a kept
-checkpoint produced the required incomplete-evidence rejection. The offline new
-identity audit validated all four actual inputs and their roots, with zero panel
-overlaps. This checks the evidence route; it does not stand in for auditing the
-2,048 starts required by the four scientific arms.
+Each arm used 32 streams, 32 decisions per update, 64-decision episodes, 32
+updates, width 40, two message rounds and four PPO epochs. Evaluation used the
+same immutable 16-root panel with two replicates per root and only update 32.
 
-## Why the comparison did not start
+| Arm | Equal-strata mean | Small mean / improvement rate | Large mean / improvement rate |
+| --- | ---: | ---: | ---: |
+| Baseline, seed 71 | 23.958% | 42.361% / 100.0% | 5.554% / 75.0% |
+| Corrected, seed 71 | 26.932% | 41.363% / 87.5% | 12.500% / 87.5% |
+| Baseline, seed 113 | 23.784% | 39.645% / 100.0% | 7.924% / 75.0% |
+| Corrected, seed 113 | 18.553% | 30.439% / 81.25% | 6.666% / 87.5% |
+| **Two-seed mean, baseline vs corrected** | **23.871% vs 22.742%** | **41.003% vs 35.901%** | **6.739% vs 9.583%** |
 
-The small run retained **33,848,304 bytes**:
+The corrected arm gained 2.974 pp at seed 71 and lost 5.232 pp at seed 113.
+Across initializations, the small stratum lost 5.102 pp while the large stratum
+gained 2.844 pp. The required aggregate weights the two strata equally, yielding
+the final -1.129 pp screen.
 
-| Payload | Bytes |
-| --- | ---: |
-| Immutable sparse replay chunks at updates 1 and 3 | 28,153,244 |
-| Checkpoint JSON, including pending replay and live sessions | 3,929,107 |
-| Three learner snapshots | 1,543,116 |
-| Current input files | 215,557 |
-| Update reports and pointers | 7,280 |
+All 128 configured critic epochs completed per arm. The actor completed 122, 119,
+127 and 122 epochs respectively because the existing KL early-stop rule ended a
+few actor epochs; this is configured PPO behavior rather than an incomplete arm.
 
-Checkpoint interval 1 saves active, unfinished replay at each mid-wave boundary.
-Each kept odd checkpoint needs those references. Later successful labels can
-still reference the same immutable chunk, so its other serialized rows cannot
-be removed by ordinary whole-file pruning. In the small run, the final live
-buffer contains only two labels and reports 300,484 bytes, while its two retained
-chunk files still contain the earlier pending inputs.
+The comparison remains strictly matched. Seeds 71 and 113 have respectively 429
+and 432 common fresh slots, with no unmatched slot. Each arm's retained odd
+checkpoints reconstruct exactly 16 waves x 32 starts. Offline canonical physical
+and root auditing finds no overlap with the evaluation panel.
 
-This is the deliberate diagnostic cadence's cost. Normal configuration still
-saves every two updates, after full-wave positive selection prunes unsuccessful
-preparation. No persistence hook, duplicated normal snapshot, lost batching or
-new per-step validation was introduced. The four-arm design deliberately overrides
-that cadence to preserve every actual admitted source without modifying baseline
-code. Retaining fewer odd checkpoints would break its scientific evidence route.
+## Throughput and retained optimizations
 
-The final preflight estimate scales all dimensions:
+All established optimizations are present in both applicable paths: persistent
+native workers, packed graph/action inference, distributed masked placeholder
+references, one-minibatch-ahead PPO preparation, foreach Adam, sparse selected
+replay, validated-input reuse and atomic direct checkpoint restore. The readiness
+harness adds diagnostic checkpoint retention; it does not patch production or
+baseline training behavior.
+
+| Arm | Training wall time | Samples/min | Retained bytes | Peak update RSS |
+| --- | ---: | ---: | ---: | ---: |
+| Baseline 71 | 69.109 s | 28,449 | 1.687 GB | 6.048 GB |
+| Corrected 71 | 83.395 s | 23,576 | 2.879 GB | 7.758 GB |
+| Baseline 113 | 74.531 s | 26,379 | 1.709 GB | 6.221 GB |
+| Corrected 113 | 89.568 s | 21,951 | 3.020 GB | 7.069 GB |
+| **Combined rate** | **71.820 vs 86.481 s mean** | **27,375 vs 22,734** |  |  |
+
+Corrected wall time is 20.41% higher and throughput is 16.95% lower. Both
+initializations show the same wall-time increase: 20.67% and 20.18%. This crosses
+the plan's 20% investigation trigger.
+
+Phase means localize the added work. Admission falls 3.7%, while collection rises
+24.8%, PPO rises 41.3% and checkpoint publication rises 35.0%. PPO preparation
+worker time rises 66.4%, but overlaps learner work and is not added again to wall
+time. Final replay payloads are 0.87-0.89 GB in the corrected arms versus
+0.24-0.30 GB in the baseline arms. The direction is consistent with the required
+wider physical graph features (41/37/15 rather than 24/14/7) and terminal-bound
+nonlinear prefix being carried through collection, learning and diagnostic saves.
+This gate does not isolate their exact shares, so further performance work should
+profile those three phases instead of removing the required contracts.
+
+These 32-stream measurements include unusually dense evidence retention and are
+not directly comparable with the earlier optimized 128-stream rates of 33,846
+fresh or 64,326 cached samples/minute.
+
+## Correctness and recovery evidence
+
+The explicit native matrix covers seven cases and 12 `Runtime::step` calls. It
+records nine charged decisions, two selection errors and one uncharged closed-
+session reply. Improved, accepted-worse, unfinished, unchanged and rejected
+outcomes remain distinct; native route/preflight work reconciles; resource stops
+do not become geometry labels; and only the true two-decision horizon terminates
+an episode.
+
+The retained small CUDA gate completed four updates and 256 fresh transitions,
+including four critic epochs per update, two positive replay sequences, two labels
+and 64 replay uses. Checkpoints 1 and 3 recover all four actual admitted starts
+after ordinary input pruning. Removing a required checkpoint yields the expected
+incomplete-evidence rejection. The existing exact next-update test covers replay,
+Adam and RNG continuation against uninterrupted execution.
+
+The scientific final-71 arm intentionally stopped at update 3 and resumed through
+update 32. Final-113 was stopped at update 22 by the existing 16 GiB free-space
+guard. Inspection found 15,525,433,827 bytes in its isolated regenerable
+`target/debug` build cache. Removing that exact cache restored free space; no
+experiment data was removed. The arm then resumed under the same registered
+allocation and clock. The pre-recovery result and recovery registration remain
+retained. A release rebuild can recreate the removed cache.
+
+The complete allocation used 327.167 of 1,800 seconds. It retained 40,018,170
+setup bytes and 9,456,950,468 post-publication scientific-root bytes, for
+9,496,968,638 combined bytes and the same combined peak, below 24 GiB. Peak process-tree RSS was
+7,937,150,976 bytes, below 48 GiB. All owned processes exited and 31,750,643,712
+filesystem bytes remained free at closeout.
+
+The earlier 4 GiB attempt remains useful preflight evidence. Its measured small
+run projected 17,330,331,648 four-arm bytes and therefore correctly prevented any
+cold arm. The authorized 24 GiB run reused and revalidated both setup roots rather
+than rerunning the matrix, panel or small gate. Actual combined retention was
+9.50 GB; the projection was conservative.
+
+## Provenance and reproduction
+
+Baseline revision is `83f4dd8`; the corrected production revision is `5fa1586`.
+The registered binaries, catalogs, templates, setup roots, panel hashes, final
+updates, checkpoint manifests and admission audits are recorded in the companion
+[compact evidence manifest](2026-09-15-integrated-io-readiness-evidence.json).
+The complete raw result is retained at:
 
 ```text
-33,848,304 bytes × (32 / 2 streams) × (16 / 2 waves) × 4 arms
-= 17,330,331,648 bytes ≈ 16.14 GiB
+/home/ashrimp/Srv/aic-learning-io-20260915/artifacts/learning-io-readiness-scientific/result.json
 ```
 
-This is a planning estimate, **not a measured four-arm output or certified bound**:
-geometry, replay selection, checkpoint overhead and later cleanup affect it.
-The initial preflight code used an insufficient factor of 128; even that estimate
-(4,332,582,912 bytes) exceeded the 4 GiB ceiling and stopped before any cold arm.
-The tool now uses the correct factor of 512, covered by a unit check. No workload
-was rerun to validate this arithmetic correction.
-
-A concrete next allocation is **24 GiB retained output**, keeping 48 GiB RSS,
-exactly four cold arms/131,072 transitions, the same seeds/panel/budgets/epochs,
-and a new 1,800-second execution ceiling. Reuse the retained panel and completed
-small-gate evidence. This proposal is **not authorized or executed**. It requires
-an explicit allocation decision and a reviewed plan amendment. An alternative
-within 4 GiB would need a newly reviewed evidence-retention design; silently
-skipping snapshots or changing training size is not an option.
-
-## Runtime and optimization continuity
-
-All established optimizations remain: persistent native workers, packed
-multi-graph/root/port inference, distributed masked placeholder references,
-one-minibatch-ahead PPO preparation, foreach Adam, sparse selected replay,
-validated-input reuse and atomic direct checkpoint restore. Neither baseline nor
-production code was patched by this diagnostic.
-
-The small CLI run takes 2.268 seconds: admission 0.234, collection 1.104,
-PPO 0.575 and checkpoint publication 0.189 seconds. It reports 6,774 samples/minute
-and 2.467 GB peak process RSS; the outer process-tree sampler observes 2.559 GB.
-Those 256 samples include initialization and only two streams. They are **not a
-throughput comparison** with the earlier optimized 128-stream fresh-input rate
-of 33,846 samples/minute, or its 64,326 cached-input rate.
-
-The planned 32-stream comparison must still measure matched end-to-end cost,
-including generation, evaluation and diagnostic retention. PPO preparation-worker
-time overlaps learner execution and must not be added again. An unexplained
-20% end-to-end regression remains an investigation/adoption blocker. No such
-regression or improvement has been measured by this gate.
-
-## Execution, provenance and recovery
-
-The first small configuration was rejected before training because its 256-row
-minibatch exceeded its two-stream, 64-row chunk. The helper was corrected to 64.
-The completed matrix and actual panel were reused in a new output root, carrying
-forward the first attempt's clock and output accounting. No learning samples
-were duplicated, no panel was redrawn and no budget was extended. The resumed
-preflight stopped at 133.317 seconds on the original clock, after 2.717 seconds
-for the actual small CLI invocation. Subsequent bounded identity auditing uses
-those retained inputs, not generated replacements.
-
-Research host roots:
-
-```text
-/home/ashrimp/Srv/aic-io-baseline-83f4dd8
-/home/ashrimp/Srv/aic-learning-io-20260915/artifacts/learning-io-readiness
-/home/ashrimp/Srv/aic-learning-io-20260915/artifacts/learning-io-readiness-run
-```
-
-Baseline revision is `83f4dd8`; production implementation is `5fa1586` with only
-explicit test/orchestration additions for this step. Binary/catalog/input hashes,
-actual checkpoint sizes and verification evidence are in the companion
-`2026-09-15-integrated-io-readiness-evidence.json`. Actual checkpoint 3 and final
-checkpoint 4, their referenced chunks, all four admitted sources and both panel
-views remain retained. All owned training, test and diagnostic processes exited.
-
-The new `io-readiness.mjs` command validates paths and registered binary/catalog/
-helper hashes, executes arms sequentially, verifies retained checkpoint hashes,
-audits actual current/root identities and reports only final-update evaluations.
-Its budget-failure test kills owned descendants and preserves actual evidence.
-Missing-checkpoint and descendant-root rejection checks pass. Failed or missing
-scientific evidence cannot produce a favorable quality screen.
-
-Use a new artifact root and a newly registered configuration for reproduction:
+Run a reproduction only in a new artifact root:
 
 ```sh
 node --test tools/native-training/io-readiness.test.mjs
 node tools/native-training/io-readiness.mjs \
   --config tools/native-training/io-readiness.json \
-  --output /home/ashrimp/Srv/aic-learning-io-20260915/artifacts/learning-io-readiness-reproduction
+  --output /new/ignored/artifact/root
 ```
 
-The checked-in 4 GiB allocation retains the preflight blocker. Do not change that
-ceiling or restart the four-arm allocation without the recorded decision/review.
+`io-readiness-recover.mjs` is a narrow continuation command for a registered
+partial result after a removable host-space blocker. It preserves the original
+elapsed clock, invocation ledger and resource accounting and refuses unrelated or
+already complete results. It is not a general way to extend an allocation.
