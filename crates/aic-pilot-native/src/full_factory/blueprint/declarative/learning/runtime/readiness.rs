@@ -1,6 +1,7 @@
 //! Explicit bounded diagnostic; never invoked by normal collection.
 use super::*;
 use crate::full_factory::blueprint::declarative::tests::session;
+use std::collections::BTreeMap;
 
 #[derive(Default, Serialize)]
 struct Counts {
@@ -58,9 +59,26 @@ fn band(runtime: &mut Runtime, counts: &mut Counts, kind: usize, at: i64) -> Val
     let o = runtime.observe().unwrap();
     let root = runtime
         .learning
+        .action_domain()
         .roots
         .iter()
-        .position(|r| r.kind == kind && matches!(r.axis, Axis::X) && r.at == at && r.count == 1)
+        .position(|r| match r.action {
+            crate::physical_editor::PhysicalRootAction::InsertBand {
+                axis,
+                at: value,
+                count,
+            } if kind == 1 => {
+                matches!(axis, crate::physical_editor::Axis::X) && value == at && count == 1
+            }
+            crate::physical_editor::PhysicalRootAction::DeleteBand {
+                axis,
+                at: value,
+                count,
+            } if kind == 2 => {
+                matches!(axis, crate::physical_editor::Axis::X) && value == at && count == 1
+            }
+            _ => false,
+        })
         .expect("scripted band exists");
     let reply = runtime.step(o.handle, root, &[]);
     counts.record(runtime, reply)
@@ -126,32 +144,47 @@ fn integrated_io_readiness_matrix() {
                     r.session.config.max_total_route_expansions = 1;
                 }
                 let o = r.observe().unwrap();
+                let actions = r.learning.action_domain();
                 let root = r
                     .learning
+                    .action_domain()
                     .roots
                     .iter()
                     .position(|p| {
-                        p.kind == 0
-                            && p.rotation == 90
+                        let crate::physical_editor::PhysicalRootAction::Place {
+                            block,
+                            position,
+                            rotation,
+                            ..
+                        } = &p.action
+                        else {
+                            return false;
+                        };
+                        *rotation == 90
                             && if name == "work-exhaustion" {
-                                r.session.blueprint.facilities[p.owner].instance == "C1"
-                                    && p.x == 27
-                                    && p.y == 13
+                                r.session.blueprint.facilities[*block].instance == "C1"
+                                    && position.x == 27
+                                    && position.y == 13
                             } else {
-                                r.session.blueprint.facilities[p.owner].instance == "A0"
-                                    && p.x == 2
-                                    && p.y == 7
+                                r.session.blueprint.facilities[*block].instance == "A0"
+                                    && position.x == 2
+                                    && position.y == 7
                             }
                     })
                     .expect("fixture placement is available");
-                let p = &r.learning.roots[root];
-                let ports: Vec<_> = r.learning.facilities[p.owner]
-                    .groups
+                let crate::physical_editor::PhysicalRootAction::Place { port_group, .. } =
+                    actions.roots[root].action
+                else {
+                    unreachable!()
+                };
+                let ports: Vec<_> = actions.port_groups[port_group]
                     .iter()
                     .map(|g| {
                         g.ports
                             .iter()
-                            .position(|port| Some(port) == r.session.state.ports[g.node].as_ref())
+                            .position(|port| {
+                                Some(port) == r.session.common_state.selected_ports[g.node].as_ref()
+                            })
                             .unwrap()
                     })
                     .collect();

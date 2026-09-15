@@ -1,6 +1,9 @@
 //! Source admission for the common physical editor state.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    sync::Arc,
+};
 
 use aic_layout::{
     editor::{
@@ -16,6 +19,7 @@ use serde::{Deserialize, Serialize};
 
 mod candidates;
 mod core;
+pub mod learning;
 mod session;
 pub use candidates::{
     PhysicalActionDomain, PhysicalActionRoot, PhysicalCandidateAuthority, PhysicalCandidateOptions,
@@ -127,7 +131,7 @@ pub struct ProceduralSourceOwner {
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct ProceduralAdmission {
-    pub problem: CompiledProblemV1,
+    pub problem: Arc<CompiledProblemV1>,
     pub draft: PhysicalDraftV1,
     pub owner: ProceduralSourceOwner,
 }
@@ -243,12 +247,17 @@ impl ProceduralAdmission {
                     .clone()
             })
             .collect();
-        let used_transports: BTreeSet<_> = original
-            .problem
-            .connections
-            .iter()
-            .map(|connection| connection.transport)
-            .collect();
+        let mut used_transports = BTreeSet::from([
+            aic_layout::logistics::TransportKind::Belt,
+            aic_layout::logistics::TransportKind::Pipe,
+        ]);
+        used_transports.extend(
+            original
+                .problem
+                .connections
+                .iter()
+                .map(|connection| connection.transport),
+        );
         let transports = catalogs
             .transports
             .catalog()
@@ -494,7 +503,7 @@ impl ProceduralAdmission {
             source_nodes,
         };
         let admission = Self {
-            problem,
+            problem: Arc::new(problem),
             draft,
             owner,
         };
@@ -902,6 +911,109 @@ mod tests {
             .unwrap();
         assert_eq!(a, b);
         assert_ne!(renamed.source_sha256(), original.source_sha256());
+    }
+
+    fn learning_limits() -> PhysicalSessionLimits {
+        PhysicalSessionLimits {
+            max_actions: 10,
+            elapsed_ms: 60_000,
+            route_expansions: 1_000_000,
+            max_total_route_expansions: 10_000_000,
+            search_padding: 8,
+        }
+    }
+
+    fn learning_options() -> PhysicalCandidateOptions {
+        PhysicalCandidateOptions {
+            translation_steps: vec![-1, 1],
+            band_counts: vec![1],
+            structural_band_mask: true,
+        }
+    }
+
+    #[test]
+    fn procedural_learning_is_translation_and_opaque_relabel_invariant() {
+        let catalogs = catalogs();
+        let translated = translated(NO_BRIDGE, 17, 23);
+        let renamed = renamed(NO_BRIDGE);
+        let mut sessions = [
+            ProceduralSession::new(NO_BRIDGE, &catalogs, learning_limits()).unwrap(),
+            ProceduralSession::new(&translated, &catalogs, learning_limits()).unwrap(),
+            ProceduralSession::new(&renamed, &catalogs, learning_limits()).unwrap(),
+        ];
+        for session in &sessions {
+            let kinds: BTreeSet<_> = session
+                .problem()
+                .used_catalog
+                .transports
+                .iter()
+                .map(|definition| definition.kind)
+                .collect();
+            assert_eq!(
+                kinds,
+                BTreeSet::from([
+                    aic_layout::logistics::TransportKind::Belt,
+                    aic_layout::logistics::TransportKind::Pipe,
+                ])
+            );
+        }
+        let options = learning_options();
+        let observations = sessions
+            .iter_mut()
+            .map(|session| session.observe_learning(&options).unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(*observations[0].input, *observations[1].input);
+        assert_eq!(*observations[0].input, *observations[2].input);
+        assert_eq!(*observations[0].domain, *observations[1].domain);
+        assert_eq!(*observations[0].domain, *observations[2].domain);
+        assert_ne!(observations[0].source_sha256, observations[1].source_sha256);
+        assert_ne!(observations[0].source_sha256, observations[2].source_sha256);
+    }
+
+    #[test]
+    fn procedural_learning_reuses_one_domain_and_refreshes_attempt_context() {
+        let catalogs = catalogs();
+        let mut session = ProceduralSession::new(NO_BRIDGE, &catalogs, learning_limits()).unwrap();
+        let options = learning_options();
+        let first = session.observe_learning(&options).unwrap();
+        let public = session.observe_actions(&options).unwrap();
+        assert_eq!(first.handle, public.handle);
+        assert_eq!(first.revision, public.revision);
+        assert_eq!(first.attempts, public.attempts);
+
+        let rejected = session.step_candidate(
+            &first.source_sha256,
+            first.revision,
+            first.handle,
+            usize::MAX,
+            &[],
+            &catalogs,
+        );
+        assert!(rejected.charged);
+        assert_eq!(rejected.status, "rejected");
+        assert_eq!(session.revision(), first.revision);
+
+        let refreshed = session.observe_learning(&options).unwrap();
+        assert_ne!(refreshed.handle, first.handle);
+        assert_eq!(refreshed.attempts, first.attempts + 1);
+        assert_eq!(refreshed.input.action_features, first.input.action_features);
+        assert_eq!(
+            refreshed.input.action_references,
+            first.input.action_references
+        );
+        assert_eq!(refreshed.input.root_meta, first.input.root_meta);
+        assert_eq!(refreshed.input.root_invalid, first.input.root_invalid);
+        assert_ne!(refreshed.input.global_features, first.input.global_features);
+
+        let changed = PhysicalCandidateOptions {
+            translation_steps: vec![-2, 2],
+            ..options
+        };
+        let changed_domain = session.observe_actions(&changed).unwrap();
+        assert_ne!(changed_domain.handle, refreshed.handle);
+        let stale = session.step_learning(&refreshed, 0, &[], &catalogs);
+        assert!(stale.charged);
+        assert_eq!(stale.status, "rejected");
     }
 
     fn normalized_domain(
@@ -1312,7 +1424,7 @@ mod tests {
     fn common_router_preserves_distinct_zero_length_nodes() {
         let catalogs = catalogs();
         let admitted = ProceduralAdmission::compile(NO_BRIDGE, &catalogs).unwrap();
-        let mut problem = admitted.problem;
+        let mut problem = admitted.problem.as_ref().clone();
         let mut draft = admitted.draft;
         let network = problem.edges[0].network;
         let mut nodes = problem.nodes[..2].to_vec();

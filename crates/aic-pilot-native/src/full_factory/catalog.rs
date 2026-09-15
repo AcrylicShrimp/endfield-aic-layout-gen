@@ -3,7 +3,7 @@ use indexmap::IndexMap;
 
 use super::types::*;
 
-pub use aic_layout::projection::{Port, edge_index, rotate};
+pub use aic_layout::projection::{Port, rotate};
 
 pub fn placement_ports(p: &FacilityPlacement, catalogs: &FactoryEditCatalogs) -> Result<Vec<Port>> {
     let spec = catalogs.facilities.facility(&p.facility).ok_or_else(|| {

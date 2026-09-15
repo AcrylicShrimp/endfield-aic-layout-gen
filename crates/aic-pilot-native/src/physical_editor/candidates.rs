@@ -6,7 +6,7 @@ use std::{
 };
 
 use aic_layout::{
-    editor::{CompiledProblemV1, PhysicalDraftV1, occupied_extents},
+    editor::{CompiledProblemV1, PhysicalDraftV1},
     geometry::Point,
 };
 use serde::{Deserialize, Serialize};
@@ -145,6 +145,7 @@ impl PhysicalCandidateAuthority {
         revision: u64,
         attempts: u64,
     ) -> Result<PhysicalActionDomain> {
+        aic_layout::editor::validate_compiled(problem, draft).map_err(compiled_error)?;
         let port_groups = (0..problem.blocks.len())
             .map(|owner| canonical_block_port_domains(problem, owner))
             .collect::<Result<Vec<_>>>()?;
@@ -169,7 +170,8 @@ impl PhysicalCandidateAuthority {
         port_groups: Vec<Vec<PortDomain>>,
     ) -> Result<u64> {
         options.validate()?;
-        let (low, high) = occupied_extents(problem, draft).map_err(compiled_error)?;
+        let (low, high) =
+            aic_layout::editor::occupied_extents_checked(problem, draft).map_err(compiled_error)?;
         let mut roots = Vec::new();
         for (owner, block) in problem.blocks.iter().enumerate() {
             let mut destinations = BTreeSet::from([draft.poses[owner].position]);
@@ -240,9 +242,15 @@ impl PhysicalCandidateAuthority {
         &self.roots
     }
 
-    #[cfg(test)]
-    pub(crate) fn port_groups(&self) -> &[Vec<PortDomain>] {
-        &self.port_groups
+    pub(crate) fn domain(&self) -> PhysicalActionDomain {
+        PhysicalActionDomain {
+            schema: "physical-action-domain-v1",
+            handle: self.handle,
+            revision: self.revision,
+            attempts: self.attempts,
+            port_groups: self.port_groups.clone(),
+            roots: self.roots.clone(),
+        }
     }
 
     pub(crate) fn refresh_context(&mut self, revision: u64, attempts: u64) -> u64 {

@@ -1,19 +1,7 @@
 //! Typed Rust entry point over the same session, candidate and evidence authority.
 use super::*;
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct PortGroup {
-    pub graph_node: usize,
-    /// Admission equivalence classes; refinements by current features still apply.
-    pub equivalence: usize,
-    pub port_equivalences: Vec<usize>,
-    pub ports: Vec<String>,
-    pub features: BTreeMap<i64, (usize, usize)>,
-}
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Domain {
-    pub groups: Vec<Vec<PortGroup>>,
-}
+pub use crate::physical_editor::learning::{Domain, PortGroup};
 #[derive(Clone)]
 pub struct Observation {
     pub input: Arc<Input>,
@@ -27,7 +15,6 @@ pub struct Observation {
 pub struct Runtime {
     session: Session,
     learning: Learning,
-    domain: Arc<Domain>,
     chunk: Option<trace::Chunk>,
 }
 fn diagnostic(d: Diagnostic) -> String {
@@ -39,28 +26,9 @@ impl Runtime {
     }
     fn from_session(session: Session, options: Options) -> std::result::Result<Self, String> {
         let learning = Learning::new(&session, options).map_err(diagnostic)?;
-        let domain = Arc::new(Domain {
-            groups: learning
-                .facilities
-                .iter()
-                .map(|f| {
-                    f.groups
-                        .iter()
-                        .map(|g| PortGroup {
-                            graph_node: learning.tables.nodes[g.node],
-                            equivalence: g.equivalence,
-                            port_equivalences: g.port_equivalences.clone(),
-                            ports: g.ports.clone(),
-                            features: g.features.clone(),
-                        })
-                        .collect()
-                })
-                .collect(),
-        });
         Ok(Self {
             session,
             learning,
-            domain,
             chunk: None,
         })
     }
@@ -87,11 +55,14 @@ impl Runtime {
         )
     }
     pub fn observe(&mut self) -> std::result::Result<Observation, String> {
-        let input = self.learning.observe(&self.session).map_err(diagnostic)?;
+        let observation = self
+            .learning
+            .observe_common(&self.session)
+            .map_err(diagnostic)?;
         Ok(Observation {
-            input,
-            domain: self.domain.clone(),
-            handle: self.learning.handle,
+            input: observation.input,
+            domain: observation.domain,
+            handle: observation.handle,
             blueprint_sha256: self.session.blueprint_sha256.clone(),
             revision: self.session.revision,
             attempts: self.session.attempts,

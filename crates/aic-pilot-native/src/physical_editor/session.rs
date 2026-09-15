@@ -6,8 +6,8 @@ use aic_layout::{physical::Metrics, validation};
 use serde::{Deserialize, Serialize};
 
 use super::{
-    EditWork, PhysicalActionDomain, PhysicalCandidateAuthority, PhysicalCandidateOptions,
-    PhysicalEdit, PhysicalEditLimits, ProceduralAdmission, Result, error,
+    EditWork, PhysicalActionDomain, PhysicalCandidateOptions, PhysicalEdit, PhysicalEditLimits,
+    ProceduralAdmission, Result, error,
 };
 
 pub const SNAPSHOT_SCHEMA: &str = "physical-editor-checkpoint-v4";
@@ -93,7 +93,7 @@ pub struct ProceduralSession {
     work: SessionWork,
     started: Instant,
     elapsed_before: Duration,
-    candidates: PhysicalCandidateAuthority,
+    learning: super::learning::Learning,
 }
 
 impl ProceduralSession {
@@ -112,6 +112,7 @@ impl ProceduralSession {
                     failure.message,
                 )
             })?;
+        let learning = super::learning::Learning::new(admission.problem.clone(), &admission.draft)?;
         Ok(Self {
             current: admission.draft.clone(),
             best: admission.draft.clone(),
@@ -124,7 +125,7 @@ impl ProceduralSession {
             work: SessionWork::default(),
             started: Instant::now(),
             elapsed_before: Duration::ZERO,
-            candidates: PhysicalCandidateAuthority::default(),
+            learning,
         })
     }
 
@@ -162,13 +163,33 @@ impl ProceduralSession {
         &mut self,
         options: &PhysicalCandidateOptions,
     ) -> Result<PhysicalActionDomain> {
-        self.candidates.enumerate(
-            &self.admission.problem,
-            &self.current,
-            options,
-            self.revision,
-            self.attempts,
-        )
+        Ok(self
+            .learning
+            .prepare_domain(&self.current, self.revision, self.attempts, options)?
+            .actions)
+    }
+
+    pub fn observe_learning(
+        &mut self,
+        options: &PhysicalCandidateOptions,
+    ) -> Result<super::learning::Observation> {
+        let initial_score = metric_score(&self.initial_metrics);
+        let best_score = metric_score(&self.best_metrics);
+        let source_sha256 = self.source_sha256().to_owned();
+        let context = super::learning::Context {
+            source_sha256: &source_sha256,
+            initial_score,
+            best_score,
+            attempts: self.attempts,
+            max_actions: self.limits.max_actions,
+            route_work: self.work.route_expansions,
+            max_total_route_work: self.limits.max_total_route_expansions,
+            per_action_route_work: self.limits.route_expansions,
+            search_padding: self.limits.search_padding,
+            done: self.done(),
+        };
+        self.learning
+            .observe(&self.current, self.revision, context, options)
     }
 
     pub fn step_candidate(
@@ -181,7 +202,7 @@ impl ProceduralSession {
         catalogs: &validation::Catalogs,
     ) -> PhysicalSessionOutcome {
         match self
-            .candidates
+            .learning
             .select(handle, revision, self.attempts, root, ports)
         {
             Ok(action) => self.step(source_sha256, revision, action, catalogs),
@@ -203,6 +224,23 @@ impl ProceduralSession {
                 }
             }
         }
+    }
+
+    pub fn step_learning(
+        &mut self,
+        observation: &super::learning::Observation,
+        root: usize,
+        ports: &[usize],
+        catalogs: &validation::Catalogs,
+    ) -> PhysicalSessionOutcome {
+        self.step_candidate(
+            &observation.source_sha256,
+            observation.revision,
+            observation.handle,
+            root,
+            ports,
+            catalogs,
+        )
     }
 
     pub fn step(
@@ -336,7 +374,7 @@ impl ProceduralSession {
             source_sha256: self.source_sha256().into(),
             catalog_sha256: self.admission.problem.catalog_sha256.clone(),
             common_problem_sha256: digest(&self.admission.problem),
-            problem: self.admission.problem.clone(),
+            problem: self.admission.problem.as_ref().clone(),
             current: self.current.clone(),
             best: self.best.clone(),
             best_metrics: self.best_metrics.clone(),
@@ -376,7 +414,7 @@ impl ProceduralSession {
         let admission = ProceduralAdmission::compile(source, catalogs)?;
         if snapshot.source_sha256 != admission.source_sha256()
             || snapshot.catalog_sha256 != catalogs.identity
-            || snapshot.problem != admission.problem
+            || snapshot.problem != *admission.problem
             || snapshot.common_problem_sha256 != digest(&snapshot.problem)
         {
             return Err(error(
@@ -406,6 +444,8 @@ impl ProceduralSession {
                 "best metrics are inconsistent or worse than the initial layout",
             ));
         }
+        let learning =
+            super::learning::Learning::new(admission.problem.clone(), &snapshot.current)?;
         Ok(Self {
             admission,
             current: snapshot.current,
@@ -418,13 +458,17 @@ impl ProceduralSession {
             work: snapshot.work,
             started: Instant::now(),
             elapsed_before: Duration::from_nanos(snapshot.elapsed_ns),
-            candidates: PhysicalCandidateAuthority::default(),
+            learning,
         })
     }
 }
 
 fn metric_key(metrics: &Metrics) -> (u64, i64, i64, u64) {
     (metrics.area, metrics.width, metrics.height, metrics.turns)
+}
+
+fn metric_score(metrics: &Metrics) -> [u64; 3] {
+    [metrics.area, metrics.transport_cells, metrics.turns]
 }
 
 fn digest(value: &impl Serialize) -> String {

@@ -1,6 +1,5 @@
 //! Isolated declarative-action experiment; the original incidence never mutates.
 
-use std::collections::BTreeMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
@@ -138,36 +137,6 @@ pub struct Session {
 }
 
 impl Session {
-    fn common_facility(&self, id: &str) -> &aic_layout::facilities::FacilityDefinition {
-        self.common_problem
-            .used_catalog
-            .facilities
-            .iter()
-            .find(|definition| definition.id == id)
-            .expect("validated common facility")
-    }
-
-    fn common_component(&self, id: &str) -> &aic_layout::logistics::LogisticsComponentDefinition {
-        self.common_problem
-            .used_catalog
-            .components
-            .iter()
-            .find(|definition| definition.id == id)
-            .expect("validated common component")
-    }
-
-    fn common_transport(
-        &self,
-        kind: aic_layout::logistics::TransportKind,
-    ) -> &aic_layout::logistics::TransportDefinition {
-        self.common_problem
-            .used_catalog
-            .transports
-            .iter()
-            .find(|definition| definition.kind == kind)
-            .expect("validated common transport")
-    }
-
     pub fn new(
         request: FactoryEditRequest,
         original: Witness,

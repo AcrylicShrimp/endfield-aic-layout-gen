@@ -410,6 +410,114 @@ fn occupied_extents_validated(
     ))
 }
 
+/// Returns occupied bounds after checking only the inputs used by the extent
+/// calculation. Session-owned hot paths use this after the complete compiled
+/// boundary was admitted once; malformed standalone values still return an
+/// error instead of reaching the validated implementation's indexed lookups.
+pub fn occupied_extents_checked(
+    problem: &CompiledProblemV1,
+    draft: &PhysicalDraftV1,
+) -> Result<(Point, Point), CompiledValidationError> {
+    if problem.schema != COMPILED_SCHEMA
+        || draft.schema != DRAFT_SCHEMA
+        || draft.poses.len() != problem.blocks.len()
+        || draft.selected_ports.len() != problem.nodes.len()
+        || draft.anchors.len() != problem.nodes.len()
+        || draft.component_positions.len() != problem.components.len()
+        || draft.paths.len() != problem.edges.len()
+    {
+        return Err(invalid(
+            "extent-shape",
+            "draft",
+            "compiled problem and draft shapes differ",
+        ));
+    }
+    let facilities: BTreeMap<_, _> = problem
+        .used_catalog
+        .facilities
+        .iter()
+        .map(|definition| (definition.id.as_str(), definition))
+        .collect();
+    let components: BTreeMap<_, _> = problem
+        .used_catalog
+        .components
+        .iter()
+        .map(|definition| (definition.id.as_str(), definition))
+        .collect();
+    for (block, pose) in problem.blocks.iter().zip(&draft.poses) {
+        let Some(definition) = facilities.get(block.facility.as_str()) else {
+            return Err(invalid(
+                "extent-facility",
+                &block.id,
+                "block facility definition is absent",
+            ));
+        };
+        if !definition.allowed_rotations.contains(&pose.rotation) {
+            return Err(invalid(
+                "extent-rotation",
+                &block.id,
+                "block rotation is outside the facility domain",
+            ));
+        }
+    }
+    for node in &problem.nodes {
+        if node.id >= problem.nodes.len() {
+            return Err(invalid(
+                "extent-node",
+                node.id.to_string(),
+                "node ID is outside the dense node bank",
+            ));
+        }
+        if let Some(CompiledTerminal::Facility { block, .. }) = &node.terminal {
+            let Some(owner) = problem.blocks.get(*block) else {
+                return Err(invalid(
+                    "extent-owner",
+                    node.id.to_string(),
+                    "terminal block owner is absent",
+                ));
+            };
+            let definition = facilities.get(owner.facility.as_str()).ok_or_else(|| {
+                invalid(
+                    "extent-facility",
+                    &owner.id,
+                    "terminal facility definition is absent",
+                )
+            })?;
+            let selected = draft.selected_ports[node.id].as_deref().ok_or_else(|| {
+                invalid(
+                    "extent-port",
+                    node.id.to_string(),
+                    "facility terminal has no selected port",
+                )
+            })?;
+            if !definition.ports.iter().any(|port| port.id == selected) {
+                return Err(invalid(
+                    "extent-port",
+                    node.id.to_string(),
+                    "selected port is absent from its facility definition",
+                ));
+            }
+        }
+    }
+    for component in &problem.components {
+        let Some(definition) = components.get(component.definition.as_str()) else {
+            return Err(invalid(
+                "extent-component",
+                &component.id,
+                "component definition is absent",
+            ));
+        };
+        if !definition.allowed_rotations.contains(&component.rotation) {
+            return Err(invalid(
+                "extent-rotation",
+                &component.id,
+                "component rotation is outside the definition domain",
+            ));
+        }
+    }
+    occupied_extents_validated(problem, draft)
+}
+
 /// Returns the complete occupied bounds used by every physical action domain.
 pub fn occupied_extents(
     problem: &CompiledProblemV1,
@@ -1169,6 +1277,30 @@ mod tests {
         assert_eq!(
             validate_compiled(&problem, &draft).unwrap_err().code,
             "coordinate-guard"
+        );
+    }
+
+    #[test]
+    fn extent_only_boundary_rejects_malformed_indexed_inputs() {
+        let (problem, mut draft) = fixture();
+        draft.selected_ports.clear();
+        assert_eq!(
+            occupied_extents_checked(&problem, &draft).unwrap_err().code,
+            "extent-shape"
+        );
+
+        let (mut problem, draft) = fixture();
+        problem.nodes[0].id = usize::MAX;
+        assert_eq!(
+            occupied_extents_checked(&problem, &draft).unwrap_err().code,
+            "extent-node"
+        );
+
+        let (problem, mut draft) = fixture();
+        draft.selected_ports[0] = Some("absent".into());
+        assert_eq!(
+            occupied_extents_checked(&problem, &draft).unwrap_err().code,
+            "extent-port"
         );
     }
 }

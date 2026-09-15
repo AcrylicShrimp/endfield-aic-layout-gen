@@ -1,14 +1,17 @@
 //! Physical graph authority. Names are lookup keys only; equality is represented by edges.
 use super::*;
-use aic_data::logistics::{
-    CardinalDirection, LogisticsComponentKind, TransportCapacity, TransportKind,
+use aic_layout::{
+    editor::{CompiledEdge, CompiledProblemV1, CompiledTerminal, PhysicalDraftV1},
+    facilities::FacilityPortDirection,
+    logistics::{CardinalDirection, LogisticsComponentKind, TransportCapacity, TransportKind},
+    rate::Rate,
 };
 use schema::{edge as e, node as n, state as st};
 
 pub(super) struct Tables {
     pub facilities: Vec<usize>,
     pub nodes: Vec<usize>,
-    components: BTreeMap<String, usize>,
+    components: Vec<usize>,
     ports: Vec<BTreeMap<String, usize>>,
     networks: Vec<usize>,
     fixed: Input,
@@ -30,7 +33,7 @@ fn rate(value: Rate) -> f32 {
 }
 fn capacity(value: &TransportCapacity) -> Result<Rate> {
     Rate::from_quantity_per_duration_ms(value.quantity, value.duration_ms)
-        .map_err(|d| error("learning-capacity", d.message, "catalog.capacity"))
+        .map_err(|d| error("learning-capacity", "catalog.capacity", d.message))
 }
 fn cardinal(d: CardinalDirection) -> usize {
     match d {
@@ -61,19 +64,32 @@ fn rotations(row: &mut [f32; NODE_STATIC], values: &[i64]) {
     }
 }
 impl Tables {
-    pub fn new(session: &Session, facilities: &[Facility]) -> Result<Self> {
-        let bp = &session.blueprint;
+    pub fn new(problem: &CompiledProblemV1, facilities: &[Facility]) -> Result<Self> {
         let exact_capacities = [TransportKind::Belt, TransportKind::Pipe]
-            .map(|kind| capacity(&session.common_transport(kind).capacity))
+            .map(|kind| {
+                problem
+                    .used_catalog
+                    .transports
+                    .iter()
+                    .find(|definition| definition.kind == kind)
+                    .ok_or_else(|| {
+                        error(
+                            "learning-catalog",
+                            format!("{kind:?}"),
+                            "Missing transport definition",
+                        )
+                    })
+                    .and_then(|definition| capacity(&definition.capacity))
+            })
             .into_iter()
             .collect::<Result<Vec<_>>>()?;
         let capacities = [rate(exact_capacities[0]), rate(exact_capacities[1])];
         let mut fixed = Input::default();
         let mut facility_map = vec![];
-        for f in &bp.facilities {
+        for f in &problem.blocks {
             let id = node(&mut fixed, n::FACILITY);
             facility_map.push(id);
-            let d = session.common_facility(&f.facility);
+            let d = super::facility(problem, &f.facility);
             let row = &mut fixed.node_static[id];
             row[n::WIDTH] = d.footprint.width as f32;
             row[n::HEIGHT] = d.footprint.height as f32;
@@ -81,13 +97,13 @@ impl Tables {
         }
         let mut nodes = vec![];
         let mut network_transport = vec![];
-        for network in &session.common_problem.networks {
+        for network in &problem.networks {
             network_transport.push(transport(network.transport));
         }
-        for original in &bp.nodes {
-            let kind = match original.terminal.as_ref().map(|t| &t.endpoint) {
-                Some(TransportNetworkEndpoint::Facility { .. }) => n::TERMINAL,
-                Some(TransportNetworkEndpoint::External { .. }) => n::EXTERNAL,
+        for original in &problem.nodes {
+            let kind = match original.terminal.as_ref() {
+                Some(CompiledTerminal::Facility { .. }) => n::TERMINAL,
+                Some(CompiledTerminal::External { .. }) => n::EXTERNAL,
                 None => n::CHANNEL,
             };
             let id = node(&mut fixed, kind);
@@ -95,18 +111,26 @@ impl Tables {
             let row = &mut fixed.node_static[id];
             row[n::TRANSPORT + network_transport[original.network]] = 1.;
             if let Some(t) = &original.terminal {
-                row[n::DIRECTION + usize::from(t.direction == FacilityPortDirection::Output)] = 1.;
-                row[n::DEMAND] = rate(t.rate);
+                let (direction, demand) = match t {
+                    CompiledTerminal::Facility {
+                        direction, rate, ..
+                    }
+                    | CompiledTerminal::External {
+                        direction, rate, ..
+                    } => (*direction, *rate),
+                };
+                row[n::DIRECTION + usize::from(direction == FacilityPortDirection::Output)] = 1.;
+                row[n::DEMAND] = rate(demand);
             }
         }
-        let mut components = BTreeMap::new();
-        let mut component_capacities = BTreeMap::new();
-        for c in &bp.components {
+        let mut components = Vec::with_capacity(problem.components.len());
+        let mut component_capacities = Vec::with_capacity(problem.components.len());
+        for c in &problem.components {
             let id = node(&mut fixed, n::COMPONENT);
-            components.insert(c.id.clone(), id);
-            let d = session.common_component(&c.component);
+            components.push(id);
+            let d = super::component(problem, &c.definition);
             let exact = capacity(&d.capacity)?;
-            component_capacities.insert(c.id.clone(), exact);
+            component_capacities.push(exact);
             let row = &mut fixed.node_static[id];
             row[n::WIDTH] = d.footprint.width as f32;
             row[n::HEIGHT] = d.footprint.height as f32;
@@ -128,14 +152,14 @@ impl Tables {
                 }
             }
         }
-        for original in &bp.nodes {
+        for original in &problem.nodes {
             let mut cap = exact_capacities[network_transport[original.network]];
-            for name in &original.components {
-                let other = component_capacities.get(name).ok_or_else(|| {
+            for &component in &original.components {
+                let other = component_capacities.get(component).ok_or_else(|| {
                     error(
                         "learning-catalog",
+                        component.to_string(),
                         "Missing endpoint component",
-                        name.clone(),
                     )
                 })?;
                 if i128::from(other.numerator) * i128::from(cap.denominator)
@@ -161,17 +185,17 @@ impl Tables {
             ports.push(table);
         }
         let mut networks = vec![];
-        for _ in &bp.networks {
+        for _ in &problem.networks {
             networks.push(node(&mut fixed, n::NETWORK));
         }
         let mut commodities = BTreeMap::<String, usize>::new();
-        for network in &session.common_problem.networks {
+        for network in &problem.networks {
             if !commodities.contains_key(&network.commodity) {
                 commodities.insert(network.commodity.clone(), node(&mut fixed, n::COMMODITY));
             }
         }
         // Transport edges retain native edge indices for path ownership.
-        for edge in &bp.edges {
+        for edge in &problem.edges {
             relation(
                 &mut fixed,
                 nodes[edge.source],
@@ -183,15 +207,15 @@ impl Tables {
             row[e::MEDIUM + medium] = 1.;
             row[e::RATE] = rate(edge.rate);
             let mut cap = exact_capacities[medium];
-            for name in [edge.source, edge.target]
+            for &component in [edge.source, edge.target]
                 .iter()
-                .flat_map(|&id| &bp.nodes[id].components)
+                .flat_map(|&id| &problem.nodes[id].components)
             {
-                let other = component_capacities.get(name).ok_or_else(|| {
+                let other = component_capacities.get(component).ok_or_else(|| {
                     error(
                         "learning-catalog",
+                        component.to_string(),
                         "Missing endpoint component",
-                        name.clone(),
                     )
                 })?;
                 if i128::from(other.numerator) * i128::from(cap.denominator)
@@ -208,11 +232,11 @@ impl Tables {
                 relation(&mut fixed, facility_map[owner], id, e::FACILITY_PORT);
             }
         }
-        for original in &bp.nodes {
-            for c in &original.components {
+        for original in &problem.nodes {
+            for &component in &original.components {
                 relation(
                     &mut fixed,
-                    components[c],
+                    components[component],
                     nodes[original.id],
                     e::COMPONENT_CHANNEL,
                 );
@@ -224,11 +248,11 @@ impl Tables {
                 e::NETWORK_MEMBER,
             );
         }
-        for (i, network) in bp.networks.iter().enumerate() {
+        for (i, network) in problem.networks.iter().enumerate() {
             relation(
                 &mut fixed,
                 networks[i],
-                commodities[network["item"].as_str().unwrap()],
+                commodities[&network.commodity],
                 e::COMMODITY_MEMBER,
             );
         }
@@ -271,23 +295,17 @@ pub(super) fn path_rows(
 impl Learning {
     pub(super) fn physical(
         &self,
-        session: &Session,
+        problem: &CompiledProblemV1,
+        draft: &PhysicalDraftV1,
         positions: &[Point],
         frame: frame::PhysicalFrame,
         collision_counts: &[f32],
         conflicts: usize,
     ) -> Result<Input> {
-        let bp = &session.blueprint;
         let scale = frame.scale() as f32;
         let mut value = self.tables.fixed.clone();
         value.conflicts = conflicts;
-        value.pending = session
-            .state
-            .geometry
-            .paths
-            .iter()
-            .filter(|p| p.is_none())
-            .count();
+        value.pending = draft.paths.iter().filter(|p| p.is_none()).count();
         for row in &mut value.node_static {
             row[n::WIDTH] /= scale;
             row[n::HEIGHT] /= scale;
@@ -303,47 +321,70 @@ impl Learning {
             row[st::SIN] = sin as f32;
             row[st::COS] = cos as f32;
         };
-        for (owner, f) in session.state.geometry.placements.iter().enumerate() {
+        for (owner, pose_value) in draft.poses.iter().enumerate() {
+            let definition = super::facility(problem, &problem.blocks[owner].facility);
+            let (width, height) = if pose_value.rotation % 180 == 0 {
+                (definition.footprint.width, definition.footprint.height)
+            } else {
+                (definition.footprint.height, definition.footprint.width)
+            };
             let row = &mut value.node_state[self.tables.facilities[owner]];
-            position(row, Point { x: f.x, y: f.y });
-            pose(row, f.width, f.height, f.rotation);
+            position(row, pose_value.position);
+            pose(row, width, height, pose_value.rotation);
             row[st::CONFLICTS] = collision_counts[owner];
-            for p in &self.facilities[owner].ports[&f.rotation] {
+            for p in &self.facilities[owner].ports[&pose_value.rotation] {
                 let row = &mut value.node_state[self.tables.ports[owner][&p.id]];
-                position(row, p.connection.shifted(f.x, f.y));
+                position(
+                    row,
+                    p.connection
+                        .shifted(pose_value.position.x, pose_value.position.y),
+                );
                 row[st::NORMAL_X] = (p.connection.x - p.position.x) as f32;
                 row[st::NORMAL_Y] = (p.connection.y - p.position.y) as f32;
             }
         }
-        for (c, p) in bp.components.iter().zip(&session.state.components) {
-            let id = self.tables.components[&c.id];
-            let d = session.common_component(&c.component);
-            let (w, h) = if c.rotation % 180 == 0 {
+        for (index, (component, point)) in problem
+            .components
+            .iter()
+            .zip(&draft.component_positions)
+            .enumerate()
+        {
+            let id = self.tables.components[index];
+            let d = super::component(problem, &component.definition);
+            let (w, h) = if component.rotation % 180 == 0 {
                 (d.footprint.width, d.footprint.height)
             } else {
                 (d.footprint.height, d.footprint.width)
             };
-            position(&mut value.node_state[id], Point::from(p));
-            pose(&mut value.node_state[id], w, h, c.rotation);
+            position(&mut value.node_state[id], *point);
+            pose(&mut value.node_state[id], w, h, component.rotation);
         }
-        for original in &bp.nodes {
+        for original in &problem.nodes {
             let id = self.tables.nodes[original.id];
             position(&mut value.node_state[id], positions[original.id]);
-            if let Some(t) = &original.terminal
-                && let TransportNetworkEndpoint::External { side, .. } = t.endpoint
+            if let Some(CompiledTerminal::External {
+                side: Some(side), ..
+            }) = &original.terminal
             {
-                let [x, y] = [[0., -1.], [1., 0.], [0., 1.], [-1., 0.]][catalog::edge_index(side)];
+                let [x, y] = [[0., -1.], [1., 0.], [0., 1.], [-1., 0.]]
+                    [aic_layout::projection::edge_index(*side)];
                 value.node_state[id][st::NORMAL_X] = x;
                 value.node_state[id][st::NORMAL_Y] = y;
             }
-            if let Some(t) = &original.terminal
-                && let TransportNetworkEndpoint::Facility { instance, port } = &t.endpoint
+            if let Some(CompiledTerminal::Facility {
+                block: owner,
+                original_port,
+                ..
+            }) = &original.terminal
             {
-                let owner = self.owners[instance];
-                let selected = session.state.ports[original.id]
-                    .as_ref()
-                    .ok_or_else(|| error("learning-port", "Missing selected port", original.id))?;
-                let selected_id = self.tables.ports[owner][selected];
+                let selected = draft.selected_ports[original.id].as_ref().ok_or_else(|| {
+                    error(
+                        "learning-port",
+                        original.id.to_string(),
+                        "Missing selected port",
+                    )
+                })?;
+                let selected_id = self.tables.ports[*owner][selected];
                 let normal = value.node_state[selected_id];
                 let row = &mut value.node_state[id];
                 row[st::NORMAL_X] = normal[st::NORMAL_X];
@@ -352,7 +393,7 @@ impl Learning {
                 value.node_state[selected_id][st::SELECTED] = 1.;
                 relation(
                     &mut value,
-                    self.tables.facilities[owner],
+                    self.tables.facilities[*owner],
                     id,
                     e::FACILITY_TERMINAL,
                 );
@@ -360,13 +401,13 @@ impl Learning {
                 relation(
                     &mut value,
                     id,
-                    self.tables.ports[owner][port],
+                    self.tables.ports[*owner][original_port],
                     e::ORIGINAL_PORT,
                 );
             }
         }
-        for edge in &bp.edges {
-            let (current, baseline) = self.endpoint_rules(session, edge)?;
+        for edge in &problem.edges {
+            let (current, baseline) = self.endpoint_rules(problem, draft, edge)?;
             let (first, last) = crate::physical_editor::query_directions(
                 edge.zero_length,
                 positions[edge.source],
@@ -382,7 +423,7 @@ impl Learning {
             ] {
                 row[offset + heading.unwrap_or(4)] = 1.;
             }
-            let path = &session.state.geometry.paths[edge.id];
+            let path = &draft.paths[edge.id];
             let (a, b) = (positions[edge.source], positions[edge.target]);
             value.edge_state[edge.id] = [
                 f32::from(path.is_none()),
@@ -408,8 +449,9 @@ impl Learning {
     }
     fn endpoint_rules(
         &self,
-        session: &Session,
-        edge: &Edge,
+        problem: &CompiledProblemV1,
+        draft: &PhysicalDraftV1,
+        edge: &CompiledEdge,
     ) -> Result<([Option<usize>; 2], [Option<usize>; 2])> {
         let mut current = [None; 2];
         let mut baseline = [None; 2];
@@ -419,24 +461,28 @@ impl Learning {
         {
             let mut facility = None;
             let mut reassigned = false;
-            if let Some(t) = &session.blueprint.nodes[id].terminal
-                && let TransportNetworkEndpoint::Facility { instance, port } = &t.endpoint
+            if let Some(CompiledTerminal::Facility {
+                block: owner,
+                original_port,
+                ..
+            }) = &problem.nodes[id].terminal
             {
-                let owner = self.owners[instance];
-                let placement = &session.state.geometry.placements[owner];
-                let selected = session.state.ports[id]
-                    .as_ref()
-                    .ok_or_else(|| error("learning-port", "Missing selected port", id))?;
-                let p = self.facilities[owner].ports[&placement.rotation]
+                let placement = draft.poses[*owner];
+                let selected = draft.selected_ports[id].as_ref().ok_or_else(|| {
+                    error("learning-port", id.to_string(), "Missing selected port")
+                })?;
+                let p = self.facilities[*owner].ports[&placement.rotation]
                     .iter()
                     .find(|p| &p.id == selected)
-                    .ok_or_else(|| error("learning-port", "Missing catalog port", id))?;
+                    .ok_or_else(|| {
+                        error("learning-port", id.to_string(), "Missing catalog port")
+                    })?;
                 facility = Some((
-                    session.blueprint.facilities[owner].rotation,
+                    problem.blocks[*owner].baseline_rotation,
                     placement.rotation,
-                    catalog::edge_index(p.edge),
+                    aic_layout::projection::edge_index(p.edge),
                 ));
-                reassigned = selected != port;
+                reassigned = selected != original_port;
             }
             (current[side], baseline[side]) =
                 crate::physical_editor::endpoint_rule(recorded, facility, side, reassigned);
@@ -444,8 +490,3 @@ impl Learning {
         Ok((current, baseline))
     }
 }
-
-#[cfg(test)]
-mod renaming_tests;
-#[cfg(test)]
-mod tests;
