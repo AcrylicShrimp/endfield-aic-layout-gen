@@ -60,7 +60,7 @@ times were:
 Packing varied with generated graph structure; the final three observed updates
 averaged 25.0 ms. The generation and editor costs remained dominant. The first
 update paid a separate 629 ms CUDA initialization cost, which is negligible in
-a 12-hour run.
+an 8-hour run.
 
 ## Controlled comparisons
 

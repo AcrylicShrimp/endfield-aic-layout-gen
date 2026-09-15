@@ -50,7 +50,7 @@
   "development_roots": 16,
   "development_interval_updates": 100,
   "checkpoint_interval_updates": 10,
-  "duration_seconds": 43200,
+  "duration_seconds": 28800,
   "train_generation_seed": 1000000000000,
   "train_action_seed": 2000000000000,
   "development_generation_seed": 3000000000000,

@@ -2,7 +2,7 @@
 
 ## Ready configuration
 
-The online encoder pretraining path is ready for a 12-hour CUDA run. It starts
+The online encoder pretraining path is ready for an 8-hour CUDA run. It starts
 the established width-40, two-round graph encoder from seed `950000`; it does
 not load the earlier physical-outcome dataset or its trained weights. Every
 training update generates 16 new roots through a persistent bounded generation
@@ -13,7 +13,7 @@ Each root owns a 1,024-seed lane and may try up to 16 seeds, so an exhausted
 procedural seed cannot permanently block resume or overlap another root.
 
 The registered configuration is
-[`tools/native-training/physical-outcome-online-12h.json`](../../tools/native-training/physical-outcome-online-12h.json).
+[`tools/native-training/physical-outcome-online-8h.json`](../../tools/native-training/physical-outcome-online-8h.json).
 It alternates 8-block and 16-block roots. Training and development use disjoint
 generation and action seed namespaces. Every 100 updates, the runner generates
 16 separate development roots, evaluates them once, and discards them.
@@ -55,7 +55,7 @@ reusing stored examples.
 ## Launch commands
 
 The established host uses the following trainer command from the repository
-root. Use a fresh output directory for the 12-hour run.
+root. Use a fresh output directory for the 8-hour run.
 
 ```sh
 env \
@@ -65,9 +65,9 @@ env \
   RUST_MIN_STACK=16777216 \
   CUBLAS_WORKSPACE_CONFIG=:4096:8 \
   target/release/aic-cli learning pretrain-outcomes-online \
-  --config tools/native-training/physical-outcome-online-12h.json \
+  --config tools/native-training/physical-outcome-online-8h.json \
   --catalog-root data/game/normalized \
-  --output artifacts/physical-outcome-online-12h \
+  --output artifacts/physical-outcome-online-8h \
   --device cuda:0
 ```
 
@@ -76,7 +76,7 @@ Start the observer after `state.json` appears:
 ```sh
 /home/ashrimp/Srv/aic-masked-long-opt-20260914/tools/factory-edit-pilot/.venv/bin/python \
   tools/factory-edit-pilot/physical_outcome_online_tracking.py \
-  --output artifacts/physical-outcome-online-12h \
+  --output artifacts/physical-outcome-online-8h \
   --env-file .env
 ```
 
