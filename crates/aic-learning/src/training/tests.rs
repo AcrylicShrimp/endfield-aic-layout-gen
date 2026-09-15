@@ -490,22 +490,6 @@ fn nonempty_learner_checkpoint_restores_every_field_and_next_update() -> Result<
         .to_device(device);
         a.apply_minibatch(&batch, None, true)?;
         let saved = a.snapshot()?;
-        let header = json!({"schema":"aic-training-checkpoint-v2", "contract":aic_pilot_native::learning::current_contract()});
-        let path = std::path::Path::new("nonempty/manifest.json");
-        for component in ["observation", "family_prior"] {
-            let mut changed = header.clone();
-            changed["contract"][component] = "different-semantics-same-shapes".into();
-            assert!(
-                aic_pilot_native::learning::validate_envelope(
-                    &changed,
-                    "aic-training-checkpoint-v2",
-                    path
-                )
-                .is_err()
-            );
-        }
-        aic_pilot_native::learning::validate_envelope(&header, "aic-training-checkpoint-v2", path)
-            .map_err(anyhow::Error::msg)?;
         let mut b = Learner::load(
             &a.model.config,
             &a.config,

@@ -84,7 +84,7 @@ pub fn failure(
     )?;
     write(
         &path.join("failure.json"),
-        &json!({"schema":"aic-native-collection-failure-v2", "contract":aic_pilot_native::learning::current_contract(), "completed":false,
+        &json!({"schema":"aic-native-collection-failure-v1", "completed":false,
         "error":format!("{error:#}"),"snapshots":snapshots,"evidence":evidence,"drained_evidence":rollout.evidence,
         "samples":rollout.samples.len(),"pending_choices":rollout.choices.len(),"completed_updates":learner.completed_steps,
         "numerical_inputs":"partial.jsonl","learner":"partial-learner.safetensors"}),

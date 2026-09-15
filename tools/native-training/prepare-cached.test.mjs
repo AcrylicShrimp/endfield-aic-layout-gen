@@ -6,26 +6,27 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
 
-test('cached preparation preserves current manifest and rejects incompatible semantics before copying', async () => {
+test('cached preparation preserves current manifest and rejects old versions before copying', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'aic-cache-contract-'));
   try {
     const source = path.join(root, 'source');
     const checkpoint = path.join(source, 'checkpoints/00000002');
     await mkdir(checkpoint, { recursive: true });
-    const { contract } = JSON.parse(await readFile(new URL('./training.json', import.meta.url)));
-    const valid = { schema: 'aic-training-checkpoint-v2', contract, replay: {} };
+    const valid = { schema: 'aic-training-checkpoint-v3', replay: {} };
     await writeFile(path.join(checkpoint, 'state.json'), JSON.stringify({ update: 2, next: { wave: 1, slots: [] } }));
     const run = output => spawnSync(process.execPath,
       [fileURLToPath(new URL('./prepare-cached.mjs', import.meta.url)), source, output, '2'], { encoding: 'utf8' });
-    for (const field of [null, 'observation', 'family_prior']) {
+    for (const version of [null, 'aic-training-checkpoint-v1', 'aic-training-checkpoint-v2']) {
       const manifest = structuredClone(valid);
-      if (field) manifest.contract[field] = 'other-v1';
-      else delete manifest.contract;
+      if (version) {
+        manifest.schema = version;
+        manifest.contract = { observation: 'historical' };
+      } else delete manifest.schema;
       await writeFile(path.join(checkpoint, 'manifest.json'), JSON.stringify(manifest));
-      const output = path.join(root, `invalid-${field}`);
+      const output = path.join(root, `invalid-${version}`);
       const result = run(output);
       assert.notEqual(result.status, 0);
-      assert.match(result.stderr, /aic-learning.io-contract/);
+      assert.match(result.stderr, /aic-learning.checkpoint-version/);
       await assert.rejects(access(output), { code: 'ENOENT' });
     }
     const bytes = JSON.stringify(valid, null, 2);

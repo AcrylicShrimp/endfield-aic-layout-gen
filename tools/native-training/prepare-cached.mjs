@@ -1,7 +1,6 @@
 // Explicit bounded benchmark preparation; normal training generates fresh slots.
 import { readFile, mkdir, cp, access, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { isDeepStrictEqual } from 'node:util';
 
 const [sourceArg, outputArg, checkpointArg = '2'] = process.argv.slice(2);
 if (!sourceArg || !outputArg || !/^\d+$/.test(checkpointArg)) {
@@ -19,9 +18,9 @@ if (!Number.isSafeInteger(ordinal) || ordinal <= 0) throw new Error('Invalid che
 const checkpoint = `checkpoints/${String(ordinal).padStart(8, '0')}`;
 const read = async file => JSON.parse(await readFile(file, 'utf8'));
 const manifest = await read(path.join(source, checkpoint, 'manifest.json'));
-const current = await read(new URL('./training.json', import.meta.url));
-if (manifest.schema !== 'aic-training-checkpoint-v2' || !isDeepStrictEqual(manifest.contract, current.contract)) {
-  throw new Error(`aic-learning.io-contract: ${path.join(source, checkpoint, 'manifest.json')}: expected schema=aic-training-checkpoint-v2 contract=${JSON.stringify(current.contract)}; actual schema=${manifest.schema} contract=${JSON.stringify(manifest.contract)}`);
+const expectedSchema = 'aic-training-checkpoint-v3';
+if (manifest.schema !== expectedSchema) {
+  throw new Error(`aic-learning.checkpoint-version: ${path.join(source, checkpoint, 'manifest.json')}: expected ${expectedSchema}; actual ${JSON.stringify(manifest.schema ?? null)}`);
 }
 const state = await read(path.join(source, checkpoint, 'state.json'));
 if (state.update !== ordinal || !state.next) {

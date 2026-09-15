@@ -12,11 +12,7 @@ use crate::{
     schema::Archive,
     update::{Learner, device_name},
 };
-use aic_pilot_native::learning::{
-    LearningContract, current_contract,
-    pool::{Command, Pool},
-    validate_envelope,
-};
+use aic_pilot_native::learning::pool::{Command, Pool};
 use aic_torch::tch::{Device, Tensor};
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
@@ -29,11 +25,12 @@ use std::{
     sync::Arc,
 };
 
+const CHECKPOINT_SCHEMA: &str = "aic-training-checkpoint-v3";
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
     pub schema: String,
-    pub contract: LearningContract,
     pub binding: String,
     pub device: String,
     pub completed_steps: u64,
@@ -158,8 +155,7 @@ impl Store {
             })
             .collect::<Result<_>>()?;
         let manifest = Manifest {
-            schema: "aic-training-checkpoint-v2".into(),
-            contract: current_contract(),
+            schema: CHECKPOINT_SCHEMA.into(),
             binding: binding.into(),
             device: device_name(learner.device)?,
             completed_steps: learner.completed_steps,
@@ -473,7 +469,13 @@ pub fn read<T: serde::de::DeserializeOwned>(path: &Path, limit: u64) -> Result<T
 /// One bounded header read, shared by restore and retention discovery.
 fn read_manifest(path: &Path) -> Result<Manifest> {
     let header: Value = read(path, 4 * 1024 * 1024)?;
-    validate_envelope(&header, "aic-training-checkpoint-v2", path).map_err(anyhow::Error::msg)?;
+    ensure!(
+        header["schema"] == CHECKPOINT_SCHEMA,
+        "aic-learning.checkpoint-version: {}: expected {}; actual {}",
+        path.display(),
+        CHECKPOINT_SCHEMA,
+        header["schema"]
+    );
     Ok(serde_json::from_value(header)?)
 }
 
@@ -527,27 +529,36 @@ mod tests {
     }
 
     #[test]
-    fn restore_rejects_semantics_before_touching_missing_payloads() -> Result<()> {
+    fn restore_rejects_old_versions_before_touching_missing_payloads() -> Result<()> {
         let root = std::env::temp_dir().join(format!("aic-contract-{}", std::process::id()));
         let path = root.join("checkpoints/00000001");
         fs::create_dir_all(&path)?;
         let config: Config =
             serde_json::from_str(include_str!("../../../../tools/native-training/smoke.json"))?;
-        let valid = serde_json::json!({"schema":"aic-training-checkpoint-v2", "contract":current_contract(),
+        let valid = serde_json::json!({"schema":CHECKPOINT_SCHEMA,
             "binding":"test", "device":"cpu", "completed_steps":1, "parameter_order":[], "files":{}, "replay":{}});
-        for component in [None, Some("observation"), Some("family_prior")] {
+        for version in [
+            None,
+            Some("aic-training-checkpoint-v1"),
+            Some("aic-training-checkpoint-v2"),
+        ] {
             let mut value = valid.clone();
-            if let Some(key) = component {
-                value["contract"][key] = "other-v1".into();
+            if let Some(version) = version {
+                value["schema"] = version.into();
+                // Obsolete fields must not hide the version diagnostic.
+                value["contract"] = serde_json::json!({"observation":"historical"});
             } else {
-                value.as_object_mut().unwrap().remove("contract");
+                value.as_object_mut().unwrap().remove("schema");
             }
             write(&path.join("manifest.json"), &value)?;
             let error = restore(&root, &path, "test", &config, Device::Cpu)
                 .err()
                 .expect("must reject");
             let text = error.to_string();
-            assert!(text.starts_with("aic-learning.io-contract:"), "{text}");
+            assert!(
+                text.starts_with("aic-learning.checkpoint-version:"),
+                "{text}"
+            );
             assert!(text.contains(&path.display().to_string()));
             assert!(!root.join("latest.json").exists());
         }
