@@ -6,6 +6,9 @@ fn seeded_setup_remains_valid_and_obeys_external_bounds() {
     let request = fixture_request(&w);
     let catalogs = Arc::new(crate::input::Catalogs::new(catalogs));
     let setup = Setup {
+        identity_limits: physical_identity::Limits {
+            max_individualization_nodes: 100_000,
+        },
         steps: 3,
         elapsed_ms: 10_000,
         route_work: 50_000,
@@ -30,7 +33,7 @@ fn seeded_setup_remains_valid_and_obeys_external_bounds() {
     .unwrap_or_else(|e| panic!("{}", e.message));
     let second = randomize(request.clone(), w, catalogs.clone(), &setup, 91, &|| Ok(()))
         .unwrap_or_else(|e| panic!("{}", e.message));
-    assert_eq!(first.geometry_sha256, second.geometry_sha256);
+    assert_eq!(first.physical, second.physical);
     FactoryEditSession::new(
         request,
         first.original,
@@ -57,18 +60,6 @@ fn seeded_setup_remains_valid_and_obeys_external_bounds() {
     );
 }
 #[test]
-fn geometry_reservation_ignores_rate_and_input_array_order() {
-    let (mut witness, _, _) = fixture();
-    let identity = geometry_identity(&witness);
-    witness.placements.reverse();
-    witness.transport_networks.reverse();
-    witness.utilizations.clear();
-    assert_eq!(geometry_identity(&witness), identity);
-    witness.placements[0].x += 1;
-    assert_ne!(geometry_identity(&witness), identity);
-}
-
-#[test]
 fn cached_actual_slot_checks_source_identity_hash_and_reserved_geometry() {
     use source::{Generated, Source};
     use std::{fs, path::PathBuf};
@@ -78,10 +69,11 @@ fn cached_actual_slot_checks_source_identity_hash_and_reserved_geometry() {
     )
     .unwrap();
     let (w, catalogs, _) = fixture();
-    let input = Generated {
+    let mut input = Generated {
         request: fixture_request(&w),
         original: w,
         metadata: json!({}),
+        admission: None,
     };
     let catalogs = Arc::new(crate::input::Catalogs::new(catalogs));
     let make = |reserved| {
@@ -93,13 +85,23 @@ fn cached_actual_slot_checks_source_identity_hash_and_reserved_geometry() {
         )
         .unwrap()
     };
+    input
+        .admit(
+            &catalogs,
+            &physical_identity::Limits {
+                max_individualization_nodes: 100_000,
+            },
+            "cached-fixture",
+            Some("source/3".into()),
+        )
+        .unwrap();
     let source = make(Default::default());
     let directory =
         std::env::temp_dir().join(format!("aic-generated-slot-test-{}", std::process::id()));
     fs::create_dir(&directory).unwrap();
     let bytes = serde_json::to_vec(&input).unwrap();
     fs::write(directory.join("input.json"), &bytes).unwrap();
-    fs::write(directory.join("manifest.json"),serde_json::to_vec(&json!({"schema":"aic-generated-slot-v1","slot":3,"source":source.identity,"input_sha256":crate::input::hash(&bytes)})).unwrap()).unwrap();
+    fs::write(directory.join("manifest.json"),serde_json::to_vec(&json!({"schema":"aic-generated-slot-v2","slot":3,"source":source.identity,"input_sha256":crate::input::hash(&bytes)})).unwrap()).unwrap();
     assert!(source.generate(3, &directory).is_ok());
     assert!(
         source
@@ -108,13 +110,76 @@ fn cached_actual_slot_checks_source_identity_hash_and_reserved_geometry() {
             .unwrap()
             .contains("slot-binding")
     );
-    let reserved = make([geometry_identity(&input.original)].into_iter().collect());
+    let reserved = make(
+        [input.admitted().unwrap().physical.structural.clone()]
+            .into_iter()
+            .collect(),
+    );
     assert!(
         reserved
             .generate(3, &directory)
             .err()
             .unwrap()
             .contains("reservation")
+    );
+    // Equivalent translation still fails the cached boundary, despite a different raw digest.
+    let mut translated = serde_json::to_value(&input).unwrap();
+    fn shift(value: &mut Value) {
+        match value {
+            Value::Object(o) => {
+                if let (Some(x), Some(y)) = (
+                    o.get("x").and_then(Value::as_i64),
+                    o.get("y").and_then(Value::as_i64),
+                ) {
+                    o.insert("x".into(), json!(x + 129));
+                    o.insert("y".into(), json!(y - 123));
+                }
+                for v in o.values_mut() {
+                    shift(v);
+                }
+            }
+            Value::Array(a) => {
+                for v in a {
+                    shift(v)
+                }
+            }
+            _ => {}
+        }
+    }
+    shift(&mut translated["original"]);
+    let write_slot = |value: &Value| {
+        let bytes = serde_json::to_vec(value).unwrap();
+        fs::write(directory.join("input.json"), &bytes).unwrap();
+        fs::write(directory.join("manifest.json"),serde_json::to_vec(&json!({"schema":"aic-generated-slot-v2","slot":3,"source":source.identity,"input_sha256":crate::input::hash(&bytes)})).unwrap()).unwrap();
+    };
+    write_slot(&translated);
+    assert!(source.generate(3, &directory).is_ok());
+    assert!(
+        reserved
+            .generate(3, &directory)
+            .err()
+            .unwrap()
+            .contains("reservation")
+    );
+    // A valid current shape cannot release a separately reserved ancestor, even with a new episode label.
+    translated["admission"]["root"]["structural"] = json!("f".repeat(64));
+    translated["admission"]["root"]["episode"] = json!("renumbered");
+    write_slot(&translated);
+    assert!(
+        make(["f".repeat(64)].into_iter().collect())
+            .generate(3, &directory)
+            .err()
+            .unwrap()
+            .contains("reservation")
+    );
+    translated["admission"]["root"]["structural"] = json!("F".repeat(64));
+    write_slot(&translated);
+    assert!(
+        source
+            .generate(3, &directory)
+            .err()
+            .unwrap()
+            .contains("invalid admission")
     );
     fs::write(directory.join("input.json"), b"{}").unwrap();
     assert!(
@@ -159,6 +224,51 @@ fn direct_generation_commits_actual_input_and_guard_failure_never_commits() {
         serde_json::to_value(&actual).unwrap(),
         serde_json::to_value(&cached).unwrap()
     );
+    let reserved = source::Source::load(
+        &root,
+        catalogs.clone(),
+        serde_json::from_value(config["generation"].clone()).unwrap(),
+        [actual.admitted().unwrap().physical.structural.clone()]
+            .into_iter()
+            .collect(),
+    )
+    .unwrap();
+    let fresh = reserved
+        .generate(0, &directory.join("reserved-fresh"))
+        .unwrap();
+    assert_ne!(
+        fresh.admitted().unwrap().physical.structural,
+        actual.admitted().unwrap().physical.structural
+    );
+    assert!(
+        fresh.metadata["attempts"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|a| a["stage"] == "reservation")
+    );
+    let mut limited = config["generation"].clone();
+    limited["identity_limits"]["max_individualization_nodes"] = json!(1);
+    let limited = source::Source::load(
+        &root,
+        catalogs.clone(),
+        serde_json::from_value(limited).unwrap(),
+        Default::default(),
+    )
+    .unwrap();
+    assert!(
+        limited
+            .generate(0, &directory.join("identity-budget"))
+            .err()
+            .unwrap()
+            .contains("physical-identity-budget")
+    );
+    assert!(
+        directory
+            .join("identity-budget/setup-partial.json")
+            .is_file()
+    );
+    assert!(!directory.join("identity-budget/manifest.json").exists());
     let calls = Arc::new(AtomicUsize::new(0));
     let count = calls.clone();
     let cancelled = make().with_guard(Arc::new(move || {

@@ -51,7 +51,24 @@ impl State {
                 && self.best_evaluation.is_none_or(f64::is_finite),
             "aic-learning.checkpoint-state: inconsistent update/sample/action boundary"
         );
+        let validate_input = |input: &Generated, root: &Root| -> anyhow::Result<()> {
+            let admission = input.admitted().map_err(anyhow::Error::msg)?;
+            admission.validate().map_err(anyhow::Error::msg)?;
+            ensure!(
+                admission.root == root.reservation,
+                "aic-learning.checkpoint-lineage: input and episode roots differ"
+            );
+            Ok(())
+        };
+        for episode in &self.episodes {
+            validate_input(&episode.input, &episode.root)?;
+        }
         if let Some(plan) = &self.next {
+            for slot in &plan.slots {
+                if let (Some(input), Some(root)) = (&slot.inherited, &slot.root) {
+                    validate_input(input, root)?;
+                }
+            }
             ensure!(
                 self.episodes.is_empty()
                     && self.actions == config.native.max_actions

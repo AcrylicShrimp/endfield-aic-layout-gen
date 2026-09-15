@@ -12,7 +12,7 @@ test('cached preparation preserves current manifest and rejects old versions bef
     const source = path.join(root, 'source');
     const checkpoint = path.join(source, 'checkpoints/00000002');
     await mkdir(checkpoint, { recursive: true });
-    const valid = { schema: 'aic-training-checkpoint-v7', replay: {} };
+    const valid = { schema: 'aic-training-checkpoint-v8', replay: {} };
     await writeFile(path.join(checkpoint, 'state.json'), JSON.stringify({ update: 2, next: { wave: 1, slots: [] } }));
     const run = output => spawnSync(process.execPath,
       [fileURLToPath(new URL('./prepare-cached.mjs', import.meta.url)), source, output, '2'], { encoding: 'utf8' });

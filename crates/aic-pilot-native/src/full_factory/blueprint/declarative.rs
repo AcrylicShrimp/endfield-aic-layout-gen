@@ -15,7 +15,7 @@ use super::*;
 
 mod checkpoint;
 mod edit;
-pub(super) mod frame;
+pub(in crate::full_factory) mod frame;
 #[cfg(test)]
 mod frame_tests;
 pub(crate) mod learning;

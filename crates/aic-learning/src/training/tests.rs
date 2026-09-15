@@ -329,16 +329,20 @@ fn curriculum_rotates_integer_quotas_and_falls_back_without_donors() -> Result<(
 
 #[test]
 fn curriculum_uses_only_strict_improvements_and_preserves_root_depth() -> Result<()> {
-    use aic_pilot_native::generation::{geometry_identity, source::Generated};
+    use aic_pilot_native::generation::{physical_identity::SEMANTICS, source::Generated};
     use curriculum::{Config, Parent, Root};
     let input: Generated = serde_json::from_value(
         json!({"request":{"schema_version":1,"instances":[],"terminals":[]},"original":{"schema_version":1,"placements":[],"utilizations":{},"transport_networks":[],"logistics_components":[]},"metadata":{}}),
     )?;
+    let mut input = input;
+    input.admission = Some(serde_json::from_value(
+        json!({"physical":{"semantics":SEMANTICS,"structural":"a".repeat(64),"exact_problem":"b".repeat(64)},"catalog_sha256":"c".repeat(64),"root":{"semantics":SEMANTICS,"structural":"d".repeat(64),"episode":"root-episode"}}),
+    )?);
     let root = Root {
         wave: 0,
         area: 100,
         request_sha256: "root-request".into(),
-        geometry_sha256: "root-geometry".into(),
+        reservation: input.admitted().unwrap().root.clone(),
     };
     let good = Parent {
         stream: 0,
@@ -397,9 +401,18 @@ fn curriculum_uses_only_strict_improvements_and_preserves_root_depth() -> Result
             .wave,
         0
     );
-    let reserved = [geometry_identity(&input.original)].into_iter().collect();
+    let reserved = [input.admitted().unwrap().physical.structural.clone()]
+        .into_iter()
+        .collect();
     assert_eq!(
         curriculum::choose(&config, 17, 1, 10, &[good.clone()], &reserved)?.actual,
+        [10, 0, 0]
+    );
+    let root_reserved = [input.admitted().unwrap().root.structural.clone()]
+        .into_iter()
+        .collect();
+    assert_eq!(
+        curriculum::choose(&config, 17, 1, 10, &[good.clone()], &root_reserved)?.actual,
         [10, 0, 0]
     );
     assert!(

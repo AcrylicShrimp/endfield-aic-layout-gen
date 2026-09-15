@@ -6,6 +6,7 @@ mod groups;
 mod movement;
 mod poses;
 pub use aic_layout::rng;
+pub mod physical_identity;
 mod routing;
 mod selection;
 pub mod source;
@@ -29,6 +30,7 @@ use std::{
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Setup {
+    pub identity_limits: physical_identity::Limits,
     pub steps: usize,
     pub elapsed_ms: u64,
     pub route_work: usize,
@@ -37,8 +39,8 @@ pub struct Setup {
 #[derive(Serialize)]
 pub struct Output {
     pub original: WitnessProbeInput,
-    pub geometry_sha256: String,
-    pub constructor_geometry_sha256: String,
+    pub physical: physical_identity::PhysicalIdentity,
+    pub constructor_physical: physical_identity::PhysicalIdentity,
     pub records: Vec<Value>,
     pub elapsed_seconds: f64,
 }
@@ -48,29 +50,6 @@ pub struct Failure {
     pub current: WitnessProbeInput,
     pub best: WitnessProbeInput,
     pub records: Vec<Value>,
-}
-pub fn geometry_identity(witness: &WitnessProbeInput) -> String {
-    fn strip(value: &mut Value) {
-        match value {
-            Value::Object(map) => {
-                map.remove("rate");
-                map.remove("utilizations");
-                for v in map.values_mut() {
-                    strip(v);
-                }
-            }
-            Value::Array(rows) => {
-                for r in rows.iter_mut() {
-                    strip(r);
-                }
-                rows.sort_by_key(identity::ascii_json);
-            }
-            _ => {}
-        }
-    }
-    let mut value = serde_json::to_value(witness).expect("typed physical witness");
-    strip(&mut value);
-    identity::digest(&value)
 }
 pub fn randomize(
     request: FactoryEditRequest,
@@ -135,7 +114,24 @@ pub fn randomize(
         )
     })?;
     let mut records = vec![];
-    let constructor_geometry_sha256 = geometry_identity(session.snapshot().current);
+    let identify = |w: &WitnessProbeInput| {
+        physical_identity::identify(
+            w,
+            &catalogs.data,
+            &config.identity_limits,
+            &format!("setup/{seed}"),
+        )
+    };
+    let constructor_physical = identify(session.snapshot().current)
+        .map_err(|message| {
+            failed(
+                message,
+                session.snapshot().current.clone(),
+                session.snapshot().best.clone(),
+                vec![],
+            )
+        })?
+        .0;
     let mut current = identity::Identity::new(session.snapshot().current);
     let mut best = current.clone();
     let mut memory = selection::Memory::new(&current.physical);
@@ -253,9 +249,18 @@ pub fn randomize(
     }
     let original = session.snapshot().current.clone();
     Ok(Output {
-        geometry_sha256: geometry_identity(&original),
+        physical: identify(&original)
+            .map_err(|message| {
+                failed(
+                    message,
+                    original.clone(),
+                    session.snapshot().best.clone(),
+                    records.clone(),
+                )
+            })?
+            .0,
         original,
-        constructor_geometry_sha256,
+        constructor_physical,
         records,
         elapsed_seconds: started.elapsed().as_secs_f64(),
     })

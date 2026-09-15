@@ -18,10 +18,7 @@ use crate::{
     update::{Learner, device_name},
 };
 use aic_pilot_native::{
-    generation::{
-        geometry_identity,
-        source::{Generated, Source},
-    },
+    generation::source::{Generated, Source},
     input::{hash, load_catalogs},
     learning::pool::{Command, Pool, Reply},
 };
@@ -43,7 +40,14 @@ pub fn run(
 ) -> Result<Value> {
     let began = Instant::now();
     let mut config = Config::load(config_path)?;
-    let panel = Panel::load(&config.evaluation.panel, config.resources.max_rss_bytes / 4)?;
+    let catalogs =
+        load_catalogs(&config.catalog_root, &config.catalogs).map_err(anyhow::Error::msg)?;
+    let panel = Panel::load(
+        &config.evaluation.panel,
+        config.resources.max_rss_bytes / 4,
+        &catalogs,
+        &config.generation.identity_limits,
+    )?;
     ensure!(
         config.strata.iter().all(|(stratum, products)| panel
             .manifest
@@ -55,8 +59,6 @@ pub fn run(
             == panel.manifest.cases.len()),
         "aic-learning.panel-strata: evaluation requires equal nonempty coverage of the two configured strata"
     );
-    let catalogs =
-        load_catalogs(&config.catalog_root, &config.catalogs).map_err(anyhow::Error::msg)?;
     let source = Source::load(
         &config.catalog_root,
         catalogs.clone(),
@@ -151,6 +153,23 @@ pub fn run(
         "aic-learning.training-updates: target must exceed completed update {}",
         state.update
     );
+    for (stream, episode) in state.episodes.iter().enumerate() {
+        source
+            .check_reservation(&episode.input, &format!("restore/{}/{stream}", state.wave))
+            .map_err(anyhow::Error::msg)?;
+    }
+    if let Some(plan) = &state.next {
+        for slot in &plan.slots {
+            if let Some(input) = &slot.inherited {
+                source
+                    .check_reservation(
+                        input,
+                        &format!("restore-next/{}/{}", plan.wave, slot.stream),
+                    )
+                    .map_err(anyhow::Error::msg)?;
+            }
+        }
+    }
     let previous_samples = state.samples;
     let previous_update = state.update;
     let mut collected = Rollout::default();
@@ -222,7 +241,7 @@ pub fn run(
             let wave_complete = state.actions == config.native.max_actions;
             let mut quality = Value::Null;
             if wave_complete {
-                let parents = finish(&state, &mut pool)?;
+                let parents = finish(&state, &mut pool, &source)?;
                 quality = json!({"episodes":parents.len(),"improved":parents.iter().filter(|p|p.best_area<p.start_area).count(),
                     "mean_area_reduction_percent":parents.iter().map(|p|100.*(1.-p.best_area as f64/p.start_area as f64)).sum::<f64>()/parents.len() as f64});
                 state.next = Some(curriculum::choose(
@@ -369,6 +388,9 @@ fn admit(
             .as_ref()
             .and_then(|p| p.slots[stream].inherited.as_ref());
         if let Some(input) = inherited {
+            source
+                .check_reservation(input, &format!("inherited/{}/{stream}", state.wave))
+                .map_err(anyhow::Error::msg)?;
             inputs.insert(stream, input.clone());
             commands.push((
                 stream,
@@ -431,7 +453,7 @@ fn admit(
             wave: state.wave,
             area,
             request_sha256: hash(&serde_json::to_vec(&input.request)?),
-            geometry_sha256: geometry_identity(&input.original),
+            reservation: input.admitted().map_err(anyhow::Error::msg)?.root.clone(),
         });
         state.episodes.push(Episode {
             input,
@@ -444,7 +466,7 @@ fn admit(
     store.ledger.enforce(config.resources.max_output_bytes)?;
     Ok(())
 }
-fn finish(state: &State, pool: &mut Pool) -> Result<Vec<Parent>> {
+fn finish(state: &State, pool: &mut Pool, source: &Source) -> Result<Vec<Parent>> {
     let mut parents = vec![];
     for (stream, reply) in pool
         .exchange(
@@ -468,6 +490,11 @@ fn finish(state: &State, pool: &mut Pool) -> Result<Vec<Parent>> {
             .ok_or_else(|| anyhow::anyhow!("aic-learning.episode-result: missing best area"))?;
         let mut best = e.input.clone();
         best.original = serde_json::from_value(result["best"].clone())?;
+        if best_area < e.start_area {
+            source
+                .publish_best(&mut best, &format!("best/{}/{stream}", state.wave))
+                .map_err(anyhow::Error::msg)?;
+        }
         parents.push(Parent {
             stream,
             wave: state.wave,

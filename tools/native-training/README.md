@@ -60,6 +60,51 @@ reader verifies its old bindings and saved state, then converts current/best
 geometry once without regenerating paths or losing pending obligations. This is
 separate from learned checkpoint continuation.
 
+## Physical reservations and panel migration
+
+Raw source SHA-256 values still validate exact file bytes. Admission also computes
+`aic-physical-identity-v1` keys from normalized integer geometry and typed directed
+relations. The structural key ignores rates and recipe/utilization values; it
+preserves body/port geometry, transport, commodity equality, component membership
+and directed route incidence. Consistent names, input order and whole-layout
+translation do not change it. The separately canonicalized exact key also retains
+reduced rational rates, referenced capacities and recipe/utilization constraints.
+
+Generation v2 requires `generation.identity_limits.max_individualization_nodes`.
+The supplied value is 100000, shared across the structural and exact searches for
+each input. Exhaustion reports `aic-learning.physical-identity-budget` with input
+identity and work used, and preserves the failed actual setup for an explicit retry.
+No partially computed key admits an input. Keys are computed at source admission,
+panel admission and publication of improving donor layouts, then retained in the
+existing input/checkpoint objects. Neither canonicalization nor layout validation
+is added to the model's action loop.
+
+Generated input/slot metadata uses v2. Each admitted input retains its physical
+keys, catalog digest, structural root and logical source episode. Curriculum
+members inherit that root unchanged; reservation membership compares its structural
+key independently of episode labels. Cached input, fresh source, inherited starts
+and checkpoint restore apply the same reservation rule.
+
+Panels use `aic-evaluation-panel-v2`. Migrate a retained v1 panel explicitly:
+
+```sh
+target/release/aic-cli learning migrate-panel \
+  --input artifacts/old-panel/panel.json \
+  --output artifacts/physical-panel \
+  --identity-limits tools/native-training/identity-limits.json \
+  --catalog-root data/game/normalized
+```
+
+The output directory must be new. Migration verifies the legacy panel and actual
+payloads, copies their bytes unchanged and preserves case IDs and action seeds.
+New keys live in the new manifest, including for unchanged legacy input archives.
+Cases that become equivalent are rejected with both case IDs. Point the training
+configuration at the new panel and start a fresh v8 learned checkpoint. Old panels,
+source files, checkpoints and reports retain their historical meaning; migration
+does not upgrade earlier evaluation claims. Procedural recipe-free learning has
+no admission entry point yet; its future importer must use the shared typed
+identity graph and the same root reservation rule.
+
 ## Physical observations
 
 The current model consumes 41 node columns (31 static + 10 state), 37 edge
@@ -166,7 +211,7 @@ replay, optimizer or curriculum. Incomplete evaluation cannot replace the best.
 ## Migration and bounded comparison
 
 Training configurations use `aic-training-v1`. Checkpoint manifests use
-`aic-training-checkpoint-v7`; this is the single learned-state format version.
+`aic-training-checkpoint-v8`; this is the single learned-state format version.
 When model input, action or replay meaning changes, increment that version even
 if tensor shapes stay the same. Existing config binding covers runtime settings.
 Restore checks the manifest version before loading learner, Adam, RNG, best-model
@@ -185,7 +230,7 @@ remain explicit Rust tests, outside the executable. Existing Python source is
 unchanged.
 
 The generator reuses the existing native construction and seven setup-edit
-algorithms. Its versioned `aic-native-generation-v1` source uses SplitMix64 for
+algorithms. Its versioned `aic-native-generation-v2` source uses SplitMix64 for
 uniform draws and shuffling, so Python generation seeds are not relabeled as
 native input-bank identities. Setup still chooses a valid randomized current
 layout rather than selecting an optimized best. This preserves the existing

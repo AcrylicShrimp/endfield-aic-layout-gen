@@ -1,5 +1,8 @@
 //! Complete-wave strict-improvement donors, with exact 80/10/10 quota rotation.
-use aic_pilot_native::generation::{geometry_identity, rng::Rng, source::Generated};
+use aic_pilot_native::generation::{
+    rng::Rng,
+    source::{Generated, RootReservation},
+};
 use anyhow::{Result, ensure};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -30,7 +33,7 @@ pub struct Root {
     pub wave: u64,
     pub area: u64,
     pub request_sha256: String,
-    pub geometry_sha256: String,
+    pub reservation: RootReservation,
 }
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Parent {
@@ -132,8 +135,13 @@ pub fn choose(
         rng(config, seed, wave, &format!("donors:{depth}")).shuffle(&mut pool);
         let selected = requested[depth].min(pool.len());
         for p in pool.into_iter().take(selected) {
-            let geometry = geometry_identity(&p.best.original);
-            if reserved.contains(&geometry) {
+            let admission = p.best.admitted().map_err(anyhow::Error::msg)?;
+            admission.validate().map_err(anyhow::Error::msg)?;
+            ensure!(
+                admission.root == p.root.reservation,
+                "aic-learning.curriculum-lineage: donor root differs from retained input"
+            );
+            if admission.is_reserved(reserved) {
                 plan.slots.push(fresh(depth as u8));
                 plan.diagnostics.push(json!({"code":"aic-learning.curriculum-reserved-geometry","severity":"info","stage":"curriculum",
                     "entity":format!("{seed}/{wave}/{}",p.stream),"message":"Selected inherited geometry is reserved; this slot uses a fresh start"}));

@@ -6,6 +6,19 @@ use std::path::PathBuf;
 
 #[derive(Debug, Subcommand)]
 pub enum LearningCommand {
+    /// Recompute physical reservations from verified v1 panel payloads into a new directory.
+    MigratePanel {
+        #[arg(long)]
+        input: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        /// JSON file containing max_individualization_nodes.
+        #[arg(long)]
+        identity_limits: PathBuf,
+        /// Directory containing the five normalized runtime catalog files.
+        #[arg(long)]
+        catalog_root: PathBuf,
+    },
     /// Ask an active training run to save and stop at its next complete wave.
     Stop {
         #[arg(long)]
@@ -42,12 +55,20 @@ pub enum LearningCommand {
 }
 pub fn run(command: LearningCommand) -> Result<()> {
     let config = match &command {
-        LearningCommand::Stop { output: config }
+        LearningCommand::MigratePanel { input: config, .. }
+        | LearningCommand::Stop { output: config }
         | LearningCommand::Train { config, .. }
         | LearningCommand::PreparePanel { config, .. } => config,
     };
     let entity = config.display().to_string();
     let report = execute(command).map_err(|error| {
+        if let Some(diagnostic) = error.chain().find_map(|cause| {
+            let value: serde_json::Value = serde_json::from_str(&cause.to_string()).ok()?;
+            (value["code"].is_string() && value["severity"].is_string()
+                && value["stage"].is_string() && value["entity"].is_string()).then_some(value)
+        }) {
+            return anyhow::anyhow!(diagnostic.to_string());
+        }
         let message = format!("{error:#}");
         let code = error.chain().find_map(|cause| {
             let text = cause.to_string();
@@ -61,6 +82,17 @@ pub fn run(command: LearningCommand) -> Result<()> {
 }
 fn execute(command: LearningCommand) -> Result<serde_json::Value> {
     match command {
+        LearningCommand::MigratePanel {
+            input,
+            output,
+            identity_limits,
+            catalog_root,
+        } => aic_learning::training::evaluation::migrate(
+            &input,
+            &output,
+            &identity_limits,
+            &catalog_root,
+        ),
         LearningCommand::Stop { output } => {
             anyhow::ensure!(
                 output.is_dir(),

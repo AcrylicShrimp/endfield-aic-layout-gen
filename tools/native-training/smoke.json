@@ -63,7 +63,8 @@
   "gae_lambda": 0.95,
   "advantage_normalization": "center",
   "generation": {
-    "schema": "aic-native-generation-v1",
+    "schema": "aic-native-generation-v2",
+    "identity_limits": { "max_individualization_nodes": 100000 },
     "seed_base": 722900000,
     "max_attempts": 8,
     "episode_setup_ms": 180000,

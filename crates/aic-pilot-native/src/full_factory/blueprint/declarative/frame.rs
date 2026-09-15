@@ -109,7 +109,7 @@ impl PhysicalFrame {
 }
 
 /// Admission uses i128 before chain extraction or world-space port arithmetic.
-pub(super) fn working_witness(
+pub(in crate::full_factory) fn working_witness(
     original: &Witness,
     catalogs: &aic_data::layouts::FactoryEditCatalogs,
 ) -> Result<Witness> {

@@ -25,7 +25,7 @@ use std::{
     sync::Arc,
 };
 
-const CHECKPOINT_SCHEMA: &str = "aic-training-checkpoint-v7";
+const CHECKPOINT_SCHEMA: &str = "aic-training-checkpoint-v8";
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

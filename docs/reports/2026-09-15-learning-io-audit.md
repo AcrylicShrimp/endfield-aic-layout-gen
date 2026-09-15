@@ -212,10 +212,24 @@ this document. The pending extraction measurement remains separate paused work.
   Physical admission order removes opaque-label ordering. Its execution record
   covers complete action distributions with equivalent labels, online/frozen
   CPU/CUDA likelihoods and gradients, actual sparse publication/restore and the
-  next optimizer update. Plans 05–06 still own evaluation reservations and measured learning readiness.
+  next optimizer update. Plan 06 still owns measured learning readiness.
 
 - Plan 04 normalizes by unmasked family counts, assigns exact zero mass to masked
   roots and keeps entropy finite. Native indices/structural rules and conditional
   port normalization remain. Explicit equal-logit, reference-gradient and actual
   masked native-input checks validate this probability contract; it does not by
   itself demonstrate better learning.
+
+
+### Physical evaluation reservations (plan 05)
+
+[The completed reservation implementation](../plans/2026-09-15.05-physical-evaluation-reservations.md)
+replaces the historical JSON geometry reservation with independent canonical
+structural and exact physical identities. Source/cache/panel admission and inherited
+root membership share this contract; old panel migration preserves actual source
+bytes and seeds and rejects newly equivalent cases. Eight retained release inputs
+required no individualization and 0.28–3.32 ms for graph/identity computation.
+Tiny integrated training, nonempty replay and v8 resume checks passed. These checks
+establish correctness and bounded cost continuity; the final cold comparison in
+plan 06 is still required for any learning-readiness conclusion. The historical
+findings above are not retrospective claims of observed evaluation contamination.

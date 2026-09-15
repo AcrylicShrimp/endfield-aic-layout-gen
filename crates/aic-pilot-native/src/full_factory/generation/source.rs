@@ -1,5 +1,10 @@
 //! Fresh complete factory construction and durable canonical input slots.
-use super::{Setup, geometry_identity, randomize, rng::Rng};
+use super::{
+    Setup,
+    physical_identity::{self, Limits, PhysicalIdentity, SEMANTICS},
+    randomize,
+    rng::Rng,
+};
 use crate::input::{Catalogs, hash, read};
 use aic_data::layouts::{
     ConstructiveProductionRequest, FactoryEditRequest, WitnessProbeInput, construct_production,
@@ -42,6 +47,7 @@ pub struct Construction {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub schema: String,
+    pub identity_limits: Limits,
     pub seed_base: u64,
     pub max_attempts: usize,
     pub episode_setup_ms: u64,
@@ -67,6 +73,96 @@ pub struct Generated {
     pub request: FactoryEditRequest,
     pub original: WitnessProbeInput,
     pub metadata: Value,
+    /// Absent only in legacy actual payloads accepted by explicit panel migration.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub admission: Option<Admission>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct RootReservation {
+    pub semantics: String,
+    pub structural: String,
+    pub episode: String,
+}
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Admission {
+    pub physical: PhysicalIdentity,
+    pub catalog_sha256: String,
+    pub root: RootReservation,
+}
+impl Admission {
+    pub fn new(physical: PhysicalIdentity, catalogs: &Catalogs, episode: String) -> Self {
+        Self {
+            root: RootReservation {
+                semantics: SEMANTICS.into(),
+                structural: physical.structural.clone(),
+                episode,
+            },
+            physical,
+            catalog_sha256: catalogs.identity.clone(),
+        }
+    }
+    pub fn is_reserved(&self, reserved: &BTreeSet<String>) -> bool {
+        reserved.contains(&self.physical.structural) || reserved.contains(&self.root.structural)
+    }
+    pub fn validate(&self) -> Result<()> {
+        let hash = |s: &str| {
+            s.len() == 64
+                && s.bytes()
+                    .all(|c| c.is_ascii_digit() || (b'a'..=b'f').contains(&c))
+        };
+        if self.physical.semantics != SEMANTICS
+            || self.root.semantics != SEMANTICS
+            || self.root.episode.is_empty()
+            || !hash(&self.root.structural)
+            || !hash(&self.physical.structural)
+            || !hash(&self.physical.exact_problem)
+            || !hash(&self.catalog_sha256)
+        {
+            return Err(
+                "aic-learning.physical-identity-metadata: invalid admission keys/root".into(),
+            );
+        }
+        Ok(())
+    }
+}
+impl Generated {
+    pub fn admitted(&self) -> Result<&Admission> {
+        self.admission.as_ref().ok_or_else(|| {
+            "aic-learning.physical-identity-metadata: legacy input needs explicit migration".into()
+        })
+    }
+    /// External/cached input boundary: validate actual payload, compute keys once,
+    /// and compare any supplied metadata. Descendant roots are preserved unchanged.
+    pub fn admit(
+        &mut self,
+        catalogs: &Catalogs,
+        limits: &Limits,
+        entity: &str,
+        legacy_episode: Option<String>,
+    ) -> Result<()> {
+        let physical = physical_identity::validate_and_identify(
+            &self.request,
+            &self.original,
+            &catalogs.data,
+            limits,
+            entity,
+        )?;
+        if let Some(admission) = &self.admission {
+            admission.validate()?;
+            if admission.physical != physical || admission.catalog_sha256 != catalogs.identity {
+                return Err(format!(
+                    "aic-learning.physical-identity-metadata: changed payload/catalog at {entity}"
+                ));
+            }
+        } else {
+            let episode = legacy_episode.ok_or_else(|| format!("aic-learning.physical-identity-metadata: legacy input at {entity}; migrate its panel explicitly"))?;
+            self.admission = Some(Admission::new(physical, catalogs, episode));
+        }
+        Ok(())
+    }
 }
 fn error(stage: &str, entity: impl std::fmt::Display, message: impl std::fmt::Display) -> String {
     json!({"code":format!("aic-generation.{stage}"),"severity":"error","stage":"input-generation",
@@ -81,6 +177,37 @@ fn write(path: &Path, value: &impl Serialize) -> Result<()> {
     file.flush().map_err(|e| error("write", path.display(), e))
 }
 impl Source {
+    /// Retained, factory-validated episode result. Recompute only at publication;
+    /// the root reservation survives every descendant geometry change.
+    pub fn publish_best(&self, value: &mut Generated, entity: &str) -> Result<()> {
+        let admission = value.admission.as_mut().ok_or("Missing admitted parent")?;
+        admission.validate()?;
+        if admission.catalog_sha256 != self.catalogs.identity {
+            return Err(format!(
+                "aic-learning.physical-identity-metadata: catalog mismatch at {entity}"
+            ));
+        }
+        admission.physical = physical_identity::identify(
+            &value.original,
+            &self.catalogs.data,
+            &self.config.identity_limits,
+            entity,
+        )?
+        .0;
+        Ok(())
+    }
+    pub fn check_reservation(&self, value: &Generated, entity: &str) -> Result<()> {
+        let admission = value.admitted()?;
+        admission.validate()?;
+        if admission.catalog_sha256 != self.catalogs.identity
+            || admission.is_reserved(&self.reserved)
+        {
+            return Err(format!(
+                "aic-learning.physical-reservation: catalog mismatch or reserved layout/root at {entity}"
+            ));
+        }
+        Ok(())
+    }
     fn compute<T>(&self, milliseconds: u64, action: impl FnOnce() -> T) -> Result<T> {
         WorkControl::new(Duration::from_millis(milliseconds), self.guard.clone())?
             .run(action)
@@ -97,7 +224,8 @@ impl Source {
         reserved: BTreeSet<String>,
     ) -> Result<Self> {
         let c = &config;
-        if c.schema != "aic-native-generation-v1"
+        if c.schema != "aic-native-generation-v2"
+            || c.identity_limits.max_individualization_nodes == 0
             || c.max_attempts == 0
             || c.max_attempts > 32
             || c.episode_setup_ms == 0
@@ -200,7 +328,7 @@ impl Source {
             let bytes = fs::read(directory.join("input.json"))
                 .map_err(|e| error("read", directory.display(), e))?;
             if bytes.len() > 16 * 1024 * 1024
-                || manifest["schema"] != "aic-generated-slot-v1"
+                || manifest["schema"] != "aic-generated-slot-v2"
                 || manifest["slot"] != slot
                 || manifest["source"] != self.identity
                 || manifest["input_sha256"] != hash(&bytes)
@@ -211,9 +339,15 @@ impl Source {
                     "committed actual input differs from this source/slot",
                 ));
             }
-            let value: Generated = serde_json::from_slice(&bytes)
+            let mut value: Generated = serde_json::from_slice(&bytes)
                 .map_err(|e| error("input", directory.display(), e))?;
-            if self.reserved.contains(&geometry_identity(&value.original)) {
+            value.admit(
+                &self.catalogs,
+                &self.config.identity_limits,
+                &directory.display().to_string(),
+                None,
+            )?;
+            if value.admitted()?.is_reserved(&self.reserved) {
                 return Err(error(
                     "reservation",
                     directory.display(),
@@ -348,6 +482,7 @@ impl Source {
                     .map_err(|e| error("constructor-witness", slot, e))?,
             };
             let setup = Setup {
+                identity_limits: self.config.identity_limits.clone(),
                 steps,
                 elapsed_ms: self.config.setup_elapsed_ms.min(remaining()),
                 route_work: self.config.route_work,
@@ -367,21 +502,34 @@ impl Source {
                         &directory.join("setup-partial.json"),
                         &json!({"request":request,"draw":draw,"failure":failure}),
                     )?;
+                    if let Ok(mut diagnostic) = serde_json::from_str::<Value>(&failure.message) {
+                        if diagnostic["code"] == "aic-learning.physical-identity-budget" {
+                            diagnostic["entity"] =
+                                json!(format!("{}/setup/{setup_seed}", directory.display()));
+                            return Err(diagnostic.to_string());
+                        }
+                    }
                     return Err(error("setup-failed", directory.display(), &failure.message));
                 }
             };
-            if self.reserved.contains(&randomized.geometry_sha256) {
-                attempts.push(json!({"seed":seed,"stage":"reservation","geometry_sha256":randomized.geometry_sha256}));
+            let admission = Admission::new(
+                randomized.physical,
+                &self.catalogs,
+                format!("{}/{slot}", self.identity),
+            );
+            if admission.is_reserved(&self.reserved) {
+                attempts.push(json!({"seed":seed,"stage":"reservation","structural":admission.physical.structural}));
                 continue;
             }
-            let metadata = json!({"schema":"aic-generated-input-v1","slot":slot,"generation_seed":seed,"source":self.identity,
-                "rng":"splitmix64-v1","draw":draw,"geometry_sha256":randomized.geometry_sha256,
-                "constructor_geometry_sha256":randomized.constructor_geometry_sha256,"setup":randomized.records,"attempts":attempts,
+            let metadata = json!({"schema":"aic-generated-input-v2","slot":slot,"generation_seed":seed,"source":self.identity,
+                "rng":"splitmix64-v1","draw":draw,
+                "constructor_physical":randomized.constructor_physical,"setup":randomized.records,"attempts":attempts,
                 "setup_seconds":started.elapsed().as_secs_f64()});
             let value = Generated {
                 request,
                 original: randomized.original,
                 metadata,
+                admission: Some(admission),
             };
             let input = directory.join("input.json");
             write(&input, &value)?;
@@ -400,7 +548,7 @@ impl Source {
             let pending = directory.join("manifest.pending");
             write(
                 &pending,
-                &json!({"schema":"aic-generated-slot-v1","slot":slot,"source":self.identity,"input_sha256":hash(&bytes)}),
+                &json!({"schema":"aic-generated-slot-v2","slot":slot,"source":self.identity,"input_sha256":hash(&bytes)}),
             )?;
             fs::File::open(&input)
                 .and_then(|f| f.sync_all())

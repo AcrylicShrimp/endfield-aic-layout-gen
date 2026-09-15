@@ -286,6 +286,32 @@ fn interchangeable_unused_ports() -> Session {
     )
     .unwrap()
 }
+
+#[test]
+fn physical_identity_survives_all_names_and_array_permutations() {
+    use crate::generation::physical_identity::{Limits, identify};
+    let limits = Limits {
+        max_individualization_nodes: 100_000,
+    };
+    for original in [session(), interchangeable_unused_ports()] {
+        let (changed, _) = renamed(&original);
+        let a = identify(
+            &original.original,
+            &original.catalogs.data,
+            &limits,
+            "original",
+        )
+        .unwrap();
+        let b = identify(
+            &changed.original,
+            &changed.catalogs.data,
+            &limits,
+            "renamed",
+        )
+        .unwrap();
+        assert_eq!(a, b);
+    }
+}
 fn enumerable(s: &Session, inverse: &BTreeMap<String, String>) -> Value {
     let mut l = Learning::new(
         s,

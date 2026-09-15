@@ -1,7 +1,10 @@
 //! Held-out native episodes with per-case RNGs and an immutable learner model.
 use crate::{collection::policy, input::sha256, model::Model, schema::Archive};
 use aic_pilot_native::{
-    generation::{geometry_identity, source::Generated},
+    generation::{
+        physical_identity::{Limits as IdentityLimits, SEMANTICS},
+        source::{Admission, Generated},
+    },
     input::Catalogs,
     learning::{
         Limits, Observation, Options,
@@ -50,13 +53,14 @@ pub struct Case {
     pub product: String,
     pub stratum: String,
     pub action_seed: u64,
-    pub geometry_sha256: String,
+    pub admission: Admission,
     pub input: Archive,
 }
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Manifest {
     pub schema: String,
+    pub identity_semantics: String,
     pub cases: Vec<Case>,
 }
 pub struct Panel {
@@ -65,16 +69,30 @@ pub struct Panel {
     pub reserved: BTreeSet<String>,
     pub identity: String,
 }
+mod migration;
+pub use migration::migrate;
 impl Panel {
-    pub fn load(path: &Path, max_input_bytes: u64) -> Result<Self> {
+    pub fn load(
+        path: &Path,
+        max_input_bytes: u64,
+        catalogs: &Catalogs,
+        limits: &IdentityLimits,
+    ) -> Result<Self> {
         ensure!(
             fs::metadata(path)?.len() <= 4 * 1024 * 1024,
             "aic-learning.evaluation-panel: oversized {}",
             path.display()
         );
-        let manifest: Manifest = serde_json::from_slice(&fs::read(path)?)?;
+        let raw: Value = serde_json::from_slice(&fs::read(path)?)?;
         ensure!(
-            manifest.schema == "aic-evaluation-panel-v1"
+            raw["schema"] == "aic-evaluation-panel-v2",
+            "aic-learning.evaluation-panel: {} needs explicit learning migrate-panel; expected aic-evaluation-panel-v2",
+            path.display()
+        );
+        let manifest: Manifest = serde_json::from_value(raw)?;
+        ensure!(
+            manifest.schema == "aic-evaluation-panel-v2"
+                && manifest.identity_semantics == SEMANTICS
                 && !manifest.cases.is_empty()
                 && manifest.cases.len() <= 4096,
             "aic-learning.evaluation-panel: invalid schema/case bound at {}",
@@ -82,6 +100,7 @@ impl Panel {
         );
         let mut ids = BTreeSet::new();
         let mut reserved = BTreeSet::new();
+        let mut owners = std::collections::BTreeMap::<String, String>::new();
         let mut inputs = vec![];
         let mut input_bytes = 0u64;
         let root = path.parent().unwrap_or(Path::new("."));
@@ -103,14 +122,38 @@ impl Panel {
                 "aic-learning.evaluation-input: changed/oversized {}",
                 input.display()
             );
-            let value: Generated = serde_json::from_slice(&fs::read(&input)?)?;
+            let mut value: Generated = serde_json::from_slice(&fs::read(&input)?)?;
+            if value.admission.is_none() {
+                value.admission = Some(case.admission.clone());
+            }
+            value
+                .admit(
+                    catalogs,
+                    limits,
+                    &format!("{} / {}", input.display(), case.id),
+                    None,
+                )
+                .map_err(anyhow::Error::msg)?;
             ensure!(
                 value.metadata["draw"]["product"] == case.product
-                    && geometry_identity(&value.original) == case.geometry_sha256
-                    && reserved.insert(case.geometry_sha256.clone()),
+                    && value.admitted().map_err(anyhow::Error::msg)? == &case.admission,
                 "aic-learning.evaluation-geometry: changed or repeated case {}",
                 case.id
             );
+            for key in [
+                &case.admission.physical.structural,
+                &case.admission.root.structural,
+            ] {
+                if let Some(previous) = owners.insert(key.clone(), case.id.clone()) {
+                    ensure!(
+                        previous == case.id,
+                        "aic-learning.evaluation-duplicate: cases {} and {} reserve equivalent layout/root",
+                        previous,
+                        case.id
+                    );
+                }
+                reserved.insert(key.clone());
+            }
             inputs.push(value);
         }
         Ok(Self {
@@ -338,7 +381,8 @@ pub fn prepare(config_path: &Path, output: &Path, cases: usize, seed: u64) -> Re
         )
         .map_err(anyhow::Error::msg)?;
     let mut manifest = Manifest {
-        schema: "aic-evaluation-panel-v1".into(),
+        schema: "aic-evaluation-panel-v2".into(),
+        identity_semantics: SEMANTICS.into(),
         cases: vec![],
     };
     let mut seen = BTreeSet::new();
@@ -347,9 +391,9 @@ pub fn prepare(config_path: &Path, output: &Path, cases: usize, seed: u64) -> Re
             anyhow::bail!("aic-learning.panel-generation: missing actual input")
         };
         let value: Generated = serde_json::from_value(v)?;
-        let geometry = geometry_identity(&value.original);
+        let admission = value.admitted().map_err(anyhow::Error::msg)?.clone();
         ensure!(
-            seen.insert(geometry.clone()),
+            seen.insert(admission.physical.structural.clone()),
             "aic-learning.panel-geometry: repeated geometry; use a different seed"
         );
         let product = value.metadata["draw"]["product"]
@@ -371,7 +415,7 @@ pub fn prepare(config_path: &Path, output: &Path, cases: usize, seed: u64) -> Re
             action_seed: seed
                 .checked_add(i as u64 * 64)
                 .ok_or_else(|| anyhow::anyhow!("aic-learning.panel-seed: overflow"))?,
-            geometry_sha256: geometry,
+            admission,
             input: Archive {
                 sha256: sha256(&output.join(&path))?,
                 path: path.to_string_lossy().into_owned(),
