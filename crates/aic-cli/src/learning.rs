@@ -22,6 +22,18 @@ pub enum LearningCommand {
         #[arg(long)]
         dataset: PathBuf,
     },
+    /// Train and evaluate the fixed physical-action outcome predictor.
+    #[cfg(feature = "learning")]
+    PretrainOutcomes {
+        #[arg(long)]
+        config: PathBuf,
+        #[arg(long)]
+        dataset: PathBuf,
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long, default_value = "cuda:0")]
+        device: String,
+    },
     /// Recompute physical reservations from verified v1 panel payloads into a new directory.
     #[cfg(feature = "learning")]
     MigratePanel {
@@ -78,6 +90,8 @@ pub fn run(command: LearningCommand) -> Result<()> {
         LearningCommand::CollectOutcomes { config, .. } => config,
         LearningCommand::ValidateOutcomes { dataset } => dataset,
         #[cfg(feature = "learning")]
+        LearningCommand::PretrainOutcomes { config, .. } => config,
+        #[cfg(feature = "learning")]
         LearningCommand::MigratePanel { input: config, .. } => config,
         #[cfg(feature = "learning")]
         LearningCommand::Stop { output: config } => config,
@@ -114,6 +128,18 @@ fn execute(command: LearningCommand) -> Result<serde_json::Value> {
             output,
         } => aic_learning::outcomes::collect(&config, &catalog_root, &output),
         LearningCommand::ValidateOutcomes { dataset } => aic_learning::outcomes::validate(&dataset),
+        #[cfg(feature = "learning")]
+        LearningCommand::PretrainOutcomes {
+            config,
+            dataset,
+            output,
+            device,
+        } => aic_learning::pretraining::run(
+            &config,
+            &dataset,
+            &output,
+            update::parse_device(&device)?,
+        ),
         #[cfg(feature = "learning")]
         LearningCommand::MigratePanel {
             input,

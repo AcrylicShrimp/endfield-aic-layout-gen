@@ -6,6 +6,8 @@ pub mod input;
 pub mod model;
 #[cfg(feature = "outcomes")]
 pub mod outcomes;
+#[cfg(feature = "libtorch")]
+pub mod pretraining;
 pub mod schema;
 #[cfg(feature = "libtorch")]
 pub mod update;

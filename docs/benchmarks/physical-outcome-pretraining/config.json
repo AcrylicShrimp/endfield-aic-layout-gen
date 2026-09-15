@@ -1,0 +1,51 @@
+{
+  "schema": "aic-physical-outcome-pretraining-v1",
+  "dataset": {
+    "manifest_sha256": "11a49bcc051349e81b6a96be430b7ed7f1c3b6a76152a8f308c2a9fd9d1c4b3c",
+    "config_sha256": "c1835d300d049e9d45049a324ffc2e6fed06638e89808afe8971fdbe0747179d",
+    "catalog_sha256": "6e483b5b903fe759008823f50dfe55d6e9a7b3d8d36978864fb292a76d5684de"
+  },
+  "model": {
+    "width": 40,
+    "message_rounds": 2,
+    "node_features": 41,
+    "edge_features": 37,
+    "global_features": 15,
+    "action_features": 12,
+    "port_features": 11
+  },
+  "seeds": [930000, 930001],
+  "epochs": 12,
+  "roots_per_batch": 4,
+  "optimizer": {
+    "learning_rate": 0.0003,
+    "beta1": 0.9,
+    "beta2": 0.999,
+    "epsilon": 1e-8,
+    "gradient_clip": 1.0
+  },
+  "count_scale": 64.0,
+  "losses": {
+    "completion": 1.0,
+    "changed": 0.25,
+    "pending_flag": 0.25,
+    "conflict_flag": 0.25,
+    "unchanged": 0.25,
+    "rejected": 0.25,
+    "pending_count": 0.25,
+    "conflict_count": 0.25,
+    "area": 0.5,
+    "transport": 0.25,
+    "turns": 0.25,
+    "route_budget": 0.25
+  },
+  "gate": {
+    "minimum_auroc": 0.6,
+    "minimum_metric_mae_improvement": 0.05
+  },
+  "resources": {
+    "max_elapsed_seconds": 1800,
+    "max_rss_bytes": 8589934592,
+    "max_output_bytes": 536870912
+  }
+}

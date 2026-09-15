@@ -201,6 +201,23 @@ pub struct DatasetManifest {
     pub failure: Option<String>,
 }
 
+/// Dataset bindings verified once, with rows decoded one root chunk at a time.
+pub struct VerifiedIndex {
+    root: PathBuf,
+    pub manifest: DatasetManifest,
+    pub split: SplitManifest,
+    chunks: BTreeMap<String, ChunkManifest>,
+}
+
+impl VerifiedIndex {
+    pub fn read_root(&self, root_id: &str) -> Result<Vec<Row>> {
+        let chunk = self.chunks.get(root_id).ok_or_else(|| {
+            anyhow::anyhow!("aic-learning.outcomes-load: missing chunk for {root_id}")
+        })?;
+        decode_chunk(&self.root.join(&chunk.path), chunk)
+    }
+}
+
 pub struct Stage {
     output: PathBuf,
     root: PathBuf,
@@ -372,7 +389,7 @@ impl Drop for Stage {
     }
 }
 
-pub fn load(path: &Path) -> Result<(DatasetManifest, Vec<Row>)> {
+pub fn verified_index(path: &Path) -> Result<VerifiedIndex> {
     let manifest: DatasetManifest = read_json(&path.join("manifest.json"))?;
     ensure!(
         manifest.schema == DATASET_SCHEMA,
@@ -412,47 +429,86 @@ pub fn load(path: &Path) -> Result<(DatasetManifest, Vec<Row>)> {
         );
         if let (Some(relative), Some(expected)) = (&root.source_file, &root.source_sha256) {
             ensure!(
-                hash(&fs::read(path.join(relative))?) == *expected,
+                hash_file(&path.join(relative))? == *expected,
                 "aic-learning.outcomes-load: source hash mismatch for {}",
                 root.slot.root_id
             );
         }
     }
-    let mut rows = Vec::new();
+    let mut chunks = BTreeMap::new();
     for chunk in &manifest.chunks {
-        let bytes = fs::read(path.join(&chunk.path))?;
         ensure!(
-            bytes.len() as u64 == chunk.bytes && hash(&bytes) == chunk.sha256,
+            fs::metadata(path.join(&chunk.path))?.len() == chunk.bytes
+                && hash_file(&path.join(&chunk.path))? == chunk.sha256,
             "aic-learning.outcomes-load: chunk binding failed for {}",
             chunk.path
         );
-        let mut cursor = std::io::Cursor::new(&bytes);
-        let mut count = 0usize;
-        while cursor.position() < bytes.len() as u64 {
-            let mut length = [0u8; 8];
-            cursor.read_exact(&mut length)?;
-            let length = usize::try_from(u64::from_le_bytes(length))?;
-            ensure!(
-                length <= bytes.len().saturating_sub(cursor.position() as usize),
-                "aic-learning.outcomes-load: truncated frame in {}",
-                chunk.path
-            );
-            let mut encoded = vec![0; length];
-            cursor.read_exact(&mut encoded)?;
-            rows.push(postcard::from_bytes(&encoded)?);
-            count += 1;
-        }
         ensure!(
-            count == chunk.rows,
-            "aic-learning.outcomes-load: row count mismatch in {}",
-            chunk.path
+            chunks
+                .insert(chunk.root_id.clone(), chunk.clone())
+                .is_none(),
+            "aic-learning.outcomes-load: duplicate chunk for {}",
+            chunk.root_id
         );
     }
     ensure!(
-        rows.len() == manifest.rows,
+        manifest
+            .roots
+            .iter()
+            .filter(|root| root.rows > 0)
+            .all(|root| chunks.contains_key(&root.slot.root_id)),
+        "aic-learning.outcomes-load: root manifest lacks chunk binding"
+    );
+    Ok(VerifiedIndex {
+        root: path.to_owned(),
+        manifest,
+        split,
+        chunks,
+    })
+}
+
+pub fn load(path: &Path) -> Result<(DatasetManifest, Vec<Row>)> {
+    let index = verified_index(path)?;
+    let mut rows = Vec::new();
+    for chunk in &index.manifest.chunks {
+        rows.extend(index.read_root(&chunk.root_id)?);
+    }
+    ensure!(
+        rows.len() == index.manifest.rows,
         "aic-learning.outcomes-load: manifest row total mismatch"
     );
-    Ok((manifest, rows))
+    Ok((index.manifest, rows))
+}
+
+fn decode_chunk(path: &Path, chunk: &ChunkManifest) -> Result<Vec<Row>> {
+    let bytes = fs::read(path)?;
+    let mut cursor = std::io::Cursor::new(&bytes);
+    let mut rows = Vec::with_capacity(chunk.rows);
+    while cursor.position() < bytes.len() as u64 {
+        let mut length = [0u8; 8];
+        cursor.read_exact(&mut length)?;
+        let length = usize::try_from(u64::from_le_bytes(length))?;
+        ensure!(
+            length <= bytes.len().saturating_sub(cursor.position() as usize),
+            "aic-learning.outcomes-load: truncated frame in {}",
+            chunk.path
+        );
+        let mut encoded = vec![0; length];
+        cursor.read_exact(&mut encoded)?;
+        let row: Row = postcard::from_bytes(&encoded)?;
+        ensure!(
+            row.root_id == chunk.root_id,
+            "aic-learning.outcomes-load: row owner mismatch in {}",
+            chunk.path
+        );
+        rows.push(row);
+    }
+    ensure!(
+        rows.len() == chunk.rows,
+        "aic-learning.outcomes-load: row count mismatch in {}",
+        chunk.path
+    );
+    Ok(rows)
 }
 
 fn pretty(value: &impl Serialize) -> Result<Vec<u8>> {
@@ -475,6 +531,20 @@ fn write_new(path: &Path, bytes: &[u8]) -> Result<()> {
 
 pub fn hash(bytes: &[u8]) -> String {
     hex(&Sha256::digest(bytes))
+}
+
+fn hash_file(path: &Path) -> Result<String> {
+    let mut file = BufReader::new(File::open(path)?);
+    let mut digest = Sha256::new();
+    let mut buffer = [0u8; 64 * 1024];
+    loop {
+        let count = file.read(&mut buffer)?;
+        if count == 0 {
+            break;
+        }
+        digest.update(&buffer[..count]);
+    }
+    Ok(hex(&digest.finalize()))
 }
 
 fn hex(bytes: &[u8]) -> String {

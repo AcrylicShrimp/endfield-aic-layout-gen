@@ -188,7 +188,7 @@ impl Model {
             Some(&self.weights[&format!("{name}.bias")]),
         )
     }
-    fn encode(&self, b: &Tensors, graphs: i64) -> (Tensor, Tensor) {
+    pub(crate) fn encode_state(&self, b: &Tensors, graphs: i64) -> EncodedState {
         let mut nodes = self
             .linear(
                 "nodes.0",
@@ -255,22 +255,62 @@ impl Model {
                 &Tensor::cat(&[&pooled, &b["global_features"]], -1),
             )
             .tanh();
-        (nodes, pooled)
+        EncodedState {
+            nodes,
+            context: pooled,
+        }
+    }
+    pub(crate) fn selected_root_embedding(
+        &self,
+        state: &EncodedState,
+        batch: &Tensors,
+        roots: &Tensor,
+    ) -> Tensor {
+        let references = batch["action_references"].index_select(0, roots);
+        let owners = batch["action_graph"].index_select(0, roots);
+        self.root_embedding(
+            state,
+            &references,
+            &owners,
+            &batch["action_features"].index_select(0, roots),
+        )
+    }
+    fn root_embedding(
+        &self,
+        state: &EncodedState,
+        references: &Tensor,
+        owners: &Tensor,
+        features: &Tensor,
+    ) -> Tensor {
+        let context = state.context.index_select(0, owners);
+        Tensor::cat(
+            &[
+                masked_references(&state.nodes, references, &context).flatten(1, -1),
+                context,
+                features.shallow_clone(),
+            ],
+            -1,
+        )
+    }
+    pub(crate) fn encode_terminal_pairs(
+        &self,
+        nodes: &Tensor,
+        terminals: &Tensor,
+        ports: &Tensor,
+    ) -> Tensor {
+        self.pairs(nodes, terminals, ports)
     }
     pub fn roots(&self, prepared: &Packed) -> RootPrediction {
         let b = &prepared.graph;
-        let (nodes, pooled) = self.encode(b, prepared.graphs);
-        let refs = &b["action_references"];
-        let context = pooled.index(&[Some(&b["action_graph"])]);
-        let selected = masked_references(&nodes, refs, &context);
-        let features = Tensor::cat(
-            &[
-                selected.flatten(1, -1),
-                context,
-                b["action_features"].shallow_clone(),
-            ],
-            -1,
+        let state = self.encode_state(b, prepared.graphs);
+        let features = self.root_embedding(
+            &state,
+            &b["action_references"],
+            &b["action_graph"],
+            &b["action_features"],
         );
+        let nodes = state.nodes;
+        let pooled = state.context;
         let logits = self
             .linear("actor.2", &self.linear("actor.0", &features).tanh())
             .squeeze_dim(-1);
@@ -382,6 +422,11 @@ impl Model {
             values,
         })
     }
+}
+
+pub(crate) struct EncodedState {
+    pub nodes: Tensor,
+    pub context: Tensor,
 }
 
 /// Missing references use graph context, so their node gradient is zero.
