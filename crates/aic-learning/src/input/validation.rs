@@ -1,6 +1,7 @@
 //! Validate packed ownership and shapes once on the CPU before device transfer.
 use super::{Tensors, tensor};
 use crate::schema::ModelConfig;
+use aic_pilot_native::learning::schema::*;
 use aic_torch::tch::{Kind, Tensor};
 use anyhow::{Result, ensure};
 
@@ -68,13 +69,13 @@ pub(super) fn packed(
         nodes > 0 && actions > 0,
         "aic-learning.input-empty: {prefix}"
     );
-    for (a, z, rows, width) in [
-        ("node_static", "node_state", nodes, c.node_features),
-        ("edge_static", "edge_state", edges, c.edge_features),
+    for (name, rows, width) in [
+        ("node_static", nodes, NODE_STATIC),
+        ("node_state", nodes, NODE_STATE),
+        ("edge_static", edges, EDGE_STATIC),
+        ("edge_state", edges, EDGE_STATE),
     ] {
-        let x = get(a)?.size()[1];
-        field(v, &b(a), Kind::Float, &[rows, x])?;
-        field(v, &b(z), Kind::Float, &[rows, width - x])?;
+        field(v, &b(name), Kind::Float, &[rows, width as i64])?;
     }
     field(
         v,
@@ -88,7 +89,12 @@ pub(super) fn packed(
         Kind::Float,
         &[graphs, c.global_features],
     )?;
-    field(v, &b("path_cells"), Kind::Float, &[paths, 2])?;
+    field(
+        v,
+        &b("path_cells"),
+        Kind::Float,
+        &[paths, PATH_FEATURES as i64],
+    )?;
     let ng = field(v, &b("node_graph"), Kind::Int64, &[nodes])?;
     let nc = groups(ng, graphs, &b("node_graph"))?;
     ensure!(

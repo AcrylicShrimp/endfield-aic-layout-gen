@@ -327,17 +327,7 @@ fn typed_worker_pool_preserves_ownership_inputs_and_cold_restore() {
         assert_eq!(new.input.root_meta, old.input.root_meta);
         assert_eq!(new.attempts, old.attempts);
         assert_eq!(new.revision, old.revision);
-        for (i, (a, b)) in new
-            .input
-            .global_features
-            .iter()
-            .zip(&old.input.global_features)
-            .enumerate()
-        {
-            if i != learning::ELAPSED_FEATURE {
-                assert_eq!(a, b);
-            } // Actual elapsed-time feature advances.
-        }
+        assert_eq!(new.input.global_features, old.input.global_features);
     }
 }
 
@@ -385,9 +375,7 @@ fn extraction_reference() {
                 json!({"kind":"delete_band","axis":"x","at":24,"count":1}),
             ];
             for (i, action) in actions.into_iter().enumerate() {
-                let mut input = learning.observe(&s);
-                let elapsed = learning::ELAPSED_FEATURE;
-                input.global_features[elapsed] = 0.; // Compare all deterministic features only.
+                let input = learning.observe(&s).unwrap();
                 macro_rules! size { ($($field:ident),*) => { $(numerical_bytes += std::mem::size_of_val(input.$field.as_slice());)* }; }
                 size!(
                     node_static,

@@ -106,11 +106,18 @@ impl Config {
             "aic-learning.training-config: invalid schema, execution bounds or diagnostic prefix"
         );
         ensure!(
-            self.model.node_features == 24
-                && self.model.edge_features == 14
+            self.model.node_features
+                == (aic_pilot_native::learning::schema::NODE_STATIC
+                    + aic_pilot_native::learning::schema::NODE_STATE) as i64
+                && self.model.edge_features
+                    == (aic_pilot_native::learning::schema::EDGE_STATIC
+                        + aic_pilot_native::learning::schema::EDGE_STATE)
+                        as i64
                 && self.model.global_features == aic_pilot_native::learning::GLOBAL_FEATURES as i64
-                && self.model.action_features == 12
-                && self.model.port_features == 12,
+                && self.model.action_features
+                    == aic_pilot_native::learning::schema::ACTION_FEATURES as i64
+                && self.model.port_features
+                    == aic_pilot_native::learning::schema::PORT_FEATURES as i64,
             "aic-learning.model-schema: model dimensions differ from native graph feature schema"
         );
         ensure!(

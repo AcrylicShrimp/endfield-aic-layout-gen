@@ -58,9 +58,38 @@ an entire factory does not create an improvement or a new physical state.
 Native physical snapshots use `declarative-edit-checkpoint-v3`. The v2 physical
 reader verifies its old bindings and saved state, then converts current/best
 geometry once without regenerating paths or losing pending obligations. This is
-separate from learned checkpoint continuation. The temporary graph schema has
-10 global fields: the previous seven plus occupied width, height and inverse
-coordinate scale. The following observation-plan cutover replaces that schema.
+separate from learned checkpoint continuation.
+
+## Physical observations
+
+The current model consumes 41 node columns (31 static + 10 state), 37 edge
+columns (33 static + 4 state), eight directed path-cell columns, 15 globals,
+12 root-action columns and 11 conditional-port columns. Width 40 and two message
+rounds are unchanged. The native [typed schema](../../crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/schema.rs)
+defines column offsets; [plan 02](../../docs/plans/2026-09-15.02-authoritative-physical-observations.md)
+defines field units, applicability and relation endpoints.
+
+The graph carries complete catalog port layouts, selected and original port
+relations, component capacity/direction masks, separate bridge channels, network
+membership and commodity equality. Names, recipes, utilization and wall time
+are not numerical features. Current route restrictions match the repair query;
+baseline headings retain the constraint restored by returning to an original
+port. Facility baseline headings use the unrotated catalog frame. External and
+component headings use the fixed grid frame. External boundary normals remain
+explicit.
+
+Lengths use the maximum occupied width/height as scale; inverse scale and
+`ln(1 + width/height)` globals preserve grid units. Rates/capacities use
+`ln(1 + quantity per second)`, while native validation retains exact values.
+Other logarithmic globals also use `ln(1 + x)`. Path cells carry incoming/outgoing
+unit directions and endpoint bits. Non-transport relation edges do not create
+routing obligations. Unchanged geometry reuses the retained view; decision and
+work budgets still refresh, and previously collected rows remain immutable.
+
+Observation limits count actual vector capacities across live/retained inputs,
+once per shared input owner, before collecting another row. Compact replay
+counts retained numerical lengths and branch/reference storage. Neither estimate
+replaces the existing process RSS guard.
 
 ## Outputs and recovery
 
@@ -99,7 +128,7 @@ replay, optimizer or curriculum. Incomplete evaluation cannot replace the best.
 ## Migration and bounded comparison
 
 Training configurations use `aic-training-v1`. Checkpoint manifests use
-`aic-training-checkpoint-v4`; this is the single learned-state format version.
+`aic-training-checkpoint-v5`; this is the single learned-state format version.
 When model input, action or replay meaning changes, increment that version even
 if tensor shapes stay the same. Existing config binding covers runtime settings.
 Restore checks the manifest version before loading learner, Adam, RNG, best-model

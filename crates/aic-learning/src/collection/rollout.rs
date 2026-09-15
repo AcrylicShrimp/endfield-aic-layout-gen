@@ -10,7 +10,7 @@ use aic_pilot_native::learning::{
 use aic_torch::tch::{Device, no_grad};
 use anyhow::{Result, ensure};
 use serde_json::{Value, json};
-use std::time::Instant;
+use std::{collections::BTreeSet, sync::Arc, time::Instant};
 
 pub struct Sample {
     pub stream: usize,
@@ -52,22 +52,22 @@ pub fn observations(replies: Vec<(usize, Reply)>) -> Result<Vec<Observation>> {
         })
         .collect()
 }
-fn bytes(o: &Observation) -> u64 {
-    let v = &o.input;
-    (v.node_static.capacity() * 56
-        + v.node_state.capacity() * 40
-        + v.edge_index.capacity() * 16
-        + v.edge_static.capacity() * 40
-        + v.edge_state.capacity() * 16
-        + v.path_cells.capacity() * 8
-        + v.path_edges.capacity() * 8
-        + v.global_features.capacity() * 4
-        + v.action_features.capacity() * 48
-        + v.action_references.capacity() * 16
-        + v.root_meta.capacity() * 24
-        + v.kind_log_counts.capacity() * 4
-        + v.root_invalid.capacity()
-        + v.port_features.capacity() * 48) as u64
+fn account<'a>(
+    rows: impl IntoIterator<Item = &'a Observation>,
+    owners: &mut BTreeSet<usize>,
+    bytes: &mut u64,
+    limit: u64,
+) -> Result<()> {
+    for row in rows {
+        if owners.insert(Arc::as_ptr(&row.input) as usize) {
+            *bytes += row.input.bytes(true);
+        }
+    }
+    ensure!(
+        *bytes <= limit,
+        "aic-learning.collection-memory: retained numerical input budget exceeded before collection"
+    );
+    Ok(())
 }
 pub fn collect(
     pool: &mut Pool,
@@ -106,6 +106,13 @@ pub fn collect(
         (streams * config.chunk_actions)
             .min(config.max_observation_bytes as usize / std::mem::size_of::<Sample>()),
     );
+    let mut owners = BTreeSet::new();
+    account(
+        &retained.current,
+        &mut owners,
+        &mut retained.observation_bytes,
+        config.max_observation_bytes,
+    )?;
     for step in 0..config.chunk_actions {
         guard()?;
         retained.choices = policy::sample(
@@ -176,7 +183,6 @@ pub fn collect(
             else {
                 unreachable!()
             };
-            retained.observation_bytes += bytes(&observation);
             retained.samples.push(Sample {
                 stream,
                 observation,
@@ -188,10 +194,12 @@ pub fn collect(
             next.push(after);
         }
         retained.current = next;
-        ensure!(
-            retained.observation_bytes <= config.max_observation_bytes,
-            "aic-learning.collection-memory: retained numerical input budget exceeded"
-        );
+        account(
+            &retained.current,
+            &mut owners,
+            &mut retained.observation_bytes,
+            config.max_observation_bytes,
+        )?;
     }
     retained.bootstrap = no_grad(|| -> Result<Vec<f32>> {
         let packed = batch::graph(&retained.current.iter().collect::<Vec<_>>(), learner.device)?;
@@ -237,4 +245,48 @@ pub fn collect(
         .collect();
     retained.seconds = started.elapsed().as_secs_f64();
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use aic_pilot_native::learning::{Domain, Input, schema::*};
+    #[test]
+    fn guard_counts_actual_capacity_once_per_shared_owner_before_work() {
+        let mut input = Input::default();
+        input.node_static.reserve_exact(50);
+        input.node_static.push([0.; NODE_STATIC]);
+        input.edge_static.reserve_exact(60);
+        input.edge_static.push([0.; EDGE_STATIC]);
+        input.path_cells.reserve_exact(70);
+        input.path_cells.push([0.; PATH_FEATURES]);
+        let old_estimate = (input.node_static.capacity() * 56
+            + input.edge_static.capacity() * 40
+            + input.path_cells.capacity() * 8) as u64;
+        let actual = input.bytes(true);
+        assert!(actual > old_estimate);
+        assert!(actual > input.bytes(false));
+        let observation = Observation {
+            input: Arc::new(input),
+            domain: Arc::new(Domain { groups: vec![] }),
+            handle: 1,
+            blueprint_sha256: String::new(),
+            revision: 0,
+            attempts: 0,
+            done: false,
+        };
+        let mut owners = BTreeSet::new();
+        let mut bytes = 0;
+        let copies = [observation.clone(), observation.clone()];
+        account(&copies, &mut owners, &mut bytes, actual).unwrap();
+        assert_eq!(bytes, actual);
+        let failure = account(
+            [&observation],
+            &mut BTreeSet::new(),
+            &mut 0,
+            (actual + old_estimate) / 2,
+        )
+        .unwrap_err();
+        assert!(failure.to_string().contains("collection-memory"));
+    }
 }

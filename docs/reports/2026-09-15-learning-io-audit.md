@@ -196,6 +196,13 @@ this document. The pending extraction measurement remains separate paused work.
 - Plan 01 implements the full translation correction: canonical native working
   geometry, signed proposals/padding, checked span arithmetic, actual physical
   snapshot conversion and translation-equivalence tests. Its execution record
-  owns measured evidence. The remaining observation, prefix, prior and evaluation
+  owns measured evidence. The remaining prefix, prior and evaluation
   findings above are still pending their corresponding plans; this historical
   audit is not a claim that all corrections have been implemented.
+
+- Plan 02 replaces fingerprints and wall time with the reviewed physical graph,
+  current/baseline route restrictions, full port/component relations, directed
+  path cells and explicit finite budgets/units. Its execution record contains
+  native invariance tests, CPU/CUDA packing/gradient checks, actual replay restore,
+  small/large byte measurements and bounded CLI evidence. Learning-quality effects
+  remain unmeasured until the integrated readiness comparison.

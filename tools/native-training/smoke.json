@@ -13,11 +13,11 @@
   "model": {
     "width": 40,
     "message_rounds": 2,
-    "node_features": 24,
-    "edge_features": 14,
-    "global_features": 10,
+    "node_features": 41,
+    "edge_features": 37,
+    "global_features": 15,
     "action_features": 12,
-    "port_features": 12
+    "port_features": 11
   },
   "optimizer": {
     "adam_backend": "foreach",

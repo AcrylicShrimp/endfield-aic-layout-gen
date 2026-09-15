@@ -1,6 +1,6 @@
 //! Pack native arrays once per logical batch, retaining original graph ordering.
 use crate::input::{Packed, Tensors};
-use aic_pilot_native::learning::Observation;
+use aic_pilot_native::learning::{Observation, schema::*};
 use aic_torch::tch::{Device, Kind, Tensor};
 use anyhow::{Result, ensure};
 
@@ -33,12 +33,12 @@ pub fn graph_inputs(rows: &[&aic_pilot_native::learning::Input], device: Device)
             );
         }};
     }
-    matrix!(node_static, 14);
-    matrix!(node_state, 10);
-    matrix!(edge_static, 10);
-    matrix!(edge_state, 4);
-    matrix!(path_cells, 2);
-    matrix!(action_features, 12);
+    matrix!(node_static, NODE_STATIC as i64);
+    matrix!(node_state, NODE_STATE as i64);
+    matrix!(edge_static, EDGE_STATIC as i64);
+    matrix!(edge_state, EDGE_STATE as i64);
+    matrix!(path_cells, PATH_FEATURES as i64);
+    matrix!(action_features, ACTION_FEATURES as i64);
     let mut edge_index = [Vec::new(), Vec::new()];
     let (mut path_edges, mut refs, mut nodes, mut actions, mut node_counts, mut path_counts) =
         (vec![], vec![], vec![], vec![], vec![], vec![]);
@@ -116,9 +116,9 @@ pub fn graph_inputs(rows: &[&aic_pilot_native::learning::Input], device: Device)
 /// A selected prefix's compatible alternatives, in original port order.
 #[derive(Clone, serde::Serialize, serde::Deserialize)]
 pub struct Branch {
-    pub features: Vec<[f32; 12]>,
-    pub history: [f32; 12],
-    pub root_features: [f32; 12],
+    pub features: Vec<[f32; PORT_FEATURES]>,
+    pub history: [f32; PORT_FEATURES],
+    pub root_features: [f32; ACTION_FEATURES],
     pub references: [i64; 2],
     pub owner: usize,
     pub keep: Vec<usize>,
@@ -139,7 +139,7 @@ pub fn branch(
         "aic-learning.port-prefix: invalid depth"
     );
     let mut used = std::collections::BTreeSet::new();
-    let mut history = [0f32; 12];
+    let mut history = [0f32; PORT_FEATURES];
     for (group, &choice) in groups[..depth].iter().zip(choices) {
         ensure!(
             choice < group.ports.len() && used.insert(group.ports[choice].as_str()),
@@ -177,7 +177,10 @@ pub fn branch(
             .collect(),
         history,
         root_features: row.input.action_features[root],
-        references: [facility as i64, group.graph_node as i64],
+        references: [
+            row.input.action_references[root][0],
+            group.graph_node as i64,
+        ],
         owner,
         keep,
     })
@@ -198,9 +201,9 @@ pub fn branches(rows: &[Branch], offsets: &[i64], device: Device) -> Tensors {
     }
     let n = owners.len() as i64;
     for (name, data, width) in [
-        ("features", features, 12),
-        ("history", history, 12),
-        ("root_features", roots, 12),
+        ("features", features, PORT_FEATURES as i64),
+        ("history", history, PORT_FEATURES as i64),
+        ("root_features", roots, ACTION_FEATURES as i64),
     ] {
         g.insert(
             name.into(),
@@ -267,7 +270,11 @@ mod tests {
             root_meta: vec![[0, 0, 90]],
             kind_log_counts: vec![0.],
             root_invalid: vec![false],
-            port_features: vec![[2.; 12], [4.; 12], [8.; 12]],
+            port_features: vec![
+                [2.; PORT_FEATURES],
+                [4.; PORT_FEATURES],
+                [8.; PORT_FEATURES],
+            ],
         };
         let row = Observation {
             input: Arc::new(input),
@@ -289,10 +296,13 @@ mod tests {
             done: false,
         };
         let prefix = branch(&row, 0, 0, &[0, 1], 2).unwrap();
-        assert_eq!(prefix.history, [3.; 12]);
+        assert_eq!(prefix.history, [3.; PORT_FEATURES]);
         assert_eq!(prefix.keep, vec![2]);
-        assert_eq!(prefix.features, vec![[8.; 12]]);
+        assert_eq!(prefix.features, vec![[8.; PORT_FEATURES]]);
         assert!(branch(&row, 0, 0, &[0, 0], 2).is_err());
-        assert_eq!(branch(&row, 0, 0, &[], 0).unwrap().history, [0.; 12]);
+        assert_eq!(
+            branch(&row, 0, 0, &[], 0).unwrap().history,
+            [0.; PORT_FEATURES]
+        );
     }
 }

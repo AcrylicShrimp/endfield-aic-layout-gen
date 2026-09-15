@@ -12,3 +12,8 @@ pub mod update;
 pub mod collection;
 #[cfg(feature = "libtorch")]
 pub mod training;
+
+// LibTorch's cold initializer uses a process-global seed. Serialize tests that
+// initialize multiple comparison models so unrelated tests cannot reseed them.
+#[cfg(all(test, feature = "libtorch"))]
+pub(crate) static TORCH_TEST: std::sync::Mutex<()> = std::sync::Mutex::new(());

@@ -189,11 +189,12 @@ pub(super) fn repair(
         return Ok(path::PathResult::stopped("work-budget", 0));
     }
     let blocked = blocked(bp, draft, catalogs, edge)?;
-    let (mut first, mut last) = topology::directions(edge, bp, draft, catalogs)?;
-    if edge.zero_length && start == end && first == last {
-        first = None;
-        last = None;
-    }
+    let (first, last) = topology::query_directions(
+        edge.zero_length,
+        start,
+        end,
+        topology::directions(edge, bp, draft, catalogs)?,
+    );
     path::shortest_path(
         start,
         end,

@@ -1,9 +1,10 @@
 //! The existing graph encoder and conditional port head, expressed as LibTorch
-//! tensor operations. Parameter names match the Python model for explicit import.
+//! tensor operations over the native physical schema.
 use crate::{
     input::{Packed, Tensors, tensor},
     schema::ModelConfig,
 };
+use aic_pilot_native::learning::schema::PATH_FEATURES;
 use aic_torch::tch::{Device, Kind, Tensor};
 use anyhow::{Result, ensure};
 use std::collections::BTreeSet;
@@ -32,7 +33,7 @@ impl Model {
         let mut layers = vec![
             ("nodes.0".to_owned(), config.node_features, w),
             ("edges.0".into(), config.edge_features, w),
-            ("paths.0".into(), 2, w),
+            ("paths.0".into(), PATH_FEATURES as i64, w),
         ];
         for i in 0..config.message_rounds {
             layers.push((format!("messages.{i}"), w * 3, w));
@@ -108,7 +109,7 @@ impl Model {
         let mut layers = vec![
             ("nodes.0".to_owned(), config.node_features, w),
             ("edges.0".to_owned(), config.edge_features, w),
-            ("paths.0".to_owned(), 2, w),
+            ("paths.0".to_owned(), PATH_FEATURES as i64, w),
             ("context.0".to_owned(), w + config.global_features, w),
             ("actor.0".to_owned(), w * 3 + config.action_features, w),
             ("actor.2".to_owned(), w, 1),

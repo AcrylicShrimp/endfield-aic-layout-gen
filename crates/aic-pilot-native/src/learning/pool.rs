@@ -271,10 +271,10 @@ fn execute(
                 .get_mut(&id)
                 .ok_or("declarative.pool-admission: unknown session")?;
             match command {
-                Command::Observe => Ok(Reply::Observation(session.observe())),
+                Command::Observe => Ok(Reply::Observation(session.observe()?)),
                 Command::Begin { actions } => {
                     session.begin_chunk(actions)?;
-                    Ok(Reply::Observation(session.observe()))
+                    Ok(Reply::Observation(session.observe()?))
                 }
                 Command::Step {
                     handle,
@@ -284,7 +284,7 @@ fn execute(
                     let result = session.step(handle, root, &ports)?;
                     Ok(Reply::Step {
                         result,
-                        next: session.observe(),
+                        next: session.observe()?,
                     })
                 }
                 Command::Drain => session.take_chunk().map(Reply::Data),

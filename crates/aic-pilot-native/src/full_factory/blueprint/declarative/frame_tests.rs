@@ -32,8 +32,7 @@ fn options() -> learning::Options {
     serde_json::from_value(json!({"translation_steps":[-2,-1,1,2],"band_counts":[1,2],"masking":"structural-bands-v1"})).unwrap()
 }
 fn input(s: &Session, learning: &mut learning::Learning) -> Value {
-    let mut input = learning.observe(s);
-    input.global_features[learning::ELAPSED_FEATURE] = 0.;
+    let input = learning.observe(s).unwrap();
     json!(input)
 }
 fn outcome(s: &mut Session, action: Value) -> Value {
@@ -151,7 +150,7 @@ fn negative_candidates_are_exact_and_consumed_handles_stay_invalid() {
         options(),
     )
     .unwrap();
-    let observed = runtime.observe();
+    let observed = runtime.observe().unwrap();
     let scale = frame::from_state(&s.blueprint, &s.state, &s.catalogs.data)
         .unwrap()
         .scale();
@@ -392,7 +391,7 @@ fn retained_physical_checkpoint_conversion_and_payload_size() {
     assert_eq!(json!(restored.validated), saved["validated"]);
     assert_eq!(restored.checkpoint()["input_sha256"], saved["input_sha256"]);
     let mut learning = learning::Learning::new(&restored, options()).unwrap();
-    let input = learning.observe(&restored);
+    let input = learning.observe(&restored).unwrap();
     let mut payload = 0;
     macro_rules! size { ($($field:ident),*) => { $(payload += std::mem::size_of_val(input.$field.as_slice());)* }; }
     size!(

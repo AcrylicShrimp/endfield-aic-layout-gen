@@ -1,4 +1,5 @@
 use super::{curriculum, frozen::Frozen, replay, schedule};
+use crate::TORCH_TEST as TORCH;
 use crate::{
     collection::{
         policy::{self, Choice},
@@ -12,15 +13,11 @@ use aic_pilot_native::learning::{Domain, Input, Observation};
 use aic_torch::{Generator, tch::Device};
 use anyhow::Result;
 use serde_json::json;
-use std::{
-    collections::BTreeMap,
-    sync::{Arc, Mutex},
-};
-static TORCH: Mutex<()> = Mutex::new(());
+use std::{collections::BTreeMap, sync::Arc};
 fn observation(attempts: u64) -> Observation {
     Observation {
         input: Arc::new(Input {
-            node_static: vec![[0.1; 14]],
+            node_static: vec![[0.1; aic_pilot_native::learning::schema::NODE_STATIC]],
             node_state: vec![[0.; 10]],
             global_features: vec![0.; aic_pilot_native::learning::GLOBAL_FEATURES],
             action_features: vec![[0.; 12], [0.5; 12]],
@@ -42,11 +39,11 @@ fn learner() -> Result<Learner> {
     let model = ModelConfig {
         width: 8,
         message_rounds: 1,
-        node_features: 24,
-        edge_features: 14,
+        node_features: 41,
+        edge_features: 37,
         global_features: aic_pilot_native::learning::GLOBAL_FEATURES as i64,
         action_features: 12,
-        port_features: 12,
+        port_features: 11,
     };
     let optimizer = UpdateConfig {
         adam_backend: "foreach".into(),

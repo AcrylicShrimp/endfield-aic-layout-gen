@@ -1,6 +1,9 @@
 //! Retained declarative candidates and typed numerical learning inputs.
 
 mod input;
+pub mod schema;
+mod view;
+use schema::*;
 pub(crate) mod runtime;
 pub(super) mod trace;
 
@@ -8,12 +11,10 @@ use std::collections::BTreeSet;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use aic_data::facilities::FacilityPortDirection;
-use sha2::{Digest, Sha256};
 
 use super::*;
 
-pub const GLOBAL_FEATURES: usize = 10;
-pub const ELAPSED_FEATURE: usize = 5;
+pub use schema::GLOBAL_FEATURES;
 
 static NEXT_HANDLE: AtomicU64 = AtomicU64::new(1);
 
@@ -54,27 +55,29 @@ struct Facility {
 pub struct Input {
     pub pending: usize,
     pub conflicts: usize,
-    pub node_static: Vec<[f32; 14]>,
-    pub node_state: Vec<[f32; 10]>,
+    pub node_static: Vec<[f32; NODE_STATIC]>,
+    pub node_state: Vec<[f32; NODE_STATE]>,
     pub edge_index: Vec<[i64; 2]>,
-    pub edge_static: Vec<[f32; 10]>,
-    pub edge_state: Vec<[f32; 4]>,
-    pub path_cells: Vec<[f32; 2]>,
+    #[serde(with = "schema::rows")]
+    pub edge_static: Vec<[f32; EDGE_STATIC]>,
+    pub edge_state: Vec<[f32; EDGE_STATE]>,
+    pub path_cells: Vec<[f32; PATH_FEATURES]>,
     pub path_edges: Vec<i64>,
     pub global_features: Vec<f32>,
-    pub action_features: Vec<[f32; 12]>,
+    pub action_features: Vec<[f32; ACTION_FEATURES]>,
     pub action_references: Vec<[i64; 2]>,
     pub root_meta: Vec<[i64; 3]>,
     pub kind_log_counts: Vec<f32>,
     pub root_invalid: Vec<bool>,
-    pub port_features: Vec<[f32; 12]>,
+    pub port_features: Vec<[f32; PORT_FEATURES]>,
 }
 
 pub(super) struct Learning {
     options: Options,
     facilities: Vec<Facility>,
     owners: BTreeMap<String, usize>,
-    fingerprints: BTreeMap<String, [f64; 4]>,
+    tables: view::Tables,
+    cached: Option<(u64, view::PhysicalView)>,
     roots: Vec<Root>,
     handle: u64,
     revision: u64,
@@ -110,11 +113,9 @@ impl Learning {
         }
         let mut facilities = vec![];
         let mut owners = BTreeMap::new();
-        let mut names = BTreeSet::new();
         let mut offset = 0;
         for (owner, placement) in session.blueprint.facilities.iter().enumerate() {
             owners.insert(placement.instance.clone(), owner);
-            names.insert(placement.recipe.clone());
             let definition = session
                 .catalogs
                 .data
@@ -151,7 +152,6 @@ impl Learning {
                     })
                     .map(|port| port.id.clone())
                     .collect();
-                names.extend(choices.iter().cloned());
                 let mut features = BTreeMap::new();
                 for &rotation in &rotations {
                     features.insert(rotation, (offset, offset + choices.len()));
@@ -169,22 +169,13 @@ impl Learning {
                 groups,
             });
         }
-        for network in &session.blueprint.networks {
-            names.insert(network["item"].as_str().unwrap().to_owned());
-        }
-        let fingerprints = names
-            .into_iter()
-            .map(|name| {
-                let digest = Sha256::digest(name.as_bytes());
-                let values = std::array::from_fn(|i| f64::from(digest[i]) / 255.);
-                (name, values)
-            })
-            .collect();
+        let tables = view::Tables::new(session, &facilities)?;
         Ok(Self {
             options,
             facilities,
             owners,
-            fingerprints,
+            tables,
+            cached: None,
             roots: vec![],
             handle: 0,
             revision: 0,
@@ -192,28 +183,30 @@ impl Learning {
         })
     }
 
-    fn position(&self, session: &Session, node: &Node) -> Point {
+    fn position(&self, session: &Session, node: &Node) -> Result<Point> {
         if let Some(terminal) = &node.terminal
             && let TransportNetworkEndpoint::Facility { instance, .. } = &terminal.endpoint
         {
             let owner = self.owners[instance];
             let placement = &session.state.geometry.placements[owner];
-            let name = session.state.ports[node.id].as_ref().unwrap();
+            let name = session.state.ports[node.id]
+                .as_ref()
+                .ok_or_else(|| error("learning-port", "Missing selected port", node.id))?;
             let port = self.facilities[owner].ports[&placement.rotation]
                 .iter()
                 .find(|p| &p.id == name)
-                .unwrap();
-            return port.connection.shifted(placement.x, placement.y);
+                .ok_or_else(|| error("learning-port", "Missing catalog port", node.id))?;
+            return Ok(port.connection.shifted(placement.x, placement.y));
         }
-        session.state.anchors[node.id]
+        Ok(session.state.anchors[node.id])
     }
 
-    pub(super) fn observe(&mut self, session: &Session) -> Input {
-        let result = self.build(session);
+    pub(super) fn observe(&mut self, session: &Session) -> Result<Arc<Input>> {
+        let result = self.build(session)?;
         self.handle = NEXT_HANDLE.fetch_add(1, Ordering::Relaxed);
         self.revision = session.revision;
         self.attempts = session.attempts;
-        result
+        Ok(result)
     }
 
     pub(super) fn selected(
@@ -317,4 +310,26 @@ impl Learning {
     }
 
     // Explicit diagnostic export only; normal collection retains these in Rust.
+}
+
+impl Input {
+    pub fn bytes(&self, allocated: bool) -> u64 {
+        macro_rules! banks { ($($name:ident),* ) => { 0usize $(+ row_bytes(&self.$name, allocated))* }; }
+        banks!(
+            node_static,
+            node_state,
+            edge_index,
+            edge_static,
+            edge_state,
+            path_cells,
+            path_edges,
+            global_features,
+            action_features,
+            action_references,
+            root_meta,
+            kind_log_counts,
+            root_invalid,
+            port_features
+        ) as u64
+    }
 }

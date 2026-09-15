@@ -61,26 +61,16 @@ impl Frozen {
         }
     }
     pub fn bytes(&self) -> u64 {
-        let v = &self.input;
-        (v.node_static.len() * 56
-            + v.node_state.len() * 40
-            + v.edge_index.len() * 16
-            + v.edge_static.len() * 40
-            + v.edge_state.len() * 16
-            + v.path_cells.len() * 8
-            + v.path_edges.len() * 8
-            + v.global_features.len() * 4
-            + v.action_features.len() * 48
-            + v.action_references.len() * 16
-            + v.kind_log_counts.len() * 4
-            + v.root_invalid.len()
-            + v.port_features.len() * 48
-            + v.root_meta.len() * 24
-            + self
-                .branches
-                .iter()
-                .map(|b| b.features.len() * 48 + b.keep.len() * 8 + 128)
-                .sum::<usize>()) as u64
+        use aic_pilot_native::learning::schema::row_bytes;
+        self.input.bytes(false)
+            + std::mem::size_of::<Self>() as u64
+            + (row_bytes(&self.branches, false)
+                + row_bytes(&self.selected, false)
+                + self
+                    .branches
+                    .iter()
+                    .map(|b| row_bytes(&b.features, false) + row_bytes(&b.keep, false))
+                    .sum::<usize>()) as u64
     }
 }
 

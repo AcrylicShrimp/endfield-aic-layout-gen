@@ -164,27 +164,67 @@ pub(super) fn directions(
                 .iter()
                 .find(|p| &p.instance == instance)
                 .unwrap();
-            if let Some(original_direction) = result[i] {
-                // The connection cell may turn immediately outside the port.
-                // Preserve that original route direction relative to the facility,
-                // rather than replacing it with the facility boundary normal.
-                let original = bp
-                    .facilities
-                    .iter()
-                    .find(|f| &f.instance == instance)
-                    .unwrap();
-                let turns = (p.rotation - original.rotation) / 90;
-                result[i] = Some((original_direction as i64 + turns).rem_euclid(4) as usize);
-            } else {
-                // A zero-length original edge has no transport segment direction;
-                // its two facility boundary arms must still face each other.
+            let original = bp
+                .facilities
+                .iter()
+                .find(|f| &f.instance == instance)
+                .unwrap();
+            let normal = if result[i].is_none() {
                 let ports = catalog::placement_ports(p, catalogs)?;
-                let p = ports.iter().find(|p| &p.id == port).unwrap();
-                result[i] = Some((catalog::edge_index(p.edge) + if i == 0 { 0 } else { 2 }) % 4);
-            }
+                catalog::edge_index(ports.iter().find(|p| &p.id == port).unwrap().edge)
+            } else {
+                0
+            };
+            result[i] = endpoint_rule(
+                result[i],
+                Some((original.rotation, p.rotation, normal)),
+                i,
+                false,
+            )
+            .0;
         }
     }
     Ok((result[0], result[1]))
+}
+
+/// One authority for current route headings and observable baseline headings.
+/// Reassignment removes the old heading; returning to the original port restores it.
+pub(super) fn endpoint_rule(
+    recorded: Option<usize>,
+    facility: Option<(i64, i64, usize)>,
+    side: usize,
+    reassigned: bool,
+) -> (Option<usize>, Option<usize>) {
+    let baseline = match (recorded, facility) {
+        (Some(d), Some((original, _, _))) => {
+            Some((d as i64 - original / 90).rem_euclid(4) as usize)
+        }
+        _ => recorded,
+    };
+    let current = if reassigned {
+        None
+    } else if let Some((original, rotation, normal)) = facility {
+        Some(recorded.map_or((normal + side * 2) % 4, |d| {
+            (d as i64 + (rotation - original) / 90).rem_euclid(4) as usize
+        }))
+    } else {
+        recorded
+    };
+    (current, baseline)
+}
+
+/// The zero-length A* query has no segment headings when compatible arms coincide.
+pub(super) fn query_directions(
+    zero_length: bool,
+    start: Point,
+    end: Point,
+    headings: (Option<usize>, Option<usize>),
+) -> (Option<usize>, Option<usize>) {
+    if zero_length && start == end && headings.0 == headings.1 {
+        (None, None)
+    } else {
+        headings
+    }
 }
 
 pub(super) fn compatible(a: &Node, b: &Node) -> bool {

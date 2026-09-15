@@ -1,13 +1,13 @@
 //! Typed Rust entry point over the same session, candidate and evidence authority.
 use super::*;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct PortGroup {
     pub graph_node: usize,
     pub ports: Vec<String>,
     pub features: BTreeMap<i64, (usize, usize)>,
 }
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Domain {
     pub groups: Vec<Vec<PortGroup>>,
 }
@@ -44,7 +44,7 @@ impl Runtime {
                     f.groups
                         .iter()
                         .map(|g| PortGroup {
-                            graph_node: session.blueprint.facilities.len() + g.node,
+                            graph_node: learning.tables.nodes[g.node],
                             ports: g.ports.clone(),
                             features: g.features.clone(),
                         })
@@ -81,17 +81,17 @@ impl Runtime {
             options,
         )
     }
-    pub fn observe(&mut self) -> Observation {
-        let input = self.learning.observe(&self.session);
-        Observation {
-            input: Arc::new(input),
+    pub fn observe(&mut self) -> std::result::Result<Observation, String> {
+        let input = self.learning.observe(&self.session).map_err(diagnostic)?;
+        Ok(Observation {
+            input,
             domain: self.domain.clone(),
             handle: self.learning.handle,
             blueprint_sha256: self.session.blueprint_sha256.clone(),
             revision: self.session.revision,
             attempts: self.session.attempts,
             done: self.session.done(),
-        }
+        })
     }
     pub fn begin_chunk(&mut self, limit: usize) -> std::result::Result<(), String> {
         if self.chunk.is_some() {
