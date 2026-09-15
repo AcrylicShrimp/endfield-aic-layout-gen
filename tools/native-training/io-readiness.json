@@ -1,0 +1,100 @@
+{
+  "schema": "aic-io-readiness-v1",
+  "baseline": {
+    "root": "/home/ashrimp/Srv/aic-io-baseline-83f4dd8",
+    "revision": "83f4dd8",
+    "binary": "/home/ashrimp/Srv/aic-io-baseline-83f4dd8/target/release/aic-cli",
+    "binary_sha256": "4485c9150d1f51981214a447fd534277c7cc083a93695c0285b40c912cb76cfb",
+    "template_sha256": "f2906909ed48f435dfcb5b97e18b6b9ad866bfbbf6cc0d7ee2f866ed6a6d174f"
+  },
+  "final": {
+    "root": "/home/ashrimp/Srv/aic-learning-io-20260915",
+    "revision": "5fa1586",
+    "binary": "/home/ashrimp/Srv/aic-learning-io-20260915/target/release/aic-cli",
+    "binary_sha256": "6cb9162981ee0a5e02e7530dd5c74bb552a29c56ee17ae62dff99636a4b56067",
+    "template_sha256": "424a278bf71ae7459649c71be7d856ed2ec392d58ff3edd89ea604c935e3b64e"
+  },
+  "native_tests": "/home/ashrimp/Srv/aic-learning-io-20260915/target/release/deps/aic_pilot_native-897e398b8bfc8503",
+  "limits": {
+    "seconds": 1800,
+    "output_bytes": 4294967296,
+    "rss_bytes": 51539607552,
+    "min_free_bytes": 17179869184
+  },
+  "environment": {
+    "LIBTORCH": "/home/ashrimp/Srv/aic-rust-learning-20260915/.venv/lib/python3.12/site-packages/torch",
+    "LIBTORCH_CXX11_ABI": "1",
+    "LD_LIBRARY_PATH": "/home/ashrimp/Srv/aic-rust-learning-20260915/.venv/lib/python3.12/site-packages/torch/lib",
+    "RUST_MIN_STACK": "16777216"
+  },
+  "catalogs": {
+    "data/game/normalized/recipes.json": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2",
+    "data/game/normalized/facilities.json": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e",
+    "data/game/normalized/items.json": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164",
+    "data/game/normalized/transports.json": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1",
+    "data/game/normalized/logistics-components.json": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+  },
+  "helper_sources": {
+    "tools/native-training/io-readiness.mjs": "19358c100eb59618e7f4f00aebeccf367d49fdbe072ee06f06ba7637a02c6b35",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/runtime/readiness.rs": "eacbcc44a04a73dc3e959d42fcb898b98cc9deb78729e6d138efea6ef40a087d",
+    "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/runtime.rs": "f37d0e54322b9301e96047a100f5c6cc26bc0d5584f5667720bcd013ca49a8a9",
+    "crates/aic-pilot-native/src/full_factory/generation/physical_identity/tests.rs": "32c3cec9ba93ee5d29711923f1692f4043d8cef258231397c8f6a3a8685ea855"
+  },
+  "contract_evidence": {
+    "plans": [
+      "2026-09-15.00-learning-semantics-boundary.md",
+      "2026-09-15.01-translation-invariant-learning-runtime.md",
+      "2026-09-15.02-authoritative-physical-observations.md",
+      "2026-09-15.03-terminal-bound-port-prefix.md",
+      "2026-09-15.04-available-action-family-prior.md",
+      "2026-09-15.05-physical-evaluation-reservations.md"
+    ],
+    "checkpoint_test": "training::tests::prefix::online_linear_prefix_work_matches_sparse_replay_and_real_checkpoint_restore",
+    "checkpoint_test_log": "/tmp/aic-readiness-feature-test.log",
+    "matrix_max_cases": 16,
+    "matrix_max_decisions": 32,
+    "checkpoint_test_log_sha256": "31675c054f96c68f6272e9f12a3cf72f6255a2fc772545476a14eda9f9f836b1"
+  },
+  "native_tests_sha256": "1e33ec9abcf0e7da877d87e9203ddbb3d44aed59301a64c413a5b910178ab943",
+  "protocol": {
+    "initialization_seeds": [
+      71,
+      113
+    ],
+    "streams": 32,
+    "chunk_actions": 32,
+    "episode_actions": 64,
+    "updates": 32,
+    "width": 40,
+    "message_rounds": 2,
+    "ppo_epochs": 4,
+    "panel_seed": 9015071,
+    "panel_roots": 16,
+    "panel_replicates": 2,
+    "evaluation_update": 32,
+    "interrupted_arm": "final-71",
+    "interrupt_update": 3,
+    "keep_updates": [
+      1,
+      3,
+      5,
+      7,
+      9,
+      11,
+      13,
+      15,
+      17,
+      19,
+      21,
+      23,
+      25,
+      27,
+      29,
+      31,
+      32
+    ],
+    "training_transitions": 131072,
+    "small_gate_transitions": 256,
+    "small_minibatch_size": 64
+  }
+}

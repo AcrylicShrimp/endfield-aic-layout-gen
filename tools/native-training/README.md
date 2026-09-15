@@ -252,3 +252,18 @@ target/release/aic-cli learning train \
 This is explicit experiment preparation. The normal training command still
 constructs fresh canonical inputs when they are absent and verifies cached slot
 identity when present. The helper does not synthesize, relabel or replay inputs.
+
+## Explicit integrated I/O readiness gate
+
+`io-readiness.mjs` is a bounded offline experiment over registered baseline/final
+binaries; it is not part of normal training. Its external JSON binds binaries,
+source helpers, catalogs, settings and resource ceilings. It preserves actual
+mid-wave admissions through diagnostic checkpoint retention and audits their
+physical/root separation before accepting a quality comparison. Owned children
+are terminated on failure and actual partial evidence is retained.
+
+The [2026-09-15 gate result](../../docs/reports/2026-09-15-integrated-io-readiness.md)
+records passing small native/recovery checks and a storage-preflight blocker.
+The checked-in configuration retains the approved 4 GiB ceiling; the four cold
+arms have not run. Paths and binary hashes refer to the registered research host.
+Use a new output and a reviewed allocation before attempting another gate.

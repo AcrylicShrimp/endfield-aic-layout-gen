@@ -1,0 +1,815 @@
+{
+  "schema": "aic-io-readiness-evidence-v1",
+  "status": "blocked-before-cold-comparison",
+  "training_transitions_scientific": 0,
+  "training_transitions_small": 256,
+  "production_revision": "5fa1586",
+  "baseline_revision": "83f4dd8",
+  "actual_execution_config": {
+    "schema": "aic-io-readiness-v1",
+    "baseline": {
+      "root": "/home/ashrimp/Srv/aic-io-baseline-83f4dd8",
+      "revision": "83f4dd8",
+      "binary": "/home/ashrimp/Srv/aic-io-baseline-83f4dd8/target/release/aic-cli",
+      "binary_sha256": "4485c9150d1f51981214a447fd534277c7cc083a93695c0285b40c912cb76cfb",
+      "template_sha256": "f2906909ed48f435dfcb5b97e18b6b9ad866bfbbf6cc0d7ee2f866ed6a6d174f"
+    },
+    "final": {
+      "root": "/home/ashrimp/Srv/aic-learning-io-20260915",
+      "revision": "5fa1586",
+      "binary": "/home/ashrimp/Srv/aic-learning-io-20260915/target/release/aic-cli",
+      "binary_sha256": "6cb9162981ee0a5e02e7530dd5c74bb552a29c56ee17ae62dff99636a4b56067",
+      "template_sha256": "424a278bf71ae7459649c71be7d856ed2ec392d58ff3edd89ea604c935e3b64e"
+    },
+    "native_tests": "/home/ashrimp/Srv/aic-learning-io-20260915/target/release/deps/aic_pilot_native-897e398b8bfc8503",
+    "limits": {
+      "seconds": 1800,
+      "output_bytes": 4294967296,
+      "rss_bytes": 51539607552,
+      "min_free_bytes": 17179869184
+    },
+    "environment": {
+      "LIBTORCH": "/home/ashrimp/Srv/aic-rust-learning-20260915/.venv/lib/python3.12/site-packages/torch",
+      "LIBTORCH_CXX11_ABI": "1",
+      "LD_LIBRARY_PATH": "/home/ashrimp/Srv/aic-rust-learning-20260915/.venv/lib/python3.12/site-packages/torch/lib",
+      "RUST_MIN_STACK": "16777216"
+    },
+    "catalogs": {
+      "data/game/normalized/recipes.json": "0fa9f71b6ab2c66ef774ad54f27ddac8682c4ccd6134730d69ca7506836f1ad2",
+      "data/game/normalized/facilities.json": "a314f24f7220297f5d4db65d4612d76c1f7b9c78e16f5c4bb6358b3834a69a9e",
+      "data/game/normalized/items.json": "b49b70d60bee6dc421817e0f6a793532866dfe8618c2e9111c17d032e3fc9164",
+      "data/game/normalized/transports.json": "c3e7c7b324ad175870b0d61830d8df9296dc6a67791fd48d7c4f474a86cee8d1",
+      "data/game/normalized/logistics-components.json": "3d7e3e59f1fef8d534c5aab5ba44d60b7ea759e2307c7ad60a7d2cc4def80608"
+    },
+    "helper_sources": {
+      "tools/native-training/io-readiness.mjs": "43c8644f2d1f79087c3de6e0d190ffe0a443072c96ae6b5998e755bf3c063059",
+      "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/runtime/readiness.rs": "eacbcc44a04a73dc3e959d42fcb898b98cc9deb78729e6d138efea6ef40a087d",
+      "crates/aic-pilot-native/src/full_factory/blueprint/declarative/learning/runtime.rs": "f37d0e54322b9301e96047a100f5c6cc26bc0d5584f5667720bcd013ca49a8a9",
+      "crates/aic-pilot-native/src/full_factory/generation/physical_identity/tests.rs": "32c3cec9ba93ee5d29711923f1692f4043d8cef258231397c8f6a3a8685ea855"
+    },
+    "contract_evidence": {
+      "plans": [
+        "2026-09-15.00-learning-semantics-boundary.md",
+        "2026-09-15.01-translation-invariant-learning-runtime.md",
+        "2026-09-15.02-authoritative-physical-observations.md",
+        "2026-09-15.03-terminal-bound-port-prefix.md",
+        "2026-09-15.04-available-action-family-prior.md",
+        "2026-09-15.05-physical-evaluation-reservations.md"
+      ],
+      "checkpoint_test": "training::tests::prefix::online_linear_prefix_work_matches_sparse_replay_and_real_checkpoint_restore",
+      "checkpoint_test_log": "/tmp/aic-readiness-feature-test.log",
+      "matrix_max_cases": 16,
+      "matrix_max_decisions": 32,
+      "checkpoint_test_log_sha256": "31675c054f96c68f6272e9f12a3cf72f6255a2fc772545476a14eda9f9f836b1"
+    },
+    "native_tests_sha256": "1e33ec9abcf0e7da877d87e9203ddbb3d44aed59301a64c413a5b910178ab943",
+    "protocol": {
+      "initialization_seeds": [
+        71,
+        113
+      ],
+      "streams": 32,
+      "chunk_actions": 32,
+      "episode_actions": 64,
+      "updates": 32,
+      "width": 40,
+      "message_rounds": 2,
+      "ppo_epochs": 4,
+      "panel_seed": 9015071,
+      "panel_roots": 16,
+      "panel_replicates": 2,
+      "evaluation_update": 32,
+      "interrupted_arm": "final-71",
+      "interrupt_update": 3,
+      "keep_updates": [
+        1,
+        3,
+        5,
+        7,
+        9,
+        11,
+        13,
+        15,
+        17,
+        19,
+        21,
+        23,
+        25,
+        27,
+        29,
+        31,
+        32
+      ],
+      "training_transitions": 131072,
+      "small_gate_transitions": 256
+    },
+    "setup": {
+      "root": "/home/ashrimp/Srv/aic-learning-io-20260915/artifacts/learning-io-readiness",
+      "started_at_ms": 1789455531826,
+      "registered_sha256": "141528bf0fd7cbc05a8877c8c83d032f98882a1c7d59114e05a9bc3166db9a84",
+      "files": {
+        "matrix.json": "57c050f924d6917a70fbf81e16b884c168fd2c36708a079f281b3323b8728f3d",
+        "panel-v1/panel.json": "ee3bbff1ce7b66a84e9496c5759cd13931dc4889a945a07efa3b8a91b85e1fa8",
+        "panel-v2/panel.json": "d3b33ee8251b90e9a6574c122f4ec82fedb40530b0ee0333d84167262ec8e637",
+        "result.json": "2379109d35dc1ce7eeec0280531d3e94d1d44fc8b930cae280266d754852ad14"
+      },
+      "reason": "Small setup config rejected before training: minibatch 256 exceeded two-stream chunk size 64. Reuse actual panel and matrix; preserve original whole-gate deadline."
+    }
+  },
+  "source_result_sha256": "d5a6b670025aa78db5a68464f62a37fb5a165a2c91adf7bb0bd5130b182c5880",
+  "executed_orchestrator_sha256": "43c8644f2d1f79087c3de6e0d190ffe0a443072c96ae6b5998e755bf3c063059",
+  "small_report": {
+    "admission_seconds": 0.23383528200000003,
+    "best_evaluation": null,
+    "checkpoint_seconds": 0.18880276599999998,
+    "collection_seconds": 1.103900718,
+    "completed_updates": 4,
+    "evaluation_seconds": 0.0,
+    "latest_checkpoint": "checkpoints/00000004",
+    "new_samples": 256,
+    "optimization_seconds": 0.5749159540000001,
+    "output_bytes": 33847606,
+    "peak_rss_bytes": 2466107392,
+    "previous_update": 0,
+    "replay": {
+      "active_streams": 0,
+      "admissions": 2,
+      "bytes": 300484,
+      "duplicates": 0,
+      "evictions": 0,
+      "labels": 2,
+      "positive_improvements": 2,
+      "selected_uses": 64,
+      "sequences": 2
+    },
+    "resumed": false,
+    "samples_per_minute": 6773.530158949,
+    "schema": "aic-training-report-v1",
+    "status": "completed",
+    "streams": 2,
+    "total_samples": 256,
+    "total_seconds": 2.26765064,
+    "workers": 2
+  },
+  "small_gate": {
+    "actual_starts": 4,
+    "old_inputs_pruned": true,
+    "missing_checkpoint_rejected": true,
+    "retained_bytes": 33848304
+  },
+  "small_split_audit": {
+    "complete": true,
+    "starts": 4,
+    "fresh": 4,
+    "roots": 4,
+    "overlaps": [],
+    "valid": true
+  },
+  "checkpoint_files": {
+    "00000001": {
+      "state.json": 229833,
+      "sessions.json": 271551,
+      "replay.json": 1349560,
+      "manifest.json": 1216,
+      "learner.safetensors": 514372
+    },
+    "00000003": {
+      "state.json": 216027,
+      "sessions.json": 260808,
+      "replay.json": 1596305,
+      "manifest.json": 1328,
+      "learner.safetensors": 514372
+    },
+    "00000004": {
+      "state.json": 358,
+      "replay.json": 876,
+      "manifest.json": 1245,
+      "learner.safetensors": 514372
+    }
+  },
+  "replay_files": {
+    "00000001.bin": 14768118,
+    "00000003.bin": 13385126
+  },
+  "matrix": [
+    {
+      "case": "accepted-better-worse",
+      "counts": {
+        "calls": 2,
+        "charged": 2,
+        "families": {
+          "delete_band": 1,
+          "insert_band": 1
+        },
+        "selection_errors": 0,
+        "statuses": {
+          "improved": 1,
+          "validated": 1
+        },
+        "stops": [],
+        "unfinished": 0,
+        "work": {
+          "preflight_expansions": 1280,
+          "route_calls": 5,
+          "route_expansions": 1624,
+          "validations": 2
+        }
+      },
+      "episode_complete": false,
+      "resource_censored": false,
+      "validation_failure": false
+    },
+    {
+      "case": "unchanged-consumed-syntax",
+      "counts": {
+        "calls": 4,
+        "charged": 2,
+        "families": {
+          "delete_band": 1,
+          "insert_band": 1
+        },
+        "selection_errors": 2,
+        "statuses": {
+          "rejected": 1,
+          "unchanged": 1
+        },
+        "stops": [],
+        "unfinished": 0,
+        "work": {
+          "preflight_expansions": 0,
+          "route_calls": 0,
+          "route_expansions": 0,
+          "validations": 0
+        }
+      },
+      "episode_complete": false,
+      "resource_censored": false,
+      "validation_failure": false
+    },
+    {
+      "case": "overlap-pending",
+      "counts": {
+        "calls": 1,
+        "charged": 1,
+        "families": {
+          "place": 1
+        },
+        "selection_errors": 0,
+        "statuses": {
+          "draft_accepted": 1
+        },
+        "stops": [],
+        "unfinished": 1,
+        "work": {
+          "preflight_expansions": 284,
+          "route_calls": 2,
+          "route_expansions": 617,
+          "validations": 0
+        }
+      },
+      "episode_complete": false,
+      "resource_censored": false,
+      "validation_failure": false
+    },
+    {
+      "case": "work-exhaustion",
+      "counts": {
+        "calls": 1,
+        "charged": 1,
+        "families": {
+          "place": 1
+        },
+        "selection_errors": 0,
+        "statuses": {
+          "draft_accepted": 1
+        },
+        "stops": [
+          [
+            {
+              "code": "declarative.routing-pending",
+              "entity": 5,
+              "message": "Automatic routing stopped: work-budget",
+              "severity": "error",
+              "stage": "declarative-edit"
+            }
+          ]
+        ],
+        "unfinished": 1,
+        "work": {
+          "preflight_expansions": 0,
+          "route_calls": 1,
+          "route_expansions": 1,
+          "validations": 0
+        }
+      },
+      "episode_complete": false,
+      "resource_censored": true,
+      "validation_failure": false
+    },
+    {
+      "case": "wall-cancellation",
+      "counts": {
+        "calls": 1,
+        "charged": 0,
+        "families": {
+          "delete_band": 1
+        },
+        "selection_errors": 0,
+        "statuses": {
+          "rejected": 1
+        },
+        "stops": [
+          [
+            {
+              "code": "declarative.budget-exhausted",
+              "entity": "session",
+              "message": "Session is closed or action/time/routing allowance is exhausted",
+              "severity": "error",
+              "stage": "declarative-edit"
+            }
+          ]
+        ],
+        "unfinished": 0,
+        "work": {
+          "preflight_expansions": 0,
+          "route_calls": 0,
+          "route_expansions": 0,
+          "validations": 0
+        }
+      },
+      "episode_complete": false,
+      "resource_censored": true,
+      "validation_failure": false
+    },
+    {
+      "case": "complete-validation-failure",
+      "counts": {
+        "calls": 1,
+        "charged": 1,
+        "families": {
+          "delete_band": 1
+        },
+        "selection_errors": 0,
+        "statuses": {
+          "draft_accepted": 1
+        },
+        "stops": [],
+        "unfinished": 1,
+        "work": {
+          "preflight_expansions": 256,
+          "route_calls": 1,
+          "route_expansions": 369,
+          "validations": 1
+        }
+      },
+      "episode_complete": false,
+      "resource_censored": false,
+      "validation_failure": true
+    },
+    {
+      "case": "true-horizon",
+      "counts": {
+        "calls": 2,
+        "charged": 2,
+        "families": {
+          "insert_band": 2
+        },
+        "selection_errors": 0,
+        "statuses": {
+          "unchanged": 2
+        },
+        "stops": [
+          []
+        ],
+        "unfinished": 0,
+        "work": {
+          "preflight_expansions": 0,
+          "route_calls": 0,
+          "route_expansions": 0,
+          "validations": 0
+        }
+      },
+      "episode_complete": true,
+      "resource_censored": false,
+      "validation_failure": false
+    }
+  ],
+  "resources": {
+    "peak_rss_bytes": 2558840832,
+    "peak_output_bytes": 39463933,
+    "output_bytes": 37088339,
+    "remaining_processes": [],
+    "invocations": [
+      {
+        "name": "small",
+        "command": "/home/ashrimp/Srv/aic-learning-io-20260915/target/release/aic-cli",
+        "args": [
+          "learning",
+          "train",
+          "--config",
+          "/home/ashrimp/Srv/aic-learning-io-20260915/artifacts/learning-io-readiness-run/small.json",
+          "--output",
+          "/home/ashrimp/Srv/aic-learning-io-20260915/artifacts/learning-io-readiness-run/small",
+          "--updates",
+          "4",
+          "--device",
+          "cuda:0"
+        ],
+        "cwd": "/home/ashrimp/Srv/aic-learning-io-20260915",
+        "pid": 287301,
+        "code": 0,
+        "seconds": 2.717160664
+      }
+    ]
+  },
+  "elapsed_seconds": 133.31681279900002,
+  "retention_estimate": {
+    "scale": 512,
+    "bytes": 17330331648,
+    "observed_four_arm_bytes": null
+  },
+  "quality_delta_pp": null,
+  "long_training_cleared": false,
+  "pretraining_cleared": false,
+  "panel": {
+    "sha256": "d3b33ee8251b90e9a6574c122f4ec82fedb40530b0ee0333d84167262ec8e637",
+    "cases": [
+      {
+        "id": "case-0000",
+        "product": "food",
+        "stratum": "large",
+        "action_seed": 9015071,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "c44393284e11af3b94e39b64a7d1ca66685c60c8be8b1bc630ceb484fdbe62cb",
+            "exact_problem": "dae83fbf310797e09682f13f83a5b3644ac8ba8ee4c81220cf93955ea175a052"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "c44393284e11af3b94e39b64a7d1ca66685c60c8be8b1bc630ceb484fdbe62cb",
+            "episode": "49b1b561c2c56d4dd373d3e3db582bcf41a4cf642dcceb7e2bde67c6e759f53f/0"
+          }
+        },
+        "input": {
+          "path": "inputs/0000.json",
+          "sha256": "f8a4b51a88163fc808dc6779d7efedbe8913e0c53fe23ccca95cd9a68451dc72"
+        }
+      },
+      {
+        "id": "case-0001",
+        "product": "copper-liquid",
+        "stratum": "small",
+        "action_seed": 9015135,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "5b637218efbea7c5c47697bd5f00f43edda4f5d91714bdf23884ab6e268a4f1e",
+            "exact_problem": "b50b7ba8fb587c8c1d6495ce0895d5c292a7c5d9bab4487f8a314db0fd031e30"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "5b637218efbea7c5c47697bd5f00f43edda4f5d91714bdf23884ab6e268a4f1e",
+            "episode": "9a4e645f61513220c147c619d3e64b9c91a39e78efc03fd356e82191c9fd5f40/1"
+          }
+        },
+        "input": {
+          "path": "inputs/0001.json",
+          "sha256": "8019ab26da410a8d8edd94759c68c9c538da73bb8b9877208593dd7856d83317"
+        }
+      },
+      {
+        "id": "case-0002",
+        "product": "medical",
+        "stratum": "large",
+        "action_seed": 9015199,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "ccaec4b0f581e08e970717a8558f5fd3e5443b29fa2db536760b39f4d6a62280",
+            "exact_problem": "0aa0be87add5d03fe33ad6169e6e38d3ea5051b9ceaffb7a8f62175eb0c341d2"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "ccaec4b0f581e08e970717a8558f5fd3e5443b29fa2db536760b39f4d6a62280",
+            "episode": "49b1b561c2c56d4dd373d3e3db582bcf41a4cf642dcceb7e2bde67c6e759f53f/2"
+          }
+        },
+        "input": {
+          "path": "inputs/0002.json",
+          "sha256": "16fc911c883373134f7a5f6c911e3103a1025c510839e1e9271e4dbb4acd55eb"
+        }
+      },
+      {
+        "id": "case-0003",
+        "product": "watered-grass",
+        "stratum": "small",
+        "action_seed": 9015263,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "bfd1961acccf481b853d87625c202ec85ee6c1b658ead91c75ed33c60edd8e83",
+            "exact_problem": "c52396487c5c95a9f0b74aa578a086005a06915fa7ec699fe8cdeaa4f8e58539"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "bfd1961acccf481b853d87625c202ec85ee6c1b658ead91c75ed33c60edd8e83",
+            "episode": "9a4e645f61513220c147c619d3e64b9c91a39e78efc03fd356e82191c9fd5f40/3"
+          }
+        },
+        "input": {
+          "path": "inputs/0003.json",
+          "sha256": "ff13026a219b3caddcd2d5f07f986f79ad203aff62511dd2e737376e9aed9ec6"
+        }
+      },
+      {
+        "id": "case-0004",
+        "product": "medical",
+        "stratum": "large",
+        "action_seed": 9015327,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "79c5a9d8d1abd8b21025c48c8d16356bee21b6c630fae72a0f5fea16bdb680b4",
+            "exact_problem": "bf486027399a378e1f2b94421e298494bf02b567470a10fcb4da1f08ee7fc40b"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "79c5a9d8d1abd8b21025c48c8d16356bee21b6c630fae72a0f5fea16bdb680b4",
+            "episode": "49b1b561c2c56d4dd373d3e3db582bcf41a4cf642dcceb7e2bde67c6e759f53f/4"
+          }
+        },
+        "input": {
+          "path": "inputs/0004.json",
+          "sha256": "ae697c8e7a7ca493eed4fc8701197f307d6c5cc72c8ca3c1ca4bec2f4746b46d"
+        }
+      },
+      {
+        "id": "case-0005",
+        "product": "watered-grass",
+        "stratum": "small",
+        "action_seed": 9015391,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "f9b238eced17334fb618947576f027ff393bc4b1a44552270426ffe6104bdc3c",
+            "exact_problem": "4b500a10c9ea74e88fe6b77bb6dc1f53af7dee463acce35e949e56cb49978f51"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "f9b238eced17334fb618947576f027ff393bc4b1a44552270426ffe6104bdc3c",
+            "episode": "9a4e645f61513220c147c619d3e64b9c91a39e78efc03fd356e82191c9fd5f40/5"
+          }
+        },
+        "input": {
+          "path": "inputs/0005.json",
+          "sha256": "b0a5d8ae18d21d00d4e3e4937f5fd033dd37c52d26384941a2eca6951264a4c0"
+        }
+      },
+      {
+        "id": "case-0006",
+        "product": "food",
+        "stratum": "large",
+        "action_seed": 9015455,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "232ebfedcf2cf14ca52ab9988d7c03bbdb7066ccc009afed3206963ca8edd16f",
+            "exact_problem": "b37787011e80d02408c2e39b71f2892126d04ee1d68ebe00e0e9d8fc129ce73d"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "232ebfedcf2cf14ca52ab9988d7c03bbdb7066ccc009afed3206963ca8edd16f",
+            "episode": "49b1b561c2c56d4dd373d3e3db582bcf41a4cf642dcceb7e2bde67c6e759f53f/6"
+          }
+        },
+        "input": {
+          "path": "inputs/0006.json",
+          "sha256": "739f7d3cd15b5706295c015eed84bcd54299a30076b9d179af281793e11ea59f"
+        }
+      },
+      {
+        "id": "case-0007",
+        "product": "copper-liquid",
+        "stratum": "small",
+        "action_seed": 9015519,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "858bbd25f95afdfe0ae026e217eacf6484903a5fd01166f1149bbe68b6b5e7f6",
+            "exact_problem": "ddcefd7d757e4b264679723af1121a3f2cf936e3d8e241a1a0cf44850c3ec5e8"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "858bbd25f95afdfe0ae026e217eacf6484903a5fd01166f1149bbe68b6b5e7f6",
+            "episode": "9a4e645f61513220c147c619d3e64b9c91a39e78efc03fd356e82191c9fd5f40/7"
+          }
+        },
+        "input": {
+          "path": "inputs/0007.json",
+          "sha256": "0af7cb29ce28870b8b8c25cafb6d33caf3b0138cb36cc218db3166850d63516a"
+        }
+      },
+      {
+        "id": "case-0008",
+        "product": "medical",
+        "stratum": "large",
+        "action_seed": 9015583,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "43d83b214b8c7278f43fe02f20f3c6f592163c3fe1cacd9b3bb1d1c4be94d908",
+            "exact_problem": "448b4926ae5ef78e52a8ed0d9ce20d390ea5d8b4def6ed7855ac16d5d67672e4"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "43d83b214b8c7278f43fe02f20f3c6f592163c3fe1cacd9b3bb1d1c4be94d908",
+            "episode": "49b1b561c2c56d4dd373d3e3db582bcf41a4cf642dcceb7e2bde67c6e759f53f/8"
+          }
+        },
+        "input": {
+          "path": "inputs/0008.json",
+          "sha256": "7663bddcf1cc70331a3d0ab9693eb1ff42ecf5eec016b4601653d3f4f6dbfa81"
+        }
+      },
+      {
+        "id": "case-0009",
+        "product": "watered-grass",
+        "stratum": "small",
+        "action_seed": 9015647,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "d8b511ab93fd25c9c6519a81c0496bffe4fdb3279bf6858c7c3f59ccb58cda25",
+            "exact_problem": "a18c247617cd259178694036c7c302a60afa92dae9c9337c994970cc987bbe1b"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "d8b511ab93fd25c9c6519a81c0496bffe4fdb3279bf6858c7c3f59ccb58cda25",
+            "episode": "9a4e645f61513220c147c619d3e64b9c91a39e78efc03fd356e82191c9fd5f40/9"
+          }
+        },
+        "input": {
+          "path": "inputs/0009.json",
+          "sha256": "78a86253974be453bb77b149f919ad08c92e74cbea40d1a1fd013d83668f2cc3"
+        }
+      },
+      {
+        "id": "case-0010",
+        "product": "medical",
+        "stratum": "large",
+        "action_seed": 9015711,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "e8fca359bdbb005fd4ada9c08e16ec4672f33ffed6bd6664f64df9be10c282cc",
+            "exact_problem": "1b6286cea39af0c85782893a39a8d3f21e19fc490fa1317951c7f709d4c81e99"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "e8fca359bdbb005fd4ada9c08e16ec4672f33ffed6bd6664f64df9be10c282cc",
+            "episode": "49b1b561c2c56d4dd373d3e3db582bcf41a4cf642dcceb7e2bde67c6e759f53f/10"
+          }
+        },
+        "input": {
+          "path": "inputs/0010.json",
+          "sha256": "7a415d7fa0bcc6092a12307bf4430ee6e4fccfabcfac8a21e32fb4a6f5bee025"
+        }
+      },
+      {
+        "id": "case-0011",
+        "product": "copper-liquid",
+        "stratum": "small",
+        "action_seed": 9015775,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "b54f04cf1497f95f46a9e5a5663c41dde28c995929b78e4d5d1e01f96efba3e5",
+            "exact_problem": "fa2ec7db398e3e0bdb6aa4993a2e6a959696978e83be62add673e1254a1f7a0b"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "b54f04cf1497f95f46a9e5a5663c41dde28c995929b78e4d5d1e01f96efba3e5",
+            "episode": "9a4e645f61513220c147c619d3e64b9c91a39e78efc03fd356e82191c9fd5f40/11"
+          }
+        },
+        "input": {
+          "path": "inputs/0011.json",
+          "sha256": "a4440ca88150048f7edad58d647475adc371e0af0357995edd42b09b3829a8d1"
+        }
+      },
+      {
+        "id": "case-0012",
+        "product": "medical",
+        "stratum": "large",
+        "action_seed": 9015839,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "4f4a6eaf03c2b4623558452e1de2b908b59755bd10561aa15e3e23411f2c4f69",
+            "exact_problem": "50da688ec7b439d486d21efe0f9b071480ae0bdb58a9a1fe193143326479b523"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "4f4a6eaf03c2b4623558452e1de2b908b59755bd10561aa15e3e23411f2c4f69",
+            "episode": "49b1b561c2c56d4dd373d3e3db582bcf41a4cf642dcceb7e2bde67c6e759f53f/12"
+          }
+        },
+        "input": {
+          "path": "inputs/0012.json",
+          "sha256": "910337149c0a9e9307340e446c4023b258e368192746b9607db38de10cd1f689"
+        }
+      },
+      {
+        "id": "case-0013",
+        "product": "copper-liquid",
+        "stratum": "small",
+        "action_seed": 9015903,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "de9f4e758b2b81c9104dde9ecd0786333079d522c3dbc33c8e686b5a2e7c58f8",
+            "exact_problem": "5b2f78e9a2a3b67344976386eebeeb8f7b5b53148d694b0e9fbc4ffbb0dc3086"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "de9f4e758b2b81c9104dde9ecd0786333079d522c3dbc33c8e686b5a2e7c58f8",
+            "episode": "9a4e645f61513220c147c619d3e64b9c91a39e78efc03fd356e82191c9fd5f40/13"
+          }
+        },
+        "input": {
+          "path": "inputs/0013.json",
+          "sha256": "5cef62d099a70e92a2285ef7b5386499421db81843b445460ffa8ebcefe63138"
+        }
+      },
+      {
+        "id": "case-0014",
+        "product": "food",
+        "stratum": "large",
+        "action_seed": 9015967,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "fddb106b44d042a2b75f3fafdd5b37f893529db748a6bcaccd17935775850c9c",
+            "exact_problem": "5b9ea764d2f87af801ff1c83675371fab08bb7b897f39a21d69f7e3512300d1c"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "fddb106b44d042a2b75f3fafdd5b37f893529db748a6bcaccd17935775850c9c",
+            "episode": "49b1b561c2c56d4dd373d3e3db582bcf41a4cf642dcceb7e2bde67c6e759f53f/14"
+          }
+        },
+        "input": {
+          "path": "inputs/0014.json",
+          "sha256": "3b313a826c6374b825a5f09c29317556fe753ac6bc41ba3ad2d1c40608913a0a"
+        }
+      },
+      {
+        "id": "case-0015",
+        "product": "watered-grass",
+        "stratum": "small",
+        "action_seed": 9016031,
+        "admission": {
+          "physical": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "b7d69b784dc8bacd303448a7f76db6ba2a49e7861e723d0bf23fed205a65d761",
+            "exact_problem": "0cfaea33863d78ae3436b29c0b6f9eae776cb28648b6414ab7820e1544e300af"
+          },
+          "catalog_sha256": "2dfe65fe4a40d942f555303f745a9a9e71f699744c75502b0008883a46fdf0ca",
+          "root": {
+            "semantics": "aic-physical-identity-v1",
+            "structural": "b7d69b784dc8bacd303448a7f76db6ba2a49e7861e723d0bf23fed205a65d761",
+            "episode": "9a4e645f61513220c147c619d3e64b9c91a39e78efc03fd356e82191c9fd5f40/15"
+          }
+        },
+        "input": {
+          "path": "inputs/0015.json",
+          "sha256": "2ec2a1dc52541e0c95454b1db14babbec0d111a1041f96c5d3e98d64ab9b6832"
+        }
+      }
+    ]
+  },
+  "closeout": {
+    "matching_live_processes": [],
+    "verified_executables": [
+      "/home/ashrimp/Srv/aic-io-baseline-83f4dd8/target/release/aic-cli",
+      "/home/ashrimp/Srv/aic-learning-io-20260915/target/release/aic-cli",
+      "/home/ashrimp/Srv/aic-learning-io-20260915/target/release/deps/aic_pilot_native-897e398b8bfc8503"
+    ]
+  }
+}

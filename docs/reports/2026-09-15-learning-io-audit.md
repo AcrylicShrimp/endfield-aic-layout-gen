@@ -233,3 +233,20 @@ Tiny integrated training, nonempty replay and v8 resume checks passed. These che
 establish correctness and bounded cost continuity; the final cold comparison in
 plan 06 is still required for any learning-readiness conclusion. The historical
 findings above are not retrospective claims of observed evaluation contamination.
+
+
+### Integrated readiness (plan 06)
+
+[The integrated gate report](2026-09-15-integrated-io-readiness.md) records passing
+native contract cases, nonempty CPU/CUDA replay/optimizer continuation, a migrated
+common 16-root panel and complete actual-input recovery from two small waves.
+The implementation contracts above are now concrete: physical widths 41/37/15/12/11,
+terminal-bound prefixes, available-family priors, native checkpoint v3/local edit
+v2, learned checkpoint v8 and canonical structural/root reservations. The
+pretraining design now names these authorities instead of the superseded profile.
+
+The four cold learning arms have not started. Mid-wave checkpoint retention's
+measured size blocks their approved 4 GiB preflight. Learning benefit and comparable
+end-to-end throughput remain unmeasured, and neither long training nor pretraining
+is cleared. The report preserves this allocation finding separately from I/O
+correctness; it is not evidence that any repair harmed or improved learning.

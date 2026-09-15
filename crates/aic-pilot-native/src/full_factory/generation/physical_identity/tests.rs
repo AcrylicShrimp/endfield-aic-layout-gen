@@ -183,3 +183,42 @@ fn retained_admission_identity_work_study() {
     )
     .unwrap();
 }
+
+#[test]
+#[ignore = "offline all-admitted-start audit; requires AIC_IO_ADMISSIONS and AIC_IO_IDENTITIES"]
+fn io_readiness_admitted_identities() {
+    use serde_json::{Value, json};
+    use std::path::Path;
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let config: Value =
+        crate::input::read(&root, Path::new("tools/native-training/training.json")).unwrap();
+    let catalogs = crate::input::load_catalogs(
+        &root,
+        &serde_json::from_value(config["catalogs"].clone()).unwrap(),
+    )
+    .unwrap();
+    let limits: Limits =
+        serde_json::from_value(config["generation"]["identity_limits"].clone()).unwrap();
+    let cases: Vec<Value> = crate::input::read(
+        Path::new("."),
+        Path::new(&std::env::var("AIC_IO_ADMISSIONS").unwrap()),
+    )
+    .unwrap();
+    assert!(!cases.is_empty() && cases.len() <= 512);
+    let began = std::time::Instant::now();
+    let mut rows = vec![];
+    for case in cases {
+        let path = Path::new(case["input"].as_str().unwrap());
+        let mut input: crate::generation::source::Generated =
+            crate::input::read(Path::new("."), path).unwrap();
+        let legacy = input
+            .admission
+            .is_none()
+            .then(|| format!("offline-audit/{}", case["id"]));
+        input
+            .admit(&catalogs, &limits, path.to_str().unwrap(), legacy)
+            .unwrap();
+        rows.push(json!({"id":case["id"],"admission":input.admission}));
+    }
+    std::fs::write(std::env::var("AIC_IO_IDENTITIES").unwrap(),serde_json::to_vec(&json!({"schema":"aic-io-admission-audit-v1","catalog_sha256":catalogs.identity,"seconds":began.elapsed().as_secs_f64(),"rows":rows})).unwrap()).unwrap();
+}
