@@ -5,9 +5,10 @@
 The online encoder pretraining path is ready for a 12-hour CUDA run. It starts
 the established width-40, two-round graph encoder from seed `950000`; it does
 not load the earlier physical-outcome dataset or its trained weights. Every
-training update generates 16 new roots, collects 32 native physical-editor
-actions per root through one persistent 16-worker pool, trains four-root
-minibatches once, and releases all rows without writing them to disk.
+training update generates 16 new roots through a persistent bounded generation
+pool, collects 32 native physical-editor actions per root through the existing
+persistent 16-worker editor pool, trains four-root minibatches once, and releases
+all rows without writing them to disk.
 Each root owns a 1,024-seed lane and may try up to 16 seeds, so an exhausted
 procedural seed cannot permanently block resume or overlap another root.
 

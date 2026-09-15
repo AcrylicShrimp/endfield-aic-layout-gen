@@ -15,7 +15,11 @@ use aic_pilot_native::physical_editor::{
     pool::{PhysicalCommand, PhysicalPool, PhysicalReply},
 };
 use anyhow::{Result, ensure};
-use std::{collections::BTreeMap, sync::Arc};
+use std::{
+    collections::BTreeMap,
+    sync::{Arc, mpsc},
+    thread::JoinHandle,
+};
 
 #[derive(Clone, Debug)]
 pub struct RootSpec {
@@ -34,9 +38,130 @@ struct Active {
     closable: bool,
 }
 
+type GenerationReply = std::result::Result<ProceduralAdmission, String>;
+
+struct GenerationPool {
+    commands: Vec<mpsc::Sender<Option<RootSpec>>>,
+    replies: Vec<mpsc::Receiver<GenerationReply>>,
+    workers: Vec<JoinHandle<()>>,
+}
+
+impl GenerationPool {
+    fn new(
+        catalogs: Arc<aic_layout::validation::Catalogs>,
+        config: GeneratorConfig,
+        workers: usize,
+    ) -> Result<Self> {
+        let mut commands = Vec::with_capacity(workers);
+        let mut replies = Vec::with_capacity(workers);
+        let mut handles = Vec::with_capacity(workers);
+        for worker in 0..workers {
+            let (command, receiver) = mpsc::channel();
+            let (reply, replies_from_worker) = mpsc::channel();
+            let catalogs = catalogs.clone();
+            let config = config.clone();
+            let handle = std::thread::Builder::new()
+                .name(format!("aic-root-generator-{worker}"))
+                .spawn(move || {
+                    while let Ok(Some(spec)) = receiver.recv() {
+                        let result = generate(&catalogs, &config, &spec)
+                            .map_err(|error| format!("{error:#}"));
+                        if reply.send(result).is_err() {
+                            break;
+                        }
+                    }
+                })?;
+            commands.push(command);
+            replies.push(replies_from_worker);
+            handles.push(handle);
+        }
+        Ok(Self {
+            commands,
+            replies,
+            workers: handles,
+        })
+    }
+
+    fn generate(&self, specs: &[RootSpec]) -> Result<Vec<ProceduralAdmission>> {
+        for (command, spec) in self.commands.iter().zip(specs.iter().cloned()) {
+            command
+                .send(Some(spec))
+                .map_err(|_| anyhow::anyhow!("aic-learning.online-generation: worker exited"))?;
+        }
+        let mut admissions = (0..specs.len()).map(|_| None).collect::<Vec<_>>();
+        let mut failure = None;
+        for (index, reply) in self.replies.iter().take(specs.len()).enumerate() {
+            let result = reply.recv().map_err(|_| {
+                anyhow::anyhow!(
+                    "aic-learning.online-generation: worker {index} reply channel closed"
+                )
+            })?;
+            match result {
+                Ok(admission) => admissions[index] = Some(admission),
+                Err(error) => {
+                    failure.get_or_insert(error);
+                }
+            }
+        }
+        if let Some(error) = failure {
+            anyhow::bail!(error);
+        }
+        admissions
+            .into_iter()
+            .map(|admission| {
+                admission.ok_or_else(|| {
+                    anyhow::anyhow!("aic-learning.online-generation: missing ordered admission")
+                })
+            })
+            .collect()
+    }
+}
+
+impl Drop for GenerationPool {
+    fn drop(&mut self) {
+        for command in &self.commands {
+            let _ = command.send(None);
+        }
+        for worker in self.workers.drain(..) {
+            let _ = worker.join();
+        }
+    }
+}
+
+fn generate(
+    catalogs: &aic_layout::validation::Catalogs,
+    base: &GeneratorConfig,
+    spec: &RootSpec,
+) -> Result<ProceduralAdmission> {
+    ensure!(
+        matches!(spec.blocks, 8 | 16),
+        "aic-learning.online-size: expected 8 or 16 blocks"
+    );
+    let mut config = base.clone();
+    config.blocks = [spec.blocks, spec.blocks];
+    let generator = Generator::new(catalogs, config)
+        .map_err(|failure| anyhow::anyhow!(serde_json::to_string(&failure).unwrap()))?;
+    for retry in 0..16u64 {
+        let seed = spec
+            .generation_seed
+            .checked_add(retry)
+            .ok_or_else(|| anyhow::anyhow!("aic-learning.online-seed: retry overflow"))?;
+        let Ok(generated) = generator.generate(seed) else {
+            continue;
+        };
+        let source = serde_json::to_vec(&generated.layout)?;
+        if let Ok(admission) = ProceduralAdmission::compile(&source, catalogs) {
+            return Ok(admission);
+        }
+    }
+    anyhow::bail!(
+        "aic-learning.online-generation: exhausted 16 deterministic seeds for {}",
+        spec.root_id
+    )
+}
+
 pub struct Collector {
-    catalogs: Arc<aic_layout::validation::Catalogs>,
-    generator: GeneratorConfig,
+    generation: GenerationPool,
     candidates: PhysicalCandidateOptions,
     session: PhysicalSessionLimits,
     workers: usize,
@@ -62,12 +187,12 @@ impl Collector {
         let loaded = aic_layout_gen::io::load_catalogs(catalog_root)?;
         let catalogs = Arc::new(loaded.catalogs);
         let identity = catalogs.identity.clone();
+        let generation = GenerationPool::new(catalogs.clone(), generator, workers)?;
         let pool =
             PhysicalPool::new(catalogs.clone(), workers, workers).map_err(anyhow::Error::msg)?;
         Ok((
             Self {
-                catalogs,
-                generator,
+                generation,
                 candidates,
                 session,
                 workers,
@@ -82,38 +207,7 @@ impl Collector {
             !specs.is_empty() && specs.len() <= self.workers,
             "aic-learning.online-batch: root count must fit the persistent worker pool"
         );
-        let mut admissions = Vec::with_capacity(specs.len());
-        for spec in specs {
-            ensure!(
-                matches!(spec.blocks, 8 | 16),
-                "aic-learning.online-size: expected 8 or 16 blocks"
-            );
-            let mut config = self.generator.clone();
-            config.blocks = [spec.blocks, spec.blocks];
-            let generator = Generator::new(&self.catalogs, config)
-                .map_err(|failure| anyhow::anyhow!(serde_json::to_string(&failure).unwrap()))?;
-            let mut admitted = None;
-            for retry in 0..16u64 {
-                let seed = spec
-                    .generation_seed
-                    .checked_add(retry)
-                    .ok_or_else(|| anyhow::anyhow!("aic-learning.online-seed: retry overflow"))?;
-                let Ok(generated) = generator.generate(seed) else {
-                    continue;
-                };
-                let source = serde_json::to_vec(&generated.layout)?;
-                if let Ok(admission) = ProceduralAdmission::compile(&source, &self.catalogs) {
-                    admitted = Some(admission);
-                    break;
-                }
-            }
-            admissions.push(admitted.ok_or_else(|| {
-                anyhow::anyhow!(
-                    "aic-learning.online-generation: exhausted 16 deterministic seeds for {}",
-                    spec.root_id
-                )
-            })?);
-        }
+        let admissions = self.generation.generate(specs)?;
 
         let opens = admissions
             .into_iter()

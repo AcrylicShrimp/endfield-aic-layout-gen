@@ -106,3 +106,38 @@ model size or minibatch size would consume more GPU without addressing the
 measured wall-time bottleneck. Pipelining collection with training can be
 considered after generation is parallel, but the current 21 ms training phase
 limits its standalone benefit.
+
+## Parallel generation trial
+
+The bounded optimization was implemented with 16 persistent standard-library
+generation workers owned directly by the live collector. Each worker receives
+at most one root for an update. Results return through a dedicated channel per
+worker and are restored to configuration order before the existing physical
+editor pool opens its sessions. The data seed lanes, retry behavior, editor
+pool, minibatches, checkpoint format and W&B protocol are unchanged.
+
+The same first 40 updates improved as follows:
+
+| Implementation | Trainer elapsed | Samples/min | Peak RSS |
+| --- | ---: | ---: | ---: |
+| Serial generation | 22.98 s | 53,463 | 2.17 GB |
+| Persistent parallel generation | 16.12 s | 76,239 | 2.22 GB |
+
+Throughput improved by 42.6% while RSS increased by about 44 MB. Both runs
+produced encoder SHA-256
+`d1c30d2723a3f46519d8d1047ccb0c8e037462ec890512b5e3947892a7e2250a`
+after update 40. This exact match confirms that parallel completion order did
+not change admitted-root order, sampled actions, optimizer updates or the final
+model.
+
+The 100-update comparison, including one fresh 16-root development evaluation,
+improved from 48,064 to 65,646 training samples per minute, a 36.6% gain. Mean
+process-tree CPU increased from 559% to 902%, while mean GPU utilization rose
+from 2.35% to 3.54%. Peak RSS was 2.24 GB. A checkpoint resume then completed
+update 41 from the 40-update result with the next 16 roots and 512 rows.
+
+The trial passes: it removes the identified serial section, gives a substantial
+bounded speedup, preserves exact training behavior, and retains the established
+persistent-worker and recovery contracts. The remaining workload is still
+data-production bound; further changes should profile the synchronized editor
+collection before changing GPU-side batching.
